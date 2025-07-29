@@ -79,9 +79,10 @@ export default function DailyExpenses() {
     queryFn: async () => {
       const response = await apiRequest("GET", `/api/projects/${selectedProjectId}/fund-transfers?date=${selectedDate}`);
       console.log("Fund transfers response:", response);
+      console.log("Query key components:", { selectedProjectId, selectedDate });
       return Array.isArray(response) ? response as FundTransfer[] : [];
     },
-    enabled: !!selectedProjectId,
+    enabled: !!selectedProjectId && !!selectedDate,
   });
 
   // جلب الرصيد المتبقي من اليوم السابق
@@ -110,6 +111,10 @@ export default function DailyExpenses() {
       setSenderName("");
       setTransferNumber("");
       setTransferType("");
+      // إعادة جلب البيانات فوراً
+      queryClient.invalidateQueries({ 
+        queryKey: ["/api/projects", selectedProjectId, "fund-transfers"] 
+      });
       toast({
         title: "تم إضافة العهدة",
         description: "تم إضافة تحويل العهدة بنجاح",
