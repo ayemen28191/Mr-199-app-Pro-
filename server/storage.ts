@@ -9,7 +9,7 @@ import {
   workerTransfers, workerBalances
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, gte, lte } from "drizzle-orm";
+import { eq, and, gte, lte, sql } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -743,17 +743,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getFilteredWorkerTransfers(projectId?: string, date?: string): Promise<WorkerTransfer[]> {
-    let query = db.select().from(workerTransfers);
-    
     if (projectId && date) {
-      query = query.where(and(eq(workerTransfers.projectId, projectId), eq(workerTransfers.transferDate, date)));
+      return await db.select().from(workerTransfers)
+        .where(and(eq(workerTransfers.projectId, projectId), eq(workerTransfers.transferDate, date)));
     } else if (projectId) {
-      query = query.where(eq(workerTransfers.projectId, projectId));
+      return await db.select().from(workerTransfers)
+        .where(eq(workerTransfers.projectId, projectId));
     } else if (date) {
-      query = query.where(eq(workerTransfers.transferDate, date));
+      return await db.select().from(workerTransfers)
+        .where(eq(workerTransfers.transferDate, date));
     }
     
-    return await query;
+    return await db.select().from(workerTransfers);
   }
 
   async getPreviousDayBalance(projectId: string, currentDate: string): Promise<string> {
