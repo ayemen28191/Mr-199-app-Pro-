@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Clock, Receipt, ShoppingCart, BarChart, Plus, Users } from "lucide-react";
+import { useSelectedProject } from "@/hooks/use-selected-project";
 import ProjectSelector from "@/components/project-selector";
 import AddProjectForm from "@/components/forms/add-project-form";
 import AddWorkerForm from "@/components/forms/add-worker-form";
@@ -14,7 +15,7 @@ import type { Project, DailyExpenseSummary } from "@shared/schema";
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
-  const [selectedProjectId, setSelectedProjectId] = useState<string>("");
+  const { selectedProjectId, selectProject } = useSelectedProject();
   const [showAddProject, setShowAddProject] = useState(false);
   const [showAddWorker, setShowAddWorker] = useState(false);
 
@@ -101,7 +102,7 @@ export default function Dashboard() {
 
       <ProjectSelector
         selectedProjectId={selectedProjectId}
-        onProjectChange={setSelectedProjectId}
+        onProjectChange={selectProject}
       />
 
       {selectedProject && (

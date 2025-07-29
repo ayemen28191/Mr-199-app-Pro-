@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Combobox } from "@/components/ui/combobox";
 import { useToast } from "@/hooks/use-toast";
+import { useSelectedProject } from "@/hooks/use-selected-project";
 import ProjectSelector from "@/components/project-selector";
 import { getCurrentDate } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
@@ -17,7 +18,7 @@ import type { Material, InsertMaterialPurchase, InsertMaterial } from "@shared/s
 
 export default function MaterialPurchase() {
   const [, setLocation] = useLocation();
-  const [selectedProjectId, setSelectedProjectId] = useState<string>("");
+  const { selectedProjectId, selectProject } = useSelectedProject();
   
   // Form states
   const [materialName, setMaterialName] = useState<string>("");
@@ -158,7 +159,7 @@ export default function MaterialPurchase() {
 
       <ProjectSelector
         selectedProjectId={selectedProjectId}
-        onProjectChange={setSelectedProjectId}
+        onProjectChange={selectProject}
       />
 
       {/* Purchase Form */}

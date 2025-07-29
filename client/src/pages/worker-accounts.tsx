@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useSelectedProject } from "@/hooks/use-selected-project";
 import ProjectSelector from "@/components/project-selector";
 import { getCurrentDate, formatCurrency } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
@@ -17,7 +18,7 @@ import type { Worker, WorkerBalance, WorkerTransfer, WorkerAttendance, InsertWor
 
 export default function WorkerAccounts() {
   const [, setLocation] = useLocation();
-  const [selectedProjectId, setSelectedProjectId] = useState<string>("");
+  const { selectedProjectId, selectProject } = useSelectedProject();
   const [selectedWorkerId, setSelectedWorkerId] = useState<string>("");
   const [showTransferDialog, setShowTransferDialog] = useState(false);
   const [showStatementDialog, setShowStatementDialog] = useState(false);
@@ -154,7 +155,7 @@ export default function WorkerAccounts() {
 
       <ProjectSelector
         selectedProjectId={selectedProjectId}
-        onProjectChange={setSelectedProjectId}
+        onProjectChange={selectProject}
       />
 
       {/* Worker Selection */}

@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { useSelectedProject } from "@/hooks/use-selected-project";
 import ProjectSelector from "@/components/project-selector";
 import EnhancedWorkerCard from "@/components/enhanced-worker-card";
 import { getCurrentDate } from "@/lib/utils";
@@ -26,7 +27,7 @@ interface AttendanceData {
 
 export default function WorkerAttendance() {
   const [, setLocation] = useLocation();
-  const [selectedProjectId, setSelectedProjectId] = useState<string>("");
+  const { selectedProjectId, selectProject } = useSelectedProject();
   const [selectedDate, setSelectedDate] = useState(getCurrentDate());
   const [attendanceData, setAttendanceData] = useState<AttendanceData>({});
   const { toast } = useToast();
@@ -128,7 +129,7 @@ export default function WorkerAttendance() {
 
       <ProjectSelector
         selectedProjectId={selectedProjectId}
-        onProjectChange={setSelectedProjectId}
+        onProjectChange={selectProject}
       />
 
       {/* Date Selection */}

@@ -5,12 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useSelectedProject } from "@/hooks/use-selected-project";
 import ProjectSelector from "@/components/project-selector";
 import { getCurrentDate, formatCurrency, formatDate } from "@/lib/utils";
 
 export default function Reports() {
   const [, setLocation] = useLocation();
-  const [selectedProjectId, setSelectedProjectId] = useState<string>("");
+  const { selectedProjectId, selectProject } = useSelectedProject();
   
   // Report form states
   const [dailyReportDate, setDailyReportDate] = useState(getCurrentDate());
@@ -164,7 +165,7 @@ export default function Reports() {
 
       <ProjectSelector
         selectedProjectId={selectedProjectId}
-        onProjectChange={setSelectedProjectId}
+        onProjectChange={selectProject}
       />
 
       {/* Report Types */}

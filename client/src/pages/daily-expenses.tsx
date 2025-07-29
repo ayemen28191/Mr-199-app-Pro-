@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useSelectedProject } from "@/hooks/use-selected-project";
 import ProjectSelector from "@/components/project-selector";
 import ExpenseSummary from "@/components/expense-summary";
 import { getCurrentDate, formatCurrency } from "@/lib/utils";
@@ -26,7 +27,7 @@ import type {
 
 export default function DailyExpenses() {
   const [, setLocation] = useLocation();
-  const [selectedProjectId, setSelectedProjectId] = useState<string>("");
+  const { selectedProjectId, selectProject } = useSelectedProject();
   const [selectedDate, setSelectedDate] = useState(getCurrentDate());
   const [carriedForward, setCarriedForward] = useState<string>("0");
   
@@ -349,7 +350,7 @@ export default function DailyExpenses() {
 
       <ProjectSelector
         selectedProjectId={selectedProjectId}
-        onProjectChange={setSelectedProjectId}
+        onProjectChange={selectProject}
       />
 
       {/* Date and Balance Info */}

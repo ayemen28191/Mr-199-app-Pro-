@@ -9,6 +9,7 @@ This is a full-stack construction project management application built with Reac
 - Preferred communication style: Simple, everyday language.
 - Communication language: Arabic
 - Business Rules: No duplicate project names, worker names, or fund transfer numbers allowed
+- Project Selection: User wants the selected project to persist across all pages and browser refreshes
 
 ## System Architecture
 
@@ -129,3 +130,11 @@ The application follows modern full-stack development practices with type safety
 - ✓ Updated API endpoints with proper error messages in Arabic
 - ✓ Enhanced storage interface with validation methods
 - ✓ Successfully tested all duplicate prevention functionality
+- ✓ Added delete functionality for all expense items:
+  - Fund transfers, transportation expenses, material purchases, worker attendance
+  - Added delete routes, storage methods, and frontend mutations
+  - Included proper error handling and cache invalidation
+- ✓ Implemented persistent project selection across all pages:
+  - Created useSelectedProject hook using localStorage
+  - Updated all pages to use the shared project state
+  - Project selection now persists through page refreshes and navigation
