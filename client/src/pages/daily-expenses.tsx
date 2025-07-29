@@ -4,6 +4,7 @@ import { useLocation } from "wouter";
 import { ArrowRight, Save, Users, Car, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Package, DollarSign } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -16,6 +17,8 @@ import type {
   WorkerAttendance, 
   TransportationExpense, 
   FundTransfer,
+  MaterialPurchase,
+  WorkerTransfer,
   InsertFundTransfer,
   InsertTransportationExpense,
   InsertDailyExpenseSummary 
@@ -48,6 +51,22 @@ export default function DailyExpenses() {
 
   const { data: todayTransportation = [] } = useQuery<TransportationExpense[]>({
     queryKey: ["/api/projects", selectedProjectId, "transportation-expenses"],
+    enabled: !!selectedProjectId,
+  });
+
+  const { data: todayMaterialPurchases = [] } = useQuery<MaterialPurchase[]>({
+    queryKey: ["/api/projects", selectedProjectId, "material-purchases"],
+    queryFn: () => apiRequest("GET", `/api/projects/${selectedProjectId}/material-purchases?dateFrom=${selectedDate}&dateTo=${selectedDate}`),
+    enabled: !!selectedProjectId,
+  });
+
+  const { data: todayWorkerTransfers = [] } = useQuery<WorkerTransfer[]>({
+    queryKey: ["/api/worker-transfers", selectedProjectId, selectedDate],
+    queryFn: async () => {
+      // Get all transfers for today for this project
+      const allTransfers = await apiRequest("GET", `/api/worker-transfers?projectId=${selectedProjectId}&date=${selectedDate}`);
+      return Array.isArray(allTransfers) ? allTransfers : [];
+    },
     enabled: !!selectedProjectId,
   });
 
@@ -138,16 +157,26 @@ export default function DailyExpenses() {
       (sum, expense) => sum + parseFloat(expense.amount || "0"), 
       0
     );
+    const totalMaterialCosts = todayMaterialPurchases.reduce(
+      (sum, purchase) => sum + parseFloat(purchase.totalAmount || "0"), 
+      0
+    );
+    const totalWorkerTransfers = todayWorkerTransfers.reduce(
+      (sum, transfer) => sum + parseFloat(transfer.amount || "0"), 
+      0
+    );
     const fundTransferAmount = parseFloat(fundAmount) || 0;
     const carriedAmount = parseFloat(carriedForward) || 0;
     
     const totalIncome = carriedAmount + fundTransferAmount;
-    const totalExpenses = totalWorkerWages + totalTransportation;
+    const totalExpenses = totalWorkerWages + totalTransportation + totalMaterialCosts + totalWorkerTransfers;
     const remainingBalance = totalIncome - totalExpenses;
 
     return {
       totalWorkerWages,
       totalTransportation,
+      totalMaterialCosts,
+      totalWorkerTransfers,
       totalIncome,
       totalExpenses,
       remainingBalance,
@@ -346,12 +375,30 @@ export default function DailyExpenses() {
       </Card>
 
       {/* Materials */}
-      <Card className="mb-4">
+      <Card className="mb-3">
         <CardContent className="p-4">
           <h4 className="font-medium text-foreground mb-3 flex items-center">
-            <Car className="text-success ml-2 h-5 w-5" />
+            <Package className="text-success ml-2 h-5 w-5" />
             شراء مواد
           </h4>
+          {todayMaterialPurchases.length === 0 ? (
+            <p className="text-muted-foreground text-sm mb-3">لا توجد مشتريات لهذا اليوم</p>
+          ) : (
+            <div className="space-y-2 mb-3">
+              {todayMaterialPurchases.map((purchase, index) => (
+                <div key={index} className="flex justify-between items-center p-2 bg-muted rounded">
+                  <span className="text-sm">{purchase.material?.name || 'مادة غير محددة'}</span>
+                  <span className="font-medium arabic-numbers">{formatCurrency(purchase.totalAmount)}</span>
+                </div>
+              ))}
+              <div className="text-left mt-2 pt-2 border-t">
+                <span className="text-sm text-muted-foreground">إجمالي المشتريات: </span>
+                <span className="font-bold text-success arabic-numbers">
+                  {formatCurrency(totals.totalMaterialCosts)}
+                </span>
+              </div>
+            </div>
+          )}
           <Button
             variant="outline"
             onClick={() => setLocation("/material-purchase")}
@@ -359,6 +406,42 @@ export default function DailyExpenses() {
           >
             <Plus className="ml-2 h-4 w-4" />
             إضافة شراء مواد
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Worker Transfers (Advances) */}
+      <Card className="mb-4">
+        <CardContent className="p-4">
+          <h4 className="font-medium text-foreground mb-3 flex items-center">
+            <DollarSign className="text-warning ml-2 h-5 w-5" />
+            عهد العمال
+          </h4>
+          {todayWorkerTransfers.length === 0 ? (
+            <p className="text-muted-foreground text-sm mb-3">لا توجد عهد لهذا اليوم</p>
+          ) : (
+            <div className="space-y-2 mb-3">
+              {todayWorkerTransfers.map((transfer, index) => (
+                <div key={index} className="flex justify-between items-center p-2 bg-muted rounded">
+                  <span className="text-sm">{transfer.recipientName}</span>
+                  <span className="font-medium arabic-numbers">{formatCurrency(transfer.amount)}</span>
+                </div>
+              ))}
+              <div className="text-left mt-2 pt-2 border-t">
+                <span className="text-sm text-muted-foreground">إجمالي العهد: </span>
+                <span className="font-bold text-warning arabic-numbers">
+                  {formatCurrency(totals.totalWorkerTransfers)}
+                </span>
+              </div>
+            </div>
+          )}
+          <Button
+            variant="outline"
+            onClick={() => setLocation("/worker-accounts")}
+            className="w-full border-2 border-dashed"
+          >
+            <Plus className="ml-2 h-4 w-4" />
+            إضافة عهدة جديدة
           </Button>
         </CardContent>
       </Card>

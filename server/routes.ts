@@ -315,6 +315,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/worker-transfers", async (req, res) => {
+    const { projectId, date } = req.query;
+    
+    try {
+      const allTransfers = await storage.getAllWorkerTransfers();
+      const filteredTransfers = allTransfers.filter(transfer => {
+        if (projectId && transfer.projectId !== projectId) return false;
+        if (date && transfer.transferDate !== date) return false;
+        return true;
+      });
+      res.json(filteredTransfers);
+    } catch (error) {
+      console.error("Error fetching all worker transfers:", error);
+      res.status(500).json({ message: "Failed to fetch worker transfers" });
+    }
+  });
+
   app.post("/api/worker-transfers", async (req, res) => {
     try {
       const validationResult = insertWorkerTransferSchema.safeParse(req.body);

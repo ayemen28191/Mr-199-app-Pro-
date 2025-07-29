@@ -58,6 +58,7 @@ export interface IStorage {
   // Worker Transfers
   getWorkerTransfers(workerId: string, projectId?: string): Promise<WorkerTransfer[]>;
   createWorkerTransfer(transfer: InsertWorkerTransfer): Promise<WorkerTransfer>;
+  getAllWorkerTransfers(): Promise<WorkerTransfer[]>;
   
   // Reports
   getWorkerAccountStatement(workerId: string, projectId?: string, dateFrom?: string, dateTo?: string): Promise<WorkerAttendance[]>;
@@ -379,6 +380,10 @@ export class MemStorage implements IStorage {
       }
     );
   }
+
+  async getAllWorkerTransfers(): Promise<WorkerTransfer[]> {
+    return Array.from(this.workerTransfers.values());
+  }
 }
 
 export class DatabaseStorage implements IStorage {
@@ -633,7 +638,9 @@ export class DatabaseStorage implements IStorage {
     return newTransfer;
   }
 
-
+  async getAllWorkerTransfers(): Promise<WorkerTransfer[]> {
+    return await db.select().from(workerTransfers);
+  }
 }
 
 // Always use DatabaseStorage now that we have PostgreSQL
