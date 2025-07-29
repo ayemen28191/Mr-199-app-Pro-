@@ -409,7 +409,7 @@ export default function DailyExpenses() {
             <div className="space-y-2 mb-3">
               {todayMaterialPurchases.map((purchase, index) => (
                 <div key={index} className="flex justify-between items-center p-2 bg-muted rounded">
-                  <span className="text-sm">{purchase.material?.name || 'مادة غير محددة'}</span>
+                  <span className="text-sm">{purchase.materialId || 'مادة غير محددة'}</span>
                   <span className="font-medium arabic-numbers">{formatCurrency(purchase.totalAmount)}</span>
                 </div>
               ))}
