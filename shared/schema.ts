@@ -136,7 +136,9 @@ export const dailyExpenseSummaries = pgTable("daily_expense_summaries", {
 // Schema definitions for forms
 export const insertProjectSchema = createInsertSchema(projects).omit({ id: true, createdAt: true });
 export const insertWorkerSchema = createInsertSchema(workers).omit({ id: true, createdAt: true });
-export const insertFundTransferSchema = createInsertSchema(fundTransfers).omit({ id: true, createdAt: true });
+export const insertFundTransferSchema = createInsertSchema(fundTransfers).omit({ id: true, createdAt: true }).extend({
+  transferDate: z.coerce.date(), // تحويل string إلى Date تلقائياً
+});
 export const insertWorkerAttendanceSchema = createInsertSchema(workerAttendance).omit({ id: true, createdAt: true });
 export const insertMaterialSchema = createInsertSchema(materials).omit({ id: true, createdAt: true });
 export const insertMaterialPurchaseSchema = createInsertSchema(materialPurchases).omit({ id: true, createdAt: true });

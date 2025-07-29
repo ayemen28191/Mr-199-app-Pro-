@@ -84,6 +84,25 @@ export default function DailyExpenses() {
     enabled: !!selectedProjectId,
   });
 
+  // جلب الرصيد المتبقي من اليوم السابق
+  const { data: previousBalance } = useQuery({
+    queryKey: ["/api/projects", selectedProjectId, "previous-balance", selectedDate],
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/projects/${selectedProjectId}/previous-balance/${selectedDate}`);
+      return response as { balance: string };
+    },
+    enabled: !!selectedProjectId && !!selectedDate,
+  });
+
+  // تحديث المبلغ المرحل تلقائياً عند تغيير التاريخ أو المشروع
+  useEffect(() => {
+    if (previousBalance?.balance && previousBalance.balance !== "0") {
+      setCarriedForward(previousBalance.balance);
+    } else {
+      setCarriedForward("0");
+    }
+  }, [previousBalance, selectedProjectId, selectedDate]);
+
   const addFundTransferMutation = useMutation({
     mutationFn: (data: InsertFundTransfer) => apiRequest("POST", "/api/fund-transfers", data),
     onSuccess: () => {
@@ -168,7 +187,7 @@ export default function DailyExpenses() {
       senderName,
       transferNumber,
       transferType,
-      transferDate: new Date(`${selectedDate}T00:00:00.000Z`),
+      transferDate: selectedDate,
       notes: "",
     });
   };

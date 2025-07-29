@@ -259,6 +259,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/projects/:projectId/previous-balance/:date", async (req, res) => {
+    try {
+      const balance = await storage.getPreviousDayBalance(req.params.projectId, req.params.date);
+      res.json({ balance });
+    } catch (error) {
+      res.status(500).json({ message: "Error fetching previous day balance" });
+    }
+  });
+
   app.post("/api/daily-expense-summaries", async (req, res) => {
     try {
       const result = insertDailyExpenseSummarySchema.safeParse(req.body);

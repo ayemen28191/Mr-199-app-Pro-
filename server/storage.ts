@@ -50,6 +50,7 @@ export interface IStorage {
   // Daily Expense Summaries
   getDailyExpenseSummary(projectId: string, date: string): Promise<DailyExpenseSummary | undefined>;
   createOrUpdateDailyExpenseSummary(summary: InsertDailyExpenseSummary): Promise<DailyExpenseSummary>;
+  getPreviousDayBalance(projectId: string, currentDate: string): Promise<string>;
   
   // Worker Balance Management
   getWorkerBalance(workerId: string, projectId: string): Promise<WorkerBalance | undefined>;
@@ -395,6 +396,15 @@ export class MemStorage implements IStorage {
       return true;
     });
   }
+
+  async getPreviousDayBalance(projectId: string, currentDate: string): Promise<string> {
+    // البحث عن آخر ملخص يومي قبل التاريخ الحالي
+    const summaries = Array.from(this.dailyExpenseSummaries.values())
+      .filter(summary => summary.projectId === projectId && summary.date < currentDate)
+      .sort((a, b) => b.date.localeCompare(a.date));
+    
+    return summaries.length > 0 ? summaries[0].remainingBalance : "0";
+  }
 }
 
 export class DatabaseStorage implements IStorage {
@@ -734,6 +744,20 @@ export class DatabaseStorage implements IStorage {
     }
     
     return await query;
+  }
+
+  async getPreviousDayBalance(projectId: string, currentDate: string): Promise<string> {
+    // البحث عن آخر ملخص يومي قبل التاريخ الحالي
+    const result = await db.select()
+      .from(dailyExpenseSummaries)
+      .where(and(
+        eq(dailyExpenseSummaries.projectId, projectId),
+        sql`${dailyExpenseSummaries.date} < ${currentDate}`
+      ))
+      .orderBy(sql`${dailyExpenseSummaries.date} DESC`)
+      .limit(1);
+    
+    return result.length > 0 ? result[0].remainingBalance : "0";
   }
 }
 
