@@ -45,12 +45,20 @@ export default function DailyExpenses() {
   const queryClient = useQueryClient();
 
   const { data: todayAttendance = [] } = useQuery<WorkerAttendance[]>({
-    queryKey: ["/api/projects", selectedProjectId, "attendance"],
+    queryKey: ["/api/projects", selectedProjectId, "attendance", selectedDate],
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/projects/${selectedProjectId}/attendance?date=${selectedDate}`);
+      return Array.isArray(response) ? response as WorkerAttendance[] : [];
+    },
     enabled: !!selectedProjectId,
   });
 
   const { data: todayTransportation = [] } = useQuery<TransportationExpense[]>({
-    queryKey: ["/api/projects", selectedProjectId, "transportation-expenses"],
+    queryKey: ["/api/projects", selectedProjectId, "transportation-expenses", selectedDate],
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/projects/${selectedProjectId}/transportation-expenses?date=${selectedDate}`);
+      return Array.isArray(response) ? response as TransportationExpense[] : [];
+    },
     enabled: !!selectedProjectId,
   });
 
@@ -77,9 +85,10 @@ export default function DailyExpenses() {
   const { data: todayFundTransfers = [], refetch: refetchFundTransfers } = useQuery({
     queryKey: ["/api/projects", selectedProjectId, "fund-transfers", selectedDate],
     queryFn: async () => {
+      console.log("Making fund transfers request:", { selectedProjectId, selectedDate });
       const response = await apiRequest("GET", `/api/projects/${selectedProjectId}/fund-transfers?date=${selectedDate}`);
       console.log("Fund transfers response:", response);
-      console.log("Query key components:", { selectedProjectId, selectedDate });
+      console.log("Response type:", typeof response, "Is array:", Array.isArray(response));
       return Array.isArray(response) ? response as FundTransfer[] : [];
     },
     enabled: !!selectedProjectId && !!selectedDate,
