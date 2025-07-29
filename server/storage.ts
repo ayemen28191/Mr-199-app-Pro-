@@ -26,7 +26,7 @@ export interface IStorage {
   updateWorker(id: string, worker: Partial<InsertWorker>): Promise<Worker | undefined>;
   
   // Fund Transfers
-  getFundTransfers(projectId: string): Promise<FundTransfer[]>;
+  getFundTransfers(projectId: string, date?: string): Promise<FundTransfer[]>;
   createFundTransfer(transfer: InsertFundTransfer): Promise<FundTransfer>;
   
   // Worker Attendance
@@ -158,10 +158,12 @@ export class MemStorage implements IStorage {
   }
 
   // Fund Transfers
-  async getFundTransfers(projectId: string): Promise<FundTransfer[]> {
-    return Array.from(this.fundTransfers.values()).filter(
-      transfer => transfer.projectId === projectId
-    );
+  async getFundTransfers(projectId: string, date?: string): Promise<FundTransfer[]> {
+    return Array.from(this.fundTransfers.values()).filter(transfer => {
+      if (transfer.projectId !== projectId) return false;
+      if (date && transfer.transferDate.toISOString().split('T')[0] !== date) return false;
+      return true;
+    });
   }
 
   async createFundTransfer(transfer: InsertFundTransfer): Promise<FundTransfer> {
@@ -456,9 +458,16 @@ export class DatabaseStorage implements IStorage {
     return updated || undefined;
   }
 
-  async getFundTransfers(projectId: string): Promise<FundTransfer[]> {
-    const result = await db.select().from(fundTransfers).where(eq(fundTransfers.projectId, projectId));
-    return result;
+  async getFundTransfers(projectId: string, date?: string): Promise<FundTransfer[]> {
+    if (date) {
+      const result = await db.select().from(fundTransfers)
+        .where(and(eq(fundTransfers.projectId, projectId), eq(fundTransfers.transferDate, new Date(date))));
+      return result;
+    } else {
+      const result = await db.select().from(fundTransfers)
+        .where(eq(fundTransfers.projectId, projectId));
+      return result;
+    }
   }
 
   async createFundTransfer(transfer: InsertFundTransfer): Promise<FundTransfer> {

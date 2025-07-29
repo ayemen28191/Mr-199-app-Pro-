@@ -74,6 +74,16 @@ export default function DailyExpenses() {
     enabled: !!selectedProjectId,
   });
 
+  const { data: todayFundTransfers = [], refetch: refetchFundTransfers } = useQuery({
+    queryKey: ["/api/projects", selectedProjectId, "fund-transfers", selectedDate],
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/projects/${selectedProjectId}/fund-transfers?date=${selectedDate}`);
+      console.log("Fund transfers response:", response);
+      return Array.isArray(response) ? response as FundTransfer[] : [];
+    },
+    enabled: !!selectedProjectId,
+  });
+
   const addFundTransferMutation = useMutation({
     mutationFn: (data: InsertFundTransfer) => apiRequest("POST", "/api/fund-transfers", data),
     onSuccess: () => {
@@ -85,9 +95,17 @@ export default function DailyExpenses() {
         title: "تم إضافة العهدة",
         description: "تم إضافة تحويل العهدة بنجاح",
       });
+      // تحديث جميع البيانات المتعلقة بالعهدة
       queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProjectId, "fund-transfers"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProjectId, "attendance"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProjectId, "transportation-expenses"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProjectId, "material-purchases"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/worker-transfers"] });
+      
+      // إعادة تحميل البيانات فوراً
       refetchMaterialPurchases();
       refetchWorkerTransfers();
+      refetchFundTransfers();
     },
   });
 
@@ -150,7 +168,7 @@ export default function DailyExpenses() {
       senderName,
       transferNumber,
       transferType,
-      transferDate: new Date(selectedDate),
+      transferDate: new Date(`${selectedDate}T00:00:00.000Z`),
       notes: "",
     });
   };
@@ -187,10 +205,11 @@ export default function DailyExpenses() {
       todayMaterialPurchases.reduce((sum, purchase) => sum + parseFloat(purchase.totalAmount || "0"), 0) : 0;
     const totalWorkerTransfers = Array.isArray(todayWorkerTransfers) ? 
       todayWorkerTransfers.reduce((sum, transfer) => sum + parseFloat(transfer.amount || "0"), 0) : 0;
-    const fundTransferAmount = parseFloat(fundAmount) || 0;
+    const totalFundTransfers = Array.isArray(todayFundTransfers) ? 
+      todayFundTransfers.reduce((sum, transfer) => sum + parseFloat(transfer.amount || "0"), 0) : 0;
     const carriedAmount = parseFloat(carriedForward) || 0;
     
-    const totalIncome = carriedAmount + fundTransferAmount;
+    const totalIncome = carriedAmount + totalFundTransfers;
     const totalExpenses = totalWorkerWages + totalTransportation + totalMaterialCosts + totalWorkerTransfers;
     const remainingBalance = totalIncome - totalExpenses;
 
@@ -317,6 +336,28 @@ export default function DailyExpenses() {
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
+            
+            {/* عرض العهد المضافة لهذا اليوم */}
+            {Array.isArray(todayFundTransfers) && todayFundTransfers.length > 0 && (
+              <div className="space-y-2 mt-3 pt-3 border-t">
+                <h5 className="text-sm font-medium text-muted-foreground">العهد المضافة اليوم:</h5>
+                {todayFundTransfers.map((transfer, index) => (
+                  <div key={index} className="flex justify-between items-center p-2 bg-muted rounded">
+                    <div className="text-sm">
+                      <div>{transfer.senderName || 'غير محدد'}</div>
+                      <div className="text-xs text-muted-foreground">{transfer.transferType}</div>
+                    </div>
+                    <span className="font-medium arabic-numbers">{formatCurrency(transfer.amount)}</span>
+                  </div>
+                ))}
+                <div className="text-left pt-2 border-t">
+                  <span className="text-sm text-muted-foreground">إجمالي العهد: </span>
+                  <span className="font-bold text-primary arabic-numbers">
+                    {formatCurrency(totalFundTransfers)}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
