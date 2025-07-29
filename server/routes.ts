@@ -185,6 +185,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const purchase = await storage.createMaterialPurchase(result.data);
+      
+      // Update daily expense summary with material cost
+      const today = new Date().toISOString().split('T')[0];
+      const existingSummary = await storage.getDailyExpenseSummary(purchase.projectId, today);
+      
+      const currentMaterialCosts = parseFloat(existingSummary?.totalMaterialCosts || '0');
+      const newMaterialCosts = currentMaterialCosts + parseFloat(purchase.totalAmount);
+      
+      const totalExpenses = newMaterialCosts + 
+        parseFloat(existingSummary?.totalWorkerWages || '0') + 
+        parseFloat(existingSummary?.totalTransportationCosts || '0');
+      const totalIncome = parseFloat(existingSummary?.totalFundTransfers || '0') + 
+        parseFloat(existingSummary?.carriedForwardAmount || '0');
+      const remainingBalance = totalIncome - totalExpenses;
+
+      await storage.createOrUpdateDailyExpenseSummary({
+        projectId: purchase.projectId,
+        date: today,
+        totalIncome: totalIncome.toString(),
+        totalExpenses: totalExpenses.toString(),
+        remainingBalance: remainingBalance.toString(),
+        totalMaterialCosts: newMaterialCosts.toString(),
+        carriedForwardAmount: existingSummary?.carriedForwardAmount || '0',
+        totalFundTransfers: existingSummary?.totalFundTransfers || '0',
+        totalWorkerWages: existingSummary?.totalWorkerWages || '0',
+        totalTransportationCosts: existingSummary?.totalTransportationCosts || '0'
+      });
+      
       res.status(201).json(purchase);
     } catch (error) {
       console.error("Error creating material purchase:", error);
