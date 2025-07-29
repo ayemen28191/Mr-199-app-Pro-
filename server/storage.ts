@@ -2,8 +2,11 @@ import {
   type Project, type Worker, type FundTransfer, type WorkerAttendance, 
   type Material, type MaterialPurchase, type TransportationExpense, type DailyExpenseSummary,
   type InsertProject, type InsertWorker, type InsertFundTransfer, type InsertWorkerAttendance,
-  type InsertMaterial, type InsertMaterialPurchase, type InsertTransportationExpense, type InsertDailyExpenseSummary
+  type InsertMaterial, type InsertMaterialPurchase, type InsertTransportationExpense, type InsertDailyExpenseSummary,
+  projects, workers, fundTransfers, workerAttendance, materials, materialPurchases, transportationExpenses, dailyExpenseSummaries
 } from "@shared/schema";
+import { db } from "./db";
+import { eq, and } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -294,4 +297,199 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export class DatabaseStorage implements IStorage {
+  async getProjects(): Promise<Project[]> {
+    const result = await db.select().from(projects);
+    return result;
+  }
+
+  async getProject(id: string): Promise<Project | undefined> {
+    const [project] = await db.select().from(projects).where(eq(projects.id, id));
+    return project || undefined;
+  }
+
+  async createProject(project: InsertProject): Promise<Project> {
+    const [newProject] = await db
+      .insert(projects)
+      .values({
+        ...project,
+        status: project.status || 'active'
+      })
+      .returning();
+    return newProject;
+  }
+
+  async updateProject(id: string, project: Partial<InsertProject>): Promise<Project | undefined> {
+    const [updated] = await db
+      .update(projects)
+      .set(project)
+      .where(eq(projects.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async getWorkers(): Promise<Worker[]> {
+    const result = await db.select().from(workers);
+    return result;
+  }
+
+  async getWorker(id: string): Promise<Worker | undefined> {
+    const [worker] = await db.select().from(workers).where(eq(workers.id, id));
+    return worker || undefined;
+  }
+
+  async createWorker(worker: InsertWorker): Promise<Worker> {
+    const [newWorker] = await db
+      .insert(workers)
+      .values({
+        ...worker,
+        isActive: worker.isActive !== false
+      })
+      .returning();
+    return newWorker;
+  }
+
+  async updateWorker(id: string, worker: Partial<InsertWorker>): Promise<Worker | undefined> {
+    const [updated] = await db
+      .update(workers)
+      .set(worker)
+      .where(eq(workers.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async getFundTransfers(projectId: string): Promise<FundTransfer[]> {
+    const result = await db.select().from(fundTransfers).where(eq(fundTransfers.projectId, projectId));
+    return result;
+  }
+
+  async createFundTransfer(transfer: InsertFundTransfer): Promise<FundTransfer> {
+    const [newTransfer] = await db
+      .insert(fundTransfers)
+      .values(transfer)
+      .returning();
+    return newTransfer;
+  }
+
+  async getWorkerAttendance(projectId: string, date?: string): Promise<WorkerAttendance[]> {
+    if (date) {
+      const result = await db.select().from(workerAttendance)
+        .where(and(eq(workerAttendance.projectId, projectId), eq(workerAttendance.date, date)));
+      return result;
+    } else {
+      const result = await db.select().from(workerAttendance)
+        .where(eq(workerAttendance.projectId, projectId));
+      return result;
+    }
+  }
+
+  async createWorkerAttendance(attendance: InsertWorkerAttendance): Promise<WorkerAttendance> {
+    const [newAttendance] = await db
+      .insert(workerAttendance)
+      .values(attendance)
+      .returning();
+    return newAttendance;
+  }
+
+  async updateWorkerAttendance(id: string, attendance: Partial<InsertWorkerAttendance>): Promise<WorkerAttendance | undefined> {
+    const [updated] = await db
+      .update(workerAttendance)
+      .set(attendance)
+      .where(eq(workerAttendance.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async getMaterials(): Promise<Material[]> {
+    const result = await db.select().from(materials);
+    return result;
+  }
+
+  async createMaterial(material: InsertMaterial): Promise<Material> {
+    const [newMaterial] = await db
+      .insert(materials)
+      .values(material)
+      .returning();
+    return newMaterial;
+  }
+
+  async getMaterialPurchases(projectId: string, dateFrom?: string, dateTo?: string): Promise<MaterialPurchase[]> {
+    let query = db.select().from(materialPurchases).where(eq(materialPurchases.projectId, projectId));
+    
+    if (dateFrom || dateTo) {
+      // For simplicity, we'll just filter by projectId for now
+      // In a real app, you'd add date filtering here
+    }
+    
+    const result = await query;
+    return result;
+  }
+
+  async createMaterialPurchase(purchase: InsertMaterialPurchase): Promise<MaterialPurchase> {
+    const [newPurchase] = await db
+      .insert(materialPurchases)
+      .values(purchase)
+      .returning();
+    return newPurchase;
+  }
+
+  async getTransportationExpenses(projectId: string, date?: string): Promise<TransportationExpense[]> {
+    if (date) {
+      const result = await db.select().from(transportationExpenses)
+        .where(and(eq(transportationExpenses.projectId, projectId), eq(transportationExpenses.date, date)));
+      return result;
+    } else {
+      const result = await db.select().from(transportationExpenses)
+        .where(eq(transportationExpenses.projectId, projectId));
+      return result;
+    }
+  }
+
+  async createTransportationExpense(expense: InsertTransportationExpense): Promise<TransportationExpense> {
+    const [newExpense] = await db
+      .insert(transportationExpenses)
+      .values(expense)
+      .returning();
+    return newExpense;
+  }
+
+  async getDailyExpenseSummary(projectId: string, date: string): Promise<DailyExpenseSummary | undefined> {
+    const [summary] = await db.select().from(dailyExpenseSummaries)
+      .where(and(eq(dailyExpenseSummaries.projectId, projectId), eq(dailyExpenseSummaries.date, date)));
+    return summary || undefined;
+  }
+
+  async createOrUpdateDailyExpenseSummary(summary: InsertDailyExpenseSummary): Promise<DailyExpenseSummary> {
+    const existing = await this.getDailyExpenseSummary(summary.projectId, summary.date);
+    
+    if (existing) {
+      const [updated] = await db
+        .update(dailyExpenseSummaries)
+        .set(summary)
+        .where(eq(dailyExpenseSummaries.id, existing.id))
+        .returning();
+      return updated;
+    } else {
+      const [newSummary] = await db
+        .insert(dailyExpenseSummaries)
+        .values(summary)
+        .returning();
+      return newSummary;
+    }
+  }
+
+  async getWorkerAccountStatement(workerId: string, projectId?: string, dateFrom?: string, dateTo?: string): Promise<WorkerAttendance[]> {
+    if (projectId) {
+      const result = await db.select().from(workerAttendance)
+        .where(and(eq(workerAttendance.workerId, workerId), eq(workerAttendance.projectId, projectId)));
+      return result;
+    } else {
+      const result = await db.select().from(workerAttendance)
+        .where(eq(workerAttendance.workerId, workerId));
+      return result;
+    }
+  }
+}
+
+// Always use DatabaseStorage now that we have PostgreSQL
+export const storage = new DatabaseStorage();

@@ -26,10 +26,11 @@ Preferred communication style: Simple, everyday language.
 - **Error handling** with proper HTTP status codes and error responses
 
 ### Database Architecture
-- **PostgreSQL** as the primary database
+- **PostgreSQL** as the primary database for local storage
 - **Drizzle ORM** for database operations and schema management
-- **Neon Database** as the hosted PostgreSQL provider
+- **Database Storage Layer** replaces in-memory storage for persistence
 - **Type-safe database schemas** with automatic TypeScript type generation
+- **Real-time data persistence** suitable for mobile APK deployment
 
 ## Key Components
 
