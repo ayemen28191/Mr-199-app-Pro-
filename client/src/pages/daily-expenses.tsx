@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { ArrowRight, Save, Users, Car, Plus } from "lucide-react";
+import { ArrowRight, Save, Users, Car, Plus, Edit2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Package, DollarSign } from "lucide-react";
@@ -378,11 +378,37 @@ export default function DailyExpenses() {
                 <h5 className="text-sm font-medium text-muted-foreground">العهد المضافة اليوم:</h5>
                 {todayFundTransfers.map((transfer, index) => (
                   <div key={index} className="flex justify-between items-center p-2 bg-muted rounded">
-                    <div className="text-sm">
+                    <div className="text-sm flex-1">
                       <div>{transfer.senderName || 'غير محدد'}</div>
                       <div className="text-xs text-muted-foreground">{transfer.transferType}</div>
                     </div>
-                    <span className="font-medium arabic-numbers">{formatCurrency(transfer.amount)}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium arabic-numbers">{formatCurrency(transfer.amount)}</span>
+                      <div className="flex gap-1">
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          className="h-7 w-7 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          onClick={() => {
+                            // TODO: إضافة تعديل العهدة
+                            toast({ title: "قريباً", description: "سيتم إضافة ميزة التعديل" });
+                          }}
+                        >
+                          <Edit2 className="h-3 w-3" />
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => {
+                            // TODO: إضافة حذف العهدة
+                            toast({ title: "قريباً", description: "سيتم إضافة ميزة الحذف" });
+                          }}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
                   </div>
                 ))}
                 <div className="text-left pt-2 border-t">
@@ -464,8 +490,34 @@ export default function DailyExpenses() {
             {/* Show existing transportation expenses */}
             {todayTransportation.map((expense, index) => (
               <div key={index} className="flex justify-between items-center p-2 bg-muted rounded">
-                <span className="text-sm">{expense.description}</span>
-                <span className="font-medium arabic-numbers">{formatCurrency(expense.amount)}</span>
+                <span className="text-sm flex-1">{expense.description}</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium arabic-numbers">{formatCurrency(expense.amount)}</span>
+                  <div className="flex gap-1">
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      className="h-7 w-7 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                      onClick={() => {
+                        // TODO: إضافة تعديل المواصلات
+                        toast({ title: "قريباً", description: "سيتم إضافة ميزة التعديل" });
+                      }}
+                    >
+                      <Edit2 className="h-3 w-3" />
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                      onClick={() => {
+                        // TODO: إضافة حذف المواصلات
+                        toast({ title: "قريباً", description: "سيتم إضافة ميزة الحذف" });
+                      }}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
@@ -485,8 +537,39 @@ export default function DailyExpenses() {
             <div className="space-y-2 mb-3">
               {todayMaterialPurchases.map((purchase, index) => (
                 <div key={index} className="flex justify-between items-center p-2 bg-muted rounded">
-                  <span className="text-sm">{purchase.materialId || 'مادة غير محددة'}</span>
-                  <span className="font-medium arabic-numbers">{formatCurrency(purchase.totalAmount)}</span>
+                  <div className="text-sm flex-1">
+                    <div>{purchase.material?.name || purchase.materialId || 'مادة غير محددة'}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {purchase.quantity} {purchase.material?.unit} × {formatCurrency(purchase.unitPrice)}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium arabic-numbers">{formatCurrency(purchase.totalAmount)}</span>
+                    <div className="flex gap-1">
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        className="h-7 w-7 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                        onClick={() => {
+                          // TODO: إضافة تعديل المواد
+                          toast({ title: "قريباً", description: "سيتم إضافة ميزة التعديل" });
+                        }}
+                      >
+                        <Edit2 className="h-3 w-3" />
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => {
+                          // TODO: إضافة حذف المواد
+                          toast({ title: "قريباً", description: "سيتم إضافة ميزة الحذف" });
+                        }}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               ))}
               <div className="text-left mt-2 pt-2 border-t">
@@ -521,8 +604,34 @@ export default function DailyExpenses() {
             <div className="space-y-2 mb-3">
               {todayWorkerTransfers.map((transfer, index) => (
                 <div key={index} className="flex justify-between items-center p-2 bg-muted rounded">
-                  <span className="text-sm">{transfer.recipientName}</span>
-                  <span className="font-medium arabic-numbers">{formatCurrency(transfer.amount)}</span>
+                  <span className="text-sm flex-1">{transfer.recipientName}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium arabic-numbers">{formatCurrency(transfer.amount)}</span>
+                    <div className="flex gap-1">
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        className="h-7 w-7 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                        onClick={() => {
+                          // TODO: إضافة تعديل عهد العمال
+                          toast({ title: "قريباً", description: "سيتم إضافة ميزة التعديل" });
+                        }}
+                      >
+                        <Edit2 className="h-3 w-3" />
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => {
+                          // TODO: إضافة حذف عهد العمال
+                          toast({ title: "قريباً", description: "سيتم إضافة ميزة الحذف" });
+                        }}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               ))}
               <div className="text-left mt-2 pt-2 border-t">
