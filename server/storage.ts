@@ -74,6 +74,25 @@ export interface IStorage {
   
   // Reports
   getWorkerAccountStatement(workerId: string, projectId?: string, dateFrom?: string, dateTo?: string): Promise<WorkerAttendance[]>;
+  
+  // Multi-project worker management
+  getWorkersWithMultipleProjects(): Promise<{worker: Worker, projects: Project[], totalBalance: string}[]>;
+  getWorkerMultiProjectStatement(workerId: string, dateFrom?: string, dateTo?: string): Promise<{
+    worker: Worker;
+    projects: {
+      project: Project;
+      attendance: WorkerAttendance[];
+      balance: WorkerBalance | null;
+      transfers: WorkerTransfer[];
+    }[];
+    totals: {
+      totalEarned: string;
+      totalPaid: string;
+      totalTransferred: string;
+      totalBalance: string;
+    };
+  }>;
+  getWorkerProjects(workerId: string): Promise<Project[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -469,6 +488,134 @@ export class MemStorage implements IStorage {
       .sort((a, b) => b.date.localeCompare(a.date));
     
     return summaries.length > 0 ? summaries[0].remainingBalance : "0";
+  }
+
+  // Multi-project worker management (simplified for MemStorage)
+  async getWorkersWithMultipleProjects(): Promise<{worker: Worker, projects: Project[], totalBalance: string}[]> {
+    const workerProjectMap = new Map<string, {worker: Worker, projects: Set<string>}>();
+    
+    // Find workers who worked on multiple projects
+    for (const attendance of this.workerAttendance.values()) {
+      if (!workerProjectMap.has(attendance.workerId)) {
+        const worker = this.workers.get(attendance.workerId);
+        if (worker) {
+          workerProjectMap.set(attendance.workerId, {
+            worker,
+            projects: new Set()
+          });
+        }
+      }
+      
+      const data = workerProjectMap.get(attendance.workerId);
+      if (data) {
+        data.projects.add(attendance.projectId);
+      }
+    }
+
+    const result = [];
+    for (const [workerId, data] of Array.from(workerProjectMap.entries())) {
+      if (data.projects.size > 1) {
+        // Get project details
+        const projects = Array.from(data.projects).map(id => this.projects.get(id)).filter(Boolean) as Project[];
+        
+        // Calculate total balance
+        const balances = Array.from(this.workerBalances.values())
+          .filter(balance => balance.workerId === workerId);
+        const totalBalance = balances.reduce((sum, balance) => 
+          sum + parseFloat(balance.currentBalance || '0'), 0
+        );
+
+        result.push({
+          worker: data.worker,
+          projects,
+          totalBalance: totalBalance.toFixed(2)
+        });
+      }
+    }
+
+    return result;
+  }
+
+  async getWorkerMultiProjectStatement(workerId: string, dateFrom?: string, dateTo?: string): Promise<{
+    worker: Worker;
+    projects: {
+      project: Project;
+      attendance: WorkerAttendance[];
+      balance: WorkerBalance | null;
+      transfers: WorkerTransfer[];
+    }[];
+    totals: {
+      totalEarned: string;
+      totalPaid: string;
+      totalTransferred: string;
+      totalBalance: string;
+    };
+  }> {
+    const worker = this.workers.get(workerId);
+    if (!worker) {
+      throw new Error('Worker not found');
+    }
+
+    const workerProjects = await this.getWorkerProjects(workerId);
+    const projectsData = [];
+    let totalEarned = 0, totalPaid = 0, totalTransferred = 0, totalBalance = 0;
+
+    for (const project of workerProjects) {
+      // Get attendance for this project
+      const attendance = Array.from(this.workerAttendance.values()).filter(a => {
+        if (a.workerId !== workerId || a.projectId !== project.id) return false;
+        if (dateFrom && a.date < dateFrom) return false;
+        if (dateTo && a.date > dateTo) return false;
+        return true;
+      });
+
+      // Get balance for this project
+      const balance = Array.from(this.workerBalances.values())
+        .find(b => b.workerId === workerId && b.projectId === project.id) || null;
+
+      // Get transfers for this project
+      const transfers = Array.from(this.workerTransfers.values())
+        .filter(t => t.workerId === workerId && t.projectId === project.id);
+
+      projectsData.push({
+        project,
+        attendance,
+        balance,
+        transfers
+      });
+
+      // Calculate totals
+      if (balance) {
+        totalEarned += parseFloat(balance.totalEarned || '0');
+        totalPaid += parseFloat(balance.totalPaid || '0');
+        totalTransferred += parseFloat(balance.totalTransferred || '0');
+        totalBalance += parseFloat(balance.currentBalance || '0');
+      }
+    }
+
+    return {
+      worker,
+      projects: projectsData,
+      totals: {
+        totalEarned: totalEarned.toFixed(2),
+        totalPaid: totalPaid.toFixed(2),
+        totalTransferred: totalTransferred.toFixed(2),
+        totalBalance: totalBalance.toFixed(2)
+      }
+    };
+  }
+
+  async getWorkerProjects(workerId: string): Promise<Project[]> {
+    const projectIds = new Set<string>();
+    
+    // Find all projects this worker has worked on
+    for (const attendance of this.workerAttendance.values()) {
+      if (attendance.workerId === workerId) {
+        projectIds.add(attendance.projectId);
+      }
+    }
+
+    return Array.from(projectIds).map(id => this.projects.get(id)).filter(Boolean) as Project[];
   }
 }
 
@@ -1043,6 +1190,207 @@ export class DatabaseStorage implements IStorage {
 
     } catch (error) {
       console.error('Error updating daily summary:', error);
+    }
+  }
+
+  // Multi-project worker management functions
+  async getWorkersWithMultipleProjects(): Promise<{worker: Worker, projects: Project[], totalBalance: string}[]> {
+    try {
+      // Get workers who have attendance in more than one project
+      const workersWithMultipleProjects = await db
+        .select({
+          workerId: workerAttendance.workerId,
+          projectId: workerAttendance.projectId,
+          worker: {
+            id: workers.id,
+            name: workers.name,
+            type: workers.type,
+            dailyWage: workers.dailyWage,
+            isActive: workers.isActive,
+            createdAt: workers.createdAt
+          },
+          project: {
+            id: projects.id,
+            name: projects.name,
+            status: projects.status,
+            createdAt: projects.createdAt
+          }
+        })
+        .from(workerAttendance)
+        .innerJoin(workers, eq(workerAttendance.workerId, workers.id))
+        .innerJoin(projects, eq(workerAttendance.projectId, projects.id))
+        .groupBy(workerAttendance.workerId, workerAttendance.projectId, workers.id, projects.id);
+
+      // Group by worker to find those with multiple projects
+      const workerProjectMap = new Map<string, {worker: Worker, projects: Project[]}>();
+      
+      for (const record of workersWithMultipleProjects) {
+        const workerId = record.workerId;
+        if (!workerProjectMap.has(workerId)) {
+          workerProjectMap.set(workerId, {
+            worker: record.worker as Worker,
+            projects: []
+          });
+        }
+        
+        const existing = workerProjectMap.get(workerId)!;
+        const projectExists = existing.projects.some(p => p.id === record.project.id);
+        if (!projectExists) {
+          existing.projects.push(record.project as Project);
+        }
+      }
+
+      // Filter workers with more than one project and calculate total balance
+      const result = [];
+      for (const [workerId, data] of Array.from(workerProjectMap.entries())) {
+        if (data.projects.length > 1) {
+          // Calculate total balance across all projects
+          const balances = await db
+            .select()
+            .from(workerBalances)
+            .where(eq(workerBalances.workerId, workerId));
+            
+          const totalBalance = balances.reduce((sum, balance) => 
+            sum + parseFloat(balance.currentBalance || '0'), 0
+          );
+
+          result.push({
+            worker: data.worker,
+            projects: data.projects,
+            totalBalance: totalBalance.toFixed(2)
+          });
+        }
+      }
+
+      return result;
+    } catch (error) {
+      console.error('Error getting workers with multiple projects:', error);
+      return [];
+    }
+  }
+
+  async getWorkerMultiProjectStatement(workerId: string, dateFrom?: string, dateTo?: string): Promise<{
+    worker: Worker;
+    projects: {
+      project: Project;
+      attendance: WorkerAttendance[];
+      balance: WorkerBalance | null;
+      transfers: WorkerTransfer[];
+    }[];
+    totals: {
+      totalEarned: string;
+      totalPaid: string;
+      totalTransferred: string;
+      totalBalance: string;
+    };
+  }> {
+    try {
+      // Get worker info
+      const [worker] = await db.select().from(workers).where(eq(workers.id, workerId));
+      if (!worker) {
+        throw new Error('Worker not found');
+      }
+
+      // Get all projects this worker has worked on
+      const workerProjects = await this.getWorkerProjects(workerId);
+      
+      const projectsData = [];
+      let totalEarned = 0, totalPaid = 0, totalTransferred = 0, totalBalance = 0;
+
+      for (const project of workerProjects) {
+        // Get attendance for this project
+        let attendanceQuery = db
+          .select()
+          .from(workerAttendance)
+          .where(and(
+            eq(workerAttendance.workerId, workerId), 
+            eq(workerAttendance.projectId, project.id)
+          ));
+
+        if (dateFrom && dateTo) {
+          attendanceQuery = db
+            .select()
+            .from(workerAttendance)
+            .where(
+              and(
+                eq(workerAttendance.workerId, workerId), 
+                eq(workerAttendance.projectId, project.id),
+                gte(workerAttendance.date, dateFrom),
+                lte(workerAttendance.date, dateTo)
+              )
+            );
+        }
+
+        const attendance = await attendanceQuery;
+        
+        // Get balance for this project
+        const [balance] = await db
+          .select()
+          .from(workerBalances)
+          .where(and(
+            eq(workerBalances.workerId, workerId),
+            eq(workerBalances.projectId, project.id)
+          ));
+
+        // Get transfers for this project
+        const transfers = await db
+          .select()
+          .from(workerTransfers)
+          .where(and(
+            eq(workerTransfers.workerId, workerId),
+            eq(workerTransfers.projectId, project.id)
+          ));
+
+        projectsData.push({
+          project,
+          attendance,
+          balance: balance || null,
+          transfers
+        });
+
+        // Calculate totals
+        if (balance) {
+          totalEarned += parseFloat(balance.totalEarned || '0');
+          totalPaid += parseFloat(balance.totalPaid || '0');
+          totalTransferred += parseFloat(balance.totalTransferred || '0');
+          totalBalance += parseFloat(balance.currentBalance || '0');
+        }
+      }
+
+      return {
+        worker,
+        projects: projectsData,
+        totals: {
+          totalEarned: totalEarned.toFixed(2),
+          totalPaid: totalPaid.toFixed(2),
+          totalTransferred: totalTransferred.toFixed(2),
+          totalBalance: totalBalance.toFixed(2)
+        }
+      };
+    } catch (error) {
+      console.error('Error getting worker multi-project statement:', error);
+      throw error;
+    }
+  }
+
+  async getWorkerProjects(workerId: string): Promise<Project[]> {
+    try {
+      const result = await db
+        .select({
+          id: projects.id,
+          name: projects.name,
+          status: projects.status,
+          createdAt: projects.createdAt
+        })
+        .from(projects)
+        .innerJoin(workerAttendance, eq(projects.id, workerAttendance.projectId))
+        .where(eq(workerAttendance.workerId, workerId))
+        .groupBy(projects.id);
+
+      return result;
+    } catch (error) {
+      console.error('Error getting worker projects:', error);
+      return [];
     }
   }
 }

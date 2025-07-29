@@ -631,6 +631,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Multi-project worker management routes
+  app.get("/api/workers/multi-project", async (req, res) => {
+    try {
+      const workers = await storage.getWorkersWithMultipleProjects();
+      res.json(workers);
+    } catch (error) {
+      console.error("Error fetching workers with multiple projects:", error);
+      res.status(500).json({ message: "خطأ في جلب العمال متعددي المشاريع" });
+    }
+  });
+
+  app.get("/api/workers/:workerId/multi-project-statement", async (req, res) => {
+    try {
+      const { workerId } = req.params;
+      const { dateFrom, dateTo } = req.query;
+      
+      const statement = await storage.getWorkerMultiProjectStatement(
+        workerId,
+        dateFrom as string,
+        dateTo as string
+      );
+      
+      res.json(statement);
+    } catch (error) {
+      console.error("Error fetching multi-project worker statement:", error);
+      res.status(500).json({ message: "خطأ في جلب كشف حساب العامل متعدد المشاريع" });
+    }
+  });
+
+  app.get("/api/workers/:workerId/projects", async (req, res) => {
+    try {
+      const { workerId } = req.params;
+      const projects = await storage.getWorkerProjects(workerId);
+      res.json(projects);
+    } catch (error) {
+      console.error("Error fetching worker projects:", error);
+      res.status(500).json({ message: "خطأ في جلب مشاريع العامل" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

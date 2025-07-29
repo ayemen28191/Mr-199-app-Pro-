@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Clock, Receipt, ShoppingCart, BarChart, Plus, Users } from "lucide-react";
+import { Clock, Receipt, ShoppingCart, BarChart, Plus, Users, UserCheck } from "lucide-react";
 import { useSelectedProject } from "@/hooks/use-selected-project";
 import ProjectSelector from "@/components/project-selector";
 import AddProjectForm from "@/components/forms/add-project-form";
@@ -98,6 +98,18 @@ export default function Dashboard() {
             <AddWorkerForm onSuccess={() => setShowAddWorker(false)} />
           </DialogContent>
         </Dialog>
+      </div>
+
+      {/* Multi-Project Workers Link */}
+      <div className="mb-4">
+        <Button 
+          variant="outline" 
+          className="w-full h-12 border-2 border-blue-300 hover:bg-blue-50"
+          onClick={() => setLocation("/multi-project-workers")}
+        >
+          <UserCheck className="ml-2 h-5 w-5 text-blue-600" />
+          <span className="text-blue-700 font-medium">العمال متعددي المشاريع</span>
+        </Button>
       </div>
 
       <ProjectSelector
