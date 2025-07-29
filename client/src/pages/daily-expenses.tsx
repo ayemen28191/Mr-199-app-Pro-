@@ -114,17 +114,20 @@ export default function DailyExpenses() {
         title: "تم إضافة العهدة",
         description: "تم إضافة تحويل العهدة بنجاح",
       });
-      // تحديث جميع البيانات المتعلقة بالعهدة
+      // تحديث العهدة مباشرة
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProjectId, "fund-transfers", selectedDate] });
       queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProjectId, "fund-transfers"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProjectId, "attendance"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProjectId, "transportation-expenses"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProjectId, "material-purchases"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/worker-transfers"] });
       
-      // إعادة تحميل البيانات فوراً
-      refetchMaterialPurchases();
-      refetchWorkerTransfers();
-      refetchFundTransfers();
+      // تنظيف النموذج
+      setFundAmount("");
+      setSenderName("");
+      setTransferNumber("");
+      setTransferType("");
+      
+      // إعادة تحميل بيانات العهدة فوراً
+      setTimeout(() => {
+        refetchFundTransfers();
+      }, 100);
     },
   });
 

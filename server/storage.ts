@@ -470,8 +470,12 @@ export class DatabaseStorage implements IStorage {
 
   async getFundTransfers(projectId: string, date?: string): Promise<FundTransfer[]> {
     if (date) {
+      // البحث بناءً على التاريخ بدون الوقت
       const result = await db.select().from(fundTransfers)
-        .where(and(eq(fundTransfers.projectId, projectId), eq(fundTransfers.transferDate, new Date(date))));
+        .where(and(
+          eq(fundTransfers.projectId, projectId),
+          sql`DATE(${fundTransfers.transferDate}) = ${date}`
+        ));
       return result;
     } else {
       const result = await db.select().from(fundTransfers)
