@@ -37,6 +37,7 @@ export interface IStorage {
   getWorkerAttendance(projectId: string, date?: string): Promise<WorkerAttendance[]>;
   createWorkerAttendance(attendance: InsertWorkerAttendance): Promise<WorkerAttendance>;
   updateWorkerAttendance(id: string, attendance: Partial<InsertWorkerAttendance>): Promise<WorkerAttendance | undefined>;
+  deleteWorkerAttendance(id: string): Promise<void>;
   
   // Materials
   getMaterials(): Promise<Material[]>;
@@ -234,6 +235,10 @@ export class MemStorage implements IStorage {
     const updated: WorkerAttendance = { ...existing, ...attendance };
     this.workerAttendance.set(id, updated);
     return updated;
+  }
+
+  async deleteWorkerAttendance(id: string): Promise<void> {
+    this.workerAttendance.delete(id);
   }
 
   // Materials
@@ -574,6 +579,10 @@ export class DatabaseStorage implements IStorage {
       .where(eq(workerAttendance.id, id))
       .returning();
     return updated || undefined;
+  }
+
+  async deleteWorkerAttendance(id: string): Promise<void> {
+    await db.delete(workerAttendance).where(eq(workerAttendance.id, id));
   }
 
   async getMaterials(): Promise<Material[]> {

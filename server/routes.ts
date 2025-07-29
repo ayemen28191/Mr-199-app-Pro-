@@ -152,6 +152,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/worker-attendance/:id", async (req, res) => {
+    try {
+      await storage.deleteWorkerAttendance(req.params.id);
+      res.status(200).json({ message: "تم حذف حضور العامل بنجاح" });
+    } catch (error) {
+      console.error("Error deleting worker attendance:", error);
+      res.status(500).json({ message: "حدث خطأ أثناء حذف الحضور" });
+    }
+  });
+
   // Materials
   app.get("/api/materials", async (req, res) => {
     try {

@@ -220,6 +220,17 @@ export default function DailyExpenses() {
     }
   });
 
+  const deleteWorkerAttendanceMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/worker-attendance/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProjectId, "attendance"] });
+      toast({ title: "تم الحذف", description: "تم حذف حضور العامل بنجاح" });
+    },
+    onError: () => {
+      toast({ title: "خطأ", description: "حدث خطأ أثناء حذف الحضور", variant: "destructive" });
+    }
+  });
+
   const handleAddFundTransfer = () => {
     if (!selectedProjectId || !fundAmount || !transferType) {
       toast({
@@ -469,7 +480,31 @@ export default function DailyExpenses() {
               {todayAttendance.map((attendance, index) => (
                 <div key={index} className="flex justify-between items-center p-2 bg-muted rounded">
                   <span className="text-sm">عامل {index + 1}</span>
-                  <span className="font-medium arabic-numbers">{formatCurrency(attendance.dailyWage)}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium arabic-numbers">{formatCurrency(attendance.dailyWage)}</span>
+                    <div className="flex gap-1">
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        className="h-7 w-7 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                        onClick={() => {
+                          // TODO: إضافة تعديل أجر العامل
+                          toast({ title: "قريباً", description: "سيتم إضافة ميزة التعديل" });
+                        }}
+                      >
+                        <Edit2 className="h-3 w-3" />
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        onClick={() => deleteWorkerAttendanceMutation.mutate(attendance.id)}
+                        disabled={deleteWorkerAttendanceMutation.isPending}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               ))}
               <div className="text-left mt-2 pt-2 border-t">
