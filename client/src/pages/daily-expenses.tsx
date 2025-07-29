@@ -105,19 +105,17 @@ export default function DailyExpenses() {
     queryKey: ["/api/projects", selectedProjectId, "previous-balance", selectedDate],
     queryFn: async () => {
       const response = await apiRequest("GET", `/api/projects/${selectedProjectId}/previous-balance/${selectedDate}`);
-      return { balance: String(response || "0") };
+      return response?.balance || "0";
     },
     enabled: !!selectedProjectId && !!selectedDate,
   });
 
-  // تحديث المبلغ المرحل تلقائياً عند تغيير التاريخ أو المشروع
+  // تحديث المبلغ المرحل تلقائياً عند جلب الرصيد السابق
   useEffect(() => {
-    if (previousBalance?.balance && previousBalance.balance !== "0") {
-      setCarriedForward(previousBalance.balance);
-    } else {
-      setCarriedForward("0");
+    if (previousBalance) {
+      setCarriedForward(previousBalance);
     }
-  }, [previousBalance, selectedProjectId, selectedDate]);
+  }, [previousBalance]);
 
   const addFundTransferMutation = useMutation({
     mutationFn: (data: InsertFundTransfer) => apiRequest("POST", "/api/fund-transfers", data),
