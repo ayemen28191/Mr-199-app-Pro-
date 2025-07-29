@@ -809,9 +809,50 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getWorkerBalance(workerId: string, projectId: string): Promise<WorkerBalance | undefined> {
-    const [balance] = await db.select().from(workerBalances)
-      .where(and(eq(workerBalances.workerId, workerId), eq(workerBalances.projectId, projectId)));
-    return balance || undefined;
+    try {
+      // حساب الرصيد ديناميكياً من سجلات الحضور
+      const attendanceRecords = await db.select().from(workerAttendance)
+        .where(and(eq(workerAttendance.workerId, workerId), eq(workerAttendance.projectId, projectId)));
+      
+      // حساب إجمالي المكتسب والمدفوع
+      let totalEarned = 0;
+      let totalPaid = 0;
+      
+      attendanceRecords.forEach(record => {
+        totalEarned += parseFloat(record.dailyWage || '0');
+        totalPaid += parseFloat(record.paidAmount || '0');
+      });
+      
+      // حساب إجمالي المحول للأهل
+      const transferRecords = await db.select().from(workerTransfers)
+        .where(and(eq(workerTransfers.workerId, workerId), eq(workerTransfers.projectId, projectId)));
+      
+      let totalTransferred = 0;
+      transferRecords.forEach(transfer => {
+        totalTransferred += parseFloat(transfer.amount || '0');
+      });
+      
+      // حساب الرصيد الحالي
+      const currentBalance = totalEarned - totalPaid - totalTransferred;
+      
+      // إنشاء كائن الرصيد
+      const balance: WorkerBalance = {
+        id: `${workerId}-${projectId}`,
+        workerId,
+        projectId,
+        totalEarned: totalEarned.toString(),
+        totalPaid: totalPaid.toString(),
+        totalTransferred: totalTransferred.toString(),
+        currentBalance: currentBalance.toString(),
+        lastUpdated: new Date(),
+        createdAt: new Date()
+      };
+      
+      return balance;
+    } catch (error) {
+      console.error("Error calculating worker balance:", error);
+      return undefined;
+    }
   }
 
   async updateWorkerBalance(workerId: string, projectId: string, balance: Partial<InsertWorkerBalance>): Promise<WorkerBalance> {

@@ -36,6 +36,7 @@ export default function WorkerAccounts() {
 
   const { data: workerBalance, isLoading: balanceLoading } = useQuery<WorkerBalance>({
     queryKey: ["/api/workers", selectedWorkerId, "balance", selectedProjectId],
+    queryFn: () => apiRequest("GET", `/api/workers/${selectedWorkerId}/balance/${selectedProjectId}`),
     enabled: !!(selectedWorkerId && selectedProjectId),
   });
 
