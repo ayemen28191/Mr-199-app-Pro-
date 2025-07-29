@@ -1,10 +1,11 @@
 import { useLocation } from "wouter";
-import { Home, Users, Receipt, BarChart } from "lucide-react";
+import { Home, Users, Receipt, BarChart, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const navigationItems = [
   { path: "/", icon: Home, label: "الرئيسية", key: "dashboard" },
-  { path: "/worker-attendance", icon: Users, label: "العمال", key: "workers" },
+  { path: "/worker-attendance", icon: Users, label: "الحضور", key: "attendance" },
+  { path: "/worker-accounts", icon: CreditCard, label: "الحسابات", key: "accounts" },
   { path: "/daily-expenses", icon: Receipt, label: "المصروفات", key: "expenses" },
   { path: "/reports", icon: BarChart, label: "التقارير", key: "reports" },
 ];
@@ -14,7 +15,7 @@ export default function BottomNavigation() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50">
-      <div className="grid grid-cols-4 h-16">
+      <div className="grid grid-cols-5 h-16">
         {navigationItems.map((item) => {
           const Icon = item.icon;
           const isActive = location === item.path;

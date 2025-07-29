@@ -156,11 +156,11 @@ export default function WorkerAttendance() {
       ) : (
         <div className="space-y-3">
           {workers.map((worker) => (
-            <WorkerCard
+            <EnhancedWorkerCard
               key={worker.id}
               worker={worker}
-              date={selectedDate}
-              onAttendanceChange={handleAttendanceChange}
+              attendance={attendanceData[worker.id] || { isPresent: false }}
+              onAttendanceChange={(attendance) => handleAttendanceChange(worker.id, attendance)}
             />
           ))}
         </div>

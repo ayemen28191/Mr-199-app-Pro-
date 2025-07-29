@@ -190,7 +190,10 @@ export class MemStorage implements IStorage {
       createdAt: new Date(),
       startTime: attendance.startTime || null,
       endTime: attendance.endTime || null,
-      workDescription: attendance.workDescription || null
+      workDescription: attendance.workDescription || null,
+      paidAmount: attendance.paidAmount || '0',
+      remainingAmount: attendance.remainingAmount || '0',
+      paymentType: attendance.paymentType || 'partial'
     };
     this.workerAttendance.set(id, newAttendance);
     return newAttendance;
@@ -294,6 +297,67 @@ export class MemStorage implements IStorage {
       this.dailyExpenseSummaries.set(id, newSummary);
       return newSummary;
     }
+  }
+
+  // Worker Balance Management
+  async getWorkerBalance(workerId: string, projectId: string): Promise<WorkerBalance | undefined> {
+    return Array.from(this.workerBalances.values()).find(
+      balance => balance.workerId === workerId && balance.projectId === projectId
+    );
+  }
+
+  async updateWorkerBalance(workerId: string, projectId: string, balance: Partial<InsertWorkerBalance>): Promise<WorkerBalance> {
+    const existing = await this.getWorkerBalance(workerId, projectId);
+    
+    if (existing) {
+      const updated: WorkerBalance = { 
+        ...existing, 
+        ...balance, 
+        lastUpdated: new Date() 
+      };
+      this.workerBalances.set(existing.id, updated);
+      return updated;
+    } else {
+      const id = randomUUID();
+      const newBalance: WorkerBalance = {
+        id,
+        workerId,
+        projectId,
+        totalEarned: '0',
+        totalPaid: '0',
+        totalTransferred: '0',
+        currentBalance: '0',
+        ...balance,
+        lastUpdated: new Date(),
+        createdAt: new Date()
+      };
+      this.workerBalances.set(id, newBalance);
+      return newBalance;
+    }
+  }
+
+  // Worker Transfers
+  async getWorkerTransfers(workerId: string, projectId?: string): Promise<WorkerTransfer[]> {
+    return Array.from(this.workerTransfers.values()).filter(
+      transfer => {
+        if (transfer.workerId !== workerId) return false;
+        if (projectId && transfer.projectId !== projectId) return false;
+        return true;
+      }
+    );
+  }
+
+  async createWorkerTransfer(transfer: InsertWorkerTransfer): Promise<WorkerTransfer> {
+    const id = randomUUID();
+    const newTransfer: WorkerTransfer = { 
+      ...transfer, 
+      id, 
+      createdAt: new Date(),
+      recipientPhone: transfer.recipientPhone || null,
+      notes: transfer.notes || null
+    };
+    this.workerTransfers.set(id, newTransfer);
+    return newTransfer;
   }
 
   // Reports
@@ -525,7 +589,11 @@ export class DatabaseStorage implements IStorage {
         .values({
           workerId,
           projectId,
-          ...balance,
+          totalEarned: '0',
+          totalPaid: '0',
+          totalTransferred: '0',
+          currentBalance: '0',
+          ...balance
         })
         .returning();
       return newBalance;
@@ -551,6 +619,8 @@ export class DatabaseStorage implements IStorage {
       .returning();
     return newTransfer;
   }
+
+
 }
 
 // Always use DatabaseStorage now that we have PostgreSQL
