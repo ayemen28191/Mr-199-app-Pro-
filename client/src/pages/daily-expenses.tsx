@@ -20,6 +20,7 @@ import type {
   FundTransfer,
   MaterialPurchase,
   WorkerTransfer,
+  Worker,
   InsertFundTransfer,
   InsertTransportationExpense,
   InsertDailyExpenseSummary 
@@ -46,6 +47,10 @@ export default function DailyExpenses() {
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  const { data: workers = [] } = useQuery<Worker[]>({
+    queryKey: ["/api/workers"],
+  });
 
   const { data: todayAttendance = [] } = useQuery<WorkerAttendance[]>({
     queryKey: ["/api/projects", selectedProjectId, "attendance", selectedDate],
@@ -370,7 +375,7 @@ export default function DailyExpenses() {
 
   const calculateTotals = () => {
     const totalWorkerWages = todayAttendance.reduce(
-      (sum, attendance) => sum + parseFloat(attendance.dailyWage || "0"), 
+      (sum, attendance) => sum + parseFloat(attendance.paidAmount || "0"), 
       0
     );
     const totalTransportation = todayTransportation.reduce(
@@ -576,36 +581,39 @@ export default function DailyExpenses() {
             <p className="text-muted-foreground text-sm">لم يتم تسجيل حضور عمال لهذا اليوم</p>
           ) : (
             <div className="space-y-2">
-              {todayAttendance.map((attendance, index) => (
-                <div key={index} className="flex justify-between items-center p-2 bg-muted rounded">
-                  <span className="text-sm">عامل {index + 1}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium arabic-numbers">{formatCurrency(attendance.dailyWage)}</span>
-                    <div className="flex gap-1">
-                      <Button 
-                        size="sm" 
-                        variant="ghost" 
-                        className="h-7 w-7 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                        onClick={() => {
-                          // TODO: إضافة تعديل أجر العامل
-                          toast({ title: "قريباً", description: "سيتم إضافة ميزة التعديل" });
-                        }}
-                      >
-                        <Edit2 className="h-3 w-3" />
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="ghost" 
-                        className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                        onClick={() => deleteWorkerAttendanceMutation.mutate(attendance.id)}
-                        disabled={deleteWorkerAttendanceMutation.isPending}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
+              {todayAttendance.map((attendance, index) => {
+                const worker = workers.find(w => w.id === attendance.workerId);
+                return (
+                  <div key={index} className="flex justify-between items-center p-2 bg-muted rounded">
+                    <span className="text-sm">{worker?.name || `عامل ${index + 1}`}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium arabic-numbers">{formatCurrency(attendance.paidAmount)}</span>
+                        <div className="flex gap-1">
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="h-7 w-7 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            onClick={() => {
+                              // TODO: إضافة تعديل أجر العامل
+                              toast({ title: "قريباً", description: "سيتم إضافة ميزة التعديل" });
+                            }}
+                          >
+                            <Edit2 className="h-3 w-3" />
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => deleteWorkerAttendanceMutation.mutate(attendance.id)}
+                            disabled={deleteWorkerAttendanceMutation.isPending}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
               <div className="text-left mt-2 pt-2 border-t">
                 <span className="text-sm text-muted-foreground">إجمالي أجور العمال: </span>
                 <span className="font-bold text-primary arabic-numbers">
