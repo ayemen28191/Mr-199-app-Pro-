@@ -30,6 +30,7 @@ export default function MaterialPurchase() {
   const [supplierName, setSupplierName] = useState<string>("");
   const [invoiceNumber, setInvoiceNumber] = useState<string>("");
   const [invoiceDate, setInvoiceDate] = useState<string>(getCurrentDate());
+  const [purchaseDate, setPurchaseDate] = useState<string>(getCurrentDate());
   const [notes, setNotes] = useState<string>("");
   const [invoicePhoto, setInvoicePhoto] = useState<string>("");
   const [editingPurchaseId, setEditingPurchaseId] = useState<string | null>(null);
@@ -87,6 +88,7 @@ export default function MaterialPurchase() {
     setSupplierName("");
     setInvoiceNumber("");
     setInvoiceDate(getCurrentDate());
+    setPurchaseDate(getCurrentDate());
     setNotes("");
     setInvoicePhoto("");
     setEditingPurchaseId(null);
@@ -156,7 +158,7 @@ export default function MaterialPurchase() {
       invoiceDate,
       invoicePhoto,
       notes,
-      purchaseDate: getCurrentDate(),
+      purchaseDate: purchaseDate,
     };
 
     if (editingPurchaseId) {
@@ -174,7 +176,7 @@ export default function MaterialPurchase() {
   };
 
   // Fetch Material Purchases for Edit Support
-  const { data: materialPurchases = [] } = useQuery({
+  const { data: materialPurchases = [] } = useQuery<any[]>({
     queryKey: ["/api/projects", selectedProjectId, "material-purchases"],
     enabled: !!selectedProjectId,
   });
@@ -190,6 +192,7 @@ export default function MaterialPurchase() {
     setSupplierName(purchase.supplierName || "");
     setInvoiceNumber(purchase.invoiceNumber || "");
     setInvoiceDate(purchase.invoiceDate || getCurrentDate());
+    setPurchaseDate(purchase.purchaseDate || getCurrentDate());
     setNotes(purchase.notes || "");
     setInvoicePhoto(purchase.invoicePhoto || "");
     setEditingPurchaseId(purchase.id);
@@ -337,6 +340,17 @@ export default function MaterialPurchase() {
                 options={existingSuppliers}
                 placeholder="اختر أو أدخل اسم المورد..."
                 customPlaceholder="إضافة مورد جديد"
+              />
+            </div>
+
+            {/* Purchase Date */}
+            <div>
+              <Label className="block text-sm font-medium text-foreground mb-2">تاريخ الشراء</Label>
+              <Input
+                type="date"
+                value={purchaseDate}
+                onChange={(e) => setPurchaseDate(e.target.value)}
+                className="w-full"
               />
             </div>
 

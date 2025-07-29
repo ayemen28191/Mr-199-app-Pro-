@@ -251,9 +251,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const purchase = await storage.createMaterialPurchase(result.data);
       
-      // Update daily expense summary with material cost
-      const today = new Date().toISOString().split('T')[0];
-      const existingSummary = await storage.getDailyExpenseSummary(purchase.projectId, today);
+      // Update daily expense summary with material cost using purchase date
+      const purchaseDate = purchase.purchaseDate;
+      const existingSummary = await storage.getDailyExpenseSummary(purchase.projectId, purchaseDate);
       
       const currentMaterialCosts = parseFloat(existingSummary?.totalMaterialCosts || '0');
       const newMaterialCosts = currentMaterialCosts + parseFloat(purchase.totalAmount);
@@ -267,7 +267,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       await storage.createOrUpdateDailyExpenseSummary({
         projectId: purchase.projectId,
-        date: today,
+        date: purchaseDate,
         totalIncome: totalIncome.toString(),
         totalExpenses: totalExpenses.toString(),
         remainingBalance: remainingBalance.toString(),

@@ -138,3 +138,8 @@ The application follows modern full-stack development practices with type safety
   - Created useSelectedProject hook using localStorage
   - Updated all pages to use the shared project state
   - Project selection now persists through page refreshes and navigation
+- ✓ Enhanced date-specific expense tracking:
+  - Fixed expense recording to use selected dates instead of current date
+  - Added purchase date field to material purchases page
+  - Updated backend to calculate daily summaries using correct dates
+  - All expenses now save and display based on user-selected dates
