@@ -160,7 +160,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/material-purchases", async (req, res) => {
     try {
-      const result = insertMaterialPurchaseSchema.safeParse(req.body);
+      // Extract material info from request body to create material first
+      const { materialName, materialCategory, materialUnit, ...purchaseData } = req.body;
+      
+      // Create or find the material first
+      let material = await storage.findMaterialByNameAndUnit(materialName, materialUnit);
+      if (!material) {
+        material = await storage.createMaterial({
+          name: materialName,
+          category: materialCategory || "عام",
+          unit: materialUnit
+        });
+      }
+      
+      // Now create the purchase with the material ID
+      const purchaseDataWithMaterialId = {
+        ...purchaseData,
+        materialId: material.id
+      };
+      
+      const result = insertMaterialPurchaseSchema.safeParse(purchaseDataWithMaterialId);
       if (!result.success) {
         return res.status(400).json({ message: "Invalid material purchase data", errors: result.error.issues });
       }
@@ -168,6 +187,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const purchase = await storage.createMaterialPurchase(result.data);
       res.status(201).json(purchase);
     } catch (error) {
+      console.error("Error creating material purchase:", error);
       res.status(500).json({ message: "Error creating material purchase" });
     }
   });

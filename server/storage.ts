@@ -37,6 +37,7 @@ export interface IStorage {
   // Materials
   getMaterials(): Promise<Material[]>;
   createMaterial(material: InsertMaterial): Promise<Material>;
+  findMaterialByNameAndUnit(name: string, unit: string): Promise<Material | undefined>;
   
   // Material Purchases
   getMaterialPurchases(projectId: string, dateFrom?: string, dateTo?: string): Promise<MaterialPurchase[]>;
@@ -218,6 +219,12 @@ export class MemStorage implements IStorage {
     const newMaterial: Material = { ...material, id, createdAt: new Date() };
     this.materials.set(id, newMaterial);
     return newMaterial;
+  }
+
+  async findMaterialByNameAndUnit(name: string, unit: string): Promise<Material | undefined> {
+    return Array.from(this.materials.values()).find(
+      material => material.name === name && material.unit === unit
+    );
   }
 
   // Material Purchases
@@ -488,6 +495,12 @@ export class DatabaseStorage implements IStorage {
       .values(material)
       .returning();
     return newMaterial;
+  }
+
+  async findMaterialByNameAndUnit(name: string, unit: string): Promise<Material | undefined> {
+    const [material] = await db.select().from(materials)
+      .where(and(eq(materials.name, name), eq(materials.unit, unit)));
+    return material || undefined;
   }
 
   async getMaterialPurchases(projectId: string, dateFrom?: string, dateTo?: string): Promise<MaterialPurchase[]> {

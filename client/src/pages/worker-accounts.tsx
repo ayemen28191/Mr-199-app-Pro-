@@ -42,7 +42,7 @@ export default function WorkerAccounts() {
     queryKey: ["/api/workers", selectedWorkerId, "transfers"],
     queryFn: async () => {
       const response = await apiRequest("GET", `/api/workers/${selectedWorkerId}/transfers?projectId=${selectedProjectId}`);
-      return response as WorkerTransfer[];
+      return Array.isArray(response) ? response as WorkerTransfer[] : [];
     },
     enabled: !!(selectedWorkerId && selectedProjectId),
   });
@@ -51,7 +51,7 @@ export default function WorkerAccounts() {
     queryKey: ["/api/workers", selectedWorkerId, "account-statement"],
     queryFn: async () => {
       const response = await apiRequest("GET", `/api/workers/${selectedWorkerId}/account-statement?projectId=${selectedProjectId}`);
-      return response as WorkerAttendance[];
+      return Array.isArray(response) ? response as WorkerAttendance[] : [];
     },
     enabled: !!(selectedWorkerId && selectedProjectId && showStatementDialog),
   });
@@ -197,11 +197,11 @@ export default function WorkerAccounts() {
                     <div className="space-y-2">
                       {statementLoading ? (
                         <p className="text-center py-4">جاري التحميل...</p>
-                      ) : (accountStatement as WorkerAttendance[]).length === 0 ? (
+                      ) : !Array.isArray(accountStatement) || accountStatement.length === 0 ? (
                         <p className="text-center py-4 text-muted-foreground">لا توجد سجلات</p>
                       ) : (
                         <div className="space-y-2">
-                          {(accountStatement as WorkerAttendance[]).map((record) => (
+                          {Array.isArray(accountStatement) && accountStatement.map((record) => (
                             <div key={record.id} className="flex justify-between items-center p-3 bg-muted/30 rounded-lg">
                               <div>
                                 <p className="font-medium">{record.date}</p>
@@ -355,11 +355,11 @@ export default function WorkerAccounts() {
           <CardContent>
             {transfersLoading ? (
               <p className="text-center py-4">جاري التحميل...</p>
-            ) : (workerTransfers as WorkerTransfer[]).length === 0 ? (
+            ) : !Array.isArray(workerTransfers) || workerTransfers.length === 0 ? (
               <p className="text-center py-4 text-muted-foreground">لا توجد حوالات سابقة</p>
             ) : (
               <div className="space-y-3">
-                {(workerTransfers as WorkerTransfer[]).map((transfer) => (
+                {Array.isArray(workerTransfers) && workerTransfers.map((transfer) => (
                   <div key={transfer.id} className="flex justify-between items-center p-3 bg-muted/30 rounded-lg">
                     <div>
                       <p className="font-medium">{transfer.recipientName}</p>
