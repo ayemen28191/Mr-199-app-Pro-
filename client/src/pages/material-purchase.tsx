@@ -32,6 +32,7 @@ export default function MaterialPurchase() {
   const [invoiceDate, setInvoiceDate] = useState<string>(getCurrentDate());
   const [notes, setNotes] = useState<string>("");
   const [invoicePhoto, setInvoicePhoto] = useState<string>("");
+  const [editingPurchaseId, setEditingPurchaseId] = useState<string | null>(null);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -88,7 +89,29 @@ export default function MaterialPurchase() {
     setInvoiceDate(getCurrentDate());
     setNotes("");
     setInvoicePhoto("");
+    setEditingPurchaseId(null);
   };
+
+  // Update Material Purchase Mutation
+  const updateMaterialPurchaseMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => 
+      apiRequest("PUT", `/api/material-purchases/${id}`, data),
+    onSuccess: () => {
+      toast({
+        title: "تم التحديث",
+        description: "تم تحديث شراء المواد بنجاح",
+      });
+      resetForm();
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProjectId, "material-purchases"] });
+    },
+    onError: () => {
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء تحديث شراء المواد",
+        variant: "destructive",
+      });
+    }
+  });
 
   const calculateTotal = () => {
     const qty = parseFloat(quantity) || 0;
@@ -119,28 +142,77 @@ export default function MaterialPurchase() {
     }
 
     const totalAmount = calculateTotal();
-
-    addMaterialPurchaseMutation.mutate({
+    const purchaseData = {
       projectId: selectedProjectId,
       materialName,
-      materialCategory: materialCategory || "عام",
+      materialCategory,
       materialUnit,
       quantity,
       unitPrice,
       totalAmount,
       purchaseType,
-      supplierName: supplierName || null,
-      invoiceNumber: invoiceNumber || null,
-      invoiceDate: invoiceDate || null,
-      invoicePhoto: invoicePhoto || null,
-      notes: notes || null,
+      supplierName,
+      invoiceNumber,
+      invoiceDate,
+      invoicePhoto,
+      notes,
       purchaseDate: getCurrentDate(),
-    });
+    };
 
-    if (!saveAndAddAnother) {
+    if (editingPurchaseId) {
+      updateMaterialPurchaseMutation.mutate({
+        id: editingPurchaseId,
+        data: purchaseData
+      });
+    } else {
+      addMaterialPurchaseMutation.mutate(purchaseData);
+    }
+
+    if (!saveAndAddAnother && !editingPurchaseId) {
       setLocation("/daily-expenses");
     }
   };
+
+  // Fetch Material Purchases for Edit Support
+  const { data: materialPurchases = [] } = useQuery({
+    queryKey: ["/api/projects", selectedProjectId, "material-purchases"],
+    enabled: !!selectedProjectId,
+  });
+
+  // Edit Function
+  const handleEdit = (purchase: any) => {
+    setMaterialName(purchase.material?.name || "");
+    setMaterialCategory(purchase.material?.category || "");
+    setMaterialUnit(purchase.material?.unit || "");
+    setQuantity(purchase.quantity);
+    setUnitPrice(purchase.unitPrice);
+    setPurchaseType(purchase.purchaseType || "نقد");
+    setSupplierName(purchase.supplierName || "");
+    setInvoiceNumber(purchase.invoiceNumber || "");
+    setInvoiceDate(purchase.invoiceDate || getCurrentDate());
+    setNotes(purchase.notes || "");
+    setInvoicePhoto(purchase.invoicePhoto || "");
+    setEditingPurchaseId(purchase.id);
+  };
+
+  // Delete Material Purchase Mutation
+  const deleteMaterialPurchaseMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/material-purchases/${id}`),
+    onSuccess: () => {
+      toast({
+        title: "تم الحذف",
+        description: "تم حذف شراء المواد بنجاح",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProjectId, "material-purchases"] });
+    },
+    onError: () => {
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء حذف شراء المواد",
+        variant: "destructive",
+      });
+    }
+  });
 
   return (
     <div className="p-4 slide-in">
@@ -342,22 +414,86 @@ export default function MaterialPurchase() {
       <div className="space-y-3">
         <Button
           onClick={() => handleSave(false)}
-          disabled={addMaterialPurchaseMutation.isPending}
+          disabled={addMaterialPurchaseMutation.isPending || updateMaterialPurchaseMutation.isPending}
           className="w-full bg-success hover:bg-success/90 text-success-foreground"
         >
           <Save className="ml-2 h-4 w-4" />
-          {addMaterialPurchaseMutation.isPending ? "جاري الحفظ..." : "حفظ الشراء"}
+          {(addMaterialPurchaseMutation.isPending || updateMaterialPurchaseMutation.isPending) 
+            ? "جاري الحفظ..." 
+            : editingPurchaseId 
+              ? "تحديث الشراء" 
+              : "حفظ الشراء"}
         </Button>
-        <Button
-          onClick={() => handleSave(true)}
-          disabled={addMaterialPurchaseMutation.isPending}
-          variant="outline"
-          className="w-full"
-        >
-          <Plus className="ml-2 h-4 w-4" />
-          حفظ وإضافة آخر
-        </Button>
+        
+        {!editingPurchaseId && (
+          <Button
+            onClick={() => handleSave(true)}
+            disabled={addMaterialPurchaseMutation.isPending}
+            variant="outline"
+            className="w-full"
+          >
+            <Plus className="ml-2 h-4 w-4" />
+            حفظ وإضافة آخر
+          </Button>
+        )}
+
+        {editingPurchaseId && (
+          <Button
+            onClick={resetForm}
+            variant="outline"
+            className="w-full"
+          >
+            إلغاء التحرير
+          </Button>
+        )}
       </div>
+
+      {/* Material Purchases List for Today */}
+      {selectedProjectId && materialPurchases.length > 0 && (
+        <Card className="mt-6">
+          <CardContent className="p-4">
+            <h3 className="text-lg font-semibold text-foreground mb-4">المشتريات المسجلة</h3>
+            <div className="space-y-3">
+              {materialPurchases.map((purchase: any) => (
+                <div key={purchase.id} className="border rounded-lg p-3 bg-card">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="font-medium text-foreground">{purchase.material?.name}</span>
+                        <span className="text-sm text-muted-foreground">({purchase.material?.unit})</span>
+                      </div>
+                      <div className="text-sm text-muted-foreground space-y-1">
+                        <p>الكمية: {purchase.quantity} | السعر: {purchase.unitPrice} ريال</p>
+                        <p className="font-medium">الإجمالي: {purchase.totalAmount} ريال</p>
+                        {purchase.supplierName && <p>المورد: {purchase.supplierName}</p>}
+                        {purchase.purchaseType && <p>نوع الدفع: {purchase.purchaseType}</p>}
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleEdit(purchase)}
+                        disabled={editingPurchaseId === purchase.id}
+                      >
+                        تعديل
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="destructive"
+                        onClick={() => deleteMaterialPurchaseMutation.mutate(purchase.id)}
+                        disabled={deleteMaterialPurchaseMutation.isPending}
+                      >
+                        حذف
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

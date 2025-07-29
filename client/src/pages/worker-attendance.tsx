@@ -33,6 +33,49 @@ export default function WorkerAttendance() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Get today's attendance records
+  const { data: todayAttendance = [] } = useQuery({
+    queryKey: ["/api/projects", selectedProjectId, "attendance", selectedDate],
+    queryFn: () => apiRequest("GET", `/api/projects/${selectedProjectId}/attendance?date=${selectedDate}`),
+    enabled: !!selectedProjectId,
+  });
+
+  // Delete Attendance Mutation
+  const deleteAttendanceMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/worker-attendance/${id}`),
+    onSuccess: () => {
+      toast({
+        title: "تم الحذف",
+        description: "تم حذف سجل الحضور بنجاح",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProjectId, "attendance"] });
+    },
+    onError: () => {
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء حذف سجل الحضور",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Edit Attendance Function
+  const handleEditAttendance = (record: any) => {
+    const worker = workers.find(w => w.id === record.workerId);
+    if (worker) {
+      const newAttendanceData = { ...attendanceData };
+      newAttendanceData[record.workerId] = {
+        isPresent: true,
+        startTime: record.startTime,
+        endTime: record.endTime,
+        workDescription: record.workDescription || "",
+        paidAmount: record.paidAmount,
+        paymentType: record.paymentType || "partial"
+      };
+      setAttendanceData(newAttendanceData);
+    }
+  };
+
   const { data: workers = [], isLoading: workersLoading } = useQuery<Worker[]>({
     queryKey: ["/api/workers"],
   });
@@ -179,6 +222,55 @@ export default function WorkerAttendance() {
             {saveAttendanceMutation.isPending ? "جاري الحفظ..." : "حفظ الحضور"}
           </Button>
         </div>
+      )}
+
+      {/* Today's Attendance List */}
+      {selectedProjectId && todayAttendance.length > 0 && (
+        <Card className="mt-6">
+          <CardContent className="p-4">
+            <h3 className="text-lg font-semibold text-foreground mb-4">حضور اليوم المسجل ({selectedDate})</h3>
+            <div className="space-y-3">
+              {todayAttendance.map((record: any) => {
+                const worker = workers.find(w => w.id === record.workerId);
+                return (
+                  <div key={record.id} className="border rounded-lg p-3 bg-card">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="font-medium text-foreground">{worker?.name}</span>
+                          <span className="text-xs bg-success text-success-foreground px-2 py-1 rounded">حاضر</span>
+                        </div>
+                        <div className="text-sm text-muted-foreground space-y-1">
+                          <p>الوقت: {record.startTime} - {record.endTime}</p>
+                          <p>الراتب اليومي: {record.dailyWage} ريال</p>
+                          <p>المدفوع: {record.paidAmount} ريال | المتبقي: {record.remainingAmount} ريال</p>
+                          {record.workDescription && <p>الوصف: {record.workDescription}</p>}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEditAttendance(record)}
+                        >
+                          تعديل
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => deleteAttendanceMutation.mutate(record.id)}
+                          disabled={deleteAttendanceMutation.isPending}
+                        >
+                          حذف
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

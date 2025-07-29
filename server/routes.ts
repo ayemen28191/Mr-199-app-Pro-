@@ -118,6 +118,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/fund-transfers/:id", async (req, res) => {
+    try {
+      const result = insertFundTransferSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "Invalid fund transfer data", errors: result.error.issues });
+      }
+      
+      // فحص عدم تكرار رقم الحوالة إذا كان موجود وليس نفس السجل
+      if (result.data.transferNumber) {
+        const existingTransfer = await storage.getFundTransferByNumber(result.data.transferNumber);
+        if (existingTransfer && existingTransfer.id !== req.params.id) {
+          return res.status(400).json({ message: "يوجد تحويل بنفس رقم الحوالة مسبقاً" });
+        }
+      }
+      
+      const transfer = await storage.updateFundTransfer(req.params.id, result.data);
+      res.json(transfer);
+    } catch (error) {
+      res.status(500).json({ message: "Error updating fund transfer" });
+    }
+  });
+
   app.delete("/api/fund-transfers/:id", async (req, res) => {
     try {
       await storage.deleteFundTransfer(req.params.id);
@@ -263,6 +285,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/material-purchases/:id", async (req, res) => {
+    try {
+      // Extract material info from request body to update material if needed
+      const { materialName, materialCategory, materialUnit, ...purchaseData } = req.body;
+      
+      // Create or find the material first (if material details changed)
+      let material = await storage.findMaterialByNameAndUnit(materialName, materialUnit);
+      if (!material) {
+        material = await storage.createMaterial({
+          name: materialName,
+          category: materialCategory || "عام",
+          unit: materialUnit
+        });
+      }
+      
+      // Update the purchase with the material ID
+      const purchaseDataWithMaterialId = {
+        ...purchaseData,
+        materialId: material.id
+      };
+      
+      const result = insertMaterialPurchaseSchema.safeParse(purchaseDataWithMaterialId);
+      if (!result.success) {
+        return res.status(400).json({ message: "Invalid material purchase data", errors: result.error.issues });
+      }
+      
+      const purchase = await storage.updateMaterialPurchase(req.params.id, result.data);
+      if (!purchase) {
+        return res.status(404).json({ message: "Material purchase not found" });
+      }
+      
+      res.json(purchase);
+    } catch (error) {
+      console.error("Error updating material purchase:", error);
+      res.status(500).json({ message: "Error updating material purchase" });
+    }
+  });
+
   app.delete("/api/material-purchases/:id", async (req, res) => {
     try {
       await storage.deleteMaterialPurchase(req.params.id);
@@ -294,6 +354,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(expense);
     } catch (error) {
       res.status(500).json({ message: "Error creating transportation expense" });
+    }
+  });
+
+  app.put("/api/transportation-expenses/:id", async (req, res) => {
+    try {
+      const result = insertTransportationExpenseSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "Invalid transportation expense data", errors: result.error.issues });
+      }
+      
+      const expense = await storage.updateTransportationExpense(req.params.id, result.data);
+      if (!expense) {
+        return res.status(404).json({ message: "Transportation expense not found" });
+      }
+      res.json(expense);
+    } catch (error) {
+      res.status(500).json({ message: "Error updating transportation expense" });
     }
   });
 

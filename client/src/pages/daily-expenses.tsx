@@ -36,11 +36,13 @@ export default function DailyExpenses() {
   const [senderName, setSenderName] = useState<string>("");
   const [transferNumber, setTransferNumber] = useState<string>("");
   const [transferType, setTransferType] = useState<string>("");
+  const [editingFundTransferId, setEditingFundTransferId] = useState<string | null>(null);
   
   // Transportation expense form
   const [transportDescription, setTransportDescription] = useState<string>("");
   const [transportAmount, setTransportAmount] = useState<string>("");
   const [transportNotes, setTransportNotes] = useState<string>("");
+  const [editingTransportationId, setEditingTransportationId] = useState<string | null>(null);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -232,6 +234,45 @@ export default function DailyExpenses() {
     }
   });
 
+  // Fund Transfer Update Mutation
+  const updateFundTransferMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => 
+      apiRequest("PUT", `/api/fund-transfers/${id}`, data),
+    onSuccess: () => {
+      resetFundTransferForm();
+      queryClient.invalidateQueries({ 
+        queryKey: ["/api/projects", selectedProjectId, "fund-transfers"] 
+      });
+      toast({
+        title: "تم التحديث",
+        description: "تم تحديث العهدة بنجاح",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء تحديث العهدة",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const resetFundTransferForm = () => {
+    setFundAmount("");
+    setSenderName("");
+    setTransferNumber("");
+    setTransferType("");
+    setEditingFundTransferId(null);
+  };
+
+  const handleEditFundTransfer = (transfer: FundTransfer) => {
+    setFundAmount(transfer.amount);
+    setSenderName(transfer.senderName || "");
+    setTransferNumber(transfer.transferNumber || "");
+    setTransferType(transfer.transferType);
+    setEditingFundTransferId(transfer.id);
+  };
+
   const handleAddFundTransfer = () => {
     if (!selectedProjectId || !fundAmount || !transferType) {
       toast({
@@ -242,7 +283,7 @@ export default function DailyExpenses() {
       return;
     }
 
-    addFundTransferMutation.mutate({
+    const transferData = {
       projectId: selectedProjectId,
       amount: fundAmount,
       senderName,
@@ -250,7 +291,53 @@ export default function DailyExpenses() {
       transferType,
       transferDate: new Date(selectedDate + 'T12:00:00.000Z'),
       notes: "",
-    });
+    };
+
+    if (editingFundTransferId) {
+      updateFundTransferMutation.mutate({
+        id: editingFundTransferId,
+        data: transferData
+      });
+    } else {
+      addFundTransferMutation.mutate(transferData);
+    }
+  };
+
+  // Transportation Update Mutation
+  const updateTransportationMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => 
+      apiRequest("PUT", `/api/transportation-expenses/${id}`, data),
+    onSuccess: () => {
+      resetTransportationForm();
+      queryClient.invalidateQueries({ 
+        queryKey: ["/api/projects", selectedProjectId, "transportation-expenses"] 
+      });
+      toast({
+        title: "تم التحديث",
+        description: "تم تحديث مصروف المواصلات بنجاح",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء تحديث المصروف",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const resetTransportationForm = () => {
+    setTransportDescription("");
+    setTransportAmount("");
+    setTransportNotes("");
+    setEditingTransportationId(null);
+  };
+
+  const handleEditTransportation = (expense: TransportationExpense) => {
+    setTransportDescription(expense.description);
+    setTransportAmount(expense.amount);
+    setTransportNotes(expense.notes || "");
+    setEditingTransportationId(expense.id);
   };
 
   const handleAddTransportation = () => {
@@ -263,13 +350,22 @@ export default function DailyExpenses() {
       return;
     }
 
-    addTransportationMutation.mutate({
+    const transportData = {
       projectId: selectedProjectId,
       amount: transportAmount,
       description: transportDescription,
       date: selectedDate,
       notes: transportNotes,
-    });
+    };
+
+    if (editingTransportationId) {
+      updateTransportationMutation.mutate({
+        id: editingTransportationId,
+        data: transportData
+      });
+    } else {
+      addTransportationMutation.mutate(transportData);
+    }
   };
 
   const calculateTotals = () => {
@@ -414,8 +510,13 @@ export default function DailyExpenses() {
                 </SelectContent>
               </Select>
               <Button onClick={handleAddFundTransfer} size="sm" className="bg-primary">
-                <Plus className="h-4 w-4" />
+                {editingFundTransferId ? <Save className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
               </Button>
+              {editingFundTransferId && (
+                <Button onClick={resetFundTransferForm} size="sm" variant="outline">
+                  إلغاء
+                </Button>
+              )}
             </div>
             
             {/* عرض العهد المضافة لهذا اليوم */}
@@ -435,10 +536,7 @@ export default function DailyExpenses() {
                           size="sm" 
                           variant="ghost" 
                           className="h-7 w-7 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                          onClick={() => {
-                            // TODO: إضافة تعديل العهدة
-                            toast({ title: "قريباً", description: "سيتم إضافة ميزة التعديل" });
-                          }}
+                          onClick={() => handleEditFundTransfer(transfer)}
                         >
                           <Edit2 className="h-3 w-3" />
                         </Button>
@@ -551,8 +649,13 @@ export default function DailyExpenses() {
                 className="flex-1"
               />
               <Button onClick={handleAddTransportation} size="sm" className="bg-secondary">
-                <Plus className="h-4 w-4" />
+                {editingTransportationId ? <Save className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
               </Button>
+              {editingTransportationId && (
+                <Button onClick={resetTransportationForm} size="sm" variant="outline">
+                  إلغاء
+                </Button>
+              )}
             </div>
             
             {/* Show existing transportation expenses */}
@@ -566,10 +669,7 @@ export default function DailyExpenses() {
                       size="sm" 
                       variant="ghost" 
                       className="h-7 w-7 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                      onClick={() => {
-                        // TODO: إضافة تعديل المواصلات
-                        toast({ title: "قريباً", description: "سيتم إضافة ميزة التعديل" });
-                      }}
+                      onClick={() => handleEditTransportation(expense)}
                     >
                       <Edit2 className="h-3 w-3" />
                     </Button>

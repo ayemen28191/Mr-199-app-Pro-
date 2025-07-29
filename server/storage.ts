@@ -31,6 +31,7 @@ export interface IStorage {
   getFundTransfers(projectId: string, date?: string): Promise<FundTransfer[]>;
   getFundTransferByNumber(transferNumber: string): Promise<FundTransfer | undefined>;
   createFundTransfer(transfer: InsertFundTransfer): Promise<FundTransfer>;
+  updateFundTransfer(id: string, transfer: Partial<InsertFundTransfer>): Promise<FundTransfer | undefined>;
   deleteFundTransfer(id: string): Promise<void>;
   
   // Worker Attendance
@@ -47,11 +48,13 @@ export interface IStorage {
   // Material Purchases
   getMaterialPurchases(projectId: string, dateFrom?: string, dateTo?: string): Promise<MaterialPurchase[]>;
   createMaterialPurchase(purchase: InsertMaterialPurchase): Promise<MaterialPurchase>;
+  updateMaterialPurchase(id: string, purchase: Partial<InsertMaterialPurchase>): Promise<MaterialPurchase | undefined>;
   deleteMaterialPurchase(id: string): Promise<void>;
   
   // Transportation Expenses
   getTransportationExpenses(projectId: string, date?: string): Promise<TransportationExpense[]>;
   createTransportationExpense(expense: InsertTransportationExpense): Promise<TransportationExpense>;
+  updateTransportationExpense(id: string, expense: Partial<InsertTransportationExpense>): Promise<TransportationExpense | undefined>;
   deleteTransportationExpense(id: string): Promise<void>;
   
   // Daily Expense Summaries
@@ -200,6 +203,15 @@ export class MemStorage implements IStorage {
     return newTransfer;
   }
 
+  async updateFundTransfer(id: string, transfer: Partial<InsertFundTransfer>): Promise<FundTransfer | undefined> {
+    const existing = this.fundTransfers.get(id);
+    if (!existing) return undefined;
+    
+    const updated: FundTransfer = { ...existing, ...transfer };
+    this.fundTransfers.set(id, updated);
+    return updated;
+  }
+
   async deleteFundTransfer(id: string): Promise<void> {
     this.fundTransfers.delete(id);
   }
@@ -287,6 +299,15 @@ export class MemStorage implements IStorage {
     return newPurchase;
   }
 
+  async updateMaterialPurchase(id: string, purchase: Partial<InsertMaterialPurchase>): Promise<MaterialPurchase | undefined> {
+    const existing = this.materialPurchases.get(id);
+    if (!existing) return undefined;
+    
+    const updated: MaterialPurchase = { ...existing, ...purchase };
+    this.materialPurchases.set(id, updated);
+    return updated;
+  }
+
   async deleteMaterialPurchase(id: string): Promise<void> {
     this.materialPurchases.delete(id);
   }
@@ -309,6 +330,15 @@ export class MemStorage implements IStorage {
     };
     this.transportationExpenses.set(id, newExpense);
     return newExpense;
+  }
+
+  async updateTransportationExpense(id: string, expense: Partial<InsertTransportationExpense>): Promise<TransportationExpense | undefined> {
+    const existing = this.transportationExpenses.get(id);
+    if (!existing) return undefined;
+    
+    const updated: TransportationExpense = { ...existing, ...expense };
+    this.transportationExpenses.set(id, updated);
+    return updated;
   }
 
   async deleteTransportationExpense(id: string): Promise<void> {
@@ -548,6 +578,15 @@ export class DatabaseStorage implements IStorage {
     return newTransfer;
   }
 
+  async updateFundTransfer(id: string, transfer: Partial<InsertFundTransfer>): Promise<FundTransfer | undefined> {
+    const [updated] = await db
+      .update(fundTransfers)
+      .set(transfer)
+      .where(eq(fundTransfers.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
   async deleteFundTransfer(id: string): Promise<void> {
     await db.delete(fundTransfers).where(eq(fundTransfers.id, id));
   }
@@ -686,6 +725,15 @@ export class DatabaseStorage implements IStorage {
     return newPurchase;
   }
 
+  async updateMaterialPurchase(id: string, purchase: Partial<InsertMaterialPurchase>): Promise<MaterialPurchase | undefined> {
+    const [updated] = await db
+      .update(materialPurchases)
+      .set(purchase)
+      .where(eq(materialPurchases.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
   async deleteMaterialPurchase(id: string): Promise<void> {
     await db.delete(materialPurchases).where(eq(materialPurchases.id, id));
   }
@@ -708,6 +756,15 @@ export class DatabaseStorage implements IStorage {
       .values(expense)
       .returning();
     return newExpense;
+  }
+
+  async updateTransportationExpense(id: string, expense: Partial<InsertTransportationExpense>): Promise<TransportationExpense | undefined> {
+    const [updated] = await db
+      .update(transportationExpenses)
+      .set(expense)
+      .where(eq(transportationExpenses.id, id))
+      .returning();
+    return updated || undefined;
   }
 
   async deleteTransportationExpense(id: string): Promise<void> {
