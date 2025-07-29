@@ -319,15 +319,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const { projectId, date } = req.query;
     
     try {
-      const allTransfers = await storage.getAllWorkerTransfers();
-      const filteredTransfers = allTransfers.filter(transfer => {
-        if (projectId && transfer.projectId !== projectId) return false;
-        if (date && transfer.transferDate !== date) return false;
-        return true;
-      });
-      res.json(filteredTransfers);
+      const transfers = await storage.getFilteredWorkerTransfers(projectId as string, date as string);
+      res.json(transfers);
     } catch (error) {
-      console.error("Error fetching all worker transfers:", error);
+      console.error("Error fetching worker transfers:", error);
       res.status(500).json({ message: "Failed to fetch worker transfers" });
     }
   });

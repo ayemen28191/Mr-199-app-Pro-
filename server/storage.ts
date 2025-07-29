@@ -59,6 +59,7 @@ export interface IStorage {
   getWorkerTransfers(workerId: string, projectId?: string): Promise<WorkerTransfer[]>;
   createWorkerTransfer(transfer: InsertWorkerTransfer): Promise<WorkerTransfer>;
   getAllWorkerTransfers(): Promise<WorkerTransfer[]>;
+  getFilteredWorkerTransfers(projectId?: string, date?: string): Promise<WorkerTransfer[]>;
   
   // Reports
   getWorkerAccountStatement(workerId: string, projectId?: string, dateFrom?: string, dateTo?: string): Promise<WorkerAttendance[]>;
@@ -384,6 +385,14 @@ export class MemStorage implements IStorage {
   async getAllWorkerTransfers(): Promise<WorkerTransfer[]> {
     return Array.from(this.workerTransfers.values());
   }
+
+  async getFilteredWorkerTransfers(projectId?: string, date?: string): Promise<WorkerTransfer[]> {
+    return Array.from(this.workerTransfers.values()).filter(transfer => {
+      if (projectId && transfer.projectId !== projectId) return false;
+      if (date && transfer.transferDate !== date) return false;
+      return true;
+    });
+  }
 }
 
 export class DatabaseStorage implements IStorage {
@@ -702,6 +711,20 @@ export class DatabaseStorage implements IStorage {
 
   async getAllWorkerTransfers(): Promise<WorkerTransfer[]> {
     return await db.select().from(workerTransfers);
+  }
+
+  async getFilteredWorkerTransfers(projectId?: string, date?: string): Promise<WorkerTransfer[]> {
+    let query = db.select().from(workerTransfers);
+    
+    if (projectId && date) {
+      query = query.where(and(eq(workerTransfers.projectId, projectId), eq(workerTransfers.transferDate, date)));
+    } else if (projectId) {
+      query = query.where(eq(workerTransfers.projectId, projectId));
+    } else if (date) {
+      query = query.where(eq(workerTransfers.transferDate, date));
+    }
+    
+    return await query;
   }
 }
 
