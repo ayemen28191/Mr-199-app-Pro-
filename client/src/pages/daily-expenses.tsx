@@ -54,19 +54,21 @@ export default function DailyExpenses() {
     enabled: !!selectedProjectId,
   });
 
-  const { data: todayMaterialPurchases = [] } = useQuery({
+  const { data: todayMaterialPurchases = [], refetch: refetchMaterialPurchases } = useQuery({
     queryKey: ["/api/projects", selectedProjectId, "material-purchases", selectedDate],
     queryFn: async () => {
       const response = await apiRequest("GET", `/api/projects/${selectedProjectId}/material-purchases?dateFrom=${selectedDate}&dateTo=${selectedDate}`);
+      console.log("Material purchases response:", response);
       return Array.isArray(response) ? response as MaterialPurchase[] : [];
     },
     enabled: !!selectedProjectId,
   });
 
-  const { data: todayWorkerTransfers = [] } = useQuery({
+  const { data: todayWorkerTransfers = [], refetch: refetchWorkerTransfers } = useQuery({
     queryKey: ["/api/worker-transfers", selectedProjectId, selectedDate],
     queryFn: async () => {
       const response = await apiRequest("GET", `/api/worker-transfers?projectId=${selectedProjectId}&date=${selectedDate}`);
+      console.log("Worker transfers response:", response);
       return Array.isArray(response) ? response as WorkerTransfer[] : [];
     },
     enabled: !!selectedProjectId,
@@ -79,7 +81,13 @@ export default function DailyExpenses() {
       setSenderName("");
       setTransferNumber("");
       setTransferType("");
+      toast({
+        title: "تم إضافة العهدة",
+        description: "تم إضافة تحويل العهدة بنجاح",
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProjectId, "fund-transfers"] });
+      refetchMaterialPurchases();
+      refetchWorkerTransfers();
     },
   });
 
@@ -89,7 +97,13 @@ export default function DailyExpenses() {
       setTransportDescription("");
       setTransportAmount("");
       setTransportNotes("");
+      toast({
+        title: "تم إضافة المواصلات",
+        description: "تم إضافة مصروف المواصلات بنجاح",
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProjectId, "transportation-expenses"] });
+      refetchMaterialPurchases();
+      refetchWorkerTransfers();
     },
   });
 
@@ -100,6 +114,16 @@ export default function DailyExpenses() {
         title: "تم الحفظ",
         description: "تم حفظ ملخص المصروفات اليومية بنجاح",
       });
+      // Refresh all data to show updated totals
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProjectId, "material-purchases"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/worker-transfers"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProjectId, "transportation-expenses"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProjectId, "attendance"] });
+      
+      // Refetch current data immediately
+      refetchMaterialPurchases();
+      refetchWorkerTransfers();
     },
     onError: () => {
       toast({
