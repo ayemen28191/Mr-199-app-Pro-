@@ -763,29 +763,44 @@ export default function DailyExpenses() {
         </CardContent>
       </Card>
 
-      {/* Worker Transfers (Advances) */}
+      {/* Worker Transfers */}
       <Card className="mb-4">
         <CardContent className="p-4">
           <h4 className="font-medium text-foreground mb-3 flex items-center">
             <DollarSign className="text-warning ml-2 h-5 w-5" />
-            عهد العمال
+            حولة من حساب العمال
           </h4>
           {!Array.isArray(todayWorkerTransfers) || todayWorkerTransfers.length === 0 ? (
-            <p className="text-muted-foreground text-sm mb-3">لا توجد عهد لهذا اليوم</p>
+            <p className="text-muted-foreground text-sm mb-3">لا توجد حوالات لهذا اليوم</p>
           ) : (
             <div className="space-y-2 mb-3">
-              {todayWorkerTransfers.map((transfer, index) => (
-                <div key={index} className="flex justify-between items-center p-2 bg-muted rounded">
-                  <span className="text-sm flex-1">{transfer.recipientName}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium arabic-numbers">{formatCurrency(transfer.amount)}</span>
-                    <div className="flex gap-1">
+              {todayWorkerTransfers.map((transfer, index) => {
+                const worker = workers.find(w => w.id === transfer.workerId);
+                return (
+                  <div key={index} className="flex justify-between items-center p-3 bg-muted rounded border-r-4 border-warning">
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-sm font-medium text-foreground">
+                          {worker?.name || 'عامل غير معروف'}
+                        </span>
+                        <span className="font-bold text-warning arabic-numbers">{formatCurrency(transfer.amount)}</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        <span>المستلم: {transfer.recipientName}</span>
+                        {transfer.recipientPhone && (
+                          <span className="mr-3">الهاتف: {transfer.recipientPhone}</span>
+                        )}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        طريقة التحويل: {transfer.transferMethod === "hawaleh" ? "حولة" : transfer.transferMethod === "bank" ? "تحويل بنكي" : "نقداً"}
+                      </div>
+                    </div>
+                    <div className="flex gap-1 mr-2">
                       <Button 
                         size="sm" 
                         variant="ghost" 
                         className="h-7 w-7 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                         onClick={() => {
-                          // TODO: إضافة تعديل عهد العمال
                           toast({ title: "قريباً", description: "سيتم إضافة ميزة التعديل" });
                         }}
                       >
@@ -796,7 +811,6 @@ export default function DailyExpenses() {
                         variant="ghost" 
                         className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
                         onClick={() => {
-                          // TODO: إضافة حذف عهد العمال
                           toast({ title: "قريباً", description: "سيتم إضافة ميزة الحذف" });
                         }}
                       >
@@ -804,10 +818,10 @@ export default function DailyExpenses() {
                       </Button>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
               <div className="text-left mt-2 pt-2 border-t">
-                <span className="text-sm text-muted-foreground">إجمالي العهد: </span>
+                <span className="text-sm text-muted-foreground">إجمالي الحوالات: </span>
                 <span className="font-bold text-warning arabic-numbers">
                   {formatCurrency(totals.totalWorkerTransfers)}
                 </span>
@@ -820,7 +834,7 @@ export default function DailyExpenses() {
             className="w-full border-2 border-dashed"
           >
             <Plus className="ml-2 h-4 w-4" />
-            إضافة عهدة جديدة
+            إرسال حولة جديدة
           </Button>
         </CardContent>
       </Card>
