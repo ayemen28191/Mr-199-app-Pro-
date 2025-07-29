@@ -420,6 +420,121 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Reports
+  app.get("/api/reports/daily-expenses/:projectId/:date", async (req, res) => {
+    try {
+      const { projectId, date } = req.params;
+      
+      const [
+        fundTransfers,
+        workerAttendance,
+        materialPurchases, 
+        transportationExpenses,
+        workerTransfers,
+        dailySummary
+      ] = await Promise.all([
+        storage.getFundTransfers(projectId, date),
+        storage.getWorkerAttendance(projectId, date),
+        storage.getMaterialPurchases(projectId, date, date),
+        storage.getTransportationExpenses(projectId, date),
+        storage.getFilteredWorkerTransfers(projectId, date),
+        storage.getDailyExpenseSummary(projectId, date)
+      ]);
+
+      res.json({
+        date,
+        projectId,
+        fundTransfers,
+        workerAttendance,
+        materialPurchases,
+        transportationExpenses,
+        workerTransfers,
+        dailySummary
+      });
+    } catch (error) {
+      console.error("Error generating daily expenses report:", error);
+      res.status(500).json({ message: "Error generating daily expenses report" });
+    }
+  });
+
+  app.get("/api/reports/material-purchases/:projectId", async (req, res) => {
+    try {
+      const { projectId } = req.params;
+      const { dateFrom, dateTo } = req.query;
+      
+      const purchases = await storage.getMaterialPurchases(
+        projectId, 
+        dateFrom as string, 
+        dateTo as string
+      );
+      
+      res.json({
+        projectId,
+        dateFrom,
+        dateTo,
+        purchases
+      });
+    } catch (error) {
+      console.error("Error generating material purchases report:", error);
+      res.status(500).json({ message: "Error generating material purchases report" });
+    }
+  });
+
+  app.get("/api/reports/project-summary/:projectId", async (req, res) => {
+    try {
+      const { projectId } = req.params;
+      const { dateFrom, dateTo } = req.query;
+      
+      const [
+        project,
+        totalFundTransfers,
+        totalWorkerAttendance,
+        totalMaterialPurchases,
+        totalTransportationExpenses,
+        totalWorkerTransfers
+      ] = await Promise.all([
+        storage.getProject(projectId),
+        storage.getFundTransfers(projectId),
+        storage.getWorkerAttendance(projectId),
+        storage.getMaterialPurchases(projectId, dateFrom as string, dateTo as string),
+        storage.getTransportationExpenses(projectId),
+        storage.getFilteredWorkerTransfers(projectId)
+      ]);
+
+      // حساب الإجماليات
+      const totalIncome = totalFundTransfers.reduce((sum, t) => sum + parseFloat(t.amount), 0);
+      const totalWorkerCosts = totalWorkerAttendance.reduce((sum, a) => sum + parseFloat(a.paidAmount), 0);
+      const totalMaterialCosts = totalMaterialPurchases.reduce((sum, p) => sum + parseFloat(p.totalAmount), 0);
+      const totalTransportCosts = totalTransportationExpenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
+      const totalTransferCosts = totalWorkerTransfers.reduce((sum, t) => sum + parseFloat(t.amount), 0);
+      const totalExpenses = totalWorkerCosts + totalMaterialCosts + totalTransportCosts + totalTransferCosts;
+
+      res.json({
+        project,
+        dateFrom,
+        dateTo,
+        summary: {
+          totalIncome,
+          totalExpenses,
+          netBalance: totalIncome - totalExpenses,
+          totalWorkerCosts,
+          totalMaterialCosts,
+          totalTransportCosts,
+          totalTransferCosts
+        },
+        details: {
+          fundTransfers: totalFundTransfers,
+          workerAttendance: totalWorkerAttendance,
+          materialPurchases: totalMaterialPurchases,
+          transportationExpenses: totalTransportationExpenses,
+          workerTransfers: totalWorkerTransfers
+        }
+      });
+    } catch (error) {
+      console.error("Error generating project summary report:", error);
+      res.status(500).json({ message: "Error generating project summary report" });
+    }
+  });
+
   app.get("/api/workers/:workerId/account-statement", async (req, res) => {
     try {
       const { projectId, dateFrom, dateTo } = req.query;

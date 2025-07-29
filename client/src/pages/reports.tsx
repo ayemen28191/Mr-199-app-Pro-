@@ -1,17 +1,24 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { ArrowRight, Receipt, UserCheck, Package, PieChart, Eye, Download, Share2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { ArrowRight, Receipt, UserCheck, Package, PieChart, Eye, Download, Share2, FileSpreadsheet, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import { useSelectedProject } from "@/hooks/use-selected-project";
 import ProjectSelector from "@/components/project-selector";
 import { getCurrentDate, formatCurrency, formatDate } from "@/lib/utils";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import type { Worker, Project } from "@shared/schema";
 
 export default function Reports() {
   const [, setLocation] = useLocation();
   const { selectedProjectId, selectProject } = useSelectedProject();
+  const { toast } = useToast();
   
   // Report form states
   const [dailyReportDate, setDailyReportDate] = useState(getCurrentDate());
@@ -22,6 +29,155 @@ export default function Reports() {
   const [materialReportDate2, setMaterialReportDate2] = useState("");
   const [projectSummaryDate1, setProjectSummaryDate1] = useState("");
   const [projectSummaryDate2, setProjectSummaryDate2] = useState("");
+  
+  // Report display states
+  const [activeReportType, setActiveReportType] = useState<string | null>(null);
+  const [reportData, setReportData] = useState<any>(null);
+
+  // Fetch projects and workers data
+  const { data: projects = [] } = useQuery<Project[]>({
+    queryKey: ["/api/projects"],
+  });
+
+  const { data: workers = [] } = useQuery<Worker[]>({
+    queryKey: ["/api/workers"],
+  });
+
+  const selectedProject = projects.find(p => p.id === selectedProjectId);
+
+  // Generate Reports Functions
+  const generateDailyExpensesReport = async () => {
+    if (!selectedProjectId || !dailyReportDate) {
+      toast({
+        title: "خطأ",
+        description: "يرجى اختيار مشروع وتاريخ",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const data = await apiRequest("GET", `/api/reports/daily-expenses/${selectedProjectId}/${dailyReportDate}`);
+      setReportData(data);
+      setActiveReportType("daily");
+      
+      toast({
+        title: "تم إنشاء التقرير",
+        description: "تم إنشاء كشف المصروفات اليومية بنجاح",
+      });
+    } catch (error) {
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء إنشاء التقرير",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const generateWorkerAccountReport = async () => {
+    if (!selectedWorkerId || !workerAccountDate1 || !workerAccountDate2) {
+      toast({
+        title: "خطأ",
+        description: "يرجى اختيار عامل والتواريخ",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const data = await apiRequest("GET", `/api/workers/${selectedWorkerId}/account-statement?projectId=${selectedProjectId}&dateFrom=${workerAccountDate1}&dateTo=${workerAccountDate2}`);
+      setReportData({ ...data, workerId: selectedWorkerId, dateFrom: workerAccountDate1, dateTo: workerAccountDate2 });
+      setActiveReportType("worker");
+
+      toast({
+        title: "تم إنشاء التقرير",
+        description: "تم إنشاء كشف حساب العامل بنجاح",
+      });
+    } catch (error) {
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء إنشاء التقرير",
+        variant: "destructive",    
+      });
+    }
+  };
+
+  const generateMaterialPurchasesReport = async () => {
+    if (!selectedProjectId || !materialReportDate1 || !materialReportDate2) {
+      toast({
+        title: "خطأ",
+        description: "يرجى اختيار مشروع والتواريخ",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const data = await apiRequest("GET", `/api/reports/material-purchases/${selectedProjectId}?dateFrom=${materialReportDate1}&dateTo=${materialReportDate2}`);
+      setReportData(data);
+      setActiveReportType("materials");
+
+      toast({
+        title: "تم إنشاء التقرير",
+        description: "تم إنشاء كشف المواد المشتراة بنجاح",
+      });
+    } catch (error) {
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء إنشاء التقرير",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const generateProjectSummaryReport = async () => {
+    if (!selectedProjectId || !projectSummaryDate1 || !projectSummaryDate2) {
+      toast({
+        title: "خطأ",
+        description: "يرجى اختيار مشروع والتواريخ",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const data = await apiRequest("GET", `/api/reports/project-summary/${selectedProjectId}?dateFrom=${projectSummaryDate1}&dateTo=${projectSummaryDate2}`);
+      setReportData(data);
+      setActiveReportType("summary");
+
+      toast({
+        title: "تم إنشاء التقرير",
+        description: "تم إنشاء ملخص المشروع بنجاح",
+      });
+    } catch (error) {
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء إنشاء التقرير",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Export Functions
+  const exportToCSV = (data: any[], filename: string) => {
+    if (!data.length) return;
+    
+    const headers = Object.keys(data[0]);
+    const csvContent = [
+      headers.join(','),
+      ...data.map(row => headers.map(header => `"${row[header] || ''}"`).join(','))
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${filename}.csv`;
+    link.click();
+  };
+
+  const printReport = () => {
+    window.print();
+  };
 
   const reportTypes = [
     {
@@ -39,17 +195,12 @@ export default function Reports() {
             onChange={(e) => setDailyReportDate(e.target.value)}
             className="text-sm"
           />
-          <Select value={selectedProjectId}>
-            <SelectTrigger className="text-sm">
-              <SelectValue placeholder="المشروع" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="project1">مشروع إبار زيد</SelectItem>
-              <SelectItem value="project2">مشروع مصنع الحيشي</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="text-sm p-2 bg-muted rounded border">
+            {selectedProject?.name || "لم يتم اختيار مشروع"}
+          </div>
         </div>
       ),
+      onGenerate: generateDailyExpensesReport,
     },
     {
       icon: UserCheck,
@@ -65,9 +216,11 @@ export default function Reports() {
               <SelectValue placeholder="اختر العامل..." />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="worker1">موسى عبدالحكيم</SelectItem>
-              <SelectItem value="worker2">سلطان</SelectItem>
-              <SelectItem value="worker3">بشير</SelectItem>
+              {workers.map((worker) => (
+                <SelectItem key={worker.id} value={worker.id}>
+                  {worker.name}
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <div className="grid grid-cols-2 gap-3">
@@ -88,6 +241,7 @@ export default function Reports() {
           </div>
         </div>
       ),
+      onGenerate: generateWorkerAccountReport,
     },
     {
       icon: Package,
@@ -114,6 +268,7 @@ export default function Reports() {
           />
         </div>
       ),
+      onGenerate: generateMaterialPurchasesReport,
     },
     {
       icon: PieChart,
@@ -140,13 +295,120 @@ export default function Reports() {
           />
         </div>
       ),
+      onGenerate: generateProjectSummaryReport,
     },
   ];
 
-  const handleGenerateReport = (reportType: string) => {
-    console.log(`Generating ${reportType} report`);
-    // TODO: Implement report generation
-  };
+  // Report Display Components
+  const DailyExpensesReport = ({ data }: { data: any }) => (
+    <div className="space-y-4">
+      <div className="bg-muted p-4 rounded-lg">
+        <h5 className="font-medium mb-2">ملخص يوم {formatDate(data.date)}</h5>
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <span>إجمالي الحوالات: </span>
+            <span className="font-medium">{formatCurrency(data.fundTransfers?.reduce((sum: number, t: any) => sum + parseFloat(t.amount), 0) || 0)}</span>
+          </div>
+          <div>
+            <span>مصروفات العمال: </span>
+            <span className="font-medium">{formatCurrency(data.workerAttendance?.reduce((sum: number, a: any) => sum + parseFloat(a.paidAmount), 0) || 0)}</span>
+          </div>
+          <div>
+            <span>شراء المواد: </span>
+            <span className="font-medium">{formatCurrency(data.materialPurchases?.reduce((sum: number, p: any) => sum + parseFloat(p.totalAmount), 0) || 0)}</span>
+          </div>
+          <div>
+            <span>مصاريف النقل: </span>
+            <span className="font-medium">{formatCurrency(data.transportationExpenses?.reduce((sum: number, e: any) => sum + parseFloat(e.amount), 0) || 0)}</span>
+          </div>
+        </div>
+      </div>
+      
+      <div className="space-y-3">
+        {data.fundTransfers?.length > 0 && (
+          <div>
+            <h6 className="font-medium mb-2">الحوالات المالية</h6>
+            {data.fundTransfers.map((transfer: any, idx: number) => (
+              <div key={idx} className="bg-white p-3 rounded border text-sm">
+                <div className="flex justify-between">
+                  <span>{transfer.senderName}</span>
+                  <span className="font-medium">{formatCurrency(transfer.amount)}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        
+        {data.workerAttendance?.length > 0 && (
+          <div>
+            <h6 className="font-medium mb-2">حضور العمال</h6>
+            {data.workerAttendance.map((attendance: any, idx: number) => (
+              <div key={idx} className="bg-white p-3 rounded border text-sm">
+                <div className="flex justify-between">
+                  <span>{attendance.worker?.name}</span>
+                  <span className="font-medium">{formatCurrency(attendance.paidAmount)}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  const MaterialPurchasesReport = ({ data }: { data: any }) => (
+    <div className="space-y-4">
+      <div className="bg-muted p-4 rounded-lg">
+        <h5 className="font-medium mb-2">المواد المشتراة من {formatDate(data.dateFrom)} إلى {formatDate(data.dateTo)}</h5>
+        <div className="text-sm">
+          <span>إجمالي المشتريات: </span>
+          <span className="font-medium">{formatCurrency(data.purchases?.reduce((sum: number, p: any) => sum + parseFloat(p.totalAmount), 0) || 0)}</span>
+        </div>
+      </div>
+      
+      <div className="space-y-3">
+        {data.purchases?.map((purchase: any, idx: number) => (
+          <div key={idx} className="bg-white p-3 rounded border text-sm">
+            <div className="flex justify-between items-start">
+              <div>
+                <div className="font-medium">{purchase.material?.name}</div>
+                <div className="text-muted-foreground">{purchase.quantity} {purchase.material?.unit}</div>
+                <div className="text-muted-foreground">{purchase.supplierName}</div>
+              </div>
+              <div className="text-left">
+                <div className="font-medium">{formatCurrency(purchase.totalAmount)}</div>
+                <div className="text-muted-foreground">{formatDate(purchase.purchaseDate)}</div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+
+  const ProjectSummaryReport = ({ data }: { data: any }) => (
+    <div className="space-y-4">
+      <div className="bg-muted p-4 rounded-lg">
+        <h5 className="font-medium mb-2">ملخص {data.project?.name}</h5>
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <span>إجمالي الدخل: </span>
+            <span className="font-bold text-green-600">{formatCurrency(data.summary?.totalIncome || 0)}</span>
+          </div>
+          <div>
+            <span>إجمالي المصروفات: </span>
+            <span className="font-bold text-red-600">{formatCurrency(data.summary?.totalExpenses || 0)}</span>
+          </div>
+          <div className="col-span-2">
+            <span>الرصيد الصافي: </span>
+            <span className={`font-bold ${(data.summary?.netBalance || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {formatCurrency(data.summary?.netBalance || 0)}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="p-4 slide-in">
@@ -184,7 +446,7 @@ export default function Reports() {
                     </div>
                   </div>
                   <Button
-                    onClick={() => handleGenerateReport(report.title)}
+                    onClick={report.onGenerate}
                     className={`${report.color} ${report.hoverColor} ${report.textColor} px-4 py-2 text-sm`}
                   >
                     إنشاء
@@ -197,60 +459,98 @@ export default function Reports() {
         })}
       </div>
 
-      {/* Report Preview Sample */}
-      <Card className="mt-6">
-        <CardContent className="p-4">
-          <h4 className="font-medium text-foreground mb-3 flex items-center">
-            <Eye className="text-primary ml-2 h-5 w-5" />
-            معاينة كشف المصروفات - {formatDate(new Date())}
-          </h4>
-          <div className="bg-muted p-3 rounded-lg text-sm space-y-2">
-            <div className="flex justify-between">
-              <span>المشروع:</span>
-              <span className="font-medium">مشروع إبار زيد</span>
+      {/* Generated Report Display */}
+      {activeReportType && reportData && (
+        <Card className="mt-6">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Eye className="h-5 w-5 text-primary" />
+                {activeReportType === 'daily' && 'كشف المصروفات اليومية'}
+                {activeReportType === 'worker' && 'كشف حساب العامل'}
+                {activeReportType === 'materials' && 'كشف المواد المشتراة'}
+                {activeReportType === 'summary' && 'ملخص المشروع'}
+              </CardTitle>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={printReport}
+                  className="flex items-center gap-2"
+                >
+                  <Printer className="h-4 w-4" />
+                  طباعة
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => {
+                    let exportData: any[] = [];
+                    let filename = '';
+                    
+                    if (activeReportType === 'daily') {
+                      exportData = [
+                        ...reportData.fundTransfers?.map((t: any) => ({
+                          نوع: 'حوالة مالية',
+                          المرسل: t.senderName,
+                          المبلغ: t.amount,
+                          التاريخ: t.transferDate
+                        })) || [],
+                        ...reportData.workerAttendance?.map((a: any) => ({
+                          نوع: 'حضور عامل',
+                          العامل: a.worker?.name,
+                          المبلغ: a.paidAmount,
+                          التاريخ: a.date
+                        })) || []
+                      ];
+                      filename = `daily-expenses-${reportData.date}`;
+                    } else if (activeReportType === 'materials') {
+                      exportData = reportData.purchases?.map((p: any) => ({
+                        المادة: p.material?.name,
+                        الكمية: p.quantity,
+                        الوحدة: p.material?.unit,
+                        'سعر الوحدة': p.unitPrice,
+                        'المبلغ الإجمالي': p.totalAmount,
+                        المورد: p.supplierName,
+                        'تاريخ الشراء': p.purchaseDate
+                      })) || [];
+                      filename = `material-purchases-${reportData.dateFrom}-${reportData.dateTo}`;
+                    }
+                    
+                    if (exportData.length > 0) {
+                      exportToCSV(exportData, filename);
+                    }
+                  }}
+                  className="flex items-center gap-2"
+                >
+                  <FileSpreadsheet className="h-4 w-4" />
+                  تصدير CSV
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => {
+                    setActiveReportType(null);
+                    setReportData(null);
+                  }}
+                >
+                  إغلاق
+                </Button>
+              </div>
             </div>
-            <div className="flex justify-between">
-              <span>مرحل من التاريخ السابق:</span>
-              <span className="font-medium arabic-numbers">{formatCurrency(4700)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>توريد اليوم:</span>
-              <span className="font-medium arabic-numbers">{formatCurrency(41700)}</span>
-            </div>
-            <hr className="my-2" />
-            <div className="flex justify-between">
-              <span>إجمالي الدخل:</span>
-              <span className="font-bold text-primary arabic-numbers">{formatCurrency(46400)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>إجمالي المنصرف:</span>
-              <span className="font-bold text-destructive arabic-numbers">{formatCurrency(31000)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>المبلغ المتبقي:</span>
-              <span className="font-bold text-success arabic-numbers">{formatCurrency(15400)}</span>
-            </div>
-          </div>
-          <div className="mt-3 flex space-x-reverse space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="bg-primary text-primary-foreground hover:bg-primary/90"
-            >
-              <Download className="ml-1 h-4 w-4" />
-              تحميل PDF
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="bg-success text-success-foreground hover:bg-success/90"
-            >
-              <Share2 className="ml-1 h-4 w-4" />
-              مشاركة
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+          </CardHeader>
+          <CardContent>
+            {activeReportType === 'daily' && <DailyExpensesReport data={reportData} />}
+            {activeReportType === 'worker' && (
+              <div className="text-center py-8 text-muted-foreground">
+                عذراً، تقرير حساب العامل غير متوفر حالياً
+              </div>
+            )}
+            {activeReportType === 'materials' && <MaterialPurchasesReport data={reportData} />}
+            {activeReportType === 'summary' && <ProjectSummaryReport data={reportData} />}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
