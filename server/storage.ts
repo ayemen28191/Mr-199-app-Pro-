@@ -575,20 +575,51 @@ export class DatabaseStorage implements IStorage {
       .insert(fundTransfers)
       .values(transfer)
       .returning();
+    
+    // تحديث الملخص اليومي تلقائياً
+    const transferDate = new Date(transfer.transferDate).toISOString().split('T')[0];
+    await this.updateDailySummaryForDate(transfer.projectId, transferDate);
+    
     return newTransfer;
   }
 
   async updateFundTransfer(id: string, transfer: Partial<InsertFundTransfer>): Promise<FundTransfer | undefined> {
+    // الحصول على البيانات القديمة أولاً
+    const [oldTransfer] = await db.select().from(fundTransfers).where(eq(fundTransfers.id, id));
+    
     const [updated] = await db
       .update(fundTransfers)
       .set(transfer)
       .where(eq(fundTransfers.id, id))
       .returning();
+    
+    if (updated && oldTransfer) {
+      // تحديث الملخص اليومي للتاريخ القديم والجديد
+      const oldDate = new Date(oldTransfer.transferDate).toISOString().split('T')[0];
+      await this.updateDailySummaryForDate(oldTransfer.projectId, oldDate);
+      
+      if (transfer.transferDate) {
+        const newDate = new Date(transfer.transferDate).toISOString().split('T')[0];
+        if (newDate !== oldDate) {
+          await this.updateDailySummaryForDate(updated.projectId, newDate);
+        }
+      }
+    }
+    
     return updated || undefined;
   }
 
   async deleteFundTransfer(id: string): Promise<void> {
+    // الحصول على البيانات قبل الحذف
+    const [transfer] = await db.select().from(fundTransfers).where(eq(fundTransfers.id, id));
+    
     await db.delete(fundTransfers).where(eq(fundTransfers.id, id));
+    
+    if (transfer) {
+      // تحديث الملخص اليومي بعد الحذف
+      const transferDate = new Date(transfer.transferDate).toISOString().split('T')[0];
+      await this.updateDailySummaryForDate(transfer.projectId, transferDate);
+    }
   }
 
   async getWorkerAttendance(projectId: string, date?: string): Promise<WorkerAttendance[]> {
@@ -608,6 +639,10 @@ export class DatabaseStorage implements IStorage {
       .insert(workerAttendance)
       .values(attendance)
       .returning();
+    
+    // تحديث الملخص اليومي تلقائياً
+    await this.updateDailySummaryForDate(attendance.projectId, attendance.date);
+    
     return newAttendance;
   }
 
@@ -621,7 +656,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteWorkerAttendance(id: string): Promise<void> {
+    // الحصول على البيانات قبل الحذف
+    const [attendance] = await db.select().from(workerAttendance).where(eq(workerAttendance.id, id));
+    
     await db.delete(workerAttendance).where(eq(workerAttendance.id, id));
+    
+    if (attendance) {
+      // تحديث الملخص اليومي بعد الحذف
+      await this.updateDailySummaryForDate(attendance.projectId, attendance.date);
+    }
   }
 
   async getMaterials(): Promise<Material[]> {
@@ -722,6 +765,10 @@ export class DatabaseStorage implements IStorage {
       .insert(materialPurchases)
       .values(purchase)
       .returning();
+    
+    // تحديث الملخص اليومي تلقائياً
+    await this.updateDailySummaryForDate(purchase.projectId, purchase.purchaseDate);
+    
     return newPurchase;
   }
 
@@ -735,7 +782,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteMaterialPurchase(id: string): Promise<void> {
+    // الحصول على البيانات قبل الحذف
+    const [purchase] = await db.select().from(materialPurchases).where(eq(materialPurchases.id, id));
+    
     await db.delete(materialPurchases).where(eq(materialPurchases.id, id));
+    
+    if (purchase) {
+      // تحديث الملخص اليومي بعد الحذف
+      await this.updateDailySummaryForDate(purchase.projectId, purchase.purchaseDate);
+    }
   }
 
   async getTransportationExpenses(projectId: string, date?: string): Promise<TransportationExpense[]> {
@@ -755,6 +810,10 @@ export class DatabaseStorage implements IStorage {
       .insert(transportationExpenses)
       .values(expense)
       .returning();
+    
+    // تحديث الملخص اليومي تلقائياً
+    await this.updateDailySummaryForDate(expense.projectId, expense.date);
+    
     return newExpense;
   }
 
@@ -768,7 +827,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteTransportationExpense(id: string): Promise<void> {
+    // الحصول على البيانات قبل الحذف
+    const [expense] = await db.select().from(transportationExpenses).where(eq(transportationExpenses.id, id));
+    
     await db.delete(transportationExpenses).where(eq(transportationExpenses.id, id));
+    
+    if (expense) {
+      // تحديث الملخص اليومي بعد الحذف
+      await this.updateDailySummaryForDate(expense.projectId, expense.date);
+    }
   }
 
   async getDailyExpenseSummary(projectId: string, date: string): Promise<DailyExpenseSummary | undefined> {
@@ -933,6 +1000,50 @@ export class DatabaseStorage implements IStorage {
       .limit(1);
     
     return result.length > 0 ? result[0].remainingBalance : "0";
+  }
+
+  // حفظ الملخص اليومي تلقائياً عند أي تغيير في المصروفات
+  async updateDailySummaryForDate(projectId: string, date: string): Promise<void> {
+    try {
+      // جمع جميع البيانات لهذا التاريخ
+      const fundTransfers = await this.getFundTransfers(projectId, date);
+      const workerAttendance = await this.getWorkerAttendance(projectId, date);
+      const materialPurchases = await this.getMaterialPurchases(projectId, date);
+      const transportationExpenses = await this.getTransportationExpenses(projectId, date);
+      const workerTransfers = await this.getFilteredWorkerTransfers(projectId, date);
+
+      // حساب الإجماليات
+      const totalFundTransfers = fundTransfers.reduce((sum, t) => sum + parseFloat(t.amount), 0);
+      const totalWorkerWages = workerAttendance.reduce((sum, a) => sum + parseFloat(a.dailyWage || '0'), 0);
+      const totalMaterialCosts = materialPurchases.reduce((sum, p) => sum + parseFloat(p.totalAmount), 0);
+      const totalTransportationCosts = transportationExpenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
+      const totalWorkerTransferCosts = workerTransfers.reduce((sum, t) => sum + parseFloat(t.amount), 0);
+
+      // الحصول على الرصيد المرحل من اليوم السابق
+      const carriedForwardAmount = parseFloat(await this.getPreviousDayBalance(projectId, date));
+
+      // حساب الإجماليات النهائية
+      const totalIncome = carriedForwardAmount + totalFundTransfers;
+      const totalExpenses = totalWorkerWages + totalMaterialCosts + totalTransportationCosts + totalWorkerTransferCosts;
+      const remainingBalance = totalIncome - totalExpenses;
+
+      // حفظ أو تحديث الملخص اليومي
+      await this.createOrUpdateDailyExpenseSummary({
+        projectId,
+        date,
+        carriedForwardAmount: carriedForwardAmount.toString(),
+        totalFundTransfers: totalFundTransfers.toString(),
+        totalWorkerWages: totalWorkerWages.toString(),
+        totalMaterialCosts: totalMaterialCosts.toString(),
+        totalTransportationCosts: totalTransportationCosts.toString(),
+        totalIncome: totalIncome.toString(),
+        totalExpenses: totalExpenses.toString(),
+        remainingBalance: remainingBalance.toString()
+      });
+
+    } catch (error) {
+      console.error('Error updating daily summary:', error);
+    }
   }
 }
 

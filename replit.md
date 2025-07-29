@@ -150,3 +150,9 @@ The application follows modern full-stack development practices with type safety
   - Added print functionality for professional report output
   - All reports display real-time data from PostgreSQL database
   - Reports include detailed breakdowns with totals and summaries
+- ✓ Fixed daily balance carry-forward functionality:
+  - Implemented automatic daily expense summary generation
+  - Added balance carry-forward between consecutive dates
+  - System now automatically updates daily summaries when expenses are added/modified/deleted
+  - Previous day balance correctly transfers to next day's opening balance
+  - All CRUD operations on expenses now trigger daily summary updates

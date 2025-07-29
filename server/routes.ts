@@ -405,6 +405,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // إجبار تحديث الملخص اليومي لتاريخ معين
+  app.post("/api/projects/:projectId/update-daily-summary/:date", async (req, res) => {
+    try {
+      await storage.updateDailySummaryForDate(req.params.projectId, req.params.date);
+      res.json({ message: "تم تحديث الملخص اليومي بنجاح" });
+    } catch (error) {
+      console.error("Error updating daily summary:", error);
+      res.status(500).json({ message: "Error updating daily summary" });
+    }
+  });
+
   app.post("/api/daily-expense-summaries", async (req, res) => {
     try {
       const result = insertDailyExpenseSummarySchema.safeParse(req.body);
