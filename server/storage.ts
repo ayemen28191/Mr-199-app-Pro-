@@ -1,0 +1,249 @@
+import { 
+  type Project, type Worker, type FundTransfer, type WorkerAttendance, 
+  type Material, type MaterialPurchase, type TransportationExpense, type DailyExpenseSummary,
+  type InsertProject, type InsertWorker, type InsertFundTransfer, type InsertWorkerAttendance,
+  type InsertMaterial, type InsertMaterialPurchase, type InsertTransportationExpense, type InsertDailyExpenseSummary
+} from "@shared/schema";
+import { randomUUID } from "crypto";
+
+export interface IStorage {
+  // Projects
+  getProjects(): Promise<Project[]>;
+  getProject(id: string): Promise<Project | undefined>;
+  createProject(project: InsertProject): Promise<Project>;
+  updateProject(id: string, project: Partial<InsertProject>): Promise<Project | undefined>;
+  
+  // Workers
+  getWorkers(): Promise<Worker[]>;
+  getWorker(id: string): Promise<Worker | undefined>;
+  createWorker(worker: InsertWorker): Promise<Worker>;
+  updateWorker(id: string, worker: Partial<InsertWorker>): Promise<Worker | undefined>;
+  
+  // Fund Transfers
+  getFundTransfers(projectId: string): Promise<FundTransfer[]>;
+  createFundTransfer(transfer: InsertFundTransfer): Promise<FundTransfer>;
+  
+  // Worker Attendance
+  getWorkerAttendance(projectId: string, date?: string): Promise<WorkerAttendance[]>;
+  createWorkerAttendance(attendance: InsertWorkerAttendance): Promise<WorkerAttendance>;
+  updateWorkerAttendance(id: string, attendance: Partial<InsertWorkerAttendance>): Promise<WorkerAttendance | undefined>;
+  
+  // Materials
+  getMaterials(): Promise<Material[]>;
+  createMaterial(material: InsertMaterial): Promise<Material>;
+  
+  // Material Purchases
+  getMaterialPurchases(projectId: string, dateFrom?: string, dateTo?: string): Promise<MaterialPurchase[]>;
+  createMaterialPurchase(purchase: InsertMaterialPurchase): Promise<MaterialPurchase>;
+  
+  // Transportation Expenses
+  getTransportationExpenses(projectId: string, date?: string): Promise<TransportationExpense[]>;
+  createTransportationExpense(expense: InsertTransportationExpense): Promise<TransportationExpense>;
+  
+  // Daily Expense Summaries
+  getDailyExpenseSummary(projectId: string, date: string): Promise<DailyExpenseSummary | undefined>;
+  createOrUpdateDailyExpenseSummary(summary: InsertDailyExpenseSummary): Promise<DailyExpenseSummary>;
+  
+  // Reports
+  getWorkerAccountStatement(workerId: string, projectId?: string, dateFrom?: string, dateTo?: string): Promise<WorkerAttendance[]>;
+}
+
+export class MemStorage implements IStorage {
+  private projects: Map<string, Project> = new Map();
+  private workers: Map<string, Worker> = new Map();
+  private fundTransfers: Map<string, FundTransfer> = new Map();
+  private workerAttendance: Map<string, WorkerAttendance> = new Map();
+  private materials: Map<string, Material> = new Map();
+  private materialPurchases: Map<string, MaterialPurchase> = new Map();
+  private transportationExpenses: Map<string, TransportationExpense> = new Map();
+  private dailyExpenseSummaries: Map<string, DailyExpenseSummary> = new Map();
+
+  constructor() {
+    this.initializeData();
+  }
+
+  private initializeData() {
+    // Initialize some basic materials
+    const basicMaterials: Material[] = [
+      { id: randomUUID(), name: "حديد تسليح", category: "حديد", unit: "طن", createdAt: new Date() },
+      { id: randomUUID(), name: "أسمنت", category: "أسمنت", unit: "كيس", createdAt: new Date() },
+      { id: randomUUID(), name: "رمل", category: "رمل", unit: "متر مكعب", createdAt: new Date() },
+      { id: randomUUID(), name: "زلط", category: "زلط", unit: "متر مكعب", createdAt: new Date() },
+      { id: randomUUID(), name: "خشب", category: "خشب", unit: "متر", createdAt: new Date() },
+      { id: randomUUID(), name: "بلاط", category: "بلاط", unit: "متر مربع", createdAt: new Date() },
+    ];
+
+    basicMaterials.forEach(material => {
+      this.materials.set(material.id, material);
+    });
+  }
+
+  // Projects
+  async getProjects(): Promise<Project[]> {
+    return Array.from(this.projects.values());
+  }
+
+  async getProject(id: string): Promise<Project | undefined> {
+    return this.projects.get(id);
+  }
+
+  async createProject(project: InsertProject): Promise<Project> {
+    const id = randomUUID();
+    const newProject: Project = { ...project, id, createdAt: new Date() };
+    this.projects.set(id, newProject);
+    return newProject;
+  }
+
+  async updateProject(id: string, project: Partial<InsertProject>): Promise<Project | undefined> {
+    const existing = this.projects.get(id);
+    if (!existing) return undefined;
+    
+    const updated: Project = { ...existing, ...project };
+    this.projects.set(id, updated);
+    return updated;
+  }
+
+  // Workers
+  async getWorkers(): Promise<Worker[]> {
+    return Array.from(this.workers.values());
+  }
+
+  async getWorker(id: string): Promise<Worker | undefined> {
+    return this.workers.get(id);
+  }
+
+  async createWorker(worker: InsertWorker): Promise<Worker> {
+    const id = randomUUID();
+    const newWorker: Worker = { ...worker, id, createdAt: new Date() };
+    this.workers.set(id, newWorker);
+    return newWorker;
+  }
+
+  async updateWorker(id: string, worker: Partial<InsertWorker>): Promise<Worker | undefined> {
+    const existing = this.workers.get(id);
+    if (!existing) return undefined;
+    
+    const updated: Worker = { ...existing, ...worker };
+    this.workers.set(id, updated);
+    return updated;
+  }
+
+  // Fund Transfers
+  async getFundTransfers(projectId: string): Promise<FundTransfer[]> {
+    return Array.from(this.fundTransfers.values()).filter(
+      transfer => transfer.projectId === projectId
+    );
+  }
+
+  async createFundTransfer(transfer: InsertFundTransfer): Promise<FundTransfer> {
+    const id = randomUUID();
+    const newTransfer: FundTransfer = { ...transfer, id, createdAt: new Date() };
+    this.fundTransfers.set(id, newTransfer);
+    return newTransfer;
+  }
+
+  // Worker Attendance
+  async getWorkerAttendance(projectId: string, date?: string): Promise<WorkerAttendance[]> {
+    return Array.from(this.workerAttendance.values()).filter(
+      attendance => attendance.projectId === projectId && (!date || attendance.date === date)
+    );
+  }
+
+  async createWorkerAttendance(attendance: InsertWorkerAttendance): Promise<WorkerAttendance> {
+    const id = randomUUID();
+    const newAttendance: WorkerAttendance = { ...attendance, id, createdAt: new Date() };
+    this.workerAttendance.set(id, newAttendance);
+    return newAttendance;
+  }
+
+  async updateWorkerAttendance(id: string, attendance: Partial<InsertWorkerAttendance>): Promise<WorkerAttendance | undefined> {
+    const existing = this.workerAttendance.get(id);
+    if (!existing) return undefined;
+    
+    const updated: WorkerAttendance = { ...existing, ...attendance };
+    this.workerAttendance.set(id, updated);
+    return updated;
+  }
+
+  // Materials
+  async getMaterials(): Promise<Material[]> {
+    return Array.from(this.materials.values());
+  }
+
+  async createMaterial(material: InsertMaterial): Promise<Material> {
+    const id = randomUUID();
+    const newMaterial: Material = { ...material, id, createdAt: new Date() };
+    this.materials.set(id, newMaterial);
+    return newMaterial;
+  }
+
+  // Material Purchases
+  async getMaterialPurchases(projectId: string, dateFrom?: string, dateTo?: string): Promise<MaterialPurchase[]> {
+    return Array.from(this.materialPurchases.values()).filter(
+      purchase => {
+        if (purchase.projectId !== projectId) return false;
+        if (dateFrom && purchase.purchaseDate < dateFrom) return false;
+        if (dateTo && purchase.purchaseDate > dateTo) return false;
+        return true;
+      }
+    );
+  }
+
+  async createMaterialPurchase(purchase: InsertMaterialPurchase): Promise<MaterialPurchase> {
+    const id = randomUUID();
+    const newPurchase: MaterialPurchase = { ...purchase, id, createdAt: new Date() };
+    this.materialPurchases.set(id, newPurchase);
+    return newPurchase;
+  }
+
+  // Transportation Expenses
+  async getTransportationExpenses(projectId: string, date?: string): Promise<TransportationExpense[]> {
+    return Array.from(this.transportationExpenses.values()).filter(
+      expense => expense.projectId === projectId && (!date || expense.date === date)
+    );
+  }
+
+  async createTransportationExpense(expense: InsertTransportationExpense): Promise<TransportationExpense> {
+    const id = randomUUID();
+    const newExpense: TransportationExpense = { ...expense, id, createdAt: new Date() };
+    this.transportationExpenses.set(id, newExpense);
+    return newExpense;
+  }
+
+  // Daily Expense Summaries
+  async getDailyExpenseSummary(projectId: string, date: string): Promise<DailyExpenseSummary | undefined> {
+    return Array.from(this.dailyExpenseSummaries.values()).find(
+      summary => summary.projectId === projectId && summary.date === date
+    );
+  }
+
+  async createOrUpdateDailyExpenseSummary(summary: InsertDailyExpenseSummary): Promise<DailyExpenseSummary> {
+    const existing = await this.getDailyExpenseSummary(summary.projectId, summary.date);
+    
+    if (existing) {
+      const updated: DailyExpenseSummary = { ...existing, ...summary };
+      this.dailyExpenseSummaries.set(existing.id, updated);
+      return updated;
+    } else {
+      const id = randomUUID();
+      const newSummary: DailyExpenseSummary = { ...summary, id, createdAt: new Date() };
+      this.dailyExpenseSummaries.set(id, newSummary);
+      return newSummary;
+    }
+  }
+
+  // Reports
+  async getWorkerAccountStatement(workerId: string, projectId?: string, dateFrom?: string, dateTo?: string): Promise<WorkerAttendance[]> {
+    return Array.from(this.workerAttendance.values()).filter(
+      attendance => {
+        if (attendance.workerId !== workerId) return false;
+        if (projectId && attendance.projectId !== projectId) return false;
+        if (dateFrom && attendance.date < dateFrom) return false;
+        if (dateTo && attendance.date > dateTo) return false;
+        return true;
+      }
+    );
+  }
+}
+
+export const storage = new MemStorage();
