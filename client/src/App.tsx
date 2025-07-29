@@ -11,6 +11,7 @@ import DailyExpenses from "@/pages/daily-expenses";
 import MaterialPurchase from "@/pages/material-purchase";
 import ReportsFixed from "@/pages/reports-fixed";
 import MultiProjectWorkers from "@/pages/multi-project-workers";
+import WorkerStatementReport from "@/pages/worker-statement-simple";
 import Header from "@/components/layout/header";
 import BottomNavigation from "@/components/layout/bottom-navigation";
 
@@ -23,6 +24,7 @@ function Router() {
       <Route path="/daily-expenses" component={DailyExpenses} />
       <Route path="/material-purchase" component={MaterialPurchase} />
       <Route path="/multi-project-workers" component={MultiProjectWorkers} />
+      <Route path="/worker-statement" component={WorkerStatementReport} />
       <Route path="/reports" component={ReportsFixed} />
       <Route component={NotFound} />
     </Switch>
