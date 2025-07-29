@@ -53,25 +53,10 @@ export default function MaterialPurchase() {
   const existingSuppliers = ["متجر الإعمار", "مؤسسة البناء", "شركة المواد"]; // Will be dynamic later
 
   const addMaterialPurchaseMutation = useMutation({
-    mutationFn: async (data: InsertMaterialPurchase & { materialName: string; materialCategory: string; materialUnit: string }) => {
-      // First, create material if it doesn't exist
-      let materialId = materials.find(m => m.name === data.materialName && m.unit === data.materialUnit)?.id;
-      
-      if (!materialId) {
-        const newMaterial: any = await addMaterialMutation.mutateAsync({
-          name: data.materialName,
-          category: data.materialCategory,
-          unit: data.materialUnit,
-        });
-        materialId = newMaterial.id;
-      }
-
-      // Then create the purchase
-      const { materialName: _, materialCategory: __, materialUnit: ___, ...purchaseData } = data;
-      return apiRequest("POST", "/api/material-purchases", {
-        ...purchaseData,
-        materialId,
-      });
+    mutationFn: async (data: any) => {
+      // Send the purchase data with material info directly to the server
+      // The server will handle creating the material if needed
+      return apiRequest("POST", "/api/material-purchases", data);
     },
     onSuccess: () => {
       toast({
@@ -143,11 +128,11 @@ export default function MaterialPurchase() {
       unitPrice,
       totalAmount,
       purchaseType,
-      supplierName,
-      invoiceNumber,
-      invoiceDate,
-      invoicePhoto,
-      notes,
+      supplierName: supplierName || null,
+      invoiceNumber: invoiceNumber || null,
+      invoiceDate: invoiceDate || null,
+      invoicePhoto: invoicePhoto || null,
+      notes: notes || null,
       purchaseDate: getCurrentDate(),
     });
 
