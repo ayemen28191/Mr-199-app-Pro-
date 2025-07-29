@@ -9,7 +9,7 @@ import WorkerAttendance from "@/pages/worker-attendance";
 import WorkerAccounts from "@/pages/worker-accounts";
 import DailyExpenses from "@/pages/daily-expenses";
 import MaterialPurchase from "@/pages/material-purchase";
-import Reports from "@/pages/reports";
+import ReportsFixed from "@/pages/reports-fixed";
 import Header from "@/components/layout/header";
 import BottomNavigation from "@/components/layout/bottom-navigation";
 
@@ -21,7 +21,7 @@ function Router() {
       <Route path="/worker-accounts" component={WorkerAccounts} />
       <Route path="/daily-expenses" component={DailyExpenses} />
       <Route path="/material-purchase" component={MaterialPurchase} />
-      <Route path="/reports" component={Reports} />
+      <Route path="/reports" component={ReportsFixed} />
       <Route component={NotFound} />
     </Switch>
   );

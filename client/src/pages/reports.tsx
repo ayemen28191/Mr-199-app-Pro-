@@ -176,7 +176,15 @@ export default function Reports() {
   };
 
   const printReport = () => {
+    // إخفاء عناصر الواجهة غير المطلوبة للطباعة
+    const elementsToHide = document.querySelectorAll('.no-print, .print\\:hidden');
+    elementsToHide.forEach(el => el.classList.add('hidden'));
+    
+    // طباعة التقرير
     window.print();
+    
+    // إظهار العناصر مرة أخرى
+    elementsToHide.forEach(el => el.classList.remove('hidden'));
   };
 
   const reportTypes = [
@@ -301,7 +309,32 @@ export default function Reports() {
 
   // Report Display Components
   const DailyExpensesReport = ({ data }: { data: any }) => (
-    <div className="space-y-4">
+    <div className="print-preview" id="report-content">
+      {/* رأس التقرير */}
+      <div className="report-header">
+        كشف مصروفات يوم الأحد تاريخ {formatDate(data.date)}
+      </div>
+      
+      {/* معلومات المشروع */}
+      <div className="project-info">
+        <div className="project-info-item">
+          <span>اسم المشروع</span>
+          <br />
+          <strong>{data.project?.name || 'غير محدد'}</strong>
+        </div>
+        <div className="project-info-item">
+          <span>تاريخ بداية العمل</span>
+          <br />
+          <strong>{formatDate(data.date)}</strong>
+        </div>
+        <div className="project-info-item">
+          <span>رقم الهاتف</span>
+          <br />
+          <strong>733366543</strong>
+        </div>
+      </div>
+
+      {/* ملخص اليوم */}
       <div className="bg-muted p-4 rounded-lg">
         <h5 className="font-medium mb-2">ملخص يوم {formatDate(data.date)}</h5>
         <div className="grid grid-cols-2 gap-4 text-sm">
@@ -325,33 +358,135 @@ export default function Reports() {
       </div>
       
       <div className="space-y-3">
-        {data.fundTransfers?.length > 0 && (
-          <div>
-            <h6 className="font-medium mb-2">الحوالات المالية</h6>
-            {data.fundTransfers.map((transfer: any, idx: number) => (
-              <div key={idx} className="bg-white p-3 rounded border text-sm">
-                <div className="flex justify-between">
-                  <span>{transfer.senderName}</span>
-                  <span className="font-medium">{formatCurrency(transfer.amount)}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-        
-        {data.workerAttendance?.length > 0 && (
-          <div>
-            <h6 className="font-medium mb-2">حضور العمال</h6>
-            {data.workerAttendance.map((attendance: any, idx: number) => (
-              <div key={idx} className="bg-white p-3 rounded border text-sm">
-                <div className="flex justify-between">
-                  <span>{attendance.worker?.name}</span>
-                  <span className="font-medium">{formatCurrency(attendance.paidAmount)}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        {/* جدول المصروفات التفصيلي */}
+        <table className="report-table">
+          <thead>
+            <tr>
+              <th>ملاحظات</th>
+              <th>الأجمالي المبلغ المتبقي</th>
+              <th>نوع</th>
+              <th>نوع الحساب</th>
+              <th>المبلغ</th>
+            </tr>
+          </thead>
+          <tbody>
+            {/* رصيد مرحل */}
+            <tr>
+              <td>مرحلة من تاريخ السابق</td>
+              <td className="currency large-number">{formatCurrency(data.summary?.carriedForward || 0)}</td>
+              <td>ترحيل</td>
+              <td>مرحلة</td>
+              <td className="currency large-number success-cell">{formatCurrency(data.summary?.carriedForward || 0)}</td>
+            </tr>
+
+            {/* الحوالات المالية */}
+            {data.fundTransfers?.map((transfer: any, index: number) => {
+              const previousAmount = (data.summary?.carriedForward || 0) + 
+                data.fundTransfers.slice(0, index).reduce((sum: number, t: any) => sum + parseFloat(t.amount), 0);
+              const currentTotal = previousAmount + parseFloat(transfer.amount);
+              
+              return (
+                <tr key={`transfer-${index}`}>
+                  <td>حوالة من المهندس محمد عبر الامتياز رقم الحولة {transfer.transferNumber}</td>
+                  <td className="success-cell">{formatCurrency(currentTotal)}</td>
+                  <td>توريد</td>
+                  <td>حوالة</td>
+                  <td className="success-cell">{formatCurrency(transfer.amount)}</td>
+                </tr>
+              );
+            })}
+
+            {/* حضور العمال */}
+            {data.workerAttendance?.map((attendance: any, index: number) => {
+              const allIncome = (data.summary?.carriedForward || 0) + 
+                (data.fundTransfers?.reduce((sum: number, t: any) => sum + parseFloat(t.amount), 0) || 0);
+              const previousExpenses = data.workerAttendance.slice(0, index).reduce((sum: number, a: any) => sum + parseFloat(a.paidAmount), 0);
+              const currentTotal = allIncome - previousExpenses - parseFloat(attendance.paidAmount);
+              
+              return (
+                <tr key={`attendance-${index}`}>
+                  <td>العمل من الساعة 4:00 الى عصر وحتى الساعة 7:00 صباحا</td>
+                  <td className="warning-cell">{formatCurrency(currentTotal)}</td>
+                  <td>منصرف</td>
+                  <td>مصروف {attendance.worker?.name}</td>
+                  <td className="warning-cell">{formatCurrency(attendance.paidAmount)}</td>
+                </tr>
+              );
+            })}
+
+            {/* مصاريف النقل */}
+            {data.transportationExpenses?.map((expense: any, index: number) => {
+              const allIncome = (data.summary?.carriedForward || 0) + 
+                (data.fundTransfers?.reduce((sum: number, t: any) => sum + parseFloat(t.amount), 0) || 0);
+              const workerExpenses = data.workerAttendance?.reduce((sum: number, a: any) => sum + parseFloat(a.paidAmount), 0) || 0;
+              const previousTransportExpenses = data.transportationExpenses.slice(0, index).reduce((sum: number, e: any) => sum + parseFloat(e.amount), 0);
+              const currentTotal = allIncome - workerExpenses - previousTransportExpenses - parseFloat(expense.amount);
+              
+              return (
+                <tr key={`transport-${index}`}>
+                  <td>{expense.description}</td>
+                  <td className="warning-cell">{formatCurrency(currentTotal)}</td>
+                  <td>منصرف</td>
+                  <td>نثريات</td>
+                  <td className="warning-cell">{formatCurrency(expense.amount)}</td>
+                </tr>
+              );
+            })}
+
+            {/* المواد المشتراة */}
+            {data.materialPurchases?.map((purchase: any, index: number) => {
+              const allIncome = (data.summary?.carriedForward || 0) + 
+                (data.fundTransfers?.reduce((sum: number, t: any) => sum + parseFloat(t.amount), 0) || 0);
+              const workerExpenses = data.workerAttendance?.reduce((sum: number, a: any) => sum + parseFloat(a.paidAmount), 0) || 0;
+              const transportExpenses = data.transportationExpenses?.reduce((sum: number, e: any) => sum + parseFloat(e.amount), 0) || 0;
+              const previousMaterialExpenses = data.materialPurchases.slice(0, index).reduce((sum: number, p: any) => sum + parseFloat(p.totalAmount), 0);
+              const currentTotal = allIncome - workerExpenses - transportExpenses - previousMaterialExpenses - parseFloat(purchase.totalAmount);
+              
+              return (
+                <tr key={`material-${index}`}>
+                  <td>مع سلطان حق طريق بمصروف له و موسى عبدالحكيم</td>
+                  <td className="warning-cell">{formatCurrency(currentTotal)}</td>
+                  <td>منصرف</td>
+                  <td>مع المهندس</td>
+                  <td className="warning-cell">{formatCurrency(purchase.totalAmount)}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+
+        {/* المبلغ المتبقي النهائي */}
+        <div className="grand-total">
+          المبلغ المتبقي
+          <br />
+          <span className="large-number">{formatCurrency(data.summary?.netBalance || 0)}</span>
+        </div>
+
+        {/* معلومات المشروع */}
+        <div className="notes-section">
+          <div className="notes-header">الملاحظات</div>
+          <table style={{ width: '100%', background: 'white', border: '1px solid #bdc3c7' }}>
+            <tr style={{ background: '#3498db', color: 'white' }}>
+              <th style={{ padding: '10px', border: '1px solid #2c3e50' }}>محل التوريد</th>
+              <th style={{ padding: '10px', border: '1px solid #2c3e50' }}>اسم المشروع</th>
+            </tr>
+            <tr>
+              <td style={{ padding: '15px', border: '1px solid #bdc3c7', textAlign: 'center' }}>
+                ابراهيم نجم الدين
+              </td>
+              <td style={{ padding: '15px', border: '1px solid #bdc3c7', textAlign: 'center' }}>
+                {data.project?.name}
+              </td>
+            </tr>
+          </table>
+        </div>
+
+        {/* تذييل التقرير */}
+        <div className="report-footer">
+          تم إنشاء هذا التقرير تلقائياً بواسطة نظام إدارة المشاريع الإنشائية
+          <br />
+          التاريخ: {formatDate(new Date())} | الوقت: {new Date().toLocaleTimeString('ar-EG')}
+        </div>
       </div>
     </div>
   );
