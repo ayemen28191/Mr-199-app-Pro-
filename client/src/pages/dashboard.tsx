@@ -4,14 +4,19 @@ import { useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Receipt, ShoppingCart, BarChart } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Clock, Receipt, ShoppingCart, BarChart, Plus, Users } from "lucide-react";
 import ProjectSelector from "@/components/project-selector";
+import AddProjectForm from "@/components/forms/add-project-form";
+import AddWorkerForm from "@/components/forms/add-worker-form";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import type { Project, DailyExpenseSummary } from "@shared/schema";
 
 export default function Dashboard() {
   const [, setLocation] = useLocation();
   const [selectedProjectId, setSelectedProjectId] = useState<string>("");
+  const [showAddProject, setShowAddProject] = useState(false);
+  const [showAddWorker, setShowAddWorker] = useState(false);
 
   const { data: projects = [] } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
@@ -61,6 +66,39 @@ export default function Dashboard() {
 
   return (
     <div className="p-4 fade-in">
+      {/* Management Buttons */}
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        <Dialog open={showAddProject} onOpenChange={setShowAddProject}>
+          <DialogTrigger asChild>
+            <Button variant="outline" className="h-12 border-2 border-dashed">
+              <Plus className="ml-2 h-4 w-4" />
+              إضافة مشروع
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>إضافة مشروع جديد</DialogTitle>
+            </DialogHeader>
+            <AddProjectForm onSuccess={() => setShowAddProject(false)} />
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showAddWorker} onOpenChange={setShowAddWorker}>
+          <DialogTrigger asChild>
+            <Button variant="outline" className="h-12 border-2 border-dashed">
+              <Users className="ml-2 h-4 w-4" />
+              إضافة عامل
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>إضافة عامل جديد</DialogTitle>
+            </DialogHeader>
+            <AddWorkerForm onSuccess={() => setShowAddWorker(false)} />
+          </DialogContent>
+        </Dialog>
+      </div>
+
       <ProjectSelector
         selectedProjectId={selectedProjectId}
         onProjectChange={setSelectedProjectId}

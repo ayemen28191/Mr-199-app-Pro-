@@ -6,21 +6,23 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Combobox } from "@/components/ui/combobox";
 import { useToast } from "@/hooks/use-toast";
 import ProjectSelector from "@/components/project-selector";
 import { getCurrentDate } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
-import type { Material, InsertMaterialPurchase } from "@shared/schema";
+import type { Material, InsertMaterialPurchase, InsertMaterial } from "@shared/schema";
 
 export default function MaterialPurchase() {
   const [, setLocation] = useLocation();
   const [selectedProjectId, setSelectedProjectId] = useState<string>("");
   
   // Form states
-  const [materialId, setMaterialId] = useState<string>("");
+  const [materialName, setMaterialName] = useState<string>("");
+  const [materialCategory, setMaterialCategory] = useState<string>("");
+  const [materialUnit, setMaterialUnit] = useState<string>("");
   const [quantity, setQuantity] = useState<string>("");
   const [unitPrice, setUnitPrice] = useState<string>("");
   const [purchaseType, setPurchaseType] = useState<string>("نقد");
@@ -37,8 +39,40 @@ export default function MaterialPurchase() {
     queryKey: ["/api/materials"],
   });
 
+  const addMaterialMutation = useMutation({
+    mutationFn: (data: InsertMaterial) => apiRequest("POST", "/api/materials", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/materials"] });
+    },
+  });
+
+  // Get unique material names, categories, units, and suppliers
+  const materialNames = materials.map(m => m.name);
+  const materialCategories = Array.from(new Set(materials.map(m => m.category)));
+  const materialUnits = Array.from(new Set(materials.map(m => m.unit)));
+  const existingSuppliers = ["متجر الإعمار", "مؤسسة البناء", "شركة المواد"]; // Will be dynamic later
+
   const addMaterialPurchaseMutation = useMutation({
-    mutationFn: (data: InsertMaterialPurchase) => apiRequest("POST", "/api/material-purchases", data),
+    mutationFn: async (data: InsertMaterialPurchase & { materialName: string; materialCategory: string; materialUnit: string }) => {
+      // First, create material if it doesn't exist
+      let materialId = materials.find(m => m.name === data.materialName && m.unit === data.materialUnit)?.id;
+      
+      if (!materialId) {
+        const newMaterial: any = await addMaterialMutation.mutateAsync({
+          name: data.materialName,
+          category: data.materialCategory,
+          unit: data.materialUnit,
+        });
+        materialId = newMaterial.id;
+      }
+
+      // Then create the purchase
+      const { materialName: _, materialCategory: __, materialUnit: ___, ...purchaseData } = data;
+      return apiRequest("POST", "/api/material-purchases", {
+        ...purchaseData,
+        materialId,
+      });
+    },
     onSuccess: () => {
       toast({
         title: "تم الحفظ",
@@ -57,7 +91,9 @@ export default function MaterialPurchase() {
   });
 
   const resetForm = () => {
-    setMaterialId("");
+    setMaterialName("");
+    setMaterialCategory("");
+    setMaterialUnit("");
     setQuantity("");
     setUnitPrice("");
     setPurchaseType("نقد");
@@ -85,8 +121,9 @@ export default function MaterialPurchase() {
     }
   };
 
+
   const handleSave = (saveAndAddAnother = false) => {
-    if (!selectedProjectId || !materialId || !quantity || !unitPrice) {
+    if (!selectedProjectId || !materialName || !materialUnit || !quantity || !unitPrice) {
       toast({
         title: "خطأ",
         description: "يرجى ملء جميع البيانات المطلوبة",
@@ -99,7 +136,9 @@ export default function MaterialPurchase() {
 
     addMaterialPurchaseMutation.mutate({
       projectId: selectedProjectId,
-      materialId,
+      materialName,
+      materialCategory: materialCategory || "عام",
+      materialUnit,
       quantity,
       unitPrice,
       totalAmount,
@@ -116,8 +155,6 @@ export default function MaterialPurchase() {
       setLocation("/daily-expenses");
     }
   };
-
-  const selectedMaterial = materials.find(m => m.id === materialId);
 
   return (
     <div className="p-4 slide-in">
@@ -143,21 +180,28 @@ export default function MaterialPurchase() {
       <Card className="mb-4">
         <CardContent className="p-4">
           <div className="space-y-4">
+            {/* Material Name */}
+            <div>
+              <Label className="block text-sm font-medium text-foreground mb-2">اسم المادة</Label>
+              <Combobox
+                value={materialName}
+                onValueChange={setMaterialName}
+                options={materialNames}
+                placeholder="اختر أو أدخل اسم المادة..."
+                customPlaceholder="إضافة مادة جديدة"
+              />
+            </div>
+
             {/* Material Category */}
             <div>
-              <Label className="block text-sm font-medium text-foreground mb-2">نوع المادة</Label>
-              <Select value={materialId} onValueChange={setMaterialId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="اختر نوع المادة..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {materials.map((material) => (
-                    <SelectItem key={material.id} value={material.id}>
-                      {material.name} ({material.unit})
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label className="block text-sm font-medium text-foreground mb-2">فئة المادة</Label>
+              <Combobox
+                value={materialCategory}
+                onValueChange={setMaterialCategory}
+                options={materialCategories}
+                placeholder="اختر أو أدخل فئة المادة..."
+                customPlaceholder="إضافة فئة جديدة"
+              />
             </div>
 
             {/* Material Details */}
@@ -174,11 +218,12 @@ export default function MaterialPurchase() {
               </div>
               <div>
                 <Label className="block text-sm font-medium text-foreground mb-2">الوحدة</Label>
-                <Input
-                  type="text"
-                  value={selectedMaterial?.unit || ""}
-                  readOnly
-                  className="bg-muted"
+                <Combobox
+                  value={materialUnit}
+                  onValueChange={setMaterialUnit}
+                  options={materialUnits}
+                  placeholder="اختر أو أدخل الوحدة..."
+                  customPlaceholder="إضافة وحدة جديدة"
                 />
               </div>
             </div>
@@ -228,11 +273,12 @@ export default function MaterialPurchase() {
             {/* Supplier/Store */}
             <div>
               <Label className="block text-sm font-medium text-foreground mb-2">اسم المورد/المحل</Label>
-              <Input
-                type="text"
+              <Combobox
                 value={supplierName}
-                onChange={(e) => setSupplierName(e.target.value)}
-                placeholder="اسم المورد أو المحل"
+                onValueChange={setSupplierName}
+                options={existingSuppliers}
+                placeholder="اختر أو أدخل اسم المورد..."
+                customPlaceholder="إضافة مورد جديد"
               />
             </div>
 

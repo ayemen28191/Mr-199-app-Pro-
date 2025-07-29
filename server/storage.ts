@@ -89,7 +89,12 @@ export class MemStorage implements IStorage {
 
   async createProject(project: InsertProject): Promise<Project> {
     const id = randomUUID();
-    const newProject: Project = { ...project, id, createdAt: new Date() };
+    const newProject: Project = { 
+      ...project, 
+      id, 
+      createdAt: new Date(),
+      status: project.status || 'active'
+    };
     this.projects.set(id, newProject);
     return newProject;
   }
@@ -114,7 +119,12 @@ export class MemStorage implements IStorage {
 
   async createWorker(worker: InsertWorker): Promise<Worker> {
     const id = randomUUID();
-    const newWorker: Worker = { ...worker, id, createdAt: new Date() };
+    const newWorker: Worker = { 
+      ...worker, 
+      id, 
+      createdAt: new Date(),
+      isActive: worker.isActive !== false
+    };
     this.workers.set(id, newWorker);
     return newWorker;
   }
@@ -137,7 +147,14 @@ export class MemStorage implements IStorage {
 
   async createFundTransfer(transfer: InsertFundTransfer): Promise<FundTransfer> {
     const id = randomUUID();
-    const newTransfer: FundTransfer = { ...transfer, id, createdAt: new Date() };
+    const newTransfer: FundTransfer = { 
+      ...transfer, 
+      id, 
+      createdAt: new Date(),
+      senderName: transfer.senderName || null,
+      transferNumber: transfer.transferNumber || null,
+      notes: transfer.notes || null
+    };
     this.fundTransfers.set(id, newTransfer);
     return newTransfer;
   }
@@ -151,7 +168,14 @@ export class MemStorage implements IStorage {
 
   async createWorkerAttendance(attendance: InsertWorkerAttendance): Promise<WorkerAttendance> {
     const id = randomUUID();
-    const newAttendance: WorkerAttendance = { ...attendance, id, createdAt: new Date() };
+    const newAttendance: WorkerAttendance = { 
+      ...attendance, 
+      id, 
+      createdAt: new Date(),
+      startTime: attendance.startTime || null,
+      endTime: attendance.endTime || null,
+      workDescription: attendance.workDescription || null
+    };
     this.workerAttendance.set(id, newAttendance);
     return newAttendance;
   }
@@ -191,7 +215,16 @@ export class MemStorage implements IStorage {
 
   async createMaterialPurchase(purchase: InsertMaterialPurchase): Promise<MaterialPurchase> {
     const id = randomUUID();
-    const newPurchase: MaterialPurchase = { ...purchase, id, createdAt: new Date() };
+    const newPurchase: MaterialPurchase = { 
+      ...purchase, 
+      id, 
+      createdAt: new Date(),
+      notes: purchase.notes || null,
+      supplierName: purchase.supplierName || null,
+      invoiceNumber: purchase.invoiceNumber || null,
+      invoiceDate: purchase.invoiceDate || null,
+      invoicePhoto: purchase.invoicePhoto || null
+    };
     this.materialPurchases.set(id, newPurchase);
     return newPurchase;
   }
@@ -205,7 +238,13 @@ export class MemStorage implements IStorage {
 
   async createTransportationExpense(expense: InsertTransportationExpense): Promise<TransportationExpense> {
     const id = randomUUID();
-    const newExpense: TransportationExpense = { ...expense, id, createdAt: new Date() };
+    const newExpense: TransportationExpense = { 
+      ...expense, 
+      id, 
+      createdAt: new Date(),
+      notes: expense.notes || null,
+      workerId: expense.workerId || null
+    };
     this.transportationExpenses.set(id, newExpense);
     return newExpense;
   }
@@ -226,7 +265,16 @@ export class MemStorage implements IStorage {
       return updated;
     } else {
       const id = randomUUID();
-      const newSummary: DailyExpenseSummary = { ...summary, id, createdAt: new Date() };
+      const newSummary: DailyExpenseSummary = { 
+        ...summary, 
+        id, 
+        createdAt: new Date(),
+        carriedForwardAmount: summary.carriedForwardAmount || '0',
+        totalFundTransfers: summary.totalFundTransfers || '0',
+        totalWorkerWages: summary.totalWorkerWages || '0',
+        totalMaterialCosts: summary.totalMaterialCosts || '0',
+        totalTransportationCosts: summary.totalTransportationCosts || '0'
+      };
       this.dailyExpenseSummaries.set(id, newSummary);
       return newSummary;
     }
