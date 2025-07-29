@@ -90,7 +90,7 @@ export default function DailyExpenses() {
     queryKey: ["/api/projects", selectedProjectId, "previous-balance", selectedDate],
     queryFn: async () => {
       const response = await apiRequest("GET", `/api/projects/${selectedProjectId}/previous-balance/${selectedDate}`);
-      return response as { balance: string };
+      return { balance: String(response || "0") };
     },
     enabled: !!selectedProjectId && !!selectedDate,
   });
@@ -195,7 +195,7 @@ export default function DailyExpenses() {
       senderName,
       transferNumber,
       transferType,
-      transferDate: selectedDate,
+      transferDate: new Date(selectedDate + 'T12:00:00.000Z'),
       notes: "",
     });
   };
@@ -245,6 +245,7 @@ export default function DailyExpenses() {
       totalTransportation,
       totalMaterialCosts,
       totalWorkerTransfers,
+      totalFundTransfers,
       totalIncome,
       totalExpenses,
       remainingBalance,
@@ -267,9 +268,9 @@ export default function DailyExpenses() {
       projectId: selectedProjectId,
       date: selectedDate,
       carriedForwardAmount: carriedForward,
-      totalFundTransfers: fundAmount || "0",
+      totalFundTransfers: totals.totalFundTransfers.toString(),
       totalWorkerWages: totals.totalWorkerWages.toString(),
-      totalMaterialCosts: "0", // Will be updated when materials are added
+      totalMaterialCosts: totals.totalMaterialCosts.toString(),
       totalTransportationCosts: totals.totalTransportation.toString(),
       totalIncome: totals.totalIncome.toString(),
       totalExpenses: totals.totalExpenses.toString(),
@@ -380,7 +381,7 @@ export default function DailyExpenses() {
                 <div className="text-left pt-2 border-t">
                   <span className="text-sm text-muted-foreground">إجمالي العهد: </span>
                   <span className="font-bold text-primary arabic-numbers">
-                    {formatCurrency(totalFundTransfers)}
+                    {formatCurrency(totals.totalFundTransfers)}
                   </span>
                 </div>
               </div>
