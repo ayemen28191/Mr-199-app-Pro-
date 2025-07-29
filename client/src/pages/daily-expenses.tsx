@@ -54,18 +54,20 @@ export default function DailyExpenses() {
     enabled: !!selectedProjectId,
   });
 
-  const { data: todayMaterialPurchases = [] } = useQuery<MaterialPurchase[]>({
-    queryKey: ["/api/projects", selectedProjectId, "material-purchases"],
-    queryFn: () => apiRequest("GET", `/api/projects/${selectedProjectId}/material-purchases?dateFrom=${selectedDate}&dateTo=${selectedDate}`),
+  const { data: todayMaterialPurchases = [] } = useQuery({
+    queryKey: ["/api/projects", selectedProjectId, "material-purchases", selectedDate],
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/projects/${selectedProjectId}/material-purchases?dateFrom=${selectedDate}&dateTo=${selectedDate}`);
+      return Array.isArray(response) ? response as MaterialPurchase[] : [];
+    },
     enabled: !!selectedProjectId,
   });
 
-  const { data: todayWorkerTransfers = [] } = useQuery<WorkerTransfer[]>({
+  const { data: todayWorkerTransfers = [] } = useQuery({
     queryKey: ["/api/worker-transfers", selectedProjectId, selectedDate],
     queryFn: async () => {
-      // Get all transfers for today for this project
-      const allTransfers = await apiRequest("GET", `/api/worker-transfers?projectId=${selectedProjectId}&date=${selectedDate}`);
-      return Array.isArray(allTransfers) ? allTransfers : [];
+      const response = await apiRequest("GET", `/api/worker-transfers?projectId=${selectedProjectId}&date=${selectedDate}`);
+      return Array.isArray(response) ? response as WorkerTransfer[] : [];
     },
     enabled: !!selectedProjectId,
   });
@@ -157,14 +159,10 @@ export default function DailyExpenses() {
       (sum, expense) => sum + parseFloat(expense.amount || "0"), 
       0
     );
-    const totalMaterialCosts = todayMaterialPurchases.reduce(
-      (sum, purchase) => sum + parseFloat(purchase.totalAmount || "0"), 
-      0
-    );
-    const totalWorkerTransfers = todayWorkerTransfers.reduce(
-      (sum, transfer) => sum + parseFloat(transfer.amount || "0"), 
-      0
-    );
+    const totalMaterialCosts = Array.isArray(todayMaterialPurchases) ? 
+      todayMaterialPurchases.reduce((sum, purchase) => sum + parseFloat(purchase.totalAmount || "0"), 0) : 0;
+    const totalWorkerTransfers = Array.isArray(todayWorkerTransfers) ? 
+      todayWorkerTransfers.reduce((sum, transfer) => sum + parseFloat(transfer.amount || "0"), 0) : 0;
     const fundTransferAmount = parseFloat(fundAmount) || 0;
     const carriedAmount = parseFloat(carriedForward) || 0;
     
@@ -381,7 +379,7 @@ export default function DailyExpenses() {
             <Package className="text-success ml-2 h-5 w-5" />
             شراء مواد
           </h4>
-          {todayMaterialPurchases.length === 0 ? (
+          {!Array.isArray(todayMaterialPurchases) || todayMaterialPurchases.length === 0 ? (
             <p className="text-muted-foreground text-sm mb-3">لا توجد مشتريات لهذا اليوم</p>
           ) : (
             <div className="space-y-2 mb-3">
@@ -417,7 +415,7 @@ export default function DailyExpenses() {
             <DollarSign className="text-warning ml-2 h-5 w-5" />
             عهد العمال
           </h4>
-          {todayWorkerTransfers.length === 0 ? (
+          {!Array.isArray(todayWorkerTransfers) || todayWorkerTransfers.length === 0 ? (
             <p className="text-muted-foreground text-sm mb-3">لا توجد عهد لهذا اليوم</p>
           ) : (
             <div className="space-y-2 mb-3">
