@@ -9,7 +9,7 @@ import {
   workerTransfers, workerBalances
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, gte, lte } from "drizzle-orm";
 import { randomUUID } from "crypto";
 
 export interface IStorage {
@@ -469,18 +469,24 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getFundTransfers(projectId: string, date?: string): Promise<FundTransfer[]> {
-    if (date) {
-      // البحث بناءً على التاريخ بدون الوقت
-      const result = await db.select().from(fundTransfers)
-        .where(and(
-          eq(fundTransfers.projectId, projectId),
-          sql`DATE(${fundTransfers.transferDate}) = ${date}`
-        ));
-      return result;
-    } else {
-      const result = await db.select().from(fundTransfers)
-        .where(eq(fundTransfers.projectId, projectId));
-      return result;
+    try {
+      if (date) {
+        // جلب جميع العهد للمشروع
+        const allTransfers = await db.select().from(fundTransfers)
+          .where(eq(fundTransfers.projectId, projectId));
+        
+        // تصفية بالتاريخ في الكود 
+        return allTransfers.filter(transfer => {
+          const transferDateStr = transfer.transferDate.toISOString().split('T')[0];
+          return transferDateStr === date;
+        });
+      } else {
+        return await db.select().from(fundTransfers)
+          .where(eq(fundTransfers.projectId, projectId));
+      }
+    } catch (error) {
+      console.error("Error in getFundTransfers:", error);
+      throw error;
     }
   }
 

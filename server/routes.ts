@@ -74,10 +74,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/projects/:projectId/fund-transfers", async (req, res) => {
     try {
       const date = req.query.date as string;
+      console.log(`Getting fund transfers for project ${req.params.projectId}, date: ${date}`);
       const transfers = await storage.getFundTransfers(req.params.projectId, date);
+      console.log(`Found ${transfers.length} transfers`);
       res.json(transfers);
     } catch (error) {
-      res.status(500).json({ message: "Error fetching fund transfers" });
+      console.error("Error fetching fund transfers:", error);
+      res.status(500).json({ message: "Error fetching fund transfers", error: error.message });
     }
   });
 
