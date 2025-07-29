@@ -85,10 +85,8 @@ export default function DailyExpenses() {
   const { data: todayFundTransfers = [], refetch: refetchFundTransfers } = useQuery({
     queryKey: ["/api/projects", selectedProjectId, "fund-transfers", selectedDate],
     queryFn: async () => {
-      console.log("Making fund transfers request:", { selectedProjectId, selectedDate });
       const response = await apiRequest("GET", `/api/projects/${selectedProjectId}/fund-transfers?date=${selectedDate}`);
       console.log("Fund transfers response:", response);
-      console.log("Response type:", typeof response, "Is array:", Array.isArray(response));
       return Array.isArray(response) ? response as FundTransfer[] : [];
     },
     enabled: !!selectedProjectId && !!selectedDate,
@@ -375,9 +373,6 @@ export default function DailyExpenses() {
             </div>
             
             {/* عرض العهد المضافة لهذا اليوم */}
-            <div className="mt-3 p-2 bg-yellow-100 rounded text-xs">
-              تدقيق: العهد = {todayFundTransfers.length} | نوع البيانات: {Array.isArray(todayFundTransfers) ? 'array' : typeof todayFundTransfers}
-            </div>
             {Array.isArray(todayFundTransfers) && todayFundTransfers.length > 0 && (
               <div className="space-y-2 mt-3 pt-3 border-t">
                 <h5 className="text-sm font-medium text-muted-foreground">العهد المضافة اليوم:</h5>
