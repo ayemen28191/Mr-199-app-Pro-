@@ -44,7 +44,10 @@ export const workerAttendance = pgTable("worker_attendance", {
   endTime: text("end_time"), // HH:MM format
   workDescription: text("work_description"),
   isPresent: boolean("is_present").notNull(),
-  dailyWage: decimal("daily_wage", { precision: 10, scale: 2 }).notNull(),
+  dailyWage: decimal("daily_wage", { precision: 10, scale: 2 }).notNull(), // الأجر اليومي الكامل
+  paidAmount: decimal("paid_amount", { precision: 10, scale: 2 }).default('0').notNull(), // المبلغ المدفوع فعلياً (الصرف)
+  remainingAmount: decimal("remaining_amount", { precision: 10, scale: 2 }).default('0').notNull(), // المتبقي في حساب العامل
+  paymentType: text("payment_type").notNull().default("partial"), // "full" | "partial" | "credit"
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -87,6 +90,33 @@ export const transportationExpenses = pgTable("transportation_expenses", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Worker balance transfers (حوالات الحساب للأهالي)
+export const workerTransfers = pgTable("worker_transfers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  workerId: varchar("worker_id").notNull().references(() => workers.id),
+  projectId: varchar("project_id").notNull().references(() => projects.id),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  recipientName: text("recipient_name").notNull(), // اسم المستلم (الأهل)
+  recipientPhone: text("recipient_phone"), // رقم هاتف المستلم
+  transferMethod: text("transfer_method").notNull(), // "hawaleh" | "bank" | "cash"
+  transferDate: text("transfer_date").notNull(), // YYYY-MM-DD format
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Worker account balances (أرصدة حسابات العمال)
+export const workerBalances = pgTable("worker_balances", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  workerId: varchar("worker_id").notNull().references(() => workers.id),
+  projectId: varchar("project_id").notNull().references(() => projects.id),
+  totalEarned: decimal("total_earned", { precision: 10, scale: 2 }).default('0').notNull(), // إجمالي المكتسب
+  totalPaid: decimal("total_paid", { precision: 10, scale: 2 }).default('0').notNull(), // إجمالي المدفوع
+  totalTransferred: decimal("total_transferred", { precision: 10, scale: 2 }).default('0').notNull(), // إجمالي المحول للأهل
+  currentBalance: decimal("current_balance", { precision: 10, scale: 2 }).default('0').notNull(), // الرصيد الحالي
+  lastUpdated: timestamp("last_updated").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Daily expense summaries (ملخص المصروفات اليومية)
 export const dailyExpenseSummaries = pgTable("daily_expense_summaries", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -111,6 +141,8 @@ export const insertWorkerAttendanceSchema = createInsertSchema(workerAttendance)
 export const insertMaterialSchema = createInsertSchema(materials).omit({ id: true, createdAt: true });
 export const insertMaterialPurchaseSchema = createInsertSchema(materialPurchases).omit({ id: true, createdAt: true });
 export const insertTransportationExpenseSchema = createInsertSchema(transportationExpenses).omit({ id: true, createdAt: true });
+export const insertWorkerTransferSchema = createInsertSchema(workerTransfers).omit({ id: true, createdAt: true });
+export const insertWorkerBalanceSchema = createInsertSchema(workerBalances).omit({ id: true, createdAt: true, lastUpdated: true });
 export const insertDailyExpenseSummarySchema = createInsertSchema(dailyExpenseSummaries).omit({ id: true, createdAt: true });
 
 // Type definitions
@@ -121,6 +153,8 @@ export type WorkerAttendance = typeof workerAttendance.$inferSelect;
 export type Material = typeof materials.$inferSelect;
 export type MaterialPurchase = typeof materialPurchases.$inferSelect;
 export type TransportationExpense = typeof transportationExpenses.$inferSelect;
+export type WorkerTransfer = typeof workerTransfers.$inferSelect;
+export type WorkerBalance = typeof workerBalances.$inferSelect;
 export type DailyExpenseSummary = typeof dailyExpenseSummaries.$inferSelect;
 
 export type InsertProject = z.infer<typeof insertProjectSchema>;
@@ -130,4 +164,6 @@ export type InsertWorkerAttendance = z.infer<typeof insertWorkerAttendanceSchema
 export type InsertMaterial = z.infer<typeof insertMaterialSchema>;
 export type InsertMaterialPurchase = z.infer<typeof insertMaterialPurchaseSchema>;
 export type InsertTransportationExpense = z.infer<typeof insertTransportationExpenseSchema>;
+export type InsertWorkerTransfer = z.infer<typeof insertWorkerTransferSchema>;
+export type InsertWorkerBalance = z.infer<typeof insertWorkerBalanceSchema>;
 export type InsertDailyExpenseSummary = z.infer<typeof insertDailyExpenseSummarySchema>;

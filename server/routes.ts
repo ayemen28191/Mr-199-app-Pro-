@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import { 
   insertProjectSchema, insertWorkerSchema, insertFundTransferSchema, 
   insertWorkerAttendanceSchema, insertMaterialSchema, insertMaterialPurchaseSchema,
-  insertTransportationExpenseSchema, insertDailyExpenseSummarySchema
+  insertTransportationExpenseSchema, insertDailyExpenseSummarySchema, insertWorkerTransferSchema
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -236,6 +236,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(statement);
     } catch (error) {
       res.status(500).json({ message: "Error fetching worker account statement" });
+    }
+  });
+
+  // Worker balances
+  app.get("/api/workers/:workerId/balance/:projectId", async (req, res) => {
+    const { workerId, projectId } = req.params;
+    
+    try {
+      const balance = await storage.getWorkerBalance(workerId, projectId);
+      res.json(balance);
+    } catch (error) {
+      console.error("Error fetching worker balance:", error);
+      res.status(500).json({ message: "Failed to fetch worker balance" });
+    }
+  });
+
+  // Worker transfers
+  app.get("/api/workers/:workerId/transfers", async (req, res) => {
+    const { workerId } = req.params;
+    const projectId = req.query.projectId as string;
+    
+    try {
+      const transfers = await storage.getWorkerTransfers(workerId, projectId);
+      res.json(transfers);
+    } catch (error) {
+      console.error("Error fetching worker transfers:", error);
+      res.status(500).json({ message: "Failed to fetch worker transfers" });
+    }
+  });
+
+  app.post("/api/worker-transfers", async (req, res) => {
+    try {
+      const validationResult = insertWorkerTransferSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          message: "Invalid worker transfer data", 
+          errors: validationResult.error.errors 
+        });
+      }
+
+      const transfer = await storage.createWorkerTransfer(validationResult.data);
+      
+      // Update worker balance after transfer
+      const currentBalance = await storage.getWorkerBalance(transfer.workerId, transfer.projectId);
+      if (currentBalance) {
+        const newTotalTransferred = parseFloat(currentBalance.totalTransferred) + parseFloat(transfer.amount);
+        const newCurrentBalance = parseFloat(currentBalance.currentBalance) - parseFloat(transfer.amount);
+        
+        await storage.updateWorkerBalance(transfer.workerId, transfer.projectId, {
+          totalTransferred: newTotalTransferred.toString(),
+          currentBalance: newCurrentBalance.toString(),
+        });
+      }
+      
+      res.status(201).json(transfer);
+    } catch (error) {
+      console.error("Error creating worker transfer:", error);
+      res.status(500).json({ message: "Failed to create worker transfer" });
     }
   });
 

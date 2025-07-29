@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import ProjectSelector from "@/components/project-selector";
-import WorkerCard from "@/components/worker-card";
+import EnhancedWorkerCard from "@/components/enhanced-worker-card";
 import { getCurrentDate } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
 import type { Worker, InsertWorkerAttendance } from "@shared/schema";
@@ -19,6 +19,8 @@ interface AttendanceData {
     startTime?: string;
     endTime?: string;
     workDescription?: string;
+    paidAmount?: string;
+    paymentType?: string;
   };
 }
 
@@ -78,6 +80,10 @@ export default function WorkerAttendance() {
       .filter(([_, data]) => data.isPresent)
       .map(([workerId, data]) => {
         const worker = workers.find(w => w.id === workerId);
+        const dailyWage = parseFloat(worker?.dailyWage || "0");
+        const paidAmount = parseFloat(data.paidAmount || "0");
+        const remainingAmount = dailyWage - paidAmount;
+        
         return {
           projectId: selectedProjectId,
           workerId,
@@ -87,6 +93,9 @@ export default function WorkerAttendance() {
           workDescription: data.workDescription || "",
           isPresent: true,
           dailyWage: worker?.dailyWage || "0",
+          paidAmount: paidAmount.toString(),
+          remainingAmount: remainingAmount.toString(),
+          paymentType: data.paymentType || "partial",
         };
       });
 

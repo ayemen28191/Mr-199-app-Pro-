@@ -1,9 +1,12 @@
 import { 
   type Project, type Worker, type FundTransfer, type WorkerAttendance, 
   type Material, type MaterialPurchase, type TransportationExpense, type DailyExpenseSummary,
+  type WorkerTransfer, type WorkerBalance,
   type InsertProject, type InsertWorker, type InsertFundTransfer, type InsertWorkerAttendance,
   type InsertMaterial, type InsertMaterialPurchase, type InsertTransportationExpense, type InsertDailyExpenseSummary,
-  projects, workers, fundTransfers, workerAttendance, materials, materialPurchases, transportationExpenses, dailyExpenseSummaries
+  type InsertWorkerTransfer, type InsertWorkerBalance,
+  projects, workers, fundTransfers, workerAttendance, materials, materialPurchases, transportationExpenses, dailyExpenseSummaries,
+  workerTransfers, workerBalances
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and } from "drizzle-orm";
@@ -47,6 +50,14 @@ export interface IStorage {
   getDailyExpenseSummary(projectId: string, date: string): Promise<DailyExpenseSummary | undefined>;
   createOrUpdateDailyExpenseSummary(summary: InsertDailyExpenseSummary): Promise<DailyExpenseSummary>;
   
+  // Worker Balance Management
+  getWorkerBalance(workerId: string, projectId: string): Promise<WorkerBalance | undefined>;
+  updateWorkerBalance(workerId: string, projectId: string, balance: Partial<InsertWorkerBalance>): Promise<WorkerBalance>;
+  
+  // Worker Transfers
+  getWorkerTransfers(workerId: string, projectId?: string): Promise<WorkerTransfer[]>;
+  createWorkerTransfer(transfer: InsertWorkerTransfer): Promise<WorkerTransfer>;
+  
   // Reports
   getWorkerAccountStatement(workerId: string, projectId?: string, dateFrom?: string, dateTo?: string): Promise<WorkerAttendance[]>;
 }
@@ -60,6 +71,8 @@ export class MemStorage implements IStorage {
   private materialPurchases: Map<string, MaterialPurchase> = new Map();
   private transportationExpenses: Map<string, TransportationExpense> = new Map();
   private dailyExpenseSummaries: Map<string, DailyExpenseSummary> = new Map();
+  private workerTransfers: Map<string, WorkerTransfer> = new Map();
+  private workerBalances: Map<string, WorkerBalance> = new Map();
 
   constructor() {
     this.initializeData();
@@ -488,6 +501,55 @@ export class DatabaseStorage implements IStorage {
         .where(eq(workerAttendance.workerId, workerId));
       return result;
     }
+  }
+
+  async getWorkerBalance(workerId: string, projectId: string): Promise<WorkerBalance | undefined> {
+    const [balance] = await db.select().from(workerBalances)
+      .where(and(eq(workerBalances.workerId, workerId), eq(workerBalances.projectId, projectId)));
+    return balance || undefined;
+  }
+
+  async updateWorkerBalance(workerId: string, projectId: string, balance: Partial<InsertWorkerBalance>): Promise<WorkerBalance> {
+    const existing = await this.getWorkerBalance(workerId, projectId);
+    
+    if (existing) {
+      const [updated] = await db
+        .update(workerBalances)
+        .set({ ...balance, lastUpdated: new Date() })
+        .where(eq(workerBalances.id, existing.id))
+        .returning();
+      return updated;
+    } else {
+      const [newBalance] = await db
+        .insert(workerBalances)
+        .values({
+          workerId,
+          projectId,
+          ...balance,
+        })
+        .returning();
+      return newBalance;
+    }
+  }
+
+  async getWorkerTransfers(workerId: string, projectId?: string): Promise<WorkerTransfer[]> {
+    if (projectId) {
+      const result = await db.select().from(workerTransfers)
+        .where(and(eq(workerTransfers.workerId, workerId), eq(workerTransfers.projectId, projectId)));
+      return result;
+    } else {
+      const result = await db.select().from(workerTransfers)
+        .where(eq(workerTransfers.workerId, workerId));
+      return result;
+    }
+  }
+
+  async createWorkerTransfer(transfer: InsertWorkerTransfer): Promise<WorkerTransfer> {
+    const [newTransfer] = await db
+      .insert(workerTransfers)
+      .values(transfer)
+      .returning();
+    return newTransfer;
   }
 }
 
