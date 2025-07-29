@@ -186,6 +186,40 @@ export default function DailyExpenses() {
     },
   });
 
+  // Delete mutations
+  const deleteFundTransferMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/fund-transfers/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProjectId, "fund-transfers"] });
+      toast({ title: "تم الحذف", description: "تم حذف العهدة بنجاح" });
+    },
+    onError: () => {
+      toast({ title: "خطأ", description: "حدث خطأ أثناء حذف العهدة", variant: "destructive" });
+    }
+  });
+
+  const deleteTransportationMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/transportation-expenses/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProjectId, "transportation-expenses"] });
+      toast({ title: "تم الحذف", description: "تم حذف مصروف المواصلات بنجاح" });
+    },
+    onError: () => {
+      toast({ title: "خطأ", description: "حدث خطأ أثناء حذف المصروف", variant: "destructive" });
+    }
+  });
+
+  const deleteMaterialPurchaseMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/material-purchases/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProjectId, "material-purchases"] });
+      toast({ title: "تم الحذف", description: "تم حذف شراء المواد بنجاح" });
+    },
+    onError: () => {
+      toast({ title: "خطأ", description: "حدث خطأ أثناء حذف الشراء", variant: "destructive" });
+    }
+  });
+
   const handleAddFundTransfer = () => {
     if (!selectedProjectId || !fundAmount || !transferType) {
       toast({
@@ -400,10 +434,8 @@ export default function DailyExpenses() {
                           size="sm" 
                           variant="ghost" 
                           className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                          onClick={() => {
-                            // TODO: إضافة حذف العهدة
-                            toast({ title: "قريباً", description: "سيتم إضافة ميزة الحذف" });
-                          }}
+                          onClick={() => deleteFundTransferMutation.mutate(transfer.id)}
+                          disabled={deleteFundTransferMutation.isPending}
                         >
                           <Trash2 className="h-3 w-3" />
                         </Button>
@@ -509,10 +541,8 @@ export default function DailyExpenses() {
                       size="sm" 
                       variant="ghost" 
                       className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                      onClick={() => {
-                        // TODO: إضافة حذف المواصلات
-                        toast({ title: "قريباً", description: "سيتم إضافة ميزة الحذف" });
-                      }}
+                      onClick={() => deleteTransportationMutation.mutate(expense.id)}
+                      disabled={deleteTransportationMutation.isPending}
                     >
                       <Trash2 className="h-3 w-3" />
                     </Button>
@@ -538,9 +568,9 @@ export default function DailyExpenses() {
               {todayMaterialPurchases.map((purchase, index) => (
                 <div key={index} className="flex justify-between items-center p-2 bg-muted rounded">
                   <div className="text-sm flex-1">
-                    <div>{purchase.material?.name || purchase.materialId || 'مادة غير محددة'}</div>
+                    <div>{purchase.materialId || 'مادة غير محددة'}</div>
                     <div className="text-xs text-muted-foreground">
-                      {purchase.quantity} {purchase.material?.unit} × {formatCurrency(purchase.unitPrice)}
+                      {purchase.quantity} وحدة × {formatCurrency(purchase.unitPrice)}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -561,10 +591,8 @@ export default function DailyExpenses() {
                         size="sm" 
                         variant="ghost" 
                         className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                        onClick={() => {
-                          // TODO: إضافة حذف المواد
-                          toast({ title: "قريباً", description: "سيتم إضافة ميزة الحذف" });
-                        }}
+                        onClick={() => deleteMaterialPurchaseMutation.mutate(purchase.id)}
+                        disabled={deleteMaterialPurchaseMutation.isPending}
                       >
                         <Trash2 className="h-3 w-3" />
                       </Button>

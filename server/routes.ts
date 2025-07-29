@@ -118,6 +118,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/fund-transfers/:id", async (req, res) => {
+    try {
+      await storage.deleteFundTransfer(req.params.id);
+      res.status(200).json({ message: "تم حذف العهدة بنجاح" });
+    } catch (error) {
+      res.status(500).json({ message: "Error deleting fund transfer" });
+    }
+  });
+
   // Worker Attendance
   app.get("/api/projects/:projectId/attendance", async (req, res) => {
     try {
@@ -244,6 +253,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/material-purchases/:id", async (req, res) => {
+    try {
+      await storage.deleteMaterialPurchase(req.params.id);
+      res.status(200).json({ message: "تم حذف شراء المواد بنجاح" });
+    } catch (error) {
+      res.status(500).json({ message: "Error deleting material purchase" });
+    }
+  });
+
   // Transportation Expenses
   app.get("/api/projects/:projectId/transportation-expenses", async (req, res) => {
     try {
@@ -266,6 +284,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(expense);
     } catch (error) {
       res.status(500).json({ message: "Error creating transportation expense" });
+    }
+  });
+
+  app.delete("/api/transportation-expenses/:id", async (req, res) => {
+    try {
+      await storage.deleteTransportationExpense(req.params.id);
+      res.status(200).json({ message: "تم حذف مصروف المواصلات بنجاح" });
+    } catch (error) {
+      res.status(500).json({ message: "Error deleting transportation expense" });
     }
   });
 

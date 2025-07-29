@@ -31,6 +31,7 @@ export interface IStorage {
   getFundTransfers(projectId: string, date?: string): Promise<FundTransfer[]>;
   getFundTransferByNumber(transferNumber: string): Promise<FundTransfer | undefined>;
   createFundTransfer(transfer: InsertFundTransfer): Promise<FundTransfer>;
+  deleteFundTransfer(id: string): Promise<void>;
   
   // Worker Attendance
   getWorkerAttendance(projectId: string, date?: string): Promise<WorkerAttendance[]>;
@@ -45,10 +46,12 @@ export interface IStorage {
   // Material Purchases
   getMaterialPurchases(projectId: string, dateFrom?: string, dateTo?: string): Promise<MaterialPurchase[]>;
   createMaterialPurchase(purchase: InsertMaterialPurchase): Promise<MaterialPurchase>;
+  deleteMaterialPurchase(id: string): Promise<void>;
   
   // Transportation Expenses
   getTransportationExpenses(projectId: string, date?: string): Promise<TransportationExpense[]>;
   createTransportationExpense(expense: InsertTransportationExpense): Promise<TransportationExpense>;
+  deleteTransportationExpense(id: string): Promise<void>;
   
   // Daily Expense Summaries
   getDailyExpenseSummary(projectId: string, date: string): Promise<DailyExpenseSummary | undefined>;
@@ -196,6 +199,10 @@ export class MemStorage implements IStorage {
     return newTransfer;
   }
 
+  async deleteFundTransfer(id: string): Promise<void> {
+    this.fundTransfers.delete(id);
+  }
+
   // Worker Attendance
   async getWorkerAttendance(projectId: string, date?: string): Promise<WorkerAttendance[]> {
     return Array.from(this.workerAttendance.values()).filter(
@@ -275,6 +282,10 @@ export class MemStorage implements IStorage {
     return newPurchase;
   }
 
+  async deleteMaterialPurchase(id: string): Promise<void> {
+    this.materialPurchases.delete(id);
+  }
+
   // Transportation Expenses
   async getTransportationExpenses(projectId: string, date?: string): Promise<TransportationExpense[]> {
     return Array.from(this.transportationExpenses.values()).filter(
@@ -293,6 +304,10 @@ export class MemStorage implements IStorage {
     };
     this.transportationExpenses.set(id, newExpense);
     return newExpense;
+  }
+
+  async deleteTransportationExpense(id: string): Promise<void> {
+    this.transportationExpenses.delete(id);
   }
 
   // Daily Expense Summaries
@@ -528,6 +543,10 @@ export class DatabaseStorage implements IStorage {
     return newTransfer;
   }
 
+  async deleteFundTransfer(id: string): Promise<void> {
+    await db.delete(fundTransfers).where(eq(fundTransfers.id, id));
+  }
+
   async getWorkerAttendance(projectId: string, date?: string): Promise<WorkerAttendance[]> {
     if (date) {
       const result = await db.select().from(workerAttendance)
@@ -658,6 +677,10 @@ export class DatabaseStorage implements IStorage {
     return newPurchase;
   }
 
+  async deleteMaterialPurchase(id: string): Promise<void> {
+    await db.delete(materialPurchases).where(eq(materialPurchases.id, id));
+  }
+
   async getTransportationExpenses(projectId: string, date?: string): Promise<TransportationExpense[]> {
     if (date) {
       const result = await db.select().from(transportationExpenses)
@@ -676,6 +699,10 @@ export class DatabaseStorage implements IStorage {
       .values(expense)
       .returning();
     return newExpense;
+  }
+
+  async deleteTransportationExpense(id: string): Promise<void> {
+    await db.delete(transportationExpenses).where(eq(transportationExpenses.id, id));
   }
 
   async getDailyExpenseSummary(projectId: string, date: string): Promise<DailyExpenseSummary | undefined> {
