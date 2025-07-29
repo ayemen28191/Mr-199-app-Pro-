@@ -27,6 +27,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid project data", errors: result.error.issues });
       }
       
+      // فحص عدم تكرار اسم المشروع
+      const existingProject = await storage.getProjectByName(result.data.name);
+      if (existingProject) {
+        return res.status(400).json({ message: "يوجد مشروع بنفس الاسم مسبقاً" });
+      }
+      
       const project = await storage.createProject(result.data);
       res.status(201).json(project);
     } catch (error) {
@@ -63,6 +69,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid worker data", errors: result.error.issues });
       }
       
+      // فحص عدم تكرار اسم العامل
+      const existingWorker = await storage.getWorkerByName(result.data.name);
+      if (existingWorker) {
+        return res.status(400).json({ message: "يوجد عامل بنفس الاسم مسبقاً" });
+      }
+      
       const worker = await storage.createWorker(result.data);
       res.status(201).json(worker);
     } catch (error) {
@@ -89,6 +101,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = insertFundTransferSchema.safeParse(req.body);
       if (!result.success) {
         return res.status(400).json({ message: "Invalid fund transfer data", errors: result.error.issues });
+      }
+      
+      // فحص عدم تكرار رقم الحوالة إذا كان موجود
+      if (result.data.transferNumber) {
+        const existingTransfer = await storage.getFundTransferByNumber(result.data.transferNumber);
+        if (existingTransfer) {
+          return res.status(400).json({ message: "يوجد تحويل بنفس رقم الحوالة مسبقاً" });
+        }
       }
       
       const transfer = await storage.createFundTransfer(result.data);

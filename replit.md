@@ -6,7 +6,9 @@ This is a full-stack construction project management application built with Reac
 
 ## User Preferences
 
-Preferred communication style: Simple, everyday language.
+- Preferred communication style: Simple, everyday language.
+- Communication language: Arabic
+- Business Rules: No duplicate project names, worker names, or fund transfer numbers allowed
 
 ## System Architecture
 
@@ -115,3 +117,15 @@ The application uses a comprehensive schema designed for construction project ma
 - **Asset optimization** for production performance
 
 The application follows modern full-stack development practices with type safety, proper separation of concerns, and scalable architecture patterns suitable for construction project management workflows.
+
+## Recent Changes
+
+### July 29, 2025
+- ✓ Fixed database connection issues and resolved all TypeScript errors
+- ✓ Added data validation constraints to prevent duplicates:
+  - Project names must be unique across the system
+  - Worker names must be unique across the system  
+  - Fund transfer numbers must be unique when provided
+- ✓ Updated API endpoints with proper error messages in Arabic
+- ✓ Enhanced storage interface with validation methods
+- ✓ Successfully tested all duplicate prevention functionality

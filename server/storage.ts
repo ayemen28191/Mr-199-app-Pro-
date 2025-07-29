@@ -16,17 +16,20 @@ export interface IStorage {
   // Projects
   getProjects(): Promise<Project[]>;
   getProject(id: string): Promise<Project | undefined>;
+  getProjectByName(name: string): Promise<Project | undefined>;
   createProject(project: InsertProject): Promise<Project>;
   updateProject(id: string, project: Partial<InsertProject>): Promise<Project | undefined>;
   
   // Workers
   getWorkers(): Promise<Worker[]>;
   getWorker(id: string): Promise<Worker | undefined>;
+  getWorkerByName(name: string): Promise<Worker | undefined>;
   createWorker(worker: InsertWorker): Promise<Worker>;
   updateWorker(id: string, worker: Partial<InsertWorker>): Promise<Worker | undefined>;
   
   // Fund Transfers
   getFundTransfers(projectId: string, date?: string): Promise<FundTransfer[]>;
+  getFundTransferByNumber(transferNumber: string): Promise<FundTransfer | undefined>;
   createFundTransfer(transfer: InsertFundTransfer): Promise<FundTransfer>;
   
   // Worker Attendance
@@ -107,6 +110,10 @@ export class MemStorage implements IStorage {
     return this.projects.get(id);
   }
 
+  async getProjectByName(name: string): Promise<Project | undefined> {
+    return Array.from(this.projects.values()).find(project => project.name === name);
+  }
+
   async createProject(project: InsertProject): Promise<Project> {
     const id = randomUUID();
     const newProject: Project = { 
@@ -137,6 +144,10 @@ export class MemStorage implements IStorage {
     return this.workers.get(id);
   }
 
+  async getWorkerByName(name: string): Promise<Worker | undefined> {
+    return Array.from(this.workers.values()).find(worker => worker.name === name);
+  }
+
   async createWorker(worker: InsertWorker): Promise<Worker> {
     const id = randomUUID();
     const newWorker: Worker = { 
@@ -165,6 +176,10 @@ export class MemStorage implements IStorage {
       if (date && transfer.transferDate.toISOString().split('T')[0] !== date) return false;
       return true;
     });
+  }
+
+  async getFundTransferByNumber(transferNumber: string): Promise<FundTransfer | undefined> {
+    return Array.from(this.fundTransfers.values()).find(transfer => transfer.transferNumber === transferNumber);
   }
 
   async createFundTransfer(transfer: InsertFundTransfer): Promise<FundTransfer> {
@@ -418,6 +433,11 @@ export class DatabaseStorage implements IStorage {
     return project || undefined;
   }
 
+  async getProjectByName(name: string): Promise<Project | undefined> {
+    const [project] = await db.select().from(projects).where(eq(projects.name, name));
+    return project || undefined;
+  }
+
   async createProject(project: InsertProject): Promise<Project> {
     const [newProject] = await db
       .insert(projects)
@@ -445,6 +465,11 @@ export class DatabaseStorage implements IStorage {
 
   async getWorker(id: string): Promise<Worker | undefined> {
     const [worker] = await db.select().from(workers).where(eq(workers.id, id));
+    return worker || undefined;
+  }
+
+  async getWorkerByName(name: string): Promise<Worker | undefined> {
+    const [worker] = await db.select().from(workers).where(eq(workers.name, name));
     return worker || undefined;
   }
 
@@ -488,6 +513,11 @@ export class DatabaseStorage implements IStorage {
       console.error("Error in getFundTransfers:", error);
       throw error;
     }
+  }
+
+  async getFundTransferByNumber(transferNumber: string): Promise<FundTransfer | undefined> {
+    const [transfer] = await db.select().from(fundTransfers).where(eq(fundTransfers.transferNumber, transferNumber));
+    return transfer || undefined;
   }
 
   async createFundTransfer(transfer: InsertFundTransfer): Promise<FundTransfer> {
