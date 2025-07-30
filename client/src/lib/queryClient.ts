@@ -3,12 +3,14 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     try {
-      const errorData = await res.json();
-      const message = errorData.message || res.statusText;
+      // استنساخ الاستجابة لتجنب خطأ "body stream already read"
+      const clonedResponse = res.clone();
+      const errorData = await clonedResponse.json();
+      const message = errorData.message || "حدث خطأ في الخادم";
       throw new Error(message);
     } catch (jsonError) {
-      const text = await res.text() || res.statusText;
-      throw new Error(text);
+      // إذا فشل تحليل JSON، استخدم رسالة خطأ عامة باللغة العربية
+      throw new Error("حدث خطأ في الاتصال بالخادم");
     }
   }
 }
