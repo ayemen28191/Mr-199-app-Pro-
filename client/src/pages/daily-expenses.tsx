@@ -55,7 +55,7 @@ export default function DailyExpenses() {
   const { data: todayAttendance = [] } = useQuery<WorkerAttendance[]>({
     queryKey: ["/api/projects", selectedProjectId, "attendance", selectedDate],
     queryFn: async () => {
-      const response = await apiRequest(`/api/projects/${selectedProjectId}/attendance?date=${selectedDate}`, "GET");
+      const response = await apiRequest("GET", `/api/projects/${selectedProjectId}/attendance?date=${selectedDate}`);
       return Array.isArray(response) ? response as WorkerAttendance[] : [];
     },
     enabled: !!selectedProjectId,
@@ -64,7 +64,7 @@ export default function DailyExpenses() {
   const { data: todayTransportation = [] } = useQuery<TransportationExpense[]>({
     queryKey: ["/api/projects", selectedProjectId, "transportation-expenses", selectedDate],
     queryFn: async () => {
-      const response = await apiRequest(`/api/projects/${selectedProjectId}/transportation-expenses?date=${selectedDate}`, "GET");
+      const response = await apiRequest("GET", `/api/projects/${selectedProjectId}/transportation-expenses?date=${selectedDate}`);
       return Array.isArray(response) ? response as TransportationExpense[] : [];
     },
     enabled: !!selectedProjectId,
@@ -73,7 +73,7 @@ export default function DailyExpenses() {
   const { data: todayMaterialPurchases = [], refetch: refetchMaterialPurchases } = useQuery({
     queryKey: ["/api/projects", selectedProjectId, "material-purchases", selectedDate],
     queryFn: async () => {
-      const response = await apiRequest(`/api/projects/${selectedProjectId}/material-purchases?dateFrom=${selectedDate}&dateTo=${selectedDate}`, "GET");
+      const response = await apiRequest("GET", `/api/projects/${selectedProjectId}/material-purchases?dateFrom=${selectedDate}&dateTo=${selectedDate}`);
       console.log("Material purchases response:", response);
       return Array.isArray(response) ? response as MaterialPurchase[] : [];
     },
@@ -83,7 +83,7 @@ export default function DailyExpenses() {
   const { data: todayWorkerTransfers = [], refetch: refetchWorkerTransfers } = useQuery({
     queryKey: ["/api/worker-transfers", selectedProjectId, selectedDate],
     queryFn: async () => {
-      const response = await apiRequest(`/api/worker-transfers?projectId=${selectedProjectId}&date=${selectedDate}`, "GET");
+      const response = await apiRequest("GET", `/api/worker-transfers?projectId=${selectedProjectId}&date=${selectedDate}`);
       console.log("Worker transfers response:", response);
       return Array.isArray(response) ? response as WorkerTransfer[] : [];
     },
@@ -97,7 +97,7 @@ export default function DailyExpenses() {
       console.log("selectedProjectId:", selectedProjectId);
       console.log("selectedDate:", selectedDate);
       
-      const response = await apiRequest(`/api/projects/${selectedProjectId}/fund-transfers?date=${selectedDate}`, "GET");
+      const response = await apiRequest("GET", `/api/projects/${selectedProjectId}/fund-transfers?date=${selectedDate}`);
       console.log("=== FUND TRANSFERS DEBUG ===");
       console.log("API URL:", `/api/projects/${selectedProjectId}/fund-transfers?date=${selectedDate}`);
       console.log("API Response:", response);
@@ -116,7 +116,7 @@ export default function DailyExpenses() {
   const { data: previousBalance } = useQuery({
     queryKey: ["/api/projects", selectedProjectId, "previous-balance", selectedDate],
     queryFn: async () => {
-      const response = await apiRequest(`/api/projects/${selectedProjectId}/previous-balance/${selectedDate}`, "GET");
+      const response = await apiRequest("GET", `/api/projects/${selectedProjectId}/previous-balance/${selectedDate}`);
       return response?.balance || "0";
     },
     enabled: !!selectedProjectId && !!selectedDate,
@@ -194,7 +194,7 @@ export default function DailyExpenses() {
 
   // Delete mutations
   const deleteFundTransferMutation = useMutation({
-    mutationFn: (id: string) => apiRequest(`/api/fund-transfers/${id}`, "DELETE"),
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/fund-transfers/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ 
         queryKey: ["/api/projects", selectedProjectId, "fund-transfers", selectedDate] 
@@ -207,7 +207,7 @@ export default function DailyExpenses() {
   });
 
   const deleteTransportationMutation = useMutation({
-    mutationFn: (id: string) => apiRequest(`/api/transportation-expenses/${id}`, "DELETE"),
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/transportation-expenses/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ 
         queryKey: ["/api/projects", selectedProjectId, "transportation-expenses", selectedDate] 
@@ -220,7 +220,7 @@ export default function DailyExpenses() {
   });
 
   const deleteMaterialPurchaseMutation = useMutation({
-    mutationFn: (id: string) => apiRequest(`/api/material-purchases/${id}`, "DELETE"),
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/material-purchases/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProjectId, "material-purchases"] });
       toast({ title: "تم الحذف", description: "تم حذف شراء المواد بنجاح" });
@@ -231,7 +231,7 @@ export default function DailyExpenses() {
   });
 
   const deleteWorkerAttendanceMutation = useMutation({
-    mutationFn: (id: string) => apiRequest(`/api/worker-attendance/${id}`, "DELETE"),
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/worker-attendance/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProjectId, "attendance"] });
       toast({ title: "تم الحذف", description: "تم حذف حضور العامل بنجاح" });

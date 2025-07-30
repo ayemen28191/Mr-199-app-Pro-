@@ -147,7 +147,7 @@ export default function MaterialPurchase() {
 
   // Delete Material Purchase Mutation
   const deleteMaterialPurchaseMutation = useMutation({
-    mutationFn: (id: string) => apiRequest(`/api/material-purchases/${id}`, "DELETE", {}),
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/material-purchases/${id}`),
     onSuccess: () => {
       toast({
         title: "تم الحذف",
