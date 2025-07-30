@@ -28,15 +28,18 @@ export default function WorkerStatementReport() {
     queryKey: ["/api/projects"],
   });
 
-  // Query for worker statement
-  const { data: attendance = [], isLoading: isLoadingStatement } = useQuery<WorkerAttendance[]>({
-    queryKey: ["/api/workers/statement", selectedWorkerId, dateFrom, dateTo],
+  // Query for worker statement with project support
+  const { data: workerStatement, isLoading: isLoadingStatement } = useQuery({
+    queryKey: ["/api/workers/statement", selectedWorkerId, selectedProjectId, dateFrom, dateTo],
     queryFn: async () => {
-      if (!selectedWorkerId || !dateFrom || !dateTo) return [];
+      if (!selectedWorkerId || !dateFrom || !dateTo) return null;
       
       const params = new URLSearchParams();
       params.append('dateFrom', dateFrom);
       params.append('dateTo', dateTo);
+      if (selectedProjectId) {
+        params.append('projectId', selectedProjectId);
+      }
       
       const response = await fetch(`/api/workers/${selectedWorkerId}/account-statement?${params}`);
       if (!response.ok) {
@@ -46,6 +49,17 @@ export default function WorkerStatementReport() {
       return response.json();
     },
     enabled: !!selectedWorkerId && !!dateFrom && !!dateTo && showReport,
+  });
+
+  // Check if worker works in multiple projects
+  const { data: multiProjectInfo } = useQuery({
+    queryKey: ["/api/workers/multi-project", selectedWorkerId],
+    queryFn: async () => {
+      if (!selectedWorkerId) return null;
+      const response = await fetch(`/api/workers/${selectedWorkerId}/multi-project-statement`);
+      return response.ok ? response.json() : null;
+    },
+    enabled: !!selectedWorkerId,
   });
 
   const selectedWorker = workers.find(w => w.id === selectedWorkerId);
@@ -58,6 +72,10 @@ export default function WorkerStatementReport() {
       maximumFractionDigits: 3,
     }).format(amount);
   };
+
+  // Calculate totals from workerStatement
+  const attendance = workerStatement?.attendance || [];
+  const workerTransfers = workerStatement?.transfers || [];
 
   const generateReport = () => {
     if (!selectedWorkerId || !dateFrom || !dateTo) {
@@ -155,10 +173,11 @@ export default function WorkerStatementReport() {
     }
   };
 
+  // Calculate financial totals
   const totalEarned = attendance.reduce((sum, a) => sum + parseFloat(a.dailyWage || '0'), 0);
-  const totalPaid = attendance.reduce((sum, a) => 
-    sum + (a.paymentType === 'نقد' ? parseFloat(a.dailyWage || '0') : 0), 0);
-  const totalRemaining = totalEarned - totalPaid;
+  const totalPaid = attendance.reduce((sum, a) => sum + parseFloat(a.paidAmount || '0'), 0);
+  const totalTransferred = workerTransfers.reduce((sum, t) => sum + parseFloat(t.amount || '0'), 0);
+  const totalRemaining = totalEarned - totalPaid - totalTransferred;
 
   return (
     <div className="container mx-auto p-6 space-y-6" dir="rtl">

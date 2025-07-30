@@ -495,7 +495,8 @@ export class MemStorage implements IStorage {
     const workerProjectMap = new Map<string, {worker: Worker, projects: Set<string>}>();
     
     // Find workers who worked on multiple projects
-    for (const attendance of this.workerAttendance.values()) {
+    const attendanceArray = Array.from(this.workerAttendance.values());
+    for (const attendance of attendanceArray) {
       if (!workerProjectMap.has(attendance.workerId)) {
         const worker = this.workers.get(attendance.workerId);
         if (worker) {
@@ -609,7 +610,8 @@ export class MemStorage implements IStorage {
     const projectIds = new Set<string>();
     
     // Find all projects this worker has worked on
-    for (const attendance of this.workerAttendance.values()) {
+    const attendanceArray = Array.from(this.workerAttendance.values());
+    for (const attendance of attendanceArray) {
       if (attendance.workerId === workerId) {
         projectIds.add(attendance.projectId);
       }
