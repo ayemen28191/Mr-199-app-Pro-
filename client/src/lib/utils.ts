@@ -9,24 +9,21 @@ export function formatCurrency(amount: number | string, currency = "ر.ي"): str
   const num = typeof amount === "string" ? parseFloat(amount) : amount;
   if (isNaN(num)) return "0 " + currency;
   
-  // استخدام الأرقام العربية مع العملة اليمنية
-  return new Intl.NumberFormat("ar-SA", {
+  // استخدام الأرقام الإنجليزية مع العملة اليمنية
+  return new Intl.NumberFormat("en-US", {
     style: "decimal",
     maximumFractionDigits: 2,
     minimumFractionDigits: 0,
-    numberingSystem: "arab"
   }).format(num) + " " + currency;
 }
 
 export function formatDate(date: string | Date): string {
   const d = typeof date === "string" ? new Date(date) : date;
-  // استخدام التاريخ الإنجليزي مع الأرقام العربية
-  return new Intl.DateTimeFormat("ar-SA", {
+  // استخدام التاريخ الإنجليزي مع الأرقام الإنجليزية
+  return new Intl.DateTimeFormat("en-US", {
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-    calendar: "gregory",
-    numberingSystem: "arab"
   }).format(d);
 }
 

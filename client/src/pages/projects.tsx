@@ -189,11 +189,10 @@ export default function ProjectsPage() {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("ar-SA", {
+    return new Intl.NumberFormat("en-US", {
       style: "decimal",
       maximumFractionDigits: 2,
       minimumFractionDigits: 0,
-      numberingSystem: "arab"
     }).format(amount) + " ر.ي";
   };
 
