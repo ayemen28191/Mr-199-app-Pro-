@@ -12,6 +12,7 @@ import MaterialPurchase from "@/pages/material-purchase";
 import ReportsFixed from "@/pages/reports-fixed";
 import MultiProjectWorkers from "@/pages/multi-project-workers";
 import WorkerStatementReport from "@/pages/worker-statement-simple";
+import ProjectsPage from "@/pages/projects";
 import Header from "@/components/layout/header";
 import BottomNavigation from "@/components/layout/bottom-navigation";
 
@@ -19,6 +20,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
+      <Route path="/projects" component={ProjectsPage} />
       <Route path="/worker-attendance" component={WorkerAttendance} />
       <Route path="/worker-accounts" component={WorkerAccounts} />
       <Route path="/daily-expenses" component={DailyExpenses} />

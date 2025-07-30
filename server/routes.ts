@@ -40,6 +40,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get projects with statistics
+  app.get("/api/projects/with-stats", async (req, res) => {
+    try {
+      const projects = await storage.getProjects();
+      const projectsWithStats = await Promise.all(
+        projects.map(async (project) => {
+          const stats = await storage.getProjectStatistics(project.id);
+          return {
+            ...project,
+            stats
+          };
+        })
+      );
+      res.json(projectsWithStats);
+    } catch (error) {
+      console.error("Error fetching projects with stats:", error);
+      res.status(500).json({ message: "Error fetching project statistics" });
+    }
+  });
+
   app.get("/api/projects/:id", async (req, res) => {
     try {
       const project = await storage.getProject(req.params.id);
@@ -49,6 +69,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(project);
     } catch (error) {
       res.status(500).json({ message: "Error fetching project" });
+    }
+  });
+
+  app.patch("/api/projects/:id", async (req, res) => {
+    try {
+      const result = insertProjectSchema.partial().safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "Invalid project data", errors: result.error.issues });
+      }
+      
+      // فحص عدم تكرار اسم المشروع إذا تم تغييره
+      if (result.data.name) {
+        const existingProject = await storage.getProjectByName(result.data.name);
+        if (existingProject && existingProject.id !== req.params.id) {
+          return res.status(400).json({ message: "يوجد مشروع بنفس الاسم مسبقاً" });
+        }
+      }
+      
+      const project = await storage.updateProject(req.params.id, result.data);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+      res.json(project);
+    } catch (error) {
+      res.status(500).json({ message: "Error updating project" });
+    }
+  });
+
+  app.delete("/api/projects/:id", async (req, res) => {
+    try {
+      const project = await storage.getProject(req.params.id);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+      
+      // يمكن إضافة فحص إضافي هنا للتأكد من عدم وجود بيانات مرتبطة
+      // await storage.deleteProject(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Error deleting project" });
     }
   });
 

@@ -1,11 +1,11 @@
 import { useLocation } from "wouter";
-import { Home, Users, Receipt, BarChart, CreditCard } from "lucide-react";
+import { Home, Users, Receipt, BarChart, CreditCard, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const navigationItems = [
   { path: "/", icon: Home, label: "الرئيسية", key: "dashboard" },
+  { path: "/projects", icon: Building2, label: "المشاريع", key: "projects" },
   { path: "/worker-attendance", icon: Users, label: "الحضور", key: "attendance" },
-  { path: "/worker-accounts", icon: CreditCard, label: "الحسابات", key: "accounts" },
   { path: "/daily-expenses", icon: Receipt, label: "المصروفات", key: "expenses" },
   { path: "/reports", icon: BarChart, label: "التقارير", key: "reports" },
 ];
