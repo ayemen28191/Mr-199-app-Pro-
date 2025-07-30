@@ -8,17 +8,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { FileText, Download, Printer, Calculator } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
-import type { Worker, WorkerAttendance } from "@shared/schema";
+import { useSelectedProject } from "@/hooks/use-selected-project";
+import type { Worker, WorkerAttendance, Project } from "@shared/schema";
 
 export default function WorkerStatementReport() {
   const [selectedWorkerId, setSelectedWorkerId] = useState("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [showReport, setShowReport] = useState(false);
+  const { selectedProjectId } = useSelectedProject();
 
   // Query for workers
   const { data: workers = [] } = useQuery<Worker[]>({
     queryKey: ["/api/workers"],
+  });
+
+  // Query for projects
+  const { data: projects = [] } = useQuery<Project[]>({
+    queryKey: ["/api/projects"],
   });
 
   // Query for worker statement
@@ -42,6 +49,7 @@ export default function WorkerStatementReport() {
   });
 
   const selectedWorker = workers.find(w => w.id === selectedWorkerId);
+  const selectedProject = projects.find(p => p.id === selectedProjectId);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('ar-SA', {
@@ -249,8 +257,22 @@ export default function WorkerStatementReport() {
         <div className="print-section">
           <Card>
             <CardContent className="p-0">
+              {/* Print Header - Only visible during print */}
+              <div className="hidden print:block">
+                <div className="text-center mb-4">
+                  <h1 className="text-2xl font-bold mb-2">إدارة المشاريع الإنشائية</h1>
+                  <p className="text-sm">هاتف: 123456789 | البريد الإلكتروني: info@construction.com</p>
+                </div>
+                <div className="bg-orange-100 p-3 mb-4 border border-orange-300">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div><span className="font-bold">اسم المشروع:</span> {selectedProject?.name || 'غير محدد'}</div>
+                    <div><span className="font-bold">تاريخ الطباعة:</span> {format(new Date(), 'dd/MM/yyyy', { locale: ar })}</div>
+                  </div>
+                </div>
+              </div>
+
               {/* Report Header */}
-              <div className="bg-gradient-to-r from-orange-400 to-yellow-400 text-white p-4 text-center">
+              <div className="bg-gradient-to-r from-orange-400 to-yellow-400 text-white p-4 text-center print:bg-orange-400 print:text-white">
                 <h2 className="text-xl font-bold">
                   كشف حساب العامل للفترة من تاريخ {format(new Date(dateFrom), 'dd/MM/yyyy', { locale: ar })} إلى تاريخ {format(new Date(dateTo), 'dd/MM/yyyy', { locale: ar })}
                 </h2>
@@ -365,10 +387,26 @@ export default function WorkerStatementReport() {
                 </div>
                 <div className="grid grid-cols-2 border-b">
                   <div className="border-l p-3 text-center font-medium">
-                    إجمالي عدد ساعات العمل
+                    إجمالي المبلغ المستحق
                   </div>
                   <div className="p-3 text-center font-bold">
-                    0
+                    {formatCurrency(totalEarned)}
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 border-b">
+                  <div className="border-l p-3 text-center font-medium">
+                    إجمالي المبلغ المستلم
+                  </div>
+                  <div className="p-3 text-center font-bold">
+                    {formatCurrency(totalPaid)}
+                  </div>
+                </div>
+                <div className="grid grid-cols-2">
+                  <div className="border-l p-3 text-center font-medium">
+                    إجمالي المبلغ المتبقي
+                  </div>
+                  <div className="p-3 text-center font-bold">
+                    {formatCurrency(totalRemaining)}
                   </div>
                 </div>
               </div>
@@ -388,15 +426,12 @@ export default function WorkerStatementReport() {
       <style dangerouslySetInnerHTML={{
         __html: `
         @media print {
-          .print-section {
-            page-break-inside: avoid;
-          }
-          
           @page {
             margin: 0.5in;
             size: A4;
           }
           
+          /* Hide everything except print section */
           body * {
             visibility: hidden;
           }
@@ -410,6 +445,54 @@ export default function WorkerStatementReport() {
             left: 0;
             top: 0;
             width: 100%;
+            background: white;
+          }
+          
+          /* Ensure colors show in print */
+          .bg-gradient-to-r {
+            background: #fb923c !important;
+            -webkit-print-color-adjust: exact;
+            color-adjust: exact;
+          }
+          
+          .bg-orange-200 {
+            background: #fed7aa !important;
+            -webkit-print-color-adjust: exact;
+            color-adjust: exact;
+          }
+          
+          .bg-orange-300 {
+            background: #fdba74 !important;
+            -webkit-print-color-adjust: exact;
+            color-adjust: exact;
+          }
+          
+          .bg-orange-100 {
+            background: #ffedd5 !important;
+            -webkit-print-color-adjust: exact;
+            color-adjust: exact;
+          }
+          
+          /* Show print header */
+          .hidden.print\\:block {
+            display: block !important;
+          }
+          
+          /* Force table structure */
+          .grid {
+            display: grid !important;
+          }
+          
+          .border {
+            border: 1px solid #000 !important;
+          }
+          
+          .border-b {
+            border-bottom: 1px solid #000 !important;
+          }
+          
+          .border-l {
+            border-left: 1px solid #000 !important;
           }
         }
         `
