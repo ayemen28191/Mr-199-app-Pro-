@@ -90,11 +90,12 @@ export default function DailyExpenses() {
     enabled: !!selectedProjectId,
   });
 
-  const { data: todayFundTransfers = [], refetch: refetchFundTransfers } = useQuery({
+  const { data: todayFundTransfers = [], refetch: refetchFundTransfers, isLoading: fundTransfersLoading } = useQuery({
     queryKey: ["/api/projects", selectedProjectId, "fund-transfers", selectedDate],
     queryFn: async () => {
       const response = await apiRequest("GET", `/api/projects/${selectedProjectId}/fund-transfers?date=${selectedDate}`);
-      console.log("Fund transfers response for", selectedDate, ":", response);
+      console.log("Fund transfers API response:", response);
+      console.log("Response type:", typeof response, "Is array:", Array.isArray(response));
       return Array.isArray(response) ? response as FundTransfer[] : [];
     },
     enabled: !!selectedProjectId && !!selectedDate,
@@ -515,51 +516,55 @@ export default function DailyExpenses() {
             </div>
             
             {/* عرض العهد المضافة لهذا اليوم */}
-            {Array.isArray(todayFundTransfers) && todayFundTransfers.length > 0 ? (
-              <div className="space-y-2 mt-3 pt-3 border-t">
-                <h5 className="text-sm font-medium text-muted-foreground">العهد المضافة اليوم:</h5>
-                {todayFundTransfers.map((transfer, index) => (
-                  <div key={transfer.id || index} className="flex justify-between items-center p-2 bg-muted rounded">
-                    <div className="text-sm flex-1">
-                      <div>{transfer.senderName || 'غير محدد'}</div>
-                      <div className="text-xs text-muted-foreground">{transfer.transferType}</div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium arabic-numbers">{transfer.amount} ر.س</span>
-                      <div className="flex gap-1">
-                        <Button 
-                          size="sm" 
-                          variant="ghost" 
-                          className="h-7 w-7 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                          onClick={() => handleEditFundTransfer(transfer)}
-                        >
-                          <Edit2 className="h-3 w-3" />
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          variant="ghost" 
-                          className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                          onClick={() => deleteFundTransferMutation.mutate(transfer.id)}
-                          disabled={deleteFundTransferMutation.isPending}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+            <div className="mt-3 pt-3 border-t">
+              <h5 className="text-sm font-medium text-muted-foreground mb-2">العهد المضافة اليوم:</h5>
+              {fundTransfersLoading ? (
+                <div className="text-center text-muted-foreground">جاري التحميل...</div>
+              ) : Array.isArray(todayFundTransfers) && todayFundTransfers.length > 0 ? (
+                <div className="space-y-2">
+                  {todayFundTransfers.map((transfer, index) => (
+                    <div key={transfer.id || index} className="flex justify-between items-center p-2 bg-muted rounded">
+                      <div className="text-sm flex-1">
+                        <div>{transfer.senderName || 'غير محدد'}</div>
+                        <div className="text-xs text-muted-foreground">{transfer.transferType}</div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium arabic-numbers">{transfer.amount} ر.س</span>
+                        <div className="flex gap-1">
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="h-7 w-7 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            onClick={() => handleEditFundTransfer(transfer)}
+                          >
+                            <Edit2 className="h-3 w-3" />
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="ghost" 
+                            className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => deleteFundTransferMutation.mutate(transfer.id)}
+                            disabled={deleteFundTransferMutation.isPending}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
+                  ))}
+                  <div className="text-left pt-2 border-t">
+                    <span className="text-sm text-muted-foreground">إجمالي العهد: </span>
+                    <span className="font-bold text-primary arabic-numbers">
+                      {formatCurrency(totals.totalFundTransfers)}
+                    </span>
                   </div>
-                ))}
-                <div className="text-left pt-2 border-t">
-                  <span className="text-sm text-muted-foreground">إجمالي العهد: </span>
-                  <span className="font-bold text-primary arabic-numbers">
-                    {formatCurrency(totals.totalFundTransfers)}
-                  </span>
                 </div>
-              </div>
-            ) : (
-              <div className="text-muted-foreground text-sm text-center p-3 border-t mt-3">
-                لا توجد عهد مضافة لهذا اليوم
-              </div>
-            )}
+              ) : (
+                <div className="text-muted-foreground text-sm text-center p-3">
+                  لا توجد عهد مضافة لهذا اليوم (العدد: {todayFundTransfers?.length || 0})
+                </div>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
