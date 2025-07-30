@@ -120,21 +120,10 @@ export default function DailyExpenses() {
   const addFundTransferMutation = useMutation({
     mutationFn: (data: InsertFundTransfer) => apiRequest("POST", "/api/fund-transfers", data),
     onSuccess: () => {
-      setFundAmount("");
-      setSenderName("");
-      setTransferNumber("");
-      setTransferType("");
-      // إعادة جلب البيانات فوراً
-      queryClient.invalidateQueries({ 
-        queryKey: ["/api/projects", selectedProjectId, "fund-transfers"] 
-      });
       toast({
         title: "تم إضافة العهدة",
         description: "تم إضافة تحويل العهدة بنجاح",
       });
-      // تحديث العهدة مباشرة
-      queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProjectId, "fund-transfers", selectedDate] });
-      queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProjectId, "fund-transfers"] });
       
       // تنظيف النموذج
       setFundAmount("");
@@ -142,26 +131,30 @@ export default function DailyExpenses() {
       setTransferNumber("");
       setTransferType("");
       
-      // إعادة تحميل بيانات العهدة فوراً
-      setTimeout(() => {
-        refetchFundTransfers();
-      }, 100);
+      // إعادة جلب البيانات
+      queryClient.invalidateQueries({ 
+        queryKey: ["/api/projects", selectedProjectId, "fund-transfers", selectedDate] 
+      });
     },
   });
 
   const addTransportationMutation = useMutation({
     mutationFn: (data: InsertTransportationExpense) => apiRequest("POST", "/api/transportation-expenses", data),
     onSuccess: () => {
-      setTransportDescription("");
-      setTransportAmount("");
-      setTransportNotes("");
       toast({
         title: "تم إضافة المواصلات",
         description: "تم إضافة مصروف المواصلات بنجاح",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProjectId, "transportation-expenses"] });
-      refetchMaterialPurchases();
-      refetchWorkerTransfers();
+      
+      // تنظيف النموذج
+      setTransportDescription("");
+      setTransportAmount("");
+      setTransportNotes("");
+      
+      // إعادة جلب البيانات
+      queryClient.invalidateQueries({ 
+        queryKey: ["/api/projects", selectedProjectId, "transportation-expenses", selectedDate] 
+      });
     },
   });
 
@@ -172,16 +165,11 @@ export default function DailyExpenses() {
         title: "تم الحفظ",
         description: "تم حفظ ملخص المصروفات اليومية بنجاح",
       });
-      // Refresh all data to show updated totals
-      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProjectId, "material-purchases"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/worker-transfers"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProjectId, "transportation-expenses"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProjectId, "attendance"] });
       
-      // Refetch current data immediately
-      refetchMaterialPurchases();
-      refetchWorkerTransfers();
+      // تحديث ملخص اليوم
+      queryClient.invalidateQueries({ 
+        queryKey: ["/api/projects", selectedProjectId, "daily-summary", selectedDate] 
+      });
     },
     onError: () => {
       toast({
@@ -196,7 +184,9 @@ export default function DailyExpenses() {
   const deleteFundTransferMutation = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/fund-transfers/${id}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProjectId, "fund-transfers"] });
+      queryClient.invalidateQueries({ 
+        queryKey: ["/api/projects", selectedProjectId, "fund-transfers", selectedDate] 
+      });
       toast({ title: "تم الحذف", description: "تم حذف العهدة بنجاح" });
     },
     onError: () => {
@@ -207,7 +197,9 @@ export default function DailyExpenses() {
   const deleteTransportationMutation = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/transportation-expenses/${id}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProjectId, "transportation-expenses"] });
+      queryClient.invalidateQueries({ 
+        queryKey: ["/api/projects", selectedProjectId, "transportation-expenses", selectedDate] 
+      });
       toast({ title: "تم الحذف", description: "تم حذف مصروف المواصلات بنجاح" });
     },
     onError: () => {
@@ -244,7 +236,7 @@ export default function DailyExpenses() {
     onSuccess: () => {
       resetFundTransferForm();
       queryClient.invalidateQueries({ 
-        queryKey: ["/api/projects", selectedProjectId, "fund-transfers"] 
+        queryKey: ["/api/projects", selectedProjectId, "fund-transfers", selectedDate] 
       });
       toast({
         title: "تم التحديث",
