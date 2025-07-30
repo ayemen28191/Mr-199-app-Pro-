@@ -112,12 +112,13 @@ export default function EnhancedWorkerCard({ worker, attendance, onAttendanceCha
                   <Label className="text-xs text-muted-foreground">المبلغ المدفوع</Label>
                   <Input
                     type="number"
+                    inputMode="decimal"
                     placeholder="0"
                     value={attendance.paidAmount || ""}
                     onChange={(e) => 
                       onAttendanceChange({ ...attendance, paidAmount: e.target.value })
                     }
-                    className="mt-1"
+                    className="mt-1 arabic-numbers"
                     max={dailyWage}
                   />
                   <div className="flex justify-between text-xs text-muted-foreground mt-1">

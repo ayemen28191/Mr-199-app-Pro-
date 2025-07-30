@@ -489,6 +489,7 @@ export default function DailyExpenses() {
               <Label className="block text-sm font-medium text-foreground mb-1">المبلغ المتبقي السابق</Label>
               <Input
                 type="number"
+                inputMode="decimal"
                 value={carriedForward}
                 onChange={(e) => setCarriedForward(e.target.value)}
                 placeholder="0"
@@ -503,6 +504,7 @@ export default function DailyExpenses() {
             <div className="grid grid-cols-2 gap-3 mb-2">
               <Input
                 type="number"
+                inputMode="decimal"
                 value={fundAmount}
                 onChange={(e) => setFundAmount(e.target.value)}
                 placeholder="المبلغ"
@@ -516,11 +518,12 @@ export default function DailyExpenses() {
               />
             </div>
             <Input
-              type="text"
+              type="number"
+              inputMode="numeric"
               value={transferNumber}
               onChange={(e) => setTransferNumber(e.target.value)}
               placeholder="رقم الحولة"
-              className="w-full mb-2"
+              className="w-full mb-2 arabic-numbers"
             />
             <div className="flex gap-2">
               <Select value={transferType} onValueChange={setTransferType}>
@@ -669,6 +672,7 @@ export default function DailyExpenses() {
               />
               <Input
                 type="number"
+                inputMode="decimal"
                 value={transportAmount}
                 onChange={(e) => setTransportAmount(e.target.value)}
                 placeholder="المبلغ"
@@ -737,7 +741,7 @@ export default function DailyExpenses() {
           ) : (
             <div className="space-y-2 mb-3">
               {todayMaterialPurchases.map((purchase, index) => {
-                const material = purchase.material || materials.find(m => m.id === purchase.materialId);
+                const material = purchase.material || (materials as any[])?.find((m: any) => m.id === purchase.materialId);
                 return (
                 <div key={index} className="flex justify-between items-center p-2 bg-muted rounded">
                   <div className="text-sm flex-1">

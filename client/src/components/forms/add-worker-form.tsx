@@ -104,6 +104,7 @@ export default function AddWorkerForm({ onSuccess }: AddWorkerFormProps) {
         <Input
           id="daily-wage"
           type="number"
+          inputMode="decimal"
           value={dailyWage}
           onChange={(e) => setDailyWage(e.target.value)}
           placeholder="0"

@@ -283,10 +283,12 @@ export default function WorkerAccounts() {
                     <Label>المبلغ المطلوب إرساله</Label>
                     <Input
                       type="number"
+                      inputMode="decimal"
                       placeholder="0"
                       value={transferAmount}
                       onChange={(e) => setTransferAmount(e.target.value)}
                       max={currentBalance}
+                      className="arabic-numbers"
                     />
                     <p className="text-xs text-muted-foreground mt-1">
                       الرصيد المتاح: {formatCurrency(currentBalance)}
@@ -305,9 +307,12 @@ export default function WorkerAccounts() {
                   <div>
                     <Label>رقم هاتف المستلم (اختياري)</Label>
                     <Input
+                      type="tel"
+                      inputMode="numeric"
                       placeholder="رقم الهاتف"
                       value={recipientPhone}
                       onChange={(e) => setRecipientPhone(e.target.value)}
+                      className="arabic-numbers"
                     />
                   </div>
 

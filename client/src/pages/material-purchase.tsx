@@ -310,6 +310,7 @@ export default function MaterialPurchase() {
                 <Label className="block text-sm font-medium text-foreground mb-2">الكمية</Label>
                 <Input
                   type="number"
+                  inputMode="decimal"
                   value={quantity}
                   onChange={(e) => setQuantity(e.target.value)}
                   placeholder="0"
@@ -334,6 +335,7 @@ export default function MaterialPurchase() {
                 <Label className="block text-sm font-medium text-foreground mb-2">سعر الوحدة</Label>
                 <Input
                   type="number"
+                  inputMode="decimal"
                   value={unitPrice}
                   onChange={(e) => setUnitPrice(e.target.value)}
                   placeholder="0.00"
@@ -398,10 +400,12 @@ export default function MaterialPurchase() {
               <div>
                 <Label className="block text-sm font-medium text-foreground mb-2">رقم الفاتورة</Label>
                 <Input
-                  type="text"
+                  type="number"
+                  inputMode="numeric"
                   value={invoiceNumber}
                   onChange={(e) => setInvoiceNumber(e.target.value)}
                   placeholder="رقم الفاتورة"
+                  className="arabic-numbers"
                 />
               </div>
               <div>
