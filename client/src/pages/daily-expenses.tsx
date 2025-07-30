@@ -94,8 +94,13 @@ export default function DailyExpenses() {
     queryKey: ["/api/projects", selectedProjectId, "fund-transfers", selectedDate],
     queryFn: async () => {
       const response = await apiRequest("GET", `/api/projects/${selectedProjectId}/fund-transfers?date=${selectedDate}`);
-      console.log("Fund transfers API response:", response);
-      console.log("Response type:", typeof response, "Is array:", Array.isArray(response));
+      console.log("=== FUND TRANSFERS DEBUG ===");
+      console.log("API URL:", `/api/projects/${selectedProjectId}/fund-transfers?date=${selectedDate}`);
+      console.log("API Response:", response);
+      console.log("Response type:", typeof response);
+      console.log("Is array:", Array.isArray(response));
+      console.log("Array length:", response?.length);
+      console.log("============================");
       return Array.isArray(response) ? response as FundTransfer[] : [];
     },
     enabled: !!selectedProjectId && !!selectedDate,
@@ -424,6 +429,17 @@ export default function DailyExpenses() {
   };
 
   const totals = calculateTotals();
+
+  // Debug logging في المكون
+  console.log("=== COMPONENT STATE DEBUG ===");
+  console.log("selectedProjectId:", selectedProjectId);
+  console.log("selectedDate:", selectedDate);
+  console.log("todayFundTransfers:", todayFundTransfers);
+  console.log("todayFundTransfers type:", typeof todayFundTransfers);
+  console.log("todayFundTransfers isArray:", Array.isArray(todayFundTransfers));
+  console.log("todayFundTransfers length:", todayFundTransfers?.length);
+  console.log("fundTransfersLoading:", fundTransfersLoading);
+  console.log("================================");
 
   return (
     <div className="p-4 slide-in">
