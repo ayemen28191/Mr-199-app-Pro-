@@ -19,10 +19,10 @@ export function formatCurrency(amount: number | string, currency = "ر.ي"): str
 
 export function formatDate(date: string | Date): string {
   const d = typeof date === "string" ? new Date(date) : date;
-  // استخدام التاريخ الإنجليزي مع الأرقام الإنجليزية
-  return new Intl.DateTimeFormat("en-US", {
+  // استخدام التاريخ الميلادي بصيغة dd/MM/yyyy
+  return new Intl.DateTimeFormat("en-GB", {
     year: "numeric",
-    month: "2-digit",
+    month: "2-digit", 
     day: "2-digit",
   }).format(d);
 }

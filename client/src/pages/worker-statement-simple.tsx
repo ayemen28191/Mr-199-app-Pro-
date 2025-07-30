@@ -9,6 +9,7 @@ import { FileText, Download, Printer, Calculator } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
 import { useSelectedProject } from "@/hooks/use-selected-project";
+import { formatCurrency, formatDate } from "@/lib/utils";
 import type { Worker, WorkerAttendance, Project } from "@shared/schema";
 
 export default function WorkerStatementReport() {
@@ -97,10 +98,10 @@ export default function WorkerStatementReport() {
         'المبلغ المستحق', 'المبلغ المستلم', 'المتبقي', 'ملاحظات'
       ];
       
-      const rows = attendance.map((record, index) => [
+      const rows = attendance.map((record: any, index: number) => [
         index + 1,
         selectedWorker.name,
-        format(new Date(record.date), 'yyyy-MM-dd'),
+        formatDate(record.date),
         formatCurrency(parseFloat(record.dailyWage || '0')),
         '1',
         '0', 
@@ -110,13 +111,13 @@ export default function WorkerStatementReport() {
         record.workDescription || ''
       ]);
 
-      const totalEarned = attendance.reduce((sum, a) => sum + parseFloat(a.dailyWage || '0'), 0);
+      const totalEarned = attendance.reduce((sum: number, a: any) => sum + parseFloat(a.dailyWage || '0'), 0);
       rows.push(['', '', '', '', '', '', '', '', '', '']);
       rows.push(['', 'إجمالي عدد أيام العمل', '', '', '', '', attendance.length.toString(), '', '', '']);
       rows.push(['', 'إجمالي المبلغ المستحق للعامل', '', '', '', '', formatCurrency(totalEarned), '', '', '']);
 
       const csvContent = [headers, ...rows]
-        .map(row => row.map(cell => `"${String(cell || '')}"`).join(','))
+        .map(row => row.map((cell: any) => `"${String(cell || '')}"`).join(','))
         .join('\n');
 
       const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -174,9 +175,9 @@ export default function WorkerStatementReport() {
   };
 
   // Calculate financial totals
-  const totalEarned = attendance.reduce((sum, a) => sum + parseFloat(a.dailyWage || '0'), 0);
-  const totalPaid = attendance.reduce((sum, a) => sum + parseFloat(a.paidAmount || '0'), 0);
-  const totalTransferred = workerTransfers.reduce((sum, t) => sum + parseFloat(t.amount || '0'), 0);
+  const totalEarned = attendance.reduce((sum: number, a: any) => sum + parseFloat(a.dailyWage || '0'), 0);
+  const totalPaid = attendance.reduce((sum: number, a: any) => sum + parseFloat(a.paidAmount || '0'), 0);
+  const totalTransferred = workerTransfers.reduce((sum: number, t: any) => sum + parseFloat(t.amount || '0'), 0);
   const totalRemaining = totalEarned - totalPaid - totalTransferred;
 
   return (
@@ -324,7 +325,7 @@ export default function WorkerStatementReport() {
                       تاريخ بداية العمل
                     </div>
                     <div className="border-b p-2 text-sm text-center">
-                      {format(new Date(dateFrom), 'dd/MM/yyyy', { locale: ar })}
+                      {formatDate(dateFrom)}
                     </div>
                   </div>
                   <div className="grid grid-cols-2 h-10">
@@ -356,13 +357,13 @@ export default function WorkerStatementReport() {
 
               {/* Table Rows */}
               <div className="min-h-[400px]">
-                {attendance.map((record, index) => (
+                {attendance.map((record: any, index: number) => (
                   <div key={record.id} className="grid grid-cols-10 text-xs border-b">
                     <div className="border-l p-2 text-center">{index + 1}</div>
                     <div className="border-l p-2 text-center">{selectedWorker.name}</div>
                     <div className="border-l p-2 text-center">{formatCurrency(parseFloat(record.dailyWage || '0'))}</div>
                     <div className="border-l p-2 text-center">
-                      {format(new Date(record.date), 'yyyy-MM-dd')}
+                      {formatDate(record.date)}
                     </div>
                     <div className="border-l p-2 text-center">1</div>
                     <div className="border-l p-2 text-center">0</div>

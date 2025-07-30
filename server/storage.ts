@@ -73,6 +73,9 @@ export interface IStorage {
   getAllWorkerTransfers(): Promise<WorkerTransfer[]>;
   getFilteredWorkerTransfers(projectId?: string, date?: string): Promise<WorkerTransfer[]>;
   
+  // Project Statistics
+  getProjectStatistics(projectId: string): Promise<any>;
+  
   // Reports
   getWorkerAccountStatement(workerId: string, projectId?: string, dateFrom?: string, dateTo?: string): Promise<WorkerAttendance[]>;
   
@@ -635,6 +638,20 @@ export class MemStorage implements IStorage {
     }
 
     return Array.from(projectIds).map(id => this.projects.get(id)).filter(Boolean) as Project[];
+  }
+
+  async getProjectStatistics(projectId: string): Promise<any> {
+    // Return basic statistics for projects
+    return {
+      totalWorkers: 0,
+      totalExpenses: 0,
+      totalIncome: 0,
+      currentBalance: 0,
+      activeWorkers: 0,
+      completedDays: 0,
+      materialPurchases: 0,
+      lastActivity: new Date().toISOString()
+    };
   }
 }
 

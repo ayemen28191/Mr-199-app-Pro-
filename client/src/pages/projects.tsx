@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import type { Project, InsertProject } from "@shared/schema";
 import { insertProjectSchema } from "@shared/schema";
+import { formatDate, formatCurrency } from "@/lib/utils";
 
 interface ProjectStats {
   totalWorkers: number;
@@ -188,13 +189,7 @@ export default function ProjectsPage() {
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
-      style: "decimal",
-      maximumFractionDigits: 2,
-      minimumFractionDigits: 0,
-    }).format(amount) + " ر.ي";
-  };
+  // استخدام دالة formatCurrency من utils.ts
 
   if (isLoading) {
     return (
@@ -298,7 +293,7 @@ export default function ProjectsPage() {
                     <CardTitle className="text-lg line-clamp-2">{project.name}</CardTitle>
                     <CardDescription className="flex items-center gap-2">
                       <MapPin className="h-3 w-3" />
-                      تم الإنشاء: {new Date(project.createdAt).toLocaleDateString("ar-SA")}
+                      تم الإنشاء: {formatDate(project.createdAt)}
                     </CardDescription>
                   </div>
                   <Badge className={getStatusColor(project.status)}>
@@ -373,7 +368,7 @@ export default function ProjectsPage() {
                 {project.stats.lastActivity && (
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <Clock className="h-3 w-3" />
-                    آخر نشاط: {new Date(project.stats.lastActivity).toLocaleDateString("ar-SA")}
+                    آخر نشاط: {formatDate(project.stats.lastActivity)}
                   </div>
                 )}
 

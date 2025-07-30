@@ -9,6 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { Calendar, User, Building, Eye, FileText, Users, DollarSign, Calculator } from "lucide-react";
 import { format } from "date-fns";
 import { ar } from "date-fns/locale";
+import { formatCurrency, formatDate } from "@/lib/utils";
 import {
   Dialog,
   DialogContent,
@@ -114,14 +115,7 @@ export default function MultiProjectWorkers() {
     enabled: !!selectedWorker,
   });
 
-  const formatCurrency = (amount: string | number) => {
-    const num = typeof amount === 'string' ? parseFloat(amount) : amount;
-    return new Intl.NumberFormat('ar-SA', {
-      style: 'currency',
-      currency: 'SAR',
-      minimumFractionDigits: 2,
-    }).format(num);
-  };
+  // استخدام دالة formatCurrency من utils.ts
 
   if (isLoading) {
     return (
@@ -408,7 +402,7 @@ export default function MultiProjectWorkers() {
                                                   {projectData.attendance.map((record, idx) => (
                                                     <TableRow key={idx}>
                                                       <TableCell>
-                                                        {format(new Date(record.date), 'dd/MM/yyyy', { locale: ar })}
+                                                        {formatDate(record.date)}
                                                       </TableCell>
                                                       <TableCell>{record.workDescription}</TableCell>
                                                       <TableCell>{formatCurrency(record.dailyWage || 0)}</TableCell>
