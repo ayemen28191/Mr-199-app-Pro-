@@ -101,14 +101,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const project = await storage.getProject(req.params.id);
       if (!project) {
-        return res.status(404).json({ message: "Project not found" });
+        return res.status(404).json({ message: "المشروع غير موجود" });
       }
       
-      // يمكن إضافة فحص إضافي هنا للتأكد من عدم وجود بيانات مرتبطة
-      // await storage.deleteProject(req.params.id);
+      await storage.deleteProject(req.params.id);
       res.status(204).send();
     } catch (error) {
-      res.status(500).json({ message: "Error deleting project" });
+      console.error("Error deleting project:", error);
+      res.status(500).json({ message: "خطأ في حذف المشروع" });
     }
   });
 

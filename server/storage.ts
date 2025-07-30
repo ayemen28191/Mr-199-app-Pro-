@@ -19,6 +19,7 @@ export interface IStorage {
   getProjectByName(name: string): Promise<Project | undefined>;
   createProject(project: InsertProject): Promise<Project>;
   updateProject(id: string, project: Partial<InsertProject>): Promise<Project | undefined>;
+  deleteProject(id: string): Promise<void>;
   
   // Workers
   getWorkers(): Promise<Worker[]>;
@@ -171,6 +172,10 @@ export class MemStorage implements IStorage {
     const updated: Project = { ...existing, ...project };
     this.projects.set(id, updated);
     return updated;
+  }
+
+  async deleteProject(id: string): Promise<void> {
+    this.projects.delete(id);
   }
 
   // Workers
@@ -667,6 +672,10 @@ export class DatabaseStorage implements IStorage {
       .where(eq(projects.id, id))
       .returning();
     return updated || undefined;
+  }
+
+  async deleteProject(id: string): Promise<void> {
+    await db.delete(projects).where(eq(projects.id, id));
   }
 
   async getWorkers(): Promise<Worker[]> {
