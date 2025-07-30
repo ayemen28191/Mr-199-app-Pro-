@@ -12,7 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useSelectedProject } from "@/hooks/use-selected-project";
 import ProjectSelector from "@/components/project-selector";
 import ExpenseSummary from "@/components/expense-summary";
-import { getCurrentDate, formatCurrency } from "@/lib/utils";
+import { getCurrentDate, formatCurrency, formatDate } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
 import type { 
   WorkerAttendance, 
@@ -94,7 +94,7 @@ export default function DailyExpenses() {
     queryKey: ["/api/projects", selectedProjectId, "fund-transfers", selectedDate],
     queryFn: async () => {
       const response = await apiRequest("GET", `/api/projects/${selectedProjectId}/fund-transfers?date=${selectedDate}`);
-      console.log("Fund transfers response:", response);
+      console.log("Fund transfers response for", selectedDate, ":", response);
       return Array.isArray(response) ? response as FundTransfer[] : [];
     },
     enabled: !!selectedProjectId && !!selectedDate,
@@ -515,17 +515,17 @@ export default function DailyExpenses() {
             </div>
             
             {/* عرض العهد المضافة لهذا اليوم */}
-            {Array.isArray(todayFundTransfers) && todayFundTransfers.length > 0 && (
+            {Array.isArray(todayFundTransfers) && todayFundTransfers.length > 0 ? (
               <div className="space-y-2 mt-3 pt-3 border-t">
                 <h5 className="text-sm font-medium text-muted-foreground">العهد المضافة اليوم:</h5>
                 {todayFundTransfers.map((transfer, index) => (
-                  <div key={index} className="flex justify-between items-center p-2 bg-muted rounded">
+                  <div key={transfer.id || index} className="flex justify-between items-center p-2 bg-muted rounded">
                     <div className="text-sm flex-1">
                       <div>{transfer.senderName || 'غير محدد'}</div>
                       <div className="text-xs text-muted-foreground">{transfer.transferType}</div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="font-medium arabic-numbers">{formatCurrency(transfer.amount)}</span>
+                      <span className="font-medium arabic-numbers">{transfer.amount} ر.س</span>
                       <div className="flex gap-1">
                         <Button 
                           size="sm" 
@@ -554,6 +554,10 @@ export default function DailyExpenses() {
                     {formatCurrency(totals.totalFundTransfers)}
                   </span>
                 </div>
+              </div>
+            ) : (
+              <div className="text-muted-foreground text-sm text-center p-3 border-t mt-3">
+                لا توجد عهد مضافة لهذا اليوم
               </div>
             )}
           </div>
