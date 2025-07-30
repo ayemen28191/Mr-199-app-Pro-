@@ -165,17 +165,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid fund transfer data", errors: result.error.issues });
       }
       
-      // فحص عدم تكرار رقم الحوالة إذا كان موجود
-      if (result.data.transferNumber) {
-        const existingTransfer = await storage.getFundTransferByNumber(result.data.transferNumber);
-        if (existingTransfer) {
+      // محاولة إنشاء التحويل مباشرة - إذا كان هناك تكرار ستعطي قاعدة البيانات خطأ
+      try {
+        const transfer = await storage.createFundTransfer(result.data);
+        res.status(201).json(transfer);
+      } catch (dbError: any) {
+        // فحص إذا كان الخطأ بسبب تكرار رقم الحوالة
+        if (dbError.code === '23505' && dbError.constraint === 'fund_transfers_transfer_number_key') {
           return res.status(400).json({ message: "يوجد تحويل بنفس رقم الحوالة مسبقاً" });
         }
+        throw dbError; // إعادة رفع الخطأ إذا لم يكن تكرار
       }
-      
-      const transfer = await storage.createFundTransfer(result.data);
-      res.status(201).json(transfer);
     } catch (error) {
+      console.error("Error creating fund transfer:", error);
       res.status(500).json({ message: "Error creating fund transfer" });
     }
   });
@@ -187,17 +189,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid fund transfer data", errors: result.error.issues });
       }
       
-      // فحص عدم تكرار رقم الحوالة إذا كان موجود وليس نفس السجل
-      if (result.data.transferNumber) {
-        const existingTransfer = await storage.getFundTransferByNumber(result.data.transferNumber);
-        if (existingTransfer && existingTransfer.id !== req.params.id) {
+      // محاولة تحديث التحويل مباشرة - إذا كان هناك تكرار ستعطي قاعدة البيانات خطأ
+      try {
+        const transfer = await storage.updateFundTransfer(req.params.id, result.data);
+        res.json(transfer);
+      } catch (dbError: any) {
+        // فحص إذا كان الخطأ بسبب تكرار رقم الحوالة
+        if (dbError.code === '23505' && dbError.constraint === 'fund_transfers_transfer_number_key') {
           return res.status(400).json({ message: "يوجد تحويل بنفس رقم الحوالة مسبقاً" });
         }
+        throw dbError; // إعادة رفع الخطأ إذا لم يكن تكرار
       }
-      
-      const transfer = await storage.updateFundTransfer(req.params.id, result.data);
-      res.json(transfer);
     } catch (error) {
+      console.error("Error updating fund transfer:", error);
       res.status(500).json({ message: "Error updating fund transfer" });
     }
   });

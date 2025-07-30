@@ -27,7 +27,7 @@ export const fundTransfers = pgTable("fund_transfers", {
   projectId: varchar("project_id").notNull().references(() => projects.id),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
   senderName: text("sender_name"), // اسم المرسل
-  transferNumber: text("transfer_number"), // رقم الحولة
+  transferNumber: text("transfer_number").unique(), // رقم الحولة - فريد
   transferType: text("transfer_type").notNull(), // حولة، تسليم يدوي، صراف
   transferDate: timestamp("transfer_date").notNull(),
   notes: text("notes"),
