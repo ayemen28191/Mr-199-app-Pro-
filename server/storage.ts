@@ -300,8 +300,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Material Purchases
-  async getMaterialPurchases(projectId: string, dateFrom?: string, dateTo?: string): Promise<MaterialPurchase[]> {
-    let query = db
+  async getMaterialPurchases(projectId: string, dateFrom?: string, dateTo?: string): Promise<any[]> {
+    // جلب مشتريات المواد مع معلومات المواد
+    const purchases = await db
       .select({
         id: materialPurchases.id,
         projectId: materialPurchases.projectId,
@@ -317,54 +318,48 @@ export class DatabaseStorage implements IStorage {
         notes: materialPurchases.notes,
         purchaseDate: materialPurchases.purchaseDate,
         createdAt: materialPurchases.createdAt,
-        material: {
-          id: materials.id,
-          name: materials.name,
-          category: materials.category,
-          unit: materials.unit,
-          createdAt: materials.createdAt
-        }
+        // معلومات المادة
+        materialName: materials.name,
+        materialCategory: materials.category,
+        materialUnit: materials.unit,
+        materialCreatedAt: materials.createdAt
       })
       .from(materialPurchases)
       .leftJoin(materials, eq(materialPurchases.materialId, materials.id))
-      .where(eq(materialPurchases.projectId, projectId));
+      .where(
+        dateFrom && dateTo 
+          ? and(
+              eq(materialPurchases.projectId, projectId),
+              eq(materialPurchases.purchaseDate, dateFrom)
+            )
+          : eq(materialPurchases.projectId, projectId)
+      )
+      .orderBy(materialPurchases.createdAt);
 
-    if (dateFrom && dateTo) {
-      return await db
-        .select({
-          id: materialPurchases.id,
-          projectId: materialPurchases.projectId,
-          materialId: materialPurchases.materialId,
-          quantity: materialPurchases.quantity,
-          unitPrice: materialPurchases.unitPrice,
-          totalAmount: materialPurchases.totalAmount,
-          purchaseType: materialPurchases.purchaseType,
-          supplierName: materialPurchases.supplierName,
-          invoiceNumber: materialPurchases.invoiceNumber,
-          invoiceDate: materialPurchases.invoiceDate,
-          invoicePhoto: materialPurchases.invoicePhoto,
-          notes: materialPurchases.notes,
-          purchaseDate: materialPurchases.purchaseDate,
-          createdAt: materialPurchases.createdAt,
-          material: {
-            id: materials.id,
-            name: materials.name,
-            category: materials.category,
-            unit: materials.unit,
-            createdAt: materials.createdAt
-          }
-        })
-        .from(materialPurchases)
-        .leftJoin(materials, eq(materialPurchases.materialId, materials.id))
-        .where(
-          and(
-            eq(materialPurchases.projectId, projectId),
-            eq(materialPurchases.purchaseDate, dateFrom)
-          )
-        );
-    }
-
-    return await query;
+    // تحويل البيانات للشكل المطلوب
+    return purchases.map(purchase => ({
+      id: purchase.id,
+      projectId: purchase.projectId,
+      materialId: purchase.materialId,
+      quantity: purchase.quantity,
+      unitPrice: purchase.unitPrice,
+      totalAmount: purchase.totalAmount,
+      purchaseType: purchase.purchaseType,
+      supplierName: purchase.supplierName,
+      invoiceNumber: purchase.invoiceNumber,
+      invoiceDate: purchase.invoiceDate,
+      invoicePhoto: purchase.invoicePhoto,
+      notes: purchase.notes,
+      purchaseDate: purchase.purchaseDate,
+      createdAt: purchase.createdAt,
+      material: {
+        id: purchase.materialId,
+        name: purchase.materialName,
+        category: purchase.materialCategory,
+        unit: purchase.materialUnit,
+        createdAt: purchase.materialCreatedAt
+      }
+    }));
   }
 
   async createMaterialPurchase(purchase: InsertMaterialPurchase): Promise<MaterialPurchase> {
