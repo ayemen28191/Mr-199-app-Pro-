@@ -667,7 +667,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getProjectByName(name: string): Promise<Project | undefined> {
-    const [project] = await db.select().from(projects).where(eq(projects.name, name));
+    const trimmedName = name.trim();
+    const [project] = await db.select().from(projects).where(eq(projects.name, trimmedName));
     return project || undefined;
   }
 
@@ -676,6 +677,7 @@ export class DatabaseStorage implements IStorage {
       .insert(projects)
       .values({
         ...project,
+        name: project.name.trim(),
         status: project.status || 'active'
       })
       .returning();
@@ -706,7 +708,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getWorkerByName(name: string): Promise<Worker | undefined> {
-    const [worker] = await db.select().from(workers).where(eq(workers.name, name));
+    const trimmedName = name.trim();
+    const [worker] = await db.select().from(workers).where(eq(workers.name, trimmedName));
     return worker || undefined;
   }
 
@@ -715,6 +718,7 @@ export class DatabaseStorage implements IStorage {
       .insert(workers)
       .values({
         ...worker,
+        name: worker.name.trim(),
         isActive: worker.isActive !== false
       })
       .returning();
