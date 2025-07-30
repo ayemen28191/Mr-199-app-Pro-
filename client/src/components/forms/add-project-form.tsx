@@ -31,10 +31,11 @@ export default function AddProjectForm({ onSuccess }: AddProjectFormProps) {
       queryClient.invalidateQueries({ queryKey: ["/api/projects/with-stats"] });
       onSuccess?.();
     },
-    onError: () => {
+    onError: (error: any) => {
+      const errorMessage = error?.message || "حدث خطأ أثناء إضافة المشروع";
       toast({
-        title: "خطأ",
-        description: "حدث خطأ أثناء إضافة المشروع",
+        title: "فشل في إضافة المشروع",
+        description: errorMessage,
         variant: "destructive",
       });
     },

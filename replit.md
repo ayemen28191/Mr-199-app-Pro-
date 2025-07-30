@@ -121,6 +121,20 @@ The application follows modern full-stack development practices with type safety
 
 ## Recent Changes
 
+### July 30, 2025
+- ✓ إصلاح مشكلة إضافة المشاريع من الصفحة الرئيسية:
+  - تصحيح ترتيب parameters في استدعاء API في نماذج إضافة المشاريع والعمال
+  - إضافة تحديث cache للإحصائيات عند إضافة مشروع جديد
+- ✓ تحسين نظام منع التكرار:
+  - إضافة تنظيف للنصوص (trim) قبل المقارنة والحفظ في قاعدة البيانات
+  - حذف البيانات المكررة الموجودة وتنظيف المسافات الإضافية
+  - إضافة قيود unique constraints على مستوى قاعدة البيانات لأسماء المشاريع والعمال
+- ✓ تحسين رسائل الأخطاء لتجربة مستخدم أفضل:
+  - تطوير معالجة أخطاء أكثر دقة وتفصيلاً في الواجهة الأمامية
+  - تحسين استخراج رسائل الخطأ من API responses
+  - عرض الأسباب المحددة للأخطاء (مثل: اسم مشروع مكرر) بدلاً من رسائل عامة
+  - ترجمة رسائل الأخطاء إلى العربية
+
 ### July 29, 2025
 - ✓ Fixed database connection issues and resolved all TypeScript errors
 - ✓ Added data validation constraints to prevent duplicates:

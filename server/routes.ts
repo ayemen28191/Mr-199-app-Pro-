@@ -36,7 +36,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const project = await storage.createProject(result.data);
       res.status(201).json(project);
     } catch (error) {
-      res.status(500).json({ message: "Error creating project" });
+      console.error("Error creating project:", error);
+      res.status(500).json({ message: "خطأ في إنشاء المشروع" });
     }
   });
 
@@ -138,7 +139,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const worker = await storage.createWorker(result.data);
       res.status(201).json(worker);
     } catch (error) {
-      res.status(500).json({ message: "Error creating worker" });
+      console.error("Error creating worker:", error);
+      res.status(500).json({ message: "خطأ في إنشاء العامل" });
     }
   });
 

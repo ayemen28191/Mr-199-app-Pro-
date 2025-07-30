@@ -32,10 +32,11 @@ export default function AddWorkerForm({ onSuccess }: AddWorkerFormProps) {
       queryClient.invalidateQueries({ queryKey: ["/api/workers"] });
       onSuccess?.();
     },
-    onError: () => {
+    onError: (error: any) => {
+      const errorMessage = error?.message || "حدث خطأ أثناء إضافة العامل";
       toast({
-        title: "خطأ",
-        description: "حدث خطأ أثناء إضافة العامل",
+        title: "فشل في إضافة العامل",
+        description: errorMessage,
         variant: "destructive",
       });
     },
