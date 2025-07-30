@@ -194,9 +194,9 @@ export class DatabaseStorage implements IStorage {
       .values(transfer)
       .returning();
     
-    // تحديث الملخص اليومي تلقائياً
+    // تحديث الملخص اليومي في الخلفية (دون انتظار)
     const transferDate = new Date(transfer.transferDate).toISOString().split('T')[0];
-    await this.updateDailySummaryForDate(transfer.projectId, transferDate);
+    this.updateDailySummaryForDate(transfer.projectId, transferDate).catch(console.error);
     
     return newTransfer;
   }
@@ -255,8 +255,8 @@ export class DatabaseStorage implements IStorage {
       .values(attendance)
       .returning();
     
-    // تحديث الملخص اليومي تلقائياً
-    await this.updateDailySummaryForDate(attendance.projectId, attendance.date);
+    // تحديث الملخص اليومي في الخلفية (دون انتظار)
+    this.updateDailySummaryForDate(attendance.projectId, attendance.date).catch(console.error);
     
     return newAttendance;
   }
@@ -411,7 +411,8 @@ export class DatabaseStorage implements IStorage {
       .values(expense)
       .returning();
     
-    await this.updateDailySummaryForDate(expense.projectId, expense.date);
+    // تحديث الملخص اليومي في الخلفية (دون انتظار)
+    this.updateDailySummaryForDate(expense.projectId, expense.date).catch(console.error);
     
     return newExpense;
   }
@@ -474,14 +475,27 @@ export class DatabaseStorage implements IStorage {
     return result.length > 0 ? result[0].remainingBalance : "0";
   }
 
-  // تحديث الملخص اليومي تلقائياً
+  // تحديث الملخص اليومي تلقائياً مع تحسينات الأداء
   async updateDailySummaryForDate(projectId: string, date: string): Promise<void> {
     try {
-      const fundTransfers = await this.getFundTransfers(projectId, date);
-      const workerAttendanceRecords = await this.getWorkerAttendance(projectId, date);
-      const materialPurchases = await this.getMaterialPurchases(projectId, date);
-      const transportationExpenses = await this.getTransportationExpenses(projectId, date);
-      const workerTransfers = await this.getFilteredWorkerTransfers(projectId, date);
+      console.log(`Updating daily summary for ${projectId} on ${date}...`);
+      
+      // تشغيل جميع الاستعلامات بشكل متوازي لتحسين الأداء
+      const [
+        fundTransfers,
+        workerAttendanceRecords,
+        materialPurchases,
+        transportationExpenses,
+        workerTransfers,
+        carriedForwardAmount
+      ] = await Promise.all([
+        this.getFundTransfers(projectId, date),
+        this.getWorkerAttendance(projectId, date),
+        this.getMaterialPurchases(projectId, date),
+        this.getTransportationExpenses(projectId, date),
+        this.getFilteredWorkerTransfers(projectId, date),
+        this.getPreviousDayBalance(projectId, date).then(balance => parseFloat(balance))
+      ]);
 
       const totalFundTransfers = fundTransfers.reduce((sum, t) => sum + parseFloat(t.amount), 0);
       const totalWorkerWages = workerAttendanceRecords.reduce((sum, a) => sum + parseFloat(a.dailyWage || '0'), 0);
@@ -489,7 +503,6 @@ export class DatabaseStorage implements IStorage {
       const totalTransportationCosts = transportationExpenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
       const totalWorkerTransferCosts = workerTransfers.reduce((sum, t) => sum + parseFloat(t.amount), 0);
 
-      const carriedForwardAmount = parseFloat(await this.getPreviousDayBalance(projectId, date));
       const totalIncome = carriedForwardAmount + totalFundTransfers;
       const totalExpenses = totalWorkerWages + totalMaterialCosts + totalTransportationCosts + totalWorkerTransferCosts;
       const remainingBalance = totalIncome - totalExpenses;
@@ -506,6 +519,8 @@ export class DatabaseStorage implements IStorage {
         totalExpenses: totalExpenses.toString(),
         remainingBalance: remainingBalance.toString()
       });
+      
+      console.log(`Daily summary updated successfully for ${projectId} on ${date}`);
     } catch (error) {
       console.error('Error updating daily summary:', error);
     }
