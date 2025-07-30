@@ -130,7 +130,7 @@ export default function DailyExpenses() {
   }, [previousBalance]);
 
   const addFundTransferMutation = useMutation({
-    mutationFn: (data: InsertFundTransfer) => apiRequest("/api/fund-transfers", "POST", data),
+    mutationFn: (data: InsertFundTransfer) => apiRequest("POST", "/api/fund-transfers", data),
     onSuccess: () => {
       toast({
         title: "تم إضافة العهدة",
@@ -151,7 +151,7 @@ export default function DailyExpenses() {
   });
 
   const addTransportationMutation = useMutation({
-    mutationFn: (data: InsertTransportationExpense) => apiRequest("/api/transportation-expenses", "POST", data),
+    mutationFn: (data: InsertTransportationExpense) => apiRequest("POST", "/api/transportation-expenses", data),
     onSuccess: () => {
       toast({
         title: "تم إضافة المواصلات",
@@ -171,7 +171,7 @@ export default function DailyExpenses() {
   });
 
   const saveDailySummaryMutation = useMutation({
-    mutationFn: (data: InsertDailyExpenseSummary) => apiRequest("/api/daily-expense-summaries", "POST", data),
+    mutationFn: (data: InsertDailyExpenseSummary) => apiRequest("POST", "/api/daily-expense-summaries", data),
     onSuccess: () => {
       toast({
         title: "تم الحفظ",

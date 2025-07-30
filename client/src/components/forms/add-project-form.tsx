@@ -19,7 +19,7 @@ export default function AddProjectForm({ onSuccess }: AddProjectFormProps) {
   const queryClient = useQueryClient();
 
   const addProjectMutation = useMutation({
-    mutationFn: (data: InsertProject) => apiRequest("/api/projects", "POST", data),
+    mutationFn: (data: InsertProject) => apiRequest("POST", "/api/projects", data),
     onSuccess: () => {
       toast({
         title: "تم الحفظ",

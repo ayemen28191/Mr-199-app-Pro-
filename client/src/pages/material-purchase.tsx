@@ -43,7 +43,7 @@ export default function MaterialPurchase() {
   });
 
   const addMaterialMutation = useMutation({
-    mutationFn: (data: InsertMaterial) => apiRequest("/api/materials", "POST", data),
+    mutationFn: (data: InsertMaterial) => apiRequest("POST", "/api/materials", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/materials"] });
     },
@@ -73,7 +73,7 @@ export default function MaterialPurchase() {
     mutationFn: async (data: any) => {
       // Send the purchase data with material info directly to the server
       // The server will handle creating the material if needed
-      return apiRequest("/api/material-purchases", "POST", data);
+      return apiRequest("POST", "/api/material-purchases", data);
     },
     onSuccess: () => {
       toast({

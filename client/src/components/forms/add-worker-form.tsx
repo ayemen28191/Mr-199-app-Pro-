@@ -20,7 +20,7 @@ export default function AddWorkerForm({ onSuccess }: AddWorkerFormProps) {
   const queryClient = useQueryClient();
 
   const addWorkerMutation = useMutation({
-    mutationFn: (data: InsertWorker) => apiRequest("/api/workers", "POST", data),
+    mutationFn: (data: InsertWorker) => apiRequest("POST", "/api/workers", data),
     onSuccess: () => {
       toast({
         title: "تم الحفظ",

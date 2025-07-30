@@ -171,7 +171,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.status(201).json(transfer);
       } catch (dbError: any) {
         // فحص إذا كان الخطأ بسبب تكرار رقم الحوالة
-        if (dbError.code === '23505' && dbError.constraint === 'fund_transfers_transfer_number_key') {
+        if (dbError.code === '23505' && (dbError.constraint === 'fund_transfers_transfer_number_key' || dbError.constraint === 'fund_transfers_transfer_number_unique')) {
           return res.status(400).json({ message: "يوجد تحويل بنفس رقم الحوالة مسبقاً" });
         }
         throw dbError; // إعادة رفع الخطأ إذا لم يكن تكرار
