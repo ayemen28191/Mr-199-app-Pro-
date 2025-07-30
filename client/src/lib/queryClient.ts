@@ -8,8 +8,8 @@ async function throwIfResNotOk(res: Response) {
 }
 
 export async function apiRequest(
-  method: string,
   url: string,
+  method: string,
   data?: unknown | undefined,
 ): Promise<any> {
   const res = await fetch(url, {
@@ -20,6 +20,12 @@ export async function apiRequest(
   });
 
   await throwIfResNotOk(res);
+  
+  // إذا كانت استجابة DELETE فارغة، لا نحاول تحليل JSON
+  if (method === "DELETE" && res.status === 204) {
+    return {};
+  }
+  
   return await res.json();
 }
 
