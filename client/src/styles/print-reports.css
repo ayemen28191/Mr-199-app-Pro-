@@ -1,7 +1,16 @@
 /* تنسيقات خاصة بطباعة التقارير */
 @media print {
   /* إخفاء عناصر الواجهة غير المرغوبة في الطباعة */
-  .no-print {
+  .no-print,
+  nav,
+  .sidebar,
+  .header-controls,
+  .print\:hidden,
+  .bg-gradient-to-r,
+  button:not(.print-show),
+  .toast-container,
+  .dropdown-menu,
+  .modal-backdrop {
     display: none !important;
   }
   

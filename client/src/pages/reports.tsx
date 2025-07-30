@@ -160,31 +160,97 @@ export default function Reports() {
 
   // Export Functions
   const exportToCSV = (data: any[], filename: string) => {
-    if (!data.length) return;
+    if (!data || data.length === 0) {
+      toast({
+        title: "تنبيه",
+        description: "لا توجد بيانات للتصدير",
+        variant: "destructive",
+      });
+      return;
+    }
     
-    const headers = Object.keys(data[0]);
-    const csvContent = [
-      headers.join(','),
-      ...data.map(row => headers.map(header => `"${row[header] || ''}"`).join(','))
-    ].join('\n');
-    
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `${filename}.csv`;
-    link.click();
+    try {
+      const headers = Object.keys(data[0]);
+      // إضافة BOM للتعامل مع النصوص العربية بشكل صحيح
+      const csvContent = [
+        '\uFEFF' + headers.join(','),
+        ...data.map(row => 
+          headers.map(header => {
+            const value = row[header] || '';
+            // تحويل القيم إلى نص وإضافة علامات التنصيص للقيم التي تحتوي على فواصل
+            return typeof value === 'string' && (value.includes(',') || value.includes('"') || value.includes('\n')) 
+              ? `"${String(value).replace(/"/g, '""')}"` 
+              : String(value);
+          }).join(',')
+        )
+      ].join('\n');
+      
+      const blob = new Blob([csvContent], { 
+        type: 'text/csv;charset=utf-8;' 
+      });
+      
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.href = url;
+      link.download = `${filename}-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      toast({
+        title: "تم التصدير",
+        description: "تم تصدير التقرير بنجاح",
+      });
+    } catch (error) {
+      console.error('خطأ في التصدير:', error);
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء تصدير التقرير",
+        variant: "destructive",
+      });
+    }
   };
 
   const printReport = () => {
-    // إخفاء عناصر الواجهة غير المطلوبة للطباعة
-    const elementsToHide = document.querySelectorAll('.no-print, .print\\:hidden');
-    elementsToHide.forEach(el => el.classList.add('hidden'));
-    
-    // طباعة التقرير
-    window.print();
-    
-    // إظهار العناصر مرة أخرى
-    elementsToHide.forEach(el => el.classList.remove('hidden'));
+    try {
+      // تطبيق تنسيقات الطباعة
+      document.body.classList.add('printing');
+      
+      // إخفاء عناصر الواجهة غير المطلوبة للطباعة
+      const elementsToHide = document.querySelectorAll('.no-print, nav, .sidebar, .header-controls, .print\\:hidden');
+      const originalStyles: { element: HTMLElement; display: string }[] = [];
+      
+      elementsToHide.forEach((el) => {
+        const element = el as HTMLElement;
+        originalStyles.push({
+          element: element,
+          display: element.style.display
+        });
+        element.style.display = 'none';
+      });
+      
+      // تأخير قصير للتأكد من تطبيق التنسيقات
+      setTimeout(() => {
+        window.print();
+        
+        // استعادة العناصر المخفية بعد الطباعة
+        setTimeout(() => {
+          originalStyles.forEach(({ element, display }) => {
+            element.style.display = display;
+          });
+          document.body.classList.remove('printing');
+        }, 100);
+      }, 100);
+      
+    } catch (error) {
+      console.error('خطأ في الطباعة:', error);
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء الطباعة",
+        variant: "destructive",
+      });
+    }
   };
 
   const reportTypes = [
@@ -606,12 +672,12 @@ export default function Reports() {
                 {activeReportType === 'materials' && 'كشف المواد المشتراة'}
                 {activeReportType === 'summary' && 'ملخص المشروع'}
               </CardTitle>
-              <div className="flex gap-2">
+              <div className="flex gap-2 no-print">
                 <Button 
                   variant="outline" 
                   size="sm" 
                   onClick={printReport}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 hover:bg-blue-50 hover:text-blue-700 transition-colors"
                 >
                   <Printer className="h-4 w-4" />
                   طباعة
@@ -656,10 +722,10 @@ export default function Reports() {
                       exportToCSV(exportData, filename);
                     }
                   }}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 hover:bg-green-50 hover:text-green-700 transition-colors"
                 >
                   <FileSpreadsheet className="h-4 w-4" />
-                  تصدير CSV
+                  تصدير Excel
                 </Button>
                 <Button 
                   variant="outline" 
@@ -668,6 +734,7 @@ export default function Reports() {
                     setActiveReportType(null);
                     setReportData(null);
                   }}
+                  className="hover:bg-red-50 hover:text-red-700 transition-colors"
                 >
                   إغلاق
                 </Button>

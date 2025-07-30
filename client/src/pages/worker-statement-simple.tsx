@@ -60,48 +60,91 @@ export default function WorkerStatementReport() {
   };
 
   const exportToExcel = () => {
-    if (!attendance || !selectedWorker) return;
+    if (!attendance || !selectedWorker || attendance.length === 0) {
+      alert("لا توجد بيانات للتصدير");
+      return;
+    }
 
-    const headers = [
-      'م', 'الاسم', 'التاريخ', 'الأجر اليومي', 'أيام العمل', 'ساعات العمل', 
-      'المبلغ المستحق', 'المبلغ المستلم', 'المتبقي', 'ملاحظات'
-    ];
-    
-    const rows = attendance.map((record, index) => [
-      index + 1,
-      selectedWorker.name,
-      format(new Date(record.date), 'yyyy-MM-dd'),
-      formatCurrency(parseFloat(record.dailyWage || '0')),
-      '1',
-      '0', 
-      formatCurrency(parseFloat(record.dailyWage || '0')),
-      record.paymentType === 'نقد' ? formatCurrency(parseFloat(record.dailyWage || '0')) : '0',
-      record.paymentType === 'نقد' ? '0' : formatCurrency(parseFloat(record.dailyWage || '0')),
-      record.workDescription || ''
-    ]);
+    try {
+      const headers = [
+        'م', 'الاسم', 'التاريخ', 'الأجر اليومي', 'أيام العمل', 'ساعات العمل', 
+        'المبلغ المستحق', 'المبلغ المستلم', 'المتبقي', 'ملاحظات'
+      ];
+      
+      const rows = attendance.map((record, index) => [
+        index + 1,
+        selectedWorker.name,
+        format(new Date(record.date), 'yyyy-MM-dd'),
+        formatCurrency(parseFloat(record.dailyWage || '0')),
+        '1',
+        '0', 
+        formatCurrency(parseFloat(record.dailyWage || '0')),
+        record.paymentType === 'نقد' ? formatCurrency(parseFloat(record.dailyWage || '0')) : '0',
+        record.paymentType === 'نقد' ? '0' : formatCurrency(parseFloat(record.dailyWage || '0')),
+        record.workDescription || ''
+      ]);
 
-    const totalEarned = attendance.reduce((sum, a) => sum + parseFloat(a.dailyWage || '0'), 0);
-    rows.push(['', '', '', '', '', '', '', '', '', '']);
-    rows.push(['', 'إجمالي عدد أيام العمل', '', '', '', '', attendance.length.toString(), '', '', '']);
-    rows.push(['', 'إجمالي المبلغ المستحق للعامل', '', '', '', '', formatCurrency(totalEarned), '', '', '']);
+      const totalEarned = attendance.reduce((sum, a) => sum + parseFloat(a.dailyWage || '0'), 0);
+      rows.push(['', '', '', '', '', '', '', '', '', '']);
+      rows.push(['', 'إجمالي عدد أيام العمل', '', '', '', '', attendance.length.toString(), '', '', '']);
+      rows.push(['', 'إجمالي المبلغ المستحق للعامل', '', '', '', '', formatCurrency(totalEarned), '', '', '']);
 
-    const csvContent = [headers, ...rows]
-      .map(row => row.map(cell => `"${cell}"`).join(','))
-      .join('\n');
+      const csvContent = [headers, ...rows]
+        .map(row => row.map(cell => `"${String(cell || '')}"`).join(','))
+        .join('\n');
 
-    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `كشف_حساب_${selectedWorker.name}_${dateFrom}_${dateTo}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.href = url;
+      link.download = `كشف_حساب_${selectedWorker.name}_${dateFrom}_${dateTo}_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      alert("تم تصدير التقرير بنجاح");
+    } catch (error) {
+      console.error('خطأ في التصدير:', error);
+      alert("حدث خطأ أثناء تصدير التقرير");
+    }
   };
 
   const printReport = () => {
-    window.print();
+    try {
+      // تطبيق تنسيقات الطباعة
+      document.body.classList.add('printing');
+      
+      // إخفاء عناصر الواجهة غير المطلوبة للطباعة
+      const elementsToHide = document.querySelectorAll('.no-print, nav, .sidebar, .header-controls, .print\\:hidden, .bg-gradient-to-r');
+      const originalStyles: { element: HTMLElement; display: string }[] = [];
+      
+      elementsToHide.forEach((el) => {
+        const element = el as HTMLElement;
+        originalStyles.push({
+          element: element,
+          display: element.style.display
+        });
+        element.style.display = 'none';
+      });
+      
+      // تأخير قصير للتأكد من تطبيق التنسيقات
+      setTimeout(() => {
+        window.print();
+        
+        // استعادة العناصر المخفية بعد الطباعة
+        setTimeout(() => {
+          originalStyles.forEach(({ element, display }) => {
+            element.style.display = display;
+          });
+          document.body.classList.remove('printing');
+        }, 100);
+      }, 100);
+      
+    } catch (error) {
+      console.error('خطأ في الطباعة:', error);
+      alert("حدث خطأ أثناء الطباعة");
+    }
   };
 
   const totalEarned = attendance.reduce((sum, a) => sum + parseFloat(a.dailyWage || '0'), 0);
@@ -173,16 +216,24 @@ export default function WorkerStatementReport() {
             </Button>
             
             {attendance.length > 0 && selectedWorker && (
-              <>
-                <Button variant="outline" onClick={exportToExcel} className="flex items-center gap-2">
+              <div className="flex gap-2 no-print">
+                <Button 
+                  variant="outline" 
+                  onClick={exportToExcel} 
+                  className="flex items-center gap-2 hover:bg-green-50 hover:text-green-700 transition-colors"
+                >
                   <Download className="h-4 w-4" />
                   تصدير Excel
                 </Button>
-                <Button variant="outline" onClick={printReport} className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={printReport} 
+                  className="flex items-center gap-2 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                >
                   <Printer className="h-4 w-4" />
                   طباعة
                 </Button>
-              </>
+              </div>
             )}
           </div>
         </CardContent>
