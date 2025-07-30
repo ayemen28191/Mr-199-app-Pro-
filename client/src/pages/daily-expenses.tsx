@@ -93,6 +93,10 @@ export default function DailyExpenses() {
   const { data: todayFundTransfers = [], refetch: refetchFundTransfers, isLoading: fundTransfersLoading } = useQuery({
     queryKey: ["/api/projects", selectedProjectId, "fund-transfers", selectedDate],
     queryFn: async () => {
+      console.log("=== FUND TRANSFERS QUERY STARTED ===");
+      console.log("selectedProjectId:", selectedProjectId);
+      console.log("selectedDate:", selectedDate);
+      
       const response = await apiRequest("GET", `/api/projects/${selectedProjectId}/fund-transfers?date=${selectedDate}`);
       console.log("=== FUND TRANSFERS DEBUG ===");
       console.log("API URL:", `/api/projects/${selectedProjectId}/fund-transfers?date=${selectedDate}`);
@@ -104,6 +108,8 @@ export default function DailyExpenses() {
       return Array.isArray(response) ? response as FundTransfer[] : [];
     },
     enabled: !!selectedProjectId && !!selectedDate,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
   });
 
   // جلب الرصيد المتبقي من اليوم السابق
@@ -432,8 +438,9 @@ export default function DailyExpenses() {
 
   // Debug logging في المكون
   console.log("=== COMPONENT STATE DEBUG ===");
-  console.log("selectedProjectId:", selectedProjectId);
-  console.log("selectedDate:", selectedDate);
+  console.log("selectedProjectId:", selectedProjectId, "!! =", !!selectedProjectId);
+  console.log("selectedDate:", selectedDate, "!! =", !!selectedDate);
+  console.log("Query enabled:", !!selectedProjectId && !!selectedDate);
   console.log("todayFundTransfers:", todayFundTransfers);
   console.log("todayFundTransfers type:", typeof todayFundTransfers);
   console.log("todayFundTransfers isArray:", Array.isArray(todayFundTransfers));
