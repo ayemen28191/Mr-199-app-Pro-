@@ -291,16 +291,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/material-purchases", async (req, res) => {
     try {
-      // Extract material info from request body to create material first
+      // التحقق من البيانات المطلوبة
       const { materialName, materialCategory, materialUnit, ...purchaseData } = req.body;
+      
+      if (!materialName || !materialUnit) {
+        return res.status(400).json({ message: "اسم المادة ووحدة القياس مطلوبان" });
+      }
+      
+      if (!purchaseData.quantity || !purchaseData.unitPrice) {
+        return res.status(400).json({ message: "الكمية وسعر الوحدة مطلوبان" });
+      }
+      
+      if (!purchaseData.projectId) {
+        return res.status(400).json({ message: "يجب اختيار مشروع" });
+      }
       
       // Create or find the material first
       let material = await storage.findMaterialByNameAndUnit(materialName, materialUnit);
       if (!material) {
         material = await storage.createMaterial({
-          name: materialName,
-          category: materialCategory || "عام",
-          unit: materialUnit
+          name: materialName.trim(),
+          category: materialCategory?.trim() || "عام",
+          unit: materialUnit.trim()
         });
       }
       
@@ -312,57 +324,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const result = insertMaterialPurchaseSchema.safeParse(purchaseDataWithMaterialId);
       if (!result.success) {
-        return res.status(400).json({ message: "Invalid material purchase data", errors: result.error.issues });
+        const errorMessages = result.error.issues.map(issue => 
+          `${issue.path.join('.')}: ${issue.message}`
+        ).join(', ');
+        return res.status(400).json({ 
+          message: `بيانات غير صحيحة: ${errorMessages}`,
+          errors: result.error.issues 
+        });
       }
       
       const purchase = await storage.createMaterialPurchase(result.data);
-      
-      // Update daily expense summary with material cost using purchase date
-      const purchaseDate = purchase.purchaseDate;
-      const existingSummary = await storage.getDailyExpenseSummary(purchase.projectId, purchaseDate);
-      
-      const currentMaterialCosts = parseFloat(existingSummary?.totalMaterialCosts || '0');
-      const newMaterialCosts = currentMaterialCosts + parseFloat(purchase.totalAmount);
-      
-      const totalExpenses = newMaterialCosts + 
-        parseFloat(existingSummary?.totalWorkerWages || '0') + 
-        parseFloat(existingSummary?.totalTransportationCosts || '0');
-      const totalIncome = parseFloat(existingSummary?.totalFundTransfers || '0') + 
-        parseFloat(existingSummary?.carriedForwardAmount || '0');
-      const remainingBalance = totalIncome - totalExpenses;
-
-      await storage.createOrUpdateDailyExpenseSummary({
-        projectId: purchase.projectId,
-        date: purchaseDate,
-        totalIncome: totalIncome.toString(),
-        totalExpenses: totalExpenses.toString(),
-        remainingBalance: remainingBalance.toString(),
-        totalMaterialCosts: newMaterialCosts.toString(),
-        carriedForwardAmount: existingSummary?.carriedForwardAmount || '0',
-        totalFundTransfers: existingSummary?.totalFundTransfers || '0',
-        totalWorkerWages: existingSummary?.totalWorkerWages || '0',
-        totalTransportationCosts: existingSummary?.totalTransportationCosts || '0'
-      });
-      
       res.status(201).json(purchase);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating material purchase:", error);
-      res.status(500).json({ message: "Error creating material purchase" });
+      
+      // التحقق من نوع الخطأ وإرجاع رسالة مناسبة
+      if (error.code === '23505') {
+        return res.status(400).json({ message: "يوجد مشترى مكرر بنفس البيانات" });
+      }
+      
+      if (error.code === '23503') {
+        return res.status(400).json({ message: "المشروع المحدد غير موجود" });
+      }
+      
+      res.status(500).json({ message: "حدث خطأ أثناء حفظ شراء المواد" });
     }
   });
 
   app.put("/api/material-purchases/:id", async (req, res) => {
     try {
-      // Extract material info from request body to update material if needed
+      // التحقق من البيانات المطلوبة
       const { materialName, materialCategory, materialUnit, ...purchaseData } = req.body;
+      
+      if (!materialName || !materialUnit) {
+        return res.status(400).json({ message: "اسم المادة ووحدة القياس مطلوبان" });
+      }
+      
+      if (!purchaseData.quantity || !purchaseData.unitPrice) {
+        return res.status(400).json({ message: "الكمية وسعر الوحدة مطلوبان" });
+      }
       
       // Create or find the material first (if material details changed)
       let material = await storage.findMaterialByNameAndUnit(materialName, materialUnit);
       if (!material) {
         material = await storage.createMaterial({
-          name: materialName,
-          category: materialCategory || "عام",
-          unit: materialUnit
+          name: materialName.trim(),
+          category: materialCategory?.trim() || "عام",
+          unit: materialUnit.trim()
         });
       }
       
@@ -374,18 +382,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const result = insertMaterialPurchaseSchema.safeParse(purchaseDataWithMaterialId);
       if (!result.success) {
-        return res.status(400).json({ message: "Invalid material purchase data", errors: result.error.issues });
+        const errorMessages = result.error.issues.map(issue => 
+          `${issue.path.join('.')}: ${issue.message}`
+        ).join(', ');
+        return res.status(400).json({ 
+          message: `بيانات غير صحيحة: ${errorMessages}`,
+          errors: result.error.issues 
+        });
       }
       
       const purchase = await storage.updateMaterialPurchase(req.params.id, result.data);
       if (!purchase) {
-        return res.status(404).json({ message: "Material purchase not found" });
+        return res.status(404).json({ message: "شراء المواد غير موجود" });
       }
       
       res.json(purchase);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error updating material purchase:", error);
-      res.status(500).json({ message: "Error updating material purchase" });
+      
+      // التحقق من نوع الخطأ وإرجاع رسالة مناسبة
+      if (error.code === '23505') {
+        return res.status(400).json({ message: "يوجد مشترى مكرر بنفس البيانات" });
+      }
+      
+      if (error.code === '23503') {
+        return res.status(400).json({ message: "المشروع أو المادة المحددة غير موجودة" });
+      }
+      
+      res.status(500).json({ message: "حدث خطأ أثناء تحديث شراء المواد" });
     }
   });
 

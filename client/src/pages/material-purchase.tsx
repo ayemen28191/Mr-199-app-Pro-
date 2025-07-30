@@ -43,9 +43,23 @@ export default function MaterialPurchase() {
   });
 
   const addMaterialMutation = useMutation({
-    mutationFn: (data: InsertMaterial) => apiRequest("POST", "/api/materials", data),
+    mutationFn: (data: InsertMaterial) => apiRequest("/api/materials", "POST", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/materials"] });
+    },
+    onError: (error: any) => {
+      console.error("Material creation error:", error);
+      let errorMessage = "حدث خطأ أثناء إضافة المادة";
+      
+      if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+      
+      toast({
+        title: "خطأ",
+        description: errorMessage,
+        variant: "destructive",
+      });
     },
   });
 
@@ -59,7 +73,7 @@ export default function MaterialPurchase() {
     mutationFn: async (data: any) => {
       // Send the purchase data with material info directly to the server
       // The server will handle creating the material if needed
-      return apiRequest("POST", "/api/material-purchases", data);
+      return apiRequest("/api/material-purchases", "POST", data);
     },
     onSuccess: () => {
       toast({
@@ -69,12 +83,20 @@ export default function MaterialPurchase() {
       resetForm();
       queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProjectId, "material-purchases"] });
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error("Material purchase error:", error);
+      let errorMessage = "حدث خطأ أثناء حفظ شراء المواد";
+      
+      if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+      
       toast({
         title: "خطأ",
-        description: "حدث خطأ أثناء حفظ شراء المواد",
+        description: errorMessage,
         variant: "destructive",
       });
+      // لا تقم بإعادة تعيين النموذج عند حدوث خطأ
     },
   });
 
@@ -97,7 +119,7 @@ export default function MaterialPurchase() {
   // Update Material Purchase Mutation
   const updateMaterialPurchaseMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => 
-      apiRequest("PUT", `/api/material-purchases/${id}`, data),
+      apiRequest(`/api/material-purchases/${id}`, "PUT", data),
     onSuccess: () => {
       toast({
         title: "تم التحديث",
@@ -106,12 +128,20 @@ export default function MaterialPurchase() {
       resetForm();
       queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProjectId, "material-purchases"] });
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error("Material purchase update error:", error);
+      let errorMessage = "حدث خطأ أثناء تحديث شراء المواد";
+      
+      if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+      
       toast({
         title: "خطأ",
-        description: "حدث خطأ أثناء تحديث شراء المواد",
+        description: errorMessage,
         variant: "destructive",
       });
+      // لا تقم بإعادة تعيين النموذج عند حدوث خطأ
     }
   });
 
