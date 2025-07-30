@@ -75,9 +75,14 @@ export default function DailyExpenses() {
     queryFn: async () => {
       const response = await apiRequest("GET", `/api/projects/${selectedProjectId}/material-purchases?dateFrom=${selectedDate}&dateTo=${selectedDate}`);
       console.log("Material purchases response:", response);
-      return Array.isArray(response) ? response as MaterialPurchase[] : [];
+      return Array.isArray(response) ? response as any[] : [];
     },
     enabled: !!selectedProjectId,
+  });
+
+  // جلب معلومات المواد
+  const { data: materials = [] } = useQuery({
+    queryKey: ["/api/materials"],
   });
 
   const { data: todayWorkerTransfers = [], refetch: refetchWorkerTransfers } = useQuery({
@@ -731,13 +736,21 @@ export default function DailyExpenses() {
             <p className="text-muted-foreground text-sm mb-3">لا توجد مشتريات لهذا اليوم</p>
           ) : (
             <div className="space-y-2 mb-3">
-              {todayMaterialPurchases.map((purchase, index) => (
+              {todayMaterialPurchases.map((purchase, index) => {
+                const material = purchase.material || materials.find(m => m.id === purchase.materialId);
+                return (
                 <div key={index} className="flex justify-between items-center p-2 bg-muted rounded">
                   <div className="text-sm flex-1">
-                    <div>{purchase.materialId || 'مادة غير محددة'}</div>
+                    <div className="font-medium">{material?.name || 'مادة غير محددة'}</div>
                     <div className="text-xs text-muted-foreground">
-                      {purchase.quantity} وحدة × {formatCurrency(purchase.unitPrice)}
+                      {purchase.quantity} {material?.unit || 'وحدة'} × {formatCurrency(purchase.unitPrice)}
                     </div>
+                    {purchase.supplierName && (
+                      <div className="text-xs text-muted-foreground">المورد: {purchase.supplierName}</div>
+                    )}
+                    {material?.category && (
+                      <div className="text-xs text-muted-foreground">الفئة: {material.category}</div>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="font-medium arabic-numbers">{formatCurrency(purchase.totalAmount)}</span>
@@ -765,7 +778,8 @@ export default function DailyExpenses() {
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
               <div className="text-left mt-2 pt-2 border-t">
                 <span className="text-sm text-muted-foreground">إجمالي المشتريات: </span>
                 <span className="font-bold text-success arabic-numbers">
