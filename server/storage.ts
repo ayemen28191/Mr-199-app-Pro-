@@ -677,17 +677,152 @@ export class DatabaseStorage implements IStorage {
     return [];
   }
 
-  async getProjectStatistics(projectId: string): Promise<any> {
-    return {
-      totalWorkers: 0,
-      totalExpenses: 0,
-      totalIncome: 0,
-      currentBalance: 0,
-      activeWorkers: 0,
-      completedDays: 0,
-      materialPurchases: 0,
-      lastActivity: new Date().toISOString().split('T')[0]
-    };
+  async getProjectStatistics(projectId: string): Promise<{
+    totalWorkers: number;
+    totalExpenses: number;
+    totalIncome: number;
+    currentBalance: number;
+    activeWorkers: number;
+    completedDays: number;
+    materialPurchases: number;
+    lastActivity: string;
+  }> {
+    try {
+      // حساب إجمالي العمال في المشروع
+      const workersCount = await db
+        .select({ count: sql<number>`count(distinct ${workerAttendance.workerId})` })
+        .from(workerAttendance)
+        .where(eq(workerAttendance.projectId, projectId));
+      
+      const totalWorkers = workersCount[0]?.count || 0;
+
+      // حساب العمال النشطين (الذين عملوا في آخر 30 يوم)
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0];
+      
+      const activeWorkersCount = await db
+        .select({ count: sql<number>`count(distinct ${workerAttendance.workerId})` })
+        .from(workerAttendance)
+        .where(and(
+          eq(workerAttendance.projectId, projectId),
+          gte(workerAttendance.date, thirtyDaysAgoStr)
+        ));
+      
+      const activeWorkers = activeWorkersCount[0]?.count || 0;
+
+      // حساب عدد أيام العمل المكتملة
+      const completedDaysCount = await db
+        .select({ count: sql<number>`count(distinct ${workerAttendance.date})` })
+        .from(workerAttendance)
+        .where(eq(workerAttendance.projectId, projectId));
+      
+      const completedDays = completedDaysCount[0]?.count || 0;
+
+      // حساب عدد مشتريات المواد
+      const purchasesCount = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(materialPurchases)
+        .where(eq(materialPurchases.projectId, projectId));
+      
+      const materialPurchasesCount = purchasesCount[0]?.count || 0;
+
+      // حساب المالية من آخر ملخص يومي
+      const latestSummary = await db
+        .select()
+        .from(dailyExpenseSummaries)
+        .where(eq(dailyExpenseSummaries.projectId, projectId))
+        .orderBy(sql`${dailyExpenseSummaries.date} DESC`)
+        .limit(1);
+
+      let totalIncome = 0;
+      let totalExpenses = 0;
+      let currentBalance = 0;
+
+      if (latestSummary.length > 0) {
+        const summary = latestSummary[0];
+        totalIncome = parseFloat(summary.totalIncome || '0');
+        totalExpenses = parseFloat(summary.totalExpenses || '0');
+        currentBalance = parseFloat(summary.remainingBalance || '0');
+      } else {
+        // إذا لم توجد ملخصات، احسب من البيانات الخام
+        const fundTransfersSum = await db
+          .select({ sum: sql<number>`COALESCE(SUM(CAST(${fundTransfers.amount} AS NUMERIC)), 0)` })
+          .from(fundTransfers)
+          .where(eq(fundTransfers.projectId, projectId));
+        
+        totalIncome = parseFloat(fundTransfersSum[0]?.sum?.toString() || '0');
+
+        // حساب المصروفات
+        const wagesSum = await db
+          .select({ sum: sql<number>`COALESCE(SUM(CAST(${workerAttendance.dailyWage} AS NUMERIC)), 0)` })
+          .from(workerAttendance)
+          .where(eq(workerAttendance.projectId, projectId));
+
+        const materialsSum = await db
+          .select({ sum: sql<number>`COALESCE(SUM(CAST(${materialPurchases.totalAmount} AS NUMERIC)), 0)` })
+          .from(materialPurchases)
+          .where(eq(materialPurchases.projectId, projectId));
+
+        const transportSum = await db
+          .select({ sum: sql<number>`COALESCE(SUM(CAST(${transportationExpenses.amount} AS NUMERIC)), 0)` })
+          .from(transportationExpenses)
+          .where(eq(transportationExpenses.projectId, projectId));
+
+        const wages = parseFloat(wagesSum[0]?.sum?.toString() || '0');
+        const materials = parseFloat(materialsSum[0]?.sum?.toString() || '0');
+        const transport = parseFloat(transportSum[0]?.sum?.toString() || '0');
+        
+        totalExpenses = wages + materials + transport;
+        currentBalance = totalIncome - totalExpenses;
+      }
+
+      // البحث عن آخر نشاط
+      const lastActivityQueries = await Promise.all([
+        db.select({ date: workerAttendance.date }).from(workerAttendance)
+          .where(eq(workerAttendance.projectId, projectId))
+          .orderBy(sql`${workerAttendance.date} DESC`).limit(1),
+        db.select({ date: materialPurchases.purchaseDate }).from(materialPurchases)
+          .where(eq(materialPurchases.projectId, projectId))
+          .orderBy(sql`${materialPurchases.purchaseDate} DESC`).limit(1),
+        db.select({ date: transportationExpenses.date }).from(transportationExpenses)
+          .where(eq(transportationExpenses.projectId, projectId))
+          .orderBy(sql`${transportationExpenses.date} DESC`).limit(1)
+      ]);
+
+      const dates = [
+        lastActivityQueries[0][0]?.date,
+        lastActivityQueries[1][0]?.date,
+        lastActivityQueries[2][0]?.date
+      ].filter(date => date);
+
+      const lastActivity = dates.length > 0 
+        ? dates.sort().reverse()[0] 
+        : new Date().toISOString().split('T')[0];
+
+      return {
+        totalWorkers,
+        totalExpenses,
+        totalIncome,
+        currentBalance,
+        activeWorkers,
+        completedDays,
+        materialPurchases: materialPurchasesCount,
+        lastActivity
+      };
+    } catch (error) {
+      console.error('Error getting project statistics:', error);
+      return {
+        totalWorkers: 0,
+        totalExpenses: 0,
+        totalIncome: 0,
+        currentBalance: 0,
+        activeWorkers: 0,
+        completedDays: 0,
+        materialPurchases: 0,
+        lastActivity: new Date().toISOString().split('T')[0]
+      };
+    }
   }
 }
 

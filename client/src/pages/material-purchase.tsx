@@ -232,18 +232,20 @@ export default function MaterialPurchase() {
   };
 
   // Fetch Material Purchases for Edit Support
-  const { data: materialPurchases = [], isLoading: materialPurchasesLoading } = useQuery<any[]>({
+  const { data: materialPurchases = [], isLoading: materialPurchasesLoading, refetch: refetchMaterialPurchases } = useQuery<any[]>({
     queryKey: ["/api/projects", selectedProjectId, "material-purchases"],
     enabled: !!selectedProjectId,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    staleTime: 0, // Always fetch fresh data
   });
 
-  // Debug logging
-  console.log("=== MATERIAL PURCHASES DEBUG ===");
-  console.log("selectedProjectId:", selectedProjectId);
-  console.log("materialPurchases:", materialPurchases);
-  console.log("materialPurchases length:", materialPurchases.length);
-  console.log("materialPurchasesLoading:", materialPurchasesLoading);
-  console.log("================================");
+  // Auto-refresh when page loads
+  useEffect(() => {
+    if (selectedProjectId) {
+      refetchMaterialPurchases();
+    }
+  }, [selectedProjectId, refetchMaterialPurchases]);
 
   // Edit Function
   const handleEdit = (purchase: any) => {
@@ -522,19 +524,7 @@ export default function MaterialPurchase() {
         </Card>
       )}
       
-      {/* Always show debug info */}
-      <Card className="mt-6 border-red-200 bg-red-50">
-        <CardContent className="p-4">
-          <h3 className="text-sm font-bold text-red-700 mb-2">معلومات التشخيص</h3>
-          <div className="text-xs text-red-600 space-y-1">
-            <p>المشروع المختار: {selectedProjectId || "غير محدد"}</p>
-            <p>عدد المشتريات: {materialPurchases?.length || 0}</p>
-            <p>حالة التحميل: {materialPurchasesLoading ? "جاري التحميل" : "مكتمل"}</p>
-            <p>نوع البيانات: {typeof materialPurchases}</p>
-            <p>هل البيانات مصفوفة: {Array.isArray(materialPurchases) ? "نعم" : "لا"}</p>
-          </div>
-        </CardContent>
-      </Card>
+
 
       {selectedProjectId && materialPurchases && materialPurchases.length > 0 && (
         <Card className="mt-6">
