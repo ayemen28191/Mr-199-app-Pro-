@@ -19,7 +19,7 @@ export default function AddProjectForm({ onSuccess }: AddProjectFormProps) {
   const queryClient = useQueryClient();
 
   const addProjectMutation = useMutation({
-    mutationFn: (data: InsertProject) => apiRequest("POST", "/api/projects", data),
+    mutationFn: (data: InsertProject) => apiRequest("/api/projects", "POST", data),
     onSuccess: () => {
       toast({
         title: "تم الحفظ",
@@ -28,6 +28,7 @@ export default function AddProjectForm({ onSuccess }: AddProjectFormProps) {
       setName("");
       setStatus("active");
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/projects/with-stats"] });
       onSuccess?.();
     },
     onError: () => {
