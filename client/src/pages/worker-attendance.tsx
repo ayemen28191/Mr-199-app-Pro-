@@ -82,6 +82,7 @@ export default function WorkerAttendance() {
 
   const saveAttendanceMutation = useMutation({
     mutationFn: async (attendanceRecords: InsertWorkerAttendance[]) => {
+      console.log("Saving attendance records:", attendanceRecords);
       const promises = attendanceRecords.map(record =>
         apiRequest("POST", "/api/worker-attendance", record)
       );
@@ -93,11 +94,14 @@ export default function WorkerAttendance() {
         description: "تم حفظ حضور العمال بنجاح",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProjectId, "attendance"] });
+      // مسح البيانات بعد الحفظ
+      setAttendanceData({});
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error("Error saving attendance:", error);
       toast({
         title: "خطأ",
-        description: "حدث خطأ أثناء حفظ الحضور",
+        description: error?.message || "حدث خطأ أثناء حفظ الحضور",
         variant: "destructive",
       });
     },

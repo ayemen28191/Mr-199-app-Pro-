@@ -228,15 +228,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/worker-attendance", async (req, res) => {
     try {
+      console.log("Received attendance data:", req.body);
       const result = insertWorkerAttendanceSchema.safeParse(req.body);
       if (!result.success) {
+        console.log("Validation failed:", result.error.issues);
         return res.status(400).json({ message: "Invalid attendance data", errors: result.error.issues });
       }
       
+      console.log("Creating attendance with data:", result.data);
       const attendance = await storage.createWorkerAttendance(result.data);
+      console.log("Attendance created successfully:", attendance);
       res.status(201).json(attendance);
     } catch (error) {
-      res.status(500).json({ message: "Error creating worker attendance" });
+      console.error("Error creating worker attendance:", error);
+      res.status(500).json({ 
+        message: "حدث خطأ أثناء حفظ الحضور", 
+        error: error instanceof Error ? error.message : 'Unknown error' 
+      });
     }
   });
 
