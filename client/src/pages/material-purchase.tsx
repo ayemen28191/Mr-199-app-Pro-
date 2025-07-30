@@ -232,10 +232,18 @@ export default function MaterialPurchase() {
   };
 
   // Fetch Material Purchases for Edit Support
-  const { data: materialPurchases = [] } = useQuery<any[]>({
+  const { data: materialPurchases = [], isLoading: materialPurchasesLoading } = useQuery<any[]>({
     queryKey: ["/api/projects", selectedProjectId, "material-purchases"],
     enabled: !!selectedProjectId,
   });
+
+  // Debug logging
+  console.log("=== MATERIAL PURCHASES DEBUG ===");
+  console.log("selectedProjectId:", selectedProjectId);
+  console.log("materialPurchases:", materialPurchases);
+  console.log("materialPurchases length:", materialPurchases.length);
+  console.log("materialPurchasesLoading:", materialPurchasesLoading);
+  console.log("================================");
 
   // Edit Function
   const handleEdit = (purchase: any) => {
@@ -506,10 +514,32 @@ export default function MaterialPurchase() {
       </div>
 
       {/* Material Purchases List for Today */}
-      {selectedProjectId && materialPurchases.length > 0 && (
+      {materialPurchasesLoading && (
         <Card className="mt-6">
           <CardContent className="p-4">
-            <h3 className="text-lg font-semibold text-foreground mb-4">المشتريات المسجلة</h3>
+            <div className="text-center text-muted-foreground">جاري تحميل المشتريات...</div>
+          </CardContent>
+        </Card>
+      )}
+      
+      {/* Always show debug info */}
+      <Card className="mt-6 border-red-200 bg-red-50">
+        <CardContent className="p-4">
+          <h3 className="text-sm font-bold text-red-700 mb-2">معلومات التشخيص</h3>
+          <div className="text-xs text-red-600 space-y-1">
+            <p>المشروع المختار: {selectedProjectId || "غير محدد"}</p>
+            <p>عدد المشتريات: {materialPurchases?.length || 0}</p>
+            <p>حالة التحميل: {materialPurchasesLoading ? "جاري التحميل" : "مكتمل"}</p>
+            <p>نوع البيانات: {typeof materialPurchases}</p>
+            <p>هل البيانات مصفوفة: {Array.isArray(materialPurchases) ? "نعم" : "لا"}</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      {selectedProjectId && materialPurchases && materialPurchases.length > 0 && (
+        <Card className="mt-6">
+          <CardContent className="p-4">
+            <h3 className="text-lg font-semibold text-foreground mb-4">المشتريات المسجلة ({materialPurchases.length})</h3>
             <div className="space-y-3">
               {materialPurchases.map((purchase: any) => (
                 <div key={purchase.id} className="border rounded-lg p-3 bg-card">
