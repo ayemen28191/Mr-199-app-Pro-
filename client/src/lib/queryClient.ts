@@ -2,32 +2,25 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
+    let errorMessage = "حدث خطأ غير متوقع";
+    
     try {
-      // استنساخ الاستجابة لتجنب خطأ "body stream already read"
-      const clonedResponse = res.clone();
-      const errorData = await clonedResponse.json();
-      
-      // التحقق من نوع الخطأ وإعطاء رسالة مناسبة
-      if (res.status === 400 && errorData.message) {
-        // خطأ في البيانات المدخلة - عرض الرسالة الفعلية من الخادم
-        throw new Error(errorData.message);
-      } else if (res.status === 500) {
-        throw new Error("حدث خطأ في الخادم، يرجى المحاولة مرة أخرى");
-      } else {
-        throw new Error(errorData.message || "حدث خطأ غير متوقع");
-      }
+      const errorData = await res.json();
+      errorMessage = errorData.message || errorMessage;
     } catch (jsonError) {
-      // إذا فشل تحليل JSON، حدد نوع الخطأ حسب status code
+      // إذا فشل تحليل JSON، استخدم رسائل افتراضية حسب status code
       if (res.status === 400) {
-        throw new Error("البيانات المدخلة غير صحيحة");
+        errorMessage = "البيانات المدخلة غير صحيحة";
       } else if (res.status === 404) {
-        throw new Error("العنصر المطلوب غير موجود");
+        errorMessage = "العنصر المطلوب غير موجود";
       } else if (res.status === 500) {
-        throw new Error("حدث خطأ في الخادم");
+        errorMessage = "حدث خطأ في الخادم";
       } else {
-        throw new Error("حدث خطأ في الاتصال");
+        errorMessage = "حدث خطأ في الاتصال";
       }
     }
+    
+    throw new Error(errorMessage);
   }
 }
 
