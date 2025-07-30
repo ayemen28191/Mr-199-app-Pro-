@@ -957,9 +957,7 @@ export class DatabaseStorage implements IStorage {
       .values(purchase)
       .returning();
     
-    // تحديث الملخص اليومي تلقائياً
-    await this.updateDailySummaryForDate(purchase.projectId, purchase.purchaseDate);
-    
+    // إرجاع البيانات فوراً بدون انتظار تحديث الملخص
     return newPurchase;
   }
 

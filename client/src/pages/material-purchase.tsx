@@ -145,6 +145,32 @@ export default function MaterialPurchase() {
     }
   });
 
+  // Delete Material Purchase Mutation
+  const deleteMaterialPurchaseMutation = useMutation({
+    mutationFn: (id: string) => apiRequest(`/api/material-purchases/${id}`, "DELETE", {}),
+    onSuccess: () => {
+      toast({
+        title: "تم الحذف",
+        description: "تم حذف شراء المواد بنجاح",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProjectId, "material-purchases"] });
+    },
+    onError: (error: any) => {
+      console.error("Material purchase delete error:", error);
+      let errorMessage = "حدث خطأ أثناء حذف شراء المواد";
+      
+      if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+      
+      toast({
+        title: "خطأ",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
+  });
+
   const calculateTotal = () => {
     const qty = parseFloat(quantity) || 0;
     const price = parseFloat(unitPrice) || 0;
@@ -228,24 +254,7 @@ export default function MaterialPurchase() {
     setEditingPurchaseId(purchase.id);
   };
 
-  // Delete Material Purchase Mutation
-  const deleteMaterialPurchaseMutation = useMutation({
-    mutationFn: (id: string) => apiRequest("DELETE", `/api/material-purchases/${id}`),
-    onSuccess: () => {
-      toast({
-        title: "تم الحذف",
-        description: "تم حذف شراء المواد بنجاح",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProjectId, "material-purchases"] });
-    },
-    onError: () => {
-      toast({
-        title: "خطأ",
-        description: "حدث خطأ أثناء حذف شراء المواد",
-        variant: "destructive",
-      });
-    }
-  });
+
 
   return (
     <div className="p-4 slide-in">

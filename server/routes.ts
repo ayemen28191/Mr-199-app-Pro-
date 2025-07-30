@@ -334,6 +334,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       const purchase = await storage.createMaterialPurchase(result.data);
+      
+      // تحديث الملخص اليومي في الخلفية لتحسين الأداء
+      setImmediate(() => {
+        storage.updateDailySummaryForDate(purchase.projectId, purchase.purchaseDate)
+          .catch(error => console.error("Error updating daily summary:", error));
+      });
+      
       res.status(201).json(purchase);
     } catch (error: any) {
       console.error("Error creating material purchase:", error);
