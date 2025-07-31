@@ -9,7 +9,7 @@ import {
   workerTransfers, workerBalances, autocompleteData
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, gte, lte, sql, inArray } from "drizzle-orm";
+import { eq, and, gte, lte, sql, inArray, or } from "drizzle-orm";
 
 export interface IStorage {
   // Projects
@@ -975,16 +975,18 @@ export class DatabaseStorage implements IStorage {
   async getFundTransfersForWorker(workerId: string, projectId: string, dateFrom: string, dateTo: string): Promise<FundTransfer[]> {
     try {
       // البحث عن التحويلات المالية التي تخص هذا العامل
-      // يمكن أن نبحث باستخدام اسم العامل في senderName أو في الملاحظات
       const worker = await this.getWorker(workerId);
       if (!worker) return [];
 
       return await db.select().from(fundTransfers)
         .where(and(
           eq(fundTransfers.projectId, projectId),
-          sql`DATE(${fundTransfers.transferDate}) >= ${dateFrom}`,
-          sql`DATE(${fundTransfers.transferDate}) <= ${dateTo}`,
-          sql`(${fundTransfers.senderName} LIKE '%${worker.name}%' OR ${fundTransfers.notes} LIKE '%${worker.name}%')`
+          gte(fundTransfers.transferDate, dateFrom),
+          lte(fundTransfers.transferDate, dateTo),
+          or(
+            sql`${fundTransfers.senderName} LIKE ${`%${worker.name}%`}`,
+            sql`${fundTransfers.notes} LIKE ${`%${worker.name}%`}`
+          )
         ))
         .orderBy(fundTransfers.transferDate);
     } catch (error) {

@@ -269,7 +269,7 @@ export default function ExcelStyleWorkerStatement() {
             }
           `}</style>
 
-          <div className="max-w-full mx-auto p-4 bg-white min-h-screen">
+          <div className="max-w-full mx-auto p-2 bg-white min-h-screen" style={{ margin: '0 auto', paddingLeft: '0.75cm', paddingRight: '0.75cm' }}>
             {/* Header */}
             <table className="excel-table mb-1">
               <tr>
@@ -374,29 +374,51 @@ export default function ExcelStyleWorkerStatement() {
 
             {/* Summary */}
             <table className="excel-table mt-2">
-              <tr>
-                <td className="excel-summary" style={{ width: '25%' }}>إجمالي المبلغ المستحق للعامل</td>
-                <td className="amount-positive" style={{ width: '15%' }}>{formatCurrency(workerStatement.summary.totalEarnings)}</td>
-                <td className="excel-summary" style={{ width: '25%' }}>إجمالي عدد أيام العمل</td>
-                <td style={{ width: '15%' }}>{workerStatement.summary.totalDays}</td>
-                <td rowSpan={3} style={{ width: '20%', verticalAlign: 'middle', fontWeight: 'bold', fontSize: '12px' }}>
-                  إجمالي المبلغ المتبقي للعامل<br/>
-                  <span className={workerStatement.summary.netBalance >= 0 ? 'amount-positive' : 'amount-negative'}>
-                    {formatCurrency(Math.abs(workerStatement.summary.netBalance))}
-                  </span>
-                </td>
-              </tr>
-              <tr>
-                <td className="excel-summary">إجمالي المبلغ المستلم</td>
-                <td className="amount-negative">{formatCurrency(workerStatement.summary.totalAdvances)}</td>
-                <td className="excel-summary">إجمالي عدد ساعات العمل</td>
-                <td>{workerStatement.summary.totalHours}</td>
-              </tr>
-              <tr>
-                <td colSpan={4} style={{ textAlign: 'center', fontStyle: 'italic', fontSize: '8px' }}>
-                  تم إنشاء هذا الكشف آلياً من نظام إدارة مشاريع البناء - جميع البيانات حقيقية ومستمدة من قاعدة البيانات
-                </td>
-              </tr>
+              {(() => {
+                // حساب الإجماليات الصحيحة
+                const totalEarnings = workerStatement.attendance.reduce((sum, record) => {
+                  return sum + (record.isPresent ? parseFloat(record.dailyWage) : 0);
+                }, 0);
+                
+                const totalPaidFromAttendance = workerStatement.attendance.reduce((sum, record) => {
+                  return sum + parseFloat(record.paidAmount || '0');
+                }, 0);
+                
+                const totalTransfers = workerStatement.transfers.reduce((sum, transfer) => {
+                  return sum + parseFloat(transfer.amount);
+                }, 0);
+                
+                const totalReceived = totalPaidFromAttendance + totalTransfers;
+                const netBalance = totalEarnings - totalReceived;
+                
+                return (
+                  <>
+                    <tr>
+                      <td className="excel-summary" style={{ width: '25%' }}>إجمالي المبلغ المستحق للعامل</td>
+                      <td className="amount-positive" style={{ width: '15%' }}>{formatCurrency(totalEarnings)}</td>
+                      <td className="excel-summary" style={{ width: '25%' }}>إجمالي عدد أيام العمل</td>
+                      <td style={{ width: '15%' }}>{workerStatement.summary.totalDays}</td>
+                      <td rowSpan={3} style={{ width: '20%', verticalAlign: 'middle', fontWeight: 'bold', fontSize: '10px' }}>
+                        إجمالي المبلغ المتبقي للعامل<br/>
+                        <span className={netBalance >= 0 ? 'amount-positive' : 'amount-negative'}>
+                          {formatCurrency(Math.abs(netBalance))}
+                        </span>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="excel-summary">إجمالي المبلغ المستلم</td>
+                      <td className="amount-negative">{formatCurrency(totalReceived)}</td>
+                      <td className="excel-summary">إجمالي عدد ساعات العمل</td>
+                      <td>{workerStatement.summary.totalHours}</td>
+                    </tr>
+                    <tr>
+                      <td colSpan={4} style={{ textAlign: 'center', fontStyle: 'italic', fontSize: '7px' }}>
+                        تم إنشاء هذا الكشف آلياً من نظام إدارة مشاريع البناء - جميع البيانات حقيقية ومستمدة من قاعدة البيانات
+                      </td>
+                    </tr>
+                  </>
+                );
+              })()}
             </table>
           </div>
         </div>
