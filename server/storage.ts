@@ -903,7 +903,7 @@ export class DatabaseStorage implements IStorage {
         .where(and(...attendanceConditions))
         .orderBy(workerAttendance.date);
       
-      // Get worker transfers
+      // Get worker transfers (including family transfers)
       let transfersConditions = [eq(workerTransfers.workerId, workerId)];
       
       if (projectId) {
@@ -922,18 +922,15 @@ export class DatabaseStorage implements IStorage {
         .where(and(...transfersConditions))
         .orderBy(workerTransfers.transferDate);
       
-      // Get worker balance
+      // Get worker balance (calculated dynamically to include all transfers)
       let balance = null;
       if (projectId) {
-        const balanceResult = await db.select().from(workerBalances)
-          .where(and(eq(workerBalances.workerId, workerId), eq(workerBalances.projectId, projectId)))
-          .limit(1);
-        balance = balanceResult[0] || null;
+        balance = await this.getWorkerBalance(workerId, projectId);
       }
       
       return {
         attendance,
-        transfers,
+        transfers, // This now includes all transfers including family transfers
         balance
       };
     } catch (error) {

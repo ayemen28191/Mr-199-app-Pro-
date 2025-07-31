@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { FileText, Printer, Download, Building2, User, Calendar, Calculator } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import '@/styles/print-reports.css';
 
 interface Worker {
   id: string;
@@ -445,147 +446,103 @@ export default function ProfessionalWorkerStatement() {
       )}
 
       {workerStatement && (
-        <div id="professional-statement-print" className="bg-white">
+        <div id="professional-statement-print" className="worker-statement-container bg-white">
           {/* Header */}
-          <div className="header">
-            <div className="company-name">شركة المقاولات الحديثة</div>
-            <div className="document-title">كشف حساب العامل الشامل</div>
-            <div className="period-info">
-              الفترة من {formatDate(dateFrom)} إلى {formatDate(dateTo)}
-            </div>
+          <div className="worker-statement-header">
+            كشف حساب العامل الشامل - الفترة من {formatDate(dateFrom)} إلى {formatDate(dateTo)}
           </div>
 
           {/* Worker and Project Info */}
-          <div className="info-grid">
-            <div className="info-section">
-              <div className="info-title">معلومات العامل</div>
-              <div className="info-item">
-                <span className="info-label">الاسم:</span>
-                <span className="info-value">{workerStatement.worker.name}</span>
-              </div>
-              <div className="info-item">
-                <span className="info-label">النوع:</span>
-                <span className="info-value">{workerStatement.worker.type}</span>
-              </div>
-              <div className="info-item">
-                <span className="info-label">الأجر اليومي:</span>
-                <span className="info-value currency">{formatCurrency(Number(workerStatement.worker.dailyWage))} ريال</span>
-              </div>
+          <div className="worker-info-section">
+            <div>
+              <strong>العامل:</strong> {workerStatement.worker.name} ({workerStatement.worker.type})
             </div>
-
-            <div className="info-section">
-              <div className="info-title">معلومات المشروع</div>
-              <div className="info-item">
-                <span className="info-label">اسم المشروع:</span>
-                <span className="info-value">{workerStatement.project.name}</span>
-              </div>
-              <div className="info-item">
-                <span className="info-label">تاريخ الكشف:</span>
-                <span className="info-value">{formatDate(new Date().toISOString())}</span>
-              </div>
-              <div className="info-item">
-                <span className="info-label">أيام العمل:</span>
-                <span className="info-value working-hours">{workerStatement.periodSummary.totalDaysWorked} يوم</span>
-              </div>
+            <div>
+              <strong>المشروع:</strong> {workerStatement.project.name}
+            </div>
+            <div>
+              <strong>الأجر اليومي:</strong> {formatCurrency(Number(workerStatement.worker.dailyWage))} ريال
+            </div>
+            <div>
+              <strong>أيام العمل:</strong> {workerStatement.periodSummary.totalDaysWorked} يوم
             </div>
           </div>
 
-          {/* Attendance Table */}
-          {workerStatement.attendance.length > 0 && (
-            <>
-              <div className="section-title">📋 سجل الحضور والأجور التفصيلي</div>
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>التاريخ</th>
-                    <th>اليوم</th>
-                    <th>الحضور</th>
-                    <th>ساعات العمل</th>
-                    <th>أجر الساعة</th>
-                    <th>إجمالي الأجر</th>
-                    <th>ملاحظات</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {workerStatement.attendance.slice(0, 12).map((record, index) => {
-                    const recordDate = new Date(record.date);
-                    const dayName = recordDate.toLocaleDateString('ar-SA', { weekday: 'long' });
-                    
-                    return (
-                      <tr key={record.id} className={`row-alternate ${index % 2 === 0 ? 'even' : 'odd'}`}>
-                        <td>{formatDate(record.date)}</td>
-                        <td>{dayName}</td>
-                        <td className={record.present ? 'present' : 'absent'}>
-                          {record.present ? '✓ حضر' : '✗ غاب'}
-                        </td>
-                        <td className="working-hours">
-                          {record.present ? (record.hoursWorked || 8) : 0} ساعة
-                        </td>
-                        <td>{record.present ? formatCurrency(record.hourlyWage || 0) : '-'}</td>
-                        <td className="currency positive">
-                          {record.present ? formatCurrency(record.totalWage || 0) : '0'} ريال
-                        </td>
-                        <td style={{ fontSize: '7px' }}>{record.notes || '-'}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-              
-              {workerStatement.attendance.length > 12 && (
-                <div style={{ fontSize: '8px', textAlign: 'center', color: '#6b7280', marginTop: '3px' }}>
-                  عرض أول 12 سجل فقط من أصل {workerStatement.attendance.length} سجل
-                </div>
-              )}
-            </>
-          )}
-
-          {/* Transfers Table */}
-          {workerStatement.transfers.length > 0 && (
-            <>
-              <div className="section-title">💰 السلف والتحويلات المالية</div>
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>التاريخ</th>
-                    <th>اليوم</th>
-                    <th>نوع العملية</th>
-                    <th>المبلغ</th>
-                    <th>المستلم</th>
-                    <th>ملاحظات</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {workerStatement.transfers.slice(0, 8).map((transfer, index) => {
-                    const transferDate = new Date(transfer.transferDate);
-                    const dayName = transferDate.toLocaleDateString('ar-SA', { weekday: 'long' });
-                    
-                    return (
-                      <tr key={transfer.id} className={`row-alternate ${index % 2 === 0 ? 'even' : 'odd'}`}>
-                        <td>{formatDate(transfer.transferDate)}</td>
-                        <td>{dayName}</td>
-                        <td>
-                          {transfer.type === 'advance' && '🔸 سلفة'}
-                          {transfer.type === 'salary' && '💵 راتب'}
-                          {transfer.type === 'deduction' && '📉 خصم'}
-                        </td>
-                        <td className={`currency ${transfer.type === 'deduction' ? 'negative' : 'positive'}`}>
-                          {formatCurrency(transfer.amount)} ريال
-                        </td>
-                        <td>{transfer.recipientName}</td>
-                        <td style={{ fontSize: '7px' }}>{transfer.notes || '-'}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-              
-              {workerStatement.transfers.length > 8 && (
-                <div style={{ fontSize: '8px', textAlign: 'center', color: '#6b7280', marginTop: '3px' }}>
-                  عرض أول 8 عمليات فقط من أصل {workerStatement.transfers.length} عملية
-                </div>
-              )}
-            </>
+          {/* Combined Attendance and Transfers Table */}
+          <table className="worker-statement-table">
+            <thead>
+              <tr>
+                <th style={{ width: '10%' }}>التاريخ</th>
+                <th style={{ width: '8%' }}>اليوم</th>
+                <th style={{ width: '8%' }}>حضور</th>
+                <th style={{ width: '8%' }}>أيام</th>
+                <th style={{ width: '10%' }}>أجر يومي</th>
+                <th style={{ width: '10%' }}>إجمالي</th>
+                <th style={{ width: '10%' }}>مدفوع</th>
+                <th style={{ width: '10%' }}>سلفة</th>
+                <th style={{ width: '10%' }}>حوالة أهل</th>
+                <th style={{ width: '8%' }}>رصيد</th>
+                <th style={{ width: '8%' }}>ملاحظات</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(() => {
+                // Get all dates from attendance and transfers
+                const attendanceDates = new Set(workerStatement.attendance.map(a => a.date));
+                const transferDates = new Set(workerStatement.transfers.map(t => t.transferDate));
+                const allDates = Array.from(new Set([...attendanceDates, ...transferDates])).sort();
+                
+                return allDates.slice(0, 20).map((date, index) => {
+                  const attendanceRecord = workerStatement.attendance.find(a => a.date === date);
+                  const dayTransfers = workerStatement.transfers.filter(t => t.transferDate === date);
+                  const recordDate = new Date(date);
+                  const dayName = recordDate.toLocaleDateString('ar-SA', { weekday: 'short' });
+                  
+                  return (
+                    <tr key={date} style={{ backgroundColor: index % 2 === 0 ? '#f8f9fa' : 'white' }}>
+                      <td className="date-cell">{formatDate(date)}</td>
+                      <td>{dayName}</td>
+                      <td>{attendanceRecord?.present ? '✓' : '-'}</td>
+                      <td>{attendanceRecord?.present ? (attendanceRecord.workDays || '1') : '-'}</td>
+                      <td className="currency-cell">
+                        {attendanceRecord?.present ? formatCurrency(Number(attendanceRecord.dailyWage || 0)) : '-'}
+                      </td>
+                      <td className="currency-cell">
+                        {attendanceRecord?.present ? formatCurrency(Number(attendanceRecord.actualWage || 0)) : '-'}
+                      </td>
+                      <td className="currency-cell">
+                        {attendanceRecord?.present ? formatCurrency(Number(attendanceRecord.paidAmount || 0)) : '-'}
+                      </td>
+                      <td className="transfer-cell">
+                        {dayTransfers.filter(t => t.transferType === 'advance').reduce((sum, t) => sum + Number(t.amount), 0) > 0 
+                          ? formatCurrency(dayTransfers.filter(t => t.transferType === 'advance').reduce((sum, t) => sum + Number(t.amount), 0))
+                          : '-'}
+                      </td>
+                      <td className="transfer-cell">
+                        {dayTransfers.filter(t => t.transferType === 'family').reduce((sum, t) => sum + Number(t.amount), 0) > 0 
+                          ? formatCurrency(dayTransfers.filter(t => t.transferType === 'family').reduce((sum, t) => sum + Number(t.amount), 0))
+                          : '-'}
+                      </td>
+                      <td className="currency-cell">
+                        {attendanceRecord?.present ? formatCurrency(Number(attendanceRecord.remainingAmount || 0)) : '-'}
+                      </td>
+                      <td style={{ fontSize: '6px' }}>
+                        {[
+                          attendanceRecord?.notes,
+                          ...dayTransfers.map(t => t.notes)
+                        ].filter(Boolean).join(', ') || '-'}
+                      </td>
+                    </tr>
+                  );
+                });
+              })()}
+            </tbody>
+          </table>
+          
+          {(workerStatement.attendance.length + workerStatement.transfers.length) > 20 && (
+            <div style={{ fontSize: '6px', textAlign: 'center', color: '#6b7280', marginTop: '2px' }}>
+              عرض أول 20 سجل فقط
+            </div>
           )}
 
           {/* Summary Section */}
@@ -600,10 +557,10 @@ export default function ProfessionalWorkerStatement() {
                 </div>
               </div>
               <div className="summary-item">
-                <div className="summary-label">💸 إجمالي السلف والخصومات</div>
+                <div className="summary-label">💸 إجمالي السلف والحوالات</div>
                 <div className="summary-value negative">{formatCurrency(workerStatement.periodSummary.totalAdvances)} ريال</div>
                 <div style={{ fontSize: '7px', color: '#6b7280' }}>
-                  ({workerStatement.transfers.length} عملية)
+                  ({workerStatement.transfers.length} عملية - تتضمن حوالات الأهل)
                 </div>
               </div>
               <div className="summary-item">

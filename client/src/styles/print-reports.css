@@ -17,7 +17,7 @@
   /* تخصيص حجم الصفحة */
   @page {
     size: A4;
-    margin: 15mm;
+    margin: 8mm;
   }
   
   /* تنسيق الجسم الأساسي */
@@ -65,25 +65,31 @@
   .report-table {
     width: 100%;
     border-collapse: collapse;
-    margin-bottom: 20px;
-    font-size: 11px;
+    margin-bottom: 15px;
+    font-size: 10px;
+    table-layout: fixed;
   }
   
   .report-table th {
     background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
     color: white;
-    padding: 12px 8px;
+    padding: 6px 4px;
     text-align: center;
     font-weight: bold;
     border: 1px solid #2c3e50;
     -webkit-print-color-adjust: exact;
+    font-size: 9px;
+    line-height: 1.2;
   }
   
   .report-table td {
-    padding: 10px 8px;
+    padding: 4px 3px;
     border: 1px solid #bdc3c7;
     text-align: center;
     -webkit-print-color-adjust: exact;
+    font-size: 9px;
+    line-height: 1.1;
+    word-wrap: break-word;
   }
   
   .report-table tbody tr:nth-child(even) {
@@ -291,5 +297,81 @@
     font-weight: bold;
     border-radius: 8px;
     margin-top: 20px;
+  }
+
+  /* تنسيقات خاصة لكشف العامل المحسن */
+  .worker-statement-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 10px;
+    font-size: 8px;
+    table-layout: fixed;
+  }
+
+  .worker-statement-table th {
+    background: #2c3e50;
+    color: white;
+    padding: 3px 2px;
+    text-align: center;
+    font-weight: bold;
+    border: 1px solid #34495e;
+    font-size: 7px;
+    line-height: 1.1;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .worker-statement-table td {
+    padding: 2px 1px;
+    border: 1px solid #bdc3c7;
+    text-align: center;
+    font-size: 7px;
+    line-height: 1.0;
+    word-wrap: break-word;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .worker-statement-table .currency-cell {
+    font-weight: bold;
+    color: #27ae60;
+  }
+
+  .worker-statement-table .date-cell {
+    background: #f8f9fa;
+    font-weight: bold;
+  }
+
+  .worker-statement-table .transfer-cell {
+    background: #fff3cd;
+    color: #856404;
+    font-weight: bold;
+  }
+
+  /* تقليل الهوامش للحصول على مساحة أكبر */
+  .worker-statement-container {
+    margin: 0;
+    padding: 5px;
+  }
+
+  .worker-statement-header {
+    text-align: center;
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    background: #3498db;
+    color: white;
+    padding: 8px;
+    border-radius: 4px;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .worker-info-section {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    background: #ecf0f1;
+    padding: 6px;
+    border-radius: 3px;
+    font-size: 9px;
+    -webkit-print-color-adjust: exact;
   }
 }
