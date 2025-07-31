@@ -521,6 +521,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // إعادة حساب جميع الأرصدة لمشروع معين
+  app.post("/api/projects/:projectId/recalculate-balances", async (req, res) => {
+    try {
+      await storage.recalculateAllBalances(req.params.projectId);
+      res.json({ message: "تم إعادة حساب جميع الأرصدة بنجاح" });
+    } catch (error) {
+      console.error("Error recalculating balances:", error);
+      res.status(500).json({ message: "خطأ في إعادة حساب الأرصدة" });
+    }
+  });
+
   app.post("/api/daily-expense-summaries", async (req, res) => {
     try {
       const result = insertDailyExpenseSummarySchema.safeParse(req.body);

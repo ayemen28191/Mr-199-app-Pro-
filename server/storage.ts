@@ -462,6 +462,8 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getPreviousDayBalance(projectId: string, currentDate: string): Promise<string> {
+    console.log(`Getting previous day balance for project ${projectId}, date: ${currentDate}`);
+    
     const result = await db.select()
       .from(dailyExpenseSummaries)
       .where(and(
@@ -471,10 +473,19 @@ export class DatabaseStorage implements IStorage {
       .orderBy(sql`${dailyExpenseSummaries.date} DESC`)
       .limit(1);
     
-    return result.length > 0 ? result[0].remainingBalance : "0";
+    const balance = result.length > 0 ? result[0].remainingBalance : "0";
+    console.log(`Previous day balance found: ${balance}`);
+    
+    // التحقق من صحة البيانات
+    if (result.length > 0) {
+      const prevSummary = result[0];
+      console.log(`Previous summary from ${prevSummary.date}: carried=${prevSummary.carriedForwardAmount}, income=${prevSummary.totalIncome}, expenses=${prevSummary.totalExpenses}, remaining=${prevSummary.remainingBalance}`);
+    }
+    
+    return balance;
   }
 
-  // تحديث الملخص اليومي تلقائياً مع تحسينات الأداء
+  // تحديث الملخص اليومي تلقائياً مع تحسينات الأداء وقيود الحماية
   async updateDailySummaryForDate(projectId: string, date: string): Promise<void> {
     try {
       console.log(`Updating daily summary for ${projectId} on ${date}...`);
@@ -506,6 +517,41 @@ export class DatabaseStorage implements IStorage {
       const totalExpenses = totalWorkerWages + totalMaterialCosts + totalTransportationCosts + totalWorkerTransferCosts;
       const remainingBalance = totalIncome - totalExpenses;
 
+      // قيود الحماية من الأخطاء
+      console.log(`Balance calculation for ${date}: Carried=${carriedForwardAmount}, Income=${totalIncome}, Expenses=${totalExpenses}, Remaining=${remainingBalance}`);
+      
+      // التحقق من صحة البيانات المحاسبية
+      if (Math.abs(totalIncome - totalExpenses - remainingBalance) > 0.01) {
+        console.error(`❌ BALANCE ERROR: Income(${totalIncome}) - Expenses(${totalExpenses}) ≠ Remaining(${remainingBalance})`);
+        throw new Error(`خطأ في حساب الرصيد: الدخل - المصروفات ≠ المتبقي`);
+      }
+
+      // التحقق من أن الرصيد المرحل صحيح
+      const previousSummary = await this.getDailyExpenseSummary(projectId, this.getPreviousDate(date));
+      if (previousSummary && Math.abs(parseFloat(previousSummary.remainingBalance) - carriedForwardAmount) > 0.01) {
+        console.error(`❌ CARRY-FORWARD ERROR: Previous balance(${previousSummary.remainingBalance}) ≠ Carried forward(${carriedForwardAmount})`);
+        console.log(`Recalculating with correct previous balance...`);
+        const correctCarriedAmount = parseFloat(previousSummary.remainingBalance);
+        const correctTotalIncome = correctCarriedAmount + totalFundTransfers;
+        const correctRemainingBalance = correctTotalIncome - totalExpenses;
+        
+        await this.createOrUpdateDailyExpenseSummary({
+          projectId,
+          date,
+          carriedForwardAmount: correctCarriedAmount.toString(),
+          totalFundTransfers: totalFundTransfers.toString(),
+          totalWorkerWages: totalWorkerWages.toString(),
+          totalMaterialCosts: totalMaterialCosts.toString(),
+          totalTransportationCosts: totalTransportationCosts.toString(),
+          totalIncome: correctTotalIncome.toString(),
+          totalExpenses: totalExpenses.toString(),
+          remainingBalance: correctRemainingBalance.toString()
+        });
+        
+        console.log(`✅ Balance corrected for ${date}: Carried=${correctCarriedAmount}, Remaining=${correctRemainingBalance}`);
+        return;
+      }
+
       await this.createOrUpdateDailyExpenseSummary({
         projectId,
         date,
@@ -519,9 +565,45 @@ export class DatabaseStorage implements IStorage {
         remainingBalance: remainingBalance.toString()
       });
       
-      console.log(`Daily summary updated successfully for ${projectId} on ${date}`);
+      console.log(`✅ Daily summary updated successfully for ${projectId} on ${date}`);
     } catch (error) {
-      console.error('Error updating daily summary:', error);
+      console.error('❌ Error updating daily summary:', error);
+      throw error;
+    }
+  }
+
+  // Helper function to get previous date
+  private getPreviousDate(currentDate: string): string {
+    const date = new Date(currentDate);
+    date.setDate(date.getDate() - 1);
+    return date.toISOString().split('T')[0];
+  }
+
+  // إعادة حساب جميع الأرصدة لمشروع معين لإصلاح أي أخطاء
+  async recalculateAllBalances(projectId: string): Promise<void> {
+    console.log(`🔄 Recalculating all balances for project ${projectId}...`);
+    
+    try {
+      // الحصول على جميع التواريخ التي بها ملخصات يومية
+      const existingSummaries = await db.select()
+        .from(dailyExpenseSummaries)
+        .where(eq(dailyExpenseSummaries.projectId, projectId))
+        .orderBy(sql`${dailyExpenseSummaries.date} ASC`);
+
+      // حذف جميع الملخصات الموجودة
+      await db.delete(dailyExpenseSummaries)
+        .where(eq(dailyExpenseSummaries.projectId, projectId));
+
+      // إعادة حساب كل تاريخ بالترتيب الصحيح
+      for (const summary of existingSummaries) {
+        console.log(`📅 Recalculating ${summary.date}...`);
+        await this.updateDailySummaryForDate(projectId, summary.date);
+      }
+
+      console.log(`✅ All balances recalculated successfully for project ${projectId}`);
+    } catch (error) {
+      console.error(`❌ Error recalculating balances:`, error);
+      throw error;
     }
   }
 

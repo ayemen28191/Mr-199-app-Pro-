@@ -239,3 +239,10 @@ The application follows modern full-stack development practices with type safety
   - **Fix**: Added client-side filtering to display only purchases matching the selected purchase date
   - **Improvements**: Added date display in purchase list header, helpful messages for empty dates, and purchase date in item details
   - **User Experience**: Now users can change purchase date to view purchases from different days with clear visual feedback
+
+- ✓ **Critical Balance Calculation Fix**: Implemented comprehensive balance carry-forward validation and auto-correction
+  - **Problem**: Balance carried forward from day 29 (-42,400) was incorrectly showing as 35,000 on day 31
+  - **Root Cause**: Missing validation in balance calculation and incorrect carry-forward logic
+  - **Solution**: Added robust validation checks, automatic error detection, and self-correcting balance calculations
+  - **Safety Features**: Added logging, error detection, and automatic recalculation API endpoint
+  - **Impact**: All daily balances now calculate correctly with proper carry-forward from previous days
