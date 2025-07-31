@@ -130,11 +130,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createProject(project: InsertProject): Promise<Project> {
-    const [newProject] = await db
-      .insert(projects)
-      .values({ ...project, name: project.name.trim() })
-      .returning();
-    return newProject;
+    try {
+      const [newProject] = await db
+        .insert(projects)
+        .values({ ...project, name: project.name.trim() })
+        .returning();
+      
+      if (!newProject) {
+        throw new Error('فشل في إنشاء المشروع');
+      }
+      
+      return newProject;
+    } catch (error) {
+      console.error('Error creating project:', error);
+      throw error;
+    }
   }
 
   async updateProject(id: string, project: Partial<InsertProject>): Promise<Project | undefined> {
@@ -167,11 +177,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createWorker(worker: InsertWorker): Promise<Worker> {
-    const [newWorker] = await db
-      .insert(workers)
-      .values({ ...worker, name: worker.name.trim() })
-      .returning();
-    return newWorker;
+    try {
+      const [newWorker] = await db
+        .insert(workers)
+        .values({ ...worker, name: worker.name.trim() })
+        .returning();
+      
+      if (!newWorker) {
+        throw new Error('فشل في إنشاء العامل');
+      }
+      
+      return newWorker;
+    } catch (error) {
+      console.error('Error creating worker:', error);
+      throw error;
+    }
   }
 
   async updateWorker(id: string, worker: Partial<InsertWorker>): Promise<Worker | undefined> {
@@ -203,16 +223,31 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createFundTransfer(transfer: InsertFundTransfer): Promise<FundTransfer> {
-    const [newTransfer] = await db
-      .insert(fundTransfers)
-      .values(transfer)
-      .returning();
-    
-    // تحديث الملخص اليومي في الخلفية (دون انتظار)
-    const transferDate = new Date(transfer.transferDate).toISOString().split('T')[0];
-    this.updateDailySummaryForDate(transfer.projectId, transferDate).catch(console.error);
-    
-    return newTransfer;
+    try {
+      const [newTransfer] = await db
+        .insert(fundTransfers)
+        .values(transfer)
+        .returning();
+      
+      if (!newTransfer) {
+        throw new Error('فشل في إنشاء تحويل العهدة');
+      }
+      
+      // تحديث الملخص اليومي في الخلفية (دون انتظار)
+      const transferDate = new Date(transfer.transferDate).toISOString().split('T')[0];
+      this.updateDailySummaryForDate(transfer.projectId, transferDate).catch(console.error);
+      
+      return newTransfer;
+    } catch (error: any) {
+      console.error('Error creating fund transfer:', error);
+      
+      // إذا كان الخطأ متعلق بتكرار رقم التحويل
+      if (error.code === '23505' && error.constraint?.includes('transfer_number')) {
+        throw new Error('يوجد تحويل بنفس رقم الحوالة مسبقاً');
+      }
+      
+      throw error;
+    }
   }
 
   async updateFundTransfer(id: string, transfer: Partial<InsertFundTransfer>): Promise<FundTransfer | undefined> {
@@ -296,15 +331,30 @@ export class DatabaseStorage implements IStorage {
         : (actualWage - parseFloat(attendance.paidAmount?.toString() || '0')).toString()
     };
     
-    const [newAttendance] = await db
-      .insert(workerAttendance)
-      .values(attendanceData)
-      .returning();
-    
-    // تحديث الملخص اليومي في الخلفية (دون انتظار)
-    this.updateDailySummaryForDate(attendance.projectId, attendance.date).catch(console.error);
-    
-    return newAttendance;
+    try {
+      const [newAttendance] = await db
+        .insert(workerAttendance)
+        .values(attendanceData)
+        .returning();
+      
+      if (!newAttendance) {
+        throw new Error('فشل في حفظ حضور العامل');
+      }
+      
+      // تحديث الملخص اليومي في الخلفية (دون انتظار)
+      this.updateDailySummaryForDate(attendance.projectId, attendance.date).catch(console.error);
+      
+      return newAttendance;
+    } catch (error: any) {
+      console.error('Error creating worker attendance:', error);
+      
+      // إذا كان الخطأ متعلق بتكرار الحضور
+      if (error.code === '23505' && error.constraint?.includes('unique')) {
+        throw new Error('تم تسجيل حضور هذا العامل مسبقاً في هذا التاريخ');
+      }
+      
+      throw error;
+    }
   }
 
   async updateWorkerAttendance(id: string, attendance: Partial<InsertWorkerAttendance>): Promise<WorkerAttendance | undefined> {
@@ -981,8 +1031,8 @@ export class DatabaseStorage implements IStorage {
       return await db.select().from(fundTransfers)
         .where(and(
           eq(fundTransfers.projectId, projectId),
-          gte(fundTransfers.transferDate, dateFrom),
-          lte(fundTransfers.transferDate, dateTo),
+          sql`DATE(${fundTransfers.transferDate}) >= ${dateFrom}`,
+          sql`DATE(${fundTransfers.transferDate}) <= ${dateTo}`,
           or(
             sql`${fundTransfers.senderName} LIKE ${`%${worker.name}%`}`,
             sql`${fundTransfers.notes} LIKE ${`%${worker.name}%`}`

@@ -29,21 +29,35 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<any> {
-  const res = await fetch(url, {
-    method,
-    headers: data ? { "Content-Type": "application/json" } : {},
-    body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
-  });
+  // إضافة timeout 30 ثانية للطلبات
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
 
-  await throwIfResNotOk(res);
-  
-  // إذا كانت استجابة DELETE فارغة، لا نحاول تحليل JSON
-  if (method === "DELETE" && res.status === 204) {
-    return {};
+  try {
+    const res = await fetch(url, {
+      method,
+      headers: data ? { "Content-Type": "application/json" } : {},
+      body: data ? JSON.stringify(data) : undefined,
+      credentials: "include",
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+    await throwIfResNotOk(res);
+    
+    // إذا كانت استجابة DELETE فارغة، لا نحاول تحليل JSON
+    if (method === "DELETE" && res.status === 204) {
+      return {};
+    }
+    
+    return await res.json();
+  } catch (error) {
+    clearTimeout(timeoutId);
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error('انتهت مهلة الطلب، يرجى المحاولة مرة أخرى');
+    }
+    throw error;
   }
-  
-  return await res.json();
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
@@ -69,12 +83,12 @@ export const queryClient = new QueryClient({
     queries: {
       queryFn: getQueryFn({ on401: "throw" }),
       refetchInterval: false,
-      refetchOnWindowFocus: false,
-      staleTime: Infinity,
-      retry: false,
+      refetchOnWindowFocus: true,
+      staleTime: 1000 * 60 * 5, // 5 دقائق بدلاً من Infinity
+      retry: 1, // محاولة واحدة إضافية عند الفشل
     },
     mutations: {
-      retry: false,
+      retry: 2, // محاولتان إضافيتان للطفرات
     },
   },
 });

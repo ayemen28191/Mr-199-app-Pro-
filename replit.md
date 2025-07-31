@@ -8,6 +8,19 @@ This is a full-stack construction project management application built with Reac
 - Communication language: Arabic (all responses must be in Arabic)
 - Business Rules: No duplicate project names, worker names, or fund transfer numbers allowed
 - Project Selection: User wants the selected project to persist across all pages and browser refreshes
+- Data Integrity: User reported issues with first-time save failures - resolved with improved error handling and retry mechanisms
+
+## Recent Changes (2025-07-31)
+- ✅ Fixed PostgreSQL database connection issues by creating database instance
+- ✅ Resolved LSP diagnostics errors in server/storage.ts with date comparison functions
+- ✅ Improved data persistence reliability:
+  - Added timeout handling (30 seconds) for API requests
+  - Enhanced error handling in database storage operations
+  - Improved retry mechanisms for failed operations
+  - Added validation checks for successful data creation
+  - Updated query client settings to reduce stale data issues (5-minute cache instead of infinite)
+- ✅ Enhanced error messages in Arabic for better user experience
+- ✅ Added comprehensive logging for debugging save operations
 
 ## System Architecture
 ### Frontend
