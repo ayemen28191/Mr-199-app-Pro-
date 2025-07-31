@@ -110,13 +110,13 @@ export default function ProfessionalWorkerStatement() {
       }
 
       // حساب ملخص الفترة
-      const totalDaysWorked = data.attendance?.filter((a: WorkerAttendance) => a.present).length || 0;
-      const totalHoursWorked = data.attendance?.reduce((sum: number, a: WorkerAttendance) => 
-        sum + (a.present ? a.hoursWorked || 8 : 0), 0) || 0;
-      const totalEarnings = data.attendance?.reduce((sum: number, a: WorkerAttendance) => 
-        sum + (a.present ? a.totalWage || 0 : 0), 0) || 0;
-      const totalAdvances = data.transfers?.reduce((sum: number, t: WorkerTransfer) => 
-        sum + (t.type === 'advance' ? t.amount : 0), 0) || 0;
+      const totalDaysWorked = data.attendance?.filter((a: any) => a.isPresent).length || 0;
+      const totalHoursWorked = data.attendance?.reduce((sum: number, a: any) => 
+        sum + (a.isPresent ? 8 : 0), 0) || 0;
+      const totalEarnings = data.attendance?.reduce((sum: number, a: any) => 
+        sum + (a.isPresent ? Number(a.actualWage || 0) : 0), 0) || 0;
+      const totalAdvances = data.transfers?.reduce((sum: number, t: any) => 
+        sum + Number(t.amount || 0), 0) || 0;
 
       return {
         worker,
@@ -488,9 +488,10 @@ export default function ProfessionalWorkerStatement() {
             <tbody>
               {(() => {
                 // Get all dates from attendance and transfers
-                const attendanceDates = new Set(workerStatement.attendance.map(a => a.date));
-                const transferDates = new Set(workerStatement.transfers.map(t => t.transferDate));
-                const allDates = Array.from(new Set([...attendanceDates, ...transferDates])).sort();
+                const attendanceDates = workerStatement.attendance.map(a => a.date);
+                const transferDates = workerStatement.transfers.map(t => t.transferDate);
+                const allDatesSet = new Set([...attendanceDates, ...transferDates]);
+                const allDates = Array.from(allDatesSet).sort();
                 
                 return allDates.slice(0, 20).map((date, index) => {
                   const attendanceRecord = workerStatement.attendance.find(a => a.date === date);
@@ -502,29 +503,27 @@ export default function ProfessionalWorkerStatement() {
                     <tr key={date} style={{ backgroundColor: index % 2 === 0 ? '#f8f9fa' : 'white' }}>
                       <td className="date-cell">{formatDate(date)}</td>
                       <td>{dayName}</td>
-                      <td>{attendanceRecord?.present ? '✓' : '-'}</td>
-                      <td>{attendanceRecord?.present ? (attendanceRecord.workDays || '1') : '-'}</td>
+                      <td>{(attendanceRecord as any)?.isPresent ? '✓' : '-'}</td>
+                      <td>{attendanceRecord ? (attendanceRecord as any).workDays || '1' : '-'}</td>
                       <td className="currency-cell">
-                        {attendanceRecord?.present ? formatCurrency(Number(attendanceRecord.dailyWage || 0)) : '-'}
+                        {attendanceRecord ? formatCurrency(Number((attendanceRecord as any).dailyWage || 0)) : '-'}
                       </td>
                       <td className="currency-cell">
-                        {attendanceRecord?.present ? formatCurrency(Number(attendanceRecord.actualWage || 0)) : '-'}
+                        {attendanceRecord ? formatCurrency(Number((attendanceRecord as any).actualWage || 0)) : '-'}
                       </td>
                       <td className="currency-cell">
-                        {attendanceRecord?.present ? formatCurrency(Number(attendanceRecord.paidAmount || 0)) : '-'}
+                        {attendanceRecord ? formatCurrency(Number((attendanceRecord as any).paidAmount || 0)) : '-'}
                       </td>
                       <td className="transfer-cell">
-                        {dayTransfers.filter(t => t.transferType === 'advance').reduce((sum, t) => sum + Number(t.amount), 0) > 0 
-                          ? formatCurrency(dayTransfers.filter(t => t.transferType === 'advance').reduce((sum, t) => sum + Number(t.amount), 0))
-                          : '-'}
+                        -
                       </td>
                       <td className="transfer-cell">
-                        {dayTransfers.filter(t => t.transferType === 'family').reduce((sum, t) => sum + Number(t.amount), 0) > 0 
-                          ? formatCurrency(dayTransfers.filter(t => t.transferType === 'family').reduce((sum, t) => sum + Number(t.amount), 0))
+                        {dayTransfers.length > 0 
+                          ? formatCurrency(dayTransfers.reduce((sum, t) => sum + Number(t.amount), 0))
                           : '-'}
                       </td>
                       <td className="currency-cell">
-                        {attendanceRecord?.present ? formatCurrency(Number(attendanceRecord.remainingAmount || 0)) : '-'}
+                        {attendanceRecord ? formatCurrency(Number((attendanceRecord as any).remainingAmount || 0)) : '-'}
                       </td>
                       <td style={{ fontSize: '6px' }}>
                         {[
