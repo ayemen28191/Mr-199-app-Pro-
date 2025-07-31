@@ -231,6 +231,9 @@ export default function WorkerAttendance() {
       return;
     }
 
+    console.log("=== تصحيح الأخطاء - بيانات الحضور قبل الحفظ ===");
+    console.log("attendanceData:", attendanceData);
+
     const attendanceRecords: InsertWorkerAttendance[] = Object.entries(attendanceData)
       .filter(([_, data]) => data.isPresent)
       .map(([workerId, data]) => {
@@ -239,7 +242,12 @@ export default function WorkerAttendance() {
         const workDays = data.workDays || 1.0;
         const actualWage = dailyWage * workDays;
         const paidAmount = parseFloat(data.paidAmount || "0");
-        const remainingAmount = actualWage - paidAmount;
+        const remainingAmount = data.paymentType === 'credit' ? actualWage : (actualWage - paidAmount);
+        
+        console.log(`العامل ${worker?.name}:`);
+        console.log(`  - المبلغ من البيانات: "${data.paidAmount}"`);
+        console.log(`  - المبلغ بعد التحويل: ${paidAmount}`);
+        console.log(`  - نوع الدفع: ${data.paymentType}`);
         
         return {
           projectId: selectedProjectId,

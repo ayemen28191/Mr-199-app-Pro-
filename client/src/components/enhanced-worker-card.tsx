@@ -34,7 +34,7 @@ export default function EnhancedWorkerCard({ worker, attendance, onAttendanceCha
   const workDays = attendance.workDays || 1.0;
   const actualWage = dailyWage * workDays;
   const paidAmount = parseFloat(attendance.paidAmount || "0");
-  const remainingAmount = actualWage - paidAmount;
+  const remainingAmount = attendance.paymentType === 'credit' ? actualWage : (actualWage - paidAmount);
 
   const formatCurrency = (amount: number) => {
     return `${amount.toLocaleString()} ر.ي`;
