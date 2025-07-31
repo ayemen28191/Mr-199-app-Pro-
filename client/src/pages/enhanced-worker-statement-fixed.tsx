@@ -100,17 +100,50 @@ export default function EnhancedWorkerStatement() {
     if (!selectedWorkerId || selectedProjectIds.length === 0) return;
 
     try {
-      const response = await fetch(
-        `/api/workers/${selectedWorkerId}/account-statement?from=${dateFrom}&to=${dateTo}&projectIds=${selectedProjectIds.join(',')}`
-      );
+      console.log("إنشاء كشف حساب العامل:", {
+        workerId: selectedWorkerId,
+        projectIds: selectedProjectIds,
+        dateFrom,
+        dateTo
+      });
+
+      // استخدام المعاملات الصحيحة التي يتوقعها الخادم
+      const params = new URLSearchParams();
+      params.append('dateFrom', dateFrom);
+      params.append('dateTo', dateTo);
       
-      if (response.ok) {
+      // للمشاريع المتعددة، نحتاج لاستدعاء API منفصل لكل مشروع
+      const statementPromises = selectedProjectIds.map(async (projectId) => {
+        const projectParams = new URLSearchParams();
+        projectParams.append('projectId', projectId);
+        projectParams.append('dateFrom', dateFrom);
+        projectParams.append('dateTo', dateTo);
+        
+        const response = await fetch(`/api/workers/${selectedWorkerId}/account-statement?${projectParams}`);
+        if (!response.ok) {
+          throw new Error(`فشل في جلب بيانات المشروع ${projectId}`);
+        }
+        
         const data = await response.json();
-        setWorkerStatement(data);
-        setShowReport(true);
-      }
+        const project = workerProjects.find(p => p.id === projectId);
+        
+        return {
+          projectId,
+          projectName: project?.name || 'مشروع غير معروف',
+          attendance: data.attendance || [],
+          transfers: data.transfers || [],
+          balance: data.balance
+        };
+      });
+
+      const statements = await Promise.all(statementPromises);
+      setWorkerStatement(statements);
+      setShowReport(true);
+      
+      console.log("تم إنشاء كشف الحساب بنجاح:", statements);
     } catch (error) {
       console.error('Error generating report:', error);
+      alert('حدث خطأ أثناء إنشاء كشف الحساب');
     }
   };
 
