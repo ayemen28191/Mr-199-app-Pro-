@@ -128,7 +128,19 @@ export default function EnhancedWorkerStatement() {
   };
 
   const printReport = () => {
-    window.print();
+    // Hide action buttons before printing
+    const actionButtons = document.querySelector('.print\\:hidden');
+    if (actionButtons) {
+      (actionButtons as HTMLElement).style.display = 'none';
+    }
+    
+    setTimeout(() => {
+      window.print();
+      // Show buttons again after printing
+      if (actionButtons) {
+        (actionButtons as HTMLElement).style.display = 'block';
+      }
+    }, 100);
   };
 
   const exportToExcel = () => {
@@ -512,16 +524,30 @@ export default function EnhancedWorkerStatement() {
             </div>
           </div>
 
-          {/* Action Buttons - Fixed at bottom */}
-          <div className="fixed bottom-4 left-4 right-4 flex gap-2 justify-center print:hidden z-50">
-            <Button onClick={printReport} className="bg-blue-600 hover:bg-blue-700 text-white">
-              <Printer className="mr-2 h-4 w-4" />
-              طباعة
-            </Button>
-            <Button onClick={exportToExcel} className="bg-green-600 hover:bg-green-700 text-white">
-              <Download className="mr-2 h-4 w-4" />
-              تصدير Excel
-            </Button>
+          {/* Action Buttons - Visible at bottom of report */}
+          <div className="mt-6 p-4 border-t bg-gray-50 print:hidden">
+            <div className="flex gap-3 justify-center">
+              <Button onClick={printReport} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2">
+                <Printer className="mr-2 h-4 w-4" />
+                طباعة الكشف
+              </Button>
+              <Button onClick={exportToExcel} className="bg-green-600 hover:bg-green-700 text-white px-6 py-2">
+                <Download className="mr-2 h-4 w-4" />
+                تصدير Excel
+              </Button>
+              <Button 
+                onClick={() => {
+                  window.print();
+                }}
+                className="bg-red-600 hover:bg-red-700 text-white px-6 py-2"
+              >
+                <Printer className="mr-2 h-4 w-4" />
+                حفظ PDF
+              </Button>
+            </div>
+            <p className="text-center text-sm text-gray-600 mt-2">
+              يمكنك طباعة الكشف أو تصديره أو حفظه كملف PDF
+            </p>
           </div>
         </div>
       )}
