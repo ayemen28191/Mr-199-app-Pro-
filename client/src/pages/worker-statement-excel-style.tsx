@@ -67,6 +67,20 @@ export default function WorkerStatementExcelStyle() {
   const attendance = workerStatement?.attendance || [];
   const workerTransfers = workerStatement?.transfers || [];
   const workerBalance = workerStatement?.balance;
+  
+  // Get all project attendance for worker (not filtered by project)
+  const { data: allAttendance = [] } = useQuery({
+    queryKey: ["/api/workers/attendance", selectedWorkerId, dateFrom, dateTo],
+    queryFn: async () => {
+      if (!selectedWorkerId || !dateFrom || !dateTo) return [];
+      
+      const response = await fetch(`/api/workers/${selectedWorkerId}/attendance?dateFrom=${dateFrom}&dateTo=${dateTo}`);
+      if (!response.ok) return [];
+      
+      return response.json();
+    },
+    enabled: !!selectedWorkerId && !!dateFrom && !!dateTo && showReport,
+  });
 
   const generateReport = () => {
     if (!selectedWorkerId || !dateFrom || !dateTo) {
@@ -278,7 +292,7 @@ export default function WorkerStatementExcelStyle() {
                   المهنة
                 </div>
                 <div className="p-2 text-xs text-center flex items-center justify-center">
-                  عامل عادي
+                  {selectedWorker?.type || 'عامل عادي'}
                 </div>
               </div>
             </div>
@@ -291,7 +305,7 @@ export default function WorkerStatementExcelStyle() {
                   الأجر اليومي
                 </div>
                 <div className="p-2 text-xs text-center flex items-center justify-center font-bold">
-                  12,000
+                  {parseInt(selectedWorker?.dailyWage || '12000').toLocaleString()}
                 </div>
               </div>
             </div>
@@ -301,7 +315,7 @@ export default function WorkerStatementExcelStyle() {
                   المشروع
                 </div>
                 <div className="p-2 text-xs text-center flex items-center justify-center">
-                  مشاريع متعددة
+                  {projects.find(p => p.id === selectedProjectId)?.name || 'مشاريع متعددة'}
                 </div>
               </div>
             </div>
@@ -309,7 +323,7 @@ export default function WorkerStatementExcelStyle() {
 
           {/* Table Headers - Exact layout as Excel */}
           <div className="border-2 border-t-0 border-black">
-            <div className="bg-orange-200 grid text-xs font-bold" style={{gridTemplateColumns: '25px 70px 60px 50px 40px 40px 50px 55px 45px 130px'}}>
+            <div className="bg-orange-200 grid text-xs font-bold" style={{gridTemplateColumns: '25px 90px 80px 60px 70px 40px 50px 65px 55px 85px'}}>
               <div className="border-r border-black p-1 text-center">م</div>
               <div className="border-r border-black p-1 text-center">الاسم</div>
               <div className="border-r border-black p-1 text-center">المشروع</div>
@@ -322,8 +336,8 @@ export default function WorkerStatementExcelStyle() {
               <div className="p-1 text-center">ملاحظات</div>
             </div>
 
-            {/* Real Data from System */}
-            {attendance.map((record: any, index: number) => {
+            {/* Real Data from System - Use allAttendance for all projects */}
+            {allAttendance.map((record: any, index: number) => {
               const dailyWage = selectedWorker?.type === 'عامل عادي' ? 12000 : 
                                selectedWorker?.type === 'عامل متخصص' ? 15000 : 
                                parseInt(selectedWorker?.dailyWage) || 12000;
@@ -334,10 +348,10 @@ export default function WorkerStatementExcelStyle() {
               const paidAmount = record.paidAmount || 0;
               
               return (
-                <div key={record.id} className="grid text-xs border-t border-black" style={{gridTemplateColumns: '25px 70px 60px 50px 40px 40px 50px 55px 45px 130px'}}>
+                <div key={record.id} className="grid text-xs border-t border-black" style={{gridTemplateColumns: '25px 90px 80px 60px 70px 40px 50px 65px 55px 85px'}}>
                   <div className="border-r border-black p-1 text-center">{index + 1}</div>
-                  <div className="border-r border-black p-1 text-center break-words">{selectedWorker?.name || 'عبود مطهر'}</div>
-                  <div className="border-r border-black p-1 text-center break-words">{record.project?.name || 'مشروع متعدد'}</div>
+                  <div className="border-r border-black p-1 text-center break-words">{selectedWorker?.name}</div>
+                  <div className="border-r border-black p-1 text-center break-words">{record.project?.name}</div>
                   <div className="border-r border-black p-1 text-center">{dailyWage.toLocaleString()}</div>
                   <div className="border-r border-black p-1 text-center">{format(new Date(record.date), 'yyyy-MM-dd')}</div>
                   <div className="border-r border-black p-1 text-center">{workingDays}</div>
@@ -356,10 +370,10 @@ export default function WorkerStatementExcelStyle() {
             
             {/* Fund Transfers from System */}
             {workerStatement?.fundTransfers?.map((transfer: any, index: number) => (
-              <div key={`transfer-${index}`} className="grid text-xs border-t border-black" style={{gridTemplateColumns: '25px 70px 60px 50px 40px 40px 50px 55px 45px 130px'}}>
-                <div className="border-r border-black p-1 text-center">{attendance.length + index + 1}</div>
-                <div className="border-r border-black p-1 text-center break-words">{selectedWorker?.name || 'عبود مطهر'}</div>
-                <div className="border-r border-black p-1 text-center break-words">{transfer.project?.name || 'مشروع متعدد'}</div>
+              <div key={`transfer-${index}`} className="grid text-xs border-t border-black" style={{gridTemplateColumns: '25px 90px 80px 60px 70px 40px 50px 65px 55px 85px'}}>
+                <div className="border-r border-black p-1 text-center">{allAttendance.length + index + 1}</div>
+                <div className="border-r border-black p-1 text-center break-words">{selectedWorker?.name}</div>
+                <div className="border-r border-black p-1 text-center break-words">{transfer.project?.name}</div>
                 <div className="border-r border-black p-1 text-center">-</div>
                 <div className="border-r border-black p-1 text-center">{format(new Date(transfer.date), 'yyyy-MM-dd')}</div>
                 <div className="border-r border-black p-1 text-center">0</div>
@@ -373,8 +387,8 @@ export default function WorkerStatementExcelStyle() {
             ))}
             
             {/* Fill remaining rows to maintain single page layout */}
-            {Array.from({ length: Math.max(0, 15 - attendance.length - (workerStatement?.fundTransfers?.length || 0)) }).map((_, index) => (
-              <div key={`empty-${index}`} className="grid text-xs border-t border-black h-5" style={{gridTemplateColumns: '25px 70px 60px 50px 40px 40px 50px 55px 45px 130px'}}>
+            {Array.from({ length: Math.max(0, 15 - allAttendance.length - (workerStatement?.fundTransfers?.length || 0)) }).map((_, index) => (
+              <div key={`empty-${index}`} className="grid text-xs border-t border-black h-5" style={{gridTemplateColumns: '25px 90px 80px 60px 70px 40px 50px 65px 55px 85px'}}>
                 <div className="border-r border-black p-1"></div>
                 <div className="border-r border-black p-1"></div>
                 <div className="border-r border-black p-1"></div>
@@ -399,7 +413,7 @@ export default function WorkerStatementExcelStyle() {
                 إجمالي عدد أيام العمل
               </div>
               <div className="p-1 text-sm font-bold">
-                {attendance.reduce((sum, record) => {
+                {allAttendance.reduce((sum, record) => {
                   const days = record.status === 'حاضر' ? 1 : record.status === 'نصف يوم' ? 0.5 : 0;
                   return sum + days;
                 }, 0).toFixed(1)}
@@ -412,7 +426,7 @@ export default function WorkerStatementExcelStyle() {
                 إجمالي عدد ساعات العمل
               </div>
               <div className="p-1 text-sm font-bold">
-                {(attendance.reduce((sum, record) => {
+                {(allAttendance.reduce((sum, record) => {
                   const days = record.status === 'حاضر' ? 1 : record.status === 'نصف يوم' ? 0.5 : 0;
                   return sum + days;
                 }, 0) * 8).toFixed(1)}
@@ -423,7 +437,7 @@ export default function WorkerStatementExcelStyle() {
             <div className="bg-orange-200 border-2 border-black">
               <div className="text-center p-1 border-b border-black">
                 <div className="text-xs font-bold">
-                  {attendance.reduce((sum, record) => {
+                  {allAttendance.reduce((sum, record) => {
                     const dailyWage = parseInt(selectedWorker?.dailyWage) || 12000;
                     const days = record.status === 'حاضر' ? 1 : record.status === 'نصف يوم' ? 0.5 : 0;
                     return sum + (dailyWage * days);
@@ -433,7 +447,7 @@ export default function WorkerStatementExcelStyle() {
               </div>
               <div className="text-center p-1">
                 <div className="text-xs font-bold">
-                  {(attendance.reduce((sum, record) => sum + (record.paidAmount || 0), 0) +
+                  {(allAttendance.reduce((sum, record) => sum + (record.paidAmount || 0), 0) +
                     (workerStatement?.fundTransfers?.reduce((sum, transfer) => sum + parseInt(transfer.amount), 0) || 0)
                   ).toLocaleString()}
                 </div>
@@ -447,12 +461,12 @@ export default function WorkerStatementExcelStyle() {
             <div className="text-sm font-bold mb-1">المبلغ المتبقي للعامل</div>
             <div className="text-lg font-bold">
               {(() => {
-                const totalEarned = attendance.reduce((sum, record) => {
+                const totalEarned = allAttendance.reduce((sum, record) => {
                   const dailyWage = parseInt(selectedWorker?.dailyWage) || 12000;
                   const days = record.status === 'حاضر' ? 1 : record.status === 'نصف يوم' ? 0.5 : 0;
                   return sum + (dailyWage * days);
                 }, 0);
-                const totalPaid = attendance.reduce((sum, record) => sum + (record.paidAmount || 0), 0);
+                const totalPaid = allAttendance.reduce((sum, record) => sum + (record.paidAmount || 0), 0);
                 const totalTransfers = workerStatement?.fundTransfers?.reduce((sum, transfer) => sum + parseInt(transfer.amount), 0) || 0;
                 return (totalEarned - totalPaid - totalTransfers).toLocaleString();
               })()}
