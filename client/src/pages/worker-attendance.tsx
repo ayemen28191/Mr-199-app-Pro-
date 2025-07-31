@@ -20,6 +20,7 @@ interface AttendanceData {
     startTime?: string;
     endTime?: string;
     workDescription?: string;
+    workDays?: number;
     paidAmount?: string;
     paymentType?: string;
   };
@@ -62,6 +63,7 @@ export default function WorkerAttendance() {
         startTime: attendanceToEdit.startTime,
         endTime: attendanceToEdit.endTime,
         workDescription: attendanceToEdit.workDescription || "",
+        workDays: parseFloat(attendanceToEdit.workDays || '1.0'),
         paidAmount: attendanceToEdit.paidAmount?.toString() || "",
         paymentType: attendanceToEdit.paymentType || "partial"
       };
@@ -98,6 +100,7 @@ export default function WorkerAttendance() {
         startTime: record.startTime,
         endTime: record.endTime,
         workDescription: record.workDescription || "",
+        workDays: parseFloat(record.workDays || '1.0'),
         paidAmount: record.paidAmount,
         paymentType: record.paymentType || "partial"
       };
@@ -128,9 +131,21 @@ export default function WorkerAttendance() {
     },
     onError: (error: any) => {
       console.error("Error saving attendance:", error);
+      let errorMessage = "حدث خطأ أثناء حفظ الحضور";
+      
+      // التحقق من رسالة الخطأ المحددة
+      if (error?.response?.data?.error || error?.message) {
+        const serverError = error?.response?.data?.error || error?.message;
+        if (serverError.includes("تم تسجيل حضور هذا العامل مسبقاً")) {
+          errorMessage = "تم تسجيل حضور هذا العامل مسبقاً في هذا التاريخ";
+        } else {
+          errorMessage = serverError;
+        }
+      }
+      
       toast({
         title: "خطأ",
-        description: error?.message || "حدث خطأ أثناء حفظ الحضور",
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -158,8 +173,10 @@ export default function WorkerAttendance() {
       .map(([workerId, data]) => {
         const worker = workers.find(w => w.id === workerId);
         const dailyWage = parseFloat(worker?.dailyWage || "0");
+        const workDays = data.workDays || 1.0;
+        const actualWage = dailyWage * workDays;
         const paidAmount = parseFloat(data.paidAmount || "0");
-        const remainingAmount = dailyWage - paidAmount;
+        const remainingAmount = actualWage - paidAmount;
         
         return {
           projectId: selectedProjectId,
@@ -169,6 +186,7 @@ export default function WorkerAttendance() {
           endTime: data.endTime || "15:00",
           workDescription: data.workDescription || "",
           isPresent: true,
+          workDays: workDays,
           dailyWage: worker?.dailyWage || "0",
           paidAmount: paidAmount.toString(),
           remainingAmount: remainingAmount.toString(),

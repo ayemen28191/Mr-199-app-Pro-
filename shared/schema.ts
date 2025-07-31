@@ -44,12 +44,17 @@ export const workerAttendance = pgTable("worker_attendance", {
   endTime: text("end_time"), // HH:MM format
   workDescription: text("work_description"),
   isPresent: boolean("is_present").notNull(),
+  workDays: decimal("work_days", { precision: 3, scale: 2 }).notNull().default('1.00'), // عدد أيام العمل (مثل 0.5، 1.0، 1.5)
   dailyWage: decimal("daily_wage", { precision: 10, scale: 2 }).notNull(), // الأجر اليومي الكامل
+  actualWage: decimal("actual_wage", { precision: 10, scale: 2 }).notNull(), // الأجر الفعلي = dailyWage * workDays
   paidAmount: decimal("paid_amount", { precision: 10, scale: 2 }).default('0').notNull(), // المبلغ المدفوع فعلياً (الصرف)
   remainingAmount: decimal("remaining_amount", { precision: 10, scale: 2 }).default('0').notNull(), // المتبقي في حساب العامل
   paymentType: text("payment_type").notNull().default("partial"), // "full" | "partial" | "credit"
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  // قيد فريد لمنع تسجيل حضور مكرر لنفس العامل في نفس اليوم
+  uniqueWorkerDate: sql`UNIQUE (worker_id, date, project_id)`
+}));
 
 // Materials
 export const materials = pgTable("materials", {
@@ -150,7 +155,9 @@ export const insertWorkerSchema = createInsertSchema(workers).omit({ id: true, c
 export const insertFundTransferSchema = createInsertSchema(fundTransfers).omit({ id: true, createdAt: true }).extend({
   transferDate: z.coerce.date(), // تحويل string إلى Date تلقائياً
 });
-export const insertWorkerAttendanceSchema = createInsertSchema(workerAttendance).omit({ id: true, createdAt: true });
+export const insertWorkerAttendanceSchema = createInsertSchema(workerAttendance).omit({ id: true, createdAt: true, actualWage: true }).extend({
+  workDays: z.number().min(0.1).max(2.0).default(1.0), // عدد أيام العمل من 0.1 إلى 2.0
+});
 export const insertMaterialSchema = createInsertSchema(materials).omit({ id: true, createdAt: true });
 export const insertMaterialPurchaseSchema = createInsertSchema(materialPurchases).omit({ id: true, createdAt: true });
 export const insertTransportationExpenseSchema = createInsertSchema(transportationExpenses).omit({ id: true, createdAt: true });

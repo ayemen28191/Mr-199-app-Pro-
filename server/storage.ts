@@ -269,9 +269,36 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createWorkerAttendance(attendance: InsertWorkerAttendance): Promise<WorkerAttendance> {
+    // التحقق من عدم وجود حضور مسجل مسبقاً لنفس العامل في نفس اليوم
+    const existingAttendance = await db.select().from(workerAttendance)
+      .where(and(
+        eq(workerAttendance.workerId, attendance.workerId),
+        eq(workerAttendance.date, attendance.date),
+        eq(workerAttendance.projectId, attendance.projectId)
+      ));
+    
+    if (existingAttendance.length > 0) {
+      throw new Error("تم تسجيل حضور هذا العامل مسبقاً في هذا التاريخ");
+    }
+    
+    // حساب الأجر الفعلي بناءً على عدد أيام العمل
+    const workDays = attendance.workDays || 1.0;
+    const dailyWage = parseFloat(attendance.dailyWage.toString());
+    const actualWage = dailyWage * workDays;
+    
+    // إعداد الحضور مع الأجر المحسوب
+    const attendanceData = {
+      ...attendance,
+      workDays: workDays.toString(),
+      actualWage: actualWage.toString(),
+      remainingAmount: attendance.paymentType === 'credit' 
+        ? actualWage.toString() 
+        : (actualWage - parseFloat(attendance.paidAmount?.toString() || '0')).toString()
+    };
+    
     const [newAttendance] = await db
       .insert(workerAttendance)
-      .values(attendance)
+      .values(attendanceData)
       .returning();
     
     // تحديث الملخص اليومي في الخلفية (دون انتظار)
@@ -281,11 +308,54 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateWorkerAttendance(id: string, attendance: Partial<InsertWorkerAttendance>): Promise<WorkerAttendance | undefined> {
+    // الحصول على البيانات الحالية لحساب الأجر إذا تم تحديث عدد الأيام
+    const [currentAttendance] = await db.select().from(workerAttendance).where(eq(workerAttendance.id, id));
+    
+    // إعداد بيانات التحديث مع التحويل المناسب للأنواع
+    let updateData: any = {};
+    
+    // نسخ الحقول العادية
+    Object.keys(attendance).forEach(key => {
+      if (key !== 'workDays') {
+        updateData[key] = attendance[key as keyof typeof attendance];
+      }
+    });
+    
+    // إعادة حساب الأجر الفعلي إذا تم تغيير عدد أيام العمل أو الأجر اليومي
+    if (attendance.workDays !== undefined || attendance.dailyWage) {
+      const workDays = typeof attendance.workDays === 'number' 
+        ? attendance.workDays 
+        : parseFloat(currentAttendance?.workDays || '1.0');
+      const dailyWage = attendance.dailyWage 
+        ? parseFloat(attendance.dailyWage.toString())
+        : parseFloat(currentAttendance?.dailyWage || '0');
+      
+      const actualWage = dailyWage * workDays;
+      
+      // تحويل الأرقام إلى نصوص للحفظ في قاعدة البيانات
+      updateData.workDays = workDays.toString();
+      updateData.actualWage = actualWage.toString();
+      
+      // إعادة حساب المبلغ المتبقي
+      const paidAmount = attendance.paidAmount 
+        ? parseFloat(attendance.paidAmount.toString())
+        : parseFloat(currentAttendance?.paidAmount || '0');
+      
+      updateData.remainingAmount = attendance.paymentType === 'credit' 
+        ? actualWage.toString() 
+        : (actualWage - paidAmount).toString();
+    }
+    
     const [updated] = await db
       .update(workerAttendance)
-      .set(attendance)
+      .set(updateData)
       .where(eq(workerAttendance.id, id))
       .returning();
+    
+    if (updated) {
+      await this.updateDailySummaryForDate(updated.projectId, updated.date);
+    }
+    
     return updated || undefined;
   }
 
