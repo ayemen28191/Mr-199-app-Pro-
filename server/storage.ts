@@ -76,7 +76,11 @@ export interface IStorage {
   getProjectStatistics(projectId: string): Promise<any>;
   
   // Reports
-  getWorkerAccountStatement(workerId: string, projectId?: string, dateFrom?: string, dateTo?: string): Promise<WorkerAttendance[]>;
+  getWorkerAccountStatement(workerId: string, projectId?: string, dateFrom?: string, dateTo?: string): Promise<{
+    attendance: WorkerAttendance[];
+    transfers: WorkerTransfer[];
+    balance: WorkerBalance | null;
+  }>;
   
   // Multi-project worker management
   getWorkersWithMultipleProjects(): Promise<{worker: Worker, projects: Project[], totalBalance: string}[]>;
@@ -626,13 +630,70 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Reports
-  async getWorkerAccountStatement(workerId: string, projectId?: string, dateFrom?: string, dateTo?: string): Promise<WorkerAttendance[]> {
-    if (projectId) {
-      return await db.select().from(workerAttendance)
-        .where(and(eq(workerAttendance.workerId, workerId), eq(workerAttendance.projectId, projectId)));
-    } else {
-      return await db.select().from(workerAttendance)
-        .where(eq(workerAttendance.workerId, workerId));
+  async getWorkerAccountStatement(workerId: string, projectId?: string, dateFrom?: string, dateTo?: string): Promise<{
+    attendance: WorkerAttendance[];
+    transfers: WorkerTransfer[];
+    balance: WorkerBalance | null;
+  }> {
+    try {
+      let attendanceConditions = [eq(workerAttendance.workerId, workerId)];
+      
+      if (projectId) {
+        attendanceConditions.push(eq(workerAttendance.projectId, projectId));
+      }
+      
+      if (dateFrom) {
+        attendanceConditions.push(gte(workerAttendance.date, dateFrom));
+      }
+      
+      if (dateTo) {
+        attendanceConditions.push(lte(workerAttendance.date, dateTo));
+      }
+      
+      const attendance = await db.select().from(workerAttendance)
+        .where(and(...attendanceConditions))
+        .orderBy(workerAttendance.date);
+      
+      // Get worker transfers
+      let transfersConditions = [eq(workerTransfers.workerId, workerId)];
+      
+      if (projectId) {
+        transfersConditions.push(eq(workerTransfers.projectId, projectId));
+      }
+      
+      if (dateFrom) {
+        transfersConditions.push(gte(workerTransfers.transferDate, dateFrom));
+      }
+      
+      if (dateTo) {
+        transfersConditions.push(lte(workerTransfers.transferDate, dateTo));
+      }
+      
+      const transfers = await db.select().from(workerTransfers)
+        .where(and(...transfersConditions))
+        .orderBy(workerTransfers.transferDate);
+      
+      // Get worker balance
+      let balance = null;
+      if (projectId) {
+        const balanceResult = await db.select().from(workerBalances)
+          .where(and(eq(workerBalances.workerId, workerId), eq(workerBalances.projectId, projectId)))
+          .limit(1);
+        balance = balanceResult[0] || null;
+      }
+      
+      return {
+        attendance,
+        transfers,
+        balance
+      };
+    } catch (error) {
+      console.error('Error getting worker account statement:', error);
+      return {
+        attendance: [],
+        transfers: [],
+        balance: null
+      };
     }
   }
 

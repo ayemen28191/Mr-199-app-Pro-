@@ -77,6 +77,7 @@ export default function WorkerStatementReport() {
   // Calculate totals from workerStatement
   const attendance = workerStatement?.attendance || [];
   const workerTransfers = workerStatement?.transfers || [];
+  const workerBalance = workerStatement?.balance;
 
   const generateReport = () => {
     if (!selectedWorkerId || !dateFrom || !dateTo) {
