@@ -338,6 +338,17 @@ export default function ReportsFixed() {
       <div className="mb-4 space-y-3">
         <Button 
           variant="outline" 
+          className="w-full h-14 border-3 border-blue-500 hover:bg-blue-50 shadow-lg"
+          onClick={() => setLocation("/professional-worker-statement")}
+        >
+          <Receipt className="ml-2 h-6 w-6 text-blue-600" />
+          <div className="text-right">
+            <div className="text-blue-800 font-bold text-base">كشف حساب العامل الاحترافي</div>
+            <div className="text-blue-600 text-xs">تصميم احترافي لورقة A4 واحدة - بيانات حقيقية 100%</div>
+          </div>
+        </Button>
+        <Button 
+          variant="outline" 
           className="w-full h-12 border-2 border-emerald-400 hover:bg-emerald-50"
           onClick={() => setLocation("/worker-statement-excel")}
         >

@@ -15,6 +15,7 @@ import WorkerStatementReport from "@/pages/worker-statement-simple";
 import EnhancedWorkerStatement from "@/pages/enhanced-worker-statement";
 import ExcelStyleWorkerStatement from "@/pages/excel-style-worker-statement";
 import WorkerStatementExcelStyle from "@/pages/worker-statement-excel-style";
+import ProfessionalWorkerStatement from "@/pages/professional-worker-statement";
 import ProjectsPage from "@/pages/projects";
 import Header from "@/components/layout/header";
 import BottomNavigation from "@/components/layout/bottom-navigation";
@@ -33,6 +34,7 @@ function Router() {
       <Route path="/enhanced-worker-statement" component={EnhancedWorkerStatement} />
       <Route path="/excel-worker-statement" component={ExcelStyleWorkerStatement} />
       <Route path="/worker-statement-excel" component={WorkerStatementExcelStyle} />
+      <Route path="/professional-worker-statement" component={ProfessionalWorkerStatement} />
       <Route path="/reports" component={ReportsFixed} />
       <Route component={NotFound} />
     </Switch>
