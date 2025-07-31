@@ -195,30 +195,47 @@ export default function ExcelStyleWorkerStatement() {
             @media print {
               .no-print { display: none !important; }
               .print-content { 
-                padding: 0 !important; 
+                padding: 0.5cm !important; 
                 margin: 0 !important;
                 max-width: none !important;
+                width: 21cm !important;
+                height: 29.7cm !important;
+                background: white !important;
               }
-              body { margin: 0; }
-              .excel-table { page-break-inside: avoid; }
+              body { 
+                margin: 0; 
+                padding: 0;
+                background: white !important;
+              }
+              .excel-table { 
+                page-break-inside: avoid; 
+                width: 100% !important;
+                margin: 0 !important;
+              }
+              @page {
+                size: A4;
+                margin: 0.5cm;
+              }
             }
             
             .excel-table {
               width: 100%;
               border-collapse: collapse;
-              font-family: 'Segoe UI', Arial, sans-serif;
-              font-size: 10px;
+              font-family: 'Arial', sans-serif;
+              font-size: 8px;
               direction: rtl;
-              margin: 0;
+              margin: 1px 0;
             }
             
             .excel-table th,
             .excel-table td {
               border: 1px solid #000;
-              padding: 2px 4px;
+              padding: 1px;
               text-align: center;
               vertical-align: middle;
               white-space: nowrap;
+              height: 16px;
+              line-height: 1.2;
             }
             
             .excel-header {
@@ -263,24 +280,24 @@ export default function ExcelStyleWorkerStatement() {
             </table>
 
             {/* Worker and Project Info */}
-            <table className="excel-table mb-2">
+            <table className="excel-table mb-1">
               <tr>
-                <td className="excel-worker-info" style={{ width: '15%' }}>اسم العامل</td>
-                <td style={{ width: '20%', fontWeight: 'bold' }}>{workerStatement.worker.name}</td>
-                <td className="excel-worker-info" style={{ width: '15%' }}>موسى عبدالحكيم</td>
-                <td className="excel-worker-info" style={{ width: '15%' }}>مشروع أبو النجا + مشروع مسجد الضحيان</td>
-                <td style={{ width: '10%' }}>7.000</td>
-                <td className="excel-worker-info" style={{ width: '10%' }}>عامل عادي</td>
-                <td className="excel-worker-info" style={{ width: '15%' }}>النهاية</td>
+                <td className="excel-worker-info" style={{ width: '12%' }}>اسم العامل</td>
+                <td style={{ width: '18%', fontWeight: 'bold' }}>{workerStatement.worker.name}</td>
+                <td className="excel-worker-info" style={{ width: '12%' }}>المشاريع</td>
+                <td style={{ width: '23%' }}>{workerStatement.projects.map(p => p.name).join(' + ')}</td>
+                <td className="excel-worker-info" style={{ width: '12%' }}>الأجر اليومي</td>
+                <td style={{ width: '12%' }}>{formatCurrency(parseFloat(workerStatement.worker.dailyWage))}</td>
+                <td className="excel-worker-info" style={{ width: '11%' }}>المسمى الوظيفي</td>
               </tr>
               <tr>
-                <td className="excel-worker-info">المسمى الوظيفي</td>
-                <td>عامل عادي</td>
-                <td className="excel-worker-info">تاريخ بداية</td>
-                <td className="excel-worker-info">مشروع أبو النجا + مشروع مسجد الضحيان</td>
+                <td className="excel-worker-info">من تاريخ</td>
                 <td>{formatDate(dateFrom)}</td>
-                <td className="excel-worker-info">رقم الهوية</td>
-                <td>7322966543</td>
+                <td className="excel-worker-info">إلى تاريخ</td>
+                <td>{formatDate(dateTo)}</td>
+                <td className="excel-worker-info">نوع العامل</td>
+                <td>{workerStatement.worker.type || 'عامل عادي'}</td>
+                <td>عامل عادي</td>
               </tr>
             </table>
 
@@ -289,16 +306,16 @@ export default function ExcelStyleWorkerStatement() {
               <thead>
                 <tr className="excel-header">
                   <th style={{ width: '3%' }}>م</th>
-                  <th style={{ width: '8%' }}>اليوم</th>
-                  <th style={{ width: '12%' }}>المشروع</th>
-                  <th style={{ width: '8%' }}>الأجر اليومي</th>
+                  <th style={{ width: '7%' }}>اليوم</th>
+                  <th style={{ width: '11%' }}>المشروع</th>
+                  <th style={{ width: '7%' }}>الأجر اليومي</th>
                   <th style={{ width: '8%' }}>التاريخ</th>
-                  <th style={{ width: '8%' }}>أيام العمل</th>
-                  <th style={{ width: '8%' }}>ساعات العمل</th>
+                  <th style={{ width: '6%' }}>أيام العمل</th>
+                  <th style={{ width: '6%' }}>ساعات العمل</th>
                   <th style={{ width: '8%' }}>المبلغ المستحق</th>
                   <th style={{ width: '8%' }}>المبلغ المستلم</th>
-                  <th style={{ width: '8%' }}>الباقي</th>
-                  <th style={{ width: '21%' }}>ملاحظات</th>
+                  <th style={{ width: '7%' }}>الباقي</th>
+                  <th style={{ width: '19%' }}>ملاحظات</th>
                 </tr>
               </thead>
               <tbody>
@@ -336,7 +353,7 @@ export default function ExcelStyleWorkerStatement() {
                     <tr key={`transfer-${transfer.id}`}>
                       <td>{workerStatement.attendance.length + index + 1}</td>
                       <td colSpan={2}>
-                        {transfer.transferType === 'advance' && 'حوالة أبو النجا بشيك الضحيان'}
+                        {transfer.transferType === 'advance' && 'سلفة'}
                         {transfer.transferType === 'salary' && 'راتب'}
                         {transfer.transferType === 'deduction' && 'خصم'}
                         {!transfer.transferType && 'تحويل مالي'}
@@ -344,11 +361,11 @@ export default function ExcelStyleWorkerStatement() {
                       <td>{formatCurrency(transferAmount)}</td>
                       <td>{formatDate(transfer.transferDate)}</td>
                       <td>0</td>
-                      <td></td>
+                      <td>0</td>
                       <td className="amount-negative">-{formatCurrency(transferAmount)}</td>
                       <td className="amount-negative">{formatCurrency(transferAmount)}</td>
                       <td>0</td>
-                      <td style={{ fontSize: '8px' }}>{transfer.notes || transfer.transferNumber || ''}</td>
+                      <td style={{ fontSize: '7px' }}>{transfer.notes || transfer.transferNumber || ''}</td>
                     </tr>
                   );
                 })}
