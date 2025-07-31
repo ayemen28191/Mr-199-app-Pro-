@@ -238,6 +238,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Creating attendance with data:", result.data);
       const attendance = await storage.createWorkerAttendance(result.data);
       console.log("Attendance created successfully:", attendance);
+      
+      // تحديث الملخص اليومي بعد إضافة الحضور
+      setImmediate(() => {
+        storage.updateDailySummaryForDate(attendance.projectId, attendance.date)
+          .catch(error => console.error("Error updating daily summary after attendance:", error));
+      });
+      
       res.status(201).json(attendance);
     } catch (error) {
       console.error("Error creating worker attendance:", error);
@@ -262,7 +269,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/worker-attendance/:id", async (req, res) => {
     try {
+      // الحصول على بيانات الحضور قبل حذفه لتحديث الملخص اليومي
+      const attendance = await storage.getWorkerAttendanceById(req.params.id);
+      
       await storage.deleteWorkerAttendance(req.params.id);
+      
+      // تحديث الملخص اليومي بعد حذف الحضور
+      if (attendance) {
+        setImmediate(() => {
+          storage.updateDailySummaryForDate(attendance.projectId, attendance.date)
+            .catch(error => console.error("Error updating daily summary after attendance deletion:", error));
+        });
+      }
+      
       res.status(200).json({ message: "تم حذف حضور العامل بنجاح" });
     } catch (error) {
       console.error("Error deleting worker attendance:", error);
@@ -788,6 +807,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // تحديث الملخص اليومي بعد إضافة الحوالة
+      setImmediate(() => {
+        storage.updateDailySummaryForDate(transfer.projectId, transfer.transferDate)
+          .catch(error => console.error("Error updating daily summary after worker transfer:", error));
+      });
+      
       res.status(201).json(transfer);
     } catch (error) {
       console.error("Error creating worker transfer:", error);
@@ -810,6 +835,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Worker transfer not found" });
       }
       
+      // تحديث الملخص اليومي بعد تعديل الحوالة
+      setImmediate(() => {
+        storage.updateDailySummaryForDate(transfer.projectId, transfer.transferDate)
+          .catch(error => console.error("Error updating daily summary after worker transfer update:", error));
+      });
+      
       res.json(transfer);
     } catch (error) {
       console.error("Error updating worker transfer:", error);
@@ -819,7 +850,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.delete("/api/worker-transfers/:id", async (req, res) => {
     try {
+      // الحصول على بيانات الحوالة قبل حذفها لتحديث الملخص اليومي
+      const transfer = await storage.getWorkerTransfer(req.params.id);
+      
       await storage.deleteWorkerTransfer(req.params.id);
+      
+      // تحديث الملخص اليومي بعد حذف الحوالة
+      if (transfer) {
+        setImmediate(() => {
+          storage.updateDailySummaryForDate(transfer.projectId, transfer.transferDate)
+            .catch(error => console.error("Error updating daily summary after worker transfer deletion:", error));
+        });
+      }
+      
       res.status(200).json({ message: "تم حذف الحولة بنجاح" });
     } catch (error) {
       console.error("Error deleting worker transfer:", error);
