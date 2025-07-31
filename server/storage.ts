@@ -9,7 +9,7 @@ import {
   workerTransfers, workerBalances
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, gte, lte, sql } from "drizzle-orm";
+import { eq, and, gte, lte, sql, inArray } from "drizzle-orm";
 
 export interface IStorage {
   // Projects
@@ -735,7 +735,26 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getWorkerProjects(workerId: string): Promise<Project[]> {
-    return [];
+    try {
+      const projectIds = await db
+        .selectDistinct({ projectId: workerAttendance.projectId })
+        .from(workerAttendance)
+        .where(eq(workerAttendance.workerId, workerId));
+      
+      if (projectIds.length === 0) {
+        return [];
+      }
+      
+      const projectsList = await db
+        .select()
+        .from(projects)
+        .where(inArray(projects.id, projectIds.map(p => p.projectId)));
+      
+      return projectsList;
+    } catch (error) {
+      console.error('Error getting worker projects:', error);
+      return [];
+    }
   }
 
   async getProjectStatistics(projectId: string): Promise<{

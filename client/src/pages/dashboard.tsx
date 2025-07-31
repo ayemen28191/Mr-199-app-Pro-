@@ -129,10 +129,10 @@ export default function Dashboard() {
         <Button 
           variant="outline" 
           className="h-12 border-2 border-green-300 hover:bg-green-50"
-          onClick={() => setLocation("/worker-statement")}
+          onClick={() => setLocation("/enhanced-worker-statement")}
         >
           <Users className="ml-2 h-5 w-5 text-green-600" />
-          <span className="text-green-700 font-medium">كشف حساب العامل (تصميم Excel)</span>
+          <span className="text-green-700 font-medium">كشف حساب العامل المحسن</span>
         </Button>
       </div>
 
