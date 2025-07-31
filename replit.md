@@ -226,3 +226,10 @@ The application follows modern full-stack development practices with type safety
   - **Row height**: Reduced to 12px to fit 10+ rows per page
   - **Table spacing**: Minimal padding (0-1px) for maximum data density
   - **CSS**: Added print-specific media queries with !important declarations
+
+- ✓ **Comprehensive API Request Fix**: Fixed all remaining HTTP method parameter order issues
+  - **Material Purchase Updates**: Fixed `apiRequest` calls in `client/src/pages/material-purchase.tsx`
+  - **Daily Expenses Updates**: Fixed `apiRequest` calls in `client/src/pages/daily-expenses.tsx` 
+  - **Fund Transfer Updates**: Corrected PUT request parameter order
+  - **Transportation Updates**: Corrected PUT request parameter order
+  - **Impact**: All update operations (PUT/PATCH) now work correctly across the entire application

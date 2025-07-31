@@ -249,7 +249,7 @@ export default function DailyExpenses() {
   // Fund Transfer Update Mutation
   const updateFundTransferMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => 
-      apiRequest(`/api/fund-transfers/${id}`, "PUT", data),
+      apiRequest("PUT", `/api/fund-transfers/${id}`, data),
     onSuccess: () => {
       resetFundTransferForm();
       queryClient.invalidateQueries({ 
@@ -318,7 +318,7 @@ export default function DailyExpenses() {
   // Transportation Update Mutation
   const updateTransportationMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => 
-      apiRequest(`/api/transportation-expenses/${id}`, "PUT", data),
+      apiRequest("PUT", `/api/transportation-expenses/${id}`, data),
     onSuccess: () => {
       resetTransportationForm();
       queryClient.invalidateQueries({ 

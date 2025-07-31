@@ -119,7 +119,7 @@ export default function MaterialPurchase() {
   // Update Material Purchase Mutation
   const updateMaterialPurchaseMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => 
-      apiRequest(`/api/material-purchases/${id}`, "PUT", data),
+      apiRequest("PUT", `/api/material-purchases/${id}`, data),
     onSuccess: () => {
       toast({
         title: "تم التحديث",
