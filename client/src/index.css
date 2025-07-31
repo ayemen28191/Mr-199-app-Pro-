@@ -71,6 +71,53 @@
 }
 
 @layer components {
+  /* Form Error Handling Styles */
+  .form-group {
+    position: relative;
+    margin-bottom: 1rem;
+  }
+
+  .form-group input,
+  .form-group textarea,
+  .form-group select {
+    transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  }
+
+  .form-group.error input,
+  .form-group.error textarea,
+  .form-group.error select {
+    border-color: hsl(var(--destructive)) !important;
+    box-shadow: 0 0 0 1px hsl(var(--destructive) / 0.3);
+  }
+
+  .error-message {
+    color: hsl(var(--destructive));
+    font-size: 0.85rem;
+    margin-top: 0.25rem;
+    min-height: 1em;
+    font-weight: 500;
+    animation: slideIn 0.2s ease-in-out;
+  }
+
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: translateY(-5px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .form-group.error .error-message {
+    display: block;
+  }
+
+  .form-group:not(.error) .error-message {
+    display: none;
+  }
+
   .success {
     color: hsl(var(--success));
   }

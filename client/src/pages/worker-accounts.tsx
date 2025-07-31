@@ -15,6 +15,7 @@ import ProjectSelector from "@/components/project-selector";
 import { getCurrentDate, formatCurrency } from "@/lib/utils";
 import { AutocompleteInput } from "@/components/ui/autocomplete-input-database";
 import { apiRequest } from "@/lib/queryClient";
+import { FormErrorHandler, FormField, useFormErrors } from "@/components/form-error-handler";
 import type { Worker, WorkerBalance, WorkerTransfer, WorkerAttendance, InsertWorkerTransfer } from "@shared/schema";
 
 export default function WorkerAccounts() {
@@ -35,8 +36,10 @@ export default function WorkerAccounts() {
   const [transferMethod, setTransferMethod] = useState("hawaleh");
   const [transferDate, setTransferDate] = useState(getCurrentDate());
   const [transferNotes, setTransferNotes] = useState("");
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { validateField, clearErrors } = useFormErrors();
 
   const { data: workers = [], isLoading: workersLoading } = useQuery<Worker[]>({
     queryKey: ["/api/workers"],
@@ -163,6 +166,7 @@ export default function WorkerAccounts() {
     setTransferMethod("hawaleh");
     setTransferDate(getCurrentDate());
     setTransferNotes("");
+    setFormErrors({});
   };
 
   const invalidateTransferQueries = () => {
@@ -177,6 +181,12 @@ export default function WorkerAccounts() {
   const transferAmountNum = parseFloat(transferAmount || "0");
 
   const handleSendTransfer = () => {
+    // مسح الأخطاء السابقة
+    setFormErrors(clearErrors(formErrors));
+    
+    const errors: Record<string, string> = {};
+
+    // التحقق من اختيار المشروع والعامل
     if (!selectedWorkerId || !selectedProjectId) {
       toast({
         title: "خطأ",
@@ -186,21 +196,36 @@ export default function WorkerAccounts() {
       return;
     }
 
-    if (transferAmountNum <= 0) {
-      toast({
-        title: "خطأ",
-        description: "يرجى إدخال مبلغ صحيح",
-        variant: "destructive",
-      });
-      return;
+    // التحقق من المبلغ
+    const amountError = validateField(transferAmount, { 
+      required: true,
+      custom: (value) => parseFloat(value) > 0
+    }, "المبلغ");
+    if (amountError) errors.transferAmount = amountError;
+
+    // التحقق من اسم المستلم
+    const recipientError = validateField(recipientName, { 
+      required: true,
+      minLength: 2
+    }, "اسم المستلم");
+    if (recipientError) errors.recipientName = recipientError;
+
+    // التحقق من رقم الهاتف إذا تم إدخاله
+    if (recipientPhone.trim()) {
+      const phoneError = validateField(recipientPhone, {
+        pattern: /^[0-9]{7,15}$/,
+      }, "رقم الهاتف");
+      if (phoneError) errors.recipientPhone = "رقم الهاتف غير صالح";
     }
 
-    if (!recipientName.trim()) {
-      toast({
-        title: "خطأ",
-        description: "يرجى إدخال اسم المستلم",
-        variant: "destructive",
-      });
+    // التحقق من رصيد العامل للحوالات الجديدة
+    if (!editId && transferAmountNum > currentBalance) {
+      errors.transferAmount = "المبلغ المطلوب أكبر من رصيد العامل";
+    }
+
+    // إذا كان هناك أخطاء، عرضها ولا تتابع
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
       return;
     }
 
@@ -411,10 +436,19 @@ export default function WorkerAccounts() {
                     </p>
                   </div>
                 )}
+                <FormErrorHandler 
+                  errors={formErrors}
+                  onFirstError={() => toast({
+                    title: "تنبيه",
+                    description: "يرجى تصحيح الأخطاء المحددة أدناه",
+                    variant: "destructive",
+                  })}
+                />
                 <div className="space-y-4">
-                  <div>
-                    <Label>المبلغ المطلوب إرساله</Label>
+                  <FormField id="transferAmount" error={formErrors.transferAmount}>
+                    <Label htmlFor="transferAmount">المبلغ المطلوب إرساله</Label>
                     <Input
+                      id="transferAmount"
                       type="number"
                       inputMode="decimal"
                       placeholder="0"
@@ -428,31 +462,34 @@ export default function WorkerAccounts() {
                         الرصيد المتاح: {formatCurrency(currentBalance)}
                       </p>
                     )}
-                  </div>
+                  </FormField>
 
-                  <div>
-                    <Label>اسم المرسل</Label>
+                  <FormField id="senderName" error={formErrors.senderName}>
+                    <Label htmlFor="senderName">اسم المرسل</Label>
                     <AutocompleteInput
+                      id="senderName"
                       value={senderName}
                       onChange={setSenderName}
                       category="senderNames"
                       placeholder="اسم المرسل"
                     />
-                  </div>
+                  </FormField>
 
-                  <div>
-                    <Label>اسم المستلم (الأهل)</Label>
+                  <FormField id="recipientName" error={formErrors.recipientName}>
+                    <Label htmlFor="recipientName">اسم المستلم (الأهل)</Label>
                     <AutocompleteInput
+                      id="recipientName"
                       value={recipientName}
                       onChange={setRecipientName}
                       category="recipientNames"
                       placeholder="اسم المستلم"
                     />
-                  </div>
+                  </FormField>
 
-                  <div>
-                    <Label>رقم هاتف المستلم (اختياري)</Label>
+                  <FormField id="recipientPhone" error={formErrors.recipientPhone}>
+                    <Label htmlFor="recipientPhone">رقم هاتف المستلم (اختياري)</Label>
                     <AutocompleteInput
+                      id="recipientPhone"
                       type="tel"
                       inputMode="numeric"
                       value={recipientPhone}
@@ -461,10 +498,10 @@ export default function WorkerAccounts() {
                       placeholder="رقم الهاتف"
                       className="arabic-numbers"
                     />
-                  </div>
+                  </FormField>
 
-                  <div>
-                    <Label>طريقة التحويل</Label>
+                  <FormField id="transferMethod" error={formErrors.transferMethod}>
+                    <Label htmlFor="transferMethod">طريقة التحويل</Label>
                     <Select value={transferMethod} onValueChange={setTransferMethod}>
                       <SelectTrigger>
                         <SelectValue />
@@ -475,27 +512,29 @@ export default function WorkerAccounts() {
                         <SelectItem value="cash">نقداً</SelectItem>
                       </SelectContent>
                     </Select>
-                  </div>
+                  </FormField>
 
-                  <div>
-                    <Label>تاريخ التحويل</Label>
+                  <FormField id="transferDate" error={formErrors.transferDate}>
+                    <Label htmlFor="transferDate">تاريخ التحويل</Label>
                     <Input
+                      id="transferDate"
                       type="date"
                       value={transferDate}
                       onChange={(e) => setTransferDate(e.target.value)}
                       className="arabic-numbers"
                     />
-                  </div>
+                  </FormField>
 
-                  <div>
-                    <Label>ملاحظات (اختياري)</Label>
+                  <FormField id="transferNotes" error={formErrors.transferNotes}>
+                    <Label htmlFor="transferNotes">ملاحظات (اختياري)</Label>
                     <AutocompleteInput
+                      id="transferNotes"
                       value={transferNotes}
                       onChange={setTransferNotes}
                       category="notes"
                       placeholder="ملاحظات إضافية..."
                     />
-                  </div>
+                  </FormField>
 
                   <div className="flex gap-2">
                     <Button 
