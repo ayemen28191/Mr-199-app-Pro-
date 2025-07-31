@@ -231,8 +231,8 @@ export default function MaterialPurchase() {
     }
   };
 
-  // Fetch Material Purchases for Edit Support
-  const { data: materialPurchases = [], isLoading: materialPurchasesLoading, refetch: refetchMaterialPurchases } = useQuery<any[]>({
+  // Fetch Material Purchases for Edit Support (filtered by purchase date)
+  const { data: allMaterialPurchases = [], isLoading: materialPurchasesLoading, refetch: refetchMaterialPurchases } = useQuery<any[]>({
     queryKey: ["/api/projects", selectedProjectId, "material-purchases"],
     enabled: !!selectedProjectId,
     refetchOnMount: true,
@@ -240,12 +240,20 @@ export default function MaterialPurchase() {
     staleTime: 0, // Always fetch fresh data
   });
 
-  // Auto-refresh when page loads
+  // Filter purchases by selected purchase date
+  const materialPurchases = allMaterialPurchases.filter((purchase: any) => {
+    if (!purchase.purchaseDate) return false;
+    const purchaseDateTime = new Date(purchase.purchaseDate);
+    const selectedDateTime = new Date(purchaseDate);
+    return purchaseDateTime.toDateString() === selectedDateTime.toDateString();
+  });
+
+  // Auto-refresh when page loads or purchase date changes
   useEffect(() => {
     if (selectedProjectId) {
       refetchMaterialPurchases();
     }
-  }, [selectedProjectId, refetchMaterialPurchases]);
+  }, [selectedProjectId, purchaseDate, refetchMaterialPurchases]);
 
   // Edit Function
   const handleEdit = (purchase: any) => {
@@ -523,13 +531,32 @@ export default function MaterialPurchase() {
           </CardContent>
         </Card>
       )}
-      
 
+      {/* No purchases message for selected date */}
+      {selectedProjectId && allMaterialPurchases.length > 0 && materialPurchases.length === 0 && (
+        <Card className="mt-6">
+          <CardContent className="p-4">
+            <div className="text-center text-muted-foreground">
+              <Package className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
+              <h3 className="text-lg font-medium mb-2">لا توجد مشتريات في {new Date(purchaseDate).toLocaleDateString('ar-YE')}</h3>
+              <p className="text-sm">غيّر تاريخ الشراء أعلاه لعرض مشتريات تواريخ أخرى</p>
+              <p className="text-sm mt-1">إجمالي المشتريات المسجلة: {allMaterialPurchases.length}</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {selectedProjectId && materialPurchases && materialPurchases.length > 0 && (
         <Card className="mt-6">
           <CardContent className="p-4">
-            <h3 className="text-lg font-semibold text-foreground mb-4">المشتريات المسجلة ({materialPurchases.length})</h3>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-foreground">
+                المشتريات في {new Date(purchaseDate).toLocaleDateString('ar-YE')} ({materialPurchases.length})
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                غيّر تاريخ الشراء أعلاه لعرض مشتريات تواريخ أخرى
+              </p>
+            </div>
             <div className="space-y-3">
               {materialPurchases.map((purchase: any) => (
                 <div key={purchase.id} className="border rounded-lg p-3 bg-card">
@@ -544,6 +571,9 @@ export default function MaterialPurchase() {
                         <p className="font-medium">الإجمالي: {purchase.totalAmount} ريال</p>
                         {purchase.supplierName && <p>المورد: {purchase.supplierName}</p>}
                         {purchase.purchaseType && <p>نوع الدفع: {purchase.purchaseType}</p>}
+                        {purchase.purchaseDate && (
+                          <p>تاريخ الشراء: {new Date(purchase.purchaseDate).toLocaleDateString('ar-YE')}</p>
+                        )}
                       </div>
                     </div>
                     <div className="flex gap-2">
