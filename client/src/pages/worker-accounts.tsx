@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { ArrowRight, Send, Eye, Calculator } from "lucide-react";
+import { ArrowRight, Send, Eye, Calculator, Edit3, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -31,6 +31,7 @@ export default function WorkerAccounts() {
   const [recipientName, setRecipientName] = useState("");
   const [recipientPhone, setRecipientPhone] = useState("");
   const [transferMethod, setTransferMethod] = useState("hawaleh");
+  const [transferDate, setTransferDate] = useState(getCurrentDate());
   const [transferNotes, setTransferNotes] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -68,6 +69,7 @@ export default function WorkerAccounts() {
       setRecipientName(transferToEdit.recipientName || "");
       setRecipientPhone(transferToEdit.recipientPhone || "");
       setTransferMethod(transferToEdit.transferMethod || "hawaleh");
+      setTransferDate(transferToEdit.transferDate || getCurrentDate());
       setTransferNotes(transferToEdit.notes || "");
       setShowTransferDialog(true);
     }
@@ -154,6 +156,8 @@ export default function WorkerAccounts() {
     setTransferAmount("");
     setRecipientName("");
     setRecipientPhone("");
+    setTransferMethod("hawaleh");
+    setTransferDate(getCurrentDate());
     setTransferNotes("");
   };
 
@@ -203,7 +207,7 @@ export default function WorkerAccounts() {
       recipientName: recipientName.trim(),
       recipientPhone: recipientPhone.trim() || undefined,
       transferMethod,
-      transferDate: getCurrentDate(),
+      transferDate: transferDate,
       notes: transferNotes.trim() || undefined,
     };
 
@@ -227,6 +231,29 @@ export default function WorkerAccounts() {
   const handleDeleteTransfer = () => {
     if (editId) {
       deleteTransferMutation.mutate(editId);
+    }
+  };
+
+  const handleEditTransfer = (transfer: WorkerTransfer) => {
+    setTransferAmount(transfer.amount?.toString() || "");
+    setRecipientName(transfer.recipientName || "");
+    setRecipientPhone(transfer.recipientPhone || "");
+    setTransferMethod(transfer.transferMethod || "hawaleh");
+    setTransferDate(transfer.transferDate || getCurrentDate());
+    setTransferNotes(transfer.notes || "");
+    
+    // تحديث URL لوضع التعديل
+    const newUrl = new URL(window.location.href);
+    newUrl.searchParams.set('edit', transfer.id);
+    newUrl.searchParams.set('worker', selectedWorkerId);
+    window.history.pushState({}, '', newUrl.toString());
+    
+    setShowTransferDialog(true);
+  };
+
+  const handleDeleteTransferDirect = (transferId: string) => {
+    if (confirm('هل أنت متأكد من حذف هذه الحولة؟')) {
+      deleteTransferMutation.mutate(transferId);
     }
   };
 
@@ -433,6 +460,26 @@ export default function WorkerAccounts() {
                   </div>
 
                   <div>
+                    <Label>تاريخ التحويل</Label>
+                    <Input
+                      type="date"
+                      value={transferDate}
+                      onChange={(e) => setTransferDate(e.target.value)}
+                      className="arabic-numbers"
+                    />
+                  </div>
+
+                  <div>
+                    <Label>تاريخ التحويل</Label>
+                    <Input
+                      type="date"
+                      value={transferDate}
+                      onChange={(e) => setTransferDate(e.target.value)}
+                      className="arabic-numbers"
+                    />
+                  </div>
+
+                  <div>
                     <Label>ملاحظات (اختياري)</Label>
                     <Textarea
                       placeholder="ملاحظات إضافية..."
@@ -496,7 +543,7 @@ export default function WorkerAccounts() {
               <div className="space-y-3">
                 {Array.isArray(workerTransfers) && workerTransfers.map((transfer) => (
                   <div key={transfer.id} className="flex justify-between items-center p-3 bg-muted/30 rounded-lg">
-                    <div>
+                    <div className="flex-1">
                       <p className="font-medium">{transfer.recipientName}</p>
                       <p className="text-sm text-muted-foreground">
                         {transfer.transferDate} • {transfer.transferMethod === "hawaleh" ? "حولة" : transfer.transferMethod === "bank" ? "تحويل بنكي" : "نقداً"}
@@ -505,8 +552,27 @@ export default function WorkerAccounts() {
                         <p className="text-xs text-muted-foreground">{transfer.recipientPhone}</p>
                       )}
                     </div>
-                    <div className="text-left">
+                    <div className="text-left flex items-center gap-3">
                       <p className="font-bold text-blue-600">{formatCurrency(parseFloat(transfer.amount))}</p>
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleEditTransfer(transfer)}
+                          className="px-2 py-1 h-8"
+                        >
+                          <Edit3 className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleDeleteTransferDirect(transfer.id)}
+                          className="px-2 py-1 h-8 text-red-600 hover:text-red-700"
+                          disabled={deleteTransferMutation.isPending}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ))}
