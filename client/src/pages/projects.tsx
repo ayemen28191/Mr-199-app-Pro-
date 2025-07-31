@@ -29,7 +29,8 @@ import {
 } from "lucide-react";
 import type { Project, InsertProject } from "@shared/schema";
 import { insertProjectSchema } from "@shared/schema";
-import { formatDate, formatCurrency } from "@/lib/utils";
+import { formatDate, formatCurrency, autocompleteKeys, saveToAutocomplete, getAutocompleteData, removeFromAutocomplete } from "@/lib/utils";
+import { AutocompleteInput } from "@/components/ui/autocomplete-input";
 
 interface ProjectStats {
   totalWorkers: number;
@@ -233,7 +234,14 @@ export default function ProjectsPage() {
                     <FormItem>
                       <FormLabel>اسم المشروع</FormLabel>
                       <FormControl>
-                        <Input placeholder="اسم المشروع" {...field} />
+                        <AutocompleteInput 
+                          value={field.value}
+                          onChange={field.onChange}
+                          suggestions={getAutocompleteData(autocompleteKeys.PROJECT_NAMES)}
+                          placeholder="اسم المشروع"
+                          onSave={(value) => saveToAutocomplete(autocompleteKeys.PROJECT_NAMES, value)}
+                          onRemove={(value) => removeFromAutocomplete(autocompleteKeys.PROJECT_NAMES, value)}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -435,7 +443,14 @@ export default function ProjectsPage() {
                   <FormItem>
                     <FormLabel>اسم المشروع</FormLabel>
                     <FormControl>
-                      <Input placeholder="اسم المشروع" {...field} />
+                      <AutocompleteInput 
+                        value={field.value}
+                        onChange={field.onChange}
+                        suggestions={getAutocompleteData(autocompleteKeys.PROJECT_NAMES)}
+                        placeholder="اسم المشروع"
+                        onSave={(value) => saveToAutocomplete(autocompleteKeys.PROJECT_NAMES, value)}
+                        onRemove={(value) => removeFromAutocomplete(autocompleteKeys.PROJECT_NAMES, value)}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

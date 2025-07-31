@@ -12,7 +12,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useSelectedProject } from "@/hooks/use-selected-project";
 import ProjectSelector from "@/components/project-selector";
 import ExpenseSummary from "@/components/expense-summary";
-import { getCurrentDate, formatCurrency, formatDate } from "@/lib/utils";
+import { getCurrentDate, formatCurrency, formatDate, autocompleteKeys, saveToAutocomplete, getAutocompleteData, removeFromAutocomplete } from "@/lib/utils";
+import { AutocompleteInput } from "@/components/ui/autocomplete-input";
 import { apiRequest } from "@/lib/queryClient";
 import type { 
   WorkerAttendance, 
@@ -510,20 +511,25 @@ export default function DailyExpenses() {
                 placeholder="المبلغ"
                 className="text-center arabic-numbers"
               />
-              <Input
-                type="text"
+              <AutocompleteInput
                 value={senderName}
-                onChange={(e) => setSenderName(e.target.value)}
+                onChange={setSenderName}
+                suggestions={getAutocompleteData(autocompleteKeys.SENDER_NAMES)}
                 placeholder="اسم المرسل"
+                onSave={(value) => saveToAutocomplete(autocompleteKeys.SENDER_NAMES, value)}
+                onRemove={(value) => removeFromAutocomplete(autocompleteKeys.SENDER_NAMES, value)}
               />
             </div>
-            <Input
+            <AutocompleteInput
               type="number"
               inputMode="numeric"
               value={transferNumber}
-              onChange={(e) => setTransferNumber(e.target.value)}
+              onChange={setTransferNumber}
+              suggestions={getAutocompleteData(autocompleteKeys.TRANSFER_NUMBERS)}
               placeholder="رقم الحولة"
               className="w-full mb-2 arabic-numbers"
+              onSave={(value) => saveToAutocomplete(autocompleteKeys.TRANSFER_NUMBERS, value)}
+              onRemove={(value) => removeFromAutocomplete(autocompleteKeys.TRANSFER_NUMBERS, value)}
             />
             <div className="flex gap-2">
               <Select value={transferType} onValueChange={setTransferType}>
@@ -664,11 +670,13 @@ export default function DailyExpenses() {
           </h4>
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
-              <Input
-                type="text"
+              <AutocompleteInput
                 value={transportDescription}
-                onChange={(e) => setTransportDescription(e.target.value)}
+                onChange={setTransportDescription}
+                suggestions={getAutocompleteData(autocompleteKeys.TRANSPORT_DESCRIPTIONS)}
                 placeholder="الوصف"
+                onSave={(value) => saveToAutocomplete(autocompleteKeys.TRANSPORT_DESCRIPTIONS, value)}
+                onRemove={(value) => removeFromAutocomplete(autocompleteKeys.TRANSPORT_DESCRIPTIONS, value)}
               />
               <Input
                 type="number"
@@ -680,12 +688,14 @@ export default function DailyExpenses() {
               />
             </div>
             <div className="flex gap-2">
-              <Input
-                type="text"
+              <AutocompleteInput
                 value={transportNotes}
-                onChange={(e) => setTransportNotes(e.target.value)}
+                onChange={setTransportNotes}
+                suggestions={getAutocompleteData(autocompleteKeys.NOTES)}
                 placeholder="ملاحظات"
                 className="flex-1"
+                onSave={(value) => saveToAutocomplete(autocompleteKeys.NOTES, value)}
+                onRemove={(value) => removeFromAutocomplete(autocompleteKeys.NOTES, value)}
               />
               <Button onClick={handleAddTransportation} size="sm" className="bg-secondary">
                 {editingTransportationId ? <Save className="h-4 w-4" /> : <Plus className="h-4 w-4" />}

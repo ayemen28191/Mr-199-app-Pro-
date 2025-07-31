@@ -13,6 +13,7 @@ interface AutocompleteInputProps {
   type?: string;
   inputMode?: "search" | "text" | "email" | "tel" | "url" | "decimal" | "none" | "numeric";
   onSave?: (value: string) => void;
+  onRemove?: (value: string) => void;
 }
 
 export function AutocompleteInput({
@@ -24,6 +25,7 @@ export function AutocompleteInput({
   type = "text",
   inputMode,
   onSave,
+  onRemove,
 }: AutocompleteInputProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [filteredSuggestions, setFilteredSuggestions] = useState<string[]>([]);
@@ -72,7 +74,9 @@ export function AutocompleteInput({
 
   const removeSuggestion = (suggestion: string, event: React.MouseEvent) => {
     event.stopPropagation();
-    // هذه الوظيفة ستحتاج إلى callback من الكومبوننت الأب لحذف الاقتراح
+    if (onRemove) {
+      onRemove(suggestion);
+    }
   };
 
   return (

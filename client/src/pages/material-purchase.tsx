@@ -12,7 +12,8 @@ import { Combobox } from "@/components/ui/combobox";
 import { useToast } from "@/hooks/use-toast";
 import { useSelectedProject } from "@/hooks/use-selected-project";
 import ProjectSelector from "@/components/project-selector";
-import { getCurrentDate, formatCurrency } from "@/lib/utils";
+import { getCurrentDate, formatCurrency, autocompleteKeys, saveToAutocomplete, getAutocompleteData, removeFromAutocomplete } from "@/lib/utils";
+import { AutocompleteInput } from "@/components/ui/autocomplete-input";
 import { apiRequest } from "@/lib/queryClient";
 import type { Material, InsertMaterialPurchase, InsertMaterial } from "@shared/schema";
 
@@ -331,24 +332,26 @@ export default function MaterialPurchase() {
             {/* Material Name */}
             <div>
               <Label className="block text-sm font-medium text-foreground mb-2">اسم المادة</Label>
-              <Combobox
+              <AutocompleteInput
                 value={materialName}
-                onValueChange={setMaterialName}
-                options={materialNames}
+                onChange={setMaterialName}
+                suggestions={getAutocompleteData(autocompleteKeys.MATERIAL_NAMES)}
                 placeholder="اختر أو أدخل اسم المادة..."
-                customPlaceholder="إضافة مادة جديدة"
+                onSave={(value) => saveToAutocomplete(autocompleteKeys.MATERIAL_NAMES, value)}
+                onRemove={(value) => removeFromAutocomplete(autocompleteKeys.MATERIAL_NAMES, value)}
               />
             </div>
 
             {/* Material Category */}
             <div>
               <Label className="block text-sm font-medium text-foreground mb-2">فئة المادة</Label>
-              <Combobox
+              <AutocompleteInput
                 value={materialCategory}
-                onValueChange={setMaterialCategory}
-                options={materialCategories}
+                onChange={setMaterialCategory}
+                suggestions={getAutocompleteData(autocompleteKeys.MATERIAL_CATEGORIES)}
                 placeholder="اختر أو أدخل فئة المادة..."
-                customPlaceholder="إضافة فئة جديدة"
+                onSave={(value) => saveToAutocomplete(autocompleteKeys.MATERIAL_CATEGORIES, value)}
+                onRemove={(value) => removeFromAutocomplete(autocompleteKeys.MATERIAL_CATEGORIES, value)}
               />
             </div>
 
@@ -367,12 +370,13 @@ export default function MaterialPurchase() {
               </div>
               <div>
                 <Label className="block text-sm font-medium text-foreground mb-2">الوحدة</Label>
-                <Combobox
+                <AutocompleteInput
                   value={materialUnit}
-                  onValueChange={setMaterialUnit}
-                  options={materialUnits}
+                  onChange={setMaterialUnit}
+                  suggestions={getAutocompleteData(autocompleteKeys.MATERIAL_UNITS)}
                   placeholder="اختر أو أدخل الوحدة..."
-                  customPlaceholder="إضافة وحدة جديدة"
+                  onSave={(value) => saveToAutocomplete(autocompleteKeys.MATERIAL_UNITS, value)}
+                  onRemove={(value) => removeFromAutocomplete(autocompleteKeys.MATERIAL_UNITS, value)}
                 />
               </div>
             </div>
@@ -423,12 +427,13 @@ export default function MaterialPurchase() {
             {/* Supplier/Store */}
             <div>
               <Label className="block text-sm font-medium text-foreground mb-2">اسم المورد/المحل</Label>
-              <Combobox
+              <AutocompleteInput
                 value={supplierName}
-                onValueChange={setSupplierName}
-                options={existingSuppliers}
+                onChange={setSupplierName}
+                suggestions={getAutocompleteData(autocompleteKeys.SUPPLIER_NAMES)}
                 placeholder="اختر أو أدخل اسم المورد..."
-                customPlaceholder="إضافة مورد جديد"
+                onSave={(value) => saveToAutocomplete(autocompleteKeys.SUPPLIER_NAMES, value)}
+                onRemove={(value) => removeFromAutocomplete(autocompleteKeys.SUPPLIER_NAMES, value)}
               />
             </div>
 
@@ -447,13 +452,16 @@ export default function MaterialPurchase() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="block text-sm font-medium text-foreground mb-2">رقم الفاتورة</Label>
-                <Input
+                <AutocompleteInput
                   type="number"
                   inputMode="numeric"
                   value={invoiceNumber}
-                  onChange={(e) => setInvoiceNumber(e.target.value)}
+                  onChange={setInvoiceNumber}
+                  suggestions={getAutocompleteData(autocompleteKeys.INVOICE_NUMBERS)}
                   placeholder="رقم الفاتورة"
                   className="arabic-numbers"
+                  onSave={(value) => saveToAutocomplete(autocompleteKeys.INVOICE_NUMBERS, value)}
+                  onRemove={(value) => removeFromAutocomplete(autocompleteKeys.INVOICE_NUMBERS, value)}
                 />
               </div>
               <div>
@@ -504,11 +512,13 @@ export default function MaterialPurchase() {
             {/* Notes */}
             <div>
               <Label className="block text-sm font-medium text-foreground mb-2">ملاحظات</Label>
-              <Textarea
+              <AutocompleteInput
                 value={notes}
-                onChange={(e) => setNotes(e.target.value)}
+                onChange={setNotes}
+                suggestions={getAutocompleteData(autocompleteKeys.NOTES)}
                 placeholder="أي ملاحظات إضافية..."
-                className="h-20 resize-none"
+                onSave={(value) => saveToAutocomplete(autocompleteKeys.NOTES, value)}
+                onRemove={(value) => removeFromAutocomplete(autocompleteKeys.NOTES, value)}
               />
             </div>
           </div>

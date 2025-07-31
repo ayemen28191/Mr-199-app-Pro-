@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useToast } from "@/hooks/use-toast";
 import { useSelectedProject } from "@/hooks/use-selected-project";
 import ProjectSelector from "@/components/project-selector";
-import { getCurrentDate, formatCurrency, autocompleteKeys, saveToAutocomplete, getAutocompleteData } from "@/lib/utils";
+import { getCurrentDate, formatCurrency, autocompleteKeys, saveToAutocomplete, getAutocompleteData, removeFromAutocomplete } from "@/lib/utils";
 import { AutocompleteInput } from "@/components/ui/autocomplete-input";
 import { apiRequest } from "@/lib/queryClient";
 import type { Worker, WorkerBalance, WorkerTransfer, WorkerAttendance, InsertWorkerTransfer } from "@shared/schema";
@@ -444,6 +444,7 @@ export default function WorkerAccounts() {
                       suggestions={getAutocompleteData(autocompleteKeys.SENDER_NAMES)}
                       placeholder="اسم المرسل"
                       onSave={(value) => saveToAutocomplete(autocompleteKeys.SENDER_NAMES, value)}
+                      onRemove={(value) => removeFromAutocomplete(autocompleteKeys.SENDER_NAMES, value)}
                     />
                   </div>
 
@@ -455,6 +456,7 @@ export default function WorkerAccounts() {
                       suggestions={getAutocompleteData(autocompleteKeys.RECIPIENT_NAMES)}
                       placeholder="اسم المستلم"
                       onSave={(value) => saveToAutocomplete(autocompleteKeys.RECIPIENT_NAMES, value)}
+                      onRemove={(value) => removeFromAutocomplete(autocompleteKeys.RECIPIENT_NAMES, value)}
                     />
                   </div>
 
@@ -469,6 +471,7 @@ export default function WorkerAccounts() {
                       placeholder="رقم الهاتف"
                       className="arabic-numbers"
                       onSave={(value) => saveToAutocomplete(autocompleteKeys.RECIPIENT_PHONES, value)}
+                      onRemove={(value) => removeFromAutocomplete(autocompleteKeys.RECIPIENT_PHONES, value)}
                     />
                   </div>
 
@@ -497,16 +500,6 @@ export default function WorkerAccounts() {
                   </div>
 
                   <div>
-                    <Label>تاريخ التحويل</Label>
-                    <Input
-                      type="date"
-                      value={transferDate}
-                      onChange={(e) => setTransferDate(e.target.value)}
-                      className="arabic-numbers"
-                    />
-                  </div>
-
-                  <div>
                     <Label>ملاحظات (اختياري)</Label>
                     <AutocompleteInput
                       value={transferNotes}
@@ -514,6 +507,7 @@ export default function WorkerAccounts() {
                       suggestions={getAutocompleteData(autocompleteKeys.NOTES)}
                       placeholder="ملاحظات إضافية..."
                       onSave={(value) => saveToAutocomplete(autocompleteKeys.NOTES, value)}
+                      onRemove={(value) => removeFromAutocomplete(autocompleteKeys.NOTES, value)}
                     />
                   </div>
 

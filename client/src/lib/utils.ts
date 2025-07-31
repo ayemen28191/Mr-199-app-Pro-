@@ -90,6 +90,22 @@ export const autocompleteKeys = {
   SUPPLIER_NAMES: 'supplierNames',
   MATERIAL_CATEGORIES: 'materialCategories',
   MATERIAL_UNITS: 'materialUnits',
+  MATERIAL_NAMES: 'materialNames',
+  INVOICE_NUMBERS: 'invoiceNumbers',
+  
+  // Transportation
+  TRANSPORT_DESCRIPTIONS: 'transportDescriptions',
+  
+  // Fund transfers
+  TRANSFER_NUMBERS: 'transferNumbers',
+  FUND_TRANSFER_TYPES: 'fundTransferTypes',
+  
+  // Worker attendance
+  WORK_DESCRIPTIONS: 'workDescriptions',
+  
+  // Projects and Workers
+  PROJECT_NAMES: 'projectNames',
+  WORKER_NAMES: 'workerNames',
   
   // General
   NOTES: 'generalNotes',
