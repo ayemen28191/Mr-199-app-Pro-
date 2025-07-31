@@ -91,13 +91,8 @@ export default function WorkerAccounts() {
         title: "تم إرسال الحولية",
         description: "تم إرسال الحولية للأهل بنجاح",
       });
-      setShowTransferDialog(false);
-      setTransferAmount("");
-      setRecipientName("");
-      setRecipientPhone("");
-      setTransferNotes("");
-      queryClient.invalidateQueries({ queryKey: ["/api/workers", selectedWorkerId, "balance", selectedProjectId] });
-      queryClient.invalidateQueries({ queryKey: ["/api/workers", selectedWorkerId, "transfers"] });
+      resetTransferForm();
+      invalidateTransferQueries();
     },
     onError: () => {
       toast({
@@ -107,6 +102,67 @@ export default function WorkerAccounts() {
       });
     },
   });
+
+  const updateTransferMutation = useMutation({
+    mutationFn: async ({ id, transfer }: { id: string; transfer: Partial<InsertWorkerTransfer> }) => {
+      return apiRequest("PUT", `/api/worker-transfers/${id}`, transfer);
+    },
+    onSuccess: () => {
+      toast({
+        title: "تم تعديل الحولية",
+        description: "تم تعديل بيانات الحولية بنجاح",
+      });
+      resetTransferForm();
+      invalidateTransferQueries();
+      // رجوع إلى صفحة المصروفات اليومية
+      setLocation("/daily-expenses");
+    },
+    onError: () => {
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء تعديل الحولية",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteTransferMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return apiRequest("DELETE", `/api/worker-transfers/${id}`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "تم حذف الحولية",
+        description: "تم حذف الحولية بنجاح",
+      });
+      resetTransferForm();
+      invalidateTransferQueries();
+      // رجوع إلى صفحة المصروفات اليومية
+      setLocation("/daily-expenses");
+    },
+    onError: () => {
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء حذف الحولية",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const resetTransferForm = () => {
+    setShowTransferDialog(false);
+    setTransferAmount("");
+    setRecipientName("");
+    setRecipientPhone("");
+    setTransferNotes("");
+  };
+
+  const invalidateTransferQueries = () => {
+    queryClient.invalidateQueries({ queryKey: ["/api/workers", selectedWorkerId, "balance", selectedProjectId] });
+    queryClient.invalidateQueries({ queryKey: ["/api/workers", selectedWorkerId, "transfers"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/worker-transfers"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProjectId, "fund-transfers"] });
+  };
 
   const selectedWorker = workers.find(w => w.id === selectedWorkerId);
   const currentBalance = parseFloat(workerBalance?.currentBalance || "0");
@@ -131,15 +187,6 @@ export default function WorkerAccounts() {
       return;
     }
 
-    if (transferAmountNum > currentBalance) {
-      toast({
-        title: "خطأ",
-        description: "المبلغ المطلوب أكبر من رصيد العامل",
-        variant: "destructive",
-      });
-      return;
-    }
-
     if (!recipientName.trim()) {
       toast({
         title: "خطأ",
@@ -149,7 +196,7 @@ export default function WorkerAccounts() {
       return;
     }
 
-    const transfer: InsertWorkerTransfer = {
+    const transfer: Partial<InsertWorkerTransfer> = {
       workerId: selectedWorkerId,
       projectId: selectedProjectId,
       amount: transferAmount,
@@ -160,7 +207,27 @@ export default function WorkerAccounts() {
       notes: transferNotes.trim() || undefined,
     };
 
-    createTransferMutation.mutate(transfer);
+    if (editId) {
+      // تعديل حولة موجودة
+      updateTransferMutation.mutate({ id: editId, transfer });
+    } else {
+      // إنشاء حولة جديدة
+      if (transferAmountNum > currentBalance) {
+        toast({
+          title: "خطأ",
+          description: "المبلغ المطلوب أكبر من رصيد العامل",
+          variant: "destructive",
+        });
+        return;
+      }
+      createTransferMutation.mutate(transfer as InsertWorkerTransfer);
+    }
+  };
+
+  const handleDeleteTransfer = () => {
+    if (editId) {
+      deleteTransferMutation.mutate(editId);
+    }
   };
 
   return (
@@ -300,8 +367,17 @@ export default function WorkerAccounts() {
               </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
-                  <DialogTitle>إرسال حولية لأهل {selectedWorker?.name}</DialogTitle>
+                  <DialogTitle>
+                    {editId ? `تعديل حولة لأهل ${selectedWorker?.name}` : `إرسال حولية لأهل ${selectedWorker?.name}`}
+                  </DialogTitle>
                 </DialogHeader>
+                {editId && (
+                  <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800 mb-4">
+                    <p className="text-sm text-blue-700 dark:text-blue-300 font-medium">
+                      🔄 وضع التعديل - قم بتعديل البيانات ثم احفظ التغييرات
+                    </p>
+                  </div>
+                )}
                 <div className="space-y-4">
                   <div>
                     <Label>المبلغ المطلوب إرساله</Label>
@@ -311,12 +387,14 @@ export default function WorkerAccounts() {
                       placeholder="0"
                       value={transferAmount}
                       onChange={(e) => setTransferAmount(e.target.value)}
-                      max={currentBalance}
+                      max={editId ? undefined : currentBalance}
                       className="arabic-numbers"
                     />
-                    <p className="text-xs text-muted-foreground mt-1">
-                      الرصيد المتاح: {formatCurrency(currentBalance)}
-                    </p>
+                    {!editId && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        الرصيد المتاح: {formatCurrency(currentBalance)}
+                      </p>
+                    )}
                   </div>
 
                   <div>
@@ -363,13 +441,39 @@ export default function WorkerAccounts() {
                     />
                   </div>
 
-                  <Button 
-                    onClick={handleSendTransfer}
-                    disabled={createTransferMutation.isPending}
-                    className="w-full"
-                  >
-                    {createTransferMutation.isPending ? "جاري الإرسال..." : "تأكيد الإرسال"}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button 
+                      onClick={handleSendTransfer}
+                      disabled={createTransferMutation.isPending || updateTransferMutation.isPending}
+                      className="flex-1"
+                    >
+                      {editId ? (
+                        updateTransferMutation.isPending ? "جاري التحديث..." : "حفظ التعديل"
+                      ) : (
+                        createTransferMutation.isPending ? "جاري الإرسال..." : "تأكيد الإرسال"
+                      )}
+                    </Button>
+                    {editId && (
+                      <Button 
+                        onClick={handleDeleteTransfer}
+                        disabled={deleteTransferMutation.isPending}
+                        variant="destructive"
+                        className="px-6"
+                      >
+                        {deleteTransferMutation.isPending ? "جاري الحذف..." : "حذف"}
+                      </Button>
+                    )}
+                  </div>
+                  
+                  {editId && (
+                    <Button 
+                      onClick={() => setLocation("/daily-expenses")}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      إلغاء والعودة للمصروفات
+                    </Button>
+                  )}
                 </div>
               </DialogContent>
             </Dialog>

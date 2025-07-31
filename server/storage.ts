@@ -72,6 +72,7 @@ export interface IStorage {
   getWorkerTransfers(workerId: string, projectId?: string): Promise<WorkerTransfer[]>;
   getWorkerTransfer(id: string): Promise<WorkerTransfer | null>;
   createWorkerTransfer(transfer: InsertWorkerTransfer): Promise<WorkerTransfer>;
+  updateWorkerTransfer(id: string, transfer: Partial<InsertWorkerTransfer>): Promise<WorkerTransfer | undefined>;
   deleteWorkerTransfer(id: string): Promise<void>;
   getAllWorkerTransfers(): Promise<WorkerTransfer[]>;
   getFilteredWorkerTransfers(projectId?: string, date?: string): Promise<WorkerTransfer[]>;
@@ -257,6 +258,11 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async getWorkerAttendanceById(id: string): Promise<WorkerAttendance | null> {
+    const [attendance] = await db.select().from(workerAttendance).where(eq(workerAttendance.id, id));
+    return attendance || null;
+  }
+
   async createWorkerAttendance(attendance: InsertWorkerAttendance): Promise<WorkerAttendance> {
     const [newAttendance] = await db
       .insert(workerAttendance)
@@ -368,6 +374,11 @@ export class DatabaseStorage implements IStorage {
         createdAt: purchase.materialCreatedAt
       }
     }));
+  }
+
+  async getMaterialPurchaseById(id: string): Promise<MaterialPurchase | null> {
+    const [purchase] = await db.select().from(materialPurchases).where(eq(materialPurchases.id, id));
+    return purchase || null;
   }
 
   async createMaterialPurchase(purchase: InsertMaterialPurchase): Promise<MaterialPurchase> {
@@ -699,6 +710,15 @@ export class DatabaseStorage implements IStorage {
       .values(transfer)
       .returning();
     return newTransfer;
+  }
+
+  async updateWorkerTransfer(id: string, transfer: Partial<InsertWorkerTransfer>): Promise<WorkerTransfer | undefined> {
+    const [updated] = await db
+      .update(workerTransfers)
+      .set(transfer)
+      .where(eq(workerTransfers.id, id))
+      .returning();
+    return updated || undefined;
   }
 
   async deleteWorkerTransfer(id: string): Promise<void> {

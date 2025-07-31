@@ -783,6 +783,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/worker-transfers/:id", async (req, res) => {
+    try {
+      const validationResult = insertWorkerTransferSchema.partial().safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({ 
+          message: "Invalid worker transfer data", 
+          errors: validationResult.error.errors 
+        });
+      }
+
+      const transfer = await storage.updateWorkerTransfer(req.params.id, validationResult.data);
+      if (!transfer) {
+        return res.status(404).json({ message: "Worker transfer not found" });
+      }
+      
+      res.json(transfer);
+    } catch (error) {
+      console.error("Error updating worker transfer:", error);
+      res.status(500).json({ message: "Failed to update worker transfer" });
+    }
+  });
+
+  app.delete("/api/worker-transfers/:id", async (req, res) => {
+    try {
+      await storage.deleteWorkerTransfer(req.params.id);
+      res.status(200).json({ message: "تم حذف الحولة بنجاح" });
+    } catch (error) {
+      console.error("Error deleting worker transfer:", error);
+      res.status(500).json({ message: "Failed to delete worker transfer" });
+    }
+  });
+
   // Multi-project worker management routes
   app.get("/api/workers/multi-project", async (req, res) => {
     try {
