@@ -422,13 +422,17 @@ export default function EnhancedWorkerStatement() {
                       });
                     }
 
+                    // Calculate total work days across all projects
+                    const totalWorkDays = workerStatement.reduce((total, projectStatement) => 
+                      total + (projectStatement.attendance?.length || 0), 0);
+
                     rows.push(
                       <tr key="summary-days" className="bg-orange-100">
                         <td colSpan={6} className="border border-gray-400 p-2 text-center font-bold">
                           إجمالي أيام العمل
                         </td>
                         <td className="border border-gray-400 p-2 text-center font-bold arabic-numbers">
-                          {attendance.length}
+                          {totalWorkDays}
                         </td>
                         <td colSpan={4} className="border border-gray-400 p-2"></td>
                       </tr>
