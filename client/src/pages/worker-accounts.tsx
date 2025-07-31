@@ -12,7 +12,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useToast } from "@/hooks/use-toast";
 import { useSelectedProject } from "@/hooks/use-selected-project";
 import ProjectSelector from "@/components/project-selector";
-import { getCurrentDate, formatCurrency } from "@/lib/utils";
+import { getCurrentDate, formatCurrency, autocompleteKeys, saveToAutocomplete, getAutocompleteData } from "@/lib/utils";
+import { AutocompleteInput } from "@/components/ui/autocomplete-input";
 import { apiRequest } from "@/lib/queryClient";
 import type { Worker, WorkerBalance, WorkerTransfer, WorkerAttendance, InsertWorkerTransfer } from "@shared/schema";
 
@@ -28,6 +29,7 @@ export default function WorkerAccounts() {
   const [showTransferDialog, setShowTransferDialog] = useState(false);
   const [showStatementDialog, setShowStatementDialog] = useState(false);
   const [transferAmount, setTransferAmount] = useState("");
+  const [senderName, setSenderName] = useState("");
   const [recipientName, setRecipientName] = useState("");
   const [recipientPhone, setRecipientPhone] = useState("");
   const [transferMethod, setTransferMethod] = useState("hawaleh");
@@ -66,6 +68,7 @@ export default function WorkerAccounts() {
   useEffect(() => {
     if (transferToEdit && editId) {
       setTransferAmount(transferToEdit.amount?.toString() || "");
+      setSenderName(transferToEdit.senderName || "");
       setRecipientName(transferToEdit.recipientName || "");
       setRecipientPhone(transferToEdit.recipientPhone || "");
       setTransferMethod(transferToEdit.transferMethod || "hawaleh");
@@ -154,6 +157,7 @@ export default function WorkerAccounts() {
   const resetTransferForm = () => {
     setShowTransferDialog(false);
     setTransferAmount("");
+    setSenderName("");
     setRecipientName("");
     setRecipientPhone("");
     setTransferMethod("hawaleh");
@@ -204,12 +208,19 @@ export default function WorkerAccounts() {
       workerId: selectedWorkerId,
       projectId: selectedProjectId,
       amount: transferAmount,
+      senderName: senderName.trim() || undefined,
       recipientName: recipientName.trim(),
       recipientPhone: recipientPhone.trim() || undefined,
       transferMethod,
       transferDate: transferDate,
       notes: transferNotes.trim() || undefined,
     };
+
+    // Save to autocomplete
+    saveToAutocomplete(autocompleteKeys.SENDER_NAMES, senderName);
+    saveToAutocomplete(autocompleteKeys.RECIPIENT_NAMES, recipientName);
+    saveToAutocomplete(autocompleteKeys.RECIPIENT_PHONES, recipientPhone);
+    saveToAutocomplete(autocompleteKeys.NOTES, transferNotes);
 
     if (editId) {
       // تعديل حولة موجودة
@@ -236,6 +247,7 @@ export default function WorkerAccounts() {
 
   const handleEditTransfer = (transfer: WorkerTransfer) => {
     setTransferAmount(transfer.amount?.toString() || "");
+    setSenderName(transfer.senderName || "");
     setRecipientName(transfer.recipientName || "");
     setRecipientPhone(transfer.recipientPhone || "");
     setTransferMethod(transfer.transferMethod || "hawaleh");
@@ -425,23 +437,38 @@ export default function WorkerAccounts() {
                   </div>
 
                   <div>
+                    <Label>اسم المرسل</Label>
+                    <AutocompleteInput
+                      value={senderName}
+                      onChange={setSenderName}
+                      suggestions={getAutocompleteData(autocompleteKeys.SENDER_NAMES)}
+                      placeholder="اسم المرسل"
+                      onSave={(value) => saveToAutocomplete(autocompleteKeys.SENDER_NAMES, value)}
+                    />
+                  </div>
+
+                  <div>
                     <Label>اسم المستلم (الأهل)</Label>
-                    <Input
-                      placeholder="اسم المستلم"
+                    <AutocompleteInput
                       value={recipientName}
-                      onChange={(e) => setRecipientName(e.target.value)}
+                      onChange={setRecipientName}
+                      suggestions={getAutocompleteData(autocompleteKeys.RECIPIENT_NAMES)}
+                      placeholder="اسم المستلم"
+                      onSave={(value) => saveToAutocomplete(autocompleteKeys.RECIPIENT_NAMES, value)}
                     />
                   </div>
 
                   <div>
                     <Label>رقم هاتف المستلم (اختياري)</Label>
-                    <Input
+                    <AutocompleteInput
                       type="tel"
                       inputMode="numeric"
-                      placeholder="رقم الهاتف"
                       value={recipientPhone}
-                      onChange={(e) => setRecipientPhone(e.target.value)}
+                      onChange={setRecipientPhone}
+                      suggestions={getAutocompleteData(autocompleteKeys.RECIPIENT_PHONES)}
+                      placeholder="رقم الهاتف"
                       className="arabic-numbers"
+                      onSave={(value) => saveToAutocomplete(autocompleteKeys.RECIPIENT_PHONES, value)}
                     />
                   </div>
 
@@ -481,10 +508,12 @@ export default function WorkerAccounts() {
 
                   <div>
                     <Label>ملاحظات (اختياري)</Label>
-                    <Textarea
-                      placeholder="ملاحظات إضافية..."
+                    <AutocompleteInput
                       value={transferNotes}
-                      onChange={(e) => setTransferNotes(e.target.value)}
+                      onChange={setTransferNotes}
+                      suggestions={getAutocompleteData(autocompleteKeys.NOTES)}
+                      placeholder="ملاحظات إضافية..."
+                      onSave={(value) => saveToAutocomplete(autocompleteKeys.NOTES, value)}
                     />
                   </div>
 

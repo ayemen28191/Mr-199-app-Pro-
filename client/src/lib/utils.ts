@@ -78,3 +78,56 @@ export function generateYemeniPhoneExample(): string {
   const number = Math.floor(Math.random() * 9000000) + 1000000;
   return `${prefix}${number}`;
 }
+
+// Storage utilities for autocomplete data
+export const autocompleteKeys = {
+  // Worker transfers
+  SENDER_NAMES: 'senderNames',
+  RECIPIENT_NAMES: 'recipientNames',
+  RECIPIENT_PHONES: 'recipientPhones',
+  
+  // Material purchases
+  SUPPLIER_NAMES: 'supplierNames',
+  MATERIAL_CATEGORIES: 'materialCategories',
+  MATERIAL_UNITS: 'materialUnits',
+  
+  // General
+  NOTES: 'generalNotes',
+  PHONE_NUMBERS: 'phoneNumbers',
+} as const;
+
+export function saveToAutocomplete(key: string, value: string): void {
+  if (!value || value.trim().length === 0) return;
+  
+  try {
+    const existing = getAutocompleteData(key);
+    const trimmedValue = value.trim();
+    
+    if (!existing.includes(trimmedValue)) {
+      const updated = [trimmedValue, ...existing].slice(0, 20); // Keep only last 20 entries
+      localStorage.setItem(key, JSON.stringify(updated));
+    }
+  } catch (error) {
+    console.error('Error saving autocomplete data:', error);
+  }
+}
+
+export function getAutocompleteData(key: string): string[] {
+  try {
+    const data = localStorage.getItem(key);
+    return data ? JSON.parse(data) : [];
+  } catch (error) {
+    console.error('Error loading autocomplete data:', error);
+    return [];
+  }
+}
+
+export function removeFromAutocomplete(key: string, value: string): void {
+  try {
+    const existing = getAutocompleteData(key);
+    const updated = existing.filter(item => item !== value);
+    localStorage.setItem(key, JSON.stringify(updated));
+  } catch (error) {
+    console.error('Error removing autocomplete data:', error);
+  }
+}

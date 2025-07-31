@@ -96,6 +96,7 @@ export const workerTransfers = pgTable("worker_transfers", {
   workerId: varchar("worker_id").notNull().references(() => workers.id),
   projectId: varchar("project_id").notNull().references(() => projects.id),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  senderName: text("sender_name"), // اسم المرسل
   recipientName: text("recipient_name").notNull(), // اسم المستلم (الأهل)
   recipientPhone: text("recipient_phone"), // رقم هاتف المستلم
   transferMethod: text("transfer_method").notNull(), // "hawaleh" | "bank" | "cash"
