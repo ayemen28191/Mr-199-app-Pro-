@@ -259,56 +259,131 @@ export default function EnhancedWorkerStatement() {
       {/* Print-specific styles */}
       <style>{`
         @media print {
-          body { margin: 0 !important; padding: 0 !important; font-size: 7px !important; }
-          * { box-sizing: border-box; }
-          .print-compact { 
-            font-size: 6px !important; 
-            line-height: 1 !important; 
+          /* قواعد عامة للطباعة */
+          @page {
+            size: A4 landscape;
+            margin: 0.4in 0.2in;
+          }
+          
+          body { 
+            margin: 0 !important; 
             padding: 0 !important; 
-            margin: 0 !important; 
-          }
-          .print-header { 
-            font-size: 8px !important; 
-            padding: 1px !important; 
-            margin: 0 !important; 
-          }
-          .print-title { 
             font-size: 10px !important; 
-            margin-bottom: 2px !important; 
+            font-family: Arial, sans-serif !important;
+            background: white !important;
           }
+          
+          * { 
+            box-sizing: border-box; 
+            color: black !important;
+          }
+          
+          /* إخفاء عناصر غير مرغوبة */
+          .print\\:hidden, button, .no-print {
+            display: none !important;
+          }
+          
+          /* تخطيط الصفحة الرئيسي */
+          .max-w-7xl {
+            max-width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
+          
+          /* العنوان الرئيسي */
+          .print-title { 
+            font-size: 16px !important; 
+            font-weight: bold !important;
+            text-align: center !important;
+            margin-bottom: 8px !important;
+            color: black !important;
+          }
+          
+          /* معلومات العامل */
           .print-info { 
-            font-size: 7px !important; 
-            margin: 1px 0 !important; 
+            font-size: 12px !important; 
+            margin: 2px 0 !important; 
+            line-height: 1.3 !important;
           }
+          
+          /* الجدول الرئيسي */
           table { 
             width: 100% !important; 
             border-collapse: collapse !important; 
-            margin: 0 !important; 
-            font-size: 6px !important;
+            margin: 5px 0 !important; 
+            font-size: 9px !important;
+            table-layout: auto !important;
           }
+          
+          /* خلايا الجدول */
           th, td { 
-            padding: 1px !important; 
-            border: 0.5px solid #000 !important; 
-            font-size: 6px !important; 
-            line-height: 1.1 !important; 
+            padding: 3px 2px !important; 
+            border: 1px solid #000 !important; 
+            font-size: 9px !important; 
+            line-height: 1.2 !important; 
             text-align: center !important;
+            vertical-align: middle !important;
+            overflow: hidden;
+            word-wrap: break-word;
           }
+          
+          /* ترويسة الجدول */
           th { 
             font-weight: bold !important; 
             background-color: #ffa500 !important; 
-            font-size: 7px !important;
+            font-size: 10px !important;
+            color: black !important;
+            height: 20px !important;
           }
-          tr { height: 12px !important; }
-          .bg-orange-100 th, .bg-orange-100 td { 
+          
+          /* صفوف البيانات */
+          td {
+            height: 18px !important;
+            min-height: 18px !important;
+          }
+          
+          /* الصفوف الخاصة */
+          .bg-orange-100 th, 
+          .bg-orange-100 td { 
             background-color: #ffcc80 !important; 
             font-weight: bold !important; 
           }
-          .bg-purple-200 td { background-color: #e1bee7 !important; }
-          .bg-purple-50 td { background-color: #f3e5f5 !important; }
-        }
-        @page {
-          size: A4;
-          margin: 0.3in;
+          
+          .bg-purple-200 td { 
+            background-color: #e1bee7 !important; 
+            font-weight: bold !important;
+          }
+          
+          .bg-purple-50 td { 
+            background-color: #f3e5f5 !important; 
+          }
+          
+          .bg-green-100 th,
+          .bg-green-100 td {
+            background-color: #c8e6c9 !important;
+            font-weight: bold !important;
+          }
+          
+          .bg-blue-100 th,
+          .bg-blue-100 td {
+            background-color: #bbdefb !important;
+          }
+          
+          /* تحسين استغلال العرض */
+          .w-8 { width: 5% !important; min-width: 30px !important; }
+          .w-16 { width: 8% !important; min-width: 50px !important; }
+          .w-20 { width: 10% !important; min-width: 60px !important; }
+          .w-24 { width: 12% !important; min-width: 70px !important; }
+          .w-32 { width: 15% !important; min-width: 90px !important; }
+          
+          /* كسر الصفحات */
+          .page-break {
+            page-break-before: always;
+          }
+          
+          .avoid-break {
+            page-break-inside: avoid;
+          }
         }
       `}</style>
 
@@ -402,42 +477,58 @@ export default function EnhancedWorkerStatement() {
         </Card>
       )}
 
-      {/* Report Display - Only show the report without controls */}
-      {showReport && workerStatement && workerStatement.length > 0 && (
-        <div className="w-full bg-white">
-          <div className="text-center border-b print-header">
-            <h1 className="text-sm font-bold print-title">
+      {/* Generated Report */}
+      {showReport && workerStatement && selectedWorker && (
+        <div className="w-full bg-white print:bg-white">
+          {/* Enhanced Report Header */}
+          <div className="text-center mb-6 print:mb-3 border-b-2 border-orange-400 pb-4 print:pb-2">
+            <h1 className="text-3xl font-bold mb-2 text-orange-600 print:text-2xl print-title">
               إدارة المشاريع الإنشائية
             </h1>
-            <p className="text-xs text-gray-600 print-info">
-              هاتف: +967133456789 | البريد الإلكتروني: info@construction.com
+            <p className="text-sm text-gray-600 mb-3 print:text-xs print:mb-1 print-info">
+              هاتف: +967700123456 | البريد الإلكتروني: info@construction.ye | الموقع: www.construction.ye
             </p>
-            <div className="border border-orange-300 bg-orange-50 print-header">
-              <h2 className="font-bold print-info">كشف حساب العامل المحسن</h2>
-              <div className="grid grid-cols-4 gap-1 print-info">
-                <div>اسم العامل: <strong>{selectedWorker?.name}</strong></div>
-                <div>من: <strong>{formatDate(dateFrom)}</strong></div>
-                <div>إلى: <strong>{formatDate(dateTo)}</strong></div>
-                <div>مشاريع: <strong>{selectedProjectIds.length}</strong></div>
+            <div className="bg-gradient-to-r from-orange-100 to-yellow-100 border-2 border-orange-300 rounded-lg p-4 print:p-2">
+              <h2 className="text-xl font-bold text-gray-800 mb-3 print:text-lg print:mb-2">
+                كشف حساب العامل المحسن
+              </h2>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm print:grid-cols-4 print:gap-1 print:text-xs print-info">
+                <div className="bg-white rounded p-2 print:p-1">
+                  <span className="font-semibold">اسم العامل:</span><br/>
+                  <span className="font-bold text-blue-600">{selectedWorker.name}</span>
+                </div>
+                <div className="bg-white rounded p-2 print:p-1">
+                  <span className="font-semibold">نوع العامل:</span><br/>
+                  <span className="font-bold text-green-600">{selectedWorker.type === 'master' ? 'أسطى' : 'عامل'}</span>
+                </div>
+                <div className="bg-white rounded p-2 print:p-1">
+                  <span className="font-semibold">الأجر اليومي:</span><br/>
+                  <span className="font-bold text-purple-600">{formatCurrency(parseFloat(selectedWorker.dailyWage))}</span>
+                </div>
+                <div className="bg-white rounded p-2 print:p-1">
+                  <span className="font-semibold">الفترة:</span><br/>
+                  <span className="font-bold text-red-600">{format(new Date(dateFrom), 'dd/MM/yyyy')} - {format(new Date(dateTo), 'dd/MM/yyyy')}</span>
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="print-compact">
-            <table className="w-full border-collapse">
+          {/* Main Data Table */}
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse border-2 border-gray-800 bg-white avoid-break">
               <thead>
-                <tr className="bg-orange-200">
-                  <th className="border border-gray-400">م</th>
-                  <th className="border border-gray-400">المشروع</th>
-                  <th className="border border-gray-400">التاريخ</th>
-                  <th className="border border-gray-400">بداية</th>
-                  <th className="border border-gray-400">نهاية</th>
-                  <th className="border border-gray-400">ساعات</th>
-                  <th className="border border-gray-400">أيام</th>
-                  <th className="border border-gray-400">أجر</th>
-                  <th className="border border-gray-400">مستلم</th>
-                  <th className="border border-gray-400">متبقي</th>
-                  <th className="border border-gray-400">ملاحظات</th>
+                <tr className="bg-orange-200 print:bg-orange-200">
+                  <th className="w-8 border border-gray-400 px-2 py-1 text-xs font-bold text-center">م</th>
+                  <th className="w-32 border border-gray-400 px-2 py-1 text-xs font-bold text-center">المشروع</th>
+                  <th className="w-20 border border-gray-400 px-2 py-1 text-xs font-bold text-center">التاريخ</th>
+                  <th className="w-16 border border-gray-400 px-2 py-1 text-xs font-bold text-center">بداية العمل</th>
+                  <th className="w-16 border border-gray-400 px-2 py-1 text-xs font-bold text-center">نهاية العمل</th>
+                  <th className="w-16 border border-gray-400 px-2 py-1 text-xs font-bold text-center">ساعات العمل</th>
+                  <th className="w-16 border border-gray-400 px-2 py-1 text-xs font-bold text-center">عدد أيام العمل</th>
+                  <th className="w-20 border border-gray-400 px-2 py-1 text-xs font-bold text-center">الأجر المستحق</th>
+                  <th className="w-20 border border-gray-400 px-2 py-1 text-xs font-bold text-center">المبلغ المستلم</th>
+                  <th className="w-20 border border-gray-400 px-2 py-1 text-xs font-bold text-center">المبلغ المتبقي</th>
+                  <th className="w-24 border border-gray-400 px-2 py-1 text-xs font-bold text-center">ملاحظات العمل</th>
                 </tr>
               </thead>
               <tbody>
