@@ -1,6 +1,10 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { exec } from "child_process";
+import { promisify } from "util";
+
+const execAsync = promisify(exec);
 
 const app = express();
 app.use(express.json({ limit: '50mb' }));
@@ -37,6 +41,16 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Auto-migrate database on startup to prevent "table does not exist" errors
+  try {
+    log("Checking and updating database schema...");
+    await execAsync("npm run db:push");
+    log("Database schema updated successfully!");
+  } catch (error) {
+    log("Database schema update failed, but continuing...");
+    console.error(error);
+  }
+
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

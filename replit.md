@@ -208,3 +208,21 @@ The application follows modern full-stack development practices with type safety
   - Added 8 worker-to-family transfer records for realistic account management
   - Generated 20 daily expense summaries with accurate running balances
   - All test data covers 15-day period with authentic Arabic business scenarios
+
+### July 31, 2025 - Critical Database & API Fixes
+- ✓ **Auto Database Migration**: Added automatic `db:push` execution on server startup to prevent "table does not exist" errors
+  - **Location**: `server/index.ts` - executes database schema sync before server initialization 
+  - **Purpose**: Ensures database tables exist even if database is recreated or reset
+  - **Impact**: Eliminates manual database setup requirement for new deployments
+
+- ✓ **Fixed API Request Parameter Order**: Corrected HTTP method parameter sequence in project update mutations
+  - **Issue**: Project updates were failing due to incorrect `apiRequest` parameter order
+  - **Location**: `client/src/pages/projects.tsx` line 110
+  - **Fix**: Changed from `apiRequest(url, method, data)` to `apiRequest(method, url, data)`
+  - **Impact**: Project editing now works correctly without HTTP method errors
+
+- ✓ **Enhanced Worker Statement Print Optimization**: Applied ultra-compact printing layout
+  - **Font sizes**: 6px for data, 7px for headers, optimized for A4 paper
+  - **Row height**: Reduced to 12px to fit 10+ rows per page
+  - **Table spacing**: Minimal padding (0-1px) for maximum data density
+  - **CSS**: Added print-specific media queries with !important declarations
