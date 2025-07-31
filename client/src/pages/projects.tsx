@@ -29,8 +29,8 @@ import {
 } from "lucide-react";
 import type { Project, InsertProject } from "@shared/schema";
 import { insertProjectSchema } from "@shared/schema";
-import { formatDate, formatCurrency, autocompleteKeys, saveToAutocomplete, getAutocompleteData, removeFromAutocomplete } from "@/lib/utils";
-import { AutocompleteInput } from "@/components/ui/autocomplete-input";
+import { formatDate, formatCurrency } from "@/lib/utils";
+import { AutocompleteInput } from "@/components/ui/autocomplete-input-database";
 
 interface ProjectStats {
   totalWorkers: number;
@@ -237,10 +237,8 @@ export default function ProjectsPage() {
                         <AutocompleteInput 
                           value={field.value}
                           onChange={field.onChange}
-                          suggestions={getAutocompleteData(autocompleteKeys.PROJECT_NAMES)}
+                          category="projectNames"
                           placeholder="اسم المشروع"
-                          onSave={(value) => saveToAutocomplete(autocompleteKeys.PROJECT_NAMES, value)}
-                          onRemove={(value) => removeFromAutocomplete(autocompleteKeys.PROJECT_NAMES, value)}
                         />
                       </FormControl>
                       <FormMessage />
@@ -446,10 +444,8 @@ export default function ProjectsPage() {
                       <AutocompleteInput 
                         value={field.value}
                         onChange={field.onChange}
-                        suggestions={getAutocompleteData(autocompleteKeys.PROJECT_NAMES)}
+                        category="projectNames"
                         placeholder="اسم المشروع"
-                        onSave={(value) => saveToAutocomplete(autocompleteKeys.PROJECT_NAMES, value)}
-                        onRemove={(value) => removeFromAutocomplete(autocompleteKeys.PROJECT_NAMES, value)}
                       />
                     </FormControl>
                     <FormMessage />

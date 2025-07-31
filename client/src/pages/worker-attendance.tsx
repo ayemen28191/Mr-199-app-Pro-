@@ -10,8 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useSelectedProject } from "@/hooks/use-selected-project";
 import ProjectSelector from "@/components/project-selector";
 import EnhancedWorkerCard from "@/components/enhanced-worker-card";
-import { getCurrentDate, formatCurrency, autocompleteKeys, saveToAutocomplete, getAutocompleteData, removeFromAutocomplete } from "@/lib/utils";
-import { AutocompleteInput } from "@/components/ui/autocomplete-input";
+import { getCurrentDate, formatCurrency } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
 import type { Worker, InsertWorkerAttendance } from "@shared/schema";
 

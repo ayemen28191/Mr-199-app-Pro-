@@ -12,8 +12,8 @@ import { Combobox } from "@/components/ui/combobox";
 import { useToast } from "@/hooks/use-toast";
 import { useSelectedProject } from "@/hooks/use-selected-project";
 import ProjectSelector from "@/components/project-selector";
-import { getCurrentDate, formatCurrency, autocompleteKeys, saveToAutocomplete, getAutocompleteData, removeFromAutocomplete } from "@/lib/utils";
-import { AutocompleteInput } from "@/components/ui/autocomplete-input";
+import { getCurrentDate, formatCurrency } from "@/lib/utils";
+import { AutocompleteInput } from "@/components/ui/autocomplete-input-database";
 import { apiRequest } from "@/lib/queryClient";
 import type { Material, InsertMaterialPurchase, InsertMaterial } from "@shared/schema";
 
@@ -335,10 +335,8 @@ export default function MaterialPurchase() {
               <AutocompleteInput
                 value={materialName}
                 onChange={setMaterialName}
-                suggestions={getAutocompleteData(autocompleteKeys.MATERIAL_NAMES)}
+                category="materialNames"
                 placeholder="اختر أو أدخل اسم المادة..."
-                onSave={(value) => saveToAutocomplete(autocompleteKeys.MATERIAL_NAMES, value)}
-                onRemove={(value) => removeFromAutocomplete(autocompleteKeys.MATERIAL_NAMES, value)}
               />
             </div>
 
@@ -348,10 +346,8 @@ export default function MaterialPurchase() {
               <AutocompleteInput
                 value={materialCategory}
                 onChange={setMaterialCategory}
-                suggestions={getAutocompleteData(autocompleteKeys.MATERIAL_CATEGORIES)}
+                category="materialCategories"
                 placeholder="اختر أو أدخل فئة المادة..."
-                onSave={(value) => saveToAutocomplete(autocompleteKeys.MATERIAL_CATEGORIES, value)}
-                onRemove={(value) => removeFromAutocomplete(autocompleteKeys.MATERIAL_CATEGORIES, value)}
               />
             </div>
 
@@ -373,10 +369,8 @@ export default function MaterialPurchase() {
                 <AutocompleteInput
                   value={materialUnit}
                   onChange={setMaterialUnit}
-                  suggestions={getAutocompleteData(autocompleteKeys.MATERIAL_UNITS)}
-                  placeholder="اختر أو أدخل الوحدة..."
-                  onSave={(value) => saveToAutocomplete(autocompleteKeys.MATERIAL_UNITS, value)}
-                  onRemove={(value) => removeFromAutocomplete(autocompleteKeys.MATERIAL_UNITS, value)}
+                  category="materialUnits"
+                  placeholder="طن، كيس، م³..."
                 />
               </div>
             </div>
@@ -430,10 +424,8 @@ export default function MaterialPurchase() {
               <AutocompleteInput
                 value={supplierName}
                 onChange={setSupplierName}
-                suggestions={getAutocompleteData(autocompleteKeys.SUPPLIER_NAMES)}
+                category="supplierNames"
                 placeholder="اختر أو أدخل اسم المورد..."
-                onSave={(value) => saveToAutocomplete(autocompleteKeys.SUPPLIER_NAMES, value)}
-                onRemove={(value) => removeFromAutocomplete(autocompleteKeys.SUPPLIER_NAMES, value)}
               />
             </div>
 
@@ -457,11 +449,9 @@ export default function MaterialPurchase() {
                   inputMode="numeric"
                   value={invoiceNumber}
                   onChange={setInvoiceNumber}
-                  suggestions={getAutocompleteData(autocompleteKeys.INVOICE_NUMBERS)}
+                  category="invoiceNumbers"
                   placeholder="رقم الفاتورة"
                   className="arabic-numbers"
-                  onSave={(value) => saveToAutocomplete(autocompleteKeys.INVOICE_NUMBERS, value)}
-                  onRemove={(value) => removeFromAutocomplete(autocompleteKeys.INVOICE_NUMBERS, value)}
                 />
               </div>
               <div>
@@ -515,10 +505,8 @@ export default function MaterialPurchase() {
               <AutocompleteInput
                 value={notes}
                 onChange={setNotes}
-                suggestions={getAutocompleteData(autocompleteKeys.NOTES)}
+                category="notes"
                 placeholder="أي ملاحظات إضافية..."
-                onSave={(value) => saveToAutocomplete(autocompleteKeys.NOTES, value)}
-                onRemove={(value) => removeFromAutocomplete(autocompleteKeys.NOTES, value)}
               />
             </div>
           </div>

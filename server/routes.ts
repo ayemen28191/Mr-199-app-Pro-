@@ -5,7 +5,7 @@ import {
   insertProjectSchema, insertWorkerSchema, insertFundTransferSchema, 
   insertWorkerAttendanceSchema, insertMaterialSchema, insertMaterialPurchaseSchema,
   insertTransportationExpenseSchema, insertDailyExpenseSummarySchema, insertWorkerTransferSchema,
-  insertWorkerBalanceSchema
+  insertWorkerBalanceSchema, insertAutocompleteDataSchema
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -864,6 +864,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching worker projects:", error);
       res.status(500).json({ message: "خطأ في جلب مشاريع العامل" });
+    }
+  });
+
+  // Autocomplete data routes
+  app.get("/api/autocomplete/:category", async (req, res) => {
+    try {
+      const { category } = req.params;
+      const data = await storage.getAutocompleteData(category);
+      res.json(data);
+    } catch (error) {
+      console.error("Error fetching autocomplete data:", error);
+      res.status(500).json({ message: "خطأ في جلب بيانات الإكمال التلقائي" });
+    }
+  });
+
+  app.post("/api/autocomplete", async (req, res) => {
+    try {
+      const result = insertAutocompleteDataSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "Invalid autocomplete data", errors: result.error.issues });
+      }
+      
+      const data = await storage.saveAutocompleteData(result.data);
+      res.status(201).json(data);
+    } catch (error) {
+      console.error("Error saving autocomplete data:", error);
+      res.status(500).json({ message: "خطأ في حفظ بيانات الإكمال التلقائي" });
+    }
+  });
+
+  app.delete("/api/autocomplete/:category/:value", async (req, res) => {
+    try {
+      const { category, value } = req.params;
+      await storage.removeAutocompleteData(category, decodeURIComponent(value));
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error removing autocomplete data:", error);
+      res.status(500).json({ message: "خطأ في حذف بيانات الإكمال التلقائي" });
     }
   });
 

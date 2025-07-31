@@ -134,6 +134,16 @@ export const dailyExpenseSummaries = pgTable("daily_expense_summaries", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Autocomplete data table (بيانات الإكمال التلقائي)
+export const autocompleteData = pgTable("autocomplete_data", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  category: text("category").notNull(), // نوع البيانات: senderNames, recipientNames, etc
+  value: text("value").notNull(), // القيمة المحفوظة
+  usageCount: integer("usage_count").default(1).notNull(), // عدد مرات الاستخدام
+  lastUsed: timestamp("last_used").defaultNow().notNull(), // آخر استخدام
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Schema definitions for forms
 export const insertProjectSchema = createInsertSchema(projects).omit({ id: true, createdAt: true });
 export const insertWorkerSchema = createInsertSchema(workers).omit({ id: true, createdAt: true });
@@ -147,6 +157,7 @@ export const insertTransportationExpenseSchema = createInsertSchema(transportati
 export const insertWorkerTransferSchema = createInsertSchema(workerTransfers).omit({ id: true, createdAt: true });
 export const insertWorkerBalanceSchema = createInsertSchema(workerBalances).omit({ id: true, createdAt: true, lastUpdated: true });
 export const insertDailyExpenseSummarySchema = createInsertSchema(dailyExpenseSummaries).omit({ id: true, createdAt: true });
+export const insertAutocompleteDataSchema = createInsertSchema(autocompleteData).omit({ id: true, createdAt: true, lastUsed: true });
 
 // Type definitions
 export type Project = typeof projects.$inferSelect;
@@ -159,6 +170,7 @@ export type TransportationExpense = typeof transportationExpenses.$inferSelect;
 export type WorkerTransfer = typeof workerTransfers.$inferSelect;
 export type WorkerBalance = typeof workerBalances.$inferSelect;
 export type DailyExpenseSummary = typeof dailyExpenseSummaries.$inferSelect;
+export type AutocompleteData = typeof autocompleteData.$inferSelect;
 
 export type InsertProject = z.infer<typeof insertProjectSchema>;
 export type InsertWorker = z.infer<typeof insertWorkerSchema>;
@@ -170,3 +182,4 @@ export type InsertTransportationExpense = z.infer<typeof insertTransportationExp
 export type InsertWorkerTransfer = z.infer<typeof insertWorkerTransferSchema>;
 export type InsertWorkerBalance = z.infer<typeof insertWorkerBalanceSchema>;
 export type InsertDailyExpenseSummary = z.infer<typeof insertDailyExpenseSummarySchema>;
+export type InsertAutocompleteData = z.infer<typeof insertAutocompleteDataSchema>;

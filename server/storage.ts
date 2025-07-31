@@ -1,12 +1,12 @@
 import { 
   type Project, type Worker, type FundTransfer, type WorkerAttendance, 
   type Material, type MaterialPurchase, type TransportationExpense, type DailyExpenseSummary,
-  type WorkerTransfer, type WorkerBalance,
+  type WorkerTransfer, type WorkerBalance, type AutocompleteData,
   type InsertProject, type InsertWorker, type InsertFundTransfer, type InsertWorkerAttendance,
   type InsertMaterial, type InsertMaterialPurchase, type InsertTransportationExpense, type InsertDailyExpenseSummary,
-  type InsertWorkerTransfer, type InsertWorkerBalance,
+  type InsertWorkerTransfer, type InsertWorkerBalance, type InsertAutocompleteData,
   projects, workers, fundTransfers, workerAttendance, materials, materialPurchases, transportationExpenses, dailyExpenseSummaries,
-  workerTransfers, workerBalances
+  workerTransfers, workerBalances, autocompleteData
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, gte, lte, sql, inArray } from "drizzle-orm";
@@ -106,6 +106,11 @@ export interface IStorage {
   }>;
   getWorkerProjects(workerId: string): Promise<Project[]>;
   updateDailySummaryForDate(projectId: string, date: string): Promise<void>;
+  
+  // Autocomplete data
+  getAutocompleteData(category: string): Promise<AutocompleteData[]>;
+  saveAutocompleteData(data: InsertAutocompleteData): Promise<AutocompleteData>;
+  removeAutocompleteData(category: string, value: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1026,6 +1031,76 @@ export class DatabaseStorage implements IStorage {
         materialPurchases: 0,
         lastActivity: new Date().toISOString().split('T')[0]
       };
+    }
+  }
+
+  // Autocomplete data methods
+  async getAutocompleteData(category: string): Promise<AutocompleteData[]> {
+    try {
+      return await db
+        .select()
+        .from(autocompleteData)
+        .where(eq(autocompleteData.category, category))
+        .orderBy(sql`${autocompleteData.usageCount} DESC, ${autocompleteData.lastUsed} DESC`);
+    } catch (error) {
+      console.error('Error getting autocomplete data:', error);
+      return [];
+    }
+  }
+
+  async saveAutocompleteData(data: InsertAutocompleteData): Promise<AutocompleteData> {
+    try {
+      // تحقق من وجود القيمة مسبقاً
+      const existing = await db
+        .select()
+        .from(autocompleteData)
+        .where(and(
+          eq(autocompleteData.category, data.category),
+          eq(autocompleteData.value, data.value.trim())
+        ))
+        .limit(1);
+
+      if (existing.length > 0) {
+        // إذا كانت موجودة، اعد تحديث عدد الاستخدام وتاريخ آخر استخدام
+        const [updated] = await db
+          .update(autocompleteData)
+          .set({
+            usageCount: sql`${autocompleteData.usageCount} + 1`,
+            lastUsed: new Date()
+          })
+          .where(eq(autocompleteData.id, existing[0].id))
+          .returning();
+        
+        return updated;
+      } else {
+        // إذا لم تكن موجودة، أنشئ سجل جديد
+        const [created] = await db
+          .insert(autocompleteData)
+          .values({
+            ...data,
+            value: data.value.trim()
+          })
+          .returning();
+        
+        return created;
+      }
+    } catch (error) {
+      console.error('Error saving autocomplete data:', error);
+      throw error;
+    }
+  }
+
+  async removeAutocompleteData(category: string, value: string): Promise<void> {
+    try {
+      await db
+        .delete(autocompleteData)
+        .where(and(
+          eq(autocompleteData.category, category),
+          eq(autocompleteData.value, value.trim())
+        ));
+    } catch (error) {
+      console.error('Error removing autocomplete data:', error);
+      throw error;
     }
   }
 }
