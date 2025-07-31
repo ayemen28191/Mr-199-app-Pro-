@@ -174,8 +174,14 @@ export default function WorkerAttendance() {
   const applyBulkSettings = () => {
     const newAttendanceData = { ...attendanceData };
     
+    console.log("=== تطبيق الإعدادات المشتركة ===");
+    console.log("الإعدادات المشتركة:", bulkSettings);
+    
     Object.keys(newAttendanceData).forEach(workerId => {
       if (newAttendanceData[workerId].isPresent) {
+        console.log(`تطبيق الإعدادات على العامل ${workerId}`);
+        console.log(`المبلغ المدفوع من الإعدادات: "${bulkSettings.paidAmount}"`);
+        
         newAttendanceData[workerId] = {
           ...newAttendanceData[workerId],
           startTime: bulkSettings.startTime,
@@ -185,6 +191,8 @@ export default function WorkerAttendance() {
           paidAmount: bulkSettings.paidAmount,
           workDescription: bulkSettings.workDescription
         };
+        
+        console.log("البيانات بعد التطبيق:", newAttendanceData[workerId]);
       }
     });
     
@@ -200,8 +208,13 @@ export default function WorkerAttendance() {
   const toggleAllWorkers = (isPresent: boolean) => {
     const newAttendanceData: AttendanceData = {};
     
+    console.log("=== تحديد جميع العمال ===");
+    console.log("حالة الحضور:", isPresent);
+    console.log("الإعدادات المشتركة:", bulkSettings);
+    
     workers.forEach(worker => {
       if (isPresent) {
+        console.log(`إضافة العامل ${worker.name} بالمبلغ: "${bulkSettings.paidAmount}"`);
         newAttendanceData[worker.id] = {
           isPresent: true,
           startTime: bulkSettings.startTime,
@@ -218,6 +231,7 @@ export default function WorkerAttendance() {
       }
     });
     
+    console.log("البيانات النهائية:", newAttendanceData);
     setAttendanceData(newAttendanceData);
   };
 
