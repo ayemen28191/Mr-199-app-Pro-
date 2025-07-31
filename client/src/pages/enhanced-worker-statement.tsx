@@ -1,116 +1,92 @@
-import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { FileText, Download, Printer, Calculator } from "lucide-react";
-import { format } from "date-fns";
-import { ar } from "date-fns/locale";
-import { formatCurrency, formatDate } from "@/lib/utils";
-import type { Worker, WorkerAttendance, Project } from "@shared/schema";
+import { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { FileText, Calculator, Download, Printer } from 'lucide-react';
+import { format } from 'date-fns';
+import { ar } from 'date-fns/locale';
+
+interface Worker {
+  id: string;
+  name: string;
+  type: string;
+  dailyWage: string;
+}
+
+interface Project {
+  id: string;
+  name: string;
+}
+
+interface WorkerStatement {
+  projectId: string;
+  projectName: string;
+  attendance: any[];
+}
+
+interface FamilyTransfer {
+  id: string;
+  projectName: string;
+  amount: string;
+  transferDate: string;
+  recipientName: string;
+  notes?: string;
+}
 
 export default function EnhancedWorkerStatement() {
-  const [selectedWorkerId, setSelectedWorkerId] = useState("");
+  const [selectedWorkerId, setSelectedWorkerId] = useState('');
+  const [selectedWorker, setSelectedWorker] = useState<Worker | null>(null);
   const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([]);
-  const [dateFrom, setDateFrom] = useState("");
-  const [dateTo, setDateTo] = useState("");
+  const [dateFrom, setDateFrom] = useState(() => {
+    const date = new Date();
+    date.setDate(1);
+    return format(date, 'yyyy-MM-dd');
+  });
+  const [dateTo, setDateTo] = useState(() => format(new Date(), 'yyyy-MM-dd'));
   const [showReport, setShowReport] = useState(false);
+  const [workerStatement, setWorkerStatement] = useState<WorkerStatement[] | null>(null);
+  const [familyTransfers, setFamilyTransfers] = useState<FamilyTransfer[]>([]);
 
-  // Query for workers
+  const queryClient = useQueryClient();
+
+  // Fetch workers
   const { data: workers = [] } = useQuery<Worker[]>({
-    queryKey: ["/api/workers"],
+    queryKey: ['/api/workers'],
   });
 
-  // Query for projects
-  const { data: projects = [] } = useQuery<Project[]>({
-    queryKey: ["/api/projects"],
-  });
-
-  // Query for worker projects (projects where this worker has worked)
+  // Fetch worker projects when worker is selected
   const { data: workerProjects = [] } = useQuery<Project[]>({
-    queryKey: ["/api/workers", selectedWorkerId, "projects"],
-    queryFn: async () => {
-      if (!selectedWorkerId) return [];
-      const response = await fetch(`/api/workers/${selectedWorkerId}/projects`);
-      return response.ok ? response.json() : [];
-    },
+    queryKey: ['/api/workers', selectedWorkerId, 'projects'],
     enabled: !!selectedWorkerId,
   });
 
-  // Query for worker statement with multiple projects support
-  const { data: workerStatement, isLoading: isLoadingStatement } = useQuery({
-    queryKey: ["/api/workers/enhanced-statement", selectedWorkerId, selectedProjectIds, dateFrom, dateTo],
-    queryFn: async () => {
-      if (!selectedWorkerId || !dateFrom || !dateTo || selectedProjectIds.length === 0) return null;
-      
-      // Fetch data for each selected project including transfers
-      const statements = await Promise.all(
-        selectedProjectIds.map(async (projectId) => {
-          const params = new URLSearchParams();
-          params.append('dateFrom', dateFrom);
-          params.append('dateTo', dateTo);
-          params.append('projectId', projectId);
-          
-          const [statementResponse, transfersResponse] = await Promise.all([
-            fetch(`/api/workers/${selectedWorkerId}/account-statement?${params}`),
-            fetch(`/api/workers/${selectedWorkerId}/transfers?projectId=${projectId}`)
-          ]);
-          
-          if (!statementResponse.ok) return null;
-          
-          const statementData = await statementResponse.json();
-          const transfersData = transfersResponse.ok ? await transfersResponse.json() : [];
-          
-          // Filter transfers by date range
-          const filteredTransfers = transfersData.filter((transfer: any) => {
-            return transfer.transferDate >= dateFrom && transfer.transferDate <= dateTo;
-          });
-          
-          return {
-            projectId,
-            projectName: projects.find(p => p.id === projectId)?.name || '',
-            ...statementData,
-            familyTransfers: filteredTransfers
-          };
-        })
-      );
-      
-      return statements.filter(s => s !== null);
-    },
-    enabled: !!selectedWorkerId && !!dateFrom && !!dateTo && selectedProjectIds.length > 0 && showReport,
+  // Fetch family transfers for the worker
+  const { data: workerFamilyTransfers = [] } = useQuery<FamilyTransfer[]>({
+    queryKey: ['/api/workers', selectedWorkerId, 'transfers'],
+    enabled: !!selectedWorkerId,
   });
 
-  const selectedWorker = workers.find(w => w.id === selectedWorkerId);
-
-  // Calculate working hours between start and end time
-  const calculateWorkingHours = (startTime: string, endTime: string): number => {
-    if (!startTime || !endTime) return 0;
-    
-    const [startHour, startMinute] = startTime.split(':').map(Number);
-    const [endHour, endMinute] = endTime.split(':').map(Number);
-    
-    let startTotalMinutes = startHour * 60 + startMinute;
-    let endTotalMinutes = endHour * 60 + endMinute;
-    
-    // Handle overnight work (e.g., 21:29 to 08:29)
-    if (endTotalMinutes < startTotalMinutes) {
-      endTotalMinutes += 24 * 60; // Add 24 hours
+  // Handle worker selection
+  useEffect(() => {
+    if (selectedWorkerId) {
+      const worker = workers.find(w => w.id === selectedWorkerId);
+      setSelectedWorker(worker || null);
+    } else {
+      setSelectedWorker(null);
+      setSelectedProjectIds([]);
     }
-    
-    const diffMinutes = endTotalMinutes - startTotalMinutes;
-    return diffMinutes / 60; // Convert to hours
-  };
+  }, [selectedWorkerId, workers]);
 
-  // Format hours to display (e.g., 8.5 hours as "8:30")
-  const formatHours = (hours: number): string => {
-    const wholeHours = Math.floor(hours);
-    const minutes = Math.round((hours - wholeHours) * 60);
-    return `${wholeHours}:${minutes.toString().padStart(2, '0')}`;
-  };
+  // Update family transfers when data changes
+  useEffect(() => {
+    setFamilyTransfers(workerFamilyTransfers);
+  }, [workerFamilyTransfers]);
 
+  // Handle project selection
   const handleProjectSelection = (projectId: string, checked: boolean) => {
     if (checked) {
       setSelectedProjectIds(prev => [...prev, projectId]);
@@ -119,30 +95,31 @@ export default function EnhancedWorkerStatement() {
     }
   };
 
-  const generateReport = () => {
-    if (!selectedWorkerId || !dateFrom || !dateTo || selectedProjectIds.length === 0) {
-      alert("يرجى تعبئة جميع الحقول المطلوبة واختيار مشروع واحد على الأقل");
-      return;
-    }
-    setShowReport(true);
-  };
+  // Generate report
+  const generateReport = async () => {
+    if (!selectedWorkerId || selectedProjectIds.length === 0) return;
 
-  const printReport = () => {
-    // Hide action buttons before printing
-    const actionButtons = document.querySelector('.print\\:hidden');
-    if (actionButtons) {
-      (actionButtons as HTMLElement).style.display = 'none';
-    }
-    
-    setTimeout(() => {
-      window.print();
-      // Show buttons again after printing
-      if (actionButtons) {
-        (actionButtons as HTMLElement).style.display = 'block';
+    try {
+      const response = await fetch(
+        `/api/workers/${selectedWorkerId}/account-statement?from=${dateFrom}&to=${dateTo}&projectIds=${selectedProjectIds.join(',')}`
+      );
+      
+      if (response.ok) {
+        const data = await response.json();
+        setWorkerStatement(data);
+        setShowReport(true);
       }
-    }, 100);
+    } catch (error) {
+      console.error('Error generating report:', error);
+    }
   };
 
+  // Print report
+  const printReport = () => {
+    window.print();
+  };
+
+  // Export to Excel (CSV)
   const exportToExcel = () => {
     if (!workerStatement || !selectedWorker || workerStatement.length === 0) {
       alert("لا توجد بيانات للتصدير");
@@ -190,13 +167,6 @@ export default function EnhancedWorkerStatement() {
         });
       });
 
-      // Add summary rows
-      rows.push(['', '', '', '', '', '', '', '', '']);
-      rows.push(['', 'إجمالي ساعات العمل', '', '', formatHours(grandTotalHours), '', '', '', '']);
-      rows.push(['', 'إجمالي المبلغ المستحق', '', '', '', formatCurrency(grandTotalEarned), '', '', '']);
-      rows.push(['', 'إجمالي المبلغ المستلم', '', '', '', '', formatCurrency(grandTotalPaid), '', '']);
-      rows.push(['', 'إجمالي المتبقي', '', '', '', '', '', formatCurrency(grandTotalRemaining), '']);
-
       const csvContent = [headers, ...rows]
         .map(row => row.map((cell: any) => `"${String(cell || '')}"`).join(','))
         .join('\n');
@@ -213,6 +183,41 @@ export default function EnhancedWorkerStatement() {
     } catch (error) {
       console.error('Export error:', error);
       alert('حدث خطأ أثناء التصدير');
+    }
+  };
+
+  // Helper functions
+  const formatDate = (dateString: string) => {
+    try {
+      return format(new Date(dateString), 'yyyy/MM/dd', { locale: ar });
+    } catch {
+      return dateString;
+    }
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('ar-YE', {
+      style: 'currency',
+      currency: 'YER',
+      minimumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  const formatHours = (hours: number) => {
+    return `${hours.toFixed(1)} ساعة`;
+  };
+
+  const calculateWorkingHours = (startTime: string, endTime: string): number => {
+    if (!startTime || !endTime) return 8;
+    
+    try {
+      const start = new Date(`2000-01-01 ${startTime}`);
+      const end = new Date(`2000-01-01 ${endTime}`);
+      const diffMs = end.getTime() - start.getTime();
+      const diffHours = diffMs / (1000 * 60 * 60);
+      return Math.max(0, diffHours);
+    } catch {
+      return 8;
     }
   };
 
@@ -284,82 +289,82 @@ export default function EnhancedWorkerStatement() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-          {/* Worker Selection */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="worker">اختيار العامل *</Label>
-              <Select value={selectedWorkerId} onValueChange={setSelectedWorkerId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="اختر العامل" />
-                </SelectTrigger>
-                <SelectContent>
-                  {workers.map((worker) => (
-                    <SelectItem key={worker.id} value={worker.id}>
-                      {worker.name} - {worker.type}
-                    </SelectItem>
+            {/* Worker Selection */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="worker">اختيار العامل *</Label>
+                <Select value={selectedWorkerId} onValueChange={setSelectedWorkerId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="اختر العامل" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {workers.map((worker) => (
+                      <SelectItem key={worker.id} value={worker.id}>
+                        {worker.name} - {worker.type}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Date Range */}
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label htmlFor="dateFrom">من تاريخ</Label>
+                  <Input
+                    id="dateFrom"
+                    type="date"
+                    value={dateFrom}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="dateTo">إلى تاريخ</Label>
+                  <Input
+                    id="dateTo"
+                    type="date"
+                    value={dateTo}
+                    onChange={(e) => setDateTo(e.target.value)}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Project Selection */}
+            {selectedWorkerId && workerProjects.length > 0 && (
+              <div>
+                <Label>اختيار المشاريع *</Label>
+                <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2 max-h-32 overflow-y-auto border rounded p-3">
+                  {workerProjects.map((project) => (
+                    <div key={project.id} className="flex items-center space-x-2 rtl:space-x-reverse">
+                      <Checkbox
+                        id={project.id}
+                        checked={selectedProjectIds.includes(project.id)}
+                        onCheckedChange={(checked) => handleProjectSelection(project.id, checked as boolean)}
+                      />
+                      <Label htmlFor={project.id} className="text-sm font-normal cursor-pointer">
+                        {project.name}
+                      </Label>
+                    </div>
                   ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            {/* Date Range */}
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <Label htmlFor="dateFrom">من تاريخ *</Label>
-                <Input
-                  id="dateFrom"
-                  type="date"
-                  value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
-                />
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  يمكنك اختيار مشروع واحد أو أكثر لعرض كشف حساب شامل
+                </p>
               </div>
-              <div>
-                <Label htmlFor="dateTo">إلى تاريخ *</Label>
-                <Input
-                  id="dateTo"
-                  type="date"
-                  value={dateTo}
-                  onChange={(e) => setDateTo(e.target.value)}
-                />
-              </div>
-            </div>
-          </div>
+            )}
 
-          {/* Project Selection */}
-          {selectedWorkerId && workerProjects.length > 0 && (
-            <div>
-              <Label>اختيار المشاريع *</Label>
-              <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-2 max-h-32 overflow-y-auto border rounded p-3">
-                {workerProjects.map((project) => (
-                  <div key={project.id} className="flex items-center space-x-2 rtl:space-x-reverse">
-                    <Checkbox
-                      id={project.id}
-                      checked={selectedProjectIds.includes(project.id)}
-                      onCheckedChange={(checked) => handleProjectSelection(project.id, checked as boolean)}
-                    />
-                    <Label htmlFor={project.id} className="text-sm font-normal cursor-pointer">
-                      {project.name}
-                    </Label>
-                  </div>
-                ))}
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                يمكنك اختيار مشروع واحد أو أكثر لعرض كشف حساب شامل
-              </p>
+            {/* Generate Report Button */}
+            <div className="flex gap-2">
+              <Button 
+                onClick={generateReport}
+                disabled={!selectedWorkerId || !dateFrom || !dateTo || selectedProjectIds.length === 0}
+                className="flex-1"
+              >
+                <Calculator className="mr-2 h-4 w-4" />
+                إنشاء الكشف
+              </Button>
             </div>
-          )}
-
-          {/* Generate Report Button */}
-          <div className="flex gap-2">
-            <Button 
-              onClick={generateReport}
-              disabled={!selectedWorkerId || !dateFrom || !dateTo || selectedProjectIds.length === 0}
-              className="flex-1"
-            >
-              <Calculator className="mr-2 h-4 w-4" />
-              إنشاء الكشف
-            </Button>
-          </div>
           </CardContent>
         </Card>
       )}
@@ -402,155 +407,147 @@ export default function EnhancedWorkerStatement() {
                   <th className="border border-gray-400">ملاحظات</th>
                 </tr>
               </thead>
-                <tbody>
-                  {(() => {
-                    let rowIndex = 1;
-                    let grandTotalEarned = 0;
-                    let grandTotalPaid = 0;
-                    let grandTotalRemaining = 0;
-                    let grandTotalHours = 0;
+              <tbody>
+                {(() => {
+                  let rowIndex = 1;
+                  let grandTotalEarned = 0;
+                  let grandTotalPaid = 0;
+                  let grandTotalRemaining = 0;
+                  let grandTotalHours = 0;
+
+                  const rows: JSX.Element[] = [];
+
+                  workerStatement.forEach((projectStatement) => {
+                    const attendance = projectStatement.attendance || [];
                     
-                    const rows = workerStatement.flatMap((projectStatement: any) => {
-                      const attendance = projectStatement.attendance || [];
+                    attendance.forEach((record) => {
+                      const workingHours = calculateWorkingHours(record.startTime, record.endTime);
+                      const dailyWage = parseFloat(record.dailyWage || '0');
+                      const paidAmount = parseFloat(record.paidAmount || '0');
+                      const remainingAmount = parseFloat(record.remainingAmount || '0');
                       
-                      return attendance.map((record: any) => {
-                        const workingHours = calculateWorkingHours(record.startTime, record.endTime);
-                        const dailyWage = parseFloat(record.dailyWage || '0');
-                        const paidAmount = parseFloat(record.paidAmount || '0');
-                        const remainingAmount = parseFloat(record.remainingAmount || '0');
-                        
-                        grandTotalEarned += dailyWage;
-                        grandTotalPaid += paidAmount;
-                        grandTotalRemaining += remainingAmount;
-                        grandTotalHours += workingHours;
+                      grandTotalEarned += dailyWage;
+                      grandTotalPaid += paidAmount;
+                      grandTotalRemaining += remainingAmount;
+                      grandTotalHours += workingHours;
 
-                        return (
-                          <tr key={`${projectStatement.projectId}-${record.id}`} className="hover:bg-blue-50">
-                            <td className="border border-gray-400 bg-gray-50">{rowIndex++}</td>
-                            <td className="border border-gray-400 bg-blue-50" style={{ maxWidth: '60px', fontSize: '5px', wordWrap: 'break-word' }}>{projectStatement.projectName}</td>
-                            <td className="border border-gray-400 bg-yellow-50">{formatDate(record.date)}</td>
-                            <td className="border border-gray-400">{record.startTime || '-'}</td>
-                            <td className="border border-gray-400">{record.endTime || '-'}</td>
-                            <td className="border border-gray-400 bg-green-50">{formatHours(workingHours)}</td>
-                            <td className="border border-gray-400 bg-purple-50">1</td>
-                            <td className="border border-gray-400 bg-blue-100">{formatCurrency(dailyWage)}</td>
-                            <td className="border border-gray-400 bg-green-100">{formatCurrency(paidAmount)}</td>
-                            <td className="border border-gray-400 bg-red-100">{formatCurrency(remainingAmount)}</td>
-                            <td className="border border-gray-400 bg-gray-100" style={{ maxWidth: '50px', fontSize: '5px', wordWrap: 'break-word' }}>{record.workDescription || '-'}</td>
-                          </tr>
-                        );
-                      });
+                      rows.push(
+                        <tr key={`${projectStatement.projectId}-${record.id}`} className="hover:bg-blue-50">
+                          <td className="border border-gray-400 bg-gray-50">{rowIndex++}</td>
+                          <td className="border border-gray-400 bg-blue-50" style={{ maxWidth: '60px', fontSize: '5px', wordWrap: 'break-word' }}>{projectStatement.projectName}</td>
+                          <td className="border border-gray-400 bg-yellow-50">{formatDate(record.date)}</td>
+                          <td className="border border-gray-400">{record.startTime || '-'}</td>
+                          <td className="border border-gray-400">{record.endTime || '-'}</td>
+                          <td className="border border-gray-400 bg-green-50">{formatHours(workingHours)}</td>
+                          <td className="border border-gray-400 bg-purple-50">1</td>
+                          <td className="border border-gray-400 bg-blue-100">{formatCurrency(dailyWage)}</td>
+                          <td className="border border-gray-400 bg-green-100">{formatCurrency(paidAmount)}</td>
+                          <td className="border border-gray-400 bg-red-100">{formatCurrency(remainingAmount)}</td>
+                          <td className="border border-gray-400 bg-gray-100" style={{ maxWidth: '50px', fontSize: '5px', wordWrap: 'break-word' }}>{record.workDescription || '-'}</td>
+                        </tr>
+                      );
                     });
+                  });
 
-                    // Add summary rows
+                  // Add family transfers section
+                  const allFamilyTransfers = familyTransfers.filter(transfer => 
+                    selectedProjectIds.some(projectId => 
+                      workerStatement?.some(ps => ps.projectId === projectId && ps.projectName === transfer.projectName)
+                    )
+                  );
+
+                  if (allFamilyTransfers.length > 0) {
                     rows.push(
-                      <tr key="summary-header" className="bg-orange-200">
-                        <td colSpan={10} className="border border-gray-400 p-2 text-center font-bold">
-                          إجمالي الحسابات للعامل
+                      <tr key="family-transfers-header" className="bg-purple-200">
+                        <td colSpan={11} className="border border-gray-400 text-center font-bold">
+                          حوالات للأهل من حساب العامل
                         </td>
                       </tr>
                     );
 
-                    // Add family transfers section
-                    const allFamilyTransfers = workerStatement.flatMap((ps: any) => 
-                      (ps.familyTransfers || []).map((transfer: any) => ({
-                        ...transfer,
-                        projectName: ps.projectName
-                      }))
-                    );
-
-                    if (allFamilyTransfers.length > 0) {
+                    allFamilyTransfers.forEach((transfer, index) => {
                       rows.push(
-                        <tr key="family-transfers-header" className="bg-purple-200">
-                          <td colSpan={11} className="border border-gray-400 text-center font-bold">
-                            حوالات للأهل من حساب العامل
-                          </td>
+                        <tr key={`transfer-${transfer.id}`} className="bg-purple-50">
+                          <td className="border border-gray-400">{index + 1}</td>
+                          <td className="border border-gray-400">{transfer.projectName}</td>
+                          <td className="border border-gray-400">{formatDate(transfer.transferDate)}</td>
+                          <td className="border border-gray-400">-</td>
+                          <td className="border border-gray-400">-</td>
+                          <td className="border border-gray-400">-</td>
+                          <td className="border border-gray-400">-</td>
+                          <td className="border border-gray-400 text-red-600">-{formatCurrency(parseFloat(transfer.amount))}</td>
+                          <td className="border border-gray-400">{transfer.recipientName}</td>
+                          <td className="border border-gray-400">-{formatCurrency(parseFloat(transfer.amount))}</td>
+                          <td className="border border-gray-400">حولة للأهل</td>
                         </tr>
                       );
+                    });
+                  }
 
-                      allFamilyTransfers.forEach((transfer: any, index: number) => {
-                        rows.push(
-                          <tr key={`transfer-${transfer.id}`} className="bg-purple-50">
-                            <td className="border border-gray-400">{index + 1}</td>
-                            <td className="border border-gray-400">{transfer.projectName}</td>
-                            <td className="border border-gray-400">{formatDate(transfer.transferDate)}</td>
-                            <td className="border border-gray-400">-</td>
-                            <td className="border border-gray-400">-</td>
-                            <td className="border border-gray-400">-</td>
-                            <td className="border border-gray-400">-</td>
-                            <td className="border border-gray-400 text-red-600">-{formatCurrency(parseFloat(transfer.amount))}</td>
-                            <td className="border border-gray-400">{transfer.recipientName}</td>
-                            <td className="border border-gray-400">-{formatCurrency(parseFloat(transfer.amount))}</td>
-                            <td className="border border-gray-400">حولة للأهل</td>
-                          </tr>
-                        );
-                      });
-                    }
+                  // Add summary rows
+                  const totalWorkDays = workerStatement.reduce((total, projectStatement) => 
+                    total + (projectStatement.attendance?.length || 0), 0);
 
-                    // Calculate total work days across all projects
-                    const totalWorkDays = workerStatement.reduce((total, projectStatement) => 
-                      total + (projectStatement.attendance?.length || 0), 0);
+                  rows.push(
+                    <tr key="summary-days" className="bg-orange-100">
+                      <td colSpan={6} className="border border-gray-400 text-center font-bold">إجمالي أيام العمل</td>
+                      <td className="border border-gray-400 text-center font-bold">{totalWorkDays}</td>
+                      <td colSpan={4} className="border border-gray-400"></td>
+                    </tr>
+                  );
 
+                  rows.push(
+                    <tr key="summary-hours" className="bg-orange-100">
+                      <td colSpan={5} className="border border-gray-400 text-center font-bold">إجمالي ساعات العمل</td>
+                      <td className="border border-gray-400 text-center font-bold">{formatHours(grandTotalHours)}</td>
+                      <td colSpan={5} className="border border-gray-400"></td>
+                    </tr>
+                  );
+
+                  rows.push(
+                    <tr key="summary-earned" className="bg-orange-100">
+                      <td colSpan={7} className="border border-gray-400 text-center font-bold">إجمالي المبلغ المستحق</td>
+                      <td className="border border-gray-400 text-center font-bold">{formatCurrency(grandTotalEarned)}</td>
+                      <td colSpan={3} className="border border-gray-400"></td>
+                    </tr>
+                  );
+
+                  rows.push(
+                    <tr key="summary-paid" className="bg-orange-100">
+                      <td colSpan={8} className="border border-gray-400 text-center font-bold">إجمالي المبلغ المستلم</td>
+                      <td className="border border-gray-400 text-center font-bold">{formatCurrency(grandTotalPaid)}</td>
+                      <td colSpan={2} className="border border-gray-400"></td>
+                    </tr>
+                  );
+
+                  // Calculate total transferred amount
+                  const totalTransferred = allFamilyTransfers.reduce((sum, transfer) => 
+                    sum + parseFloat(transfer.amount), 0);
+
+                  if (totalTransferred > 0) {
                     rows.push(
-                      <tr key="summary-days" className="bg-orange-100">
-                        <td colSpan={6} className="border border-gray-400 text-center font-bold">إجمالي أيام العمل</td>
-                        <td className="border border-gray-400 text-center font-bold">{totalWorkDays}</td>
-                        <td colSpan={4} className="border border-gray-400"></td>
-                      </tr>
-                    );
-
-                    rows.push(
-                      <tr key="summary-hours" className="bg-orange-100">
-                        <td colSpan={5} className="border border-gray-400 text-center font-bold">إجمالي ساعات العمل</td>
-                        <td className="border border-gray-400 text-center font-bold">{formatHours(grandTotalHours)}</td>
-                        <td colSpan={5} className="border border-gray-400"></td>
-                      </tr>
-                    );
-
-                    rows.push(
-                      <tr key="summary-earned" className="bg-orange-100">
-                        <td colSpan={7} className="border border-gray-400 text-center font-bold">إجمالي المبلغ المستحق</td>
-                        <td className="border border-gray-400 text-center font-bold">{formatCurrency(grandTotalEarned)}</td>
-                        <td colSpan={3} className="border border-gray-400"></td>
-                      </tr>
-                    );
-
-                    rows.push(
-                      <tr key="summary-paid" className="bg-orange-100">
-                        <td colSpan={8} className="border border-gray-400 text-center font-bold">إجمالي المبلغ المستلم</td>
-                        <td className="border border-gray-400 text-center font-bold">{formatCurrency(grandTotalPaid)}</td>
+                      <tr key="summary-transferred" className="bg-orange-100">
+                        <td colSpan={8} className="border border-gray-400 text-center font-bold">إجمالي المحول للأهل</td>
+                        <td className="border border-gray-400 text-center font-bold text-red-600">{formatCurrency(totalTransferred)}</td>
                         <td colSpan={2} className="border border-gray-400"></td>
                       </tr>
                     );
+                  }
 
-                    const totalTransferred = allFamilyTransfers.reduce((sum, transfer) => 
-                      sum + parseFloat(transfer.amount), 0);
+                  const finalBalance = grandTotalRemaining - totalTransferred;
 
-                    if (totalTransferred > 0) {
-                      rows.push(
-                        <tr key="summary-transferred" className="bg-orange-100">
-                          <td colSpan={8} className="border border-gray-400 text-center font-bold">إجمالي المحول للأهل</td>
-                          <td className="border border-gray-400 text-center font-bold text-red-600">{formatCurrency(totalTransferred)}</td>
-                          <td colSpan={2} className="border border-gray-400"></td>
-                        </tr>
-                      );
-                    }
+                  rows.push(
+                    <tr key="summary-remaining" className="bg-orange-100">
+                      <td colSpan={9} className="border border-gray-400 text-center font-bold">إجمالي المتبقي (بعد خصم الحوالات)</td>
+                      <td className="border border-gray-400 text-center font-bold">{formatCurrency(finalBalance)}</td>
+                      <td className="border border-gray-400"></td>
+                    </tr>
+                  );
 
-                    const finalBalance = grandTotalRemaining - totalTransferred;
-
-                    rows.push(
-                      <tr key="summary-remaining" className="bg-orange-100">
-                        <td colSpan={9} className="border border-gray-400 text-center font-bold">إجمالي المتبقي (بعد خصم الحوالات)</td>
-                        <td className="border border-gray-400 text-center font-bold">{formatCurrency(finalBalance)}</td>
-                        <td className="border border-gray-400"></td>
-                      </tr>
-                    );
-
-                    return rows;
-                  })()}
-                </tbody>
-              </table>
-            </div>
+                  return rows;
+                })()}
+              </tbody>
+            </table>
           </div>
 
           {/* Action Buttons - Visible at bottom of report */}
@@ -587,18 +584,6 @@ export default function EnhancedWorkerStatement() {
           </div>
         </div>
       )}
-
-      {!showReport && isLoadingStatement && (
-        <div className="text-center py-8">
-          <p>جاري تحميل البيانات...</p>
-        </div>
-      )}
-
-      {!showReport && !isLoadingStatement && (!workerStatement || workerStatement.length === 0) && selectedWorkerId && (
-        <div className="text-center py-8">
-          <p>لا توجد بيانات حضور للفترة المحددة</p>
-        </div>
-      )}
     </div>
   );
-};
+}
