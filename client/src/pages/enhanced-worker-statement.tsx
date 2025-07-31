@@ -218,14 +218,16 @@ export default function EnhancedWorkerStatement() {
 
   return (
     <div className="p-4 max-w-7xl mx-auto">
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            كشف حساب العامل المحسن
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+      {/* Controls Card - Hidden when report is shown */}
+      {!showReport && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              كشف حساب العامل المحسن
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
           {/* Worker Selection */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -302,8 +304,9 @@ export default function EnhancedWorkerStatement() {
               إنشاء الكشف
             </Button>
           </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Report Display - Only show the report without controls */}
       {showReport && workerStatement && workerStatement.length > 0 && (
@@ -526,7 +529,14 @@ export default function EnhancedWorkerStatement() {
 
           {/* Action Buttons - Visible at bottom of report */}
           <div className="mt-6 p-4 border-t bg-gray-50 print:hidden">
-            <div className="flex gap-3 justify-center">
+            <div className="flex gap-3 justify-center flex-wrap">
+              <Button 
+                onClick={() => setShowReport(false)} 
+                className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2"
+              >
+                <FileText className="mr-2 h-4 w-4" />
+                عودة للإعدادات
+              </Button>
               <Button onClick={printReport} className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2">
                 <Printer className="mr-2 h-4 w-4" />
                 طباعة الكشف
@@ -546,7 +556,7 @@ export default function EnhancedWorkerStatement() {
               </Button>
             </div>
             <p className="text-center text-sm text-gray-600 mt-2">
-              يمكنك طباعة الكشف أو تصديره أو حفظه كملف PDF
+              يمكنك طباعة الكشف أو تصديره أو حفظه كملف PDF أو العودة لتعديل الإعدادات
             </p>
           </div>
         </div>
