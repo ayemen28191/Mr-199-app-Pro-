@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { ArrowRight, Save, Plus, Camera } from "lucide-react";
+import { ArrowRight, Save, Plus, Camera, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,10 @@ import type { Material, InsertMaterialPurchase, InsertMaterial } from "@shared/s
 export default function MaterialPurchase() {
   const [, setLocation] = useLocation();
   const { selectedProjectId, selectProject } = useSelectedProject();
+  
+  // Get URL parameters for editing
+  const urlParams = new URLSearchParams(window.location.search);
+  const editId = urlParams.get('edit');
   
   // Form states
   const [materialName, setMaterialName] = useState<string>("");
@@ -41,6 +45,32 @@ export default function MaterialPurchase() {
   const { data: materials = [] } = useQuery<Material[]>({
     queryKey: ["/api/materials"],
   });
+
+  // Fetch purchase data for editing
+  const { data: purchaseToEdit } = useQuery({
+    queryKey: ["/api/material-purchases", editId],
+    queryFn: () => apiRequest("GET", `/api/material-purchases/${editId}`),
+    enabled: !!editId,
+  });
+
+  // Effect to populate form when editing
+  useEffect(() => {
+    if (purchaseToEdit) {
+      setMaterialName(purchaseToEdit.material?.name || "");
+      setMaterialCategory(purchaseToEdit.material?.category || "");
+      setMaterialUnit(purchaseToEdit.material?.unit || "");
+      setQuantity(purchaseToEdit.quantity?.toString() || "");
+      setUnitPrice(purchaseToEdit.unitPrice?.toString() || "");
+      setPurchaseType(purchaseToEdit.purchaseType || "نقد");
+      setSupplierName(purchaseToEdit.supplierName || "");
+      setInvoiceNumber(purchaseToEdit.invoiceNumber || "");
+      setInvoiceDate(purchaseToEdit.invoiceDate || getCurrentDate());
+      setPurchaseDate(purchaseToEdit.purchaseDate || getCurrentDate());
+      setNotes(purchaseToEdit.notes || "");
+      setInvoicePhoto(purchaseToEdit.invoicePhoto || "");
+      setEditingPurchaseId(purchaseToEdit.id);
+    }
+  }, [purchaseToEdit]);
 
   const addMaterialMutation = useMutation({
     mutationFn: (data: InsertMaterial) => apiRequest("POST", "/api/materials", data),

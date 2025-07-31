@@ -248,6 +248,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/worker-attendance/:id", async (req, res) => {
+    try {
+      const attendance = await storage.getWorkerAttendanceById(req.params.id);
+      if (!attendance) {
+        return res.status(404).json({ message: "Worker attendance not found" });
+      }
+      res.json(attendance);
+    } catch (error) {
+      res.status(500).json({ message: "Error fetching worker attendance" });
+    }
+  });
+
   app.delete("/api/worker-attendance/:id", async (req, res) => {
     try {
       await storage.deleteWorkerAttendance(req.params.id);
@@ -425,6 +437,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.status(500).json({ message: "حدث خطأ أثناء تحديث شراء المواد" });
+    }
+  });
+
+  app.get("/api/material-purchases/:id", async (req, res) => {
+    try {
+      const purchase = await storage.getMaterialPurchaseById(req.params.id);
+      if (!purchase) {
+        return res.status(404).json({ message: "Material purchase not found" });
+      }
+      res.json(purchase);
+    } catch (error) {
+      res.status(500).json({ message: "Error fetching material purchase" });
     }
   });
 
@@ -713,6 +737,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching worker transfers:", error);
       res.status(500).json({ message: "Failed to fetch worker transfers" });
+    }
+  });
+
+  app.get("/api/worker-transfers/:id", async (req, res) => {
+    try {
+      const transfer = await storage.getWorkerTransfer(req.params.id);
+      if (!transfer) {
+        return res.status(404).json({ message: "Worker transfer not found" });
+      }
+      res.json(transfer);
+    } catch (error) {
+      res.status(500).json({ message: "Error fetching worker transfer" });
     }
   });
 

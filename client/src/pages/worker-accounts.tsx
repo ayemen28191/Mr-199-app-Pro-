@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { ArrowRight, Send, Eye, Calculator } from "lucide-react";
@@ -19,7 +19,12 @@ import type { Worker, WorkerBalance, WorkerTransfer, WorkerAttendance, InsertWor
 export default function WorkerAccounts() {
   const [, setLocation] = useLocation();
   const { selectedProjectId, selectProject } = useSelectedProject();
-  const [selectedWorkerId, setSelectedWorkerId] = useState<string>("");
+  
+  // Get URL parameters for editing
+  const urlParams = new URLSearchParams(window.location.search);
+  const editId = urlParams.get('edit');
+  const workerId = urlParams.get('worker');
+  const [selectedWorkerId, setSelectedWorkerId] = useState<string>(workerId || "");
   const [showTransferDialog, setShowTransferDialog] = useState(false);
   const [showStatementDialog, setShowStatementDialog] = useState(false);
   const [transferAmount, setTransferAmount] = useState("");
@@ -48,6 +53,25 @@ export default function WorkerAccounts() {
     },
     enabled: !!(selectedWorkerId && selectedProjectId),
   });
+
+  // Fetch specific transfer for editing
+  const { data: transferToEdit } = useQuery({
+    queryKey: ["/api/worker-transfers", editId],
+    queryFn: () => apiRequest("GET", `/api/worker-transfers/${editId}`),
+    enabled: !!editId,
+  });
+
+  // Effect to populate form when editing a transfer
+  useEffect(() => {
+    if (transferToEdit && editId) {
+      setTransferAmount(transferToEdit.amount?.toString() || "");
+      setRecipientName(transferToEdit.recipientName || "");
+      setRecipientPhone(transferToEdit.recipientPhone || "");
+      setTransferMethod(transferToEdit.transferMethod || "hawaleh");
+      setTransferNotes(transferToEdit.notes || "");
+      setShowTransferDialog(true);
+    }
+  }, [transferToEdit, editId]);
 
   const { data: accountStatement = [], isLoading: statementLoading } = useQuery({
     queryKey: ["/api/workers", selectedWorkerId, "account-statement"],

@@ -28,7 +28,13 @@ interface AttendanceData {
 export default function WorkerAttendance() {
   const [, setLocation] = useLocation();
   const { selectedProjectId, selectProject } = useSelectedProject();
-  const [selectedDate, setSelectedDate] = useState(getCurrentDate());
+  
+  // Get URL parameters for editing
+  const urlParams = new URLSearchParams(window.location.search);
+  const editId = urlParams.get('edit');
+  const workerId = urlParams.get('worker');
+  const dateParam = urlParams.get('date');
+  const [selectedDate, setSelectedDate] = useState(dateParam || getCurrentDate());
   const [attendanceData, setAttendanceData] = useState<AttendanceData>({});
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -39,6 +45,29 @@ export default function WorkerAttendance() {
     queryFn: () => apiRequest("GET", `/api/projects/${selectedProjectId}/attendance?date=${selectedDate}`),
     enabled: !!selectedProjectId,
   });
+
+  // Fetch specific attendance record for editing
+  const { data: attendanceToEdit } = useQuery({
+    queryKey: ["/api/worker-attendance", editId],
+    queryFn: () => apiRequest("GET", `/api/worker-attendance/${editId}`),
+    enabled: !!editId,
+  });
+
+  // Effect to populate form when editing
+  useEffect(() => {
+    if (attendanceToEdit && workerId) {
+      const newAttendanceData = { ...attendanceData };
+      newAttendanceData[workerId] = {
+        isPresent: true,
+        startTime: attendanceToEdit.startTime,
+        endTime: attendanceToEdit.endTime,
+        workDescription: attendanceToEdit.workDescription || "",
+        paidAmount: attendanceToEdit.paidAmount?.toString() || "",
+        paymentType: attendanceToEdit.paymentType || "partial"
+      };
+      setAttendanceData(newAttendanceData);
+    }
+  }, [attendanceToEdit, workerId]);
 
   // Delete Attendance Mutation
   const deleteAttendanceMutation = useMutation({

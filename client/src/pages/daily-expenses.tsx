@@ -624,8 +624,8 @@ export default function DailyExpenses() {
                             variant="ghost" 
                             className="h-7 w-7 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                             onClick={() => {
-                              // TODO: إضافة تعديل أجر العامل
-                              toast({ title: "قريباً", description: "سيتم إضافة ميزة التعديل" });
+                              // توجيه إلى صفحة حضور العمال مع معرف العامل والتاريخ للتعديل
+                              setLocation(`/worker-attendance?edit=${attendance.id}&worker=${attendance.workerId}&date=${selectedDate}`);
                             }}
                           >
                             <Edit2 className="h-3 w-3" />
@@ -764,8 +764,8 @@ export default function DailyExpenses() {
                         variant="ghost" 
                         className="h-7 w-7 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                         onClick={() => {
-                          // TODO: إضافة تعديل المواد
-                          toast({ title: "قريباً", description: "سيتم إضافة ميزة التعديل" });
+                          // توجيه إلى صفحة شراء المواد مع معرف الشراء للتعديل
+                          setLocation(`/material-purchase?edit=${purchase.id}`);
                         }}
                       >
                         <Edit2 className="h-3 w-3" />
@@ -841,7 +841,8 @@ export default function DailyExpenses() {
                         variant="ghost" 
                         className="h-7 w-7 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                         onClick={() => {
-                          toast({ title: "قريباً", description: "سيتم إضافة ميزة التعديل" });
+                          // توجيه إلى صفحة حسابات العمال مع معرف التحويل للتعديل
+                          setLocation(`/worker-accounts?edit=${transfer.id}&worker=${transfer.workerId}`);
                         }}
                       >
                         <Edit2 className="h-3 w-3" />

@@ -36,6 +36,7 @@ export interface IStorage {
   
   // Worker Attendance
   getWorkerAttendance(projectId: string, date?: string): Promise<WorkerAttendance[]>;
+  getWorkerAttendanceById(id: string): Promise<WorkerAttendance | null>;
   createWorkerAttendance(attendance: InsertWorkerAttendance): Promise<WorkerAttendance>;
   updateWorkerAttendance(id: string, attendance: Partial<InsertWorkerAttendance>): Promise<WorkerAttendance | undefined>;
   deleteWorkerAttendance(id: string): Promise<void>;
@@ -47,6 +48,7 @@ export interface IStorage {
   
   // Material Purchases
   getMaterialPurchases(projectId: string, dateFrom?: string, dateTo?: string): Promise<MaterialPurchase[]>;
+  getMaterialPurchaseById(id: string): Promise<MaterialPurchase | null>;
   createMaterialPurchase(purchase: InsertMaterialPurchase): Promise<MaterialPurchase>;
   updateMaterialPurchase(id: string, purchase: Partial<InsertMaterialPurchase>): Promise<MaterialPurchase | undefined>;
   deleteMaterialPurchase(id: string): Promise<void>;
@@ -68,7 +70,9 @@ export interface IStorage {
   
   // Worker Transfers
   getWorkerTransfers(workerId: string, projectId?: string): Promise<WorkerTransfer[]>;
+  getWorkerTransfer(id: string): Promise<WorkerTransfer | null>;
   createWorkerTransfer(transfer: InsertWorkerTransfer): Promise<WorkerTransfer>;
+  deleteWorkerTransfer(id: string): Promise<void>;
   getAllWorkerTransfers(): Promise<WorkerTransfer[]>;
   getFilteredWorkerTransfers(projectId?: string, date?: string): Promise<WorkerTransfer[]>;
   
@@ -684,12 +688,21 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async getWorkerTransfer(id: string): Promise<WorkerTransfer | null> {
+    const [transfer] = await db.select().from(workerTransfers).where(eq(workerTransfers.id, id));
+    return transfer || null;
+  }
+
   async createWorkerTransfer(transfer: InsertWorkerTransfer): Promise<WorkerTransfer> {
     const [newTransfer] = await db
       .insert(workerTransfers)
       .values(transfer)
       .returning();
     return newTransfer;
+  }
+
+  async deleteWorkerTransfer(id: string): Promise<void> {
+    await db.delete(workerTransfers).where(eq(workerTransfers.id, id));
   }
 
   async getAllWorkerTransfers(): Promise<WorkerTransfer[]> {
