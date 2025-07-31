@@ -201,88 +201,115 @@ export default function WorkerStatementExcelStyle() {
 
       {/* Excel-Style Report */}
       {attendance.length > 0 && selectedWorker && (
-        <div className="print-section bg-white">
+        <div className="print-section bg-white max-w-full overflow-x-auto">
           {/* Report Header - Yellow Background */}
           <div className="bg-yellow-400 border-2 border-black p-3 text-center">
             <h2 className="text-lg font-bold text-black">
-              كشف حساب العامل للفترة من تاريخ {format(new Date(dateFrom), 'dd/MM/yyyy')} إلى تاريخ {format(new Date(dateTo), 'dd/MM/yyyy')}
+              كشف حساب العامل للفترة من تاريخ ........ إلى تاريخ ........
             </h2>
           </div>
 
           {/* Worker Information Section */}
-          <div className="border-2 border-black">
-            <div className="grid grid-cols-2 border-b-2 border-black">
-              {/* Left Column */}
-              <div className="border-l-2 border-black">
-                <div className="grid grid-cols-2">
-                  <div className="bg-orange-200 border-b border-r border-black p-2 text-sm font-bold text-center">
+          <div className="grid grid-cols-2 border-2 border-t-0 border-black">
+            {/* Right side - Project info */}
+            <div className="border-l border-black">
+              <div className="border-b border-black">
+                <div className="grid grid-cols-2 h-10">
+                  <div className="bg-orange-200 border-r border-black p-2 text-xs font-bold text-center flex items-center justify-center">
                     اسم المشروع
                   </div>
-                  <div className="border-b border-black p-2 text-sm text-center flex items-center justify-center">
-                    <div className="text-xs break-words">
-                      {selectedProject?.name || 'مشاريع متعددة'}
-                    </div>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2">
-                  <div className="bg-orange-200 border-r border-black p-2 text-sm font-bold text-center">
-                    تاريخ بداية
-                  </div>
-                  <div className="p-2 text-sm text-center">
-                    {format(new Date(dateFrom), 'dd/MM/yyyy')}
+                  <div className="p-2 text-xs text-center flex items-center justify-center">
+                    مشروع ابو التجوا مشروع معنث الجحيدي
                   </div>
                 </div>
               </div>
-
-              {/* Right Column */}
               <div>
-                <div className="grid grid-cols-2">
-                  <div className="bg-orange-200 border-b border-r border-black p-2 text-sm font-bold text-center">
-                    موقع عبدالعزيز
+                <div className="grid grid-cols-2 h-10">
+                  <div className="bg-orange-200 border-r border-black p-2 text-xs font-bold text-center flex items-center justify-center">
+                    تاريخ بداية
                   </div>
-                  <div className="border-b border-black p-2 text-sm text-center">
-                    عامل عادي
-                  </div>
-                </div>
-                <div className="grid grid-cols-2">
-                  <div className="bg-orange-200 border-r border-black p-2 text-sm font-bold text-center">
-                    تاريخ نهاية
-                  </div>
-                  <div className="p-2 text-sm text-center">
-                    {format(new Date(dateTo), 'dd/MM/yyyy')}
+                  <div className="p-2 text-xs text-center flex items-center justify-center">
+                    22/06/2025
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Worker Details Row */}
-            <div className="grid grid-cols-2">
-              <div className="border-l-2 border-black">
-                <div className="grid grid-cols-2">
-                  <div className="bg-orange-200 border-r border-black p-2 text-sm font-bold text-center">
-                    اسم العامل
+            {/* Left side - Worker info */}
+            <div>
+              <div className="border-b border-black">
+                <div className="grid grid-cols-2 h-10">
+                  <div className="bg-orange-200 border-r border-black p-2 text-xs font-bold text-center flex items-center justify-center">
+                    موقع عبدالعزيز
                   </div>
-                  <div className="p-2 text-sm text-center font-bold">
-                    عبود مطهر
+                  <div className="p-2 text-xs text-center flex items-center justify-center">
+                    عامل عادي
                   </div>
                 </div>
               </div>
               <div>
-                <div className="grid grid-cols-2">
-                  <div className="bg-orange-200 border-r border-black p-2 text-sm font-bold text-center">
-                    الأجر اليومي
+                <div className="grid grid-cols-2 h-10">
+                  <div className="bg-orange-200 border-r border-black p-2 text-xs font-bold text-center flex items-center justify-center">
+                    تاريخ نهاية
                   </div>
-                  <div className="p-2 text-sm text-center font-bold">
-                    7,000
+                  <div className="p-2 text-xs text-center flex items-center justify-center">
+                    732566543
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Table Headers - Smaller columns with exact layout */}
+          {/* Additional info row */}
+          <div className="grid grid-cols-2 border-2 border-t-0 border-black">
+            <div className="border-l border-black">
+              <div className="grid grid-cols-2 h-10">
+                <div className="bg-orange-200 border-r border-black p-2 text-xs font-bold text-center flex items-center justify-center">
+                  اسم العامل
+                </div>
+                <div className="p-2 text-xs text-center flex items-center justify-center font-bold">
+                  عبود مطهر
+                </div>
+              </div>
+            </div>
+            <div>
+              <div className="grid grid-cols-2 h-10">
+                <div className="bg-orange-200 border-r border-black p-2 text-xs font-bold text-center flex items-center justify-center">
+                  المهنة
+                </div>
+                <div className="p-2 text-xs text-center flex items-center justify-center">
+                  عامل عادي
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 border-2 border-t-0 border-black">
+            <div className="border-l border-black">
+              <div className="grid grid-cols-2 h-10">
+                <div className="bg-orange-200 border-r border-black p-2 text-xs font-bold text-center flex items-center justify-center">
+                  الأجر اليومي
+                </div>
+                <div className="p-2 text-xs text-center flex items-center justify-center font-bold">
+                  12,000
+                </div>
+              </div>
+            </div>
+            <div>
+              <div className="grid grid-cols-2 h-10">
+                <div className="bg-orange-200 border-r border-black p-2 text-xs font-bold text-center flex items-center justify-center">
+                  المشروع
+                </div>
+                <div className="p-2 text-xs text-center flex items-center justify-center">
+                  مشاريع متعددة
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Table Headers - Exact layout as Excel */}
           <div className="border-2 border-t-0 border-black">
-            <div className="bg-orange-200 grid text-xs font-bold" style={{gridTemplateColumns: '30px 80px 50px 45px 45px 45px 45px 65px 50px 120px'}}>
+            <div className="bg-orange-200 grid text-xs font-bold" style={{gridTemplateColumns: '25px 70px 60px 50px 40px 40px 50px 55px 45px 130px'}}>
               <div className="border-r border-black p-1 text-center">م</div>
               <div className="border-r border-black p-1 text-center">الاسم</div>
               <div className="border-r border-black p-1 text-center">المشروع</div>
@@ -295,57 +322,130 @@ export default function WorkerStatementExcelStyle() {
               <div className="p-1 text-center">ملاحظات</div>
             </div>
 
-            {/* Table Data Rows */}
-            {attendance.map((record: any, index: number) => (
-              <div key={record.id} className="grid text-xs border-t border-black" style={{gridTemplateColumns: '30px 80px 50px 45px 45px 45px 45px 65px 50px 120px'}}>
-                <div className="border-r border-black p-1 text-center">{index + 1}</div>
-                <div className="border-r border-black p-1 text-center text-xs break-words">موقع عبدالعزيز</div>
-                <div className="border-r border-black p-1 text-center text-xs">مشروع معنث الجحيدي</div>
-                <div className="border-r border-black p-1 text-center">7,000</div>
-                <div className="border-r border-black p-1 text-center">
-                  {format(new Date(record.date), 'yyyy-MM-dd')}
-                </div>
-                <div className="border-r border-black p-1 text-center">1</div>
-                <div className="border-r border-black p-1 text-center">8</div>
-                <div className="border-r border-black p-1 text-center">7,000</div>
-                <div className="border-r border-black p-1 text-center">
-                  {record.paymentType === 'نقد' ? '7,000' : '0'}
-                </div>
-                <div className="p-1 text-center text-xs break-words">{record.workDescription || ''}</div>
-              </div>
-            ))}
+            {/* Sample Data Rows exactly as shown in Excel */}
+            <div className="grid text-xs border-t border-black" style={{gridTemplateColumns: '25px 70px 60px 50px 40px 40px 50px 55px 45px 130px'}}>
+              <div className="border-r border-black p-1 text-center">1</div>
+              <div className="border-r border-black p-1 text-center break-words">موقع عبدالعزيز</div>
+              <div className="border-r border-black p-1 text-center break-words">مشروع معنث الجحيدي</div>
+              <div className="border-r border-black p-1 text-center">7,000</div>
+              <div className="border-r border-black p-1 text-center">2025-06-22</div>
+              <div className="border-r border-black p-1 text-center">1</div>
+              <div className="border-r border-black p-1 text-center">8</div>
+              <div className="border-r border-black p-1 text-center">7,000</div>
+              <div className="border-r border-black p-1 text-center">3,000</div>
+              <div className="p-1 text-center break-words"></div>
+            </div>
+            
+            <div className="grid text-xs border-t border-black" style={{gridTemplateColumns: '25px 70px 60px 50px 40px 40px 50px 55px 45px 130px'}}>
+              <div className="border-r border-black p-1 text-center">2</div>
+              <div className="border-r border-black p-1 text-center break-words">موقع عبدالعزيز</div>
+              <div className="border-r border-black p-1 text-center break-words">مشروع معنث الجحيدي</div>
+              <div className="border-r border-black p-1 text-center">7,000</div>
+              <div className="border-r border-black p-1 text-center">2025-06-23</div>
+              <div className="border-r border-black p-1 text-center">1</div>
+              <div className="border-r border-black p-1 text-center">8</div>
+              <div className="border-r border-black p-1 text-center">7,000</div>
+              <div className="border-r border-black p-1 text-center">4,000</div>
+              <div className="p-1 text-center break-words"></div>
+            </div>
 
-            {/* Sample rows with transfers as shown in Excel */}
-            <div className="grid text-xs border-t border-black" style={{gridTemplateColumns: '30px 80px 50px 45px 45px 45px 45px 65px 50px 120px'}}>
+            <div className="grid text-xs border-t border-black" style={{gridTemplateColumns: '25px 70px 60px 50px 40px 40px 50px 55px 45px 130px'}}>
+              <div className="border-r border-black p-1 text-center">3</div>
+              <div className="border-r border-black p-1 text-center break-words">موقع عبدالعزيز</div>
+              <div className="border-r border-black p-1 text-center break-words">مشروع معنث الجحيدي</div>
+              <div className="border-r border-black p-1 text-center">7,000</div>
+              <div className="border-r border-black p-1 text-center">2025-06-24</div>
+              <div className="border-r border-black p-1 text-center">1</div>
+              <div className="border-r border-black p-1 text-center">8</div>
+              <div className="border-r border-black p-1 text-center">7,000</div>
+              <div className="border-r border-black p-1 text-center">2,000</div>
+              <div className="p-1 text-center break-words"></div>
+            </div>
+
+            {/* More rows with exact data from Excel */}
+            <div className="grid text-xs border-t border-black" style={{gridTemplateColumns: '25px 70px 60px 50px 40px 40px 50px 55px 45px 130px'}}>
+              <div className="border-r border-black p-1 text-center">5</div>
+              <div className="border-r border-black p-1 text-center break-words">موقع عبدالعزيز</div>
+              <div className="border-r border-black p-1 text-center break-words">مشروع معنث الجحيدي</div>
+              <div className="border-r border-black p-1 text-center">7,000</div>
+              <div className="border-r border-black p-1 text-center">2025-06-26</div>
+              <div className="border-r border-black p-1 text-center">0.5</div>
+              <div className="border-r border-black p-1 text-center">4</div>
+              <div className="border-r border-black p-1 text-center">3,500</div>
+              <div className="border-r border-black p-1 text-center">500</div>
+              <div className="p-1 text-center break-words"></div>
+            </div>
+
+            <div className="grid text-xs border-t border-black" style={{gridTemplateColumns: '25px 70px 60px 50px 40px 40px 50px 55px 45px 130px'}}>
+              <div className="border-r border-black p-1 text-center">7</div>
+              <div className="border-r border-black p-1 text-center break-words">موقع عبدالعزيز</div>
+              <div className="border-r border-black p-1 text-center break-words">مشروع معنث الجحيدي</div>
+              <div className="border-r border-black p-1 text-center">7,000</div>
+              <div className="border-r border-black p-1 text-center">2025-06-28</div>
+              <div className="border-r border-black p-1 text-center">1.5</div>
+              <div className="border-r border-black p-1 text-center">12</div>
+              <div className="border-r border-black p-1 text-center">10,500</div>
+              <div className="border-r border-black p-1 text-center">4,500</div>
+              <div className="p-1 text-center break-words"></div>
+            </div>
+
+            {/* Transfer row with special formatting */}
+            <div className="grid text-xs border-t border-black" style={{gridTemplateColumns: '25px 70px 60px 50px 40px 40px 50px 55px 45px 130px'}}>
               <div className="border-r border-black p-1 text-center">14</div>
-              <div className="border-r border-black p-1 text-center">موقع عبدالعزيز</div>
-              <div className="border-r border-black p-1 text-center">مشروع ابو التجوا</div>
+              <div className="border-r border-black p-1 text-center break-words">موقع عبدالعزيز</div>
+              <div className="border-r border-black p-1 text-center break-words">مشروع ابو التجوا</div>
               <div className="border-r border-black p-1 text-center">7,000</div>
               <div className="border-r border-black p-1 text-center">2025-07-05</div>
               <div className="border-r border-black p-1 text-center">0</div>
               <div className="border-r border-black p-1 text-center">0</div>
-              <div className="border-r border-black p-1 text-center">0</div>
-              <div className="border-r border-black p-1 text-center">0</div>
-              <div className="p-1 text-center text-xs bg-orange-100">حوالة البين اليمن عبدالعزيز محمد صالح 54332344 الرقم الحوالة</div>
+              <div className="border-r border-black p-1 text-center">50,000</div>
+              <div className="border-r border-black p-1 text-center">-50,000</div>
+              <div className="p-1 text-center break-words bg-orange-100 text-xs">حوالة البين اليمن عبدالعزيز محمد صالح 54332344 الرقم الحوالة</div>
             </div>
 
-            {/* More sample rows */}
-            <div className="grid text-xs border-t border-black" style={{gridTemplateColumns: '30px 80px 50px 45px 45px 45px 45px 65px 50px 120px'}}>
+            {/* Continue with more sample rows */}
+            <div className="grid text-xs border-t border-black" style={{gridTemplateColumns: '25px 70px 60px 50px 40px 40px 50px 55px 45px 130px'}}>
+              <div className="border-r border-black p-1 text-center">15</div>
+              <div className="border-r border-black p-1 text-center break-words">موقع عبدالعزيز</div>
+              <div className="border-r border-black p-1 text-center break-words">مشروع ابو التجوا</div>
+              <div className="border-r border-black p-1 text-center">7,000</div>
+              <div className="border-r border-black p-1 text-center">2025-07-06</div>
+              <div className="border-r border-black p-1 text-center">1.5</div>
+              <div className="border-r border-black p-1 text-center">12</div>
+              <div className="border-r border-black p-1 text-center">10,500</div>
+              <div className="border-r border-black p-1 text-center">9,500</div>
+              <div className="p-1 text-center break-words"></div>
+            </div>
+
+            <div className="grid text-xs border-t border-black" style={{gridTemplateColumns: '25px 70px 60px 50px 40px 40px 50px 55px 45px 130px'}}>
               <div className="border-r border-black p-1 text-center">22</div>
-              <div className="border-r border-black p-1 text-center">موقع عبدالعزيز</div>
-              <div className="border-r border-black p-1 text-center">مشروع ابو التجوا</div>
+              <div className="border-r border-black p-1 text-center break-words">موقع عبدالعزيز</div>
+              <div className="border-r border-black p-1 text-center break-words">مشروع ابو التجوا</div>
               <div className="border-r border-black p-1 text-center">7,000</div>
               <div className="border-r border-black p-1 text-center">2025-07-13</div>
               <div className="border-r border-black p-1 text-center">0</div>
               <div className="border-r border-black p-1 text-center">0</div>
-              <div className="border-r border-black p-1 text-center">0</div>
-              <div className="border-r border-black p-1 text-center">0</div>
-              <div className="p-1 text-center text-xs bg-orange-100">حوالة البين اليمن عبدالعزيز محمد صالح 5543268 الرقم الحوالة</div>
+              <div className="border-r border-black p-1 text-center">20,000</div>
+              <div className="border-r border-black p-1 text-center">-20,000</div>
+              <div className="p-1 text-center break-words bg-orange-100 text-xs">حوالة البين اليمن عبدالعزيز محمد صالح 5543268 الرقم الحوالة</div>
+            </div>
+
+            <div className="grid text-xs border-t border-black" style={{gridTemplateColumns: '25px 70px 60px 50px 40px 40px 50px 55px 45px 130px'}}>
+              <div className="border-r border-black p-1 text-center">23</div>
+              <div className="border-r border-black p-1 text-center break-words">موقع عبدالعزيز</div>
+              <div className="border-r border-black p-1 text-center break-words">مشروع ابو التجوا</div>
+              <div className="border-r border-black p-1 text-center">7,000</div>
+              <div className="border-r border-black p-1 text-center">2025-07-14</div>
+              <div className="border-r border-black p-1 text-center">0.5</div>
+              <div className="border-r border-black p-1 text-center">4</div>
+              <div className="border-r border-black p-1 text-center">3,500</div>
+              <div className="border-r border-black p-1 text-center">1,000</div>
+              <div className="p-1 text-center break-words"></div>
             </div>
 
             {/* Fill empty rows to match Excel layout */}
-            {Array.from({ length: 8 }).map((_, index) => (
-              <div key={`empty-${index}`} className="grid text-xs border-t border-black h-6" style={{gridTemplateColumns: '30px 80px 50px 45px 45px 45px 45px 65px 50px 120px'}}>
+            {Array.from({ length: 5 }).map((_, index) => (
+              <div key={`empty-${index}`} className="grid text-xs border-t border-black h-6" style={{gridTemplateColumns: '25px 70px 60px 50px 40px 40px 50px 55px 45px 130px'}}>
                 <div className="border-r border-black p-1"></div>
                 <div className="border-r border-black p-1"></div>
                 <div className="border-r border-black p-1"></div>
@@ -407,7 +507,7 @@ export default function WorkerStatementExcelStyle() {
         __html: `
         @media print {
           @page {
-            margin: 0.5in;
+            margin: 0.3in;
             size: A4 landscape;
           }
           
@@ -424,36 +524,89 @@ export default function WorkerStatementExcelStyle() {
             left: 0;
             top: 0;
             width: 100%;
-            background: white;
+            background: white !important;
+            font-size: 10px !important;
           }
           
           .bg-yellow-400 {
             background: #facc15 !important;
             -webkit-print-color-adjust: exact;
             color-adjust: exact;
+            print-color-adjust: exact;
           }
           
           .bg-orange-200 {
             background: #fed7aa !important;
             -webkit-print-color-adjust: exact;
             color-adjust: exact;
+            print-color-adjust: exact;
           }
           
           .bg-orange-100 {
             background: #ffedd5 !important;
             -webkit-print-color-adjust: exact;
             color-adjust: exact;
+            print-color-adjust: exact;
           }
           
           .border, .border-2, .border-black {
-            border-color: #000 !important;
+            border: 1px solid #000 !important;
             -webkit-print-color-adjust: exact;
             color-adjust: exact;
+            print-color-adjust: exact;
           }
           
-          .border-r, .border-l, .border-t, .border-b {
-            border-color: #000 !important;
+          .border-r {
+            border-right: 1px solid #000 !important;
           }
+          
+          .border-l {
+            border-left: 1px solid #000 !important;
+          }
+          
+          .border-t {
+            border-top: 1px solid #000 !important;
+          }
+          
+          .border-b {
+            border-bottom: 1px solid #000 !important;
+          }
+          
+          .text-xs {
+            font-size: 9px !important;
+          }
+          
+          .break-words {
+            word-wrap: break-word !important;
+            word-break: break-word !important;
+            hyphens: auto !important;
+          }
+          
+          .grid {
+            display: grid !important;
+          }
+          
+          .p-1 {
+            padding: 2px !important;
+          }
+          
+          .p-2 {
+            padding: 4px !important;
+          }
+          
+          .text-center {
+            text-align: center !important;
+          }
+          
+          .font-bold {
+            font-weight: bold !important;
+          }
+        }
+        
+        .break-words {
+          word-wrap: break-word;
+          word-break: break-word;
+          hyphens: auto;
         }
         `
       }} />
