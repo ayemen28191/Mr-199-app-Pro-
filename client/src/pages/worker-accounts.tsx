@@ -216,12 +216,6 @@ export default function WorkerAccounts() {
       notes: transferNotes.trim() || undefined,
     };
 
-    // Save to autocomplete
-    saveToAutocomplete(autocompleteKeys.SENDER_NAMES, senderName);
-    saveToAutocomplete(autocompleteKeys.RECIPIENT_NAMES, recipientName);
-    saveToAutocomplete(autocompleteKeys.RECIPIENT_PHONES, recipientPhone);
-    saveToAutocomplete(autocompleteKeys.NOTES, transferNotes);
-
     if (editId) {
       // تعديل حولة موجودة
       updateTransferMutation.mutate({ id: editId, transfer });
