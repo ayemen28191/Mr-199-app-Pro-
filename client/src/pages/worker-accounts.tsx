@@ -397,6 +397,17 @@ export default function WorkerAccounts() {
                     <span className="font-medium">الرصيد الحالي:</span>
                     <span className="font-bold text-lg text-primary">{formatCurrency(currentBalance)}</span>
                   </div>
+                  <div className="flex gap-2 mt-3 pt-2 border-t">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setLocation(`/excel-worker-statement?workerId=${selectedWorkerId}&projectId=${selectedProjectId}`)}
+                      className="flex items-center gap-2 flex-1"
+                    >
+                      <Eye className="h-4 w-4" />
+                      عرض كشف الحساب
+                    </Button>
+                  </div>
                 </div>
               </div>
             ) : (

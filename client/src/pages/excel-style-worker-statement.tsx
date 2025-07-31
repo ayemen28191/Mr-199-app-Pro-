@@ -72,6 +72,30 @@ export default function ExcelStyleWorkerStatement() {
     enabled: !!selectedWorkerId,
   });
 
+  // Handle URL parameters for auto-selection
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const workerIdFromUrl = urlParams.get('workerId');
+    const projectIdFromUrl = urlParams.get('projectId');
+
+    if (workerIdFromUrl && workers.length > 0) {
+      setSelectedWorkerId(workerIdFromUrl);
+      
+      if (projectIdFromUrl) {
+        setSelectedProjectIds([projectIdFromUrl]);
+        // Auto-generate report when both worker and project are specified
+        setShowReport(false); // Reset first
+        setTimeout(() => {
+          const worker = workers.find(w => w.id === workerIdFromUrl);
+          if (worker) {
+            setSelectedWorker(worker);
+            generateReportWithIds(workerIdFromUrl, [projectIdFromUrl], dateFrom, dateTo);
+          }
+        }, 100);
+      }
+    }
+  }, [workers]);
+
   // Handle worker selection
   useEffect(() => {
     if (selectedWorkerId) {
@@ -117,6 +141,50 @@ export default function ExcelStyleWorkerStatement() {
         projectParams.append('dateTo', dateTo);
         
         const response = await fetch(`/api/workers/${selectedWorkerId}/account-statement?${projectParams}`);
+        if (!response.ok) {
+          throw new Error(`فشل في جلب بيانات المشروع ${projectId}`);
+        }
+        
+        const data = await response.json();
+        const project = workerProjects.find(p => p.id === projectId);
+        
+        return {
+          projectId,
+          projectName: project?.name || 'مشروع غير معروف',
+          attendance: data.attendance || [],
+          transfers: data.transfers || [],
+          balance: data.balance
+        };
+      });
+
+      const statements = await Promise.all(statementPromises);
+      setWorkerStatement(statements);
+      setShowReport(true);
+      
+      console.log("تم إنشاء كشف الحساب بنجاح:", statements);
+    } catch (error) {
+      console.error('Error generating report:', error);
+      alert('حدث خطأ أثناء إنشاء كشف الحساب');
+    }
+  };
+
+  // Generate report with specific IDs (for URL parameters)
+  const generateReportWithIds = async (workerId: string, projectIds: string[], fromDate?: string, toDate?: string) => {
+    try {
+      console.log("إنشاء كشف حساب العامل (من URL):", {
+        workerId,
+        projectIds,
+        dateFrom: fromDate || dateFrom,
+        dateTo: toDate || dateTo
+      });
+
+      const statementPromises = projectIds.map(async (projectId) => {
+        const projectParams = new URLSearchParams();
+        projectParams.append('projectId', projectId);
+        projectParams.append('dateFrom', fromDate || dateFrom);
+        projectParams.append('dateTo', toDate || dateTo);
+        
+        const response = await fetch(`/api/workers/${workerId}/account-statement?${projectParams}`);
         if (!response.ok) {
           throw new Error(`فشل في جلب بيانات المشروع ${projectId}`);
         }
