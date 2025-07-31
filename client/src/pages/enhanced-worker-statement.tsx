@@ -46,7 +46,7 @@ export default function EnhancedWorkerStatement() {
     queryFn: async () => {
       if (!selectedWorkerId || !dateFrom || !dateTo || selectedProjectIds.length === 0) return null;
       
-      // Fetch data for each selected project
+      // Fetch data for each selected project including transfers
       const statements = await Promise.all(
         selectedProjectIds.map(async (projectId) => {
           const params = new URLSearchParams();
@@ -54,14 +54,26 @@ export default function EnhancedWorkerStatement() {
           params.append('dateTo', dateTo);
           params.append('projectId', projectId);
           
-          const response = await fetch(`/api/workers/${selectedWorkerId}/account-statement?${params}`);
-          if (!response.ok) return null;
+          const [statementResponse, transfersResponse] = await Promise.all([
+            fetch(`/api/workers/${selectedWorkerId}/account-statement?${params}`),
+            fetch(`/api/workers/${selectedWorkerId}/transfers?projectId=${projectId}`)
+          ]);
           
-          const data = await response.json();
+          if (!statementResponse.ok) return null;
+          
+          const statementData = await statementResponse.json();
+          const transfersData = transfersResponse.ok ? await transfersResponse.json() : [];
+          
+          // Filter transfers by date range
+          const filteredTransfers = transfersData.filter((transfer: any) => {
+            return transfer.transferDate >= dateFrom && transfer.transferDate <= dateTo;
+          });
+          
           return {
             projectId,
             projectName: projects.find(p => p.id === projectId)?.name || '',
-            ...data
+            ...statementData,
+            familyTransfers: filteredTransfers
           };
         })
       );
@@ -281,44 +293,48 @@ export default function EnhancedWorkerStatement() {
         </CardContent>
       </Card>
 
-      {/* Report Display */}
+      {/* Report Display - Only show the report without controls */}
       {showReport && workerStatement && workerStatement.length > 0 && (
-        <Card className="print-container">
-          <CardHeader className="text-center border-b">
-            <CardTitle className="text-xl">
+        <div className="w-full max-w-4xl mx-auto bg-white shadow-lg print:shadow-none">
+          <div className="text-center border-b p-6">
+            <h1 className="text-xl font-bold mb-2">
               إدارة المشاريع الإنشائية
-            </CardTitle>
-            <p className="text-sm text-muted-foreground">
+            </h1>
+            <p className="text-sm text-gray-600 mb-4">
               هاتف: +967133456789 | البريد الإلكتروني: info@construction.com
             </p>
-            <div className="mt-4">
-              <h2 className="text-lg font-bold">كشف حساب العامل</h2>
-              <div className="grid grid-cols-2 gap-4 mt-2 text-sm">
-                <div>اسم العامل: <span className="font-bold">{selectedWorker?.name}</span></div>
-                <div>تاريخ الطباعة: <span className="font-bold">{format(new Date(), 'yyyy/MM/dd', { locale: ar })}</span></div>
+            <div className="border-2 border-orange-300 p-4 rounded-lg bg-orange-50">
+              <h2 className="text-lg font-bold mb-3">كشف حساب العامل المحسن</h2>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="text-right">اسم العامل: <span className="font-bold">{selectedWorker?.name}</span></div>
+                <div className="text-left">تاريخ الطباعة: <span className="font-bold">{format(new Date(), 'yyyy/MM/dd', { locale: ar })}</span></div>
               </div>
-              <div className="grid grid-cols-2 gap-4 mt-1 text-sm">
-                <div>من تاريخ: <span className="font-bold">{formatDate(dateFrom)}</span></div>
-                <div>إلى تاريخ: <span className="font-bold">{formatDate(dateTo)}</span></div>
+              <div className="grid grid-cols-2 gap-4 mt-2 text-sm">
+                <div className="text-right">من تاريخ: <span className="font-bold">{formatDate(dateFrom)}</span></div>
+                <div className="text-left">إلى تاريخ: <span className="font-bold">{formatDate(dateTo)}</span></div>
+              </div>
+              <div className="mt-2 text-sm">
+                <div className="text-center">عدد المشاريع المختارة: <span className="font-bold">{selectedProjectIds.length}</span></div>
               </div>
             </div>
-          </CardHeader>
+          </div>
 
-          <CardContent className="p-0">
+          <div className="p-4">
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-sm">
                 <thead>
-                  <tr className="bg-orange-100">
-                    <th className="border border-gray-400 p-2 text-center">م</th>
-                    <th className="border border-gray-400 p-2 text-center">اسم المشروع</th>
-                    <th className="border border-gray-400 p-2 text-center">التاريخ</th>
-                    <th className="border border-gray-400 p-2 text-center">وقت البداية</th>
-                    <th className="border border-gray-400 p-2 text-center">وقت النهاية</th>
-                    <th className="border border-gray-400 p-2 text-center">ساعات العمل</th>
-                    <th className="border border-gray-400 p-2 text-center">الأجر اليومي</th>
-                    <th className="border border-gray-400 p-2 text-center">المبلغ المستلم</th>
-                    <th className="border border-gray-400 p-2 text-center">المتبقي</th>
-                    <th className="border border-gray-400 p-2 text-center">ملاحظات</th>
+                  <tr className="bg-orange-200">
+                    <th className="border border-gray-400 p-2 text-center font-bold">م</th>
+                    <th className="border border-gray-400 p-2 text-center font-bold">اسم المشروع</th>
+                    <th className="border border-gray-400 p-2 text-center font-bold">التاريخ</th>
+                    <th className="border border-gray-400 p-2 text-center font-bold">وقت البداية</th>
+                    <th className="border border-gray-400 p-2 text-center font-bold">وقت النهاية</th>
+                    <th className="border border-gray-400 p-2 text-center font-bold">ساعات العمل</th>
+                    <th className="border border-gray-400 p-2 text-center font-bold">عدد أيام العمل</th>
+                    <th className="border border-gray-400 p-2 text-center font-bold">الأجر اليومي</th>
+                    <th className="border border-gray-400 p-2 text-center font-bold">المبلغ المستلم</th>
+                    <th className="border border-gray-400 p-2 text-center font-bold">المتبقي</th>
+                    <th className="border border-gray-400 p-2 text-center font-bold">ملاحظات</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -344,17 +360,18 @@ export default function EnhancedWorkerStatement() {
                         grandTotalHours += workingHours;
 
                         return (
-                          <tr key={`${projectStatement.projectId}-${record.id}`} className="hover:bg-gray-50">
-                            <td className="border border-gray-400 p-2 text-center arabic-numbers">{rowIndex++}</td>
-                            <td className="border border-gray-400 p-2 text-center">{projectStatement.projectName}</td>
-                            <td className="border border-gray-400 p-2 text-center arabic-numbers">{formatDate(record.date)}</td>
+                          <tr key={`${projectStatement.projectId}-${record.id}`} className="hover:bg-blue-50">
+                            <td className="border border-gray-400 p-2 text-center arabic-numbers bg-gray-50">{rowIndex++}</td>
+                            <td className="border border-gray-400 p-2 text-center bg-blue-50">{projectStatement.projectName}</td>
+                            <td className="border border-gray-400 p-2 text-center arabic-numbers bg-yellow-50">{formatDate(record.date)}</td>
                             <td className="border border-gray-400 p-2 text-center arabic-numbers">{record.startTime || '-'}</td>
                             <td className="border border-gray-400 p-2 text-center arabic-numbers">{record.endTime || '-'}</td>
-                            <td className="border border-gray-400 p-2 text-center arabic-numbers">{formatHours(workingHours)}</td>
-                            <td className="border border-gray-400 p-2 text-center arabic-numbers">{formatCurrency(dailyWage)}</td>
-                            <td className="border border-gray-400 p-2 text-center arabic-numbers">{formatCurrency(paidAmount)}</td>
-                            <td className="border border-gray-400 p-2 text-center arabic-numbers">{formatCurrency(remainingAmount)}</td>
-                            <td className="border border-gray-400 p-2 text-center">{record.workDescription || '-'}</td>
+                            <td className="border border-gray-400 p-2 text-center arabic-numbers bg-green-50">{formatHours(workingHours)}</td>
+                            <td className="border border-gray-400 p-2 text-center arabic-numbers bg-purple-50">1</td>
+                            <td className="border border-gray-400 p-2 text-center arabic-numbers bg-blue-100">{formatCurrency(dailyWage)}</td>
+                            <td className="border border-gray-400 p-2 text-center arabic-numbers bg-green-100">{formatCurrency(paidAmount)}</td>
+                            <td className="border border-gray-400 p-2 text-center arabic-numbers bg-red-100">{formatCurrency(remainingAmount)}</td>
+                            <td className="border border-gray-400 p-2 text-center bg-gray-100">{record.workDescription || '-'}</td>
                           </tr>
                         );
                       });
@@ -369,6 +386,54 @@ export default function EnhancedWorkerStatement() {
                       </tr>
                     );
 
+                    // Add family transfers section
+                    const allFamilyTransfers = workerStatement.flatMap((ps: any) => 
+                      (ps.familyTransfers || []).map((transfer: any) => ({
+                        ...transfer,
+                        projectName: ps.projectName
+                      }))
+                    );
+
+                    if (allFamilyTransfers.length > 0) {
+                      rows.push(
+                        <tr key="family-transfers-header" className="bg-purple-200">
+                          <td colSpan={11} className="border border-gray-400 p-2 text-center font-bold">
+                            حوالات للأهل من حساب العامل
+                          </td>
+                        </tr>
+                      );
+
+                      allFamilyTransfers.forEach((transfer: any, index: number) => {
+                        rows.push(
+                          <tr key={`transfer-${transfer.id}`} className="bg-purple-50">
+                            <td className="border border-gray-400 p-2 text-center arabic-numbers">{index + 1}</td>
+                            <td className="border border-gray-400 p-2 text-center">{transfer.projectName}</td>
+                            <td className="border border-gray-400 p-2 text-center arabic-numbers">{formatDate(transfer.transferDate)}</td>
+                            <td className="border border-gray-400 p-2 text-center">-</td>
+                            <td className="border border-gray-400 p-2 text-center">-</td>
+                            <td className="border border-gray-400 p-2 text-center">-</td>
+                            <td className="border border-gray-400 p-2 text-center">-</td>
+                            <td className="border border-gray-400 p-2 text-center arabic-numbers text-red-600">-{formatCurrency(parseFloat(transfer.amount))}</td>
+                            <td className="border border-gray-400 p-2 text-center">{transfer.recipientName}</td>
+                            <td className="border border-gray-400 p-2 text-center arabic-numbers">-{formatCurrency(parseFloat(transfer.amount))}</td>
+                            <td className="border border-gray-400 p-2 text-center">{transfer.notes || 'حولة للأهل'}</td>
+                          </tr>
+                        );
+                      });
+                    }
+
+                    rows.push(
+                      <tr key="summary-days" className="bg-orange-100">
+                        <td colSpan={6} className="border border-gray-400 p-2 text-center font-bold">
+                          إجمالي أيام العمل
+                        </td>
+                        <td className="border border-gray-400 p-2 text-center font-bold arabic-numbers">
+                          {attendance.length}
+                        </td>
+                        <td colSpan={4} className="border border-gray-400 p-2"></td>
+                      </tr>
+                    );
+
                     rows.push(
                       <tr key="summary-hours" className="bg-orange-100">
                         <td colSpan={5} className="border border-gray-400 p-2 text-center font-bold">
@@ -377,13 +442,13 @@ export default function EnhancedWorkerStatement() {
                         <td className="border border-gray-400 p-2 text-center font-bold arabic-numbers">
                           {formatHours(grandTotalHours)}
                         </td>
-                        <td colSpan={4} className="border border-gray-400 p-2"></td>
+                        <td colSpan={5} className="border border-gray-400 p-2"></td>
                       </tr>
                     );
 
                     rows.push(
                       <tr key="summary-earned" className="bg-orange-100">
-                        <td colSpan={6} className="border border-gray-400 p-2 text-center font-bold">
+                        <td colSpan={7} className="border border-gray-400 p-2 text-center font-bold">
                           إجمالي المبلغ المستحق للعامل
                         </td>
                         <td className="border border-gray-400 p-2 text-center font-bold arabic-numbers">
@@ -395,7 +460,7 @@ export default function EnhancedWorkerStatement() {
 
                     rows.push(
                       <tr key="summary-paid" className="bg-orange-100">
-                        <td colSpan={7} className="border border-gray-400 p-2 text-center font-bold">
+                        <td colSpan={8} className="border border-gray-400 p-2 text-center font-bold">
                           إجمالي المبلغ المستلم
                         </td>
                         <td className="border border-gray-400 p-2 text-center font-bold arabic-numbers">
@@ -405,13 +470,32 @@ export default function EnhancedWorkerStatement() {
                       </tr>
                     );
 
+                    const totalTransferred = allFamilyTransfers.reduce((sum, transfer) => 
+                      sum + parseFloat(transfer.amount), 0);
+
+                    if (totalTransferred > 0) {
+                      rows.push(
+                        <tr key="summary-transferred" className="bg-orange-100">
+                          <td colSpan={8} className="border border-gray-400 p-2 text-center font-bold">
+                            إجمالي المحول للأهل
+                          </td>
+                          <td className="border border-gray-400 p-2 text-center font-bold arabic-numbers text-red-600">
+                            {formatCurrency(totalTransferred)}
+                          </td>
+                          <td colSpan={2} className="border border-gray-400 p-2"></td>
+                        </tr>
+                      );
+                    }
+
+                    const finalBalance = grandTotalRemaining - totalTransferred;
+
                     rows.push(
                       <tr key="summary-remaining" className="bg-orange-100">
-                        <td colSpan={8} className="border border-gray-400 p-2 text-center font-bold">
-                          إجمالي المتبقي للعامل
+                        <td colSpan={9} className="border border-gray-400 p-2 text-center font-bold">
+                          إجمالي المتبقي للعامل (بعد خصم الحوالات)
                         </td>
                         <td className="border border-gray-400 p-2 text-center font-bold arabic-numbers">
-                          {formatCurrency(grandTotalRemaining)}
+                          {formatCurrency(finalBalance)}
                         </td>
                         <td className="border border-gray-400 p-2"></td>
                       </tr>
@@ -422,22 +506,20 @@ export default function EnhancedWorkerStatement() {
                 </tbody>
               </table>
             </div>
-          </CardContent>
+          </div>
 
-          {/* Action Buttons */}
-          <CardContent className="border-t mt-4">
-            <div className="flex gap-2 justify-center print:hidden">
-              <Button onClick={printReport} variant="outline">
-                <Printer className="mr-2 h-4 w-4" />
-                طباعة
-              </Button>
-              <Button onClick={exportToExcel} variant="outline">
-                <Download className="mr-2 h-4 w-4" />
-                تصدير Excel
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+          {/* Action Buttons - Fixed at bottom */}
+          <div className="fixed bottom-4 left-4 right-4 flex gap-2 justify-center print:hidden z-50">
+            <Button onClick={printReport} className="bg-blue-600 hover:bg-blue-700 text-white">
+              <Printer className="mr-2 h-4 w-4" />
+              طباعة
+            </Button>
+            <Button onClick={exportToExcel} className="bg-green-600 hover:bg-green-700 text-white">
+              <Download className="mr-2 h-4 w-4" />
+              تصدير Excel
+            </Button>
+          </div>
+        </div>
       )}
 
       {showReport && isLoadingStatement && (
