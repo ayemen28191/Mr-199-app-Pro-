@@ -147,9 +147,304 @@ export default function EnhancedWorkerStatement() {
     }
   };
 
-  // Print report
+  // Print report with optimized layout
   const printReport = () => {
-    window.print();
+    if (!workerStatement || !selectedWorker) return;
+
+    // Create print content
+    let printContent = `
+      <!DOCTYPE html>
+      <html dir="rtl" lang="ar">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>كشف حساب العامل - ${selectedWorker.name}</title>
+        <style>
+          @page {
+            size: A4 landscape;
+            margin: 0.3in;
+          }
+          
+          * {
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact !important;
+            color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          
+          body {
+            font-family: 'Arial', sans-serif;
+            font-size: 9pt;
+            line-height: 1.2;
+            margin: 0;
+            padding: 0;
+            background: white;
+            color: black;
+          }
+          
+          .header {
+            text-align: center;
+            margin-bottom: 15pt;
+            border-bottom: 2pt solid #ffa500;
+            padding-bottom: 8pt;
+          }
+          
+          .main-title {
+            font-size: 16pt;
+            font-weight: bold;
+            color: #d97706;
+            margin-bottom: 5pt;
+          }
+          
+          .subtitle {
+            font-size: 14pt;
+            font-weight: bold;
+            margin-bottom: 8pt;
+          }
+          
+          .contact-info {
+            font-size: 8pt;
+            color: #666;
+            margin-bottom: 8pt;
+          }
+          
+          .worker-info {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8pt;
+            margin-bottom: 12pt;
+            background: #fff3cd;
+            padding: 8pt;
+            border: 1pt solid #ffa500;
+          }
+          
+          .info-box {
+            background: white;
+            padding: 4pt;
+            border: 1pt solid #ddd;
+            text-align: center;
+          }
+          
+          .info-label {
+            font-size: 7pt;
+            font-weight: bold;
+            display: block;
+            margin-bottom: 2pt;
+          }
+          
+          .info-value {
+            font-size: 8pt;
+            font-weight: bold;
+            color: #333;
+          }
+          
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0;
+            font-size: 7pt;
+          }
+          
+          th {
+            background-color: #ffa500 !important;
+            color: black !important;
+            font-weight: bold;
+            padding: 3pt 2pt;
+            border: 1pt solid #000;
+            text-align: center;
+            font-size: 7pt;
+          }
+          
+          td {
+            padding: 2pt 1pt;
+            border: 0.5pt solid #000;
+            text-align: center;
+            font-size: 6pt;
+            word-wrap: break-word;
+          }
+          
+          .row-number { background-color: #f8f9fa !important; }
+          .project-name { background-color: #e3f2fd !important; max-width: 60pt; }
+          .date-cell { background-color: #fffde7 !important; }
+          .hours-cell { background-color: #e8f5e8 !important; }
+          .days-cell { background-color: #f3e5f5 !important; font-weight: bold; }
+          .wage-cell { background-color: #bbdefb !important; font-weight: bold; }
+          .paid-cell { background-color: #c8e6c9 !important; font-weight: bold; }
+          .remaining-cell { background-color: #ffcdd2 !important; font-weight: bold; }
+          .notes-cell { background-color: #f5f5f5 !important; max-width: 50pt; }
+          
+          .section-header {
+            background-color: #e1bee7 !important;
+            font-weight: bold;
+            text-align: center;
+          }
+          
+          .section-row {
+            background-color: #f3e5f5 !important;
+          }
+          
+          .total-row {
+            background-color: #ffcc80 !important;
+            font-weight: bold;
+          }
+          
+          .final-row {
+            background-color: #ff9800 !important;
+            font-weight: bold;
+            color: black;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <div class="main-title">إدارة المشاريع الإنشائية</div>
+          <div class="contact-info">هاتف: +967700123456 | البريد الإلكتروني: info@construction.ye | الموقع: www.construction.ye</div>
+          <div class="subtitle">كشف حساب العامل المحسن</div>
+        </div>
+        
+        <div class="worker-info">
+          <div class="info-box">
+            <span class="info-label">اسم العامل</span>
+            <span class="info-value">${selectedWorker.name}</span>
+          </div>
+          <div class="info-box">
+            <span class="info-label">نوع العامل</span>
+            <span class="info-value">${selectedWorker.type === 'master' ? 'أسطى' : 'عامل'}</span>
+          </div>
+          <div class="info-box">
+            <span class="info-label">الأجر اليومي</span>
+            <span class="info-value">${formatCurrency(parseFloat(selectedWorker.dailyWage))}</span>
+          </div>
+          <div class="info-box">
+            <span class="info-label">الفترة</span>
+            <span class="info-value">${format(new Date(dateFrom), 'dd/MM/yyyy')} - ${format(new Date(dateTo), 'dd/MM/yyyy')}</span>
+          </div>
+        </div>
+        
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 4%;">م</th>
+              <th style="width: 15%;">المشروع</th>
+              <th style="width: 8%;">التاريخ</th>
+              <th style="width: 7%;">بداية</th>
+              <th style="width: 7%;">نهاية</th>
+              <th style="width: 8%;">ساعات</th>
+              <th style="width: 6%;">أيام</th>
+              <th style="width: 12%;">الأجر</th>
+              <th style="width: 12%;">مستلم</th>
+              <th style="width: 12%;">متبقي</th>
+              <th style="width: 9%;">ملاحظات</th>
+            </tr>
+          </thead>
+          <tbody>`;
+
+    // Add data rows
+    let rowIndex = 1;
+    let grandTotalEarned = 0;
+    let grandTotalPaid = 0;
+    let grandTotalRemaining = 0;
+    let grandTotalHours = 0;
+
+    workerStatement.forEach((projectStatement) => {
+      const attendance = projectStatement.attendance || [];
+      
+      attendance.forEach((record) => {
+        const workingHours = calculateWorkingHours(record.startTime, record.endTime);
+        const dailyWage = parseFloat(record.dailyWage || '0');
+        const paidAmount = parseFloat(record.paidAmount || '0');
+        const remainingAmount = parseFloat(record.remainingAmount || '0');
+        
+        grandTotalEarned += dailyWage;
+        grandTotalPaid += paidAmount;
+        grandTotalRemaining += remainingAmount;
+        grandTotalHours += workingHours;
+
+        printContent += `
+          <tr>
+            <td class="row-number">${rowIndex++}</td>
+            <td class="project-name">${projectStatement.projectName}</td>
+            <td class="date-cell">${formatDate(record.date)}</td>
+            <td>${record.startTime || '-'}</td>
+            <td>${record.endTime || '-'}</td>
+            <td class="hours-cell">${formatHours(workingHours)}</td>
+            <td class="days-cell">1</td>
+            <td class="wage-cell">${formatCurrency(dailyWage)}</td>
+            <td class="paid-cell">${formatCurrency(paidAmount)}</td>
+            <td class="remaining-cell">${formatCurrency(remainingAmount)}</td>
+            <td class="notes-cell">${record.workDescription || '-'}</td>
+          </tr>`;
+      });
+    });
+
+    // Add family transfers if any
+    const allFamilyTransfers = familyTransfers.filter(transfer => 
+      selectedProjectIds.some(projectId => 
+        workerStatement?.some(ps => ps.projectId === projectId && ps.projectName === transfer.projectName)
+      )
+    );
+
+    if (allFamilyTransfers.length > 0) {
+      printContent += `
+        <tr>
+          <td colspan="11" class="section-header">حوالات للأهل من حساب العامل</td>
+        </tr>`;
+
+      allFamilyTransfers.forEach((transfer, index) => {
+        printContent += `
+          <tr class="section-row">
+            <td>${index + 1}</td>
+            <td>${transfer.projectName}</td>
+            <td>${formatDate(transfer.transferDate)}</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td>-</td>
+            <td style="color: red;">-${formatCurrency(parseFloat(transfer.amount))}</td>
+            <td>${transfer.recipientName}</td>
+            <td style="color: red;">-${formatCurrency(parseFloat(transfer.amount))}</td>
+            <td>حولة للأهل</td>
+          </tr>`;
+      });
+    }
+
+    // Add totals
+    const totalFamilyTransfers = allFamilyTransfers.reduce((sum, t) => sum + parseFloat(t.amount), 0);
+    const finalBalance = grandTotalRemaining - totalFamilyTransfers;
+
+    printContent += `
+            <tr class="total-row">
+              <td colspan="5">الإجماليات:</td>
+              <td>${formatHours(grandTotalHours)}</td>
+              <td>${Math.round(grandTotalHours / 8)}</td>
+              <td>${formatCurrency(grandTotalEarned)}</td>
+              <td>${formatCurrency(grandTotalPaid)}</td>
+              <td>${formatCurrency(grandTotalRemaining)}</td>
+              <td>-</td>
+            </tr>
+            <tr class="final-row">
+              <td colspan="9">إجمالي المحول للأهل: ${formatCurrency(totalFamilyTransfers)}</td>
+              <td colspan="2">الرصيد النهائي: ${formatCurrency(finalBalance)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </body>
+      </html>`;
+
+    // Open print window
+    const printWindow = window.open('', '_blank', 'width=1200,height=800');
+    if (printWindow) {
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      
+      // Wait for content to load then print
+      printWindow.onload = () => {
+        setTimeout(() => {
+          printWindow.print();
+          printWindow.close();
+        }, 500);
+      };
+    }
   };
 
   // Export to Excel (CSV)
@@ -257,135 +552,205 @@ export default function EnhancedWorkerStatement() {
   return (
     <div className="p-4 max-w-7xl mx-auto">
       {/* Print-specific styles */}
-      <style>{`
+      <style dangerouslySetInnerHTML={{
+        __html: `
         @media print {
-          /* قواعد عامة للطباعة */
           @page {
             size: A4 landscape;
-            margin: 0.4in 0.2in;
+            margin: 0.2in;
           }
           
-          body { 
-            margin: 0 !important; 
-            padding: 0 !important; 
-            font-size: 10px !important; 
+          * {
+            -webkit-print-color-adjust: exact !important;
+            color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          
+          body {
+            margin: 0 !important;
+            padding: 0 !important;
             font-family: Arial, sans-serif !important;
+            font-size: 8pt !important;
+            line-height: 1.1 !important;
+            color: black !important;
             background: white !important;
           }
           
-          * { 
-            box-sizing: border-box; 
-            color: black !important;
-          }
-          
-          /* إخفاء عناصر غير مرغوبة */
-          .print\\:hidden, button, .no-print {
-            display: none !important;
-          }
-          
-          /* تخطيط الصفحة الرئيسي */
-          .max-w-7xl {
-            max-width: 100% !important;
-            margin: 0 !important;
+          .p-4 {
             padding: 0 !important;
           }
           
-          /* العنوان الرئيسي */
-          .print-title { 
-            font-size: 16px !important; 
+          .max-w-7xl {
+            max-width: 100% !important;
+            margin: 0 !important;
+          }
+          
+          .print\\:hidden,
+          button,
+          .no-print,
+          .print\\:block {
+            display: none !important;
+          }
+          
+          .text-3xl {
+            font-size: 14pt !important;
+            margin-bottom: 4pt !important;
+          }
+          
+          .text-xl {
+            font-size: 12pt !important;
+            margin-bottom: 3pt !important;
+          }
+          
+          .text-sm {
+            font-size: 8pt !important;
+          }
+          
+          .text-xs {
+            font-size: 7pt !important;
+          }
+          
+          .mb-6, .mb-3 {
+            margin-bottom: 3pt !important;
+          }
+          
+          .p-4, .p-2 {
+            padding: 2pt !important;
+          }
+          
+          .border-b-2 {
+            border-bottom: 1pt solid #000 !important;
+          }
+          
+          .pb-4, .pb-2 {
+            padding-bottom: 2pt !important;
+          }
+          
+          .grid {
+            display: grid !important;
+          }
+          
+          .grid-cols-4 {
+            grid-template-columns: repeat(4, 1fr) !important;
+            gap: 2pt !important;
+          }
+          
+          .rounded,
+          .rounded-lg {
+            border-radius: 0 !important;
+          }
+          
+          .bg-gradient-to-r {
+            background: #fff3cd !important;
+          }
+          
+          .border-2 {
+            border: 1pt solid #000 !important;
+          }
+          
+          .bg-white {
+            background: white !important;
+          }
+          
+          .overflow-x-auto {
+            overflow: visible !important;
+          }
+          
+          table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            margin: 0 !important;
+            font-size: 7pt !important;
+            table-layout: fixed !important;
+          }
+          
+          th {
+            background-color: #ffa500 !important;
+            color: black !important;
             font-weight: bold !important;
+            padding: 1pt !important;
+            border: 0.5pt solid #000 !important;
             text-align: center !important;
-            margin-bottom: 8px !important;
-            color: black !important;
+            font-size: 7pt !important;
+            height: 14pt !important;
+            line-height: 1 !important;
           }
           
-          /* معلومات العامل */
-          .print-info { 
-            font-size: 12px !important; 
-            margin: 2px 0 !important; 
-            line-height: 1.3 !important;
-          }
-          
-          /* الجدول الرئيسي */
-          table { 
-            width: 100% !important; 
-            border-collapse: collapse !important; 
-            margin: 5px 0 !important; 
-            font-size: 9px !important;
-            table-layout: auto !important;
-          }
-          
-          /* خلايا الجدول */
-          th, td { 
-            padding: 3px 2px !important; 
-            border: 1px solid #000 !important; 
-            font-size: 9px !important; 
-            line-height: 1.2 !important; 
-            text-align: center !important;
-            vertical-align: middle !important;
-            overflow: hidden;
-            word-wrap: break-word;
-          }
-          
-          /* ترويسة الجدول */
-          th { 
-            font-weight: bold !important; 
-            background-color: #ffa500 !important; 
-            font-size: 10px !important;
-            color: black !important;
-            height: 20px !important;
-          }
-          
-          /* صفوف البيانات */
           td {
-            height: 18px !important;
-            min-height: 18px !important;
+            padding: 1pt !important;
+            border: 0.5pt solid #000 !important;
+            text-align: center !important;
+            font-size: 6pt !important;
+            height: 12pt !important;
+            line-height: 1 !important;
+            overflow: hidden !important;
+            word-wrap: break-word !important;
           }
           
-          /* الصفوف الخاصة */
-          .bg-orange-100 th, 
-          .bg-orange-100 td { 
-            background-color: #ffcc80 !important; 
-            font-weight: bold !important; 
+          .w-8 { width: 4% !important; }
+          .w-16 { width: 8% !important; }
+          .w-20 { width: 10% !important; }
+          .w-24 { width: 12% !important; }
+          .w-32 { width: 16% !important; }
+          
+          .bg-orange-200 {
+            background-color: #ffa500 !important;
           }
           
-          .bg-purple-200 td { 
-            background-color: #e1bee7 !important; 
-            font-weight: bold !important;
+          .bg-gray-50 {
+            background-color: #f8f9fa !important;
           }
           
-          .bg-purple-50 td { 
-            background-color: #f3e5f5 !important; 
+          .bg-blue-50 {
+            background-color: #e3f2fd !important;
           }
           
-          .bg-green-100 th,
-          .bg-green-100 td {
-            background-color: #c8e6c9 !important;
-            font-weight: bold !important;
+          .bg-yellow-50 {
+            background-color: #fffde7 !important;
           }
           
-          .bg-blue-100 th,
-          .bg-blue-100 td {
+          .bg-green-50 {
+            background-color: #e8f5e8 !important;
+          }
+          
+          .bg-purple-50 {
+            background-color: #f3e5f5 !important;
+          }
+          
+          .bg-blue-100 {
             background-color: #bbdefb !important;
           }
           
-          /* تحسين استغلال العرض */
-          .w-8 { width: 5% !important; min-width: 30px !important; }
-          .w-16 { width: 8% !important; min-width: 50px !important; }
-          .w-20 { width: 10% !important; min-width: 60px !important; }
-          .w-24 { width: 12% !important; min-width: 70px !important; }
-          .w-32 { width: 15% !important; min-width: 90px !important; }
-          
-          /* كسر الصفحات */
-          .page-break {
-            page-break-before: always;
+          .bg-green-100 {
+            background-color: #c8e6c9 !important;
           }
           
-          .avoid-break {
-            page-break-inside: avoid;
+          .bg-red-100 {
+            background-color: #ffcdd2 !important;
+          }
+          
+          .bg-gray-100 {
+            background-color: #f5f5f5 !important;
+          }
+          
+          .bg-purple-200 {
+            background-color: #e1bee7 !important;
+          }
+          
+          .font-bold {
+            font-weight: bold !important;
+          }
+          
+          .text-center {
+            text-align: center !important;
+          }
+          
+          .text-right {
+            text-align: right !important;
           }
         }
-      `}</style>
+        `
+      }} />
 
       {/* Controls Card - Hidden when report is shown */}
       {!showReport && (
@@ -479,7 +844,7 @@ export default function EnhancedWorkerStatement() {
 
       {/* Generated Report */}
       {showReport && workerStatement && selectedWorker && (
-        <div className="w-full bg-white print:bg-white">
+        <div className="print-area w-full bg-white print:bg-white" style={{ fontSize: '14px' }}>
           {/* Enhanced Report Header */}
           <div className="text-center mb-6 print:mb-3 border-b-2 border-orange-400 pb-4 print:pb-2">
             <h1 className="text-3xl font-bold mb-2 text-orange-600 print:text-2xl print-title">
@@ -557,17 +922,17 @@ export default function EnhancedWorkerStatement() {
 
                       rows.push(
                         <tr key={`${projectStatement.projectId}-${record.id}`} className="hover:bg-blue-50">
-                          <td className="border border-gray-400 bg-gray-50">{rowIndex++}</td>
-                          <td className="border border-gray-400 bg-blue-50" style={{ maxWidth: '60px', fontSize: '5px', wordWrap: 'break-word' }}>{projectStatement.projectName}</td>
-                          <td className="border border-gray-400 bg-yellow-50">{formatDate(record.date)}</td>
-                          <td className="border border-gray-400">{record.startTime || '-'}</td>
-                          <td className="border border-gray-400">{record.endTime || '-'}</td>
-                          <td className="border border-gray-400 bg-green-50">{formatHours(workingHours)}</td>
-                          <td className="border border-gray-400 bg-purple-50">1</td>
-                          <td className="border border-gray-400 bg-blue-100">{formatCurrency(dailyWage)}</td>
-                          <td className="border border-gray-400 bg-green-100">{formatCurrency(paidAmount)}</td>
-                          <td className="border border-gray-400 bg-red-100">{formatCurrency(remainingAmount)}</td>
-                          <td className="border border-gray-400 bg-gray-100" style={{ maxWidth: '50px', fontSize: '5px', wordWrap: 'break-word' }}>{record.workDescription || '-'}</td>
+                          <td className="border border-gray-400 bg-gray-50 px-1 py-1 text-xs">{rowIndex++}</td>
+                          <td className="border border-gray-400 bg-blue-50 px-1 py-1 text-xs" style={{ maxWidth: '120px', wordWrap: 'break-word' }}>{projectStatement.projectName}</td>
+                          <td className="border border-gray-400 bg-yellow-50 px-1 py-1 text-xs">{formatDate(record.date)}</td>
+                          <td className="border border-gray-400 px-1 py-1 text-xs">{record.startTime || '-'}</td>
+                          <td className="border border-gray-400 px-1 py-1 text-xs">{record.endTime || '-'}</td>
+                          <td className="border border-gray-400 bg-green-50 px-1 py-1 text-xs">{formatHours(workingHours)}</td>
+                          <td className="border border-gray-400 bg-purple-50 px-1 py-1 text-xs font-bold">1</td>
+                          <td className="border border-gray-400 bg-blue-100 px-1 py-1 text-xs font-semibold">{formatCurrency(dailyWage)}</td>
+                          <td className="border border-gray-400 bg-green-100 px-1 py-1 text-xs font-semibold">{formatCurrency(paidAmount)}</td>
+                          <td className="border border-gray-400 bg-red-100 px-1 py-1 text-xs font-semibold">{formatCurrency(remainingAmount)}</td>
+                          <td className="border border-gray-400 bg-gray-100 px-1 py-1 text-xs" style={{ maxWidth: '100px', wordWrap: 'break-word' }}>{record.workDescription || '-'}</td>
                         </tr>
                       );
                     });
