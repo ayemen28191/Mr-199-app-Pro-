@@ -221,23 +221,56 @@ export default function EnhancedWorkerStatement() {
       {/* Print-specific styles */}
       <style>{`
         @media print {
-          body { margin: 0; padding: 0; }
-          .print\\:text-xs { font-size: 8px !important; }
-          .print\\:p-0 { padding: 0 !important; }
-          .print\\:p-0\\.5 { padding: 1px !important; }
-          .print\\:p-1 { padding: 2px !important; }
-          .print\\:p-2 { padding: 4px !important; }
-          .print\\:mb-1 { margin-bottom: 2px !important; }
-          .print\\:text-sm { font-size: 10px !important; }
-          .print\\:text-base { font-size: 12px !important; }
-          table { page-break-inside: auto; }
-          tr { page-break-inside: avoid; page-break-after: auto; }
-          th, td { page-break-inside: avoid; }
-          thead { display: table-header-group; }
+          body { margin: 0 !important; padding: 0 !important; font-size: 7px !important; }
+          * { box-sizing: border-box; }
+          .print-compact { 
+            font-size: 6px !important; 
+            line-height: 1 !important; 
+            padding: 0 !important; 
+            margin: 0 !important; 
+          }
+          .print-header { 
+            font-size: 8px !important; 
+            padding: 1px !important; 
+            margin: 0 !important; 
+          }
+          .print-title { 
+            font-size: 10px !important; 
+            margin-bottom: 2px !important; 
+          }
+          .print-info { 
+            font-size: 7px !important; 
+            margin: 1px 0 !important; 
+          }
+          table { 
+            width: 100% !important; 
+            border-collapse: collapse !important; 
+            margin: 0 !important; 
+            font-size: 6px !important;
+          }
+          th, td { 
+            padding: 1px !important; 
+            border: 0.5px solid #000 !important; 
+            font-size: 6px !important; 
+            line-height: 1.1 !important; 
+            text-align: center !important;
+          }
+          th { 
+            font-weight: bold !important; 
+            background-color: #ffa500 !important; 
+            font-size: 7px !important;
+          }
+          tr { height: 12px !important; }
+          .bg-orange-100 th, .bg-orange-100 td { 
+            background-color: #ffcc80 !important; 
+            font-weight: bold !important; 
+          }
+          .bg-purple-200 td { background-color: #e1bee7 !important; }
+          .bg-purple-50 td { background-color: #f3e5f5 !important; }
         }
         @page {
           size: A4;
-          margin: 0.5in;
+          margin: 0.3in;
         }
       `}</style>
 
@@ -333,48 +366,42 @@ export default function EnhancedWorkerStatement() {
 
       {/* Report Display - Only show the report without controls */}
       {showReport && workerStatement && workerStatement.length > 0 && (
-        <div className="w-full max-w-full mx-auto bg-white print:w-full print:max-w-none print:m-0">
-          <div className="text-center border-b p-3 print:p-2">
-            <h1 className="text-lg font-bold mb-1 print:text-base print:mb-1">
+        <div className="w-full bg-white">
+          <div className="text-center border-b print-header">
+            <h1 className="text-sm font-bold print-title">
               إدارة المشاريع الإنشائية
             </h1>
-            <p className="text-xs text-gray-600 mb-2 print:text-xs print:mb-1">
+            <p className="text-xs text-gray-600 print-info">
               هاتف: +967133456789 | البريد الإلكتروني: info@construction.com
             </p>
-            <div className="border-2 border-orange-300 p-2 rounded-lg bg-orange-50 print:border print:rounded-none print:p-1">
-              <h2 className="text-base font-bold mb-2 print:text-sm print:mb-1">كشف حساب العامل المحسن</h2>
-              <div className="grid grid-cols-2 gap-2 text-xs print:text-xs">
-                <div className="text-right">اسم العامل: <span className="font-bold">{selectedWorker?.name}</span></div>
-                <div className="text-left">تاريخ الطباعة: <span className="font-bold">{format(new Date(), 'yyyy/MM/dd', { locale: ar })}</span></div>
-              </div>
-              <div className="grid grid-cols-2 gap-2 mt-1 text-xs print:text-xs">
-                <div className="text-right">من تاريخ: <span className="font-bold">{formatDate(dateFrom)}</span></div>
-                <div className="text-left">إلى تاريخ: <span className="font-bold">{formatDate(dateTo)}</span></div>
-              </div>
-              <div className="mt-1 text-xs print:text-xs">
-                <div className="text-center">عدد المشاريع المختارة: <span className="font-bold">{selectedProjectIds.length}</span></div>
+            <div className="border border-orange-300 bg-orange-50 print-header">
+              <h2 className="font-bold print-info">كشف حساب العامل المحسن</h2>
+              <div className="grid grid-cols-4 gap-1 print-info">
+                <div>اسم العامل: <strong>{selectedWorker?.name}</strong></div>
+                <div>من: <strong>{formatDate(dateFrom)}</strong></div>
+                <div>إلى: <strong>{formatDate(dateTo)}</strong></div>
+                <div>مشاريع: <strong>{selectedProjectIds.length}</strong></div>
               </div>
             </div>
           </div>
 
-          <div className="p-2 print:p-1">
-            <div className="overflow-x-auto print:overflow-visible">
-              <table className="w-full border-collapse text-xs print:text-xs" style={{ fontSize: '10px' }}>
-                <thead>
-                  <tr className="bg-orange-200">
-                    <th className="border border-gray-400 p-1 text-center font-bold print:p-0.5" style={{ fontSize: '9px', lineHeight: '1.2' }}>م</th>
-                    <th className="border border-gray-400 p-1 text-center font-bold print:p-0.5" style={{ fontSize: '9px', lineHeight: '1.2' }}>اسم المشروع</th>
-                    <th className="border border-gray-400 p-1 text-center font-bold print:p-0.5" style={{ fontSize: '9px', lineHeight: '1.2' }}>التاريخ</th>
-                    <th className="border border-gray-400 p-1 text-center font-bold print:p-0.5" style={{ fontSize: '9px', lineHeight: '1.2' }}>وقت البداية</th>
-                    <th className="border border-gray-400 p-1 text-center font-bold print:p-0.5" style={{ fontSize: '9px', lineHeight: '1.2' }}>وقت النهاية</th>
-                    <th className="border border-gray-400 p-1 text-center font-bold print:p-0.5" style={{ fontSize: '9px', lineHeight: '1.2' }}>ساعات العمل</th>
-                    <th className="border border-gray-400 p-1 text-center font-bold print:p-0.5" style={{ fontSize: '9px', lineHeight: '1.2' }}>عدد أيام</th>
-                    <th className="border border-gray-400 p-1 text-center font-bold print:p-0.5" style={{ fontSize: '9px', lineHeight: '1.2' }}>الأجر اليومي</th>
-                    <th className="border border-gray-400 p-1 text-center font-bold print:p-0.5" style={{ fontSize: '9px', lineHeight: '1.2' }}>المبلغ المستلم</th>
-                    <th className="border border-gray-400 p-1 text-center font-bold print:p-0.5" style={{ fontSize: '9px', lineHeight: '1.2' }}>المتبقي</th>
-                    <th className="border border-gray-400 p-1 text-center font-bold print:p-0.5" style={{ fontSize: '9px', lineHeight: '1.2' }}>ملاحظات</th>
-                  </tr>
-                </thead>
+          <div className="print-compact">
+            <table className="w-full border-collapse">
+              <thead>
+                <tr className="bg-orange-200">
+                  <th className="border border-gray-400">م</th>
+                  <th className="border border-gray-400">المشروع</th>
+                  <th className="border border-gray-400">التاريخ</th>
+                  <th className="border border-gray-400">بداية</th>
+                  <th className="border border-gray-400">نهاية</th>
+                  <th className="border border-gray-400">ساعات</th>
+                  <th className="border border-gray-400">أيام</th>
+                  <th className="border border-gray-400">أجر</th>
+                  <th className="border border-gray-400">مستلم</th>
+                  <th className="border border-gray-400">متبقي</th>
+                  <th className="border border-gray-400">ملاحظات</th>
+                </tr>
+              </thead>
                 <tbody>
                   {(() => {
                     let rowIndex = 1;
@@ -398,18 +425,18 @@ export default function EnhancedWorkerStatement() {
                         grandTotalHours += workingHours;
 
                         return (
-                          <tr key={`${projectStatement.projectId}-${record.id}`} className="hover:bg-blue-50" style={{ height: '20px' }}>
-                            <td className="border border-gray-400 p-0.5 text-center arabic-numbers bg-gray-50 print:p-0" style={{ fontSize: '8px', lineHeight: '1.1' }}>{rowIndex++}</td>
-                            <td className="border border-gray-400 p-0.5 text-center bg-blue-50 print:p-0" style={{ fontSize: '8px', lineHeight: '1.1', maxWidth: '80px', wordWrap: 'break-word' }}>{projectStatement.projectName}</td>
-                            <td className="border border-gray-400 p-0.5 text-center arabic-numbers bg-yellow-50 print:p-0" style={{ fontSize: '8px', lineHeight: '1.1' }}>{formatDate(record.date)}</td>
-                            <td className="border border-gray-400 p-0.5 text-center arabic-numbers print:p-0" style={{ fontSize: '8px', lineHeight: '1.1' }}>{record.startTime || '-'}</td>
-                            <td className="border border-gray-400 p-0.5 text-center arabic-numbers print:p-0" style={{ fontSize: '8px', lineHeight: '1.1' }}>{record.endTime || '-'}</td>
-                            <td className="border border-gray-400 p-0.5 text-center arabic-numbers bg-green-50 print:p-0" style={{ fontSize: '8px', lineHeight: '1.1' }}>{formatHours(workingHours)}</td>
-                            <td className="border border-gray-400 p-0.5 text-center arabic-numbers bg-purple-50 print:p-0" style={{ fontSize: '8px', lineHeight: '1.1' }}>1</td>
-                            <td className="border border-gray-400 p-0.5 text-center arabic-numbers bg-blue-100 print:p-0" style={{ fontSize: '8px', lineHeight: '1.1' }}>{formatCurrency(dailyWage)}</td>
-                            <td className="border border-gray-400 p-0.5 text-center arabic-numbers bg-green-100 print:p-0" style={{ fontSize: '8px', lineHeight: '1.1' }}>{formatCurrency(paidAmount)}</td>
-                            <td className="border border-gray-400 p-0.5 text-center arabic-numbers bg-red-100 print:p-0" style={{ fontSize: '8px', lineHeight: '1.1' }}>{formatCurrency(remainingAmount)}</td>
-                            <td className="border border-gray-400 p-0.5 text-center bg-gray-100 print:p-0" style={{ fontSize: '8px', lineHeight: '1.1', maxWidth: '60px', wordWrap: 'break-word' }}>{record.workDescription || '-'}</td>
+                          <tr key={`${projectStatement.projectId}-${record.id}`} className="hover:bg-blue-50">
+                            <td className="border border-gray-400 bg-gray-50">{rowIndex++}</td>
+                            <td className="border border-gray-400 bg-blue-50" style={{ maxWidth: '60px', fontSize: '5px', wordWrap: 'break-word' }}>{projectStatement.projectName}</td>
+                            <td className="border border-gray-400 bg-yellow-50">{formatDate(record.date)}</td>
+                            <td className="border border-gray-400">{record.startTime || '-'}</td>
+                            <td className="border border-gray-400">{record.endTime || '-'}</td>
+                            <td className="border border-gray-400 bg-green-50">{formatHours(workingHours)}</td>
+                            <td className="border border-gray-400 bg-purple-50">1</td>
+                            <td className="border border-gray-400 bg-blue-100">{formatCurrency(dailyWage)}</td>
+                            <td className="border border-gray-400 bg-green-100">{formatCurrency(paidAmount)}</td>
+                            <td className="border border-gray-400 bg-red-100">{formatCurrency(remainingAmount)}</td>
+                            <td className="border border-gray-400 bg-gray-100" style={{ maxWidth: '50px', fontSize: '5px', wordWrap: 'break-word' }}>{record.workDescription || '-'}</td>
                           </tr>
                         );
                       });
@@ -435,7 +462,7 @@ export default function EnhancedWorkerStatement() {
                     if (allFamilyTransfers.length > 0) {
                       rows.push(
                         <tr key="family-transfers-header" className="bg-purple-200">
-                          <td colSpan={11} className="border border-gray-400 p-1 text-center font-bold print:p-0.5" style={{ fontSize: '9px', lineHeight: '1.2' }}>
+                          <td colSpan={11} className="border border-gray-400 text-center font-bold">
                             حوالات للأهل من حساب العامل
                           </td>
                         </tr>
@@ -443,18 +470,18 @@ export default function EnhancedWorkerStatement() {
 
                       allFamilyTransfers.forEach((transfer: any, index: number) => {
                         rows.push(
-                          <tr key={`transfer-${transfer.id}`} className="bg-purple-50" style={{ height: '20px' }}>
-                            <td className="border border-gray-400 p-0.5 text-center arabic-numbers print:p-0" style={{ fontSize: '8px', lineHeight: '1.1' }}>{index + 1}</td>
-                            <td className="border border-gray-400 p-0.5 text-center print:p-0" style={{ fontSize: '8px', lineHeight: '1.1' }}>{transfer.projectName}</td>
-                            <td className="border border-gray-400 p-0.5 text-center arabic-numbers print:p-0" style={{ fontSize: '8px', lineHeight: '1.1' }}>{formatDate(transfer.transferDate)}</td>
-                            <td className="border border-gray-400 p-0.5 text-center print:p-0" style={{ fontSize: '8px', lineHeight: '1.1' }}>-</td>
-                            <td className="border border-gray-400 p-0.5 text-center print:p-0" style={{ fontSize: '8px', lineHeight: '1.1' }}>-</td>
-                            <td className="border border-gray-400 p-0.5 text-center print:p-0" style={{ fontSize: '8px', lineHeight: '1.1' }}>-</td>
-                            <td className="border border-gray-400 p-0.5 text-center print:p-0" style={{ fontSize: '8px', lineHeight: '1.1' }}>-</td>
-                            <td className="border border-gray-400 p-0.5 text-center arabic-numbers text-red-600 print:p-0" style={{ fontSize: '8px', lineHeight: '1.1' }}>-{formatCurrency(parseFloat(transfer.amount))}</td>
-                            <td className="border border-gray-400 p-0.5 text-center print:p-0" style={{ fontSize: '8px', lineHeight: '1.1' }}>{transfer.recipientName}</td>
-                            <td className="border border-gray-400 p-0.5 text-center arabic-numbers print:p-0" style={{ fontSize: '8px', lineHeight: '1.1' }}>-{formatCurrency(parseFloat(transfer.amount))}</td>
-                            <td className="border border-gray-400 p-0.5 text-center print:p-0" style={{ fontSize: '8px', lineHeight: '1.1' }}>{transfer.notes || 'حولة للأهل'}</td>
+                          <tr key={`transfer-${transfer.id}`} className="bg-purple-50">
+                            <td className="border border-gray-400">{index + 1}</td>
+                            <td className="border border-gray-400">{transfer.projectName}</td>
+                            <td className="border border-gray-400">{formatDate(transfer.transferDate)}</td>
+                            <td className="border border-gray-400">-</td>
+                            <td className="border border-gray-400">-</td>
+                            <td className="border border-gray-400">-</td>
+                            <td className="border border-gray-400">-</td>
+                            <td className="border border-gray-400 text-red-600">-{formatCurrency(parseFloat(transfer.amount))}</td>
+                            <td className="border border-gray-400">{transfer.recipientName}</td>
+                            <td className="border border-gray-400">-{formatCurrency(parseFloat(transfer.amount))}</td>
+                            <td className="border border-gray-400">حولة للأهل</td>
                           </tr>
                         );
                       });
@@ -466,49 +493,33 @@ export default function EnhancedWorkerStatement() {
 
                     rows.push(
                       <tr key="summary-days" className="bg-orange-100">
-                        <td colSpan={6} className="border border-gray-400 p-1 text-center font-bold print:p-0.5" style={{ fontSize: '9px', lineHeight: '1.2' }}>
-                          إجمالي أيام العمل
-                        </td>
-                        <td className="border border-gray-400 p-1 text-center font-bold arabic-numbers print:p-0.5" style={{ fontSize: '9px', lineHeight: '1.2' }}>
-                          {totalWorkDays}
-                        </td>
-                        <td colSpan={4} className="border border-gray-400 p-1 print:p-0.5"></td>
+                        <td colSpan={6} className="border border-gray-400 text-center font-bold">إجمالي أيام العمل</td>
+                        <td className="border border-gray-400 text-center font-bold">{totalWorkDays}</td>
+                        <td colSpan={4} className="border border-gray-400"></td>
                       </tr>
                     );
 
                     rows.push(
                       <tr key="summary-hours" className="bg-orange-100">
-                        <td colSpan={5} className="border border-gray-400 p-1 text-center font-bold print:p-0.5" style={{ fontSize: '9px', lineHeight: '1.2' }}>
-                          إجمالي ساعات العمل
-                        </td>
-                        <td className="border border-gray-400 p-1 text-center font-bold arabic-numbers print:p-0.5" style={{ fontSize: '9px', lineHeight: '1.2' }}>
-                          {formatHours(grandTotalHours)}
-                        </td>
-                        <td colSpan={5} className="border border-gray-400 p-1 print:p-0.5"></td>
+                        <td colSpan={5} className="border border-gray-400 text-center font-bold">إجمالي ساعات العمل</td>
+                        <td className="border border-gray-400 text-center font-bold">{formatHours(grandTotalHours)}</td>
+                        <td colSpan={5} className="border border-gray-400"></td>
                       </tr>
                     );
 
                     rows.push(
                       <tr key="summary-earned" className="bg-orange-100">
-                        <td colSpan={7} className="border border-gray-400 p-1 text-center font-bold print:p-0.5" style={{ fontSize: '9px', lineHeight: '1.2' }}>
-                          إجمالي المبلغ المستحق للعامل
-                        </td>
-                        <td className="border border-gray-400 p-1 text-center font-bold arabic-numbers print:p-0.5" style={{ fontSize: '9px', lineHeight: '1.2' }}>
-                          {formatCurrency(grandTotalEarned)}
-                        </td>
-                        <td colSpan={3} className="border border-gray-400 p-1 print:p-0.5"></td>
+                        <td colSpan={7} className="border border-gray-400 text-center font-bold">إجمالي المبلغ المستحق</td>
+                        <td className="border border-gray-400 text-center font-bold">{formatCurrency(grandTotalEarned)}</td>
+                        <td colSpan={3} className="border border-gray-400"></td>
                       </tr>
                     );
 
                     rows.push(
                       <tr key="summary-paid" className="bg-orange-100">
-                        <td colSpan={8} className="border border-gray-400 p-1 text-center font-bold print:p-0.5" style={{ fontSize: '9px', lineHeight: '1.2' }}>
-                          إجمالي المبلغ المستلم
-                        </td>
-                        <td className="border border-gray-400 p-1 text-center font-bold arabic-numbers print:p-0.5" style={{ fontSize: '9px', lineHeight: '1.2' }}>
-                          {formatCurrency(grandTotalPaid)}
-                        </td>
-                        <td colSpan={2} className="border border-gray-400 p-1 print:p-0.5"></td>
+                        <td colSpan={8} className="border border-gray-400 text-center font-bold">إجمالي المبلغ المستلم</td>
+                        <td className="border border-gray-400 text-center font-bold">{formatCurrency(grandTotalPaid)}</td>
+                        <td colSpan={2} className="border border-gray-400"></td>
                       </tr>
                     );
 
@@ -518,13 +529,9 @@ export default function EnhancedWorkerStatement() {
                     if (totalTransferred > 0) {
                       rows.push(
                         <tr key="summary-transferred" className="bg-orange-100">
-                          <td colSpan={8} className="border border-gray-400 p-1 text-center font-bold print:p-0.5" style={{ fontSize: '9px', lineHeight: '1.2' }}>
-                            إجمالي المحول للأهل
-                          </td>
-                          <td className="border border-gray-400 p-1 text-center font-bold arabic-numbers text-red-600 print:p-0.5" style={{ fontSize: '9px', lineHeight: '1.2' }}>
-                            {formatCurrency(totalTransferred)}
-                          </td>
-                          <td colSpan={2} className="border border-gray-400 p-1 print:p-0.5"></td>
+                          <td colSpan={8} className="border border-gray-400 text-center font-bold">إجمالي المحول للأهل</td>
+                          <td className="border border-gray-400 text-center font-bold text-red-600">{formatCurrency(totalTransferred)}</td>
+                          <td colSpan={2} className="border border-gray-400"></td>
                         </tr>
                       );
                     }
@@ -533,13 +540,9 @@ export default function EnhancedWorkerStatement() {
 
                     rows.push(
                       <tr key="summary-remaining" className="bg-orange-100">
-                        <td colSpan={9} className="border border-gray-400 p-1 text-center font-bold print:p-0.5" style={{ fontSize: '9px', lineHeight: '1.2' }}>
-                          إجمالي المتبقي للعامل (بعد خصم الحوالات)
-                        </td>
-                        <td className="border border-gray-400 p-1 text-center font-bold arabic-numbers print:p-0.5" style={{ fontSize: '9px', lineHeight: '1.2' }}>
-                          {formatCurrency(finalBalance)}
-                        </td>
-                        <td className="border border-gray-400 p-1 print:p-0.5"></td>
+                        <td colSpan={9} className="border border-gray-400 text-center font-bold">إجمالي المتبقي (بعد خصم الحوالات)</td>
+                        <td className="border border-gray-400 text-center font-bold">{formatCurrency(finalBalance)}</td>
+                        <td className="border border-gray-400"></td>
                       </tr>
                     );
 
@@ -585,19 +588,17 @@ export default function EnhancedWorkerStatement() {
         </div>
       )}
 
-      {showReport && isLoadingStatement && (
+      {!showReport && isLoadingStatement && (
         <div className="text-center py-8">
           <p>جاري تحميل البيانات...</p>
         </div>
       )}
 
-      {showReport && !isLoadingStatement && (!workerStatement || workerStatement.length === 0) && (
-        <Card>
-          <CardContent className="text-center py-8">
-            <p>لا توجد بيانات للفترة المحددة والمشاريع المختارة</p>
-          </CardContent>
-        </Card>
+      {!showReport && !isLoadingStatement && (!workerStatement || workerStatement.length === 0) && selectedWorkerId && (
+        <div className="text-center py-8">
+          <p>لا توجد بيانات حضور للفترة المحددة</p>
+        </div>
       )}
     </div>
   );
-}
+};
