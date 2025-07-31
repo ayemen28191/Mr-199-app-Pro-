@@ -322,130 +322,59 @@ export default function WorkerStatementExcelStyle() {
               <div className="p-1 text-center">ملاحظات</div>
             </div>
 
-            {/* Sample Data Rows exactly as shown in Excel */}
-            <div className="grid text-xs border-t border-black" style={{gridTemplateColumns: '25px 70px 60px 50px 40px 40px 50px 55px 45px 130px'}}>
-              <div className="border-r border-black p-1 text-center">1</div>
-              <div className="border-r border-black p-1 text-center break-words">موقع عبدالعزيز</div>
-              <div className="border-r border-black p-1 text-center break-words">مشروع معنث الجحيدي</div>
-              <div className="border-r border-black p-1 text-center">7,000</div>
-              <div className="border-r border-black p-1 text-center">2025-06-22</div>
-              <div className="border-r border-black p-1 text-center">1</div>
-              <div className="border-r border-black p-1 text-center">8</div>
-              <div className="border-r border-black p-1 text-center">7,000</div>
-              <div className="border-r border-black p-1 text-center">3,000</div>
-              <div className="p-1 text-center break-words"></div>
-            </div>
+            {/* Real Data from System */}
+            {attendance.map((record: any, index: number) => {
+              const dailyWage = selectedWorker?.type === 'عامل عادي' ? 12000 : 
+                               selectedWorker?.type === 'عامل متخصص' ? 15000 : 
+                               parseInt(selectedWorker?.dailyWage) || 12000;
+              const workingDays = record.status === 'حاضر' ? 1 : 
+                                  record.status === 'نصف يوم' ? 0.5 : 0;
+              const workingHours = workingDays * 8;
+              const totalAmount = dailyWage * workingDays;
+              const paidAmount = record.paidAmount || 0;
+              
+              return (
+                <div key={record.id} className="grid text-xs border-t border-black" style={{gridTemplateColumns: '25px 70px 60px 50px 40px 40px 50px 55px 45px 130px'}}>
+                  <div className="border-r border-black p-1 text-center">{index + 1}</div>
+                  <div className="border-r border-black p-1 text-center break-words">{selectedWorker?.name || 'عبود مطهر'}</div>
+                  <div className="border-r border-black p-1 text-center break-words">{record.project?.name || 'مشروع متعدد'}</div>
+                  <div className="border-r border-black p-1 text-center">{dailyWage.toLocaleString()}</div>
+                  <div className="border-r border-black p-1 text-center">{format(new Date(record.date), 'yyyy-MM-dd')}</div>
+                  <div className="border-r border-black p-1 text-center">{workingDays}</div>
+                  <div className="border-r border-black p-1 text-center">{workingHours}</div>
+                  <div className="border-r border-black p-1 text-center">{totalAmount.toLocaleString()}</div>
+                  <div className="border-r border-black p-1 text-center">{paidAmount.toLocaleString()}</div>
+                  <div className="p-1 text-center break-words text-xs">
+                    {record.workDescription || record.notes || 
+                     (record.status === 'حاضر' ? 'عمل عادي' : 
+                      record.status === 'غائب' ? 'غائب' : 
+                      record.status === 'نصف يوم' ? 'نصف يوم عمل' : '')}
+                  </div>
+                </div>
+              );
+            })}
             
-            <div className="grid text-xs border-t border-black" style={{gridTemplateColumns: '25px 70px 60px 50px 40px 40px 50px 55px 45px 130px'}}>
-              <div className="border-r border-black p-1 text-center">2</div>
-              <div className="border-r border-black p-1 text-center break-words">موقع عبدالعزيز</div>
-              <div className="border-r border-black p-1 text-center break-words">مشروع معنث الجحيدي</div>
-              <div className="border-r border-black p-1 text-center">7,000</div>
-              <div className="border-r border-black p-1 text-center">2025-06-23</div>
-              <div className="border-r border-black p-1 text-center">1</div>
-              <div className="border-r border-black p-1 text-center">8</div>
-              <div className="border-r border-black p-1 text-center">7,000</div>
-              <div className="border-r border-black p-1 text-center">4,000</div>
-              <div className="p-1 text-center break-words"></div>
-            </div>
-
-            <div className="grid text-xs border-t border-black" style={{gridTemplateColumns: '25px 70px 60px 50px 40px 40px 50px 55px 45px 130px'}}>
-              <div className="border-r border-black p-1 text-center">3</div>
-              <div className="border-r border-black p-1 text-center break-words">موقع عبدالعزيز</div>
-              <div className="border-r border-black p-1 text-center break-words">مشروع معنث الجحيدي</div>
-              <div className="border-r border-black p-1 text-center">7,000</div>
-              <div className="border-r border-black p-1 text-center">2025-06-24</div>
-              <div className="border-r border-black p-1 text-center">1</div>
-              <div className="border-r border-black p-1 text-center">8</div>
-              <div className="border-r border-black p-1 text-center">7,000</div>
-              <div className="border-r border-black p-1 text-center">2,000</div>
-              <div className="p-1 text-center break-words"></div>
-            </div>
-
-            {/* More rows with exact data from Excel */}
-            <div className="grid text-xs border-t border-black" style={{gridTemplateColumns: '25px 70px 60px 50px 40px 40px 50px 55px 45px 130px'}}>
-              <div className="border-r border-black p-1 text-center">5</div>
-              <div className="border-r border-black p-1 text-center break-words">موقع عبدالعزيز</div>
-              <div className="border-r border-black p-1 text-center break-words">مشروع معنث الجحيدي</div>
-              <div className="border-r border-black p-1 text-center">7,000</div>
-              <div className="border-r border-black p-1 text-center">2025-06-26</div>
-              <div className="border-r border-black p-1 text-center">0.5</div>
-              <div className="border-r border-black p-1 text-center">4</div>
-              <div className="border-r border-black p-1 text-center">3,500</div>
-              <div className="border-r border-black p-1 text-center">500</div>
-              <div className="p-1 text-center break-words"></div>
-            </div>
-
-            <div className="grid text-xs border-t border-black" style={{gridTemplateColumns: '25px 70px 60px 50px 40px 40px 50px 55px 45px 130px'}}>
-              <div className="border-r border-black p-1 text-center">7</div>
-              <div className="border-r border-black p-1 text-center break-words">موقع عبدالعزيز</div>
-              <div className="border-r border-black p-1 text-center break-words">مشروع معنث الجحيدي</div>
-              <div className="border-r border-black p-1 text-center">7,000</div>
-              <div className="border-r border-black p-1 text-center">2025-06-28</div>
-              <div className="border-r border-black p-1 text-center">1.5</div>
-              <div className="border-r border-black p-1 text-center">12</div>
-              <div className="border-r border-black p-1 text-center">10,500</div>
-              <div className="border-r border-black p-1 text-center">4,500</div>
-              <div className="p-1 text-center break-words"></div>
-            </div>
-
-            {/* Transfer row with special formatting */}
-            <div className="grid text-xs border-t border-black" style={{gridTemplateColumns: '25px 70px 60px 50px 40px 40px 50px 55px 45px 130px'}}>
-              <div className="border-r border-black p-1 text-center">14</div>
-              <div className="border-r border-black p-1 text-center break-words">موقع عبدالعزيز</div>
-              <div className="border-r border-black p-1 text-center break-words">مشروع ابو التجوا</div>
-              <div className="border-r border-black p-1 text-center">7,000</div>
-              <div className="border-r border-black p-1 text-center">2025-07-05</div>
-              <div className="border-r border-black p-1 text-center">0</div>
-              <div className="border-r border-black p-1 text-center">0</div>
-              <div className="border-r border-black p-1 text-center">50,000</div>
-              <div className="border-r border-black p-1 text-center">-50,000</div>
-              <div className="p-1 text-center break-words bg-orange-100 text-xs">حوالة البين اليمن عبدالعزيز محمد صالح 54332344 الرقم الحوالة</div>
-            </div>
-
-            {/* Continue with more sample rows */}
-            <div className="grid text-xs border-t border-black" style={{gridTemplateColumns: '25px 70px 60px 50px 40px 40px 50px 55px 45px 130px'}}>
-              <div className="border-r border-black p-1 text-center">15</div>
-              <div className="border-r border-black p-1 text-center break-words">موقع عبدالعزيز</div>
-              <div className="border-r border-black p-1 text-center break-words">مشروع ابو التجوا</div>
-              <div className="border-r border-black p-1 text-center">7,000</div>
-              <div className="border-r border-black p-1 text-center">2025-07-06</div>
-              <div className="border-r border-black p-1 text-center">1.5</div>
-              <div className="border-r border-black p-1 text-center">12</div>
-              <div className="border-r border-black p-1 text-center">10,500</div>
-              <div className="border-r border-black p-1 text-center">9,500</div>
-              <div className="p-1 text-center break-words"></div>
-            </div>
-
-            <div className="grid text-xs border-t border-black" style={{gridTemplateColumns: '25px 70px 60px 50px 40px 40px 50px 55px 45px 130px'}}>
-              <div className="border-r border-black p-1 text-center">22</div>
-              <div className="border-r border-black p-1 text-center break-words">موقع عبدالعزيز</div>
-              <div className="border-r border-black p-1 text-center break-words">مشروع ابو التجوا</div>
-              <div className="border-r border-black p-1 text-center">7,000</div>
-              <div className="border-r border-black p-1 text-center">2025-07-13</div>
-              <div className="border-r border-black p-1 text-center">0</div>
-              <div className="border-r border-black p-1 text-center">0</div>
-              <div className="border-r border-black p-1 text-center">20,000</div>
-              <div className="border-r border-black p-1 text-center">-20,000</div>
-              <div className="p-1 text-center break-words bg-orange-100 text-xs">حوالة البين اليمن عبدالعزيز محمد صالح 5543268 الرقم الحوالة</div>
-            </div>
-
-            <div className="grid text-xs border-t border-black" style={{gridTemplateColumns: '25px 70px 60px 50px 40px 40px 50px 55px 45px 130px'}}>
-              <div className="border-r border-black p-1 text-center">23</div>
-              <div className="border-r border-black p-1 text-center break-words">موقع عبدالعزيز</div>
-              <div className="border-r border-black p-1 text-center break-words">مشروع ابو التجوا</div>
-              <div className="border-r border-black p-1 text-center">7,000</div>
-              <div className="border-r border-black p-1 text-center">2025-07-14</div>
-              <div className="border-r border-black p-1 text-center">0.5</div>
-              <div className="border-r border-black p-1 text-center">4</div>
-              <div className="border-r border-black p-1 text-center">3,500</div>
-              <div className="border-r border-black p-1 text-center">1,000</div>
-              <div className="p-1 text-center break-words"></div>
-            </div>
-
-            {/* Fill empty rows to match Excel layout */}
-            {Array.from({ length: 5 }).map((_, index) => (
-              <div key={`empty-${index}`} className="grid text-xs border-t border-black h-6" style={{gridTemplateColumns: '25px 70px 60px 50px 40px 40px 50px 55px 45px 130px'}}>
+            {/* Fund Transfers from System */}
+            {workerStatement?.fundTransfers?.map((transfer: any, index: number) => (
+              <div key={`transfer-${index}`} className="grid text-xs border-t border-black" style={{gridTemplateColumns: '25px 70px 60px 50px 40px 40px 50px 55px 45px 130px'}}>
+                <div className="border-r border-black p-1 text-center">{attendance.length + index + 1}</div>
+                <div className="border-r border-black p-1 text-center break-words">{selectedWorker?.name || 'عبود مطهر'}</div>
+                <div className="border-r border-black p-1 text-center break-words">{transfer.project?.name || 'مشروع متعدد'}</div>
+                <div className="border-r border-black p-1 text-center">-</div>
+                <div className="border-r border-black p-1 text-center">{format(new Date(transfer.date), 'yyyy-MM-dd')}</div>
+                <div className="border-r border-black p-1 text-center">0</div>
+                <div className="border-r border-black p-1 text-center">0</div>
+                <div className="border-r border-black p-1 text-center">0</div>
+                <div className="border-r border-black p-1 text-center">-{parseInt(transfer.amount).toLocaleString()}</div>
+                <div className="p-1 text-center break-words text-xs bg-orange-100">
+                  حوالة {transfer.senderName} رقم {transfer.transferNumber}
+                </div>
+              </div>
+            ))}
+            
+            {/* Fill remaining rows to maintain single page layout */}
+            {Array.from({ length: Math.max(0, 15 - attendance.length - (workerStatement?.fundTransfers?.length || 0)) }).map((_, index) => (
+              <div key={`empty-${index}`} className="grid text-xs border-t border-black h-5" style={{gridTemplateColumns: '25px 70px 60px 50px 40px 40px 50px 55px 45px 130px'}}>
                 <div className="border-r border-black p-1"></div>
                 <div className="border-r border-black p-1"></div>
                 <div className="border-r border-black p-1"></div>
@@ -458,47 +387,76 @@ export default function WorkerStatementExcelStyle() {
                 <div className="p-1"></div>
               </div>
             ))}
+
+
           </div>
 
-          {/* Summary Boxes - Exact layout as Excel */}
-          <div className="grid grid-cols-3 gap-4 mt-4">
-            {/* Left Summary */}
+          {/* Summary Boxes - Compact layout */}
+          <div className="grid grid-cols-3 gap-2 mt-2">
+            {/* Left Summary - Real Data */}
             <div className="bg-orange-200 border-2 border-black text-center">
-              <div className="border-b border-black p-2 text-sm font-bold">
+              <div className="border-b border-black p-1 text-xs font-bold">
                 إجمالي عدد أيام العمل
               </div>
-              <div className="p-2 text-lg font-bold">
-                21.0
+              <div className="p-1 text-sm font-bold">
+                {attendance.reduce((sum, record) => {
+                  const days = record.status === 'حاضر' ? 1 : record.status === 'نصف يوم' ? 0.5 : 0;
+                  return sum + days;
+                }, 0).toFixed(1)}
               </div>
             </div>
 
-            {/* Center Summary */}
+            {/* Center Summary - Real Data */}
             <div className="bg-orange-200 border-2 border-black text-center">
-              <div className="border-b border-black p-2 text-sm font-bold">
+              <div className="border-b border-black p-1 text-xs font-bold">
                 إجمالي عدد ساعات العمل
               </div>
-              <div className="p-2 text-lg font-bold">
-                168.0
+              <div className="p-1 text-sm font-bold">
+                {(attendance.reduce((sum, record) => {
+                  const days = record.status === 'حاضر' ? 1 : record.status === 'نصف يوم' ? 0.5 : 0;
+                  return sum + days;
+                }, 0) * 8).toFixed(1)}
               </div>
             </div>
 
-            {/* Right Summary */}
+            {/* Right Summary - Real Data */}
             <div className="bg-orange-200 border-2 border-black">
-              <div className="text-center p-2">
-                <div className="text-sm font-bold">147,000</div>
+              <div className="text-center p-1 border-b border-black">
+                <div className="text-xs font-bold">
+                  {attendance.reduce((sum, record) => {
+                    const dailyWage = parseInt(selectedWorker?.dailyWage) || 12000;
+                    const days = record.status === 'حاضر' ? 1 : record.status === 'نصف يوم' ? 0.5 : 0;
+                    return sum + (dailyWage * days);
+                  }, 0).toLocaleString()}
+                </div>
                 <div className="text-xs">إجمالي المبلغ المستحق</div>
               </div>
-              <div className="text-center p-2 border-t border-black">
-                <div className="text-sm font-bold">136,500</div>
+              <div className="text-center p-1">
+                <div className="text-xs font-bold">
+                  {(attendance.reduce((sum, record) => sum + (record.paidAmount || 0), 0) +
+                    (workerStatement?.fundTransfers?.reduce((sum, transfer) => sum + parseInt(transfer.amount), 0) || 0)
+                  ).toLocaleString()}
+                </div>
                 <div className="text-xs">إجمالي المبلغ المستلم</div>
               </div>
             </div>
           </div>
 
-          {/* Final Total */}
-          <div className="bg-orange-200 border-2 border-black text-center mt-4 p-4">
-            <div className="text-sm font-bold mb-2">إجمالي المبلغ المستحق للعامل</div>
-            <div className="text-xl font-bold">10,500</div>
+          {/* Final Balance - Real Calculation */}
+          <div className="bg-orange-200 border-2 border-black text-center mt-2 p-2">
+            <div className="text-sm font-bold mb-1">المبلغ المتبقي للعامل</div>
+            <div className="text-lg font-bold">
+              {(() => {
+                const totalEarned = attendance.reduce((sum, record) => {
+                  const dailyWage = parseInt(selectedWorker?.dailyWage) || 12000;
+                  const days = record.status === 'حاضر' ? 1 : record.status === 'نصف يوم' ? 0.5 : 0;
+                  return sum + (dailyWage * days);
+                }, 0);
+                const totalPaid = attendance.reduce((sum, record) => sum + (record.paidAmount || 0), 0);
+                const totalTransfers = workerStatement?.fundTransfers?.reduce((sum, transfer) => sum + parseInt(transfer.amount), 0) || 0;
+                return (totalEarned - totalPaid - totalTransfers).toLocaleString();
+              })()}
+            </div>
           </div>
         </div>
       )}
