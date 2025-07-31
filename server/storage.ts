@@ -500,10 +500,39 @@ export class DatabaseStorage implements IStorage {
     return balance;
   }
 
+  // إزالة الملخصات المكررة للتاريخ الواحد
+  async removeDuplicateSummaries(projectId: string, date: string): Promise<void> {
+    try {
+      // البحث عن الملخصات المكررة
+      const duplicates = await db.select()
+        .from(dailyExpenseSummaries)
+        .where(and(
+          eq(dailyExpenseSummaries.projectId, projectId),
+          eq(dailyExpenseSummaries.date, date)
+        ))
+        .orderBy(dailyExpenseSummaries.createdAt);
+
+      // إذا كان هناك أكثر من ملخص، احذف الأقدم واحتفظ بالأحدث
+      if (duplicates.length > 1) {
+        const toDelete = duplicates.slice(0, -1); // جميع الملخصات عدا الأحدث
+        for (const summary of toDelete) {
+          await db.delete(dailyExpenseSummaries)
+            .where(eq(dailyExpenseSummaries.id, summary.id));
+        }
+        console.log(`🗑️ Removed ${toDelete.length} duplicate summaries for ${projectId} on ${date}`);
+      }
+    } catch (error) {
+      console.error('Error removing duplicate summaries:', error);
+    }
+  }
+
   // تحديث الملخص اليومي تلقائياً مع تحسينات الأداء وقيود الحماية
   async updateDailySummaryForDate(projectId: string, date: string): Promise<void> {
     try {
-      console.log(`Updating daily summary for ${projectId} on ${date}...`);
+      console.log(`🔄 Updating daily summary for ${projectId} on ${date}...`);
+      
+      // التحقق من وجود ملخصات مكررة وحذفها
+      await this.removeDuplicateSummaries(projectId, date);
       
       // تشغيل جميع الاستعلامات بشكل متوازي لتحسين الأداء
       const [
@@ -523,7 +552,8 @@ export class DatabaseStorage implements IStorage {
       ]);
 
       const totalFundTransfers = fundTransfers.reduce((sum, t) => sum + parseFloat(t.amount), 0);
-      const totalWorkerWages = workerAttendanceRecords.reduce((sum, a) => sum + parseFloat(a.dailyWage || '0'), 0);
+      // استخدام المبلغ المدفوع بدلاً من إجمالي الأجر اليومي
+      const totalWorkerWages = workerAttendanceRecords.reduce((sum, a) => sum + parseFloat(a.paidAmount || '0'), 0);
       const totalMaterialCosts = materialPurchases.reduce((sum, p) => sum + parseFloat(p.totalAmount), 0);
       const totalTransportationCosts = transportationExpenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
       const totalWorkerTransferCosts = workerTransfers.reduce((sum, t) => sum + parseFloat(t.amount), 0);
@@ -532,8 +562,17 @@ export class DatabaseStorage implements IStorage {
       const totalExpenses = totalWorkerWages + totalMaterialCosts + totalTransportationCosts + totalWorkerTransferCosts;
       const remainingBalance = totalIncome - totalExpenses;
 
-      // قيود الحماية من الأخطاء
-      console.log(`Balance calculation for ${date}: Carried=${carriedForwardAmount}, Income=${totalIncome}, Expenses=${totalExpenses}, Remaining=${remainingBalance}`);
+      // معلومات تفصيلية للتشخيص
+      console.log(`📊 Balance calculation for ${date}:`);
+      console.log(`   Carried Forward: ${carriedForwardAmount}`);
+      console.log(`   Fund Transfers: ${totalFundTransfers}`);
+      console.log(`   Worker Wages: ${totalWorkerWages}`);
+      console.log(`   Material Costs: ${totalMaterialCosts}`);
+      console.log(`   Transportation: ${totalTransportationCosts}`);
+      console.log(`   Worker Transfers: ${totalWorkerTransferCosts}`);
+      console.log(`   Total Income: ${totalIncome}`);
+      console.log(`   Total Expenses: ${totalExpenses}`);
+      console.log(`   Remaining Balance: ${remainingBalance}`);
       
       // التحقق من صحة البيانات المحاسبية
       if (Math.abs(totalIncome - totalExpenses - remainingBalance) > 0.01) {
@@ -541,40 +580,10 @@ export class DatabaseStorage implements IStorage {
         throw new Error(`خطأ في حساب الرصيد: الدخل - المصروفات ≠ المتبقي`);
       }
 
-      // التحقق من أن الرصيد المرحل صحيح
-      const previousSummary = await this.getDailyExpenseSummary(projectId, this.getPreviousDate(date));
-      if (previousSummary && Math.abs(parseFloat(previousSummary.remainingBalance) - carriedForwardAmount) > 0.01) {
-        console.error(`❌ CARRY-FORWARD ERROR: Previous balance(${previousSummary.remainingBalance}) ≠ Carried forward(${carriedForwardAmount})`);
-        console.log(`Recalculating with correct previous balance...`);
-        const correctCarriedAmount = parseFloat(previousSummary.remainingBalance);
-        const correctTotalIncome = correctCarriedAmount + totalFundTransfers;
-        const correctRemainingBalance = correctTotalIncome - totalExpenses;
-        
-        await this.createOrUpdateDailyExpenseSummary({
-          projectId,
-          date,
-          carriedForwardAmount: correctCarriedAmount.toString(),
-          totalFundTransfers: totalFundTransfers.toString(),
-          totalWorkerWages: totalWorkerWages.toString(),
-          totalMaterialCosts: totalMaterialCosts.toString(),
-          totalTransportationCosts: totalTransportationCosts.toString(),
-          totalIncome: correctTotalIncome.toString(),
-          totalExpenses: totalExpenses.toString(),
-          remainingBalance: correctRemainingBalance.toString()
-        });
-        
-        console.log(`✅ Balance corrected for ${date}: Carried=${correctCarriedAmount}, Remaining=${correctRemainingBalance}`);
-        return;
-      }
-
       await this.createOrUpdateDailyExpenseSummary({
         projectId,
         date,
         carriedForwardAmount: carriedForwardAmount.toString(),
-        totalFundTransfers: totalFundTransfers.toString(),
-        totalWorkerWages: totalWorkerWages.toString(),
-        totalMaterialCosts: totalMaterialCosts.toString(),
-        totalTransportationCosts: totalTransportationCosts.toString(),
         totalIncome: totalIncome.toString(),
         totalExpenses: totalExpenses.toString(),
         remainingBalance: remainingBalance.toString()

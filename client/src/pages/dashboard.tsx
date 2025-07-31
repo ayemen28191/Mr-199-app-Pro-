@@ -158,21 +158,18 @@ export default function Dashboard() {
                 <div className="text-lg font-bold text-primary arabic-numbers">
                   {formatCurrency(selectedProject.stats.totalIncome)}
                 </div>
-                <div className="text-xs text-muted-foreground">ريال</div>
               </div>
               <div className="bg-red-50 dark:bg-red-950/20 p-3 rounded-lg text-center">
                 <div className="text-sm text-muted-foreground mb-1">إجمالي المنصرف</div>
                 <div className="text-lg font-bold text-destructive arabic-numbers">
                   {formatCurrency(selectedProject.stats.totalExpenses)}
                 </div>
-                <div className="text-xs text-muted-foreground">ريال</div>
               </div>
               <div className="bg-green-50 dark:bg-green-950/20 p-3 rounded-lg text-center">
                 <div className="text-sm text-muted-foreground mb-1">المتبقي الحالي</div>
                 <div className="text-lg font-bold text-success arabic-numbers">
                   {formatCurrency(selectedProject.stats.currentBalance)}
                 </div>
-                <div className="text-xs text-muted-foreground">ريال</div>
               </div>
             </div>
 

@@ -12,7 +12,7 @@ import { Combobox } from "@/components/ui/combobox";
 import { useToast } from "@/hooks/use-toast";
 import { useSelectedProject } from "@/hooks/use-selected-project";
 import ProjectSelector from "@/components/project-selector";
-import { getCurrentDate } from "@/lib/utils";
+import { getCurrentDate, formatCurrency } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
 import type { Material, InsertMaterialPurchase, InsertMaterial } from "@shared/schema";
 
@@ -597,8 +597,8 @@ export default function MaterialPurchase() {
                         <span className="text-sm text-muted-foreground">({purchase.material?.unit})</span>
                       </div>
                       <div className="text-sm text-muted-foreground space-y-1">
-                        <p>الكمية: {purchase.quantity} | السعر: {purchase.unitPrice} ريال</p>
-                        <p className="font-medium">الإجمالي: {purchase.totalAmount} ريال</p>
+                        <p>الكمية: {purchase.quantity} | السعر: {formatCurrency(purchase.unitPrice)}</p>
+                        <p className="font-medium">الإجمالي: {formatCurrency(purchase.totalAmount)}</p>
                         {purchase.supplierName && <p>المورد: {purchase.supplierName}</p>}
                         {purchase.purchaseType && <p>نوع الدفع: {purchase.purchaseType}</p>}
                         {purchase.purchaseDate && (

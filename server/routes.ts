@@ -525,6 +525,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // إعادة حساب الملخص اليومي
+  app.put("/api/projects/:projectId/daily-summary/:date", async (req, res) => {
+    try {
+      await storage.updateDailySummaryForDate(req.params.projectId, req.params.date);
+      const summary = await storage.getDailyExpenseSummary(req.params.projectId, req.params.date);
+      res.json({ message: "تم إعادة حساب الملخص اليومي بنجاح", summary });
+    } catch (error) {
+      console.error("Error recalculating daily summary:", error);
+      res.status(500).json({ message: "خطأ في إعادة حساب الملخص اليومي" });
+    }
+  });
+
   app.get("/api/projects/:projectId/previous-balance/:date", async (req, res) => {
     try {
       const balance = await storage.getPreviousDayBalance(req.params.projectId, req.params.date);

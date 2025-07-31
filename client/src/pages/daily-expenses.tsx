@@ -560,7 +560,7 @@ export default function DailyExpenses() {
                         <div className="text-xs text-muted-foreground">{transfer.transferType}</div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="font-medium arabic-numbers">{transfer.amount} ر.س</span>
+                        <span className="font-medium arabic-numbers">{formatCurrency(transfer.amount)}</span>
                         <div className="flex gap-1">
                           <Button 
                             size="sm" 
