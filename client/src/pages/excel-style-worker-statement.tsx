@@ -9,6 +9,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { FileText, Calculator, Download, Printer } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 
 interface Worker {
   id: string;
@@ -244,14 +246,221 @@ export default function ExcelStyleWorkerStatement() {
     return format(new Date(dateString), 'yyyy-MM-dd');
   };
 
-  // Print report with Excel-style layout
+  // Export to Excel with professional design
+  const exportToExcel = async () => {
+    if (!workerStatement || !selectedWorker) {
+      alert('لا توجد بيانات للتصدير');
+      return;
+    }
+
+    try {
+      const workbook = new ExcelJS.Workbook();
+      const sheet = workbook.addWorksheet('كشف حساب العامل', { 
+        views: [{ rightToLeft: true }],
+        pageSetup: {
+          orientation: 'landscape',
+          fitToPage: true,
+          fitToWidth: 1,
+          fitToHeight: 0
+        }
+      });
+
+      // Calculate totals first
+      let grandTotalEarned = 0;
+      let grandTotalPaid = 0;
+      let grandTotalRemaining = 0;
+      let grandTotalHours = 0;
+      let grandTotalDays = 0;
+
+      const allAttendance: any[] = [];
+      workerStatement.forEach((projectStatement) => {
+        const attendance = projectStatement.attendance || [];
+        attendance.forEach((record) => {
+          const workingHours = calculateWorkingHours(record.startTime, record.endTime);
+          const dailyWage = parseFloat(record.dailyWage || '0');
+          const paidAmount = parseFloat(record.paidAmount || '0');
+          const remainingAmount = parseFloat(record.remainingAmount || '0');
+          
+          grandTotalEarned += dailyWage;
+          grandTotalPaid += paidAmount;
+          grandTotalRemaining += remainingAmount;
+          grandTotalHours += workingHours;
+          grandTotalDays += parseFloat(record.workDays || '1');
+
+          allAttendance.push({
+            ...record,
+            projectName: projectStatement.projectName,
+            workingHours
+          });
+        });
+      });
+
+      // Header title
+      sheet.mergeCells('A1', 'K1');
+      const titleCell = sheet.getCell('A1');
+      titleCell.value = `كشف حساب العامل من ${formatDate(dateFrom)} إلى ${formatDate(dateTo)}`;
+      titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      titleCell.font = { size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
+      titleCell.fill = { 
+        type: 'pattern', 
+        pattern: 'solid', 
+        fgColor: { argb: 'FFFF9800' }
+      };
+      sheet.getRow(1).height = 25;
+
+      // Info section
+      const infoRows = [
+        ['اسم العامل', selectedWorker.name, 'المهنة', selectedWorker.type === 'master' ? 'أسطى' : 'عامل عادي'],
+        ['الأجر اليومي', formatCurrency(parseFloat(selectedWorker.dailyWage)), 'المشروع', selectedProjectIds.length > 1 ? 'مشاريع متعددة' : (workerStatement?.[0]?.projectName || '')],
+        ['تاريخ البداية', formatDate(dateFrom), 'تاريخ النهاية', formatDate(dateTo)],
+      ];
+
+      infoRows.forEach((row, i) => {
+        const excelRow = sheet.addRow(row);
+        excelRow.height = 20;
+        excelRow.alignment = { vertical: 'middle', horizontal: 'center' };
+        
+        row.forEach((cell, j) => {
+          const cellRef = excelRow.getCell(j + 1);
+          cellRef.font = { bold: j % 2 === 0, size: 10 };
+          if (j % 2 === 0) {
+            cellRef.fill = { 
+              type: 'pattern', 
+              pattern: 'solid', 
+              fgColor: { argb: 'FFFFF3E0' }
+            };
+          }
+          cellRef.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' },
+          };
+        });
+      });
+
+      sheet.addRow([]);
+
+      // Table Header
+      const header = [
+        'م', 'المشروع', 'التاريخ', 'أيام العمل', 'ساعات العمل', 'الأجر اليومي', 'المبلغ المستحق', 'المبلغ المستلم', 'المتبقي', 'ملاحظات'
+      ];
+      const headerRow = sheet.addRow(header);
+      headerRow.height = 25;
+      headerRow.eachCell((cell) => {
+        cell.fill = { 
+          type: 'pattern', 
+          pattern: 'solid', 
+          fgColor: { argb: 'FFFF9800' }
+        };
+        cell.font = { color: { argb: 'FFFFFFFF' }, bold: true, size: 11 };
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.border = {
+          top: { style: 'medium' },
+          left: { style: 'medium' },
+          bottom: { style: 'medium' },
+          right: { style: 'medium' },
+        };
+      });
+
+      // Data rows
+      allAttendance.forEach((record, index) => {
+        const row = sheet.addRow([
+          index + 1,
+          record.projectName,
+          formatDate(record.date),
+          parseFloat(record.workDays || '1').toFixed(1),
+          record.workingHours.toFixed(1),
+          formatCurrency(parseFloat(record.dailyWage || '0')),
+          formatCurrency(parseFloat(record.dailyWage || '0')),
+          formatCurrency(parseFloat(record.paidAmount || '0')),
+          formatCurrency(parseFloat(record.remainingAmount || '0')),
+          record.workDescription || ''
+        ]);
+        
+        row.height = 20;
+        row.eachCell((cell) => {
+          cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' },
+          };
+          cell.alignment = { horizontal: 'center', vertical: 'middle' };
+          cell.font = { size: 10 };
+        });
+      });
+
+      // Summary footer
+      const summaries = [
+        ['إجمالي أيام العمل', grandTotalDays.toFixed(1)],
+        ['إجمالي ساعات العمل', grandTotalHours.toFixed(1)],
+        ['إجمالي المبلغ المستحق', formatCurrency(grandTotalEarned)],
+        ['إجمالي المبلغ المستلم', formatCurrency(grandTotalPaid)],
+        ['إجمالي المبلغ المتبقي', formatCurrency(grandTotalRemaining)],
+      ];
+
+      summaries.forEach((summary) => {
+        const row = sheet.addRow(['', '', '', '', '', '', '', summary[0], summary[1], '']);
+        row.height = 22;
+        
+        const labelCell = row.getCell(8);
+        const valueCell = row.getCell(9);
+        
+        labelCell.fill = { 
+          type: 'pattern', 
+          pattern: 'solid', 
+          fgColor: { argb: 'FFFF9800' }
+        };
+        labelCell.font = { color: { argb: 'FFFFFFFF' }, bold: true, size: 11 };
+        valueCell.font = { bold: true, size: 11 };
+        
+        row.eachCell((cell) => {
+          cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' },
+          };
+          cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        });
+      });
+
+      // Adjust columns width
+      sheet.columns = [
+        { width: 8 },   // م
+        { width: 20 },  // المشروع
+        { width: 12 },  // التاريخ
+        { width: 12 },  // أيام العمل
+        { width: 12 },  // ساعات العمل
+        { width: 15 },  // الأجر اليومي
+        { width: 15 },  // المبلغ المستحق
+        { width: 15 },  // المبلغ المستلم
+        { width: 15 },  // المتبقي
+        { width: 20 },  // ملاحظات
+      ];
+
+      // Generate and download
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      saveAs(blob, `كشف_حساب_${selectedWorker.name}_${formatExcelDate(dateFrom)}_${formatExcelDate(dateTo)}.xlsx`);
+      
+      console.log('تم تصدير الكشف إلى Excel بنجاح');
+      
+    } catch (error) {
+      console.error('خطأ في تصدير Excel:', error);
+      alert('حدث خطأ أثناء تصدير الكشف إلى Excel');
+    }
+  };
+
+  // Print report with HTML layout (fallback)
   const printReport = () => {
     if (!workerStatement || !selectedWorker) {
       alert('لا توجد بيانات للطباعة');
       return;
     }
 
-    // Calculate totals first
+    // Calculate totals
     let grandTotalEarned = 0;
     let grandTotalPaid = 0;
     let grandTotalRemaining = 0;
@@ -616,90 +825,7 @@ export default function ExcelStyleWorkerStatement() {
     }
   };
 
-  // Export to Excel (CSV)
-  const exportToExcel = () => {
-    if (!workerStatement || !selectedWorker || workerStatement.length === 0) {
-      alert("لا توجد بيانات للتصدير");
-      return;
-    }
 
-    try {
-      const headers = [
-        'م', 'اسم المشروع', 'التاريخ', 'الأجر اليومي', 'أيام العمل', 'ساعات العمل', 
-        'المبلغ المستحق', 'المبلغ المستلم', 'المتبقي', 'ملاحظات'
-      ];
-      
-      let rowIndex = 1;
-      const rows: any[] = [];
-      let grandTotalEarned = 0;
-      let grandTotalPaid = 0;
-      let grandTotalRemaining = 0;
-      let grandTotalHours = 0;
-      let grandTotalDays = 0;
-
-      workerStatement.forEach((projectStatement: any) => {
-        const attendance = projectStatement.attendance || [];
-        
-        attendance.forEach((record: any) => {
-          const workingHours = calculateWorkingHours(record.startTime, record.endTime);
-          const dailyWage = parseFloat(record.dailyWage || '0');
-          const paidAmount = parseFloat(record.paidAmount || '0');
-          const remainingAmount = parseFloat(record.remainingAmount || '0');
-          const workDays = parseFloat(record.workDays || '1');
-          
-          grandTotalEarned += dailyWage;
-          grandTotalPaid += paidAmount;
-          grandTotalRemaining += remainingAmount;
-          grandTotalHours += workingHours;
-          grandTotalDays += workDays;
-
-          rows.push([
-            rowIndex++,
-            projectStatement.projectName,
-            formatExcelDate(record.date),
-            formatCurrency(dailyWage),
-            workDays,
-            workingHours.toFixed(1),
-            formatCurrency(dailyWage),
-            formatCurrency(paidAmount),
-            formatCurrency(remainingAmount),
-            record.workDescription || ''
-          ]);
-        });
-      });
-
-      // Add totals row
-      rows.push([
-        '',
-        'الإجماليات',
-        '',
-        '',
-        grandTotalDays.toFixed(1),
-        grandTotalHours.toFixed(1),
-        formatCurrency(grandTotalEarned),
-        formatCurrency(grandTotalPaid),
-        formatCurrency(grandTotalRemaining),
-        ''
-      ]);
-
-      const csvContent = [headers, ...rows]
-        .map(row => row.map((cell: any) => `"${String(cell || '')}"`).join(','))
-        .join('\n');
-
-      const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
-      const link = document.createElement('a');
-      const url = URL.createObjectURL(blob);
-      link.setAttribute('href', url);
-      link.setAttribute('download', `كشف_حساب_${selectedWorker.name}_${dateFrom}_${dateTo}.csv`);
-      link.style.visibility = 'hidden';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (error) {
-      console.error('Export error:', error);
-      alert('حدث خطأ أثناء التصدير');
-    }
-  };
 
   // Helper function to format hours
   const formatHours = (hours: number) => {
