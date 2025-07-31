@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useSelectedProject } from "@/hooks/use-selected-project";
 import ProjectSelector from "@/components/project-selector";
@@ -37,6 +38,17 @@ export default function WorkerAttendance() {
   const dateParam = urlParams.get('date');
   const [selectedDate, setSelectedDate] = useState(dateParam || getCurrentDate());
   const [attendanceData, setAttendanceData] = useState<AttendanceData>({});
+  
+  // إعدادات مشتركة لجميع العمال
+  const [bulkSettings, setBulkSettings] = useState({
+    startTime: "07:00",
+    endTime: "15:00",
+    workDays: 1.0,
+    paymentType: "partial",
+    paidAmount: "",
+    workDescription: ""
+  });
+  
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -158,6 +170,57 @@ export default function WorkerAttendance() {
     }));
   };
 
+  // تطبيق الإعدادات المشتركة على جميع العمال المحددين
+  const applyBulkSettings = () => {
+    const newAttendanceData = { ...attendanceData };
+    
+    Object.keys(newAttendanceData).forEach(workerId => {
+      if (newAttendanceData[workerId].isPresent) {
+        newAttendanceData[workerId] = {
+          ...newAttendanceData[workerId],
+          startTime: bulkSettings.startTime,
+          endTime: bulkSettings.endTime,
+          workDays: bulkSettings.workDays,
+          paymentType: bulkSettings.paymentType,
+          paidAmount: bulkSettings.paidAmount,
+          workDescription: bulkSettings.workDescription
+        };
+      }
+    });
+    
+    setAttendanceData(newAttendanceData);
+    
+    toast({
+      title: "تم التطبيق",
+      description: "تم تطبيق الإعدادات على جميع العمال المحددين",
+    });
+  };
+
+  // تحديد/إلغاء تحديد جميع العمال
+  const toggleAllWorkers = (isPresent: boolean) => {
+    const newAttendanceData: AttendanceData = {};
+    
+    workers.forEach(worker => {
+      if (isPresent) {
+        newAttendanceData[worker.id] = {
+          isPresent: true,
+          startTime: bulkSettings.startTime,
+          endTime: bulkSettings.endTime,
+          workDays: bulkSettings.workDays,
+          paymentType: bulkSettings.paymentType,
+          paidAmount: bulkSettings.paidAmount,
+          workDescription: bulkSettings.workDescription
+        };
+      } else {
+        newAttendanceData[worker.id] = {
+          isPresent: false
+        };
+      }
+    });
+    
+    setAttendanceData(newAttendanceData);
+  };
+
   const handleSaveAttendance = () => {
     if (!selectedProjectId) {
       toast({
@@ -238,6 +301,118 @@ export default function WorkerAttendance() {
           />
         </CardContent>
       </Card>
+
+      {/* الإعدادات المشتركة */}
+      {workers.length > 0 && (
+        <Card className="mb-4">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-foreground">الإعدادات المشتركة</h3>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => toggleAllWorkers(true)}
+                  className="text-xs"
+                >
+                  تحديد الكل
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => toggleAllWorkers(false)}
+                  className="text-xs"
+                >
+                  إلغاء الكل
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={applyBulkSettings}
+                  className="text-xs"
+                >
+                  تطبيق على المحدد
+                </Button>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+              <div>
+                <Label className="text-xs text-muted-foreground">وقت البدء</Label>
+                <Input
+                  type="time"
+                  value={bulkSettings.startTime}
+                  onChange={(e) => setBulkSettings(prev => ({ ...prev, startTime: e.target.value }))}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">وقت الانتهاء</Label>
+                <Input
+                  type="time"
+                  value={bulkSettings.endTime}
+                  onChange={(e) => setBulkSettings(prev => ({ ...prev, endTime: e.target.value }))}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">عدد الأيام</Label>
+                <Input
+                  type="number"
+                  inputMode="decimal"
+                  step="0.1"
+                  min="0.1"
+                  max="2.0"
+                  value={bulkSettings.workDays}
+                  onChange={(e) => setBulkSettings(prev => ({ ...prev, workDays: parseFloat(e.target.value) || 1.0 }))}
+                  className="mt-1 arabic-numbers"
+                />
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">نوع الدفع</Label>
+                <Select
+                  value={bulkSettings.paymentType}
+                  onValueChange={(value) => setBulkSettings(prev => ({ ...prev, paymentType: value }))}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="full">دفع كامل</SelectItem>
+                    <SelectItem value="partial">دفع جزئي</SelectItem>
+                    <SelectItem value="credit">على الحساب</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {bulkSettings.paymentType !== "credit" && (
+                <div>
+                  <Label className="text-xs text-muted-foreground">المبلغ المدفوع</Label>
+                  <Input
+                    type="number"
+                    inputMode="decimal"
+                    placeholder="0"
+                    value={bulkSettings.paidAmount}
+                    onChange={(e) => setBulkSettings(prev => ({ ...prev, paidAmount: e.target.value }))}
+                    className="mt-1 arabic-numbers"
+                  />
+                </div>
+              )}
+              <div>
+                <Label className="text-xs text-muted-foreground">وصف العمل</Label>
+                <Input
+                  type="text"
+                  placeholder="اكتب وصف العمل..."
+                  value={bulkSettings.workDescription}
+                  onChange={(e) => setBulkSettings(prev => ({ ...prev, workDescription: e.target.value }))}
+                  className="mt-1"
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Worker List */}
       {workersLoading ? (
