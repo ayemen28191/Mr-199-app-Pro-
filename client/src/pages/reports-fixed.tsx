@@ -338,6 +338,17 @@ export default function ReportsFixed() {
       <div className="mb-4 space-y-3">
         <Button 
           variant="outline" 
+          className="w-full h-16 border-3 border-orange-500 hover:bg-orange-50 shadow-lg"
+          onClick={() => setLocation("/excel-format-worker-statement")}
+        >
+          <FileSpreadsheet className="ml-2 h-7 w-7 text-orange-600" />
+          <div className="text-right">
+            <div className="text-orange-800 font-bold text-lg">كشف حساب العامل - نمط Excel</div>
+            <div className="text-orange-600 text-sm">تصميم مطابق للنموذج المرفق - دعم المشاريع المتعددة</div>
+          </div>
+        </Button>
+        <Button 
+          variant="outline" 
           className="w-full h-14 border-3 border-blue-500 hover:bg-blue-50 shadow-lg"
           onClick={() => setLocation("/professional-worker-statement")}
         >

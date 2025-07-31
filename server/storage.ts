@@ -956,6 +956,43 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async getWorkerAttendanceForPeriod(workerId: string, projectId: string, dateFrom: string, dateTo: string): Promise<WorkerAttendance[]> {
+    try {
+      return await db.select().from(workerAttendance)
+        .where(and(
+          eq(workerAttendance.workerId, workerId),
+          eq(workerAttendance.projectId, projectId),
+          gte(workerAttendance.date, dateFrom),
+          lte(workerAttendance.date, dateTo)
+        ))
+        .orderBy(workerAttendance.date);
+    } catch (error) {
+      console.error('Error getting worker attendance for period:', error);
+      return [];
+    }
+  }
+
+  async getFundTransfersForWorker(workerId: string, projectId: string, dateFrom: string, dateTo: string): Promise<FundTransfer[]> {
+    try {
+      // البحث عن التحويلات المالية التي تخص هذا العامل
+      // يمكن أن نبحث باستخدام اسم العامل في senderName أو في الملاحظات
+      const worker = await this.getWorker(workerId);
+      if (!worker) return [];
+
+      return await db.select().from(fundTransfers)
+        .where(and(
+          eq(fundTransfers.projectId, projectId),
+          sql`DATE(${fundTransfers.transferDate}) >= ${dateFrom}`,
+          sql`DATE(${fundTransfers.transferDate}) <= ${dateTo}`,
+          sql`(${fundTransfers.senderName} LIKE '%${worker.name}%' OR ${fundTransfers.notes} LIKE '%${worker.name}%')`
+        ))
+        .orderBy(fundTransfers.transferDate);
+    } catch (error) {
+      console.error('Error getting fund transfers for worker:', error);
+      return [];
+    }
+  }
+
   async getProjectStatistics(projectId: string): Promise<{
     totalWorkers: number;
     totalExpenses: number;

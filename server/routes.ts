@@ -732,6 +732,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Worker statement with multiple projects support
+  app.get("/api/worker-statement/:workerId", async (req, res) => {
+    try {
+      const { workerId } = req.params;
+      const { dateFrom, dateTo, projects } = req.query;
+      
+      if (!dateFrom || !dateTo || !projects) {
+        return res.status(400).json({ message: "Missing required parameters: dateFrom, dateTo, projects" });
+      }
+
+      const projectIds = (projects as string).split(',');
+      
+      // Get worker
+      const worker = await storage.getWorker(workerId);
+      if (!worker) {
+        return res.status(404).json({ message: "Worker not found" });
+      }
+
+      // Get projects
+      const projectList = await Promise.all(
+        projectIds.map(id => storage.getProject(id))
+      );
+      const validProjects = projectList.filter(p => p !== undefined);
+
+      // Get attendance for all selected projects within date range
+      const attendancePromises = projectIds.map(projectId => 
+        storage.getWorkerAttendanceForPeriod(workerId, projectId, dateFrom as string, dateTo as string)
+      );
+      const attendanceArrays = await Promise.all(attendancePromises);
+      const attendance = attendanceArrays.flat().sort((a: any, b: any) => 
+        new Date(a.date).getTime() - new Date(b.date).getTime()
+      );
+
+      // Get fund transfers (سلف) for all projects within date range
+      const transfersPromises = projectIds.map(projectId =>
+        storage.getFundTransfersForWorker(workerId, projectId, dateFrom as string, dateTo as string)
+      );
+      const transfersArrays = await Promise.all(transfersPromises);
+      const transfers = transfersArrays.flat().sort((a: any, b: any) => 
+        new Date(a.transferDate).getTime() - new Date(b.transferDate).getTime()
+      );
+
+      // Calculate summary
+      const totalEarnings = attendance.reduce((sum: number, record: any) => {
+        return sum + (record.isPresent ? parseFloat(record.dailyWage) : 0);
+      }, 0);
+
+      const totalAdvances = transfers.reduce((sum: number, transfer: any) => {
+        return sum + parseFloat(transfer.amount);
+      }, 0);
+
+      const totalDays = attendance.filter((record: any) => record.isPresent).length;
+      const totalHours = totalDays * 8; // افتراض 8 ساعات لكل يوم
+
+      const summary = {
+        totalEarnings,
+        totalAdvances,
+        netBalance: totalEarnings - totalAdvances,
+        totalDays,
+        totalHours,
+        projectStats: validProjects.map(project => {
+          const projectAttendance = attendance.filter((a: any) => a.projectId === project.id);
+          const projectDays = projectAttendance.filter((a: any) => a.isPresent).length;
+          const projectEarnings = projectAttendance.reduce((sum: number, a: any) => 
+            sum + (a.isPresent ? parseFloat(a.dailyWage) : 0), 0
+          );
+          
+          return {
+            projectId: project.id,
+            projectName: project.name,
+            days: projectDays,
+            hours: projectDays * 8,
+            earnings: projectEarnings
+          };
+        })
+      };
+
+      res.json({
+        worker,
+        projects: validProjects,
+        attendance,
+        transfers,
+        summary
+      });
+
+    } catch (error) {
+      console.error("Error fetching worker statement:", error);
+      res.status(500).json({ message: "Error fetching worker statement" });
+    }
+  });
+
   // Worker balances
   app.get("/api/workers/:workerId/balance/:projectId", async (req, res) => {
     const { workerId, projectId } = req.params;
