@@ -13,14 +13,29 @@ import AddWorkerForm from "@/components/forms/add-worker-form";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import type { Project, DailyExpenseSummary } from "@shared/schema";
 
+interface ProjectStats {
+  totalWorkers: string;
+  totalExpenses: number;
+  totalIncome: number;
+  currentBalance: number;
+  activeWorkers: string;
+  completedDays: string;
+  materialPurchases: string;
+  lastActivity: string;
+}
+
+interface ProjectWithStats extends Project {
+  stats: ProjectStats;
+}
+
 export default function Dashboard() {
   const [, setLocation] = useLocation();
   const { selectedProjectId, selectProject } = useSelectedProject();
   const [showAddProject, setShowAddProject] = useState(false);
   const [showAddWorker, setShowAddWorker] = useState(false);
 
-  const { data: projects = [] } = useQuery<Project[]>({
-    queryKey: ["/api/projects"],
+  const { data: projects = [] } = useQuery<ProjectWithStats[]>({
+    queryKey: ["/api/projects/with-stats"],
   });
 
   const { data: todaySummary } = useQuery<DailyExpenseSummary>({
@@ -136,53 +151,52 @@ export default function Dashboard() {
               </Badge>
             </div>
 
-            {todaySummary ? (
-              <>
-                {/* Financial Summary Cards */}
-                <div className="grid grid-cols-3 gap-3 mb-4">
-                  <div className="bg-blue-50 dark:bg-blue-950/20 p-3 rounded-lg text-center">
-                    <div className="text-sm text-muted-foreground mb-1">إجمالي التوريد</div>
-                    <div className="text-lg font-bold text-primary arabic-numbers">
-                      {formatCurrency(todaySummary.totalIncome)}
-                    </div>
-                    <div className="text-xs text-muted-foreground">ريال</div>
-                  </div>
-                  <div className="bg-red-50 dark:bg-red-950/20 p-3 rounded-lg text-center">
-                    <div className="text-sm text-muted-foreground mb-1">إجمالي المنصرف</div>
-                    <div className="text-lg font-bold text-destructive arabic-numbers">
-                      {formatCurrency(todaySummary.totalExpenses)}
-                    </div>
-                    <div className="text-xs text-muted-foreground">ريال</div>
-                  </div>
-                  <div className="bg-green-50 dark:bg-green-950/20 p-3 rounded-lg text-center">
-                    <div className="text-sm text-muted-foreground mb-1">المتبقي</div>
-                    <div className="text-lg font-bold text-success arabic-numbers">
-                      {formatCurrency(todaySummary.remainingBalance)}
-                    </div>
-                    <div className="text-xs text-muted-foreground">ريال</div>
-                  </div>
+            {/* Project Statistics */}
+            <div className="grid grid-cols-3 gap-3 mb-4">
+              <div className="bg-blue-50 dark:bg-blue-950/20 p-3 rounded-lg text-center">
+                <div className="text-sm text-muted-foreground mb-1">إجمالي التوريد</div>
+                <div className="text-lg font-bold text-primary arabic-numbers">
+                  {formatCurrency(selectedProject.stats.totalIncome)}
                 </div>
-
-                {/* Quick Stats */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-muted p-3 rounded-lg">
-                    <div className="text-sm text-muted-foreground mb-1">آخر تحديث</div>
-                    <div className="text-sm font-medium text-foreground">
-                      {formatDate(todaySummary.date)}
-                    </div>
-                  </div>
-                  <div className="bg-muted p-3 rounded-lg">
-                    <div className="text-sm text-muted-foreground mb-1">حالة المشروع</div>
-                    <div className="text-sm font-medium text-foreground">نشط</div>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <p>لا توجد بيانات لهذا اليوم</p>
-                <p className="text-sm">ابدأ بتسجيل المصروفات اليومية</p>
+                <div className="text-xs text-muted-foreground">ريال</div>
               </div>
-            )}
+              <div className="bg-red-50 dark:bg-red-950/20 p-3 rounded-lg text-center">
+                <div className="text-sm text-muted-foreground mb-1">إجمالي المنصرف</div>
+                <div className="text-lg font-bold text-destructive arabic-numbers">
+                  {formatCurrency(selectedProject.stats.totalExpenses)}
+                </div>
+                <div className="text-xs text-muted-foreground">ريال</div>
+              </div>
+              <div className="bg-green-50 dark:bg-green-950/20 p-3 rounded-lg text-center">
+                <div className="text-sm text-muted-foreground mb-1">المتبقي الحالي</div>
+                <div className="text-lg font-bold text-success arabic-numbers">
+                  {formatCurrency(selectedProject.stats.currentBalance)}
+                </div>
+                <div className="text-xs text-muted-foreground">ريال</div>
+              </div>
+            </div>
+
+            {/* Project Activity Stats */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="bg-muted p-3 rounded-lg text-center">
+                <div className="text-sm text-muted-foreground mb-1">أيام العمل</div>
+                <div className="text-lg font-bold text-foreground arabic-numbers">
+                  {selectedProject.stats.completedDays}
+                </div>
+              </div>
+              <div className="bg-muted p-3 rounded-lg text-center">
+                <div className="text-sm text-muted-foreground mb-1">المشتريات</div>
+                <div className="text-lg font-bold text-foreground arabic-numbers">
+                  {selectedProject.stats.materialPurchases}
+                </div>
+              </div>
+              <div className="bg-muted p-3 rounded-lg text-center">
+                <div className="text-sm text-muted-foreground mb-1">العمال</div>
+                <div className="text-lg font-bold text-foreground arabic-numbers">
+                  {selectedProject.stats.activeWorkers}
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
       )}
