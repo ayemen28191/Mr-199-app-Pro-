@@ -4,8 +4,8 @@
 This is a full-stack construction project management application built with React, TypeScript, Express.js, and PostgreSQL. It is designed for Arabic-speaking users to manage construction projects, including worker attendance, daily expenses, material purchasing, and financial reporting. The system aims to provide comprehensive project management capabilities with a focus on ease of use and financial transparency.
 
 ## User Preferences
-- Preferred communication style: Simple, everyday language.
-- Communication language: Arabic
+- Preferred communication style: Simple, everyday language in Arabic
+- Communication language: Arabic (all responses must be in Arabic)
 - Business Rules: No duplicate project names, worker names, or fund transfer numbers allowed
 - Project Selection: User wants the selected project to persist across all pages and browser refreshes
 
