@@ -212,9 +212,44 @@ export default function ExcelStyleWorkerStatement() {
     }
   };
 
+  // Helper function to calculate working hours
+  const calculateWorkingHours = (startTime: string, endTime: string): number => {
+    if (!startTime || !endTime) return 8; // Default 8 hours if not specified
+    
+    const [startHour, startMin] = startTime.split(':').map(Number);
+    const [endHour, endMin] = endTime.split(':').map(Number);
+    
+    const startMinutes = startHour * 60 + startMin;
+    const endMinutes = endHour * 60 + endMin;
+    
+    return (endMinutes - startMinutes) / 60;
+  };
+
+  // Helper function to format currency
+  const formatCurrency = (amount: number): string => {
+    return new Intl.NumberFormat('ar-YE', {
+      style: 'currency',
+      currency: 'YER',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount);
+  };
+
+  // Helper functions for date formatting
+  const formatDate = (dateString: string): string => {
+    return format(new Date(dateString), 'dd/MM/yyyy', { locale: ar });
+  };
+
+  const formatExcelDate = (dateString: string): string => {
+    return format(new Date(dateString), 'yyyy-MM-dd');
+  };
+
   // Print report with Excel-style layout
   const printReport = () => {
-    if (!workerStatement || !selectedWorker) return;
+    if (!workerStatement || !selectedWorker) {
+      alert('لا توجد بيانات للطباعة');
+      return;
+    }
 
     // Calculate totals first
     let grandTotalEarned = 0;
@@ -666,52 +701,9 @@ export default function ExcelStyleWorkerStatement() {
     }
   };
 
-  // Helper functions
-  const formatDate = (dateString: string) => {
-    try {
-      const date = new Date(dateString);
-      return format(date, 'dd/MM/yyyy', { locale: ar });
-    } catch {
-      return dateString;
-    }
-  };
-
-  const formatExcelDate = (dateString: string) => {
-    try {
-      const date = new Date(dateString);
-      return format(date, 'yyyy-MM-dd');
-    } catch {
-      return dateString;
-    }
-  };
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('ar-EG', {
-      style: 'decimal',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
-
+  // Helper function to format hours
   const formatHours = (hours: number) => {
     return hours.toFixed(1);
-  };
-
-  const calculateWorkingHours = (startTime: string, endTime: string) => {
-    if (!startTime || !endTime) return 8; // Default 8 hours
-
-    try {
-      const [startHour, startMinute] = startTime.split(':').map(Number);
-      const [endHour, endMinute] = endTime.split(':').map(Number);
-      
-      const startInMinutes = startHour * 60 + startMinute;
-      const endInMinutes = endHour * 60 + endMinute;
-      
-      const diffInMinutes = endInMinutes - startInMinutes;
-      return diffInMinutes > 0 ? diffInMinutes / 60 : 8;
-    } catch {
-      return 8;
-    }
   };
 
   if (!showReport) {
