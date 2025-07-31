@@ -334,15 +334,23 @@ export default function ReportsFixed() {
         onProjectChange={selectProject}
       />
 
-      {/* Worker Statement Button */}
-      <div className="mb-4">
+      {/* Worker Statement Buttons */}
+      <div className="mb-4 space-y-3">
         <Button 
           variant="outline" 
-          className="w-full h-12 border-2 border-green-300 hover:bg-green-50"
-          onClick={() => setLocation("/worker-statement")}
+          className="w-full h-12 border-2 border-orange-300 hover:bg-orange-50"
+          onClick={() => setLocation("/excel-worker-statement")}
         >
-          <UserCheck className="ml-2 h-5 w-5 text-green-600" />
-          <span className="text-green-700 font-medium">كشف حساب العامل (تصميم Excel)</span>
+          <UserCheck className="ml-2 h-5 w-5 text-orange-600" />
+          <span className="text-orange-700 font-medium">كشف حساب العامل - التصميم الجديد</span>
+        </Button>
+        <Button 
+          variant="outline" 
+          className="w-full h-10 border-2 border-green-300 hover:bg-green-50"
+          onClick={() => setLocation("/enhanced-worker-statement")}
+        >
+          <UserCheck className="ml-2 h-4 w-4 text-green-600" />
+          <span className="text-green-700 font-medium text-sm">كشف حساب العامل - التصميم السابق</span>
         </Button>
       </div>
 
