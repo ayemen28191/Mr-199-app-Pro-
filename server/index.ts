@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { databaseManager } from "./database-manager";
 import { exec } from "child_process";
 import { promisify } from "util";
 
@@ -41,14 +42,30 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Auto-migrate database on startup to prevent "table does not exist" errors
+  // فحص شامل لقاعدة البيانات باستخدام النظام الذكي
   try {
-    log("Checking and updating database schema...");
-    // تم تعطيل التحديث التلقائي مؤقتاً - سيتم تشغيله يدوياً عند الحاجة
-    // await execAsync("npm run db:push");
-    log("Database schema check skipped - manual push required if needed!");
+    log("🚀 بدء الفحص الشامل لقاعدة البيانات...");
+    
+    const dbCheck = await databaseManager.initializeDatabase();
+    
+    if (dbCheck.success) {
+      log("✅ " + dbCheck.message);
+      
+      // اختبار العمليات الأساسية
+      const testResult = await databaseManager.testBasicOperations();
+      if (testResult.success) {
+        log("✅ جميع أنظمة قاعدة البيانات تعمل بشكل مثالي");
+      } else {
+        log("⚠️ مشكلة في العمليات الأساسية: " + testResult.message);
+      }
+    } else {
+      log("❌ " + dbCheck.message);
+      if (dbCheck.details) {
+        console.log("📋 تفاصيل المشكلة:", dbCheck.details);
+      }
+    }
   } catch (error) {
-    log("Database schema update failed, but continuing...");
+    log("💥 خطأ كبير في النظام:");
     console.error(error);
   }
 
