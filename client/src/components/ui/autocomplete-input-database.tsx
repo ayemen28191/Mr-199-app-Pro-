@@ -70,7 +70,7 @@ export function AutocompleteInput({
     setIsOpen(false);
     setSearchQuery('');
     
-    // حفظ البيانات في قاعدة البيانات
+    // حفظ البيانات في قاعدة البيانات (سيزيد عدد الاستخدام)
     if (selectedValue.trim()) {
       saveDataMutation.mutate({
         category,
@@ -87,8 +87,9 @@ export function AutocompleteInput({
         setIsOpen(false);
         setSearchQuery('');
         
-        // حفظ البيانات إذا كانت جديدة
-        if (value.trim() && !autocompleteData.some(item => item.value === value.trim())) {
+        // حفظ البيانات إذا كانت موجودة وليست فارغة
+        if (value.trim()) {
+          // دائماً حفظ القيمة (سيتم تحديث عدد الاستخدام إذا كانت موجودة مسبقاً)
           saveDataMutation.mutate({
             category,
             value: value.trim()
@@ -96,7 +97,7 @@ export function AutocompleteInput({
         }
       }
     }, 150);
-  }, [value, category, autocompleteData, saveDataMutation]);
+  }, [value, category, saveDataMutation]);
 
   // حذف عنصر من القائمة
   const handleRemove = useCallback((itemValue: string, e: React.MouseEvent) => {
@@ -132,6 +133,21 @@ export function AutocompleteInput({
       setIsOpen(true);
     }
   };
+  
+  // حفظ البيانات عند الضغط على Enter
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && value.trim()) {
+      e.preventDefault();
+      setIsOpen(false);
+      setSearchQuery('');
+      
+      // حفظ البيانات في قاعدة البيانات
+      saveDataMutation.mutate({
+        category,
+        value: value.trim()
+      });
+    }
+  }, [value, category, saveDataMutation]);
 
   const handleInputFocus = () => {
     if (autocompleteData.length > 0) {
@@ -147,6 +163,7 @@ export function AutocompleteInput({
         onChange={handleInputChange}
         onFocus={handleInputFocus}
         onBlur={handleBlur}
+        onKeyDown={handleKeyDown}
         placeholder={placeholder}
         disabled={disabled}
         className={`arabic-numbers ${className}`}

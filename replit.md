@@ -21,6 +21,10 @@ This is a full-stack construction project management application built with Reac
   - Kept only: excel-style-worker-statement.tsx as the single worker statement solution
 - ✅ Updated routing in App.tsx and reports navigation to use single statement component
 - ✅ Verified data accuracy: API now correctly shows totalDays: 1.5 for test case (0.5 + 1.0 days)
+- ✅ Fixed autocomplete input data saving issue for first-time entries
+- ✅ Improved AutocompleteInput component to save data on blur, Enter key, and selection
+- ✅ Removed condition that prevented saving new values, now all entries are saved to database
+- ✅ Added Enter key support for quick data saving
 
 ## System Architecture
 ### Frontend
