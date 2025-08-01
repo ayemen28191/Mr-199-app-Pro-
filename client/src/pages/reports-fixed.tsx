@@ -380,19 +380,19 @@ export default function ReportsFixed() {
           </CardContent>
         </Card>
 
-        {/* كشف المصروفات اليومية المحسن */}
+        {/* كشف المصروفات اليومية نمط Excel */}
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center space-x-reverse space-x-3">
-                <BarChart className="h-6 w-6 text-green-600" />
+                <FileSpreadsheet className="h-6 w-6 text-green-600" />
                 <div>
-                  <h4 className="font-medium text-foreground">كشف المصروفات اليومية المحسن</h4>
-                  <p className="text-sm text-muted-foreground">تقرير شامل لفترة زمنية مع إمكانيات طباعة وتصدير Excel</p>
+                  <h4 className="font-medium text-foreground">كشف المصروفات اليومية - نمط Excel</h4>
+                  <p className="text-sm text-muted-foreground">تصميم مطابق للنموذج المرفق مع إمكانيات طباعة وتصدير Excel</p>
                 </div>
               </div>
               <Button
-                onClick={() => setLocation("/daily-expenses-report")}
+                onClick={() => setLocation("/excel-style-daily-expenses")}
                 className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 text-sm flex items-center gap-2"
               >
                 <FileSpreadsheet className="h-4 w-4" />
@@ -402,10 +402,11 @@ export default function ReportsFixed() {
             <div className="bg-green-50 p-3 rounded-lg text-sm">
               <div className="font-medium text-green-800 mb-1">المميزات:</div>
               <ul className="text-green-700 space-y-1">
-                <li>• تحديد فترة زمنية من تاريخ إلى تاريخ</li>
-                <li>• تصدير إلى Excel مع ورقتين (ملخص وتفاصيل)</li>
-                <li>• طباعة احترافية مع تنسيقات مخصصة</li>
-                <li>• عرض إحصائيات سريعة ومقارنات</li>
+                <li>• تصميم مطابق تماماً للنموذج المرفق</li>
+                <li>• ألوان وتنسيقات احترافية مثل Excel</li>
+                <li>• حساب الرصيد المتبقي تلقائياً</li>
+                <li>• تصدير إلى Excel بنفس التصميم</li>
+                <li>• طباعة عالية الجودة</li>
               </ul>
             </div>
           </CardContent>

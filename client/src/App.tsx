@@ -12,6 +12,7 @@ import MaterialPurchase from "@/pages/material-purchase";
 import ReportsFixed from "@/pages/reports-fixed";
 import ExcelStyleWorkerStatement from "@/pages/excel-style-worker-statement";
 import DailyExpensesReport from "@/pages/daily-expenses-report";
+import ExcelStyleDailyExpenses from "@/pages/excel-style-daily-expenses";
 
 import ProjectsPage from "@/pages/projects";
 import Header from "@/components/layout/header";
@@ -28,6 +29,7 @@ function Router() {
       <Route path="/material-purchase" component={MaterialPurchase} />
       <Route path="/excel-format-worker-statement" component={ExcelStyleWorkerStatement} />
       <Route path="/daily-expenses-report" component={DailyExpensesReport} />
+      <Route path="/excel-style-daily-expenses" component={ExcelStyleDailyExpenses} />
 
       <Route path="/reports" component={ReportsFixed} />
       <Route component={NotFound} />
