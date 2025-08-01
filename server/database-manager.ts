@@ -2,6 +2,10 @@ import { db } from './db';
 import { sql } from 'drizzle-orm';
 import * as schema from '@shared/schema';
 
+// ⚠️ تحذير صارم: هذا الملف للتحقق من قاعدة بيانات Supabase السحابية فقط
+// ⛔ ممنوع منعاً باتاً إنشاء أو استخدام قاعدة بيانات محلية
+// ✅ التطبيق يعتمد كلياً على قاعدة بيانات Supabase PostgreSQL السحابية
+
 interface DatabaseCheckResult {
   success: boolean;
   message: string;
@@ -11,36 +15,36 @@ interface DatabaseCheckResult {
 class DatabaseManager {
   
   /**
-   * فحص الاتصال بقاعدة البيانات
+   * فحص الاتصال بقاعدة بيانات Supabase السحابية
    */
   async checkConnection(): Promise<DatabaseCheckResult> {
     try {
-      console.log('🔍 جاري فحص الاتصال بقاعدة البيانات...');
+      console.log('🔍 جاري فحص الاتصال بقاعدة بيانات Supabase...');
       
       const result = await db.execute(sql`SELECT 1 as test`);
       
-      console.log('✅ تم الاتصال بقاعدة البيانات بنجاح');
+      console.log('✅ تم الاتصال بقاعدة بيانات Supabase بنجاح');
       return {
         success: true,
-        message: 'الاتصال بقاعدة البيانات ناجح',
+        message: 'الاتصال بقاعدة بيانات Supabase ناجح',
         details: result
       };
     } catch (error) {
-      console.error('❌ فشل الاتصال بقاعدة البيانات:', error);
+      console.error('❌ فشل الاتصال بقاعدة بيانات Supabase:', error);
       return {
         success: false,
-        message: 'فشل الاتصال بقاعدة البيانات',
+        message: 'فشل الاتصال بقاعدة بيانات Supabase',
         details: error
       };
     }
   }
 
   /**
-   * فحص وجود الجداول المطلوبة
+   * فحص وجود الجداول المطلوبة في Supabase
    */
   async checkTablesExist(): Promise<DatabaseCheckResult> {
     try {
-      console.log('🔍 جاري فحص الجداول الموجودة...');
+      console.log('🔍 جاري فحص الجداول في قاعدة بيانات Supabase...');
       
       const tablesQuery = await db.execute(sql`
         SELECT table_name 
@@ -54,7 +58,7 @@ class DatabaseManager {
       if (tablesQuery && Array.isArray(tablesQuery)) {
         existingTables = tablesQuery.map((row: any) => row.table_name);
       }
-      console.log('📋 الجداول الموجودة:', existingTables);
+      console.log('📋 الجداول الموجودة في Supabase:', existingTables);
       
       const requiredTables = [
         'projects',
@@ -72,327 +76,73 @@ class DatabaseManager {
       const missingTables = requiredTables.filter(table => !existingTables.includes(table));
       
       if (missingTables.length > 0) {
-        console.log('⚠️ الجداول المفقودة:', missingTables);
+        console.log('⚠️ الجداول المفقودة في قاعدة بيانات Supabase:', missingTables);
+        console.log('⛔ تحذير: يجب إنشاء الجداول في قاعدة بيانات Supabase السحابية مباشرة');
+        console.log('❌ لا يمكن إنشاء جداول محلية - التطبيق يستخدم Supabase فقط');
         return {
           success: false,
-          message: `الجداول التالية مفقودة: ${missingTables.join(', ')}`,
+          message: `الجداول التالية مفقودة في Supabase: ${missingTables.join(', ')}`,
           details: { existingTables, missingTables, requiredTables }
         };
       }
       
-      console.log('✅ جميع الجداول المطلوبة موجودة');
+      console.log('✅ جميع الجداول المطلوبة موجودة في Supabase');
       return {
         success: true,
-        message: 'جميع الجداول المطلوبة موجودة',
+        message: 'جميع الجداول المطلوبة موجودة في Supabase',
         details: { existingTables, requiredTables }
       };
     } catch (error) {
-      console.error('❌ خطأ في فحص الجداول:', error);
+      console.error('❌ خطأ في فحص جداول Supabase:', error);
       return {
         success: false,
-        message: 'خطأ في فحص الجداول',
+        message: 'خطأ في فحص جداول Supabase',
         details: error
       };
     }
   }
 
   /**
-   * إنشاء الجداول مباشرة باستخدام SQL
-   */
-  async createTables(): Promise<DatabaseCheckResult> {
-    try {
-      console.log('🔨 جاري إنشاء الجداول مباشرة...');
-      
-      // إنشاء جدول المشاريع
-      await db.execute(sql`
-        CREATE TABLE IF NOT EXISTS projects (
-          id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
-          name TEXT NOT NULL,
-          status TEXT NOT NULL DEFAULT 'active',
-          created_at TIMESTAMP DEFAULT NOW() NOT NULL
-        )
-      `);
-      console.log('✅ تم إنشاء جدول projects');
-
-      // إنشاء جدول العمال
-      await db.execute(sql`
-        CREATE TABLE IF NOT EXISTS workers (
-          id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
-          name TEXT NOT NULL,
-          type TEXT NOT NULL,
-          daily_wage DECIMAL(10,2) NOT NULL,
-          is_active BOOLEAN DEFAULT true NOT NULL,
-          created_at TIMESTAMP DEFAULT NOW() NOT NULL
-        )
-      `);
-      console.log('✅ تم إنشاء جدول workers');
-
-      // إنشاء جدول تحويلات العهدة
-      await db.execute(sql`
-        CREATE TABLE IF NOT EXISTS fund_transfers (
-          id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
-          project_id VARCHAR NOT NULL REFERENCES projects(id),
-          amount DECIMAL(10,2) NOT NULL,
-          sender_name TEXT,
-          transfer_number TEXT UNIQUE,
-          transfer_type TEXT NOT NULL,
-          transfer_date TIMESTAMP NOT NULL,
-          notes TEXT,
-          created_at TIMESTAMP DEFAULT NOW() NOT NULL
-        )
-      `);
-      console.log('✅ تم إنشاء جدول fund_transfers');
-
-      // إنشاء جدول حضور العمال
-      await db.execute(sql`
-        CREATE TABLE IF NOT EXISTS worker_attendance (
-          id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
-          project_id VARCHAR NOT NULL REFERENCES projects(id),
-          worker_id VARCHAR NOT NULL REFERENCES workers(id),
-          date TEXT NOT NULL,
-          start_time TEXT,
-          end_time TEXT,
-          work_description TEXT,
-          is_present BOOLEAN NOT NULL,
-          work_days DECIMAL(3,2) NOT NULL DEFAULT 1.00,
-          daily_wage DECIMAL(10,2) NOT NULL,
-          actual_wage DECIMAL(10,2) NOT NULL,
-          paid_amount DECIMAL(10,2) DEFAULT 0 NOT NULL,
-          remaining_amount DECIMAL(10,2) DEFAULT 0 NOT NULL,
-          payment_type TEXT NOT NULL DEFAULT 'partial',
-          created_at TIMESTAMP DEFAULT NOW() NOT NULL,
-          UNIQUE (worker_id, date, project_id)
-        )
-      `);
-      console.log('✅ تم إنشاء جدول worker_attendance');
-
-      // إنشاء جدول المواد
-      await db.execute(sql`
-        CREATE TABLE IF NOT EXISTS materials (
-          id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
-          name TEXT NOT NULL,
-          category TEXT NOT NULL,
-          unit TEXT NOT NULL,
-          created_at TIMESTAMP DEFAULT NOW() NOT NULL
-        )
-      `);
-      console.log('✅ تم إنشاء جدول materials');
-
-      // إنشاء جدول مشتريات المواد
-      await db.execute(sql`
-        DROP TABLE IF EXISTS material_purchases CASCADE;
-        CREATE TABLE material_purchases (
-          id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
-          project_id VARCHAR NOT NULL REFERENCES projects(id),
-          material_id VARCHAR NOT NULL REFERENCES materials(id),
-          quantity DECIMAL(10,3) NOT NULL,
-          unit_price DECIMAL(10,2) NOT NULL,
-          total_amount DECIMAL(10,2) NOT NULL,
-          purchase_type TEXT NOT NULL,
-          supplier_name TEXT,
-          invoice_number TEXT,
-          invoice_date TEXT,
-          invoice_photo TEXT,
-          notes TEXT,
-          purchase_date TEXT NOT NULL,
-          created_at TIMESTAMP DEFAULT NOW() NOT NULL
-        )
-      `);
-      console.log('✅ تم إنشاء جدول material_purchases');
-
-      // إنشاء جدول مصاريف النقل
-      await db.execute(sql`
-        CREATE TABLE IF NOT EXISTS transportation_expenses (
-          id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
-          project_id VARCHAR NOT NULL REFERENCES projects(id),
-          worker_id VARCHAR REFERENCES workers(id),
-          amount DECIMAL(10,2) NOT NULL,
-          description TEXT NOT NULL,
-          date TEXT NOT NULL,
-          notes TEXT,
-          created_at TIMESTAMP DEFAULT NOW() NOT NULL
-        )
-      `);
-      console.log('✅ تم إنشاء جدول transportation_expenses');
-
-      // إضافة الأعمدة المفقودة إذا كانت غير موجودة
-      try {
-        await db.execute(sql`ALTER TABLE transportation_expenses ADD COLUMN IF NOT EXISTS worker_id VARCHAR REFERENCES workers(id)`);
-        await db.execute(sql`ALTER TABLE transportation_expenses ADD COLUMN IF NOT EXISTS notes TEXT`);
-        console.log('✅ تم التأكد من وجود جميع الأعمدة في جدول transportation_expenses');
-      } catch (error) {
-        console.log('⚠️ الأعمدة موجودة بالفعل في جدول transportation_expenses');
-      }
-
-      // حذف وإعادة إنشاء جدول ملخص المصاريف اليومية بالهيكل الصحيح
-      await db.execute(sql`DROP TABLE IF EXISTS daily_expense_summaries CASCADE`);
-      await db.execute(sql`
-        CREATE TABLE daily_expense_summaries (
-          id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
-          project_id VARCHAR NOT NULL REFERENCES projects(id),
-          date TEXT NOT NULL,
-          carried_forward_amount DECIMAL(10,2) DEFAULT 0 NOT NULL,
-          total_fund_transfers DECIMAL(10,2) DEFAULT 0 NOT NULL,
-          total_worker_wages DECIMAL(10,2) DEFAULT 0 NOT NULL,
-          total_material_costs DECIMAL(10,2) DEFAULT 0 NOT NULL,
-          total_transportation_costs DECIMAL(10,2) DEFAULT 0 NOT NULL,
-          total_income DECIMAL(10,2) NOT NULL,
-          total_expenses DECIMAL(10,2) NOT NULL,
-          remaining_balance DECIMAL(10,2) NOT NULL,
-          created_at TIMESTAMP DEFAULT NOW() NOT NULL,
-          UNIQUE (project_id, date)
-        )
-      `);
-      console.log('✅ تم إنشاء جدول daily_expense_summaries');
-
-      // إنشاء الجداول الإضافية
-      await db.execute(sql`
-        DROP TABLE IF EXISTS worker_transfers CASCADE;
-        CREATE TABLE worker_transfers (
-          id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
-          worker_id VARCHAR NOT NULL REFERENCES workers(id),
-          project_id VARCHAR NOT NULL REFERENCES projects(id),
-          amount DECIMAL(10,2) NOT NULL,
-          transfer_number TEXT,
-          sender_name TEXT,
-          recipient_name TEXT NOT NULL,
-          recipient_phone TEXT,
-          transfer_method TEXT NOT NULL,
-          transfer_date TEXT NOT NULL,
-          notes TEXT,
-          created_at TIMESTAMP DEFAULT NOW() NOT NULL
-        )
-      `);
-      console.log('✅ تم إنشاء جدول worker_transfers');
-
-      await db.execute(sql`
-        CREATE TABLE IF NOT EXISTS worker_balances (
-          id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
-          worker_id VARCHAR NOT NULL REFERENCES workers(id),
-          project_id VARCHAR NOT NULL REFERENCES projects(id),
-          total_earned DECIMAL(10,2) DEFAULT 0 NOT NULL,
-          total_paid DECIMAL(10,2) DEFAULT 0 NOT NULL,
-          current_balance DECIMAL(10,2) DEFAULT 0 NOT NULL,
-          last_updated TIMESTAMP DEFAULT NOW() NOT NULL,
-          UNIQUE (worker_id, project_id)
-        )
-      `);
-      console.log('✅ تم إنشاء جدول worker_balances');
-
-      await db.execute(sql`
-        DROP TABLE IF EXISTS autocomplete_data CASCADE;
-        CREATE TABLE autocomplete_data (
-          id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
-          category TEXT NOT NULL,
-          value TEXT NOT NULL,
-          usage_count INTEGER DEFAULT 1 NOT NULL,
-          created_at TIMESTAMP DEFAULT NOW() NOT NULL,
-          last_used TIMESTAMP DEFAULT NOW() NOT NULL,
-          UNIQUE (category, value)
-        )
-      `);
-      console.log('✅ تم إنشاء جدول autocomplete_data');
-
-      await db.execute(sql`
-        DROP TABLE IF EXISTS worker_types CASCADE;
-        CREATE TABLE worker_types (
-          id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
-          name TEXT NOT NULL UNIQUE,
-          usage_count INTEGER DEFAULT 1 NOT NULL,
-          last_used TIMESTAMP DEFAULT NOW() NOT NULL,
-          created_at TIMESTAMP DEFAULT NOW() NOT NULL
-        )
-      `);
-      console.log('✅ تم إنشاء جدول worker_types');
-
-      await db.execute(sql`
-        CREATE TABLE IF NOT EXISTS worker_misc_expenses (
-          id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
-          project_id VARCHAR NOT NULL REFERENCES projects(id),
-          amount DECIMAL(10,2) NOT NULL,
-          description TEXT NOT NULL,
-          date TEXT NOT NULL,
-          notes TEXT,
-          created_at TIMESTAMP DEFAULT NOW() NOT NULL
-        )
-      `);
-      console.log('✅ تم إنشاء جدول worker_misc_expenses');
-
-      // إضافة عمود notes إذا كان مفقوداً
-      try {
-        await db.execute(sql`ALTER TABLE worker_misc_expenses ADD COLUMN IF NOT EXISTS notes TEXT`);
-        console.log('✅ تم التأكد من وجود عمود notes في جدول worker_misc_expenses');
-      } catch (error) {
-        console.log('⚠️ عمود notes موجود بالفعل في جدول worker_misc_expenses');
-      }
-      
-      console.log('🎉 تم إنشاء جميع الجداول بنجاح!');
-      
-      return {
-        success: true,
-        message: 'تم إنشاء جميع الجداول بنجاح'
-      };
-    } catch (error) {
-      console.error('❌ خطأ في إنشاء الجداول:', error);
-      return {
-        success: false,
-        message: 'خطأ في إنشاء الجداول',
-        details: error
-      };
-    }
-  }
-
-  /**
-   * فحص شامل لقاعدة البيانات وإعداد الجداول
+   * ✅ فحص قاعدة بيانات Supabase السحابية
+   * ⛔ لا يتم إنشاء أي جداول محلية - Supabase فقط
    */
   async initializeDatabase(): Promise<DatabaseCheckResult> {
-    console.log('🚀 بدء الفحص الشامل لقاعدة البيانات...');
+    console.log('🔄 بدء فحص قاعدة بيانات Supabase السحابية...');
     
-    // 1. فحص الاتصال
+    // 1. فحص الاتصال بـ Supabase
     const connectionCheck = await this.checkConnection();
     if (!connectionCheck.success) {
+      console.error('❌ فشل الاتصال بقاعدة بيانات Supabase');
       return connectionCheck;
     }
     
-    // 2. فحص الجداول
+    // 2. فحص وجود الجداول في Supabase
     const tablesCheck = await this.checkTablesExist();
+    
     if (!tablesCheck.success) {
-      console.log('⚠️ الجداول غير موجودة، سيتم إنشاؤها تلقائياً...');
-      
-      // 3. إنشاء الجداول تلقائياً
-      const createResult = await this.createTables();
-      if (!createResult.success) {
-        return {
-          success: false,
-          message: 'فشل في إنشاء الجداول: ' + createResult.message,
-          details: createResult.details
-        };
-      }
-      
-      // 4. فحص الجداول مرة أخرى للتأكد
-      const recheckTables = await this.checkTablesExist();
-      if (!recheckTables.success) {
-        return {
-          success: false,
-          message: 'فشل في التحقق من إنشاء الجداول',
-          details: recheckTables.details
-        };
-      }
+      console.error('⚠️ جداول مفقودة في قاعدة بيانات Supabase');
+      console.error('⛔ يجب إنشاء الجداول في Supabase مباشرة');
+      console.error('❌ لا يمكن إنشاء جداول محلية');
+      return {
+        success: false,
+        message: 'جداول مفقودة في Supabase - يجب إنشاؤها يدوياً',
+        details: tablesCheck.details
+      };
     }
     
-    console.log('🎉 قاعدة البيانات جاهزة للاستخدام');
+    console.log('✅ قاعدة بيانات Supabase متصلة وجاهزة');
     return {
       success: true,
-      message: 'قاعدة البيانات جاهزة ومُعدة بالكامل'
+      message: 'قاعدة بيانات Supabase متصلة وتحتوي على جميع الجداول'
     };
   }
 
   /**
-   * اختبار عمليات CRUD الأساسية
+   * اختبار عمليات CRUD الأساسية على Supabase
    */
   async testBasicOperations(): Promise<DatabaseCheckResult> {
     try {
-      console.log('🧪 جاري اختبار العمليات الأساسية...');
+      console.log('🧪 جاري اختبار العمليات الأساسية على Supabase...');
       
       // اختبار إنشاء مشروع تجريبي
       const testProject = await db.insert(schema.projects).values({
@@ -400,28 +150,44 @@ class DatabaseManager {
         status: 'active'
       }).returning();
       
-      console.log('✅ تم إنشاء مشروع تجريبي:', testProject[0]);
+      console.log('✅ تم إنشاء مشروع تجريبي في Supabase:', testProject[0]);
       
       // اختبار قراءة المشاريع
       const projects = await db.select().from(schema.projects).limit(1);
-      console.log('✅ تم قراءة المشاريع:', projects.length);
+      console.log('✅ تم قراءة المشاريع من Supabase:', projects.length);
       
       // حذف المشروع التجريبي
       await db.delete(schema.projects).where(sql`id = ${testProject[0].id}`);
-      console.log('✅ تم حذف المشروع التجريبي');
+      console.log('✅ تم حذف المشروع التجريبي من Supabase');
       
       return {
         success: true,
-        message: 'جميع العمليات الأساسية تعمل بشكل صحيح'
+        message: 'جميع العمليات الأساسية تعمل بشكل صحيح على Supabase'
       };
     } catch (error) {
-      console.error('❌ خطأ في اختبار العمليات الأساسية:', error);
+      console.error('❌ خطأ في اختبار العمليات الأساسية على Supabase:', error);
       return {
         success: false,
-        message: 'خطأ في اختبار العمليات الأساسية',
+        message: 'خطأ في اختبار العمليات الأساسية على Supabase',
         details: error
       };
     }
+  }
+
+  /**
+   * ⛔ دالة محذوفة: إنشاء الجداول ممنوع منعاً باتاً
+   * ✅ التطبيق يستخدم فقط جداول موجودة في Supabase السحابية
+   */
+  async createTables(): Promise<DatabaseCheckResult> {
+    console.error('❌ خطأ حرج: محاولة إنشاء جداول محلية محظورة!');
+    console.error('⛔ التطبيق يستخدم فقط قاعدة بيانات Supabase السحابية');
+    console.error('⚠️ يجب إنشاء/تحديث الجداول في Supabase مباشرة');
+    
+    return {
+      success: false,
+      message: 'إنشاء الجداول المحلية ممنوع - استخدم Supabase فقط',
+      details: { error: 'LOCAL_TABLE_CREATION_FORBIDDEN' }
+    };
   }
 }
 

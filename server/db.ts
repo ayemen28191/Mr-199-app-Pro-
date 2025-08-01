@@ -6,18 +6,22 @@ import * as schema from "@shared/schema";
 // Configure WebSocket for Neon/Supabase serverless connection
 neonConfig.webSocketConstructor = ws;
 
-// ✅ SUPABASE CLOUD DATABASE CONFIGURATION
-// التطبيق يستخدم قاعدة بيانات Supabase PostgreSQL السحابية بالكامل
-// لا يعتمد على قاعدة البيانات المحلية الخاصة بـ Replit
+// ✅ SUPABASE CLOUD DATABASE CONFIGURATION - الاتصال الوحيد المسموح
+// ⚠️ تحذير صارم: ممنوع منعاً باتاً استخدام قاعدة البيانات المحلية الخاصة بـ Replit
+// ⚠️ التطبيق يستخدم فقط قاعدة بيانات Supabase PostgreSQL السحابية
+// ⚠️ أي محاولة لاستخدام DATABASE_URL المحلي سيؤدي إلى فشل النظام
+
 const SUPABASE_DATABASE_URL = "postgresql://postgres.wibtasmyusxfqxxqekks:Ay**--772283228@aws-0-us-east-1.pooler.supabase.com:6543/postgres";
 
-// Primary connection: Supabase Cloud Database
-// Secondary fallback: Environment variable (not used in production)
-const connectionString = SUPABASE_DATABASE_URL || process.env.DATABASE_URL;
+// ⛔ ممنوع استخدام process.env.DATABASE_URL - Replit PostgreSQL محظور
+// ✅ الاتصال الوحيد المسموح: Supabase Cloud Database
+const connectionString = SUPABASE_DATABASE_URL;
 
-if (!connectionString) {
+if (!connectionString || connectionString.includes('replit') || connectionString.includes('localhost')) {
   throw new Error(
-    "قاعدة البيانات السحابية Supabase غير متاحة - تحقق من الاتصال",
+    "❌ خطأ حرج: محاولة استخدام قاعدة بيانات محلية محظورة!\n" +
+    "⚠️ التطبيق يستخدم فقط قاعدة بيانات Supabase السحابية\n" +
+    "⛔ استخدام قاعدة بيانات Replit المحلية ممنوع منعاً باتاً"
   );
 }
 

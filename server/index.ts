@@ -43,19 +43,20 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // فحص شامل لقاعدة البيانات باستخدام النظام الذكي
+  // ✅ فحص قاعدة بيانات Supabase السحابية فقط
+  // ⛔ لا يتم إنشاء أي جداول محلية - Supabase فقط
   try {
-    log("🚀 بدء الفحص الشامل لقاعدة البيانات...");
+    log("🔍 بدء فحص قاعدة بيانات Supabase السحابية...");
     
     const dbCheck = await databaseManager.initializeDatabase();
     
     if (dbCheck.success) {
       log("✅ " + dbCheck.message);
       
-      // اختبار العمليات الأساسية
+      // اختبار العمليات الأساسية على Supabase
       const testResult = await databaseManager.testBasicOperations();
       if (testResult.success) {
-        log("✅ جميع أنظمة قاعدة البيانات تعمل بشكل مثالي");
+        log("✅ جميع أنظمة قاعدة بيانات Supabase تعمل بشكل مثالي");
         
         // تشغيل الاختبار الشامل لجميع الوظائف
         log("🧪 بدء الاختبار الشامل لجميع وظائف التطبيق...");
@@ -66,16 +67,17 @@ app.use((req, res, next) => {
         const report = ComprehensiveTestReporter.generateFullReport();
         ComprehensiveTestReporter.printFormattedReport(report);
       } else {
-        log("⚠️ مشكلة في العمليات الأساسية: " + testResult.message);
+        log("⚠️ مشكلة في العمليات الأساسية على Supabase: " + testResult.message);
       }
     } else {
-      log("❌ " + dbCheck.message);
+      log("❌ مشكلة في قاعدة بيانات Supabase: " + dbCheck.message);
+      log("⛔ تحذير: يجب التأكد من إنشاء الجداول في Supabase السحابية");
       if (dbCheck.details) {
         console.log("📋 تفاصيل المشكلة:", dbCheck.details);
       }
     }
   } catch (error) {
-    log("💥 خطأ كبير في النظام:");
+    log("💥 خطأ في الاتصال بـ Supabase:");
     console.error(error);
   }
 
