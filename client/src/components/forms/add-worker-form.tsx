@@ -10,8 +10,20 @@ import { apiRequest } from "@/lib/queryClient";
 import { Plus } from "lucide-react";
 import type { InsertWorker } from "@shared/schema";
 
+interface Worker {
+  id: string;
+  name: string;
+  type: string;
+  dailyWage: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
 interface AddWorkerFormProps {
+  worker?: Worker;
   onSuccess?: () => void;
+  onCancel?: () => void;
+  submitLabel?: string;
 }
 
 interface WorkerType {
@@ -22,10 +34,10 @@ interface WorkerType {
   createdAt: string;
 }
 
-export default function AddWorkerForm({ onSuccess }: AddWorkerFormProps) {
-  const [name, setName] = useState("");
-  const [type, setType] = useState("");
-  const [dailyWage, setDailyWage] = useState("");
+export default function AddWorkerForm({ worker, onSuccess, onCancel, submitLabel = "إضافة العامل" }: AddWorkerFormProps) {
+  const [name, setName] = useState(worker?.name || "");
+  const [type, setType] = useState(worker?.type || "");
+  const [dailyWage, setDailyWage] = useState(worker ? worker.dailyWage : "");
   const [showAddTypeDialog, setShowAddTypeDialog] = useState(false);
   const [newTypeName, setNewTypeName] = useState("");
   const { toast } = useToast();
@@ -37,23 +49,31 @@ export default function AddWorkerForm({ onSuccess }: AddWorkerFormProps) {
   });
 
   const addWorkerMutation = useMutation({
-    mutationFn: (data: InsertWorker) => apiRequest("POST", "/api/workers", data),
+    mutationFn: (data: InsertWorker) => {
+      if (worker) {
+        return apiRequest("PUT", `/api/workers/${worker.id}`, data);
+      } else {
+        return apiRequest("POST", "/api/workers", data);
+      }
+    },
     onSuccess: () => {
       toast({
         title: "تم الحفظ",
-        description: "تم إضافة العامل بنجاح",
+        description: worker ? "تم تعديل العامل بنجاح" : "تم إضافة العامل بنجاح",
       });
-      setName("");
-      setType("");
-      setDailyWage("");
+      if (!worker) {
+        setName("");
+        setType("");
+        setDailyWage("");
+      }
       queryClient.invalidateQueries({ queryKey: ["/api/workers"] });
       queryClient.invalidateQueries({ queryKey: ["/api/worker-types"] });
       onSuccess?.();
     },
     onError: (error: any) => {
-      const errorMessage = error?.message || "حدث خطأ أثناء إضافة العامل";
+      const errorMessage = error?.message || (worker ? "حدث خطأ أثناء تعديل العامل" : "حدث خطأ أثناء إضافة العامل");
       toast({
-        title: "فشل في إضافة العامل",
+        title: worker ? "فشل في تعديل العامل" : "فشل في إضافة العامل",
         description: errorMessage,
         variant: "destructive",
       });
@@ -229,13 +249,25 @@ export default function AddWorkerForm({ onSuccess }: AddWorkerFormProps) {
         />
       </div>
 
-      <Button
-        type="submit"
-        disabled={addWorkerMutation.isPending}
-        className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
-      >
-        {addWorkerMutation.isPending ? "جاري الإضافة..." : "إضافة العامل"}
-      </Button>
+      <div className="flex gap-2">
+        <Button 
+          type="submit" 
+          className="flex-1" 
+          disabled={addWorkerMutation.isPending}
+        >
+          {addWorkerMutation.isPending ? "جاري الحفظ..." : submitLabel}
+        </Button>
+        {onCancel && (
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={onCancel}
+            className="flex-1"
+          >
+            إلغاء
+          </Button>
+        )}
+      </div>
     </form>
   );
 }

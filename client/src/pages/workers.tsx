@@ -11,6 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Edit2, Trash2, Users, Clock, DollarSign, Calendar, Search, Filter, User, Activity } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
+import AddWorkerForm from '@/components/forms/add-worker-form';
 
 interface Worker {
   id: string;
@@ -144,89 +145,25 @@ const WorkerCard = ({ worker, onEdit, onDelete, onToggleStatus }: {
   );
 };
 
-const WorkerDialog = ({ worker, onSave, onClose, isOpen }: {
+const WorkerDialog = ({ worker, onClose, isOpen }: {
   worker?: Worker;
-  onSave: (data: WorkerFormData) => void;
   onClose: () => void;
   isOpen: boolean;
 }) => {
-  const [formData, setFormData] = useState<WorkerFormData>({
-    name: worker?.name || '',
-    type: worker?.type || '',
-    dailyWage: worker ? parseFloat(worker.dailyWage) : 0
-  });
-
-  const { data: workerTypes = [] } = useQuery<WorkerType[]>({
-    queryKey: ['/api/worker-types'],
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.name.trim() || !formData.type.trim() || formData.dailyWage <= 0) {
-      return;
-    }
-    onSave(formData);
-  };
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{worker ? 'تعديل العامل' : 'إضافة عامل جديد'}</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label htmlFor="name">اسم العامل *</Label>
-            <Input
-              id="name"
-              value={formData.name}
-              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-              placeholder="أدخل اسم العامل"
-              className="mt-1"
-              required
-            />
-          </div>
-          
-          <div>
-            <Label htmlFor="type">نوع العامل *</Label>
-            <Select value={formData.type} onValueChange={(value) => setFormData(prev => ({ ...prev, type: value }))}>
-              <SelectTrigger className="mt-1">
-                <SelectValue placeholder="اختر نوع العامل" />
-              </SelectTrigger>
-              <SelectContent>
-                {workerTypes.map((type) => (
-                  <SelectItem key={type.id} value={type.name}>
-                    {type.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          
-          <div>
-            <Label htmlFor="dailyWage">الأجر اليومي (ريال) *</Label>
-            <Input
-              id="dailyWage"
-              type="number"
-              min="1"
-              step="0.01"
-              value={formData.dailyWage}
-              onChange={(e) => setFormData(prev => ({ ...prev, dailyWage: parseFloat(e.target.value) || 0 }))}
-              placeholder="أدخل الأجر اليومي"
-              className="mt-1"
-              required
-            />
-          </div>
-          
-          <div className="flex gap-2 pt-4">
-            <Button type="submit" className="flex-1">
-              {worker ? 'حفظ التعديلات' : 'إضافة العامل'}
-            </Button>
-            <Button type="button" variant="outline" onClick={onClose}>
-              إلغاء
-            </Button>
-          </div>
-        </form>
+        <div className="mt-4">
+          <AddWorkerForm
+            worker={worker}
+            onSuccess={onClose}
+            onCancel={onClose}
+            submitLabel={worker ? 'حفظ التعديلات' : 'إضافة العامل'}
+          />
+        </div>
       </DialogContent>
     </Dialog>
   );
@@ -250,61 +187,10 @@ export default function WorkersPage() {
     queryKey: ['/api/worker-types'],
   });
 
-  const createWorkerMutation = useMutation({
-    mutationFn: (data: WorkerFormData) => 
-      fetch('/api/workers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      }).then(res => res.json()),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/workers'] });
-      setShowDialog(false);
-      setEditingWorker(undefined);
-      toast({
-        title: "تم بنجاح",
-        description: "تم إضافة العامل بنجاح",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "خطأ",
-        description: error.message || "حدث خطأ في إضافة العامل",
-        variant: "destructive",
-      });
-    },
-  });
 
-  const updateWorkerMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => 
-      fetch(`/api/workers/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      }).then(res => res.json()),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/workers'] });
-      setShowDialog(false);
-      setEditingWorker(undefined);
-      toast({
-        title: "تم بنجاح",
-        description: "تم تحديث بيانات العامل بنجاح",
-      });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "خطأ",
-        description: error.message || "حدث خطأ في تحديث العامل",
-        variant: "destructive",
-      });
-    },
-  });
 
   const deleteWorkerMutation = useMutation({
-    mutationFn: (id: string) => 
-      fetch(`/api/workers/${id}`, {
-        method: 'DELETE',
-      }).then(res => res.json()),
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/workers/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/workers'] });
       toast({
@@ -316,6 +202,25 @@ export default function WorkersPage() {
       toast({
         title: "خطأ",
         description: error.message || "حدث خطأ في حذف العامل",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateWorkerMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => 
+      apiRequest("PUT", `/api/workers/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/workers'] });
+      toast({
+        title: "تم بنجاح",
+        description: "تم تحديث بيانات العامل بنجاح",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "خطأ",
+        description: error.message || "حدث خطأ في تحديث العامل",
         variant: "destructive",
       });
     },
@@ -339,18 +244,7 @@ export default function WorkersPage() {
     avgWage: workers.length > 0 ? workers.reduce((sum, w) => sum + parseFloat(w.dailyWage), 0) / workers.length : 0
   };
 
-  const handleSaveWorker = (data: WorkerFormData) => {
-    const formattedData = {
-      ...data,
-      dailyWage: data.dailyWage.toString() // تحويل الرقم إلى نص
-    };
-    
-    if (editingWorker) {
-      updateWorkerMutation.mutate({ id: editingWorker.id, data: formattedData });
-    } else {
-      createWorkerMutation.mutate(formattedData);
-    }
-  };
+
 
   const handleEditWorker = (worker: Worker) => {
     setEditingWorker(worker);
@@ -567,7 +461,6 @@ export default function WorkersPage() {
       {/* Worker Dialog */}
       <WorkerDialog
         worker={editingWorker}
-        onSave={handleSaveWorker}
         onClose={() => {
           setShowDialog(false);
           setEditingWorker(undefined);
