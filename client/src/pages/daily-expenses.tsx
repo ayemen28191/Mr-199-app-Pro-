@@ -50,6 +50,20 @@ export default function DailyExpenses() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // دالة مساعدة لحفظ قيم الإكمال التلقائي
+  const saveAutocompleteValue = async (field: string, value: string) => {
+    if (!value || value.trim().length < 2) return;
+    
+    try {
+      await apiRequest('POST', '/api/autocomplete', {
+        category: field,
+        value: value.trim()
+      });
+    } catch (error) {
+      console.error(`Error saving autocomplete value for ${field}:`, error);
+    }
+  };
+
   const { data: workers = [] } = useQuery<Worker[]>({
     queryKey: ["/api/workers"],
   });
@@ -147,11 +161,15 @@ export default function DailyExpenses() {
 
   const addFundTransferMutation = useMutation({
     mutationFn: (data: InsertFundTransfer) => apiRequest("POST", "/api/fund-transfers", data),
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({
         title: "تم إضافة العهدة",
         description: "تم إضافة تحويل العهدة بنجاح",
       });
+      
+      // حفظ قيم الإكمال التلقائي
+      if (senderName) await saveAutocompleteValue('senderNames', senderName);
+      if (transferNumber) await saveAutocompleteValue('transferNumbers', transferNumber);
       
       // تنظيف النموذج
       setFundAmount("");
@@ -168,11 +186,15 @@ export default function DailyExpenses() {
 
   const addTransportationMutation = useMutation({
     mutationFn: (data: InsertTransportationExpense) => apiRequest("POST", "/api/transportation-expenses", data),
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({
         title: "تم إضافة المواصلات",
         description: "تم إضافة مصروف المواصلات بنجاح",
       });
+      
+      // حفظ قيم الإكمال التلقائي
+      if (transportDescription) await saveAutocompleteValue('transportDescriptions', transportDescription);
+      if (transportNotes) await saveAutocompleteValue('notes', transportNotes);
       
       // تنظيف النموذج
       setTransportDescription("");
@@ -261,7 +283,11 @@ export default function DailyExpenses() {
   const updateFundTransferMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => 
       apiRequest("PUT", `/api/fund-transfers/${id}`, data),
-    onSuccess: () => {
+    onSuccess: async () => {
+      // حفظ قيم الإكمال التلقائي
+      if (senderName) await saveAutocompleteValue('senderNames', senderName);
+      if (transferNumber) await saveAutocompleteValue('transferNumbers', transferNumber);
+      
       resetFundTransferForm();
       queryClient.invalidateQueries({ 
         queryKey: ["/api/projects", selectedProjectId, "fund-transfers", selectedDate] 
@@ -330,7 +356,11 @@ export default function DailyExpenses() {
   const updateTransportationMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => 
       apiRequest("PUT", `/api/transportation-expenses/${id}`, data),
-    onSuccess: () => {
+    onSuccess: async () => {
+      // حفظ قيم الإكمال التلقائي
+      if (transportDescription) await saveAutocompleteValue('transportDescriptions', transportDescription);
+      if (transportNotes) await saveAutocompleteValue('notes', transportNotes);
+      
       resetTransportationForm();
       queryClient.invalidateQueries({ 
         queryKey: ["/api/projects", selectedProjectId, "transportation-expenses"] 

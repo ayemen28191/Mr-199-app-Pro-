@@ -31,6 +31,20 @@ export default function WorkerMiscExpenses({ projectId, selectedDate }: WorkerMi
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // دالة مساعدة لحفظ قيم الإكمال التلقائي
+  const saveAutocompleteValue = async (field: string, value: string) => {
+    if (!value || value.trim().length < 2) return;
+    
+    try {
+      await apiRequest('POST', '/api/autocomplete', {
+        category: field,
+        value: value.trim()
+      });
+    } catch (error) {
+      console.error(`Error saving autocomplete value for ${field}:`, error);
+    }
+  };
+
   const { data: todayMiscExpenses = [] } = useQuery<WorkerMiscExpense[]>({
     queryKey: ["/api/worker-misc-expenses", projectId, selectedDate],
     queryFn: async () => {
@@ -43,7 +57,10 @@ export default function WorkerMiscExpenses({ projectId, selectedDate }: WorkerMi
   const createMiscExpenseMutation = useMutation({
     mutationFn: (data: { amount: string; description: string; projectId: string; date: string }) =>
       apiRequest("POST", "/api/worker-misc-expenses", data),
-    onSuccess: () => {
+    onSuccess: async () => {
+      // حفظ قيم الإكمال التلقائي
+      if (miscDescription) await saveAutocompleteValue('workerMiscDescriptions', miscDescription);
+      
       queryClient.invalidateQueries({ queryKey: ["/api/worker-misc-expenses"] });
       setMiscDescription("");
       setMiscAmount("");
@@ -65,7 +82,10 @@ export default function WorkerMiscExpenses({ projectId, selectedDate }: WorkerMi
   const updateMiscExpenseMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<WorkerMiscExpense> }) =>
       apiRequest("PUT", `/api/worker-misc-expenses/${id}`, data),
-    onSuccess: () => {
+    onSuccess: async () => {
+      // حفظ قيم الإكمال التلقائي
+      if (miscDescription) await saveAutocompleteValue('workerMiscDescriptions', miscDescription);
+      
       queryClient.invalidateQueries({ queryKey: ["/api/worker-misc-expenses"] });
       resetMiscExpenseForm();
       toast({

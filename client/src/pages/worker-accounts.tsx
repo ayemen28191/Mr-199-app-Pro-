@@ -42,6 +42,20 @@ export default function WorkerAccounts() {
   const queryClient = useQueryClient();
   const { validateField, clearErrors } = useFormErrors();
 
+  // دالة مساعدة لحفظ قيم الإكمال التلقائي
+  const saveAutocompleteValue = async (field: string, value: string) => {
+    if (!value || value.trim().length < 2) return;
+    
+    try {
+      await apiRequest('POST', '/api/autocomplete', {
+        category: field,
+        value: value.trim()
+      });
+    } catch (error) {
+      console.error(`Error saving autocomplete value for ${field}:`, error);
+    }
+  };
+
   const { data: workers = [], isLoading: workersLoading } = useQuery<Worker[]>({
     queryKey: ["/api/workers"],
   });
@@ -96,7 +110,13 @@ export default function WorkerAccounts() {
     mutationFn: async (transfer: InsertWorkerTransfer) => {
       return apiRequest("POST", "/api/worker-transfers", transfer);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      // حفظ قيم الإكمال التلقائي
+      if (senderName) await saveAutocompleteValue('senderNames', senderName);
+      if (recipientName) await saveAutocompleteValue('recipientNames', recipientName);
+      if (recipientPhone) await saveAutocompleteValue('recipientPhones', recipientPhone);
+      if (transferNumber) await saveAutocompleteValue('transferNumbers', transferNumber);
+      
       toast({
         title: "تم إرسال الحولية",
         description: "تم إرسال الحولية للأهل بنجاح",
@@ -117,7 +137,13 @@ export default function WorkerAccounts() {
     mutationFn: async ({ id, transfer }: { id: string; transfer: Partial<InsertWorkerTransfer> }) => {
       return apiRequest("PUT", `/api/worker-transfers/${id}`, transfer);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      // حفظ قيم الإكمال التلقائي
+      if (senderName) await saveAutocompleteValue('senderNames', senderName);
+      if (recipientName) await saveAutocompleteValue('recipientNames', recipientName);
+      if (recipientPhone) await saveAutocompleteValue('recipientPhones', recipientPhone);
+      if (transferNumber) await saveAutocompleteValue('transferNumbers', transferNumber);
+      
       toast({
         title: "تم تعديل الحولية",
         description: "تم تعديل بيانات الحولية بنجاح",
