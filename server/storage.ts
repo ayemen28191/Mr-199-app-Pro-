@@ -216,6 +216,15 @@ export class DatabaseStorage implements IStorage {
     return updated || undefined;
   }
 
+  async deleteWorker(id: string): Promise<void> {
+    try {
+      await db.delete(workers).where(eq(workers.id, id));
+    } catch (error) {
+      console.error('Error deleting worker:', error);
+      throw new Error('فشل في حذف العامل');
+    }
+  }
+
   // Worker Types
   async getWorkerTypes(): Promise<WorkerType[]> {
     try {

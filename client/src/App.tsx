@@ -15,6 +15,7 @@ import DailyExpensesReport from "@/pages/daily-expenses-report";
 import ExcelStyleDailyExpenses from "@/pages/excel-style-daily-expenses";
 
 import ProjectsPage from "@/pages/projects";
+import WorkersPage from "@/pages/workers";
 import Header from "@/components/layout/header";
 import BottomNavigation from "@/components/layout/bottom-navigation";
 
@@ -23,6 +24,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Dashboard} />
       <Route path="/projects" component={ProjectsPage} />
+      <Route path="/workers" component={WorkersPage} />
       <Route path="/worker-attendance" component={WorkerAttendance} />
       <Route path="/worker-accounts" component={WorkerAccounts} />
       <Route path="/daily-expenses" component={DailyExpenses} />

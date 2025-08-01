@@ -1,0 +1,579 @@
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
+import { Plus, Edit2, Trash2, Users, Clock, DollarSign, Calendar, Search, Filter, User, Activity } from 'lucide-react';
+import { apiRequest } from '@/lib/queryClient';
+
+interface Worker {
+  id: string;
+  name: string;
+  type: string;
+  dailyWage: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+interface WorkerType {
+  id: string;
+  name: string;
+  usageCount: number;
+  lastUsed: string;
+  createdAt: string;
+}
+
+interface WorkerFormData {
+  name: string;
+  type: string;
+  dailyWage: number;
+  isActive?: boolean;
+}
+
+const WorkerCard = ({ worker, onEdit, onDelete, onToggleStatus }: {
+  worker: Worker;
+  onEdit: (worker: Worker) => void;
+  onDelete: (workerId: string) => void;
+  onToggleStatus: (workerId: string) => void;
+}) => {
+  return (
+    <Card className={`transition-all duration-300 hover:shadow-lg border-r-4 ${
+      worker.isActive ? 'border-r-green-500 bg-gradient-to-r from-green-50 to-white dark:from-green-950 dark:to-gray-900' 
+      : 'border-r-red-500 bg-gradient-to-r from-red-50 to-white dark:from-red-950 dark:to-gray-900'
+    }`}>
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold text-lg">
+              {worker.name.charAt(0)}
+            </div>
+            <div>
+              <CardTitle className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                {worker.name}
+              </CardTitle>
+              <div className="flex items-center gap-2 mt-1">
+                <Badge variant={worker.isActive ? "default" : "destructive"} className="text-xs">
+                  {worker.isActive ? "نشط" : "غير نشط"}
+                </Badge>
+                <Badge variant="outline" className="text-xs">
+                  {worker.type}
+                </Badge>
+              </div>
+            </div>
+          </div>
+          <div className="flex gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onEdit(worker)}
+              className="h-8 w-8 p-0 hover:bg-blue-100 dark:hover:bg-blue-900"
+            >
+              <Edit2 className="h-4 w-4 text-blue-600" />
+            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 w-8 p-0 hover:bg-red-100 dark:hover:bg-red-900"
+                >
+                  <Trash2 className="h-4 w-4 text-red-600" />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>حذف العامل</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    هل أنت متأكد من حذف العامل "{worker.name}"؟ هذا الإجراء لا يمكن التراجع عنه.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>إلغاء</AlertDialogCancel>
+                  <AlertDialogAction onClick={() => onDelete(worker.id)} className="bg-red-600 hover:bg-red-700">
+                    حذف
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-0">
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <div className="flex items-center gap-2">
+            <DollarSign className="h-4 w-4 text-green-600" />
+            <div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">الأجر اليومي</p>
+              <p className="font-bold text-green-600">{parseFloat(worker.dailyWage).toFixed(0)} ريال</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-blue-600" />
+            <div>
+              <p className="text-xs text-gray-500 dark:text-gray-400">تاريخ التسجيل</p>
+              <p className="font-medium text-gray-700 dark:text-gray-300">
+                {new Date(worker.createdAt).toLocaleDateString('ar-SA')}
+              </p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="flex justify-between items-center pt-3 border-t border-gray-200 dark:border-gray-700">
+          <Button
+            variant={worker.isActive ? "destructive" : "default"}
+            size="sm"
+            onClick={() => onToggleStatus(worker.id)}
+            className="flex items-center gap-2 text-xs"
+          >
+            <Activity className="h-3 w-3" />
+            {worker.isActive ? "إيقاف" : "تفعيل"}
+          </Button>
+          <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+            <User className="h-3 w-3" />
+            ID: {worker.id.slice(-8)}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+const WorkerDialog = ({ worker, onSave, onClose, isOpen }: {
+  worker?: Worker;
+  onSave: (data: WorkerFormData) => void;
+  onClose: () => void;
+  isOpen: boolean;
+}) => {
+  const [formData, setFormData] = useState<WorkerFormData>({
+    name: worker?.name || '',
+    type: worker?.type || '',
+    dailyWage: worker ? parseFloat(worker.dailyWage) : 0
+  });
+
+  const { data: workerTypes = [] } = useQuery<WorkerType[]>({
+    queryKey: ['/api/worker-types'],
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.name.trim() || !formData.type.trim() || formData.dailyWage <= 0) {
+      return;
+    }
+    onSave(formData);
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{worker ? 'تعديل العامل' : 'إضافة عامل جديد'}</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Label htmlFor="name">اسم العامل *</Label>
+            <Input
+              id="name"
+              value={formData.name}
+              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+              placeholder="أدخل اسم العامل"
+              className="mt-1"
+              required
+            />
+          </div>
+          
+          <div>
+            <Label htmlFor="type">نوع العامل *</Label>
+            <Select value={formData.type} onValueChange={(value) => setFormData(prev => ({ ...prev, type: value }))}>
+              <SelectTrigger className="mt-1">
+                <SelectValue placeholder="اختر نوع العامل" />
+              </SelectTrigger>
+              <SelectContent>
+                {workerTypes.map((type) => (
+                  <SelectItem key={type.id} value={type.name}>
+                    {type.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div>
+            <Label htmlFor="dailyWage">الأجر اليومي (ريال) *</Label>
+            <Input
+              id="dailyWage"
+              type="number"
+              min="1"
+              step="0.01"
+              value={formData.dailyWage}
+              onChange={(e) => setFormData(prev => ({ ...prev, dailyWage: parseFloat(e.target.value) || 0 }))}
+              placeholder="أدخل الأجر اليومي"
+              className="mt-1"
+              required
+            />
+          </div>
+          
+          <div className="flex gap-2 pt-4">
+            <Button type="submit" className="flex-1">
+              {worker ? 'حفظ التعديلات' : 'إضافة العامل'}
+            </Button>
+            <Button type="button" variant="outline" onClick={onClose}>
+              إلغاء
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export default function WorkersPage() {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [editingWorker, setEditingWorker] = useState<Worker | undefined>();
+  const [showDialog, setShowDialog] = useState(false);
+  
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const { data: workers = [], isLoading } = useQuery<Worker[]>({
+    queryKey: ['/api/workers'],
+  });
+
+  const { data: workerTypes = [] } = useQuery<WorkerType[]>({
+    queryKey: ['/api/worker-types'],
+  });
+
+  const createWorkerMutation = useMutation({
+    mutationFn: (data: WorkerFormData) => 
+      fetch('/api/workers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      }).then(res => res.json()),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/workers'] });
+      setShowDialog(false);
+      setEditingWorker(undefined);
+      toast({
+        title: "تم بنجاح",
+        description: "تم إضافة العامل بنجاح",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "خطأ",
+        description: error.message || "حدث خطأ في إضافة العامل",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateWorkerMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) => 
+      fetch(`/api/workers/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      }).then(res => res.json()),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/workers'] });
+      setShowDialog(false);
+      setEditingWorker(undefined);
+      toast({
+        title: "تم بنجاح",
+        description: "تم تحديث بيانات العامل بنجاح",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "خطأ",
+        description: error.message || "حدث خطأ في تحديث العامل",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const deleteWorkerMutation = useMutation({
+    mutationFn: (id: string) => 
+      fetch(`/api/workers/${id}`, {
+        method: 'DELETE',
+      }).then(res => res.json()),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/workers'] });
+      toast({
+        title: "تم بنجاح",
+        description: "تم حذف العامل بنجاح",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "خطأ",
+        description: error.message || "حدث خطأ في حذف العامل",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const filteredWorkers = workers.filter(worker => {
+    const matchesSearch = worker.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         worker.type.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || 
+                         (statusFilter === 'active' && worker.isActive) ||
+                         (statusFilter === 'inactive' && !worker.isActive);
+    const matchesType = typeFilter === 'all' || worker.type === typeFilter;
+    
+    return matchesSearch && matchesStatus && matchesType;
+  });
+
+  const stats = {
+    total: workers.length,
+    active: workers.filter(w => w.isActive).length,
+    inactive: workers.filter(w => !w.isActive).length,
+    avgWage: workers.length > 0 ? workers.reduce((sum, w) => sum + parseFloat(w.dailyWage), 0) / workers.length : 0
+  };
+
+  const handleSaveWorker = (data: WorkerFormData) => {
+    const formattedData = {
+      ...data,
+      dailyWage: data.dailyWage.toString() // تحويل الرقم إلى نص
+    };
+    
+    if (editingWorker) {
+      updateWorkerMutation.mutate({ id: editingWorker.id, data: formattedData });
+    } else {
+      createWorkerMutation.mutate(formattedData);
+    }
+  };
+
+  const handleEditWorker = (worker: Worker) => {
+    setEditingWorker(worker);
+    setShowDialog(true);
+  };
+
+  const handleDeleteWorker = (workerId: string) => {
+    deleteWorkerMutation.mutate(workerId);
+  };
+
+  const handleToggleStatus = (workerId: string) => {
+    const worker = workers.find(w => w.id === workerId);
+    if (worker) {
+      updateWorkerMutation.mutate({ 
+        id: workerId, 
+        data: { isActive: !worker.isActive }
+      });
+    }
+  };
+
+  const handleNewWorker = () => {
+    setEditingWorker(undefined);
+    setShowDialog(true);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto p-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {[...Array(8)].map((_, i) => (
+            <Card key={i} className="animate-pulse">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-full bg-gray-300 dark:bg-gray-700" />
+                  <div className="space-y-2">
+                    <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-24" />
+                    <div className="h-3 bg-gray-300 dark:bg-gray-700 rounded w-16" />
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="h-3 bg-gray-300 dark:bg-gray-700 rounded" />
+                  <div className="h-3 bg-gray-300 dark:bg-gray-700 rounded w-3/4" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto p-4 space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">إدارة العمال</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">إدارة وتنظيم العمالة في المشاريع</p>
+        </div>
+        <Button onClick={handleNewWorker} className="flex items-center gap-2">
+          <Plus className="h-4 w-4" />
+          إضافة عامل جديد
+        </Button>
+      </div>
+
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-blue-100 text-sm">إجمالي العمال</p>
+                <p className="text-2xl font-bold">{stats.total}</p>
+              </div>
+              <Users className="h-8 w-8 text-blue-200" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-green-100 text-sm">العمال النشطون</p>
+                <p className="text-2xl font-bold">{stats.active}</p>
+              </div>
+              <Activity className="h-8 w-8 text-green-200" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-r from-red-500 to-red-600 text-white">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-red-100 text-sm">العمال غير النشطين</p>
+                <p className="text-2xl font-bold">{stats.inactive}</p>
+              </div>
+              <Clock className="h-8 w-8 text-red-200" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white">
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-purple-100 text-sm">متوسط الأجر</p>
+                <p className="text-2xl font-bold">{stats.avgWage.toFixed(0)} ريال</p>
+              </div>
+              <DollarSign className="h-8 w-8 text-purple-200" />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filters */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+              <Label htmlFor="search">البحث</Label>
+              <div className="relative mt-1">
+                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  id="search"
+                  placeholder="ابحث عن عامل..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pr-10"
+                />
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="status">الحالة</Label>
+              <Select value={statusFilter} onValueChange={(value: any) => setStatusFilter(value)}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">جميع الحالات</SelectItem>
+                  <SelectItem value="active">نشط</SelectItem>
+                  <SelectItem value="inactive">غير نشط</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="type">نوع العامل</Label>
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">جميع الأنواع</SelectItem>
+                  {workerTypes.map((type) => (
+                    <SelectItem key={type.id} value={type.name}>
+                      {type.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-end">
+              <Button variant="outline" className="w-full mt-1" onClick={() => {
+                setSearchTerm('');
+                setStatusFilter('all');
+                setTypeFilter('all');
+              }}>
+                <Filter className="h-4 w-4 mr-2" />
+                إعادة تعيين
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Workers Grid */}
+      {filteredWorkers.length === 0 ? (
+        <Card>
+          <CardContent className="p-8 text-center">
+            <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+              لا توجد عمال
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              {workers.length === 0 ? 'لم يتم إضافة أي عمال بعد' : 'لا توجد عمال تطابق معايير البحث'}
+            </p>
+            {workers.length === 0 && (
+              <Button onClick={handleNewWorker}>
+                إضافة أول عامل
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {filteredWorkers.map((worker) => (
+            <WorkerCard
+              key={worker.id}
+              worker={worker}
+              onEdit={handleEditWorker}
+              onDelete={handleDeleteWorker}
+              onToggleStatus={handleToggleStatus}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Worker Dialog */}
+      <WorkerDialog
+        worker={editingWorker}
+        onSave={handleSaveWorker}
+        onClose={() => {
+          setShowDialog(false);
+          setEditingWorker(undefined);
+        }}
+        isOpen={showDialog}
+      />
+    </div>
+  );
+}

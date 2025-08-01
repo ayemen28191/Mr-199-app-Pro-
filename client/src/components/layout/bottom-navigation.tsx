@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 const navigationItems = [
   { path: "/", icon: Home, label: "الرئيسية", key: "dashboard" },
   { path: "/projects", icon: Building2, label: "المشاريع", key: "projects" },
-  { path: "/worker-attendance", icon: Users, label: "الحضور", key: "attendance" },
+  { path: "/workers", icon: Users, label: "العمال", key: "workers" },
   { path: "/daily-expenses", icon: Receipt, label: "المصروفات", key: "expenses" },
   { path: "/reports", icon: BarChart, label: "التقارير", key: "reports" },
 ];

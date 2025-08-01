@@ -145,6 +145,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/workers/:id", async (req, res) => {
+    try {
+      const worker = await storage.updateWorker(req.params.id, req.body);
+      if (!worker) {
+        return res.status(404).json({ message: "العامل غير موجود" });
+      }
+      res.json(worker);
+    } catch (error) {
+      console.error("Error updating worker:", error);
+      res.status(500).json({ message: "خطأ في تحديث العامل" });
+    }
+  });
+
+  app.delete("/api/workers/:id", async (req, res) => {
+    try {
+      await storage.deleteWorker(req.params.id);
+      res.json({ message: "تم حذف العامل بنجاح" });
+    } catch (error) {
+      console.error("Error deleting worker:", error);
+      res.status(500).json({ message: "خطأ في حذف العامل" });
+    }
+  });
+
   // Worker Types
   app.get("/api/worker-types", async (req, res) => {
     try {
