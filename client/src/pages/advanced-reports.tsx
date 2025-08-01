@@ -1,49 +1,46 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { CalendarIcon, FileText, Download, Printer, Filter } from 'lucide-react';
+import { CalendarIcon, FileText, Download, Printer, Filter, ArrowRight } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import * as XLSX from 'exceljs';
 import { saveAs } from 'file-saver';
+import { useLocation } from 'wouter';
 
 interface Project {
   id: string;
   name: string;
 }
 
-interface ReportData {
-  expenses: ExpenseRecord[];
-  income: IncomeRecord[];
-  totals: {
-    totalAmount: number;
-    categoryTotals: Record<string, number>;
-  };
+interface ReportFilters {
+  projectId: string;
+  reportType: 'expenses' | 'income';
+  dateFrom: string;
+  dateTo: string;
 }
 
 interface ExpenseRecord {
   id: string;
-  projectName: string;
+  projectId: string;
   date: string;
-  day: string;
   category: string;
-  subcategory: string;
+  subcategory?: string;
   description: string;
   amount: number;
   vendor?: string;
   notes?: string;
+  type: string;
 }
 
 interface IncomeRecord {
   id: string;
-  projectName: string;
+  projectId: string;
   date: string;
   transferNumber: string;
   senderName: string;
@@ -52,25 +49,30 @@ interface IncomeRecord {
   notes?: string;
 }
 
+interface ReportData {
+  expenses?: ExpenseRecord[];
+  income?: IncomeRecord[];
+  totals: {
+    categoryTotals?: Record<string, number>;
+    totalAmount: number;
+  };
+}
+
 const AdvancedReports = () => {
-  const [filters, setFilters] = useState({
+  const [, setLocation] = useLocation();
+  const [filters, setFilters] = useState<ReportFilters>({
     projectId: '',
-    reportType: 'expenses', // 'expenses' or 'income'
+    reportType: 'expenses',
     dateFrom: '',
     dateTo: '',
   });
 
+  const [reportData, setReportData] = useState<ReportData | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
 
   // جلب قائمة المشاريع
   const { data: projects = [] } = useQuery<Project[]>({
     queryKey: ['/api/projects'],
-  });
-
-  // جلب بيانات التقرير
-  const { data: reportData, refetch: generateReport, isFetching } = useQuery<ReportData>({
-    queryKey: ['/api/reports/advanced', filters],
-    enabled: false, // لا نجلب البيانات تلقائياً
   });
 
   const handleGenerateReport = async () => {
@@ -80,8 +82,37 @@ const AdvancedReports = () => {
     }
     
     setIsGenerating(true);
-    await generateReport();
-    setIsGenerating(false);
+    try {
+      const params = new URLSearchParams({
+        projectId: filters.projectId,
+        dateFrom: filters.dateFrom,
+        dateTo: filters.dateTo,
+        reportType: filters.reportType
+      });
+
+      console.log('🔍 جلب التقرير مع المعاملات:', params.toString());
+      
+      const response = await fetch(`/api/reports/advanced?${params}`);
+      console.log('📡 حالة الاستجابة:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ خطأ في API:', errorText);
+        throw new Error(`خطأ HTTP ${response.status}: ${errorText}`);
+      }
+
+      const data = await response.json();
+      console.log('📊 بيانات التقرير المستلمة:', data);
+      
+      setReportData(data);
+      alert('تم إنشاء التقرير بنجاح!');
+      
+    } catch (error) {
+      console.error('❌ خطأ في جلب التقرير:', error);
+      alert(`حدث خطأ أثناء إنشاء التقرير: ${error instanceof Error ? error.message : 'خطأ غير معروف'}`);
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const formatCurrency = (amount: number) => {
@@ -130,7 +161,7 @@ const AdvancedReports = () => {
       worksheet.addRow(['التاريخ', 'اليوم', 'الفئة', 'الفئة الفرعية', 'الوصف', 'المبلغ', 'المورد', 'ملاحظات']);
 
       // البيانات
-      reportData.expenses.forEach(expense => {
+      reportData.expenses?.forEach(expense => {
         worksheet.addRow([
           formatDate(expense.date),
           getDayName(expense.date),
@@ -147,9 +178,11 @@ const AdvancedReports = () => {
       worksheet.addRow([]); // سطر فارغ
       worksheet.addRow(['الإجماليات حسب الفئة:']);
       
-      Object.entries(reportData.totals.categoryTotals).forEach(([category, total]) => {
-        worksheet.addRow([category, '', '', '', '', total]);
-      });
+      if (reportData.totals.categoryTotals) {
+        Object.entries(reportData.totals.categoryTotals).forEach(([category, total]) => {
+          worksheet.addRow([category, '', '', '', '', total]);
+        });
+      }
 
       worksheet.addRow([]); // سطر فارغ
       worksheet.addRow(['الإجمالي العام:', '', '', '', '', reportData.totals.totalAmount]);
@@ -168,7 +201,7 @@ const AdvancedReports = () => {
       worksheet.addRow(['التاريخ', 'رقم الحوالة', 'اسم المرسل', 'نوع الحوالة', 'المبلغ', 'ملاحظات']);
 
       // البيانات
-      reportData.income.forEach(income => {
+      reportData.income?.forEach(income => {
         worksheet.addRow([
           formatDate(income.date),
           income.transferNumber,
@@ -189,190 +222,42 @@ const AdvancedReports = () => {
     saveAs(data, fileName);
   };
 
-  const renderExpensesTable = () => {
-    if (!reportData?.expenses.length) {
-      return (
-        <div className="text-center py-8 text-muted-foreground">
-          لا توجد مصروفات في الفترة المحددة
-        </div>
-      );
-    }
-
-    return (
-      <div className="space-y-6">
-        {/* جدول المصروفات */}
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/50">
-                <TableHead className="text-right font-semibold">التاريخ</TableHead>
-                <TableHead className="text-right font-semibold">اليوم</TableHead>
-                <TableHead className="text-right font-semibold">الفئة</TableHead>
-                <TableHead className="text-right font-semibold">الفئة الفرعية</TableHead>
-                <TableHead className="text-right font-semibold">الوصف</TableHead>
-                <TableHead className="text-right font-semibold">المبلغ</TableHead>
-                <TableHead className="text-right font-semibold">المورد</TableHead>
-                <TableHead className="text-right font-semibold">ملاحظات</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {reportData.expenses.map((expense) => (
-                <TableRow key={expense.id} className="hover:bg-muted/30">
-                  <TableCell className="font-medium">{formatDate(expense.date)}</TableCell>
-                  <TableCell>{getDayName(expense.date)}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="text-xs">
-                      {expense.category}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {expense.subcategory || '-'}
-                  </TableCell>
-                  <TableCell className="max-w-xs truncate" title={expense.description}>
-                    {expense.description}
-                  </TableCell>
-                  <TableCell className="font-semibold text-red-600 arabic-numbers">
-                    {formatCurrency(expense.amount)}
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
-                    {expense.vendor || '-'}
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
-                    {expense.notes || '-'}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-
-        {/* ملخص الإجماليات */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">ملخص الإجماليات حسب الفئة</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {Object.entries(reportData.totals.categoryTotals).map(([category, total]) => (
-                <div key={category} className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg">
-                  <div className="text-sm font-medium text-red-700 dark:text-red-400 mb-1">
-                    {category}
-                  </div>
-                  <div className="text-lg font-bold text-red-800 dark:text-red-300 arabic-numbers">
-                    {formatCurrency(total)}
-                  </div>
-                </div>
-              ))}
-            </div>
-            
-            <Separator className="my-4" />
-            
-            <div className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg">
-              <div className="flex justify-between items-center">
-                <span className="text-lg font-semibold">إجمالي المصروفات:</span>
-                <span className="text-xl font-bold text-red-600 arabic-numbers">
-                  {formatCurrency(reportData.totals.totalAmount)}
-                </span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  };
-
-  const renderIncomeTable = () => {
-    if (!reportData?.income.length) {
-      return (
-        <div className="text-center py-8 text-muted-foreground">
-          لا توجد إيرادات في الفترة المحددة
-        </div>
-      );
-    }
-
-    return (
-      <div className="space-y-6">
-        {/* جدول الإيرادات */}
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/50">
-                <TableHead className="text-right font-semibold">التاريخ</TableHead>
-                <TableHead className="text-right font-semibold">رقم الحوالة</TableHead>
-                <TableHead className="text-right font-semibold">اسم المرسل</TableHead>
-                <TableHead className="text-right font-semibold">نوع الحوالة</TableHead>
-                <TableHead className="text-right font-semibold">المبلغ</TableHead>
-                <TableHead className="text-right font-semibold">ملاحظات</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {reportData.income.map((income) => (
-                <TableRow key={income.id} className="hover:bg-muted/30">
-                  <TableCell className="font-medium">{formatDate(income.date)}</TableCell>
-                  <TableCell className="font-mono text-sm bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded">
-                    {income.transferNumber}
-                  </TableCell>
-                  <TableCell className="font-medium">{income.senderName}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="text-xs bg-green-50 text-green-700">
-                      {income.transferType}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="font-semibold text-green-600 arabic-numbers">
-                    {formatCurrency(income.amount)}
-                  </TableCell>
-                  <TableCell className="text-sm text-muted-foreground max-w-xs truncate">
-                    {income.notes || '-'}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-
-        {/* إجمالي الإيرادات */}
-        <Card>
-          <CardContent className="pt-6">
-            <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
-              <div className="flex justify-between items-center">
-                <span className="text-lg font-semibold">إجمالي الإيرادات:</span>
-                <span className="text-xl font-bold text-green-600 arabic-numbers">
-                  {formatCurrency(reportData.totals.totalAmount)}
-                </span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  };
-
-  const selectedProject = projects.find(p => p.id === filters.projectId);
-
   return (
-    <div className="space-y-6 p-6">
+    <div className="container mx-auto p-6 space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setLocation('/reports')}
+          className="p-2"
+        >
+          <ArrowRight className="h-4 w-4" />
+        </Button>
         <FileText className="h-8 w-8 text-primary" />
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">التقارير المتقدمة</h1>
-          <p className="text-muted-foreground mt-1">إنشاء تقارير مفصلة للمصروفات والإيرادات</p>
+          <p className="text-muted-foreground mt-1">إنشاء تقارير مخصصة للمصروفات والإيرادات</p>
         </div>
       </div>
 
-      {/* نموذج المرشحات */}
+      {/* Filters Section */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Filter className="h-5 w-5" />
-            معايير التقرير
+            مرشحات التقرير
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* اختيار المشروع */}
             <div className="space-y-2">
               <Label htmlFor="project">المشروع</Label>
-              <Select value={filters.projectId} onValueChange={(value) => setFilters(prev => ({ ...prev, projectId: value }))}>
+              <Select 
+                value={filters.projectId} 
+                onValueChange={(value) => setFilters(prev => ({ ...prev, projectId: value }))}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="اختر المشروع" />
                 </SelectTrigger>
@@ -386,11 +271,15 @@ const AdvancedReports = () => {
               </Select>
             </div>
 
+            {/* نوع التقرير */}
             <div className="space-y-2">
               <Label htmlFor="reportType">نوع التقرير</Label>
-              <Select value={filters.reportType} onValueChange={(value) => setFilters(prev => ({ ...prev, reportType: value }))}>
+              <Select 
+                value={filters.reportType} 
+                onValueChange={(value: 'expenses' | 'income') => setFilters(prev => ({ ...prev, reportType: value }))}
+              >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="اختر نوع التقرير" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="expenses">المصروفات</SelectItem>
@@ -399,6 +288,7 @@ const AdvancedReports = () => {
               </Select>
             </div>
 
+            {/* من تاريخ */}
             <div className="space-y-2">
               <Label htmlFor="dateFrom">من تاريخ</Label>
               <Input
@@ -409,6 +299,7 @@ const AdvancedReports = () => {
               />
             </div>
 
+            {/* إلى تاريخ */}
             <div className="space-y-2">
               <Label htmlFor="dateTo">إلى تاريخ</Label>
               <Input
@@ -420,64 +311,194 @@ const AdvancedReports = () => {
             </div>
           </div>
 
-          <div className="mt-6 flex gap-3">
+          <div className="flex gap-3">
             <Button 
               onClick={handleGenerateReport} 
-              disabled={isGenerating || isFetching}
-              className="gap-2"
+              disabled={isGenerating}
+              className="flex items-center gap-2"
             >
-              <FileText className="h-4 w-4" />
-              {isGenerating || isFetching ? 'جاري إنشاء التقرير...' : 'إنشاء التقرير'}
+              {isGenerating ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  جاري إنشاء التقرير...
+                </>
+              ) : (
+                <>
+                  <FileText className="h-4 w-4" />
+                  إنشاء التقرير
+                </>
+              )}
             </Button>
+
+            {reportData && (
+              <>
+                <Button 
+                  variant="outline" 
+                  onClick={handleExportExcel}
+                  className="flex items-center gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  تصدير Excel
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={handlePrint}
+                  className="flex items-center gap-2"
+                >
+                  <Printer className="h-4 w-4" />
+                  طباعة
+                </Button>
+              </>
+            )}
           </div>
         </CardContent>
       </Card>
 
-      {/* عرض التقرير */}
+      {/* Report Display */}
       {reportData && (
         <Card>
-          <CardHeader className="print:hidden">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-xl">
-                  تقرير {filters.reportType === 'expenses' ? 'المصروفات' : 'الإيرادات'}
-                </CardTitle>
-                <div className="text-sm text-muted-foreground mt-1">
-                  <span>المشروع: {selectedProject?.name}</span>
-                  <span className="mx-2">•</span>
-                  <span>الفترة: من {formatDate(filters.dateFrom)} إلى {formatDate(filters.dateTo)}</span>
-                  <span className="mx-2">•</span>
-                  <span>تاريخ التقرير: {formatDate(new Date().toISOString())}</span>
-                </div>
-              </div>
-              
-              <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={handlePrint} className="gap-2">
-                  <Printer className="h-4 w-4" />
-                  طباعة
-                </Button>
-                <Button variant="outline" size="sm" onClick={handleExportExcel} className="gap-2">
-                  <Download className="h-4 w-4" />
-                  تصدير Excel
-                </Button>
-              </div>
-            </div>
+          <CardHeader className="no-print">
+            <CardTitle>
+              {filters.reportType === 'expenses' ? 'تقرير المصروفات' : 'تقرير الإيرادات'}
+            </CardTitle>
           </CardHeader>
-          
           <CardContent>
-            {/* عنوان للطباعة */}
-            <div className="hidden print:block mb-6 text-center border-b pb-4">
-              <h1 className="text-2xl font-bold mb-2">
-                تقرير {filters.reportType === 'expenses' ? 'المصروفات' : 'الإيرادات'}
-              </h1>
-              <div className="text-sm text-muted-foreground">
-                <div>المشروع: {selectedProject?.name}</div>
-                <div>الفترة: من {formatDate(filters.dateFrom)} إلى {formatDate(filters.dateTo)}</div>
-                <div>تاريخ التقرير: {formatDate(new Date().toISOString())}</div>
+            {/* Project and Date Info */}
+            <div className="mb-6 print:mb-4">
+              <div className="text-center space-y-2">
+                <h2 className="text-xl font-bold">
+                  {filters.reportType === 'expenses' ? 'تقرير المصروفات المفصل' : 'تقرير الإيرادات المفصل'}
+                </h2>
+                <p className="text-muted-foreground">
+                  المشروع: {projects.find(p => p.id === filters.projectId)?.name}
+                </p>
+                <p className="text-muted-foreground">
+                  الفترة: من {formatDate(filters.dateFrom)} إلى {formatDate(filters.dateTo)}
+                </p>
               </div>
             </div>
 
-            {filters.reportType === 'expenses' ? renderExpensesTable() : renderIncomeTable()}
+            {/* Expenses Report */}
+            {filters.reportType === 'expenses' && reportData.expenses && (
+              <div className="space-y-6">
+                {/* Data Table */}
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse border border-gray-300">
+                    <thead>
+                      <tr className="bg-gray-100 dark:bg-gray-800">
+                        <th className="border border-gray-300 p-2 text-right">التاريخ</th>
+                        <th className="border border-gray-300 p-2 text-right">اليوم</th>
+                        <th className="border border-gray-300 p-2 text-right">الفئة</th>
+                        <th className="border border-gray-300 p-2 text-right">الفئة الفرعية</th>
+                        <th className="border border-gray-300 p-2 text-right">الوصف</th>
+                        <th className="border border-gray-300 p-2 text-right">المبلغ</th>
+                        <th className="border border-gray-300 p-2 text-right">المورد</th>
+                        <th className="border border-gray-300 p-2 text-right">ملاحظات</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {reportData.expenses.map((expense, index) => (
+                        <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                          <td className="border border-gray-300 p-2">{formatDate(expense.date)}</td>
+                          <td className="border border-gray-300 p-2">{getDayName(expense.date)}</td>
+                          <td className="border border-gray-300 p-2">{expense.category}</td>
+                          <td className="border border-gray-300 p-2">{expense.subcategory || '-'}</td>
+                          <td className="border border-gray-300 p-2">{expense.description}</td>
+                          <td className="border border-gray-300 p-2 font-bold text-red-600">
+                            {formatCurrency(expense.amount)}
+                          </td>
+                          <td className="border border-gray-300 p-2">{expense.vendor || '-'}</td>
+                          <td className="border border-gray-300 p-2">{expense.notes || '-'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Category Totals */}
+                {reportData.totals.categoryTotals && (
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-bold">الإجماليات حسب الفئة</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {Object.entries(reportData.totals.categoryTotals).map(([category, total]) => (
+                        <div key={category} className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg">
+                          <div className="text-sm text-muted-foreground">{category}</div>
+                          <div className="text-xl font-bold text-red-600">{formatCurrency(total)}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Grand Total */}
+                <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border border-red-200 dark:border-red-800">
+                  <div className="text-center">
+                    <div className="text-lg text-red-700 dark:text-red-300">إجمالي المصروفات</div>
+                    <div className="text-3xl font-bold text-red-600">{formatCurrency(reportData.totals.totalAmount)}</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Income Report */}
+            {filters.reportType === 'income' && reportData.income && (
+              <div className="space-y-6">
+                {/* Data Table */}
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse border border-gray-300">
+                    <thead>
+                      <tr className="bg-gray-100 dark:bg-gray-800">
+                        <th className="border border-gray-300 p-2 text-right">التاريخ</th>
+                        <th className="border border-gray-300 p-2 text-right">رقم الحوالة</th>
+                        <th className="border border-gray-300 p-2 text-right">اسم المرسل</th>
+                        <th className="border border-gray-300 p-2 text-right">نوع الحوالة</th>
+                        <th className="border border-gray-300 p-2 text-right">المبلغ</th>
+                        <th className="border border-gray-300 p-2 text-right">ملاحظات</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {reportData.income.map((income, index) => (
+                        <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                          <td className="border border-gray-300 p-2">{formatDate(income.date)}</td>
+                          <td className="border border-gray-300 p-2">{income.transferNumber}</td>
+                          <td className="border border-gray-300 p-2">{income.senderName}</td>
+                          <td className="border border-gray-300 p-2">{income.transferType}</td>
+                          <td className="border border-gray-300 p-2 font-bold text-green-600">
+                            {formatCurrency(income.amount)}
+                          </td>
+                          <td className="border border-gray-300 p-2">{income.notes || '-'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Grand Total */}
+                <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-200 dark:border-green-800">
+                  <div className="text-center">
+                    <div className="text-lg text-green-700 dark:text-green-300">إجمالي الإيرادات</div>
+                    <div className="text-3xl font-bold text-green-600">{formatCurrency(reportData.totals.totalAmount)}</div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Footer */}
+            <div className="mt-8 pt-4 border-t border-gray-200 dark:border-gray-700 text-center text-sm text-muted-foreground print:text-black">
+              <p>تم إنشاء هذا التقرير تلقائياً بواسطة نظام إدارة المشاريع الإنشائية</p>
+              <p>التاريخ: {formatDate(new Date().toISOString())} | الوقت: {new Date().toLocaleTimeString('ar-EG')}</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* No Data Message */}
+      {!reportData && !isGenerating && (
+        <Card>
+          <CardContent className="text-center py-12">
+            <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-muted-foreground mb-2">لا يوجد تقرير</h3>
+            <p className="text-muted-foreground">اختر المعايير المطلوبة وانقر على "إنشاء التقرير" لعرض البيانات</p>
           </CardContent>
         </Card>
       )}
