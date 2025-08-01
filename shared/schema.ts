@@ -3,6 +3,20 @@ import { pgTable, text, varchar, integer, decimal, timestamp, boolean, jsonb } f
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Users table (جدول المستخدمين)
+export const users = pgTable("users", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: text("email").notNull().unique(),
+  password: text("password").notNull(), // سيتم تشفيرها
+  firstName: text("first_name"),
+  lastName: text("last_name"),
+  role: text("role").notNull().default("admin"), // admin, manager, user
+  isActive: boolean("is_active").default(true).notNull(),
+  lastLogin: timestamp("last_login"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 // Projects table
 export const projects = pgTable("projects", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -188,6 +202,7 @@ export const insertDailyExpenseSummarySchema = createInsertSchema(dailyExpenseSu
 export const insertWorkerTypeSchema = createInsertSchema(workerTypes).omit({ id: true, createdAt: true, lastUsed: true });
 export const insertAutocompleteDataSchema = createInsertSchema(autocompleteData).omit({ id: true, createdAt: true, lastUsed: true });
 export const insertWorkerMiscExpenseSchema = createInsertSchema(workerMiscExpenses).omit({ id: true, createdAt: true });
+export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, updatedAt: true, lastLogin: true });
 
 // Type definitions
 export type Project = typeof projects.$inferSelect;
@@ -203,6 +218,7 @@ export type DailyExpenseSummary = typeof dailyExpenseSummaries.$inferSelect;
 export type WorkerType = typeof workerTypes.$inferSelect;
 export type AutocompleteData = typeof autocompleteData.$inferSelect;
 export type WorkerMiscExpense = typeof workerMiscExpenses.$inferSelect;
+export type User = typeof users.$inferSelect;
 
 export type InsertProject = z.infer<typeof insertProjectSchema>;
 export type InsertWorker = z.infer<typeof insertWorkerSchema>;
@@ -217,3 +233,4 @@ export type InsertDailyExpenseSummary = z.infer<typeof insertDailyExpenseSummary
 export type InsertWorkerType = z.infer<typeof insertWorkerTypeSchema>;
 export type InsertAutocompleteData = z.infer<typeof insertAutocompleteDataSchema>;
 export type InsertWorkerMiscExpense = z.infer<typeof insertWorkerMiscExpenseSchema>;
+export type InsertUser = z.infer<typeof insertUserSchema>;

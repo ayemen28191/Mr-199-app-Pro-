@@ -1,12 +1,12 @@
 import { 
   type Project, type Worker, type FundTransfer, type WorkerAttendance, 
   type Material, type MaterialPurchase, type TransportationExpense, type DailyExpenseSummary,
-  type WorkerTransfer, type WorkerBalance, type AutocompleteData, type WorkerType, type WorkerMiscExpense,
+  type WorkerTransfer, type WorkerBalance, type AutocompleteData, type WorkerType, type WorkerMiscExpense, type User,
   type InsertProject, type InsertWorker, type InsertFundTransfer, type InsertWorkerAttendance,
   type InsertMaterial, type InsertMaterialPurchase, type InsertTransportationExpense, type InsertDailyExpenseSummary,
-  type InsertWorkerTransfer, type InsertWorkerBalance, type InsertAutocompleteData, type InsertWorkerType, type InsertWorkerMiscExpense,
+  type InsertWorkerTransfer, type InsertWorkerBalance, type InsertAutocompleteData, type InsertWorkerType, type InsertWorkerMiscExpense, type InsertUser,
   projects, workers, fundTransfers, workerAttendance, materials, materialPurchases, transportationExpenses, dailyExpenseSummaries,
-  workerTransfers, workerBalances, autocompleteData, workerTypes, workerMiscExpenses
+  workerTransfers, workerBalances, autocompleteData, workerTypes, workerMiscExpenses, users
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, gte, lte, sql, inArray, or } from "drizzle-orm";
@@ -123,6 +123,14 @@ export interface IStorage {
   createWorkerMiscExpense(expense: InsertWorkerMiscExpense): Promise<WorkerMiscExpense>;
   updateWorkerMiscExpense(id: string, expense: Partial<InsertWorkerMiscExpense>): Promise<WorkerMiscExpense | undefined>;
   deleteWorkerMiscExpense(id: string): Promise<void>;
+  
+  // Users
+  getUsers(): Promise<User[]>;
+  getUser(id: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  createUser(user: InsertUser): Promise<User>;
+  updateUser(id: string, user: Partial<InsertUser>): Promise<User | undefined>;
+  deleteUser(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1436,6 +1444,78 @@ export class DatabaseStorage implements IStorage {
       await db.delete(workerMiscExpenses).where(eq(workerMiscExpenses.id, id));
     } catch (error) {
       console.error('Error deleting worker misc expense:', error);
+      throw error;
+    }
+  }
+
+  // Users methods
+  async getUsers(): Promise<User[]> {
+    try {
+      return await db.select().from(users).orderBy(users.createdAt);
+    } catch (error) {
+      console.error('Error getting users:', error);
+      return [];
+    }
+  }
+
+  async getUser(id: string): Promise<User | undefined> {
+    try {
+      const [user] = await db.select().from(users).where(eq(users.id, id));
+      return user || undefined;
+    } catch (error) {
+      console.error('Error getting user:', error);
+      return undefined;
+    }
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    try {
+      const [user] = await db.select().from(users).where(eq(users.email, email));
+      return user || undefined;
+    } catch (error) {
+      console.error('Error getting user by email:', error);
+      return undefined;
+    }
+  }
+
+  async createUser(user: InsertUser): Promise<User> {
+    try {
+      const [newUser] = await db
+        .insert(users)
+        .values({
+          ...user,
+          updatedAt: new Date()
+        })
+        .returning();
+      return newUser;
+    } catch (error) {
+      console.error('Error creating user:', error);
+      throw error;
+    }
+  }
+
+  async updateUser(id: string, user: Partial<InsertUser>): Promise<User | undefined> {
+    try {
+      const [updated] = await db
+        .update(users)
+        .set({
+          ...user,
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, id))
+        .returning();
+      return updated || undefined;
+    } catch (error) {
+      console.error('Error updating user:', error);
+      throw error;
+    }
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    try {
+      await db.delete(users).where(eq(users.id, id));
+    } catch (error) {
+      console.error('Error deleting user:', error);
       throw error;
     }
   }

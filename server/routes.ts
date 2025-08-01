@@ -6,7 +6,7 @@ import {
   insertWorkerAttendanceSchema, insertMaterialSchema, insertMaterialPurchaseSchema,
   insertTransportationExpenseSchema, insertDailyExpenseSummarySchema, insertWorkerTransferSchema,
   insertWorkerBalanceSchema, insertAutocompleteDataSchema, insertWorkerTypeSchema,
-  insertWorkerMiscExpenseSchema
+  insertWorkerMiscExpenseSchema, insertUserSchema
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -691,7 +691,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const totalTransferCosts = workerTransfers.reduce((sum, t) => sum + parseFloat(t.amount.toString()), 0);
       const totalExpenses = totalWorkerCosts + totalMaterialCosts + totalTransportCosts + totalTransferCosts;
       const totalIncome = totalFundTransfers;
-      const remainingBalance = carriedForward + totalIncome - totalExpenses;
+      const remainingBalance = parseFloat(carriedForward.toString()) + totalIncome - totalExpenses;
 
       // إضافة معلومات العمال للحضور
       const workerAttendanceWithWorkers = await Promise.all(
@@ -1303,6 +1303,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting worker misc expense:", error);
       res.status(500).json({ message: "خطأ في حذف نثريات العمال" });
+    }
+  });
+
+  // Users endpoints
+  app.get("/api/users", async (req, res) => {
+    try {
+      const users = await storage.getUsers();
+      // إخفاء كلمات المرور من الاستجابة
+      const safeUsers = users.map(user => {
+        const { password, ...safeUser } = user;
+        return safeUser;
+      });
+      res.json(safeUsers);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "خطأ في جلب المستخدمين" });
+    }
+  });
+
+  app.post("/api/users", async (req, res) => {
+    try {
+      const result = insertUserSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "بيانات مستخدم غير صحيحة", errors: result.error.issues });
+      }
+      
+      // فحص عدم تكرار البريد الإلكتروني
+      const existingUser = await storage.getUserByEmail(result.data.email);
+      if (existingUser) {
+        return res.status(400).json({ message: "يوجد مستخدم بنفس البريد الإلكتروني مسبقاً" });
+      }
+      
+      const user = await storage.createUser(result.data);
+      
+      // إخفاء كلمة المرور من الاستجابة
+      const { password, ...safeUser } = user;
+      res.status(201).json(safeUser);
+    } catch (error) {
+      console.error("Error creating user:", error);
+      res.status(500).json({ message: "خطأ في إنشاء المستخدم" });
+    }
+  });
+
+  app.get("/api/users/:id", async (req, res) => {
+    try {
+      const user = await storage.getUser(req.params.id);
+      if (!user) {
+        return res.status(404).json({ message: "المستخدم غير موجود" });
+      }
+      
+      // إخفاء كلمة المرور من الاستجابة
+      const { password, ...safeUser } = user;
+      res.json(safeUser);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "خطأ في جلب المستخدم" });
+    }
+  });
+
+  app.put("/api/users/:id", async (req, res) => {
+    try {
+      const result = insertUserSchema.partial().safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "بيانات مستخدم غير صحيحة", errors: result.error.issues });
+      }
+      
+      const user = await storage.updateUser(req.params.id, result.data);
+      if (!user) {
+        return res.status(404).json({ message: "المستخدم غير موجود" });
+      }
+      
+      // إخفاء كلمة المرور من الاستجابة
+      const { password, ...safeUser } = user;
+      res.json(safeUser);
+    } catch (error) {
+      console.error("Error updating user:", error);
+      res.status(500).json({ message: "خطأ في تحديث المستخدم" });
+    }
+  });
+
+  app.delete("/api/users/:id", async (req, res) => {
+    try {
+      await storage.deleteUser(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      res.status(500).json({ message: "خطأ في حذف المستخدم" });
     }
   });
 
