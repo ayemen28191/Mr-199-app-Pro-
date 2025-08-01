@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Receipt, UserCheck, Package, PieChart, Eye, Download, Share2, FileSpreadsheet, Printer, BarChart } from "lucide-react";
+import { ArrowRight, Receipt, UserCheck, Package, PieChart, Eye, Download, Share2, FileSpreadsheet, Printer, BarChart, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -328,6 +328,38 @@ export default function ReportsFixed() {
         </Button>
         <h2 className="text-xl font-bold text-foreground">التقارير المحسنة</h2>
       </div>
+
+      {/* زر التقارير المتقدمة */}
+      <Card className="mb-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-200 dark:border-blue-800">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-reverse space-x-4">
+              <div className="bg-blue-600 p-3 rounded-lg">
+                <FileText className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg text-blue-900 dark:text-blue-100">التقارير المتقدمة</h3>
+                <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                  إنشاء تقارير مخصصة للمصروفات والإيرادات مع إمكانية التصدير والطباعة
+                </p>
+                <div className="flex gap-4 mt-2 text-xs text-blue-600 dark:text-blue-400">
+                  <span>• تقارير حسب الفترة الزمنية</span>
+                  <span>• تصدير Excel احترافي</span>
+                  <span>• طباعة محسنة</span>
+                </div>
+              </div>
+            </div>
+            <Button
+              onClick={() => setLocation("/advanced-reports")}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 flex items-center gap-2 font-medium"
+              size="lg"
+            >
+              <FileText className="h-4 w-4" />
+              إنشاء تقرير متقدم
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       <ProjectSelector
         selectedProjectId={selectedProjectId}
