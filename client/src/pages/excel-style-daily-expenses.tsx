@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Calendar, FileSpreadsheet, Printer, Download, BarChart3 } from "lucide-react";
+import { ArrowRight, Calendar, FileSpreadsheet, Printer, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,22 +16,32 @@ import type { Project } from "@shared/schema";
 
 interface DailyExpenseData {
   date: string;
+  projectId: string;
   summary: {
     carriedForward: number;
+    totalFundTransfers: number;
+    totalWorkerCosts: number;
+    totalMaterialCosts: number;
+    totalTransportCosts: number;
+    totalTransferCosts: number;
     totalIncome: number;
     totalExpenses: number;
     remainingBalance: number;
-    totalFundTransfers: number;
-    totalWorkerWages: number;
-    totalMaterialCosts: number;
-    totalTransportationCosts: number;
-    totalWorkerTransfers: number;
   };
   fundTransfers: any[];
   workerAttendance: any[];
   materialPurchases: any[];
   transportationExpenses: any[];
   workerTransfers: any[];
+}
+
+interface TransactionRow {
+  id: string;
+  accountType: string;
+  operationType: string;
+  amount: number;
+  balanceAfter: number;
+  notes: string;
 }
 
 export default function ExcelStyleDailyExpenses() {
@@ -87,6 +97,83 @@ export default function ExcelStyleDailyExpenses() {
       setIsLoading(false);
     }
   }, [selectedProjectId, selectedDate, toast]);
+
+  // تحويل البيانات إلى معاملات مرتبة
+  const generateTransactions = useCallback((): TransactionRow[] => {
+    if (!reportData) return [];
+
+    const transactions: TransactionRow[] = [];
+    let runningBalance = reportData.summary.carriedForward;
+
+    // 1. مرحلة من اليوم السابق
+    if (reportData.summary.carriedForward > 0) {
+      transactions.push({
+        id: 'carried-forward',
+        accountType: 'مرحلة',
+        operationType: 'ترجيل',
+        amount: reportData.summary.carriedForward,
+        balanceAfter: runningBalance,
+        notes: `مرحلة من تاريخ ${new Date(new Date(reportData.date).getTime() - 24*60*60*1000).toLocaleDateString('ar-SA')}`
+      });
+    }
+
+    // 2. الحوالات (توريد)
+    reportData.fundTransfers.forEach(transfer => {
+      runningBalance += parseFloat(transfer.amount);
+      transactions.push({
+        id: transfer.id,
+        accountType: 'حولة',
+        operationType: 'توريد',
+        amount: parseFloat(transfer.amount),
+        balanceAfter: runningBalance,
+        notes: `حوالة من ${transfer.senderName} - رقم الحوالة ${transfer.transferNumber}`
+      });
+    });
+
+    // 3. مصروفات العمال (منصرف)
+    reportData.workerAttendance.forEach(attendance => {
+      if (attendance.paidAmount > 0) {
+        runningBalance -= parseFloat(attendance.paidAmount);
+        const workDays = parseFloat(attendance.workDays || '1');
+        transactions.push({
+          id: attendance.id,
+          accountType: `مصروف ${attendance.worker?.name || 'عامل'}`,
+          operationType: 'منصرف',
+          amount: parseFloat(attendance.paidAmount),
+          balanceAfter: runningBalance,
+          notes: `العمل من الساعة ${attendance.startTime} إلى عصر وحتى الساعة ${attendance.endTime} صباحاً - ${workDays} يوم`
+        });
+      }
+    });
+
+    // 4. مصروفات النقليات (منصرف)
+    reportData.transportationExpenses.forEach(expense => {
+      runningBalance -= parseFloat(expense.amount);
+      transactions.push({
+        id: expense.id,
+        accountType: 'نقليات',
+        operationType: 'منصرف',
+        amount: parseFloat(expense.amount),
+        balanceAfter: runningBalance,
+        notes: expense.description || 'مصروف نقليات'
+      });
+    });
+
+    // 5. حوالات العمال للأهل (منصرف)
+    reportData.workerTransfers.forEach(transfer => {
+      runningBalance -= parseFloat(transfer.amount);
+      transactions.push({
+        id: transfer.id,
+        accountType: `حوالة ${transfer.worker?.name || 'عامل'}`,
+        operationType: 'منصرف',
+        amount: parseFloat(transfer.amount),
+        balanceAfter: runningBalance,
+        notes: `حوالة إلى ${transfer.recipientName} - ${transfer.transferMethod}`
+      });
+    });
+
+    return transactions;
+  }, [reportData]);
 
   const exportToExcel = useCallback(async () => {
     if (!reportData) {
@@ -347,7 +434,7 @@ export default function ExcelStyleDailyExpenses() {
         >
           <ArrowRight className="h-5 w-5" />
         </Button>
-        <BarChart3 className="h-6 w-6 text-primary" />
+        <FileSpreadsheet className="h-6 w-6 text-primary" />
         <h1 className="text-2xl font-bold text-foreground">كشف المصروفات اليومية - نمط Excel</h1>
       </div>
 
@@ -560,7 +647,7 @@ export default function ExcelStyleDailyExpenses() {
       {!reportData && !isLoading && (
         <Card>
           <CardContent className="p-8 text-center">
-            <BarChart3 className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+            <FileSpreadsheet className="h-16 w-16 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">لا توجد بيانات</h3>
             <p className="text-gray-600">
               يرجى اختيار مشروع وتحديد التاريخ ثم الضغط على "إنشاء التقرير"
