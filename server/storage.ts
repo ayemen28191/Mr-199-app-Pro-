@@ -685,6 +685,14 @@ export class DatabaseStorage implements IStorage {
     return summary || undefined;
   }
 
+  async getLatestDailySummary(projectId: string): Promise<DailyExpenseSummary | undefined> {
+    const [summary] = await db.select().from(dailyExpenseSummaries)
+      .where(eq(dailyExpenseSummaries.projectId, projectId))
+      .orderBy(sql`${dailyExpenseSummaries.date} DESC`)
+      .limit(1);
+    return summary || undefined;
+  }
+
   async createOrUpdateDailyExpenseSummary(summary: InsertDailyExpenseSummary): Promise<DailyExpenseSummary> {
     const existing = await this.getDailyExpenseSummary(summary.projectId, summary.date);
     
