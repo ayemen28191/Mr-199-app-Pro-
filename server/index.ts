@@ -62,6 +62,20 @@ app.use((req, res, next) => {
         log("🧪 بدء الاختبار الشامل لجميع وظائف التطبيق...");
         const testResults = await databaseTester.runComprehensiveTests();
         
+        // تحسين نظام الإكمال التلقائي
+        try {
+          log("🔧 بدء تحسين نظام الإكمال التلقائي...");
+          const { runAutocompleteIndexMigration } = await import("./db/run-autocomplete-migrations");
+          await runAutocompleteIndexMigration();
+          
+          const { autocompleteScheduler } = await import("./autocomplete-scheduler");
+          autocompleteScheduler.startScheduledMaintenance();
+          
+          log("✅ تم تحسين نظام الإكمال التلقائي بنجاح");
+        } catch (error) {
+          log("⚠️ تحذير: فشل في تحسين نظام الإكمال التلقائي - سيعمل النظام بالوضع العادي");
+        }
+        
         // استيراد وطباعة التقرير الشامل
         const { ComprehensiveTestReporter } = await import('./comprehensive-test-report');
         const report = ComprehensiveTestReporter.generateFullReport();

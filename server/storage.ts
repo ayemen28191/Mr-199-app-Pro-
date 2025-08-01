@@ -1298,14 +1298,15 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  // Autocomplete data methods
-  async getAutocompleteData(category: string): Promise<AutocompleteData[]> {
+  // Autocomplete data methods - محسنة مع حدود وذاكرة تخزين مؤقت
+  async getAutocompleteData(category: string, limit: number = 50): Promise<AutocompleteData[]> {
     try {
       return await db
         .select()
         .from(autocompleteData)
         .where(eq(autocompleteData.category, category))
-        .orderBy(sql`${autocompleteData.usageCount} DESC, ${autocompleteData.lastUsed} DESC`);
+        .orderBy(sql`${autocompleteData.usageCount} DESC, ${autocompleteData.lastUsed} DESC`)
+        .limit(limit);
     } catch (error) {
       console.error('Error getting autocomplete data:', error);
       return [];
@@ -1314,18 +1315,25 @@ export class DatabaseStorage implements IStorage {
 
   async saveAutocompleteData(data: InsertAutocompleteData): Promise<AutocompleteData> {
     try {
+      const trimmedValue = data.value.trim();
+      
+      // تحقق من صحة البيانات
+      if (!trimmedValue || trimmedValue.length < 2) {
+        throw new Error('قيمة الإكمال التلقائي يجب أن تكون على الأقل حرفين');
+      }
+
       // تحقق من وجود القيمة مسبقاً
       const existing = await db
         .select()
         .from(autocompleteData)
         .where(and(
           eq(autocompleteData.category, data.category),
-          eq(autocompleteData.value, data.value.trim())
+          eq(autocompleteData.value, trimmedValue)
         ))
         .limit(1);
 
       if (existing.length > 0) {
-        // إذا كانت موجودة، اعد تحديث عدد الاستخدام وتاريخ آخر استخدام
+        // إذا كانت موجودة، قم بتحديث عدد الاستخدام وتاريخ آخر استخدام
         const [updated] = await db
           .update(autocompleteData)
           .set({
@@ -1337,12 +1345,15 @@ export class DatabaseStorage implements IStorage {
         
         return updated;
       } else {
-        // إذا لم تكن موجودة، أنشئ سجل جديد
+        // تحقق من عدم تجاوز الحد الأقصى للسجلات في هذه الفئة
+        await this.enforceCategoryLimit(data.category);
+
+        // إنشاء سجل جديد
         const [created] = await db
           .insert(autocompleteData)
           .values({
             ...data,
-            value: data.value.trim()
+            value: trimmedValue
           })
           .returning();
         
@@ -1351,6 +1362,39 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error saving autocomplete data:', error);
       throw error;
+    }
+  }
+
+  // طريقة جديدة لفرض حدود الفئة
+  private async enforceCategoryLimit(category: string, maxRecords: number = 100): Promise<void> {
+    try {
+      // عد السجلات الحالية في هذه الفئة
+      const countResult = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(autocompleteData)
+        .where(eq(autocompleteData.category, category));
+
+      const currentCount = countResult[0]?.count || 0;
+
+      if (currentCount >= maxRecords) {
+        // حذف أقل السجلات استخداماً
+        const recordsToDelete = await db
+          .select({ id: autocompleteData.id })
+          .from(autocompleteData)
+          .where(eq(autocompleteData.category, category))
+          .orderBy(sql`${autocompleteData.usageCount} ASC, ${autocompleteData.lastUsed} ASC`)
+          .limit(currentCount - maxRecords + 1);
+
+        if (recordsToDelete.length > 0) {
+          await db
+            .delete(autocompleteData)
+            .where(
+              sql`id IN (${recordsToDelete.map(r => `'${r.id}'`).join(',')})`
+            );
+        }
+      }
+    } catch (error) {
+      console.error('Error enforcing category limit:', error);
     }
   }
 

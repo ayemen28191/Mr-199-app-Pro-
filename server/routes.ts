@@ -1172,11 +1172,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Autocomplete data routes
+  // Autocomplete data routes - محسنة مع إدارة الصيانة
   app.get("/api/autocomplete/:category", async (req, res) => {
     try {
       const { category } = req.params;
-      const data = await storage.getAutocompleteData(category);
+      const { limit = '50' } = req.query;
+      const data = await storage.getAutocompleteData(category, parseInt(limit as string));
       res.json(data);
     } catch (error) {
       console.error("Error fetching autocomplete data:", error);
@@ -1207,6 +1208,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error removing autocomplete data:", error);
       res.status(500).json({ message: "خطأ في حذف بيانات الإكمال التلقائي" });
+    }
+  });
+
+  // نقاط نهاية إدارة وصيانة الإكمال التلقائي
+  app.get("/api/autocomplete-admin/stats", async (req, res) => {
+    try {
+      const { autocompleteOptimizer } = await import("./autocomplete-optimizer");
+      const stats = await autocompleteOptimizer.getSystemStats();
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching autocomplete stats:", error);
+      res.status(500).json({ message: "خطأ في جلب إحصائيات نظام الإكمال التلقائي" });
+    }
+  });
+
+  app.post("/api/autocomplete-admin/cleanup", async (req, res) => {
+    try {
+      const { autocompleteOptimizer } = await import("./autocomplete-optimizer");
+      const result = await autocompleteOptimizer.cleanupOldData();
+      res.json(result);
+    } catch (error) {
+      console.error("Error cleaning up autocomplete data:", error);
+      res.status(500).json({ message: "خطأ في تنظيف بيانات الإكمال التلقائي" });
+    }
+  });
+
+  app.post("/api/autocomplete-admin/enforce-limits", async (req, res) => {
+    try {
+      const { category } = req.body;
+      const { autocompleteOptimizer } = await import("./autocomplete-optimizer");
+      const result = await autocompleteOptimizer.enforceCategoryLimits(category);
+      res.json(result);
+    } catch (error) {
+      console.error("Error enforcing autocomplete limits:", error);
+      res.status(500).json({ message: "خطأ في تطبيق حدود نظام الإكمال التلقائي" });
+    }
+  });
+
+  app.post("/api/autocomplete-admin/maintenance", async (req, res) => {
+    try {
+      const { autocompleteOptimizer } = await import("./autocomplete-optimizer");
+      const result = await autocompleteOptimizer.runMaintenance();
+      res.json(result);
+    } catch (error) {
+      console.error("Error running autocomplete maintenance:", error);
+      res.status(500).json({ message: "خطأ في تشغيل صيانة نظام الإكمال التلقائي" });
     }
   });
 

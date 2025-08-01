@@ -16,6 +16,7 @@ import ExcelStyleDailyExpenses from "@/pages/excel-style-daily-expenses";
 
 import ProjectsPage from "@/pages/projects";
 import WorkersPage from "@/pages/workers";
+import AutocompleteAdminPage from "@/pages/autocomplete-admin";
 import Header from "@/components/layout/header";
 import BottomNavigation from "@/components/layout/bottom-navigation";
 
@@ -32,6 +33,7 @@ function Router() {
       <Route path="/excel-format-worker-statement" component={ExcelStyleWorkerStatement} />
       <Route path="/daily-expenses-report" component={DailyExpensesReport} />
       <Route path="/excel-style-daily-expenses" component={ExcelStyleDailyExpenses} />
+      <Route path="/autocomplete-admin" component={AutocompleteAdminPage} />
 
       <Route path="/reports" component={ReportsFixed} />
       <Route component={NotFound} />
