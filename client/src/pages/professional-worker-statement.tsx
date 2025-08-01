@@ -85,18 +85,19 @@ export default function ProfessionalWorkerStatement() {
     queryKey: ['/api/projects'],
   });
 
-  // Fetch worker statement data
+  // Fetch worker statement data - استخدام endpoint الصحيح مع الحوالات
   const { data: workerStatement, isLoading: isLoadingStatement } = useQuery<WorkerStatement | null>({
-    queryKey: ['/api/workers', selectedWorkerId, 'professional-statement', selectedProjectId, dateFrom, dateTo],
+    queryKey: ['/api/worker-statement', selectedWorkerId, selectedProjectId, dateFrom, dateTo],
     queryFn: async (): Promise<WorkerStatement | null> => {
       if (!selectedWorkerId || !selectedProjectId) return null;
       
       const params = new URLSearchParams();
-      params.append('projectId', selectedProjectId);
+      params.append('projectId', selectedProjectId);  
       params.append('dateFrom', dateFrom);
       params.append('dateTo', dateTo);
+      params.append('projects', selectedProjectId); // المعامل المطلوب
       
-      const response = await fetch(`/api/workers/${selectedWorkerId}/account-statement?${params}`);
+      const response = await fetch(`/api/worker-statement/${selectedWorkerId}?${params}`);
       if (!response.ok) {
         throw new Error('فشل في جلب بيانات كشف الحساب');
       }
@@ -119,8 +120,8 @@ export default function ProfessionalWorkerStatement() {
         sum + Number(t.amount || 0), 0) || 0;
 
       return {
-        worker,
-        project,
+        worker: data.worker,
+        project: data.projects?.[0] || project,
         attendance: data.attendance || [],
         transfers: data.transfers || [],
         balance: data.balance || { 
