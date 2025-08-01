@@ -531,85 +531,47 @@ export default function ProfessionalWorkerStatement() {
             </thead>
             <tbody>
               {(() => {
-                // Get all dates from attendance and transfers
-                const attendanceDates = workerStatement.attendance.map(a => a.date);
-                const transferDates = workerStatement.transfers.map(t => t.transferDate);
-                const allDatesSet = new Set([...attendanceDates, ...transferDates]);
-                const allDates = Array.from(allDatesSet).sort();
+                // جمع جميع السجلات (حضور + حوالات) وترتيبها بالتاريخ
+                const allRecords: any[] = [];
                 
-                // تسجيل البيانات للتشخيص
-                console.log('Worker Statement Data:', {
-                  hasTransfers: !!(workerStatement.transfers && workerStatement.transfers.length > 0),
-                  transfersCount: workerStatement.transfers?.length || 0,
-                  transfers: workerStatement.transfers
-                });
-                
-                // دمج الحضور والحوالات في صفوف مرتبة بالتاريخ
-                const combinedData: Array<{
-                  date: string;
-                  type: 'attendance' | 'transfer';
-                  attendanceRecord?: any;
-                  transferRecord?: any;
-                }> = [];
-
                 // إضافة سجلات الحضور
-                workerStatement.attendance.forEach(attendance => {
-                  combinedData.push({
-                    date: attendance.date,
-                    type: 'attendance',
-                    attendanceRecord: attendance
-                  });
+                workerStatement.attendance.forEach(att => {
+                  allRecords.push({ ...att, type: 'attendance', date: att.date });
                 });
-
+                
                 // إضافة سجلات الحوالات
                 workerStatement.transfers.forEach(transfer => {
-                  combinedData.push({
-                    date: transfer.transferDate,
-                    type: 'transfer',
-                    transferRecord: transfer
-                  });
+                  allRecords.push({ ...transfer, type: 'transfer', date: transfer.transferDate });
                 });
+                
+                // ترتيب حسب التاريخ
+                allRecords.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-                // ترتيب البيانات حسب التاريخ
-                combinedData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-                return combinedData.slice(0, 20).map((item, index) => {
-                  const recordDate = new Date(item.date);
+                return allRecords.slice(0, 20).map((record, index) => {
+                  const recordDate = new Date(record.date);
                   const dayName = recordDate.toLocaleDateString('ar-SA', { weekday: 'short' });
                   
-                  if (item.type === 'attendance') {
-                    const record = item.attendanceRecord;
+                  if (record.type === 'attendance') {
                     return (
-                      <tr key={`att-${item.date}-${index}`} style={{ backgroundColor: index % 2 === 0 ? '#f8f9fa' : 'white' }}>
-                        <td className="date-cell">{formatDate(item.date)}</td>
+                      <tr key={`${record.date}-${index}`} style={{ backgroundColor: index % 2 === 0 ? '#f8f9fa' : 'white' }}>
+                        <td className="date-cell">{formatDate(record.date)}</td>
                         <td>{dayName}</td>
                         <td>{record.isPresent ? '✓' : '-'}</td>
                         <td>{record.workDays || '1'}</td>
-                        <td className="currency-cell">
-                          {formatCurrency(Number(record.dailyWage || 0))}
-                        </td>
-                        <td className="currency-cell">
-                          {formatCurrency(Number(record.actualWage || 0))}
-                        </td>
-                        <td className="currency-cell">
-                          {formatCurrency(Number(record.paidAmount || 0))}
-                        </td>
+                        <td className="currency-cell">{formatCurrency(Number(record.dailyWage || 0))}</td>
+                        <td className="currency-cell">{formatCurrency(Number(record.actualWage || 0))}</td>
+                        <td className="currency-cell">{formatCurrency(Number(record.paidAmount || 0))}</td>
                         <td className="currency-cell">-</td>
                         <td className="currency-cell">-</td>
-                        <td className="currency-cell">
-                          {formatCurrency(Number(record.remainingAmount || 0))}
-                        </td>
-                        <td style={{ fontSize: '6px' }}>
-                          {record.notes || '-'}
-                        </td>
+                        <td className="currency-cell">{formatCurrency(Number(record.remainingAmount || 0))}</td>
+                        <td style={{ fontSize: '6px' }}>{record.notes || '-'}</td>
                       </tr>
                     );
                   } else {
                     // صف الحوالة
-                    const transfer = item.transferRecord;
                     return (
-                      <tr key={`tr-${item.date}-${index}`} style={{ backgroundColor: '#fff3e0' }}>
-                        <td className="date-cell">{formatDate(item.date)}</td>
+                      <tr key={`${record.date}-${index}`} style={{ backgroundColor: '#fff8e1' }}>
+                        <td className="date-cell">{formatDate(record.date)}</td>
                         <td>{dayName}</td>
                         <td>حوالة أهل</td>
                         <td>-</td>
@@ -617,22 +579,13 @@ export default function ProfessionalWorkerStatement() {
                         <td className="currency-cell">0</td>
                         <td className="currency-cell">-</td>
                         <td className="currency-cell">-</td>
-                        <td className="currency-cell" style={{ 
-                          backgroundColor: '#ffb74d', 
-                          fontWeight: 'bold',
-                          color: '#d32f2f'
-                        }}>
-                          {formatCurrency(Number(transfer.amount))}
+                        <td className="currency-cell" style={{ backgroundColor: '#ffb74d', fontWeight: 'bold' }}>
+                          {formatCurrency(Number(record.amount))}
                         </td>
-                        <td className="currency-cell" style={{ 
-                          backgroundColor: '#ffcdd2',
-                          fontWeight: 'bold'
-                        }}>
-                          -{formatCurrency(Number(transfer.amount))}
+                        <td className="currency-cell" style={{ backgroundColor: '#ffcdd2', fontWeight: 'bold' }}>
+                          -{formatCurrency(Number(record.amount))}
                         </td>
-                        <td style={{ fontSize: '6px' }}>
-                          حوالة: {(transfer as any).senderName} → {(transfer as any).recipientName} | {transfer.notes || 'لا توجد'}
-                        </td>
+                        <td style={{ fontSize: '6px' }}>حوالة: {record.notes || 'بدون ملاحظات'}</td>
                       </tr>
                     );
                   }
