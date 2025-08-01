@@ -205,13 +205,24 @@ class DatabaseManager {
         CREATE TABLE IF NOT EXISTS transportation_expenses (
           id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
           project_id VARCHAR NOT NULL REFERENCES projects(id),
+          worker_id VARCHAR REFERENCES workers(id),
           amount DECIMAL(10,2) NOT NULL,
           description TEXT NOT NULL,
           date TEXT NOT NULL,
+          notes TEXT,
           created_at TIMESTAMP DEFAULT NOW() NOT NULL
         )
       `);
       console.log('✅ تم إنشاء جدول transportation_expenses');
+
+      // إضافة الأعمدة المفقودة إذا كانت غير موجودة
+      try {
+        await db.execute(sql`ALTER TABLE transportation_expenses ADD COLUMN IF NOT EXISTS worker_id VARCHAR REFERENCES workers(id)`);
+        await db.execute(sql`ALTER TABLE transportation_expenses ADD COLUMN IF NOT EXISTS notes TEXT`);
+        console.log('✅ تم التأكد من وجود جميع الأعمدة في جدول transportation_expenses');
+      } catch (error) {
+        console.log('⚠️ الأعمدة موجودة بالفعل في جدول transportation_expenses');
+      }
 
       // حذف وإعادة إنشاء جدول ملخص المصاريف اليومية بالهيكل الصحيح
       await db.execute(sql`DROP TABLE IF EXISTS daily_expense_summaries CASCADE`);
