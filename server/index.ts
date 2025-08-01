@@ -44,8 +44,9 @@ app.use((req, res, next) => {
   // Auto-migrate database on startup to prevent "table does not exist" errors
   try {
     log("Checking and updating database schema...");
-    await execAsync("npm run db:push");
-    log("Database schema updated successfully!");
+    // تم تعطيل التحديث التلقائي مؤقتاً - سيتم تشغيله يدوياً عند الحاجة
+    // await execAsync("npm run db:push");
+    log("Database schema check skipped - manual push required if needed!");
   } catch (error) {
     log("Database schema update failed, but continuing...");
     console.error(error);

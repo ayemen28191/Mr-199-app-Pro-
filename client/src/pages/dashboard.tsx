@@ -9,7 +9,7 @@ import { Clock, Receipt, ShoppingCart, BarChart, Plus, Users, UserCheck } from "
 import { useSelectedProject } from "@/hooks/use-selected-project";
 import ProjectSelector from "@/components/project-selector";
 import AddProjectForm from "@/components/forms/add-project-form";
-import AddWorkerForm from "@/components/forms/add-worker-form";
+import EnhancedAddWorkerForm from "@/components/forms/enhanced-add-worker-form";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import type { Project, DailyExpenseSummary } from "@shared/schema";
 
@@ -110,7 +110,7 @@ export default function Dashboard() {
             <DialogHeader>
               <DialogTitle>إضافة عامل جديد</DialogTitle>
             </DialogHeader>
-            <AddWorkerForm onSuccess={() => setShowAddWorker(false)} />
+            <EnhancedAddWorkerForm onSuccess={() => setShowAddWorker(false)} />
           </DialogContent>
         </Dialog>
       </div>

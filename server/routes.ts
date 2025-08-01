@@ -5,7 +5,7 @@ import {
   insertProjectSchema, insertWorkerSchema, insertFundTransferSchema, 
   insertWorkerAttendanceSchema, insertMaterialSchema, insertMaterialPurchaseSchema,
   insertTransportationExpenseSchema, insertDailyExpenseSummarySchema, insertWorkerTransferSchema,
-  insertWorkerBalanceSchema, insertAutocompleteDataSchema
+  insertWorkerBalanceSchema, insertAutocompleteDataSchema, insertWorkerTypeSchema
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -141,6 +141,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error creating worker:", error);
       res.status(500).json({ message: "خطأ في إنشاء العامل" });
+    }
+  });
+
+  // Worker Types
+  app.get("/api/worker-types", async (req, res) => {
+    try {
+      const workerTypes = await storage.getWorkerTypes();
+      res.json(workerTypes);
+    } catch (error) {
+      console.error("Error fetching worker types:", error);
+      res.status(500).json({ message: "خطأ في جلب أنواع العمال" });
+    }
+  });
+
+  app.post("/api/worker-types", async (req, res) => {
+    try {
+      const result = insertWorkerTypeSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "بيانات نوع العامل غير صالحة", errors: result.error.issues });
+      }
+      
+      const workerType = await storage.createWorkerType(result.data);
+      res.status(201).json(workerType);
+    } catch (error: any) {
+      console.error("Error creating worker type:", error);
+      // فحص إذا كان الخطأ بسبب تكرار الاسم
+      if (error.code === '23505' && error.constraint === 'worker_types_name_unique') {
+        return res.status(400).json({ message: "نوع العامل موجود مسبقاً" });
+      }
+      res.status(500).json({ message: "خطأ في إضافة نوع العامل" });
     }
   });
 

@@ -1,12 +1,12 @@
 import { 
   type Project, type Worker, type FundTransfer, type WorkerAttendance, 
   type Material, type MaterialPurchase, type TransportationExpense, type DailyExpenseSummary,
-  type WorkerTransfer, type WorkerBalance, type AutocompleteData,
+  type WorkerTransfer, type WorkerBalance, type AutocompleteData, type WorkerType,
   type InsertProject, type InsertWorker, type InsertFundTransfer, type InsertWorkerAttendance,
   type InsertMaterial, type InsertMaterialPurchase, type InsertTransportationExpense, type InsertDailyExpenseSummary,
-  type InsertWorkerTransfer, type InsertWorkerBalance, type InsertAutocompleteData,
+  type InsertWorkerTransfer, type InsertWorkerBalance, type InsertAutocompleteData, type InsertWorkerType,
   projects, workers, fundTransfers, workerAttendance, materials, materialPurchases, transportationExpenses, dailyExpenseSummaries,
-  workerTransfers, workerBalances, autocompleteData
+  workerTransfers, workerBalances, autocompleteData, workerTypes
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, gte, lte, sql, inArray, or } from "drizzle-orm";
@@ -26,6 +26,10 @@ export interface IStorage {
   getWorkerByName(name: string): Promise<Worker | undefined>;
   createWorker(worker: InsertWorker): Promise<Worker>;
   updateWorker(id: string, worker: Partial<InsertWorker>): Promise<Worker | undefined>;
+  
+  // Worker Types
+  getWorkerTypes(): Promise<WorkerType[]>;
+  createWorkerType(workerType: InsertWorkerType): Promise<WorkerType>;
   
   // Fund Transfers
   getFundTransfers(projectId: string, date?: string): Promise<FundTransfer[]>;
@@ -202,6 +206,29 @@ export class DatabaseStorage implements IStorage {
       .where(eq(workers.id, id))
       .returning();
     return updated || undefined;
+  }
+
+  // Worker Types
+  async getWorkerTypes(): Promise<WorkerType[]> {
+    return await db.select().from(workerTypes).orderBy(sql`usage_count DESC, name ASC`);
+  }
+
+  async createWorkerType(workerType: InsertWorkerType): Promise<WorkerType> {
+    try {
+      const [newWorkerType] = await db
+        .insert(workerTypes)
+        .values({ ...workerType, name: workerType.name.trim() })
+        .returning();
+      
+      if (!newWorkerType) {
+        throw new Error('فشل في إنشاء نوع العامل');
+      }
+      
+      return newWorkerType;
+    } catch (error) {
+      console.error('Error creating worker type:', error);
+      throw error;
+    }
   }
 
   // Fund Transfers
@@ -923,9 +950,10 @@ export class DatabaseStorage implements IStorage {
         .orderBy(workerTransfers.transferDate);
       
       // Get worker balance (calculated dynamically to include all transfers)
-      let balance = null;
+      let balance: WorkerBalance | null = null;
       if (projectId) {
-        balance = await this.getWorkerBalance(workerId, projectId);
+        const workerBalance = await this.getWorkerBalance(workerId, projectId);
+        balance = workerBalance || null;
       }
       
       return {
