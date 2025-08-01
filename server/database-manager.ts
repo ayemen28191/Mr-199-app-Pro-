@@ -47,18 +47,29 @@ class DatabaseManager {
       console.log('🔍 جاري فحص الجداول في قاعدة بيانات Supabase...');
       
       const tablesQuery = await db.execute(sql`
-        SELECT table_name 
-        FROM information_schema.tables 
-        WHERE table_schema = 'public' 
-        ORDER BY table_name
+        SELECT tablename as table_name 
+        FROM pg_tables 
+        WHERE schemaname = 'public' 
+        ORDER BY tablename
       `);
       
       // استخراج أسماء الجداول من النتيجة
       let existingTables: string[] = [];
-      if (tablesQuery && Array.isArray(tablesQuery)) {
-        existingTables = tablesQuery.map((row: any) => row.table_name);
+      console.log('🔍 نتيجة استعلام الجداول الخام:', tablesQuery);
+      
+      // النتيجة في tablesQuery.rows وليس في tablesQuery مباشرة
+      if (tablesQuery && tablesQuery.rows && Array.isArray(tablesQuery.rows)) {
+        existingTables = tablesQuery.rows.map((row: any) => {
+          return row.table_name || row.tablename || row.TABLE_NAME || row.TABLENAME;
+        }).filter(Boolean);
       }
+      
       console.log('📋 الجداول الموجودة في Supabase:', existingTables);
+      
+      // إذا كانت الجداول موجودة، لا تظهر رسائل تحذيرية
+      if (existingTables.length > 0) {
+        console.log('✅ تم العثور على', existingTables.length, 'جدول في قاعدة بيانات Supabase');
+      }
       
       const requiredTables = [
         'projects',
