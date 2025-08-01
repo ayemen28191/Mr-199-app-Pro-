@@ -493,9 +493,13 @@ export default function ProfessionalWorkerStatement() {
                 const allDatesSet = new Set([...attendanceDates, ...transferDates]);
                 const allDates = Array.from(allDatesSet).sort();
                 
+                console.log('All dates:', allDates);
+                console.log('Transfers:', workerStatement.transfers);
+                
                 return allDates.slice(0, 20).map((date, index) => {
                   const attendanceRecord = workerStatement.attendance.find(a => a.date === date);
                   const dayTransfers = workerStatement.transfers.filter(t => t.transferDate === date);
+                  console.log(`Date: ${date}, Transfers found:`, dayTransfers);
                   const recordDate = new Date(date);
                   const dayName = recordDate.toLocaleDateString('ar-SA', { weekday: 'short' });
                   
@@ -517,9 +521,9 @@ export default function ProfessionalWorkerStatement() {
                       <td className="transfer-cell">
                         -
                       </td>
-                      <td className="transfer-cell">
+                      <td className="transfer-cell" style={{ backgroundColor: dayTransfers.length > 0 ? '#fff3cd' : '' }}>
                         {dayTransfers.length > 0 
-                          ? formatCurrency(dayTransfers.reduce((sum, t) => sum + Number(t.amount), 0))
+                          ? `${formatCurrency(dayTransfers.reduce((sum, t) => sum + Number(t.amount), 0))} (${dayTransfers.length})`
                           : '-'}
                       </td>
                       <td className="currency-cell">
