@@ -1200,80 +1200,82 @@ export class DatabaseStorage implements IStorage {
       
       const materialPurchasesCount = purchasesCount[0]?.count || 0;
 
-      // حساب الإجمالي الكلي للمشروع من البداية (وليس من آخر ملخص يومي فقط)
-      
-      // حساب إجمالي الدخل من جميع تحويلات العهدة
-      const fundTransfersSum = await db
-        .select({ sum: sql<number>`COALESCE(SUM(CAST(${fundTransfers.amount} AS NUMERIC)), 0)` })
-        .from(fundTransfers)
-        .where(eq(fundTransfers.projectId, projectId));
-      
-      const totalIncome = parseFloat(fundTransfersSum[0]?.sum?.toString() || '0');
-
-      // حساب إجمالي المصروفات من جميع المصادر
-      const [wagesSum, materialsSum, transportSum, workerTransfersSum, workerMiscSum] = await Promise.all([
-        // أجور العمال المدفوعة (paidAmount وليس dailyWage)
-        db.select({ sum: sql<number>`COALESCE(SUM(CAST(${workerAttendance.paidAmount} AS NUMERIC)), 0)` })
-          .from(workerAttendance)
-          .where(eq(workerAttendance.projectId, projectId)),
-        
-        // تكلفة المواد
-        db.select({ sum: sql<number>`COALESCE(SUM(CAST(${materialPurchases.totalAmount} AS NUMERIC)), 0)` })
-          .from(materialPurchases)
-          .where(eq(materialPurchases.projectId, projectId)),
-        
-        // مصاريف النقل
-        db.select({ sum: sql<number>`COALESCE(SUM(CAST(${transportationExpenses.amount} AS NUMERIC)), 0)` })
-          .from(transportationExpenses)
-          .where(eq(transportationExpenses.projectId, projectId)),
-        
-        // تحويلات العمال
-        db.select({ sum: sql<number>`COALESCE(SUM(CAST(${workerTransfers.amount} AS NUMERIC)), 0)` })
-          .from(workerTransfers)
-          .where(eq(workerTransfers.projectId, projectId)),
-        
-        // مصاريف العمال المتنوعة
-        db.select({ sum: sql<number>`COALESCE(SUM(CAST(${workerMiscExpenses.amount} AS NUMERIC)), 0)` })
-          .from(workerMiscExpenses)
-          .where(eq(workerMiscExpenses.projectId, projectId))
-      ]);
-
-      const wages = parseFloat(wagesSum[0]?.sum?.toString() || '0');
-      const materials = parseFloat(materialsSum[0]?.sum?.toString() || '0');
-      const transport = parseFloat(transportSum[0]?.sum?.toString() || '0');
-      const workerTransfersTotal = parseFloat(workerTransfersSum[0]?.sum?.toString() || '0');
-      const workerMiscTotal = parseFloat(workerMiscSum[0]?.sum?.toString() || '0');
-      
-      const totalExpenses = wages + materials + transport + workerTransfersTotal + workerMiscTotal;
-      
-      // حساب الرصيد الحالي الصحيح من الفرق بين الدخل والمصروفات الإجمالية
-      // وليس من آخر ملخص يومي لأن ذلك يعطي رصيد يوم واحد فقط
-      const currentBalance = totalIncome - totalExpenses;
-      
-      // للتحقق: جلب آخر ملخص يومي للمقارنة فقط
+      // استخدام آخر ملخص يومي للحصول على الإحصائيات الصحيحة
+      // لأن الملخص اليومي يحتوي على المبلغ المرحل والحسابات الصحيحة
       const latestSummary = await db
         .select()
         .from(dailyExpenseSummaries)
         .where(eq(dailyExpenseSummaries.projectId, projectId))
         .orderBy(sql`${dailyExpenseSummaries.date} DESC`)
         .limit(1);
-      
-      const lastDaySummaryBalance = latestSummary.length > 0 
-        ? parseFloat(latestSummary[0].remainingBalance || '0')
-        : 0;
 
-      // طباعة تفاصيل الحساب للتشخيص
-      console.log(`📊 Project ${projectId} Statistics Calculation:`);
-      console.log(`   💰 Total Income (Fund Transfers): ${totalIncome.toLocaleString()}`);
-      console.log(`   💸 Total Expenses: ${totalExpenses.toLocaleString()}`);
-      console.log(`     - Wages (Paid): ${wages.toLocaleString()}`);
-      console.log(`     - Materials: ${materials.toLocaleString()}`);
-      console.log(`     - Transportation: ${transport.toLocaleString()}`);
-      console.log(`     - Worker Transfers: ${workerTransfersTotal.toLocaleString()}`);
-      console.log(`     - Worker Misc Expenses: ${workerMiscTotal.toLocaleString()}`);
-      console.log(`   🏦 Current Balance (Calculated): ${currentBalance.toLocaleString()}`);
-      console.log(`   📅 Last Day Summary Balance: ${lastDaySummaryBalance.toLocaleString()}`);
-      console.log(`   ✅ Using calculated balance for accuracy`);
+      let totalIncome = 0;
+      let totalExpenses = 0;
+      let currentBalance = 0;
+
+      if (latestSummary.length > 0) {
+        // استخدام البيانات من آخر ملخص يومي (الأكثر دقة لأنه يشمل المبلغ المرحل)
+        const summary = latestSummary[0];
+        totalIncome = parseFloat(summary.totalIncome || '0');
+        totalExpenses = parseFloat(summary.totalExpenses || '0');
+        currentBalance = parseFloat(summary.remainingBalance || '0');
+        
+        console.log(`📊 Project ${projectId} Statistics (from latest summary):`);
+        console.log(`   💰 Total Income: ${totalIncome.toLocaleString()}`);
+        console.log(`   💸 Total Expenses: ${totalExpenses.toLocaleString()}`);
+        console.log(`   🏦 Current Balance: ${currentBalance.toLocaleString()}`);
+        console.log(`   📅 Summary Date: ${summary.date}`);
+      } else {
+        // في حالة عدم وجود ملخص يومي، احسب من البيانات الخام (بدون مبلغ مرحل)
+        const fundTransfersSum = await db
+          .select({ sum: sql<number>`COALESCE(SUM(CAST(${fundTransfers.amount} AS NUMERIC)), 0)` })
+          .from(fundTransfers)
+          .where(eq(fundTransfers.projectId, projectId));
+        
+        totalIncome = parseFloat(fundTransfersSum[0]?.sum?.toString() || '0');
+
+        // حساب إجمالي المصروفات من جميع المصادر
+        const [wagesSum, materialsSum, transportSum, workerTransfersSum, workerMiscSum] = await Promise.all([
+          // أجور العمال المدفوعة (paidAmount وليس dailyWage)
+          db.select({ sum: sql<number>`COALESCE(SUM(CAST(${workerAttendance.paidAmount} AS NUMERIC)), 0)` })
+            .from(workerAttendance)
+            .where(eq(workerAttendance.projectId, projectId)),
+          
+          // تكلفة المواد
+          db.select({ sum: sql<number>`COALESCE(SUM(CAST(${materialPurchases.totalAmount} AS NUMERIC)), 0)` })
+            .from(materialPurchases)
+            .where(eq(materialPurchases.projectId, projectId)),
+          
+          // مصاريف النقل
+          db.select({ sum: sql<number>`COALESCE(SUM(CAST(${transportationExpenses.amount} AS NUMERIC)), 0)` })
+            .from(transportationExpenses)
+            .where(eq(transportationExpenses.projectId, projectId)),
+          
+          // تحويلات العمال
+          db.select({ sum: sql<number>`COALESCE(SUM(CAST(${workerTransfers.amount} AS NUMERIC)), 0)` })
+            .from(workerTransfers)
+            .where(eq(workerTransfers.projectId, projectId)),
+          
+          // مصاريف العمال المتنوعة
+          db.select({ sum: sql<number>`COALESCE(SUM(CAST(${workerMiscExpenses.amount} AS NUMERIC)), 0)` })
+            .from(workerMiscExpenses)
+            .where(eq(workerMiscExpenses.projectId, projectId))
+        ]);
+
+        const wages = parseFloat(wagesSum[0]?.sum?.toString() || '0');
+        const materials = parseFloat(materialsSum[0]?.sum?.toString() || '0');
+        const transport = parseFloat(transportSum[0]?.sum?.toString() || '0');
+        const workerTransfersTotal = parseFloat(workerTransfersSum[0]?.sum?.toString() || '0');
+        const workerMiscTotal = parseFloat(workerMiscSum[0]?.sum?.toString() || '0');
+        
+        totalExpenses = wages + materials + transport + workerTransfersTotal + workerMiscTotal;
+        currentBalance = totalIncome - totalExpenses;
+        
+        console.log(`📊 Project ${projectId} Statistics (calculated from raw data):`);
+        console.log(`   💰 Total Income: ${totalIncome.toLocaleString()}`);
+        console.log(`   💸 Total Expenses: ${totalExpenses.toLocaleString()}`);
+        console.log(`   🏦 Current Balance: ${currentBalance.toLocaleString()}`);
+      }
 
       // البحث عن آخر نشاط
       const lastActivityQueries = await Promise.all([
