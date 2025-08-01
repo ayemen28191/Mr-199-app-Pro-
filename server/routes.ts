@@ -1626,58 +1626,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // مسار مراجعة مؤقت للبيانات المحاسبية (للتشخيص فقط)
-  app.get("/api/audit/:projectId", async (req, res) => {
+  // مسار التقارير المتقدمة
+  app.get("/api/reports/advanced", async (req, res) => {
     try {
-      const { projectId } = req.params;
+      const { projectId, reportType, dateFrom, dateTo } = req.query;
       
-      console.log(`🔍 مراجعة شاملة للبيانات المحاسبية للمشروع: ${projectId}`);
-      
-      // الحصول على آخر ملخص يومي
-      const latestSummary = await storage.getLatestDailySummary(projectId);
-      
-      // حساب البيانات من الجداول الأصلية
-      const totalFundTransfers = 303200; // معروف من السجلات السابقة
-      const totalExpenses = 274000; // معروف من السجلات السابقة
-      const calculatedBalance = totalFundTransfers - totalExpenses; // 29,200
-      
-      const auditResults = {
-        projectId,
-        auditDate: new Date().toISOString(),
-        
-        // بيانات الملخص اليومي الأحدث
-        latestSummary: latestSummary ? {
-          date: latestSummary.date,
-          carriedForward: parseFloat(latestSummary.carriedForwardAmount || '0'),
-          totalIncome: parseFloat(latestSummary.totalIncome || '0'),
-          totalExpenses: parseFloat(latestSummary.totalExpenses || '0'),
-          remainingBalance: parseFloat(latestSummary.remainingBalance || '0')
-        } : null,
-        
-        // البيانات المحسوبة 
-        rawDataCalculation: {
-          totalFundTransfers,
-          totalExpenses,
-          calculatedBalance
-        },
-        
-        // المشكلة المكتشفة
-        issue: latestSummary ? {
-          summaryBalance: parseFloat(latestSummary.remainingBalance || '0'),
-          calculatedBalance,
-          difference: parseFloat(latestSummary.remainingBalance || '0') - calculatedBalance,
-          correctBalance: 24200, // الرصيد الصحيح من المستخدم
-          summaryIsWrong: parseFloat(latestSummary.remainingBalance || '0') !== 24200
-        } : null
+      if (!projectId || !reportType || !dateFrom || !dateTo) {
+        return res.status(400).json({ 
+          message: "مطلوب: projectId, reportType, dateFrom, dateTo" 
+        });
+      }
+
+      let reportData: any = {
+        expenses: [],
+        income: [],
+        totals: {
+          totalAmount: 0,
+          categoryTotals: {}
+        }
       };
-      
-      console.log('📊 نتائج المراجعة:', JSON.stringify(auditResults, null, 2));
-      
-      res.json(auditResults);
+
+      if (reportType === 'expenses') {
+        // جلب المصروفات من جميع الجداول
+        const expenses = await storage.getExpensesForReport(
+          projectId as string, 
+          dateFrom as string, 
+          dateTo as string
+        );
+        
+        reportData.expenses = expenses;
+        reportData.totals.totalAmount = expenses.reduce((sum, exp) => sum + parseFloat(exp.amount.toString()), 0);
+        
+        // حساب الإجماليات حسب الفئة
+        expenses.forEach(expense => {
+          const category = expense.category;
+          const amount = parseFloat(expense.amount.toString());
+          reportData.totals.categoryTotals[category] = (reportData.totals.categoryTotals[category] || 0) + amount;
+        });
+
+      } else if (reportType === 'income') {
+        // جلب الإيرادات (تحويلات العهدة)
+        const income = await storage.getIncomeForReport(
+          projectId as string, 
+          dateFrom as string, 
+          dateTo as string
+        );
+        
+        reportData.income = income;
+        reportData.totals.totalAmount = income.reduce((sum, inc) => sum + parseFloat(inc.amount.toString()), 0);
+      }
+
+      res.json(reportData);
       
     } catch (error) {
-      console.error("خطأ في مراجعة البيانات:", error);
-      res.status(500).json({ message: "خطأ في مراجعة البيانات المحاسبية" });
+      console.error("خطأ في إنشاء التقرير:", error);
+      res.status(500).json({ message: "خطأ في إنشاء التقرير المتقدم" });
     }
   });
 
