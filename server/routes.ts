@@ -1496,7 +1496,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { autocompleteOptimizer } = await import('./autocomplete-optimizer');
       const { category } = req.body;
-      const result = await autocompleteOptimizer.enforceLimits(category);
+      const result = await autocompleteOptimizer.enforceCategoryLimits(category);
       res.json(result);
     } catch (error) {
       res.status(500).json({ error: "تعذر تطبيق حدود الفئات" });
