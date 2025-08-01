@@ -316,7 +316,7 @@ export default function ProjectsPage() {
                       <TrendingUp className="h-4 w-4 text-green-600" />
                       <span className="text-xs font-medium text-green-700 dark:text-green-400">الدخل</span>
                     </div>
-                    <p className="text-sm font-bold text-green-800 dark:text-green-300">
+                    <p className="text-sm font-bold text-green-800 dark:text-green-300 arabic-numbers">
                       {formatCurrency(project.stats.totalIncome)}
                     </p>
                   </div>
@@ -326,7 +326,7 @@ export default function ProjectsPage() {
                       <DollarSign className="h-4 w-4 text-red-600" />
                       <span className="text-xs font-medium text-red-700 dark:text-red-400">المصروفات</span>
                     </div>
-                    <p className="text-sm font-bold text-red-800 dark:text-red-300">
+                    <p className="text-sm font-bold text-red-800 dark:text-red-300 arabic-numbers">
                       {formatCurrency(project.stats.totalExpenses)}
                     </p>
                   </div>
@@ -338,7 +338,7 @@ export default function ProjectsPage() {
                     <BarChart3 className="h-4 w-4 text-blue-600" />
                     <span className="text-xs font-medium text-blue-700 dark:text-blue-400">الرصيد الحالي</span>
                   </div>
-                  <p className="text-lg font-bold text-blue-800 dark:text-blue-300">
+                  <p className="text-lg font-bold text-blue-800 dark:text-blue-300 arabic-numbers">
                     {formatCurrency(project.stats.currentBalance)}
                   </p>
                 </div>
@@ -350,7 +350,7 @@ export default function ProjectsPage() {
                       <Users className="h-3 w-3 text-muted-foreground" />
                     </div>
                     <p className="text-xs text-muted-foreground">العمال</p>
-                    <p className="text-sm font-semibold">{project.stats.totalWorkers}</p>
+                    <p className="text-sm font-semibold arabic-numbers">{project.stats.totalWorkers}</p>
                   </div>
                   
                   <div className="space-y-1">
@@ -358,7 +358,7 @@ export default function ProjectsPage() {
                       <Package className="h-3 w-3 text-muted-foreground" />
                     </div>
                     <p className="text-xs text-muted-foreground">المشتريات</p>
-                    <p className="text-sm font-semibold">{project.stats.materialPurchases}</p>
+                    <p className="text-sm font-semibold arabic-numbers">{project.stats.materialPurchases}</p>
                   </div>
                   
                   <div className="space-y-1">

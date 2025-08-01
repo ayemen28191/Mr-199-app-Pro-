@@ -37,7 +37,7 @@ export default function EnhancedWorkerCard({ worker, attendance, onAttendanceCha
   const remainingAmount = attendance.paymentType === 'credit' ? actualWage : (actualWage - paidAmount);
 
   const formatCurrency = (amount: number) => {
-    return `${amount.toLocaleString()} ر.ي`;
+    return `${amount.toLocaleString('en-US')} ر.ي`;
   };
 
   return (

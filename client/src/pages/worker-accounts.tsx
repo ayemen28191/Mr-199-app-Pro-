@@ -386,21 +386,21 @@ export default function WorkerAccounts() {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">إجمالي المكتسب:</span>
-                    <span className="font-medium">{formatCurrency(parseFloat(workerBalance.totalEarned))}</span>
+                    <span className="font-medium arabic-numbers">{formatCurrency(parseFloat(workerBalance.totalEarned))}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">إجمالي المدفوع:</span>
-                    <span className="font-medium text-green-600">{formatCurrency(parseFloat(workerBalance.totalPaid))}</span>
+                    <span className="font-medium text-green-600 arabic-numbers">{formatCurrency(parseFloat(workerBalance.totalPaid))}</span>
                   </div>
                 </div>
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span className="text-sm text-muted-foreground">إجمالي المحول:</span>
-                    <span className="font-medium text-blue-600">{formatCurrency(parseFloat(workerBalance.totalTransferred))}</span>
+                    <span className="font-medium text-blue-600 arabic-numbers">{formatCurrency(parseFloat(workerBalance.totalTransferred))}</span>
                   </div>
                   <div className="flex justify-between border-t pt-2">
                     <span className="font-medium">الرصيد الحالي:</span>
-                    <span className="font-bold text-lg text-primary">{formatCurrency(currentBalance)}</span>
+                    <span className="font-bold text-lg text-primary arabic-numbers">{formatCurrency(currentBalance)}</span>
                   </div>
                   <div className="flex gap-2 mt-3 pt-2 border-t">
                     <Button
@@ -474,7 +474,7 @@ export default function WorkerAccounts() {
                       className="arabic-numbers"
                     />
                     {!editId && (
-                      <p className="text-xs text-muted-foreground mt-1">
+                      <p className="text-xs text-muted-foreground mt-1 arabic-numbers">
                         الرصيد المتاح: {formatCurrency(currentBalance)}
                       </p>
                     )}
@@ -496,7 +496,6 @@ export default function WorkerAccounts() {
                   <FormField id="senderName" error={formErrors.senderName}>
                     <Label htmlFor="senderName">اسم المرسل</Label>
                     <AutocompleteInput
-                      id="senderName"
                       value={senderName}
                       onChange={setSenderName}
                       category="senderNames"
@@ -507,7 +506,6 @@ export default function WorkerAccounts() {
                   <FormField id="recipientName" error={formErrors.recipientName}>
                     <Label htmlFor="recipientName">اسم المستلم (الأهل)</Label>
                     <AutocompleteInput
-                      id="recipientName"
                       value={recipientName}
                       onChange={setRecipientName}
                       category="recipientNames"
@@ -518,7 +516,6 @@ export default function WorkerAccounts() {
                   <FormField id="recipientPhone" error={formErrors.recipientPhone}>
                     <Label htmlFor="recipientPhone">رقم هاتف المستلم (اختياري)</Label>
                     <AutocompleteInput
-                      id="recipientPhone"
                       type="tel"
                       inputMode="numeric"
                       value={recipientPhone}
@@ -557,7 +554,6 @@ export default function WorkerAccounts() {
                   <FormField id="transferNotes" error={formErrors.transferNotes}>
                     <Label htmlFor="transferNotes">ملاحظات (اختياري)</Label>
                     <AutocompleteInput
-                      id="transferNotes"
                       value={transferNotes}
                       onChange={setTransferNotes}
                       category="notes"

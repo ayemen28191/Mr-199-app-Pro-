@@ -228,6 +228,9 @@
   .arabic-numbers {
     font-family: 'Arial', sans-serif;
     direction: ltr;
+    unicode-bidi: embed;
+    display: inline-block;
+    font-variant-numeric: tabular-nums;
   }
 
   /* تنسيقات كشف المصروفات اليومية نمط Excel المحدث */

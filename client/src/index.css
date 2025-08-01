@@ -68,6 +68,18 @@
   html {
     direction: rtl;
   }
+
+  /* إجبار جميع الأرقام على العرض بالإنجليزية */
+  * {
+    font-variant-numeric: tabular-nums;
+  }
+  
+  input[type="number"], input[inputmode="numeric"], .number-display {
+    unicode-bidi: embed;
+    direction: ltr;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
 }
 
 @layer components {
@@ -145,6 +157,9 @@
   .arabic-numbers {
     font-family: 'Cairo', sans-serif;
     font-variant-numeric: tabular-nums;
+    unicode-bidi: embed;
+    direction: ltr;
+    display: inline-block;
   }
 
   .slide-in {
