@@ -198,6 +198,9 @@ export class DatabaseStorage implements IStorage {
 
   async createWorker(worker: InsertWorker): Promise<Worker> {
     try {
+      // التحقق من وجود نوع العامل وإضافته إذا لم يكن موجوداً
+      await this.ensureWorkerTypeExists(worker.type);
+      
       const [newWorker] = await db
         .insert(workers)
         .values({ ...worker, name: worker.name.trim() })
@@ -206,6 +209,9 @@ export class DatabaseStorage implements IStorage {
       if (!newWorker) {
         throw new Error('فشل في إنشاء العامل');
       }
+      
+      // تحديث عداد الاستخدام لنوع العامل
+      await this.incrementWorkerTypeUsage(worker.type);
       
       return newWorker;
     } catch (error) {
@@ -258,6 +264,46 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error creating worker type:', error);
       throw new Error('خطأ في إضافة نوع العامل');
+    }
+  }
+
+  // دالة للتأكد من وجود نوع العامل وإضافته إذا لم يكن موجوداً
+  private async ensureWorkerTypeExists(typeName: string): Promise<void> {
+    try {
+      const trimmedName = typeName.trim();
+      
+      // البحث عن نوع العامل
+      const [existingType] = await db
+        .select()
+        .from(workerTypes)
+        .where(eq(workerTypes.name, trimmedName));
+      
+      // إذا لم يكن موجوداً، أضفه
+      if (!existingType) {
+        await db
+          .insert(workerTypes)
+          .values({ name: trimmedName })
+          .onConflictDoNothing(); // تجنب الخطأ إذا تم إدراجه من مكان آخر
+      }
+    } catch (error) {
+      console.error('Error ensuring worker type exists:', error);
+      // لا نلقي خطأ هنا لأن هذا لا يجب أن يوقف إنشاء العامل
+    }
+  }
+
+  // دالة لزيادة عداد استخدام نوع العامل
+  private async incrementWorkerTypeUsage(typeName: string): Promise<void> {
+    try {
+      await db
+        .update(workerTypes)
+        .set({ 
+          usageCount: sql`${workerTypes.usageCount} + 1`,
+          lastUsed: new Date()
+        })
+        .where(eq(workerTypes.name, typeName.trim()));
+    } catch (error) {
+      console.error('Error incrementing worker type usage:', error);
+      // لا نلقي خطأ هنا لأن هذا ليس حرجاً
     }
   }
 
