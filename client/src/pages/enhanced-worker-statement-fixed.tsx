@@ -355,7 +355,7 @@ export default function EnhancedWorkerStatement() {
         const dailyWage = parseFloat(record.dailyWage || '0');
         const paidAmount = parseFloat(record.paidAmount || '0');
         const remainingAmount = parseFloat(record.remainingAmount || '0');
-        const workDays = parseFloat(record.workDays || '1');
+        const workDays = parseFloat(record.workDays || record.work_days || '1');
         
         grandTotalEarned += dailyWage;
         grandTotalPaid += paidAmount;
@@ -918,7 +918,7 @@ export default function EnhancedWorkerStatement() {
                       const dailyWage = parseFloat(record.dailyWage || '0');
                       const paidAmount = parseFloat(record.paidAmount || '0');
                       const remainingAmount = parseFloat(record.remainingAmount || '0');
-                      const workDays = parseFloat(record.workDays || '1');
+                      const workDays = parseFloat(record.workDays || record.work_days || '1');
                       
                       grandTotalEarned += dailyWage;
                       grandTotalPaid += paidAmount;
