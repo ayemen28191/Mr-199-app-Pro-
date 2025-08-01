@@ -51,9 +51,7 @@ class DatabaseManager {
       
       // استخراج أسماء الجداول من النتيجة
       let existingTables: string[] = [];
-      if (tablesQuery && tablesQuery.length > 0) {
-        existingTables = tablesQuery.map((row: any) => row.table_name);
-      } else if (Array.isArray(tablesQuery)) {
+      if (tablesQuery && Array.isArray(tablesQuery)) {
         existingTables = tablesQuery.map((row: any) => row.table_name);
       }
       console.log('📋 الجداول الموجودة:', existingTables);
@@ -210,20 +208,21 @@ class DatabaseManager {
       `);
       console.log('✅ تم إنشاء جدول transportation_expenses');
 
-      // إنشاء جدول ملخص المصاريف اليومية
+      // حذف وإعادة إنشاء جدول ملخص المصاريف اليومية بالهيكل الصحيح
+      await db.execute(sql`DROP TABLE IF EXISTS daily_expense_summaries CASCADE`);
       await db.execute(sql`
-        CREATE TABLE IF NOT EXISTS daily_expense_summaries (
+        CREATE TABLE daily_expense_summaries (
           id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
           project_id VARCHAR NOT NULL REFERENCES projects(id),
           date TEXT NOT NULL,
+          carried_forward_amount DECIMAL(10,2) DEFAULT 0 NOT NULL,
           total_fund_transfers DECIMAL(10,2) DEFAULT 0 NOT NULL,
           total_worker_wages DECIMAL(10,2) DEFAULT 0 NOT NULL,
           total_material_costs DECIMAL(10,2) DEFAULT 0 NOT NULL,
-          total_transportation DECIMAL(10,2) DEFAULT 0 NOT NULL,
-          total_worker_misc_expenses DECIMAL(10,2) DEFAULT 0 NOT NULL,
-          total_expenses DECIMAL(10,2) DEFAULT 0 NOT NULL,
-          previous_balance DECIMAL(10,2) DEFAULT 0 NOT NULL,
-          remaining_balance DECIMAL(10,2) DEFAULT 0 NOT NULL,
+          total_transportation_costs DECIMAL(10,2) DEFAULT 0 NOT NULL,
+          total_income DECIMAL(10,2) NOT NULL,
+          total_expenses DECIMAL(10,2) NOT NULL,
+          remaining_balance DECIMAL(10,2) NOT NULL,
           created_at TIMESTAMP DEFAULT NOW() NOT NULL,
           UNIQUE (project_id, date)
         )

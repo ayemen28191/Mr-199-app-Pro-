@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { databaseManager } from "./database-manager";
+import { databaseTester } from "./database-tester";
 import { exec } from "child_process";
 import { promisify } from "util";
 
@@ -55,6 +56,15 @@ app.use((req, res, next) => {
       const testResult = await databaseManager.testBasicOperations();
       if (testResult.success) {
         log("✅ جميع أنظمة قاعدة البيانات تعمل بشكل مثالي");
+        
+        // تشغيل الاختبار الشامل لجميع الوظائف
+        log("🧪 بدء الاختبار الشامل لجميع وظائف التطبيق...");
+        const testResults = await databaseTester.runComprehensiveTests();
+        
+        // استيراد وطباعة التقرير الشامل
+        const { ComprehensiveTestReporter } = await import('./comprehensive-test-report');
+        const report = ComprehensiveTestReporter.generateFullReport();
+        ComprehensiveTestReporter.printFormattedReport(report);
       } else {
         log("⚠️ مشكلة في العمليات الأساسية: " + testResult.message);
       }
