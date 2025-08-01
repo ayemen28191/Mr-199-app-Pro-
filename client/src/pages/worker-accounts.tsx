@@ -17,11 +17,12 @@ import { AutocompleteInput } from "@/components/ui/autocomplete-input-database";
 import { apiRequest } from "@/lib/queryClient";
 import { FormErrorHandler, FormField, useFormErrors } from "@/components/form-error-handler";
 import type { Worker, WorkerBalance, WorkerTransfer, WorkerAttendance, InsertWorkerTransfer } from "@shared/schema";
+import { Checkbox } from "@/components/ui/checkbox";
 
 export default function WorkerAccounts() {
   const [, setLocation] = useLocation();
   const { selectedProjectId, selectProject } = useSelectedProject();
-  
+
   // Get URL parameters for editing
   const urlParams = new URLSearchParams(window.location.search);
   const editId = urlParams.get('edit');
@@ -41,11 +42,12 @@ export default function WorkerAccounts() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { validateField, clearErrors } = useFormErrors();
+  const [allowNegativeBalance, setAllowNegativeBalance] = useState(false);
 
   // دالة مساعدة لحفظ قيم الإكمال التلقائي
   const saveAutocompleteValue = async (field: string, value: string) => {
     if (!value || value.trim().length < 2) return;
-    
+
     try {
       await apiRequest('POST', '/api/autocomplete', {
         category: field,
@@ -116,7 +118,7 @@ export default function WorkerAccounts() {
       if (recipientName) await saveAutocompleteValue('recipientNames', recipientName);
       if (recipientPhone) await saveAutocompleteValue('recipientPhones', recipientPhone);
       if (transferNumber) await saveAutocompleteValue('transferNumbers', transferNumber);
-      
+
       toast({
         title: "تم إرسال الحولية",
         description: "تم إرسال الحولية للأهل بنجاح",
@@ -143,7 +145,7 @@ export default function WorkerAccounts() {
       if (recipientName) await saveAutocompleteValue('recipientNames', recipientName);
       if (recipientPhone) await saveAutocompleteValue('recipientPhones', recipientPhone);
       if (transferNumber) await saveAutocompleteValue('transferNumbers', transferNumber);
-      
+
       toast({
         title: "تم تعديل الحولية",
         description: "تم تعديل بيانات الحولية بنجاح",
@@ -196,6 +198,7 @@ export default function WorkerAccounts() {
     setTransferDate(getCurrentDate());
     setTransferNotes("");
     setFormErrors({});
+    setAllowNegativeBalance(false);
   };
 
   const invalidateTransferQueries = () => {
@@ -212,7 +215,7 @@ export default function WorkerAccounts() {
   const handleSendTransfer = () => {
     // مسح الأخطاء السابقة
     setFormErrors(clearErrors(formErrors));
-    
+
     const errors: Record<string, string> = {};
 
     // التحقق من اختيار المشروع والعامل
@@ -248,7 +251,7 @@ export default function WorkerAccounts() {
     }
 
     // التحقق من رصيد العامل للحوالات الجديدة
-    if (!editId && transferAmountNum > currentBalance) {
+    if (!editId && !allowNegativeBalance && transferAmountNum > currentBalance) {
       errors.transferAmount = "المبلغ المطلوب أكبر من رصيد العامل";
     }
 
@@ -276,14 +279,6 @@ export default function WorkerAccounts() {
       updateTransferMutation.mutate({ id: editId, transfer });
     } else {
       // إنشاء حولة جديدة
-      if (transferAmountNum > currentBalance) {
-        toast({
-          title: "خطأ",
-          description: "المبلغ المطلوب أكبر من رصيد العامل",
-          variant: "destructive",
-        });
-        return;
-      }
       createTransferMutation.mutate(transfer as InsertWorkerTransfer);
     }
   };
@@ -303,13 +298,13 @@ export default function WorkerAccounts() {
     setTransferMethod(transfer.transferMethod || "hawaleh");
     setTransferDate(transfer.transferDate || getCurrentDate());
     setTransferNotes(transfer.notes || "");
-    
+
     // تحديث URL لوضع التعديل
     const newUrl = new URL(window.location.href);
     newUrl.searchParams.set('edit', transfer.id);
     newUrl.searchParams.set('worker', selectedWorkerId);
     window.history.pushState({}, '', newUrl.toString());
-    
+
     setShowTransferDialog(true);
   };
 
@@ -449,7 +444,7 @@ export default function WorkerAccounts() {
       )}
 
       {/* Transfer Money Section */}
-      {selectedWorkerId && selectedProjectId && currentBalance > 0 && (
+      {selectedWorkerId && selectedProjectId && (
         <Card className="mb-4">
           <CardHeader>
             <CardTitle className="flex items-center">
@@ -500,9 +495,29 @@ export default function WorkerAccounts() {
                       className="arabic-numbers"
                     />
                     {!editId && (
-                      <p className="text-xs text-muted-foreground mt-1 arabic-numbers">
-                        الرصيد المتاح: {formatCurrency(currentBalance)}
-                      </p>
+                      <div className="space-y-2">
+                        <p className="text-xs text-muted-foreground arabic-numbers">
+                          الرصيد المتاح: {formatCurrency(currentBalance)}
+                        </p>
+                        <div className="flex items-center space-x-2 space-x-reverse">
+                          <Checkbox
+                            id="allowNegativeBalance"
+                            checked={allowNegativeBalance}
+                            onCheckedChange={setAllowNegativeBalance}
+                          />
+                          <Label 
+                            htmlFor="allowNegativeBalance" 
+                            className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                          >
+                            السماح بإرسال حولة حتى لو كان الرصيد غير كافي (رصيد سالب)
+                          </Label>
+                        </div>
+                        {allowNegativeBalance && (
+                          <p className="text-xs text-amber-600 font-medium">
+                            ⚠️ تنبيه: سيصبح رصيد العامل سالباً بعد هذه الحولة
+                          </p>
+                        )}
+                      </div>
                     )}
                   </FormField>
 
@@ -610,7 +625,7 @@ export default function WorkerAccounts() {
                       </Button>
                     )}
                   </div>
-                  
+
                   {editId && (
                     <Button 
                       onClick={() => setLocation("/daily-expenses")}

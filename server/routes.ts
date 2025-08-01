@@ -1039,18 +1039,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const transfer = await storage.createWorkerTransfer(validationResult.data);
       
-      // Update worker balance after transfer
-      const currentBalance = await storage.getWorkerBalance(transfer.workerId, transfer.projectId);
-      if (currentBalance) {
-        const newTotalTransferred = parseFloat(currentBalance.totalTransferred) + parseFloat(transfer.amount);
-        const newCurrentBalance = parseFloat(currentBalance.currentBalance) - parseFloat(transfer.amount);
-        
-        await storage.updateWorkerBalance(transfer.workerId, transfer.projectId, {
-          totalTransferred: newTotalTransferred.toString(),
-          currentBalance: newCurrentBalance.toString(),
-        });
-      }
-      
       // تحديث الملخص اليومي بعد إضافة الحوالة
       setImmediate(() => {
         storage.updateDailySummaryForDate(transfer.projectId, transfer.transferDate)
