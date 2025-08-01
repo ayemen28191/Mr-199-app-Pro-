@@ -1222,17 +1222,48 @@ export class DatabaseStorage implements IStorage {
       let currentBalance = 0;
 
       if (latestSummary.length > 0) {
-        // استخدام البيانات من آخر ملخص يومي (الأكثر دقة لأنه يشمل المبلغ المرحل)
-        const summary = latestSummary[0];
-        totalIncome = parseFloat(summary.totalIncome || '0');
-        totalExpenses = parseFloat(summary.totalExpenses || '0');
-        currentBalance = parseFloat(summary.remainingBalance || '0');
+        // حساب الإجمالي التراكمي من جميع الملخصات اليومية
+        const allSummaries = await db
+          .select()
+          .from(dailyExpenseSummaries)
+          .where(eq(dailyExpenseSummaries.projectId, projectId))
+          .orderBy(dailyExpenseSummaries.date);
+
+        let totalCarriedForward = 0;
+        let totalFundTransfersAccumulated = 0;
+        let totalExpensesAccumulated = 0;
+
+        // حساب إجمالي تحويلات العهدة من جميع الأيام
+        allSummaries.forEach((summary, index) => {
+          const income = parseFloat(summary.totalIncome || '0');
+          const expenses = parseFloat(summary.totalExpenses || '0');
+          const carried = parseFloat(summary.carriedForwardAmount || '0');
+          
+          if (index === 0) {
+            // أول يوم: المبلغ المرحل + تحويلات اليوم
+            totalCarriedForward = carried;
+            totalFundTransfersAccumulated = income - carried; // إزالة المبلغ المرحل للحصول على تحويلات العهدة فقط
+          } else {
+            // الأيام التالية: تحويلات العهدة الجديدة فقط
+            const previousSummary = allSummaries[index - 1];
+            const previousRemaining = parseFloat(previousSummary.remainingBalance || '0');
+            totalFundTransfersAccumulated += income - previousRemaining;
+          }
+          
+          totalExpensesAccumulated += expenses;
+        });
+
+        totalIncome = totalCarriedForward + totalFundTransfersAccumulated;
+        totalExpenses = totalExpensesAccumulated;
+        currentBalance = totalIncome - totalExpenses;
         
-        console.log(`📊 Project ${projectId} Statistics (from latest summary):`);
-        console.log(`   💰 Total Income: ${totalIncome.toLocaleString()}`);
+        console.log(`📊 Project ${projectId} Statistics (cumulative from all summaries):`);
+        console.log(`   🏦 Initial Carried Amount: ${totalCarriedForward.toLocaleString()}`);
+        console.log(`   💰 Total Fund Transfers: ${totalFundTransfersAccumulated.toLocaleString()}`);
+        console.log(`   💰 Total Income (Carried + Transfers): ${totalIncome.toLocaleString()}`);
         console.log(`   💸 Total Expenses: ${totalExpenses.toLocaleString()}`);
         console.log(`   🏦 Current Balance: ${currentBalance.toLocaleString()}`);
-        console.log(`   📅 Summary Date: ${summary.date}`);
+        console.log(`   📅 From ${allSummaries[0]?.date} to ${allSummaries[allSummaries.length - 1]?.date}`);
       } else {
         // في حالة عدم وجود ملخص يومي، احسب من البيانات الخام (بدون مبلغ مرحل)
         const fundTransfersSum = await db
