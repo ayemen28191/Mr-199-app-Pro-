@@ -10,17 +10,17 @@ This is a full-stack construction project management application built with Reac
 - Project Selection: User wants the selected project to persist across all pages and browser refreshes
 - Data Integrity: User reported issues with first-time save failures - resolved with improved error handling and retry mechanisms
 
-## Recent Changes (2025-07-31)
-- ✅ Fixed PostgreSQL database connection issues by creating database instance
-- ✅ Resolved LSP diagnostics errors in server/storage.ts with date comparison functions
-- ✅ Improved data persistence reliability:
-  - Added timeout handling (30 seconds) for API requests
-  - Enhanced error handling in database storage operations
-  - Improved retry mechanisms for failed operations
-  - Added validation checks for successful data creation
-  - Updated query client settings to reduce stale data issues (5-minute cache instead of infinite)
-- ✅ Enhanced error messages in Arabic for better user experience
-- ✅ Added comprehensive logging for debugging save operations
+## Recent Changes (2025-08-01)
+- ✅ Fixed critical data accuracy issue in worker statement calculations
+- ✅ Corrected API endpoints to sum actual work_days values instead of counting records
+- ✅ Fixed workDays calculation in /api/worker-statement endpoint 
+- ✅ Updated frontend to read workDays field correctly from API response
+- ✅ Cleaned up codebase by removing duplicate worker statement components:
+  - Removed: enhanced-worker-statement-fixed.tsx, enhanced-worker-statement.tsx
+  - Removed: multi-project-workers.tsx, worker-statement-excel-style.tsx, worker-statement-simple.tsx
+  - Kept only: excel-style-worker-statement.tsx as the single worker statement solution
+- ✅ Updated routing in App.tsx and reports navigation to use single statement component
+- ✅ Verified data accuracy: API now correctly shows totalDays: 1.5 for test case (0.5 + 1.0 days)
 
 ## System Architecture
 ### Frontend
