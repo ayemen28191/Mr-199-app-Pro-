@@ -544,56 +544,98 @@ export default function ProfessionalWorkerStatement() {
                   transfers: workerStatement.transfers
                 });
                 
-                return allDates.slice(0, 20).map((date, index) => {
-                  const attendanceRecord = workerStatement.attendance.find(a => a.date === date);
-                  const dayTransfers = workerStatement.transfers.filter(t => t.transferDate === date);
-                  
-                  // تسجيل تفصيلي لكل تاريخ
-                  if (dayTransfers.length > 0) {
-                    console.log(`🎯 Date ${date} HAS ${dayTransfers.length} transfers:`, dayTransfers.map(t => t.amount));
-                  }
-                  const recordDate = new Date(date);
+                // دمج الحضور والحوالات في صفوف مرتبة بالتاريخ
+                const combinedData: Array<{
+                  date: string;
+                  type: 'attendance' | 'transfer';
+                  attendanceRecord?: any;
+                  transferRecord?: any;
+                }> = [];
+
+                // إضافة سجلات الحضور
+                workerStatement.attendance.forEach(attendance => {
+                  combinedData.push({
+                    date: attendance.date,
+                    type: 'attendance',
+                    attendanceRecord: attendance
+                  });
+                });
+
+                // إضافة سجلات الحوالات
+                workerStatement.transfers.forEach(transfer => {
+                  combinedData.push({
+                    date: transfer.transferDate,
+                    type: 'transfer',
+                    transferRecord: transfer
+                  });
+                });
+
+                // ترتيب البيانات حسب التاريخ
+                combinedData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+                return combinedData.slice(0, 20).map((item, index) => {
+                  const recordDate = new Date(item.date);
                   const dayName = recordDate.toLocaleDateString('ar-SA', { weekday: 'short' });
                   
-                  return (
-                    <tr key={date} style={{ backgroundColor: index % 2 === 0 ? '#f8f9fa' : 'white' }}>
-                      <td className="date-cell">{formatDate(date)}</td>
-                      <td>{dayName}</td>
-                      <td>{(attendanceRecord as any)?.isPresent ? '✓' : '-'}</td>
-                      <td>{attendanceRecord ? (attendanceRecord as any).workDays || '1' : '-'}</td>
-                      <td className="currency-cell">
-                        {attendanceRecord ? formatCurrency(Number((attendanceRecord as any).dailyWage || 0)) : '-'}
-                      </td>
-                      <td className="currency-cell">
-                        {attendanceRecord ? formatCurrency(Number((attendanceRecord as any).actualWage || 0)) : '-'}
-                      </td>
-                      <td className="currency-cell">
-                        {attendanceRecord ? formatCurrency(Number((attendanceRecord as any).paidAmount || 0)) : '-'}
-                      </td>
-                      <td className="transfer-cell">
-                        -
-                      </td>
-                      <td className="transfer-cell" style={{ 
-                        backgroundColor: dayTransfers.length > 0 ? '#ffeb3b' : '', 
-                        fontWeight: dayTransfers.length > 0 ? 'bold' : 'normal',
-                        color: dayTransfers.length > 0 ? '#d32f2f' : '',
-                        border: dayTransfers.length > 0 ? '2px solid #d32f2f' : ''
-                      }}>
-                        {dayTransfers.length > 0 
-                          ? `🔥 ${formatCurrency(dayTransfers.reduce((sum, t) => sum + Number(t.amount), 0))} حوالة 🔥`
-                          : '-'}
-                      </td>
-                      <td className="currency-cell">
-                        {attendanceRecord ? formatCurrency(Number((attendanceRecord as any).remainingAmount || 0)) : '-'}
-                      </td>
-                      <td style={{ fontSize: '6px' }}>
-                        {[
-                          attendanceRecord?.notes,
-                          ...dayTransfers.map(t => `حوالة: ${t.notes || 'بدون ملاحظات'}`)
-                        ].filter(Boolean).join(', ') || '-'}
-                      </td>
-                    </tr>
-                  );
+                  if (item.type === 'attendance') {
+                    const record = item.attendanceRecord;
+                    return (
+                      <tr key={`att-${item.date}-${index}`} style={{ backgroundColor: index % 2 === 0 ? '#f8f9fa' : 'white' }}>
+                        <td className="date-cell">{formatDate(item.date)}</td>
+                        <td>{dayName}</td>
+                        <td>{record.isPresent ? '✓' : '-'}</td>
+                        <td>{record.workDays || '1'}</td>
+                        <td className="currency-cell">
+                          {formatCurrency(Number(record.dailyWage || 0))}
+                        </td>
+                        <td className="currency-cell">
+                          {formatCurrency(Number(record.actualWage || 0))}
+                        </td>
+                        <td className="currency-cell">
+                          {formatCurrency(Number(record.paidAmount || 0))}
+                        </td>
+                        <td className="currency-cell">-</td>
+                        <td className="currency-cell">-</td>
+                        <td className="currency-cell">
+                          {formatCurrency(Number(record.remainingAmount || 0))}
+                        </td>
+                        <td style={{ fontSize: '6px' }}>
+                          {record.notes || '-'}
+                        </td>
+                      </tr>
+                    );
+                  } else {
+                    // صف الحوالة
+                    const transfer = item.transferRecord;
+                    return (
+                      <tr key={`tr-${item.date}-${index}`} style={{ backgroundColor: '#fff3e0' }}>
+                        <td className="date-cell">{formatDate(item.date)}</td>
+                        <td>{dayName}</td>
+                        <td>حوالة أهل</td>
+                        <td>-</td>
+                        <td className="currency-cell">-</td>
+                        <td className="currency-cell">0</td>
+                        <td className="currency-cell">-</td>
+                        <td className="currency-cell">-</td>
+                        <td className="currency-cell" style={{ 
+                          backgroundColor: '#ffb74d', 
+                          fontWeight: 'bold',
+                          color: '#d32f2f'
+                        }}>
+                          {formatCurrency(Number(transfer.amount))}
+                        </td>
+                        <td className="currency-cell" style={{ 
+                          backgroundColor: '#ffcdd2',
+                          fontWeight: 'bold'
+                        }}>
+                          -{formatCurrency(Number(transfer.amount))}
+                        </td>
+                        <td style={{ fontSize: '6px' }}>
+                          حوالة: {(transfer as any).senderName} → {(transfer as any).recipientName} | {transfer.notes || 'لا توجد'}
+                        </td>
+                      </tr>
+                    );
+                  }
                 });
               })()}
             </tbody>
