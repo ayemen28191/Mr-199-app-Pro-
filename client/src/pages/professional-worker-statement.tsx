@@ -469,25 +469,48 @@ export default function ProfessionalWorkerStatement() {
             </div>
           </div>
 
-          {/* Debug: Show Transfers Directly */}
-          {workerStatement.transfers && workerStatement.transfers.length > 0 && (
-            <div style={{ margin: '10px 0', padding: '10px', backgroundColor: '#e3f2fd', border: '2px solid #2196f3' }}>
-              <h4 style={{ color: '#1976d2', margin: '0 0 10px 0' }}>🔍 الحوالات الموجودة في البيانات ({workerStatement.transfers.length})</h4>
-              {workerStatement.transfers.map((transfer, index) => (
-                <div key={index} style={{ 
-                  padding: '5px', 
-                  backgroundColor: '#fff', 
-                  margin: '5px 0', 
-                  border: '1px solid #ccc',
-                  borderRadius: '4px'
-                }}>
-                  <strong>تاريخ:</strong> {transfer.transferDate} | 
-                  <strong> المبلغ:</strong> {formatCurrency(Number(transfer.amount))} | 
-                  <strong> الملاحظات:</strong> {transfer.notes || 'لا توجد'}
-                </div>
-              ))}
-            </div>
-          )}
+          {/* عرض جميع الحوالات بشكل مباشر */}
+          <div style={{ margin: '10px 0', padding: '15px', backgroundColor: '#fff3e0', border: '3px solid #ff9800', borderRadius: '8px' }}>
+            <h3 style={{ color: '#e65100', margin: '0 0 15px 0', textAlign: 'center' }}>حوالات الأهل للعامل</h3>
+            {workerStatement?.transfers && workerStatement.transfers.length > 0 ? (
+              <div>
+                <p style={{ color: '#d84315', fontWeight: 'bold', marginBottom: '10px' }}>
+                  عدد الحوالات: {workerStatement.transfers.length} | 
+                  إجمالي المبلغ: {formatCurrency(workerStatement.transfers.reduce((sum, t) => sum + Number(t.amount), 0))}
+                </p>
+                {workerStatement.transfers.map((transfer, index) => (
+                  <div key={index} style={{ 
+                    padding: '10px', 
+                    backgroundColor: '#fff', 
+                    margin: '8px 0', 
+                    border: '2px solid #ff9800',
+                    borderRadius: '6px',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontWeight: 'bold', color: '#e65100' }}>
+                        📅 {transfer.transferDate}
+                      </span>
+                      <span style={{ fontWeight: 'bold', color: '#2e7d32', fontSize: '18px' }}>
+                        💰 {formatCurrency(Number(transfer.amount))}
+                      </span>
+                    </div>
+                    <div style={{ marginTop: '5px', color: '#424242' }}>
+                      <strong>المرسل:</strong> {transfer.senderName} | 
+                      <strong> المستقبل:</strong> {transfer.recipientName}
+                    </div>
+                    <div style={{ marginTop: '5px', color: '#616161', fontSize: '12px' }}>
+                      📝 {transfer.notes || 'بدون ملاحظات'}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p style={{ color: '#d32f2f', textAlign: 'center', fontWeight: 'bold' }}>
+                لا توجد حوالات أهل مسجلة للعامل في هذه الفترة
+              </p>
+            )}
+          </div>
 
           {/* Combined Attendance and Transfers Table */}
           <table className="worker-statement-table">
@@ -514,23 +537,12 @@ export default function ProfessionalWorkerStatement() {
                 const allDatesSet = new Set([...attendanceDates, ...transferDates]);
                 const allDates = Array.from(allDatesSet).sort();
                 
-                // البيانات الحقيقية - إجبار ظهور الحوالات
-                if (workerStatement.transfers && workerStatement.transfers.length > 0) {
-                  console.log('✅ FOUND TRANSFERS:', workerStatement.transfers.length);
-                  workerStatement.transfers.forEach((t, i) => {
-                    console.log(`Transfer ${i+1}:`, {
-                      date: t.transferDate,
-                      amount: t.amount,
-                      notes: t.notes
-                    });
-                  });
-                } else {
-                  console.log('❌ NO TRANSFERS FOUND');
-                }
-                
-                // إضافة جميع تواريخ الحوالات للتأكد من ظهورها
-                const allTransferDates = workerStatement.transfers.map(t => t.transferDate);
-                console.log('All transfer dates to show:', allTransferDates);
+                // تسجيل البيانات للتشخيص
+                console.log('Worker Statement Data:', {
+                  hasTransfers: !!(workerStatement.transfers && workerStatement.transfers.length > 0),
+                  transfersCount: workerStatement.transfers?.length || 0,
+                  transfers: workerStatement.transfers
+                });
                 
                 return allDates.slice(0, 20).map((date, index) => {
                   const attendanceRecord = workerStatement.attendance.find(a => a.date === date);

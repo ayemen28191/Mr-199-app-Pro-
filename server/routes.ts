@@ -765,12 +765,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         new Date(a.date).getTime() - new Date(b.date).getTime()
       );
 
+      // Get worker transfers (حوالات الأهل) for all projects within date range
+      const workerTransfersPromises = projectIds.map(projectId =>
+        storage.getWorkerTransfers(workerId, projectId)
+      );
+      const workerTransfersArrays = await Promise.all(workerTransfersPromises);
+      const workerTransfers = workerTransfersArrays.flat().filter((t: any) => {
+        const transferDate = new Date(t.transferDate);
+        const fromDate = new Date(dateFrom as string);
+        const toDate = new Date(dateTo as string);
+        return transferDate >= fromDate && transferDate <= toDate;
+      }).sort((a: any, b: any) => 
+        new Date(a.transferDate).getTime() - new Date(b.transferDate).getTime()
+      );
+
       // Get fund transfers (سلف) for all projects within date range
-      const transfersPromises = projectIds.map(projectId =>
+      const fundTransfersPromises = projectIds.map(projectId =>
         storage.getFundTransfersForWorker(workerId, projectId, dateFrom as string, dateTo as string)
       );
-      const transfersArrays = await Promise.all(transfersPromises);
-      const transfers = transfersArrays.flat().sort((a: any, b: any) => 
+      const fundTransfersArrays = await Promise.all(fundTransfersPromises);
+      const fundTransfers = fundTransfersArrays.flat().sort((a: any, b: any) => 
         new Date(a.transferDate).getTime() - new Date(b.transferDate).getTime()
       );
 
@@ -779,7 +793,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return sum + (record.isPresent ? parseFloat(record.dailyWage) : 0);
       }, 0);
 
-      const totalAdvances = transfers.reduce((sum: number, transfer: any) => {
+      const totalAdvances = fundTransfers.reduce((sum: number, transfer: any) => {
+        return sum + parseFloat(transfer.amount);
+      }, 0);
+
+      const totalWorkerTransfers = workerTransfers.reduce((sum: number, transfer: any) => {
         return sum + parseFloat(transfer.amount);
       }, 0);
 
@@ -813,8 +831,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         worker,
         projects: validProjects,
         attendance,
-        transfers,
-        summary
+        transfers: workerTransfers, // حوالات الأهل
+        fundTransfers, // السلف
+        summary: {
+          ...summary,
+          totalWorkerTransfers
+        }
       });
 
     } catch (error) {
