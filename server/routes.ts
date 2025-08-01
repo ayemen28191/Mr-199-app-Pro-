@@ -831,7 +831,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return sum + parseFloat(transfer.amount);
       }, 0);
 
-      const totalDays = attendance.filter((record: any) => record.isPresent).length;
+      const totalDays = attendance.reduce((sum: number, record: any) => {
+        return sum + (record.isPresent ? parseFloat(record.workDays || '1') : 0);
+      }, 0);
       const totalHours = totalDays * 8; // افتراض 8 ساعات لكل يوم
 
       const summary = {
@@ -842,7 +844,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalHours,
         projectStats: validProjects.map(project => {
           const projectAttendance = attendance.filter((a: any) => a.projectId === project.id);
-          const projectDays = projectAttendance.filter((a: any) => a.isPresent).length;
+          const projectDays = projectAttendance.reduce((sum: number, a: any) => 
+            sum + (a.isPresent ? parseFloat(a.workDays || '1') : 0), 0
+          );
           const projectEarnings = projectAttendance.reduce((sum: number, a: any) => 
             sum + (a.isPresent ? parseFloat(a.dailyWage) : 0), 0
           );
