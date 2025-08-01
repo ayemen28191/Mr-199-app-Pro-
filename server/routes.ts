@@ -1440,6 +1440,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Performance analysis endpoints  
+  app.get("/api/performance/quick-analysis", async (req, res) => {
+    try {
+      const { performanceAnalyzer } = await import('./performance-analyzer');
+      const result = await performanceAnalyzer.runQuickAnalysis();
+      res.json({ analysis: result });
+    } catch (error) {
+      res.status(500).json({ error: "تعذر تشغيل تحليل الأداء" });
+    }
+  });
+
+  app.post("/api/performance/detailed-report", async (req, res) => {
+    try {
+      const { performanceAnalyzer } = await import('./performance-analyzer');
+      await performanceAnalyzer.generateDetailedReport();
+      res.json({ message: "تم إنشاء تقرير الأداء المفصل بنجاح" });
+    } catch (error) {
+      res.status(500).json({ error: "تعذر إنشاء تقرير الأداء" });
+    }
+  });
+
+  app.get("/api/performance/analysis", async (req, res) => {
+    try {
+      const { performanceAnalyzer } = await import('./performance-analyzer');
+      const analysis = await performanceAnalyzer.analyzeInsertDeletePerformance();
+      res.json(analysis);
+    } catch (error) {
+      res.status(500).json({ error: "تعذر تحليل أداء قاعدة البيانات" });
+    }
+  });
+
+  // Admin routes for autocomplete system
+  app.get("/api/autocomplete-admin/stats", async (req, res) => {
+    try {
+      const { autocompleteOptimizer } = await import('./autocomplete-optimizer');
+      const stats = await autocompleteOptimizer.getSystemStats();
+      res.json(stats);
+    } catch (error) {
+      res.status(500).json({ error: "تعذر جلب إحصائيات النظام" });
+    }
+  });
+
+  app.post("/api/autocomplete-admin/cleanup", async (req, res) => {
+    try {
+      const { autocompleteOptimizer } = await import('./autocomplete-optimizer');
+      const result = await autocompleteOptimizer.cleanupOldData();
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: "تعذر تنظيف البيانات القديمة" });
+    }
+  });
+
+  app.post("/api/autocomplete-admin/enforce-limits", async (req, res) => {
+    try {
+      const { autocompleteOptimizer } = await import('./autocomplete-optimizer');
+      const { category } = req.body;
+      const result = await autocompleteOptimizer.enforceLimits(category);
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: "تعذر تطبيق حدود الفئات" });
+    }
+  });
+
+  app.post("/api/autocomplete-admin/maintenance", async (req, res) => {
+    try {
+      const { autocompleteOptimizer } = await import('./autocomplete-optimizer');
+      const result = await autocompleteOptimizer.runMaintenance();
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: "تعذر تشغيل الصيانة الشاملة" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
