@@ -420,108 +420,110 @@ export default function ExcelStyleDailyExpenses() {
       {reportData && (
         <div className="excel-style-report print-preview">
           {/* Report Header */}
-          <div className="excel-header">
+          <div className="modern-excel-header">
             <h2>كشف مصروفات يوم الأحد تاريخ {formatDate(selectedDate)}</h2>
           </div>
 
-          {/* Main Table */}
-          <div className="excel-table-container">
-            <table className="excel-table">
+          {/* Main Table - New Layout */}
+          <div className="modern-excel-container">
+            <table className="modern-excel-table">
               <thead>
-                <tr className="excel-header-row">
-                  <th>المبلغ</th>
-                  <th>نوع الحساب</th>
-                  <th>نوع</th>
-                  <th>الأجمالي المبلغ المتبقي</th>
-                  <th>ملاحظات</th>
+                <tr className="modern-header-row">
+                  <th className="col-amount">المبلغ</th>
+                  <th className="col-account-type">نوع الحساب</th>
+                  <th className="col-total-balance">الإجمالي المبلغ المتبقي</th>
+                  <th className="col-notes">ملاحظات</th>
                 </tr>
               </thead>
               <tbody>
-                {/* الرصيد المرحل */}
-                {reportData.summary?.carriedForward !== 0 && (
-                  <tr className="excel-income-row">
-                    <td className="excel-amount">{formatCurrency(reportData.summary?.carriedForward || 0)}</td>
-                    <td>مرحلة</td>
-                    <td>توريد</td>
-                    <td className="excel-balance">{formatCurrency(reportData.summary?.carriedForward || 0)}</td>
-                    <td>رصيد مرحل من اليوم السابق</td>
-                  </tr>
-                )}
-
-                {/* الحوالات المالية */}
-                {reportData.fundTransfers?.map((transfer, index) => {
-                  const previousAmount = (reportData.summary?.carriedForward || 0) + 
-                    reportData.fundTransfers.slice(0, index).reduce((sum, t) => sum + parseFloat(t.amount), 0);
-                  const currentBalance = previousAmount + parseFloat(transfer.amount);
+                {(() => {
+                  let runningBalance = reportData.summary?.carriedForward || 0;
+                  const rows = [];
                   
-                  return (
-                    <tr key={`transfer-${index}`} className="excel-income-row">
-                      <td className="excel-amount">{formatCurrency(parseFloat(transfer.amount))}</td>
-                      <td>حوالة</td>
-                      <td>توريد</td>
-                      <td className="excel-balance">{formatCurrency(currentBalance)}</td>
-                      <td>حوالة من {transfer.senderName} عبر {transfer.transferType} رقم {transfer.transferNumber}</td>
-                    </tr>
-                  );
-                })}
+                  // الرصيد المرحل
+                  if ((reportData.summary?.carriedForward || 0) !== 0) {
+                    rows.push(
+                      <tr key="carried-forward" className="modern-income-row">
+                        <td className="amount-cell">{formatCurrency(reportData.summary?.carriedForward || 0)}</td>
+                        <td>مرحل</td>
+                        <td className="balance-cell">{formatCurrency(runningBalance)}</td>
+                        <td>مرحل من تاريخ {formatDate(new Date(new Date(selectedDate).getTime() - 24*60*60*1000))}</td>
+                      </tr>
+                    );
+                  }
 
-                {/* أجور العمال */}
-                {reportData.workerAttendance?.map((attendance, index) => {
-                  const previousIncome = (reportData.summary?.carriedForward || 0) + (reportData.summary?.totalFundTransfers || 0);
-                  const previousExpenses = reportData.workerAttendance.slice(0, index).reduce((sum, a) => sum + parseFloat(a.paidAmount), 0);
-                  const currentBalance = previousIncome - previousExpenses - parseFloat(attendance.paidAmount);
-                  
-                  return (
-                    <tr key={`worker-${index}`} className="excel-expense-row">
-                      <td className="excel-amount">{formatCurrency(parseFloat(attendance.paidAmount))}</td>
-                      <td>مع {attendance.worker?.name}</td>
-                      <td>منصرف</td>
-                      <td className="excel-balance">{formatCurrency(currentBalance)}</td>
-                      <td>{attendance.workDescription || 'عمل يومي'}</td>
-                    </tr>
-                  );
-                })}
+                  // الحوالات المالية
+                  reportData.fundTransfers?.forEach((transfer, index) => {
+                    runningBalance += parseFloat(transfer.amount);
+                    rows.push(
+                      <tr key={`transfer-${index}`} className="modern-income-row">
+                        <td className="amount-cell">{formatCurrency(parseFloat(transfer.amount))}</td>
+                        <td>حوالة</td>
+                        <td className="balance-cell">{formatCurrency(runningBalance)}</td>
+                        <td>الحوالة من {transfer.senderName} باسم المهندس محمد تاريخ {formatDate(transfer.transferDate)}</td>
+                      </tr>
+                    );
+                  });
 
-                {/* شراء المواد */}
-                {reportData.materialPurchases?.map((purchase, index) => {
-                  const runningBalance = reportData.summary?.remainingBalance || 0; // سيتم حساب هذا بدقة أكثر
-                  
-                  return (
-                    <tr key={`material-${index}`} className="excel-expense-row">
-                      <td className="excel-amount">{formatCurrency(parseFloat(purchase.totalAmount))}</td>
-                      <td>شراء {purchase.material?.name}</td>
-                      <td>منصرف</td>
-                      <td className="excel-balance">{formatCurrency(runningBalance)}</td>
-                      <td>{purchase.quantity} {purchase.material?.unit} من {purchase.supplierName}</td>
-                    </tr>
-                  );
-                })}
+                  // أجور العمال
+                  reportData.workerAttendance?.forEach((attendance, index) => {
+                    runningBalance -= parseFloat(attendance.paidAmount);
+                    const workerType = attendance.worker?.name?.includes('سلطان') ? 'مصروف المهندس' : 
+                                     attendance.worker?.name?.includes('مؤيد') ? 'مصروف مؤيد' : 
+                                     attendance.worker?.name?.includes('عبدالله') ? 'مصروف عبدالله عمر' :
+                                     `مصروف ${attendance.worker?.name}`;
+                    
+                    rows.push(
+                      <tr key={`worker-${index}`} className="modern-expense-row">
+                        <td className="amount-cell">{formatCurrency(parseFloat(attendance.paidAmount))}</td>
+                        <td>{workerType}</td>
+                        <td className="balance-cell">{formatCurrency(runningBalance)}</td>
+                        <td>{attendance.workDescription || `العمل ${attendance.workDays} أيام العمل ${attendance.hoursWorked || 8} ساعات`}</td>
+                      </tr>
+                    );
+                  });
 
-                {/* أجور المواصلات */}
-                {reportData.transportationExpenses?.map((expense, index) => {
-                  return (
-                    <tr key={`transport-${index}`} className="excel-expense-row">
-                      <td className="excel-amount">{formatCurrency(parseFloat(expense.amount))}</td>
-                      <td>نقليات</td>
-                      <td>منصرف</td>
-                      <td className="excel-balance">0</td>
-                      <td>{expense.description} - {expense.worker?.name || ''}</td>
-                    </tr>
-                  );
-                })}
+                  // أجور المواصلات والتنقلات
+                  reportData.transportationExpenses?.forEach((expense, index) => {
+                    runningBalance -= parseFloat(expense.amount);
+                    rows.push(
+                      <tr key={`transport-${index}`} className="modern-expense-row">
+                        <td className="amount-cell">{formatCurrency(parseFloat(expense.amount))}</td>
+                        <td>نقليات</td>
+                        <td className="balance-cell">{formatCurrency(runningBalance)}</td>
+                        <td>{expense.description} - {expense.worker?.name || ''}</td>
+                      </tr>
+                    );
+                  });
 
-                {/* حوالات العمال */}
-                {reportData.workerTransfers?.map((transfer, index) => {
-                  return (
-                    <tr key={`worker-transfer-${index}`} className="excel-expense-row">
-                      <td className="excel-amount">{formatCurrency(parseFloat(transfer.amount))}</td>
-                      <td>نقليات</td>
-                      <td>منصرف</td>
-                      <td className="excel-balance">0</td>
-                      <td>حوالة {transfer.worker?.name} إلى {transfer.recipientName} عبر {transfer.transferMethod}</td>
-                    </tr>
-                  );
-                })}
+                  // حوالات العمال
+                  reportData.workerTransfers?.forEach((transfer, index) => {
+                    runningBalance -= parseFloat(transfer.amount);
+                    rows.push(
+                      <tr key={`worker-transfer-${index}`} className="modern-expense-row">
+                        <td className="amount-cell">{formatCurrency(parseFloat(transfer.amount))}</td>
+                        <td>نقليات العمال</td>
+                        <td className="balance-cell">{formatCurrency(runningBalance)}</td>
+                        <td>حق {transfer.worker?.name} بترول مع {transfer.recipientName}</td>
+                      </tr>
+                    );
+                  });
+
+                  // المشتريات
+                  reportData.materialPurchases?.forEach((purchase, index) => {
+                    runningBalance -= parseFloat(purchase.totalAmount);
+                    rows.push(
+                      <tr key={`material-${index}`} className="modern-expense-row">
+                        <td className="amount-cell">{formatCurrency(parseFloat(purchase.totalAmount))}</td>
+                        <td>مشتريات</td>
+                        <td className="balance-cell">{formatCurrency(runningBalance)}</td>
+                        <td>شراء {purchase.material?.name} من {purchase.supplierName}</td>
+                      </tr>
+                    );
+                  });
+
+                  return rows;
+                })()}
               </tbody>
             </table>
           </div>

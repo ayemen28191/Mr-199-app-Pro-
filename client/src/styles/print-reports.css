@@ -230,73 +230,97 @@
     direction: ltr;
   }
 
-  /* تنسيقات كشف المصروفات اليومية نمط Excel */
+  /* تنسيقات كشف المصروفات اليومية نمط Excel المحدث */
   .excel-style-report {
     direction: rtl;
     text-align: right;
     font-family: 'Arial', sans-serif;
-    max-width: 1000px;
+    max-width: 1200px;
     margin: 0 auto;
+    padding: 20px;
   }
 
-  .excel-header {
+  .modern-excel-header {
     background: linear-gradient(135deg, #87CEEB 0%, #4682B4 100%);
     color: #000;
-    padding: 15px;
+    padding: 20px;
     text-align: center;
-    font-size: 18px;
+    font-size: 16px;
     font-weight: bold;
-    margin-bottom: 10px;
+    margin-bottom: 0;
     border: 2px solid #000;
+    border-bottom: none;
   }
 
-  .excel-table-container {
+  .modern-excel-container {
     margin-bottom: 20px;
   }
 
-  .excel-table {
+  .modern-excel-table {
     width: 100%;
     border-collapse: collapse;
     border: 2px solid #000;
-    font-size: 14px;
+    font-size: 13px;
+    background: white;
   }
 
-  .excel-header-row {
+  .modern-excel-table .col-amount {
+    width: 15%;
+  }
+
+  .modern-excel-table .col-account-type {
+    width: 20%;
+  }
+
+  .modern-excel-table .col-total-balance {
+    width: 20%;
+  }
+
+  .modern-excel-table .col-notes {
+    width: 45%;
+  }
+
+  .modern-header-row {
     background: linear-gradient(135deg, #87CEEB 0%, #4682B4 100%);
     color: #000;
     font-weight: bold;
+    height: 45px;
   }
 
-  .excel-table th,
-  .excel-table td {
+  .modern-excel-table th,
+  .modern-excel-table td {
     border: 1px solid #000;
-    padding: 8px 12px;
+    padding: 10px 8px;
     text-align: center;
     vertical-align: middle;
+    line-height: 1.4;
   }
 
-  .excel-table th {
+  .modern-excel-table th {
     font-weight: bold;
     background: #87CEEB;
+    font-size: 14px;
   }
 
-  .excel-income-row {
+  .modern-income-row {
     background: #C8E6C9 !important;
   }
 
-  .excel-expense-row {
-    background: #FFCDD2 !important;
+  .modern-expense-row {
+    background: #FFE6E6 !important;
   }
 
-  .excel-amount {
+  .amount-cell {
     font-weight: bold;
     text-align: center;
+    color: #2c3e50;
   }
 
-  .excel-balance {
+  .balance-cell {
     font-weight: bold;
     text-align: center;
     background: #FFF3E0 !important;
+    color: #d35400;
   }
 
   .excel-total-section {
