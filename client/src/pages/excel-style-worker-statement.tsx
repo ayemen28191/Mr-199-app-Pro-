@@ -324,8 +324,10 @@ export default function ExcelStyleWorkerStatement() {
                   const dayName = recordDate.toLocaleDateString('ar-SA', { weekday: 'long' });
                   const project = workerStatement.projects.find(p => p.id === record.projectId);
                   const dailyWage = parseFloat(record.dailyWage) || 0;
+                  const workDays = parseFloat(record.workDays || '1');
+                  const actualWage = dailyWage * workDays; // الأجر الفعلي حسب أيام العمل
                   const received = parseFloat(record.paidAmount) || 0;
-                  const remaining = dailyWage - received;
+                  const remaining = actualWage - received;
 
                   return (
                     <tr key={record.id}>
@@ -334,9 +336,9 @@ export default function ExcelStyleWorkerStatement() {
                       <td>{project?.name || 'غير محدد'}</td>
                       <td>{formatCurrency(dailyWage)}</td>
                       <td>{formatDate(record.date)}</td>
-                      <td>{record.isPresent ? '1' : '0'}</td>
-                      <td>{record.isPresent ? 8 : 0}</td>
-                      <td className="amount-positive">{formatCurrency(dailyWage)}</td>
+                      <td>{record.isPresent ? (parseFloat(record.workDays || '1')) : '0'}</td>
+                      <td>{record.isPresent ? (parseFloat(record.workDays || '1') * 8) : 0}</td>
+                      <td className="amount-positive">{formatCurrency(actualWage)}</td>
                       <td className="amount-negative">{formatCurrency(received)}</td>
                       <td className={remaining >= 0 ? 'amount-positive' : 'amount-negative'}>
                         {formatCurrency(Math.abs(remaining))}
@@ -377,7 +379,10 @@ export default function ExcelStyleWorkerStatement() {
               {(() => {
                 // حساب الإجماليات الصحيحة
                 const totalEarnings = workerStatement.attendance.reduce((sum, record) => {
-                  return sum + (record.isPresent ? parseFloat(record.dailyWage) : 0);
+                  if (!record.isPresent) return sum;
+                  const dailyWage = parseFloat(record.dailyWage) || 0;
+                  const workDays = parseFloat(record.workDays || '1');
+                  return sum + (dailyWage * workDays); // الأجر الفعلي = الأجر اليومي × أيام العمل
                 }, 0);
                 
                 const totalPaidFromAttendance = workerStatement.attendance.reduce((sum, record) => {
