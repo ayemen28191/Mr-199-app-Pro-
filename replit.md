@@ -51,6 +51,15 @@ This is a full-stack construction project management application built with Reac
   - Enhanced data validation requiring minimum 2 characters before saving
   - Added immediate refetch after successful save to ensure data appears in dropdown
   - Fixed first-time save failures by properly handling focus/blur events
+- ✅ Implemented Worker Miscellaneous Expenses system:
+  - Added workerMiscExpenses table to database schema with fields: id, projectId, amount, description, date, createdAt
+  - Created comprehensive API endpoints for CRUD operations on worker misc expenses
+  - Updated database storage methods to handle worker miscellaneous expenses
+  - Enhanced daily summary calculations to include worker misc expenses in total expenses
+  - Built complete frontend component (WorkerMiscExpenses) with add/edit/delete functionality
+  - Integrated worker misc expenses into daily expenses page with proper positioning
+  - Added numeric input validation and proper Arabic UI with RTL support
+  - Worker misc expenses now properly affect project balance calculations
 
 ## System Architecture
 ### Frontend

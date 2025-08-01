@@ -1,12 +1,12 @@
 import { 
   type Project, type Worker, type FundTransfer, type WorkerAttendance, 
   type Material, type MaterialPurchase, type TransportationExpense, type DailyExpenseSummary,
-  type WorkerTransfer, type WorkerBalance, type AutocompleteData, type WorkerType,
+  type WorkerTransfer, type WorkerBalance, type AutocompleteData, type WorkerType, type WorkerMiscExpense,
   type InsertProject, type InsertWorker, type InsertFundTransfer, type InsertWorkerAttendance,
   type InsertMaterial, type InsertMaterialPurchase, type InsertTransportationExpense, type InsertDailyExpenseSummary,
-  type InsertWorkerTransfer, type InsertWorkerBalance, type InsertAutocompleteData, type InsertWorkerType,
+  type InsertWorkerTransfer, type InsertWorkerBalance, type InsertAutocompleteData, type InsertWorkerType, type InsertWorkerMiscExpense,
   projects, workers, fundTransfers, workerAttendance, materials, materialPurchases, transportationExpenses, dailyExpenseSummaries,
-  workerTransfers, workerBalances, autocompleteData, workerTypes
+  workerTransfers, workerBalances, autocompleteData, workerTypes, workerMiscExpenses
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, gte, lte, sql, inArray, or } from "drizzle-orm";
@@ -116,6 +116,13 @@ export interface IStorage {
   getAutocompleteData(category: string): Promise<AutocompleteData[]>;
   saveAutocompleteData(data: InsertAutocompleteData): Promise<AutocompleteData>;
   removeAutocompleteData(category: string, value: string): Promise<void>;
+  
+  // Worker miscellaneous expenses
+  getWorkerMiscExpenses(projectId: string, date?: string): Promise<WorkerMiscExpense[]>;
+  getWorkerMiscExpense(id: string): Promise<WorkerMiscExpense | null>;
+  createWorkerMiscExpense(expense: InsertWorkerMiscExpense): Promise<WorkerMiscExpense>;
+  updateWorkerMiscExpense(id: string, expense: Partial<InsertWorkerMiscExpense>): Promise<WorkerMiscExpense | undefined>;
+  deleteWorkerMiscExpense(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -694,6 +701,7 @@ export class DatabaseStorage implements IStorage {
         materialPurchases,
         transportationExpenses,
         workerTransfers,
+        workerMiscExpenses,
         carriedForwardAmount
       ] = await Promise.all([
         this.getFundTransfers(projectId, date),
@@ -701,6 +709,7 @@ export class DatabaseStorage implements IStorage {
         this.getMaterialPurchases(projectId, date),
         this.getTransportationExpenses(projectId, date),
         this.getFilteredWorkerTransfers(projectId, date),
+        this.getWorkerMiscExpenses(projectId, date),
         this.getPreviousDayBalance(projectId, date).then(balance => parseFloat(balance))
       ]);
 
@@ -710,9 +719,10 @@ export class DatabaseStorage implements IStorage {
       const totalMaterialCosts = materialPurchases.reduce((sum, p) => sum + parseFloat(p.totalAmount), 0);
       const totalTransportationCosts = transportationExpenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
       const totalWorkerTransferCosts = workerTransfers.reduce((sum, t) => sum + parseFloat(t.amount), 0);
+      const totalWorkerMiscCosts = workerMiscExpenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
 
       const totalIncome = carriedForwardAmount + totalFundTransfers;
-      const totalExpenses = totalWorkerWages + totalMaterialCosts + totalTransportationCosts + totalWorkerTransferCosts;
+      const totalExpenses = totalWorkerWages + totalMaterialCosts + totalTransportationCosts + totalWorkerTransferCosts + totalWorkerMiscCosts;
       const remainingBalance = totalIncome - totalExpenses;
 
       // معلومات تفصيلية للتشخيص
@@ -723,6 +733,7 @@ export class DatabaseStorage implements IStorage {
       console.log(`   Material Costs: ${totalMaterialCosts}`);
       console.log(`   Transportation: ${totalTransportationCosts}`);
       console.log(`   Worker Transfers: ${totalWorkerTransferCosts}`);
+      console.log(`   Worker Misc Expenses: ${totalWorkerMiscCosts}`);
       console.log(`   Total Income: ${totalIncome}`);
       console.log(`   Total Expenses: ${totalExpenses}`);
       console.log(`   Remaining Balance: ${remainingBalance}`);
@@ -1348,6 +1359,70 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error getting daily expenses range:', error);
       return [];
+    }
+  }
+
+  // Worker miscellaneous expenses methods
+  async getWorkerMiscExpenses(projectId: string, date?: string): Promise<WorkerMiscExpense[]> {
+    try {
+      if (date) {
+        return await db.select().from(workerMiscExpenses)
+          .where(and(eq(workerMiscExpenses.projectId, projectId), eq(workerMiscExpenses.date, date)))
+          .orderBy(workerMiscExpenses.createdAt);
+      } else {
+        return await db.select().from(workerMiscExpenses)
+          .where(eq(workerMiscExpenses.projectId, projectId))
+          .orderBy(workerMiscExpenses.date, workerMiscExpenses.createdAt);
+      }
+    } catch (error) {
+      console.error('Error getting worker misc expenses:', error);
+      return [];
+    }
+  }
+
+  async getWorkerMiscExpense(id: string): Promise<WorkerMiscExpense | null> {
+    try {
+      const [expense] = await db.select().from(workerMiscExpenses).where(eq(workerMiscExpenses.id, id));
+      return expense || null;
+    } catch (error) {
+      console.error('Error getting worker misc expense:', error);
+      return null;
+    }
+  }
+
+  async createWorkerMiscExpense(expense: InsertWorkerMiscExpense): Promise<WorkerMiscExpense> {
+    try {
+      const [newExpense] = await db
+        .insert(workerMiscExpenses)
+        .values(expense)
+        .returning();
+      return newExpense;
+    } catch (error) {
+      console.error('Error creating worker misc expense:', error);
+      throw error;
+    }
+  }
+
+  async updateWorkerMiscExpense(id: string, expense: Partial<InsertWorkerMiscExpense>): Promise<WorkerMiscExpense | undefined> {
+    try {
+      const [updated] = await db
+        .update(workerMiscExpenses)
+        .set(expense)
+        .where(eq(workerMiscExpenses.id, id))
+        .returning();
+      return updated || undefined;
+    } catch (error) {
+      console.error('Error updating worker misc expense:', error);
+      throw error;
+    }
+  }
+
+  async deleteWorkerMiscExpense(id: string): Promise<void> {
+    try {
+      await db.delete(workerMiscExpenses).where(eq(workerMiscExpenses.id, id));
+    } catch (error) {
+      console.error('Error deleting worker misc expense:', error);
+      throw error;
     }
   }
 }

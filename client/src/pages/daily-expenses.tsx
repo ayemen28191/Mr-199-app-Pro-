@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useSelectedProject } from "@/hooks/use-selected-project";
 import ProjectSelector from "@/components/project-selector";
 import ExpenseSummary from "@/components/expense-summary";
+import WorkerMiscExpenses from "./worker-misc-expenses";
 import { getCurrentDate, formatCurrency, formatDate } from "@/lib/utils";
 import { AutocompleteInput } from "@/components/ui/autocomplete-input-database";
 import { apiRequest } from "@/lib/queryClient";
@@ -881,6 +882,14 @@ export default function DailyExpenses() {
           </Button>
         </CardContent>
       </Card>
+
+      {/* Worker Miscellaneous Expenses */}
+      {selectedProjectId && (
+        <WorkerMiscExpenses 
+          projectId={selectedProjectId} 
+          selectedDate={selectedDate} 
+        />
+      )}
 
       {/* Total Summary */}
       <ExpenseSummary

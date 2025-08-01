@@ -5,7 +5,8 @@ import {
   insertProjectSchema, insertWorkerSchema, insertFundTransferSchema, 
   insertWorkerAttendanceSchema, insertMaterialSchema, insertMaterialPurchaseSchema,
   insertTransportationExpenseSchema, insertDailyExpenseSummarySchema, insertWorkerTransferSchema,
-  insertWorkerBalanceSchema, insertAutocompleteDataSchema, insertWorkerTypeSchema
+  insertWorkerBalanceSchema, insertAutocompleteDataSchema, insertWorkerTypeSchema,
+  insertWorkerMiscExpenseSchema
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -1183,6 +1184,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error removing autocomplete data:", error);
       res.status(500).json({ message: "خطأ في حذف بيانات الإكمال التلقائي" });
+    }
+  });
+
+  // Worker miscellaneous expenses routes
+  app.get("/api/projects/:projectId/worker-misc-expenses", async (req, res) => {
+    try {
+      const { projectId } = req.params;
+      const { date } = req.query;
+      const expenses = await storage.getWorkerMiscExpenses(projectId, date as string);
+      res.json(expenses);
+    } catch (error) {
+      console.error("Error fetching worker misc expenses:", error);
+      res.status(500).json({ message: "خطأ في جلب نثريات العمال" });
+    }
+  });
+
+  app.post("/api/worker-misc-expenses", async (req, res) => {
+    try {
+      const result = insertWorkerMiscExpenseSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "Invalid worker misc expense data", errors: result.error.issues });
+      }
+      
+      const expense = await storage.createWorkerMiscExpense(result.data);
+      
+      // تحديث الملخص اليومي
+      setImmediate(() => {
+        storage.updateDailySummaryForDate(expense.projectId, expense.date)
+          .catch(error => console.error("Error updating daily summary after worker misc expense creation:", error));
+      });
+      
+      res.status(201).json(expense);
+    } catch (error) {
+      console.error("Error creating worker misc expense:", error);
+      res.status(500).json({ message: "خطأ في إنشاء نثريات العمال" });
+    }
+  });
+
+  app.put("/api/worker-misc-expenses/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const result = insertWorkerMiscExpenseSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "Invalid worker misc expense data", errors: result.error.issues });
+      }
+      
+      const expense = await storage.updateWorkerMiscExpense(id, result.data);
+      if (!expense) {
+        return res.status(404).json({ message: "Worker misc expense not found" });
+      }
+      
+      // تحديث الملخص اليومي
+      setImmediate(() => {
+        storage.updateDailySummaryForDate(expense.projectId, expense.date)
+          .catch(error => console.error("Error updating daily summary after worker misc expense update:", error));
+      });
+      
+      res.json(expense);
+    } catch (error) {
+      console.error("Error updating worker misc expense:", error);
+      res.status(500).json({ message: "خطأ في تحديث نثريات العمال" });
+    }
+  });
+
+  app.delete("/api/worker-misc-expenses/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // الحصول على تفاصيل النثريات قبل الحذف لتحديث الملخص اليومي
+      const expense = await storage.getWorkerMiscExpense(id);
+      
+      await storage.deleteWorkerMiscExpense(id);
+      
+      // تحديث الملخص اليومي إذا كانت النثريات موجودة
+      if (expense) {
+        setImmediate(() => {
+          storage.updateDailySummaryForDate(expense.projectId, expense.date)
+            .catch(error => console.error("Error updating daily summary after worker misc expense deletion:", error));
+        });
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting worker misc expense:", error);
+      res.status(500).json({ message: "خطأ في حذف نثريات العمال" });
     }
   });
 
