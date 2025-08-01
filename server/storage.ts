@@ -1200,7 +1200,53 @@ export class DatabaseStorage implements IStorage {
       
       const materialPurchasesCount = purchasesCount[0]?.count || 0;
 
-      // حساب المالية من آخر ملخص يومي
+      // حساب الإجمالي الكلي للمشروع من البداية (وليس من آخر ملخص يومي فقط)
+      
+      // حساب إجمالي الدخل من جميع تحويلات العهدة
+      const fundTransfersSum = await db
+        .select({ sum: sql<number>`COALESCE(SUM(CAST(${fundTransfers.amount} AS NUMERIC)), 0)` })
+        .from(fundTransfers)
+        .where(eq(fundTransfers.projectId, projectId));
+      
+      const totalIncome = parseFloat(fundTransfersSum[0]?.sum?.toString() || '0');
+
+      // حساب إجمالي المصروفات من جميع المصادر
+      const [wagesSum, materialsSum, transportSum, workerTransfersSum, workerMiscSum] = await Promise.all([
+        // أجور العمال المدفوعة (paidAmount وليس dailyWage)
+        db.select({ sum: sql<number>`COALESCE(SUM(CAST(${workerAttendance.paidAmount} AS NUMERIC)), 0)` })
+          .from(workerAttendance)
+          .where(eq(workerAttendance.projectId, projectId)),
+        
+        // تكلفة المواد
+        db.select({ sum: sql<number>`COALESCE(SUM(CAST(${materialPurchases.totalAmount} AS NUMERIC)), 0)` })
+          .from(materialPurchases)
+          .where(eq(materialPurchases.projectId, projectId)),
+        
+        // مصاريف النقل
+        db.select({ sum: sql<number>`COALESCE(SUM(CAST(${transportationExpenses.amount} AS NUMERIC)), 0)` })
+          .from(transportationExpenses)
+          .where(eq(transportationExpenses.projectId, projectId)),
+        
+        // تحويلات العمال
+        db.select({ sum: sql<number>`COALESCE(SUM(CAST(${workerTransfers.amount} AS NUMERIC)), 0)` })
+          .from(workerTransfers)
+          .where(eq(workerTransfers.projectId, projectId)),
+        
+        // مصاريف العمال المتنوعة
+        db.select({ sum: sql<number>`COALESCE(SUM(CAST(${workerMiscExpenses.amount} AS NUMERIC)), 0)` })
+          .from(workerMiscExpenses)
+          .where(eq(workerMiscExpenses.projectId, projectId))
+      ]);
+
+      const wages = parseFloat(wagesSum[0]?.sum?.toString() || '0');
+      const materials = parseFloat(materialsSum[0]?.sum?.toString() || '0');
+      const transport = parseFloat(transportSum[0]?.sum?.toString() || '0');
+      const workerTransfersTotal = parseFloat(workerTransfersSum[0]?.sum?.toString() || '0');
+      const workerMiscTotal = parseFloat(workerMiscSum[0]?.sum?.toString() || '0');
+      
+      const totalExpenses = wages + materials + transport + workerTransfersTotal + workerMiscTotal;
+      
+      // حساب الرصيد الحالي من آخر ملخص يومي (هذا هو الرصيد الحالي الصحيح)
       const latestSummary = await db
         .select()
         .from(dailyExpenseSummaries)
@@ -1208,47 +1254,20 @@ export class DatabaseStorage implements IStorage {
         .orderBy(sql`${dailyExpenseSummaries.date} DESC`)
         .limit(1);
 
-      let totalIncome = 0;
-      let totalExpenses = 0;
-      let currentBalance = 0;
+      const currentBalance = latestSummary.length > 0 
+        ? parseFloat(latestSummary[0].remainingBalance || '0')
+        : totalIncome - totalExpenses;
 
-      if (latestSummary.length > 0) {
-        const summary = latestSummary[0];
-        totalIncome = parseFloat(summary.totalIncome || '0');
-        totalExpenses = parseFloat(summary.totalExpenses || '0');
-        currentBalance = parseFloat(summary.remainingBalance || '0');
-      } else {
-        // إذا لم توجد ملخصات، احسب من البيانات الخام
-        const fundTransfersSum = await db
-          .select({ sum: sql<number>`COALESCE(SUM(CAST(${fundTransfers.amount} AS NUMERIC)), 0)` })
-          .from(fundTransfers)
-          .where(eq(fundTransfers.projectId, projectId));
-        
-        totalIncome = parseFloat(fundTransfersSum[0]?.sum?.toString() || '0');
-
-        // حساب المصروفات
-        const wagesSum = await db
-          .select({ sum: sql<number>`COALESCE(SUM(CAST(${workerAttendance.dailyWage} AS NUMERIC)), 0)` })
-          .from(workerAttendance)
-          .where(eq(workerAttendance.projectId, projectId));
-
-        const materialsSum = await db
-          .select({ sum: sql<number>`COALESCE(SUM(CAST(${materialPurchases.totalAmount} AS NUMERIC)), 0)` })
-          .from(materialPurchases)
-          .where(eq(materialPurchases.projectId, projectId));
-
-        const transportSum = await db
-          .select({ sum: sql<number>`COALESCE(SUM(CAST(${transportationExpenses.amount} AS NUMERIC)), 0)` })
-          .from(transportationExpenses)
-          .where(eq(transportationExpenses.projectId, projectId));
-
-        const wages = parseFloat(wagesSum[0]?.sum?.toString() || '0');
-        const materials = parseFloat(materialsSum[0]?.sum?.toString() || '0');
-        const transport = parseFloat(transportSum[0]?.sum?.toString() || '0');
-        
-        totalExpenses = wages + materials + transport;
-        currentBalance = totalIncome - totalExpenses;
-      }
+      // طباعة تفاصيل الحساب للتشخيص
+      console.log(`📊 Project ${projectId} Statistics Calculation:`);
+      console.log(`   💰 Total Income (Fund Transfers): ${totalIncome.toLocaleString()}`);
+      console.log(`   💸 Total Expenses: ${totalExpenses.toLocaleString()}`);
+      console.log(`     - Wages (Paid): ${wages.toLocaleString()}`);
+      console.log(`     - Materials: ${materials.toLocaleString()}`);
+      console.log(`     - Transportation: ${transport.toLocaleString()}`);
+      console.log(`     - Worker Transfers: ${workerTransfersTotal.toLocaleString()}`);
+      console.log(`     - Worker Misc Expenses: ${workerMiscTotal.toLocaleString()}`);
+      console.log(`   🏦 Current Balance: ${currentBalance.toLocaleString()}`);
 
       // البحث عن آخر نشاط
       const lastActivityQueries = await Promise.all([
