@@ -97,6 +97,15 @@ export default function DailyExpenses() {
     enabled: !!selectedProjectId,
   });
 
+  const { data: todayMiscExpenses = [] } = useQuery({
+    queryKey: ["/api/worker-misc-expenses", selectedProjectId, selectedDate],
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/worker-misc-expenses?projectId=${selectedProjectId}&date=${selectedDate}`);
+      return Array.isArray(response) ? response : [];
+    },
+    enabled: !!selectedProjectId,
+  });
+
   const { data: todayFundTransfers = [], refetch: refetchFundTransfers, isLoading: fundTransfersLoading } = useQuery({
     queryKey: ["/api/projects", selectedProjectId, "fund-transfers", selectedDate],
     queryFn: async () => {
@@ -395,12 +404,14 @@ export default function DailyExpenses() {
       todayMaterialPurchases.reduce((sum, purchase) => sum + parseFloat(purchase.totalAmount || "0"), 0) : 0;
     const totalWorkerTransfers = Array.isArray(todayWorkerTransfers) ? 
       todayWorkerTransfers.reduce((sum, transfer) => sum + parseFloat(transfer.amount || "0"), 0) : 0;
+    const totalMiscExpenses = Array.isArray(todayMiscExpenses) ? 
+      todayMiscExpenses.reduce((sum, expense) => sum + parseFloat(expense.amount || "0"), 0) : 0;
     const totalFundTransfers = Array.isArray(todayFundTransfers) ? 
       todayFundTransfers.reduce((sum, transfer) => sum + parseFloat(transfer.amount || "0"), 0) : 0;
     const carriedAmount = parseFloat(carriedForward) || 0;
     
     const totalIncome = carriedAmount + totalFundTransfers;
-    const totalExpenses = totalWorkerWages + totalTransportation + totalMaterialCosts + totalWorkerTransfers;
+    const totalExpenses = totalWorkerWages + totalTransportation + totalMaterialCosts + totalWorkerTransfers + totalMiscExpenses;
     const remainingBalance = totalIncome - totalExpenses;
 
     return {
@@ -408,6 +419,7 @@ export default function DailyExpenses() {
       totalTransportation,
       totalMaterialCosts,
       totalWorkerTransfers,
+      totalMiscExpenses,
       totalFundTransfers,
       totalIncome,
       totalExpenses,
