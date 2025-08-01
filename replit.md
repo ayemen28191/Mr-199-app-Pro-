@@ -37,6 +37,13 @@ This is a full-stack construction project management application built with Reac
   - Fixed enhanced-worker-card.tsx to display real profession from worker.type field
   - Now shows accurate job titles like "معلم", "حداد", "نجار", "سائق" etc. as stored in database
   - Database schema already properly stores worker professions in 'type' field
+- ✅ Enhanced worker transfer system with transfer number field:
+  - Added transferNumber field to workerTransfers table schema
+  - Updated database schema with new optional transfer number column
+  - Added transfer number input field with numeric keyboard (inputMode="numeric")
+  - Enhanced transfer form with proper field validation and form state management
+  - Updated transfer display to show transfer numbers in previous transfers list
+  - Transfer number is optional but visible when provided
 
 ## System Architecture
 ### Frontend

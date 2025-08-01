@@ -30,6 +30,7 @@ export default function WorkerAccounts() {
   const [showTransferDialog, setShowTransferDialog] = useState(false);
   const [showStatementDialog, setShowStatementDialog] = useState(false);
   const [transferAmount, setTransferAmount] = useState("");
+  const [transferNumber, setTransferNumber] = useState("");
   const [senderName, setSenderName] = useState("");
   const [recipientName, setRecipientName] = useState("");
   const [recipientPhone, setRecipientPhone] = useState("");
@@ -71,6 +72,7 @@ export default function WorkerAccounts() {
   useEffect(() => {
     if (transferToEdit && editId) {
       setTransferAmount(transferToEdit.amount?.toString() || "");
+      setTransferNumber(transferToEdit.transferNumber || "");
       setSenderName(transferToEdit.senderName || "");
       setRecipientName(transferToEdit.recipientName || "");
       setRecipientPhone(transferToEdit.recipientPhone || "");
@@ -160,6 +162,7 @@ export default function WorkerAccounts() {
   const resetTransferForm = () => {
     setShowTransferDialog(false);
     setTransferAmount("");
+    setTransferNumber("");
     setSenderName("");
     setRecipientName("");
     setRecipientPhone("");
@@ -233,6 +236,7 @@ export default function WorkerAccounts() {
       workerId: selectedWorkerId,
       projectId: selectedProjectId,
       amount: transferAmount,
+      transferNumber: transferNumber.trim() || undefined,
       senderName: senderName.trim() || undefined,
       recipientName: recipientName.trim(),
       recipientPhone: recipientPhone.trim() || undefined,
@@ -266,6 +270,7 @@ export default function WorkerAccounts() {
 
   const handleEditTransfer = (transfer: WorkerTransfer) => {
     setTransferAmount(transfer.amount?.toString() || "");
+    setTransferNumber(transfer.transferNumber || "");
     setSenderName(transfer.senderName || "");
     setRecipientName(transfer.recipientName || "");
     setRecipientPhone(transfer.recipientPhone || "");
@@ -475,6 +480,19 @@ export default function WorkerAccounts() {
                     )}
                   </FormField>
 
+                  <FormField id="transferNumber" error={formErrors.transferNumber}>
+                    <Label htmlFor="transferNumber">رقم الحوالة (اختياري)</Label>
+                    <Input
+                      id="transferNumber"
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="رقم الحوالة..."
+                      value={transferNumber}
+                      onChange={(e) => setTransferNumber(e.target.value)}
+                      className="arabic-numbers"
+                    />
+                  </FormField>
+
                   <FormField id="senderName" error={formErrors.senderName}>
                     <Label htmlFor="senderName">اسم المرسل</Label>
                     <AutocompleteInput
@@ -607,6 +625,9 @@ export default function WorkerAccounts() {
                       <p className="text-sm text-muted-foreground">
                         {transfer.transferDate} • {transfer.transferMethod === "hawaleh" ? "حولة" : transfer.transferMethod === "bank" ? "تحويل بنكي" : "نقداً"}
                       </p>
+                      {transfer.transferNumber && (
+                        <p className="text-xs text-muted-foreground">رقم الحوالة: {transfer.transferNumber}</p>
+                      )}
                       {transfer.recipientPhone && (
                         <p className="text-xs text-muted-foreground">{transfer.recipientPhone}</p>
                       )}
