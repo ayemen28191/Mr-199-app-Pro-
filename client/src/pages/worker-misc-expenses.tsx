@@ -15,6 +15,7 @@ interface WorkerMiscExpense {
   amount: string;
   description: string;
   date: string;
+  notes?: string;
   createdAt: string;
 }
 

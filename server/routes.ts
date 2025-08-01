@@ -1223,6 +1223,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/worker-misc-expenses", async (req, res) => {
+    try {
+      const { projectId, date } = req.query;
+      const expenses = await storage.getWorkerMiscExpenses(projectId as string, date as string);
+      res.json(expenses);
+    } catch (error) {
+      console.error("Error fetching worker misc expenses:", error);
+      res.status(500).json({ message: "خطأ في جلب نثريات العمال" });
+    }
+  });
+
   app.post("/api/worker-misc-expenses", async (req, res) => {
     try {
       const result = insertWorkerMiscExpenseSchema.safeParse(req.body);
