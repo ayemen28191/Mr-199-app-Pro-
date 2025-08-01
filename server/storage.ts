@@ -1246,17 +1246,21 @@ export class DatabaseStorage implements IStorage {
       
       const totalExpenses = wages + materials + transport + workerTransfersTotal + workerMiscTotal;
       
-      // حساب الرصيد الحالي من آخر ملخص يومي (هذا هو الرصيد الحالي الصحيح)
+      // حساب الرصيد الحالي الصحيح من الفرق بين الدخل والمصروفات الإجمالية
+      // وليس من آخر ملخص يومي لأن ذلك يعطي رصيد يوم واحد فقط
+      const currentBalance = totalIncome - totalExpenses;
+      
+      // للتحقق: جلب آخر ملخص يومي للمقارنة فقط
       const latestSummary = await db
         .select()
         .from(dailyExpenseSummaries)
         .where(eq(dailyExpenseSummaries.projectId, projectId))
         .orderBy(sql`${dailyExpenseSummaries.date} DESC`)
         .limit(1);
-
-      const currentBalance = latestSummary.length > 0 
+      
+      const lastDaySummaryBalance = latestSummary.length > 0 
         ? parseFloat(latestSummary[0].remainingBalance || '0')
-        : totalIncome - totalExpenses;
+        : 0;
 
       // طباعة تفاصيل الحساب للتشخيص
       console.log(`📊 Project ${projectId} Statistics Calculation:`);
@@ -1267,7 +1271,9 @@ export class DatabaseStorage implements IStorage {
       console.log(`     - Transportation: ${transport.toLocaleString()}`);
       console.log(`     - Worker Transfers: ${workerTransfersTotal.toLocaleString()}`);
       console.log(`     - Worker Misc Expenses: ${workerMiscTotal.toLocaleString()}`);
-      console.log(`   🏦 Current Balance: ${currentBalance.toLocaleString()}`);
+      console.log(`   🏦 Current Balance (Calculated): ${currentBalance.toLocaleString()}`);
+      console.log(`   📅 Last Day Summary Balance: ${lastDaySummaryBalance.toLocaleString()}`);
+      console.log(`   ✅ Using calculated balance for accuracy`);
 
       // البحث عن آخر نشاط
       const lastActivityQueries = await Promise.all([
