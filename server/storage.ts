@@ -124,6 +124,10 @@ export interface IStorage {
   updateWorkerMiscExpense(id: string, expense: Partial<InsertWorkerMiscExpense>): Promise<WorkerMiscExpense | undefined>;
   deleteWorkerMiscExpense(id: string): Promise<void>;
   
+  // Advanced Reports
+  getExpensesForReport(projectId: string, dateFrom: string, dateTo: string): Promise<any[]>;
+  getIncomeForReport(projectId: string, dateFrom: string, dateTo: string): Promise<any[]>;
+  
   // Users
   getUsers(): Promise<User[]>;
   getUser(id: string): Promise<User | undefined>;
@@ -693,147 +697,7 @@ export class DatabaseStorage implements IStorage {
     return summary || undefined;
   }
 
-  // دوال التقارير المتقدمة
-  async getExpensesForReport(projectId: string, dateFrom: string, dateTo: string): Promise<any[]> {
-    // جلب جميع المصروفات من مصادر مختلفة
-    const expenses: any[] = [];
 
-    // 1. مصروفات يومية عامة
-    const dailyExpensesData = await db.select({
-      id: dailyExpenses.id,
-      projectId: dailyExpenses.projectId,
-      date: dailyExpenses.date,
-      category: dailyExpenses.category,
-      subcategory: dailyExpenses.subcategory,
-      description: dailyExpenses.description,
-      amount: dailyExpenses.amount,
-      vendor: sql`NULL`.as('vendor'),
-      notes: dailyExpenses.notes,
-      type: sql`'daily'`.as('type')
-    })
-    .from(dailyExpenses)
-    .where(and(
-      eq(dailyExpenses.projectId, projectId),
-      gte(dailyExpenses.date, dateFrom),
-      lte(dailyExpenses.date, dateTo)
-    ));
-
-    // 2. أجور العمال
-    const workerWages = await db.select({
-      id: workerAttendance.id,
-      projectId: workerAttendance.projectId,
-      date: workerAttendance.date,
-      category: sql`'عمالة'`.as('category'),
-      subcategory: workerTypes.name,
-      description: workers.name,
-      amount: workerAttendance.wage,
-      vendor: sql`NULL`.as('vendor'),
-      notes: sql`NULL`.as('notes'),
-      type: sql`'wages'`.as('type')
-    })
-    .from(workerAttendance)
-    .leftJoin(workers, eq(workerAttendance.workerId, workers.id))
-    .leftJoin(workerTypes, eq(workers.type, workerTypes.id))
-    .where(and(
-      eq(workerAttendance.projectId, projectId),
-      gte(workerAttendance.date, dateFrom),
-      lte(workerAttendance.date, dateTo)
-    ));
-
-    // 3. مشتريات المواد
-    const materialPurchasesData = await db.select({
-      id: materialPurchases.id,
-      projectId: materialPurchases.projectId,
-      date: materialPurchases.purchaseDate,
-      category: sql`'مشتريات'`.as('category'),
-      subcategory: sql`'مواد'`.as('subcategory'),
-      description: materialPurchases.materialName,
-      amount: materialPurchases.totalAmount,
-      vendor: materialPurchases.vendor,
-      notes: materialPurchases.notes,
-      type: sql`'materials'`.as('type')
-    })
-    .from(materialPurchases)
-    .where(and(
-      eq(materialPurchases.projectId, projectId),
-      gte(materialPurchases.purchaseDate, dateFrom),
-      lte(materialPurchases.purchaseDate, dateTo)
-    ));
-
-    // 4. تحويلات العمال
-    const workerTransfersExp = await db.select({
-      id: workerTransfers.id,
-      projectId: workerTransfers.projectId,
-      date: workerTransfers.transferDate,
-      category: sql`'تحويلات عمال'`.as('category'),
-      subcategory: sql`'تحويل'`.as('subcategory'),
-      description: workers.name,
-      amount: workerTransfers.amount,
-      vendor: sql`NULL`.as('vendor'),
-      notes: workerTransfers.notes,
-      type: sql`'worker_transfers'`.as('type')
-    })
-    .from(workerTransfers)
-    .leftJoin(workers, eq(workerTransfers.workerId, workers.id))
-    .where(and(
-      eq(workerTransfers.projectId, projectId),
-      gte(workerTransfers.transferDate, dateFrom),
-      lte(workerTransfers.transferDate, dateTo)
-    ));
-
-    // دمج جميع المصروفات
-    expenses.push(...dailyExpensesData, ...workerWages, ...materialPurchasesData, ...workerTransfersExp);
-
-    // إضافة اسم المشروع لكل سجل
-    const project = await this.getProject(projectId);
-    const projectName = project?.name || 'غير محدد';
-
-    return expenses.map(expense => ({
-      ...expense,
-      projectName,
-      amount: parseFloat(expense.amount?.toString() || '0'),
-      category: expense.category || 'غير محدد',
-      subcategory: expense.subcategory || '',
-      description: expense.description || '',
-      vendor: expense.vendor || '',
-      notes: expense.notes || ''
-    })).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  }
-
-  async getIncomeForReport(projectId: string, dateFrom: string, dateTo: string): Promise<any[]> {
-    // جلب تحويلات العهدة (الإيرادات)
-    const income = await db.select({
-      id: fundTransfers.id,
-      projectId: fundTransfers.projectId,
-      date: fundTransfers.transferDate,
-      transferNumber: fundTransfers.transferNumber,
-      senderName: fundTransfers.senderName,
-      transferType: fundTransfers.transferType,
-      amount: fundTransfers.amount,
-      notes: fundTransfers.notes
-    })
-    .from(fundTransfers)
-    .where(and(
-      eq(fundTransfers.projectId, projectId),
-      sql`${fundTransfers.transferDate} >= ${dateFrom}`,
-      sql`${fundTransfers.transferDate} <= ${dateTo}`
-    ))
-    .orderBy(fundTransfers.transferDate);
-
-    // إضافة اسم المشروع
-    const project = await this.getProject(projectId);
-    const projectName = project?.name || 'غير محدد';
-
-    return income.map(inc => ({
-      ...inc,
-      projectName,
-      amount: parseFloat(inc.amount?.toString() || '0'),
-      transferNumber: inc.transferNumber || 'غير محدد',
-      senderName: inc.senderName || 'غير محدد',
-      transferType: inc.transferType || 'حوالة عادية',
-      notes: inc.notes || ''
-    }));
-  }
 
   async createOrUpdateDailyExpenseSummary(summary: InsertDailyExpenseSummary): Promise<DailyExpenseSummary> {
     const existing = await this.getDailyExpenseSummary(summary.projectId, summary.date);
@@ -1744,6 +1608,169 @@ export class DatabaseStorage implements IStorage {
       console.error('Error deleting worker misc expense:', error);
       throw error;
     }
+  }
+
+  // Advanced Reports
+  async getExpensesForReport(projectId: string, dateFrom: string, dateTo: string): Promise<any[]> {
+    // جلب جميع المصروفات من مصادر مختلفة
+    const expenses: any[] = [];
+
+    // 1. أجور العمال
+    const workerWages = await db.select({
+      id: workerAttendance.id,
+      projectId: workerAttendance.projectId,
+      date: workerAttendance.date,
+      category: sql`'عمالة'`.as('category'),
+      subcategory: workers.type,
+      description: workers.name,
+      amount: workerAttendance.actualWage,
+      vendor: sql`NULL`.as('vendor'),
+      notes: sql`NULL`.as('notes'),
+      type: sql`'wages'`.as('type')
+    })
+    .from(workerAttendance)
+    .leftJoin(workers, eq(workerAttendance.workerId, workers.id))
+    .where(and(
+      eq(workerAttendance.projectId, projectId),
+      gte(workerAttendance.date, dateFrom),
+      lte(workerAttendance.date, dateTo),
+      eq(workerAttendance.isPresent, true)
+    ));
+
+    // 2. مشتريات المواد
+    const materialPurchasesData = await db.select({
+      id: materialPurchases.id,
+      projectId: materialPurchases.projectId,
+      date: materialPurchases.purchaseDate,
+      category: sql`'مشتريات'`.as('category'),
+      subcategory: sql`'مواد'`.as('subcategory'),
+      description: materials.name,
+      amount: materialPurchases.totalAmount,
+      vendor: materialPurchases.supplierName,
+      notes: materialPurchases.notes,
+      type: sql`'materials'`.as('type')
+    })
+    .from(materialPurchases)
+    .leftJoin(materials, eq(materialPurchases.materialId, materials.id))
+    .where(and(
+      eq(materialPurchases.projectId, projectId),
+      gte(materialPurchases.purchaseDate, dateFrom),
+      lte(materialPurchases.purchaseDate, dateTo)
+    ));
+
+    // 3. مصروفات النقل
+    const transportExpenses = await db.select({
+      id: transportationExpenses.id,
+      projectId: transportationExpenses.projectId,
+      date: transportationExpenses.date,
+      category: sql`'مواصلات'`.as('category'),
+      subcategory: sql`'أجور نقل'`.as('subcategory'),
+      description: transportationExpenses.description,
+      amount: transportationExpenses.amount,
+      vendor: sql`NULL`.as('vendor'),
+      notes: transportationExpenses.notes,
+      type: sql`'transport'`.as('type')
+    })
+    .from(transportationExpenses)
+    .where(and(
+      eq(transportationExpenses.projectId, projectId),
+      gte(transportationExpenses.date, dateFrom),
+      lte(transportationExpenses.date, dateTo)
+    ));
+
+    // 4. تحويلات العمال
+    const workerTransfersExp = await db.select({
+      id: workerTransfers.id,
+      projectId: workerTransfers.projectId,
+      date: workerTransfers.transferDate,
+      category: sql`'تحويلات عمال'`.as('category'),
+      subcategory: sql`'تحويل'`.as('subcategory'),
+      description: workers.name,
+      amount: workerTransfers.amount,
+      vendor: sql`NULL`.as('vendor'),
+      notes: workerTransfers.notes,
+      type: sql`'worker_transfers'`.as('type')
+    })
+    .from(workerTransfers)
+    .leftJoin(workers, eq(workerTransfers.workerId, workers.id))
+    .where(and(
+      eq(workerTransfers.projectId, projectId),
+      gte(workerTransfers.transferDate, dateFrom),
+      lte(workerTransfers.transferDate, dateTo)
+    ));
+
+    // 5. نثريات العمال
+    const workerMiscExp = await db.select({
+      id: workerMiscExpenses.id,
+      projectId: workerMiscExpenses.projectId,
+      date: workerMiscExpenses.date,
+      category: sql`'نثريات'`.as('category'),
+      subcategory: sql`'نثريات عمال'`.as('subcategory'),
+      description: workerMiscExpenses.description,
+      amount: workerMiscExpenses.amount,
+      vendor: sql`NULL`.as('vendor'),
+      notes: workerMiscExpenses.notes,
+      type: sql`'misc'`.as('type')
+    })
+    .from(workerMiscExpenses)
+    .where(and(
+      eq(workerMiscExpenses.projectId, projectId),
+      gte(workerMiscExpenses.date, dateFrom),
+      lte(workerMiscExpenses.date, dateTo)
+    ));
+
+    // دمج جميع المصروفات
+    expenses.push(...workerWages, ...materialPurchasesData, ...transportExpenses, ...workerTransfersExp, ...workerMiscExp);
+
+    // إضافة اسم المشروع لكل سجل
+    const project = await this.getProject(projectId);
+    const projectName = project?.name || 'غير محدد';
+
+    return expenses.map(expense => ({
+      ...expense,
+      projectName,
+      amount: parseFloat(expense.amount?.toString() || '0'),
+      category: expense.category || 'غير محدد',
+      subcategory: expense.subcategory || '',
+      description: expense.description || '',
+      vendor: expense.vendor || '',
+      notes: expense.notes || ''
+    })).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }
+
+  async getIncomeForReport(projectId: string, dateFrom: string, dateTo: string): Promise<any[]> {
+    // جلب تحويلات العهدة (الإيرادات)
+    const income = await db.select({
+      id: fundTransfers.id,
+      projectId: fundTransfers.projectId,
+      date: fundTransfers.transferDate,
+      transferNumber: fundTransfers.transferNumber,
+      senderName: fundTransfers.senderName,
+      transferType: fundTransfers.transferType,
+      amount: fundTransfers.amount,
+      notes: fundTransfers.notes
+    })
+    .from(fundTransfers)
+    .where(and(
+      eq(fundTransfers.projectId, projectId),
+      gte(sql`date(${fundTransfers.transferDate})`, dateFrom),
+      lte(sql`date(${fundTransfers.transferDate})`, dateTo)
+    ))
+    .orderBy(fundTransfers.transferDate);
+
+    // إضافة اسم المشروع
+    const project = await this.getProject(projectId);
+    const projectName = project?.name || 'غير محدد';
+
+    return income.map(inc => ({
+      ...inc,
+      projectName,
+      amount: parseFloat(inc.amount?.toString() || '0'),
+      transferNumber: inc.transferNumber || 'غير محدد',
+      senderName: inc.senderName || 'غير محدد',
+      transferType: inc.transferType || 'حوالة عادية',
+      notes: inc.notes || ''
+    }));
   }
 
   // Users methods
