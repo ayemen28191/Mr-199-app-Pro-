@@ -1513,6 +1513,90 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Batch operations endpoints - العمليات الجماعية المحسنة
+  app.delete("/api/batch/autocomplete", async (req, res) => {
+    try {
+      const { batchOperationsOptimizer } = await import('./batch-operations-optimizer');
+      const { ids } = req.body;
+      
+      if (!Array.isArray(ids) || ids.length === 0) {
+        return res.status(400).json({ error: "مطلوب مصفوفة من المعرفات" });
+      }
+
+      const result = await batchOperationsOptimizer.batchDeleteAutocomplete(ids);
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: "تعذر تنفيذ الحذف الجماعي" });
+    }
+  });
+
+  app.post("/api/batch/autocomplete", async (req, res) => {
+    try {
+      const { batchOperationsOptimizer } = await import('./batch-operations-optimizer');
+      const { records } = req.body;
+      
+      if (!Array.isArray(records) || records.length === 0) {
+        return res.status(400).json({ error: "مطلوب مصفوفة من السجلات" });
+      }
+
+      const result = await batchOperationsOptimizer.batchInsertAutocomplete(records);
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: "تعذر تنفيذ الإدخال الجماعي" });
+    }
+  });
+
+  app.post("/api/batch/cleanup", async (req, res) => {
+    try {
+      const { batchOperationsOptimizer } = await import('./batch-operations-optimizer');
+      const result = await batchOperationsOptimizer.optimizedBatchCleanup();
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: "تعذر تنفيذ التنظيف الجماعي" });
+    }
+  });
+
+  app.get("/api/batch/stats", async (req, res) => {
+    try {
+      const { batchOperationsOptimizer } = await import('./batch-operations-optimizer');
+      const stats = await batchOperationsOptimizer.getBatchOperationsStats();
+      res.json(stats);
+    } catch (error) {
+      res.status(500).json({ error: "تعذر جلب إحصائيات العمليات الجماعية" });
+    }
+  });
+
+  // Materialized Views endpoints
+  app.post("/api/materialized-views/setup", async (req, res) => {
+    try {
+      const { materializedViewManager } = await import('./materialized-view-manager');
+      const result = await materializedViewManager.setupMaterializedViews();
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: "تعذر إعداد Materialized Views" });
+    }
+  });
+
+  app.post("/api/materialized-views/refresh", async (req, res) => {
+    try {
+      const { materializedViewManager } = await import('./materialized-view-manager');
+      const result = await materializedViewManager.refreshDailySummaryView();
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: "تعذر تحديث Materialized Views" });
+    }
+  });
+
+  app.get("/api/materialized-views/stats", async (req, res) => {
+    try {
+      const { materializedViewManager } = await import('./materialized-view-manager');
+      const stats = await materializedViewManager.getMaterializedViewStats();
+      res.json(stats);
+    } catch (error) {
+      res.status(500).json({ error: "تعذر جلب إحصائيات Materialized Views" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
