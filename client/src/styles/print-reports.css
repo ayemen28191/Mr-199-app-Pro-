@@ -211,6 +211,24 @@
     font-weight: bold;
     -webkit-print-color-adjust: exact;
   }
+
+  /* تنسيقات خاصة لكشف المصروفات اليومية المحسن */
+  .print-preview {
+    direction: rtl;
+    text-align: right;
+  }
+
+  .report-table tfoot tr {
+    background: #3498db !important;
+    color: white !important;
+    font-weight: bold;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .arabic-numbers {
+    font-family: 'Arial', sans-serif;
+    direction: ltr;
+  }
 }
 
 /* تنسيقات للعرض على الشاشة */

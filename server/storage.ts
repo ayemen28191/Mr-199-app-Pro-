@@ -110,6 +110,7 @@ export interface IStorage {
   }>;
   getWorkerProjects(workerId: string): Promise<Project[]>;
   updateDailySummaryForDate(projectId: string, date: string): Promise<void>;
+  getDailyExpensesRange(projectId: string, dateFrom: string, dateTo: string): Promise<any[]>;
   
   // Autocomplete data
   getAutocompleteData(category: string): Promise<AutocompleteData[]>;
@@ -1285,6 +1286,68 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error removing autocomplete data:', error);
       throw error;
+    }
+  }
+
+  async getDailyExpensesRange(projectId: string, dateFrom: string, dateTo: string): Promise<any[]> {
+    try {
+      const startDate = new Date(dateFrom);
+      const endDate = new Date(dateTo);
+      const results = [];
+
+      for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+        const currentDate = d.toISOString().split('T')[0];
+        
+        let dailySummary = await this.getDailyExpenseSummary(projectId, currentDate);
+        
+        if (!dailySummary) {
+          await this.updateDailySummaryForDate(projectId, currentDate);
+          dailySummary = await this.getDailyExpenseSummary(projectId, currentDate);
+        }
+
+        if (dailySummary) {
+          const [
+            fundTransfers,
+            workerAttendance,
+            materialPurchases,
+            transportationExpenses,
+            workerTransfers
+          ] = await Promise.all([
+            this.getFundTransfers(projectId, currentDate),
+            this.getWorkerAttendance(projectId, currentDate),
+            this.getMaterialPurchases(projectId, currentDate, currentDate),
+            this.getTransportationExpenses(projectId, currentDate),
+            this.getWorkerTransfers("", projectId).then(transfers => 
+              transfers.filter(t => t.transferDate === currentDate)
+            )
+          ]);
+
+          results.push({
+            date: currentDate,
+            summary: {
+              carriedForward: parseFloat(dailySummary.carriedForwardAmount),
+              totalIncome: parseFloat(dailySummary.totalIncome),
+              totalExpenses: parseFloat(dailySummary.totalExpenses),
+              remainingBalance: parseFloat(dailySummary.remainingBalance),
+              totalFundTransfers: parseFloat(dailySummary.totalFundTransfers),
+              totalWorkerWages: parseFloat(dailySummary.totalWorkerWages),
+              totalMaterialCosts: parseFloat(dailySummary.totalMaterialCosts),
+              totalTransportationCosts: parseFloat(dailySummary.totalTransportationCosts),
+              totalWorkerTransfers: workerTransfers?.reduce((sum, t) => sum + parseFloat(t.amount), 0) || 0
+            },
+            fundTransfers,
+            workerAttendance,
+            materialPurchases,
+            transportationExpenses,
+            workerTransfers
+          });
+        }
+      }
+
+      return results;
+    } catch (error) {
+      console.error('Error getting daily expenses range:', error);
+      return [];
     }
   }
 }

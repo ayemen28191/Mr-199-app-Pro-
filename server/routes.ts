@@ -1057,6 +1057,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Daily expenses range report
+  app.get("/api/reports/daily-expenses-range/:projectId", async (req, res) => {
+    try {
+      const { projectId } = req.params;
+      const { dateFrom, dateTo } = req.query;
+      
+      if (!dateFrom || !dateTo) {
+        return res.status(400).json({ message: "يرجى تحديد تاريخ البداية والنهاية" });
+      }
+      
+      const results = await storage.getDailyExpensesRange(projectId, dateFrom as string, dateTo as string);
+      res.json(results);
+    } catch (error) {
+      console.error("Error generating daily expenses range report:", error);
+      res.status(500).json({ message: "خطأ في إنشاء كشف المصروفات اليومية" });
+    }
+  });
+
   // Autocomplete data routes
   app.get("/api/autocomplete/:category", async (req, res) => {
     try {
