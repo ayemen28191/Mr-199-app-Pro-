@@ -345,6 +345,7 @@ export default function EnhancedWorkerStatement() {
     let grandTotalPaid = 0;
     let grandTotalRemaining = 0;
     let grandTotalHours = 0;
+    let grandTotalWorkDays = 0;
 
     workerStatement.forEach((projectStatement) => {
       const attendance = projectStatement.attendance || [];
@@ -354,11 +355,13 @@ export default function EnhancedWorkerStatement() {
         const dailyWage = parseFloat(record.dailyWage || '0');
         const paidAmount = parseFloat(record.paidAmount || '0');
         const remainingAmount = parseFloat(record.remainingAmount || '0');
+        const workDays = parseFloat(record.workDays || '1');
         
         grandTotalEarned += dailyWage;
         grandTotalPaid += paidAmount;
         grandTotalRemaining += remainingAmount;
         grandTotalHours += workingHours;
+        grandTotalWorkDays += workDays;
 
         printContent += `
           <tr>
@@ -368,7 +371,7 @@ export default function EnhancedWorkerStatement() {
             <td>${record.startTime || '-'}</td>
             <td>${record.endTime || '-'}</td>
             <td class="hours-cell">${formatHours(workingHours)}</td>
-            <td class="days-cell">1</td>
+            <td class="days-cell">${workDays}</td>
             <td class="wage-cell">${formatCurrency(dailyWage)}</td>
             <td class="paid-cell">${formatCurrency(paidAmount)}</td>
             <td class="remaining-cell">${formatCurrency(remainingAmount)}</td>
@@ -416,7 +419,7 @@ export default function EnhancedWorkerStatement() {
             <tr class="total-row">
               <td colspan="5">الإجماليات:</td>
               <td>${formatHours(grandTotalHours)}</td>
-              <td>${Math.round(grandTotalHours / 8)}</td>
+              <td>${grandTotalWorkDays}</td>
               <td>${formatCurrency(grandTotalEarned)}</td>
               <td>${formatCurrency(grandTotalPaid)}</td>
               <td>${formatCurrency(grandTotalRemaining)}</td>
@@ -903,6 +906,7 @@ export default function EnhancedWorkerStatement() {
                   let grandTotalPaid = 0;
                   let grandTotalRemaining = 0;
                   let grandTotalHours = 0;
+                  let grandTotalWorkDays = 0;
 
                   const rows: JSX.Element[] = [];
 
@@ -914,11 +918,13 @@ export default function EnhancedWorkerStatement() {
                       const dailyWage = parseFloat(record.dailyWage || '0');
                       const paidAmount = parseFloat(record.paidAmount || '0');
                       const remainingAmount = parseFloat(record.remainingAmount || '0');
+                      const workDays = parseFloat(record.workDays || '1');
                       
                       grandTotalEarned += dailyWage;
                       grandTotalPaid += paidAmount;
                       grandTotalRemaining += remainingAmount;
                       grandTotalHours += workingHours;
+                      grandTotalWorkDays += workDays;
 
                       rows.push(
                         <tr key={`${projectStatement.projectId}-${record.id}`} className="hover:bg-blue-50">
@@ -928,7 +934,7 @@ export default function EnhancedWorkerStatement() {
                           <td className="border border-gray-400 px-1 py-1 text-xs">{record.startTime || '-'}</td>
                           <td className="border border-gray-400 px-1 py-1 text-xs">{record.endTime || '-'}</td>
                           <td className="border border-gray-400 bg-green-50 px-1 py-1 text-xs">{formatHours(workingHours)}</td>
-                          <td className="border border-gray-400 bg-purple-50 px-1 py-1 text-xs font-bold">1</td>
+                          <td className="border border-gray-400 bg-purple-50 px-1 py-1 text-xs font-bold">{workDays}</td>
                           <td className="border border-gray-400 bg-blue-100 px-1 py-1 text-xs font-semibold">{formatCurrency(dailyWage)}</td>
                           <td className="border border-gray-400 bg-green-100 px-1 py-1 text-xs font-semibold">{formatCurrency(paidAmount)}</td>
                           <td className="border border-gray-400 bg-red-100 px-1 py-1 text-xs font-semibold">{formatCurrency(remainingAmount)}</td>
@@ -974,13 +980,10 @@ export default function EnhancedWorkerStatement() {
                   }
 
                   // Add summary rows
-                  const totalWorkDays = workerStatement.reduce((total, projectStatement) => 
-                    total + (projectStatement.attendance?.length || 0), 0);
-
                   rows.push(
                     <tr key="summary-days" className="bg-orange-100">
                       <td colSpan={6} className="border border-gray-400 text-center font-bold">إجمالي أيام العمل</td>
-                      <td className="border border-gray-400 text-center font-bold">{totalWorkDays}</td>
+                      <td className="border border-gray-400 text-center font-bold">{grandTotalWorkDays}</td>
                       <td colSpan={4} className="border border-gray-400"></td>
                     </tr>
                   );
