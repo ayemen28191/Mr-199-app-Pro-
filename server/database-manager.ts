@@ -180,16 +180,21 @@ class DatabaseManager {
 
       // إنشاء جدول مشتريات المواد
       await db.execute(sql`
-        CREATE TABLE IF NOT EXISTS material_purchases (
+        DROP TABLE IF EXISTS material_purchases CASCADE;
+        CREATE TABLE material_purchases (
           id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
           project_id VARCHAR NOT NULL REFERENCES projects(id),
           material_id VARCHAR NOT NULL REFERENCES materials(id),
           quantity DECIMAL(10,3) NOT NULL,
           unit_price DECIMAL(10,2) NOT NULL,
           total_amount DECIMAL(10,2) NOT NULL,
+          purchase_type TEXT NOT NULL,
           supplier_name TEXT,
-          purchase_date TEXT NOT NULL,
+          invoice_number TEXT,
+          invoice_date TEXT,
+          invoice_photo TEXT,
           notes TEXT,
+          purchase_date TEXT NOT NULL,
           created_at TIMESTAMP DEFAULT NOW() NOT NULL
         )
       `);
@@ -231,13 +236,18 @@ class DatabaseManager {
 
       // إنشاء الجداول الإضافية
       await db.execute(sql`
-        CREATE TABLE IF NOT EXISTS worker_transfers (
+        DROP TABLE IF EXISTS worker_transfers CASCADE;
+        CREATE TABLE worker_transfers (
           id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
-          project_id VARCHAR NOT NULL REFERENCES projects(id),
           worker_id VARCHAR NOT NULL REFERENCES workers(id),
+          project_id VARCHAR NOT NULL REFERENCES projects(id),
           amount DECIMAL(10,2) NOT NULL,
           transfer_number TEXT,
-          date TEXT NOT NULL,
+          sender_name TEXT,
+          recipient_name TEXT NOT NULL,
+          recipient_phone TEXT,
+          transfer_method TEXT NOT NULL,
+          transfer_date TEXT NOT NULL,
           notes TEXT,
           created_at TIMESTAMP DEFAULT NOW() NOT NULL
         )
@@ -259,21 +269,26 @@ class DatabaseManager {
       console.log('✅ تم إنشاء جدول worker_balances');
 
       await db.execute(sql`
-        CREATE TABLE IF NOT EXISTS autocomplete_data (
+        DROP TABLE IF EXISTS autocomplete_data CASCADE;
+        CREATE TABLE autocomplete_data (
           id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
-          field_name TEXT NOT NULL,
+          category TEXT NOT NULL,
           value TEXT NOT NULL,
           usage_count INTEGER DEFAULT 1 NOT NULL,
           created_at TIMESTAMP DEFAULT NOW() NOT NULL,
-          UNIQUE (field_name, value)
+          last_used TIMESTAMP DEFAULT NOW() NOT NULL,
+          UNIQUE (category, value)
         )
       `);
       console.log('✅ تم إنشاء جدول autocomplete_data');
 
       await db.execute(sql`
-        CREATE TABLE IF NOT EXISTS worker_types (
+        DROP TABLE IF EXISTS worker_types CASCADE;
+        CREATE TABLE worker_types (
           id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
-          type_name TEXT NOT NULL UNIQUE,
+          name TEXT NOT NULL UNIQUE,
+          usage_count INTEGER DEFAULT 1 NOT NULL,
+          last_used TIMESTAMP DEFAULT NOW() NOT NULL,
           created_at TIMESTAMP DEFAULT NOW() NOT NULL
         )
       `);

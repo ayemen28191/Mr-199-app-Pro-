@@ -218,7 +218,12 @@ export class DatabaseStorage implements IStorage {
 
   // Worker Types
   async getWorkerTypes(): Promise<WorkerType[]> {
-    return await db.select().from(workerTypes).orderBy(sql`usage_count DESC, name ASC`);
+    try {
+      return await db.select().from(workerTypes).orderBy(sql`${workerTypes.usageCount} DESC, ${workerTypes.name} ASC`);
+    } catch (error) {
+      console.error('Error fetching worker types:', error);
+      throw new Error('خطأ في جلب أنواع العمال');
+    }
   }
 
   async createWorkerType(workerType: InsertWorkerType): Promise<WorkerType> {
@@ -235,7 +240,7 @@ export class DatabaseStorage implements IStorage {
       return newWorkerType;
     } catch (error) {
       console.error('Error creating worker type:', error);
-      throw error;
+      throw new Error('خطأ في إضافة نوع العامل');
     }
   }
 
