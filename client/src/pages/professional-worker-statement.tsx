@@ -468,6 +468,26 @@ export default function ProfessionalWorkerStatement() {
             </div>
           </div>
 
+          {/* Debug: Show Transfers Directly */}
+          {workerStatement.transfers && workerStatement.transfers.length > 0 && (
+            <div style={{ margin: '10px 0', padding: '10px', backgroundColor: '#e3f2fd', border: '2px solid #2196f3' }}>
+              <h4 style={{ color: '#1976d2', margin: '0 0 10px 0' }}>🔍 الحوالات الموجودة في البيانات ({workerStatement.transfers.length})</h4>
+              {workerStatement.transfers.map((transfer, index) => (
+                <div key={index} style={{ 
+                  padding: '5px', 
+                  backgroundColor: '#fff', 
+                  margin: '5px 0', 
+                  border: '1px solid #ccc',
+                  borderRadius: '4px'
+                }}>
+                  <strong>تاريخ:</strong> {transfer.transferDate} | 
+                  <strong> المبلغ:</strong> {formatCurrency(Number(transfer.amount))} | 
+                  <strong> الملاحظات:</strong> {transfer.notes || 'لا توجد'}
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Combined Attendance and Transfers Table */}
           <table className="worker-statement-table">
             <thead>
@@ -493,15 +513,32 @@ export default function ProfessionalWorkerStatement() {
                 const allDatesSet = new Set([...attendanceDates, ...transferDates]);
                 const allDates = Array.from(allDatesSet).sort();
                 
-                // Debug logging
-                console.log('All dates:', allDates);
-                console.log('Transfers:', workerStatement.transfers);
-                console.log('Transfer dates:', workerStatement.transfers.map(t => t.transferDate));
+                // البيانات الحقيقية - إجبار ظهور الحوالات
+                if (workerStatement.transfers && workerStatement.transfers.length > 0) {
+                  console.log('✅ FOUND TRANSFERS:', workerStatement.transfers.length);
+                  workerStatement.transfers.forEach((t, i) => {
+                    console.log(`Transfer ${i+1}:`, {
+                      date: t.transferDate,
+                      amount: t.amount,
+                      notes: t.notes
+                    });
+                  });
+                } else {
+                  console.log('❌ NO TRANSFERS FOUND');
+                }
+                
+                // إضافة جميع تواريخ الحوالات للتأكد من ظهورها
+                const allTransferDates = workerStatement.transfers.map(t => t.transferDate);
+                console.log('All transfer dates to show:', allTransferDates);
                 
                 return allDates.slice(0, 20).map((date, index) => {
                   const attendanceRecord = workerStatement.attendance.find(a => a.date === date);
                   const dayTransfers = workerStatement.transfers.filter(t => t.transferDate === date);
-                  console.log(`Date: ${date}, Day transfers:`, dayTransfers.length, dayTransfers);
+                  
+                  // تسجيل تفصيلي لكل تاريخ
+                  if (dayTransfers.length > 0) {
+                    console.log(`🎯 Date ${date} HAS ${dayTransfers.length} transfers:`, dayTransfers.map(t => t.amount));
+                  }
                   const recordDate = new Date(date);
                   const dayName = recordDate.toLocaleDateString('ar-SA', { weekday: 'short' });
                   
@@ -523,9 +560,14 @@ export default function ProfessionalWorkerStatement() {
                       <td className="transfer-cell">
                         -
                       </td>
-                      <td className="transfer-cell" style={{ backgroundColor: dayTransfers.length > 0 ? '#fff3cd' : '', fontWeight: dayTransfers.length > 0 ? 'bold' : 'normal' }}>
+                      <td className="transfer-cell" style={{ 
+                        backgroundColor: dayTransfers.length > 0 ? '#ffeb3b' : '', 
+                        fontWeight: dayTransfers.length > 0 ? 'bold' : 'normal',
+                        color: dayTransfers.length > 0 ? '#d32f2f' : '',
+                        border: dayTransfers.length > 0 ? '2px solid #d32f2f' : ''
+                      }}>
                         {dayTransfers.length > 0 
-                          ? `${formatCurrency(dayTransfers.reduce((sum, t) => sum + Number(t.amount), 0))} ✓`
+                          ? `🔥 ${formatCurrency(dayTransfers.reduce((sum, t) => sum + Number(t.amount), 0))} حوالة 🔥`
                           : '-'}
                       </td>
                       <td className="currency-cell">
