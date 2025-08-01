@@ -15,12 +15,13 @@ export class MaterializedViewManager {
     try {
       console.log('📊 إنشاء Materialized View للملخص اليومي...');
 
-      // إنشاء Materialized View للملخص اليومي
+      // إنشاء Materialized View للملخص اليومي بالهيكل الصحيح
       await db.execute(sql`
         CREATE MATERIALIZED VIEW IF NOT EXISTS daily_summary_mv AS
         SELECT 
+          des.id,
           des.project_id,
-          des.summary_date,
+          des.date as summary_date,
           des.carried_forward_amount,
           des.total_fund_transfers,
           des.total_worker_wages,
@@ -37,7 +38,7 @@ export class MaterializedViewManager {
           p.name as project_name
         FROM daily_expense_summaries des
         LEFT JOIN projects p ON des.project_id = p.id
-        WHERE des.summary_date >= CURRENT_DATE - INTERVAL '30 days'
+        WHERE des.date >= CURRENT_DATE - INTERVAL '30 days'
       `);
 
       // إنشاء فهرس فريد للـ Materialized View

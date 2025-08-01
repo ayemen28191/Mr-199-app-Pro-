@@ -1597,6 +1597,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Quick Performance Fixes endpoints
+  app.post("/api/performance/apply-all-optimizations", async (req, res) => {
+    try {
+      const { quickPerformanceFixes } = await import('./quick-performance-fixes');
+      const result = await quickPerformanceFixes.applyAllOptimizations();
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: "تعذر تطبيق التحسينات" });
+    }
+  });
+
+  app.post("/api/performance/apply-indexes", async (req, res) => {
+    try {
+      const { quickPerformanceFixes } = await import('./quick-performance-fixes');
+      const result = await quickPerformanceFixes.applyOptimizedIndexes();
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: "تعذر تطبيق الفهارس المحسنة" });
+    }
+  });
+
+  app.post("/api/performance/immediate-cleanup", async (req, res) => {
+    try {
+      const { quickPerformanceFixes } = await import('./quick-performance-fixes');
+      const result = await quickPerformanceFixes.immediateCleanupAndOptimize();
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: "تعذر تنفيذ التنظيف الفوري" });
+    }
+  });
+
+  app.get("/api/performance/benchmark", async (req, res) => {
+    try {
+      const { quickPerformanceFixes } = await import('./quick-performance-fixes');
+      const result = await quickPerformanceFixes.benchmarkPerformance();
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({ error: "تعذر قياس الأداء" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
