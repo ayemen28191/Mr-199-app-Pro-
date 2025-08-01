@@ -652,15 +652,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
         storage.getDailyExpenseSummary(projectId, date)
       ]);
 
+      // حساب الرصيد المرحل (من اليوم السابق)
+      const prevDate = new Date(date);
+      prevDate.setDate(prevDate.getDate() - 1);
+      const prevDateString = prevDate.toISOString().split('T')[0];
+      const prevDailySummary = await storage.getDailyExpenseSummary(projectId, prevDateString);
+      const carriedForward = prevDailySummary?.remainingBalance || 0;
+
+      // حساب الإجماليات
+      const totalFundTransfers = fundTransfers.reduce((sum, t) => sum + parseFloat(t.amount), 0);
+      const totalWorkerCosts = workerAttendance.reduce((sum, a) => sum + parseFloat(a.paidAmount), 0);
+      const totalMaterialCosts = materialPurchases.reduce((sum, p) => sum + parseFloat(p.totalAmount), 0);
+      const totalTransportCosts = transportationExpenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
+      const totalTransferCosts = workerTransfers.reduce((sum, t) => sum + parseFloat(t.amount.toString()), 0);
+      const totalExpenses = totalWorkerCosts + totalMaterialCosts + totalTransportCosts + totalTransferCosts;
+      const totalIncome = totalFundTransfers;
+      const remainingBalance = carriedForward + totalIncome - totalExpenses;
+
+      // إضافة معلومات العمال للحضور
+      const workerAttendanceWithWorkers = await Promise.all(
+        workerAttendance.map(async (attendance) => {
+          const worker = await storage.getWorker(attendance.workerId);
+          return {
+            ...attendance,
+            worker
+          };
+        })
+      );
+
+      // إضافة معلومات المواد للمشتريات
+      const materialPurchasesWithMaterials = await Promise.all(
+        materialPurchases.map(async (purchase) => {
+          const materials = await storage.getMaterials();
+          const material = materials.find(m => m.id === purchase.materialId);
+          return {
+            ...purchase,
+            material
+          };
+        })
+      );
+
+      // إضافة معلومات العمال لمصروفات النقل
+      const transportationExpensesWithWorkers = await Promise.all(
+        transportationExpenses.map(async (expense) => {
+          const worker = expense.workerId ? await storage.getWorker(expense.workerId) : null;
+          return {
+            ...expense,
+            worker
+          };
+        })
+      );
+
+      // إضافة معلومات العمال لحوالات العمال
+      const workerTransfersWithWorkers = await Promise.all(
+        workerTransfers.map(async (transfer) => {
+          const worker = await storage.getWorker(transfer.workerId);
+          return {
+            ...transfer,
+            worker
+          };
+        })
+      );
+
       res.json({
         date,
         projectId,
         fundTransfers,
-        workerAttendance,
-        materialPurchases,
-        transportationExpenses,
-        workerTransfers,
-        dailySummary
+        workerAttendance: workerAttendanceWithWorkers,
+        materialPurchases: materialPurchasesWithMaterials,
+        transportationExpenses: transportationExpensesWithWorkers,
+        workerTransfers: workerTransfersWithWorkers,
+        dailySummary,
+        summary: {
+          carriedForward,
+          totalFundTransfers,
+          totalWorkerCosts,
+          totalMaterialCosts,
+          totalTransportCosts,
+          totalTransferCosts,
+          totalIncome,
+          totalExpenses,
+          remainingBalance
+        }
       });
     } catch (error) {
       console.error("Error generating daily expenses report:", error);
