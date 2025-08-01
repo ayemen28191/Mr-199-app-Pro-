@@ -47,7 +47,12 @@ export function AutocompleteInput({
       apiRequest('POST', '/api/autocomplete', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['autocomplete', category] });
+      // إعادة تحديث البيانات فوراً
+      queryClient.refetchQueries({ queryKey: ['autocomplete', category] });
     },
+    onError: (error) => {
+      console.error('Error saving autocomplete data:', error);
+    }
   });
 
   // حذف البيانات من قاعدة البيانات
@@ -88,7 +93,7 @@ export function AutocompleteInput({
         setSearchQuery('');
         
         // حفظ البيانات إذا كانت موجودة وليست فارغة
-        if (value.trim()) {
+        if (value.trim() && value.trim().length >= 2) {
           // دائماً حفظ القيمة (سيتم تحديث عدد الاستخدام إذا كانت موجودة مسبقاً)
           saveDataMutation.mutate({
             category,
@@ -129,14 +134,14 @@ export function AutocompleteInput({
     const newValue = e.target.value;
     onChange(newValue);
     setSearchQuery(newValue);
-    if (!isOpen && newValue) {
+    if (!isOpen && newValue && newValue.length >= 1) {
       setIsOpen(true);
     }
   };
   
   // حفظ البيانات عند الضغط على Enter
   const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && value.trim()) {
+    if (e.key === 'Enter' && value.trim() && value.trim().length >= 2) {
       e.preventDefault();
       setIsOpen(false);
       setSearchQuery('');
@@ -150,9 +155,10 @@ export function AutocompleteInput({
   }, [value, category, saveDataMutation]);
 
   const handleInputFocus = () => {
-    if (autocompleteData.length > 0) {
-      setIsOpen(true);
-    }
+    // فتح القائمة دائماً عند التركيز، حتى لو كانت فارغة
+    setIsOpen(true);
+    // تحديث البيانات عند التركيز للحصول على أحدث البيانات
+    queryClient.refetchQueries({ queryKey: ['autocomplete', category] });
   };
 
   return (

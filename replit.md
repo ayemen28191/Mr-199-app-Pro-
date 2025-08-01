@@ -41,9 +41,16 @@ This is a full-stack construction project management application built with Reac
   - Added transferNumber field to workerTransfers table schema
   - Updated database schema with new optional transfer number column
   - Added transfer number input field with numeric keyboard (inputMode="numeric")
-  - Enhanced transfer form with proper field validation and form state management
+  - Enhanced transfer form with properly saving transfer numbers to database
   - Updated transfer display to show transfer numbers in previous transfers list
   - Transfer number is optional but visible when provided
+- ✅ Fixed critical autocomplete input saving issue:
+  - Corrected AutocompleteInput component to save data on blur, Enter key, and selection
+  - Removed condition that prevented saving new values, now all entries are saved to database
+  - Added Enter key support for quick data saving and improved cache invalidation
+  - Enhanced data validation requiring minimum 2 characters before saving
+  - Added immediate refetch after successful save to ensure data appears in dropdown
+  - Fixed first-time save failures by properly handling focus/blur events
 
 ## System Architecture
 ### Frontend
