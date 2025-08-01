@@ -32,6 +32,11 @@ This is a full-stack construction project management application built with Reac
   - Professional printing with custom CSS styles
   - Quick statistics display (total income/expenses)
   - Added to reports page instead of bottom navigation for better organization
+- ✅ Fixed worker profession display issue:
+  - Corrected worker-accounts.tsx to show actual job title instead of generic "عامل" 
+  - Fixed enhanced-worker-card.tsx to display real profession from worker.type field
+  - Now shows accurate job titles like "معلم", "حداد", "نجار", "سائق" etc. as stored in database
+  - Database schema already properly stores worker professions in 'type' field
 
 ## System Architecture
 ### Frontend

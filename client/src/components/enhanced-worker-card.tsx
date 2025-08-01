@@ -49,7 +49,7 @@ export default function EnhancedWorkerCard({ worker, attendance, onAttendanceCha
             <div>
               <h3 className="font-medium text-foreground">{worker.name}</h3>
               <p className="text-sm text-muted-foreground">
-                {worker.type === "master" ? "أسطى" : "عامل"} • الأجر اليومي: {formatCurrency(dailyWage)}
+                {worker.type} • الأجر اليومي: {formatCurrency(dailyWage)}
               </p>
             </div>
             <div className="flex items-center space-x-2">

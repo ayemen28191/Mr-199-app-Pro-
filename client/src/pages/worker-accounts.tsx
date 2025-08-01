@@ -319,7 +319,7 @@ export default function WorkerAccounts() {
             <SelectContent>
               {workers.map((worker) => (
                 <SelectItem key={worker.id} value={worker.id}>
-                  {worker.name} - {worker.type === "master" ? "أسطى" : "عامل"}
+                  {worker.name} - {worker.type}
                 </SelectItem>
               ))}
             </SelectContent>
