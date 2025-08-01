@@ -7,7 +7,7 @@ const navigationItems = [
   { path: "/projects", icon: Building2, label: "المشاريع", key: "projects" },
   { path: "/worker-attendance", icon: Users, label: "الحضور", key: "attendance" },
   { path: "/daily-expenses", icon: Receipt, label: "المصروفات", key: "expenses" },
-  { path: "/daily-expenses-report", icon: BarChart, label: "كشف المصروفات", key: "daily-report" },
+  { path: "/reports", icon: BarChart, label: "التقارير", key: "reports" },
 ];
 
 export default function BottomNavigation() {

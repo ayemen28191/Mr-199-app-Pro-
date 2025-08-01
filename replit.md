@@ -25,6 +25,13 @@ This is a full-stack construction project management application built with Reac
 - ✅ Improved AutocompleteInput component to save data on blur, Enter key, and selection
 - ✅ Removed condition that prevented saving new values, now all entries are saved to database
 - ✅ Added Enter key support for quick data saving
+- ✅ Developed enhanced daily expenses report with advanced features:
+  - Date range selection (from/to dates)
+  - Project-specific filtering
+  - Excel export with two sheets (summary and details)
+  - Professional printing with custom CSS styles
+  - Quick statistics display (total income/expenses)
+  - Added to reports page instead of bottom navigation for better organization
 
 ## System Architecture
 ### Frontend

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Receipt, UserCheck, Package, PieChart, Eye, Download, Share2, FileSpreadsheet, Printer } from "lucide-react";
+import { ArrowRight, Receipt, UserCheck, Package, PieChart, Eye, Download, Share2, FileSpreadsheet, Printer, BarChart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -376,6 +376,37 @@ export default function ReportsFixed() {
                 placeholder="اختر التاريخ"
                 className="text-sm"
               />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* كشف المصروفات اليومية المحسن */}
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center space-x-reverse space-x-3">
+                <BarChart className="h-6 w-6 text-green-600" />
+                <div>
+                  <h4 className="font-medium text-foreground">كشف المصروفات اليومية المحسن</h4>
+                  <p className="text-sm text-muted-foreground">تقرير شامل لفترة زمنية مع إمكانيات طباعة وتصدير Excel</p>
+                </div>
+              </div>
+              <Button
+                onClick={() => setLocation("/daily-expenses-report")}
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 text-sm flex items-center gap-2"
+              >
+                <FileSpreadsheet className="h-4 w-4" />
+                فتح
+              </Button>
+            </div>
+            <div className="bg-green-50 p-3 rounded-lg text-sm">
+              <div className="font-medium text-green-800 mb-1">المميزات:</div>
+              <ul className="text-green-700 space-y-1">
+                <li>• تحديد فترة زمنية من تاريخ إلى تاريخ</li>
+                <li>• تصدير إلى Excel مع ورقتين (ملخص وتفاصيل)</li>
+                <li>• طباعة احترافية مع تنسيقات مخصصة</li>
+                <li>• عرض إحصائيات سريعة ومقارنات</li>
+              </ul>
             </div>
           </CardContent>
         </Card>
