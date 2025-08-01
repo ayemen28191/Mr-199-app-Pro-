@@ -129,16 +129,16 @@ export default function ExcelStyleDailyExpenses() {
       };
       
       let currentRow = 3;
-      let runningBalance = reportData.summary.carriedForward;
+      let runningBalance = reportData.summary?.carriedForward || 0;
       
       // إضافة الرصيد المرحل
-      if (reportData.summary.carriedForward !== 0) {
+      if ((reportData.summary?.carriedForward || 0) !== 0) {
         const balanceRow = worksheet.getRow(currentRow);
         balanceRow.values = [
-          reportData.summary.carriedForward,
+          reportData.summary?.carriedForward || 0,
           'مرحلة',
           'توريد',
-          reportData.summary.carriedForward,
+          reportData.summary?.carriedForward || 0,
           'رصيد مرحل من اليوم السابق'
         ];
         balanceRow.fill = {
@@ -240,7 +240,7 @@ export default function ExcelStyleDailyExpenses() {
       currentRow++;
       worksheet.mergeCells(`A${currentRow}:D${currentRow}`);
       const totalValueCell = worksheet.getCell(`A${currentRow}`);
-      totalValueCell.value = reportData.summary.remainingBalance;
+      totalValueCell.value = reportData.summary?.remainingBalance || 0;
       totalValueCell.alignment = { horizontal: 'center', vertical: 'middle' };
       totalValueCell.font = { bold: true, size: 16 };
       totalValueCell.fill = {
@@ -438,19 +438,19 @@ export default function ExcelStyleDailyExpenses() {
               </thead>
               <tbody>
                 {/* الرصيد المرحل */}
-                {reportData.summary.carriedForward !== 0 && (
+                {reportData.summary?.carriedForward !== 0 && (
                   <tr className="excel-income-row">
-                    <td className="excel-amount">{formatCurrency(reportData.summary.carriedForward)}</td>
+                    <td className="excel-amount">{formatCurrency(reportData.summary?.carriedForward || 0)}</td>
                     <td>مرحلة</td>
                     <td>توريد</td>
-                    <td className="excel-balance">{formatCurrency(reportData.summary.carriedForward)}</td>
+                    <td className="excel-balance">{formatCurrency(reportData.summary?.carriedForward || 0)}</td>
                     <td>رصيد مرحل من اليوم السابق</td>
                   </tr>
                 )}
 
                 {/* الحوالات المالية */}
                 {reportData.fundTransfers?.map((transfer, index) => {
-                  const previousAmount = reportData.summary.carriedForward + 
+                  const previousAmount = (reportData.summary?.carriedForward || 0) + 
                     reportData.fundTransfers.slice(0, index).reduce((sum, t) => sum + parseFloat(t.amount), 0);
                   const currentBalance = previousAmount + parseFloat(transfer.amount);
                   
@@ -467,7 +467,7 @@ export default function ExcelStyleDailyExpenses() {
 
                 {/* أجور العمال */}
                 {reportData.workerAttendance?.map((attendance, index) => {
-                  const previousIncome = reportData.summary.carriedForward + reportData.summary.totalFundTransfers;
+                  const previousIncome = (reportData.summary?.carriedForward || 0) + (reportData.summary?.totalFundTransfers || 0);
                   const previousExpenses = reportData.workerAttendance.slice(0, index).reduce((sum, a) => sum + parseFloat(a.paidAmount), 0);
                   const currentBalance = previousIncome - previousExpenses - parseFloat(attendance.paidAmount);
                   
@@ -484,7 +484,7 @@ export default function ExcelStyleDailyExpenses() {
 
                 {/* شراء المواد */}
                 {reportData.materialPurchases?.map((purchase, index) => {
-                  const runningBalance = reportData.summary.remainingBalance; // سيتم حساب هذا بدقة أكثر
+                  const runningBalance = reportData.summary?.remainingBalance || 0; // سيتم حساب هذا بدقة أكثر
                   
                   return (
                     <tr key={`material-${index}`} className="excel-expense-row">
@@ -529,7 +529,7 @@ export default function ExcelStyleDailyExpenses() {
           {/* المبلغ المتبقي */}
           <div className="excel-total-section">
             <div className="excel-total-label">المبلغ المتبقي</div>
-            <div className="excel-total-amount">{formatCurrency(reportData.summary.remainingBalance)}</div>
+            <div className="excel-total-amount">{formatCurrency(reportData.summary?.remainingBalance || 0)}</div>
           </div>
 
           {/* Project Information */}
