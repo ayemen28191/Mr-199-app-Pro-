@@ -493,13 +493,15 @@ export default function ProfessionalWorkerStatement() {
                 const allDatesSet = new Set([...attendanceDates, ...transferDates]);
                 const allDates = Array.from(allDatesSet).sort();
                 
+                // Debug logging
                 console.log('All dates:', allDates);
                 console.log('Transfers:', workerStatement.transfers);
+                console.log('Transfer dates:', workerStatement.transfers.map(t => t.transferDate));
                 
                 return allDates.slice(0, 20).map((date, index) => {
                   const attendanceRecord = workerStatement.attendance.find(a => a.date === date);
                   const dayTransfers = workerStatement.transfers.filter(t => t.transferDate === date);
-                  console.log(`Date: ${date}, Transfers found:`, dayTransfers);
+                  console.log(`Date: ${date}, Day transfers:`, dayTransfers.length, dayTransfers);
                   const recordDate = new Date(date);
                   const dayName = recordDate.toLocaleDateString('ar-SA', { weekday: 'short' });
                   
@@ -521,9 +523,9 @@ export default function ProfessionalWorkerStatement() {
                       <td className="transfer-cell">
                         -
                       </td>
-                      <td className="transfer-cell" style={{ backgroundColor: dayTransfers.length > 0 ? '#fff3cd' : '' }}>
+                      <td className="transfer-cell" style={{ backgroundColor: dayTransfers.length > 0 ? '#fff3cd' : '', fontWeight: dayTransfers.length > 0 ? 'bold' : 'normal' }}>
                         {dayTransfers.length > 0 
-                          ? `${formatCurrency(dayTransfers.reduce((sum, t) => sum + Number(t.amount), 0))} (${dayTransfers.length})`
+                          ? `${formatCurrency(dayTransfers.reduce((sum, t) => sum + Number(t.amount), 0))} ✓`
                           : '-'}
                       </td>
                       <td className="currency-cell">
@@ -532,7 +534,7 @@ export default function ProfessionalWorkerStatement() {
                       <td style={{ fontSize: '6px' }}>
                         {[
                           attendanceRecord?.notes,
-                          ...dayTransfers.map(t => t.notes)
+                          ...dayTransfers.map(t => `حوالة: ${t.notes || 'بدون ملاحظات'}`)
                         ].filter(Boolean).join(', ') || '-'}
                       </td>
                     </tr>
