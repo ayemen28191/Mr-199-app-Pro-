@@ -301,10 +301,19 @@ class DatabaseManager {
           amount DECIMAL(10,2) NOT NULL,
           description TEXT NOT NULL,
           date TEXT NOT NULL,
+          notes TEXT,
           created_at TIMESTAMP DEFAULT NOW() NOT NULL
         )
       `);
       console.log('✅ تم إنشاء جدول worker_misc_expenses');
+
+      // إضافة عمود notes إذا كان مفقوداً
+      try {
+        await db.execute(sql`ALTER TABLE worker_misc_expenses ADD COLUMN IF NOT EXISTS notes TEXT`);
+        console.log('✅ تم التأكد من وجود عمود notes في جدول worker_misc_expenses');
+      } catch (error) {
+        console.log('⚠️ عمود notes موجود بالفعل في جدول worker_misc_expenses');
+      }
       
       console.log('🎉 تم إنشاء جميع الجداول بنجاح!');
       
