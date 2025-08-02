@@ -62,6 +62,17 @@ app.use((req, res, next) => {
         log("🧪 بدء الاختبار الشامل لجميع وظائف التطبيق...");
         const testResults = await databaseTester.runComprehensiveTests();
         
+        // إصلاح عمود carried_forward_amount المفقود
+        try {
+          log("🔧 فحص وإصلاح عمود carried_forward_amount...");
+          const { CarriedForwardMigration } = await import("./fix-carried-forward-migration");
+          await CarriedForwardMigration.runMigration();
+          await CarriedForwardMigration.testDailySummaryOperations();
+          log("✅ تم إصلاح عمود carried_forward_amount بنجاح");
+        } catch (error) {
+          log("⚠️ تحذير: خطأ في إصلاح عمود carried_forward_amount: " + (error as Error).message);
+        }
+
         // تحسين نظام الإكمال التلقائي
         try {
           log("🔧 بدء تحسين نظام الإكمال التلقائي...");
