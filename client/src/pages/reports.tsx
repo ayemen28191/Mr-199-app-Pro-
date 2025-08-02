@@ -319,180 +319,357 @@ export default function Reports() {
     const selectedProject = projects.find(p => p.id === selectedProjectId);
 
     return (
-      <div className="print-content space-y-6" dir="rtl">
-        {/* Report Header */}
-        <div className="text-center border-b-2 border-gray-300 pb-6 mb-6">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">كشف المصروفات اليومية</h1>
-          <h2 className="text-xl text-gray-600 mb-4">{selectedProject?.name || 'غير محدد'}</h2>
-          <p className="text-lg text-gray-700">التاريخ: {formatDate(dailyReportDate)}</p>
+      <div className="print-content bg-white min-h-screen" dir="rtl">
+        {/* Professional Header with Wave Design */}
+        <div className="relative bg-gradient-to-r from-cyan-500 to-blue-600 text-white overflow-hidden">
+          {/* Wave shape at bottom */}
+          <div className="absolute bottom-0 left-0 w-full h-16">
+            <svg viewBox="0 0 1200 120" preserveAspectRatio="none" className="w-full h-full">
+              <path d="M0,120 C150,80 350,40 600,60 C850,80 1050,100 1200,80 L1200,120 Z" fill="white"></path>
+            </svg>
+          </div>
+          
+          <div className="relative px-8 py-12">
+            <div className="flex justify-between items-start mb-8">
+              {/* Company Logo and Name */}
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 bg-white bg-opacity-20 rounded-lg flex items-center justify-center backdrop-blur-sm">
+                  <FileText className="h-8 w-8 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold">نظام إدارة المشاريع</h1>
+                  <p className="text-cyan-100 text-sm">المشاريع الهندسية والإنشائية</p>
+                </div>
+              </div>
+              
+              {/* Invoice Title */}
+              <div className="text-left">
+                <h2 className="text-4xl font-bold text-white mb-2">كشف المصروفات</h2>
+                <div className="bg-white bg-opacity-20 rounded-lg p-3 backdrop-blur-sm">
+                  <p className="text-sm mb-1">رقم الكشف: {Math.floor(Math.random() * 10000).toString().padStart(4, '0')}</p>
+                  <p className="text-sm">التاريخ: {formatDate(dailyReportDate)}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Project Information */}
+            <div className="bg-white bg-opacity-10 rounded-lg p-6 backdrop-blur-sm">
+              <h3 className="text-lg font-bold mb-3">معلومات المشروع:</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-cyan-100 text-sm">اسم المشروع</p>
+                  <p className="font-semibold">{selectedProject?.name || 'غير محدد'}</p>
+                </div>
+                <div>
+                  <p className="text-cyan-100 text-sm">تاريخ التقرير</p>
+                  <p className="font-semibold">{formatDate(dailyReportDate)}</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
-            <p className="text-sm font-medium text-blue-600 mb-1">الرصيد المرحل</p>
-            <p className="text-xl font-bold text-blue-800">{formatCurrency(carriedForward)}</p>
+        {/* Main Content */}
+        <div className="px-8 py-8">
+          {/* Financial Summary Table */}
+          <div className="mb-8">
+            <table className="w-full border-collapse shadow-lg rounded-lg overflow-hidden">
+              <thead>
+                <tr className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white">
+                  <th className="px-6 py-4 text-right font-bold">البيان</th>
+                  <th className="px-6 py-4 text-center font-bold">المبلغ (ر.ي)</th>
+                  <th className="px-6 py-4 text-center font-bold">النوع</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white">
+                <tr className="border-b border-gray-200 hover:bg-gray-50">
+                  <td className="px-6 py-4 font-medium">الرصيد المرحل من اليوم السابق</td>
+                  <td className="px-6 py-4 text-center font-bold text-blue-600">{formatCurrency(carriedForward)}</td>
+                  <td className="px-6 py-4 text-center">
+                    <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">رصيد مرحل</span>
+                  </td>
+                </tr>
+                <tr className="border-b border-gray-200 hover:bg-gray-50">
+                  <td className="px-6 py-4 font-medium">إجمالي الواردات (تحويلات العهدة)</td>
+                  <td className="px-6 py-4 text-center font-bold text-green-600">{formatCurrency(totalIncome)}</td>
+                  <td className="px-6 py-4 text-center">
+                    <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">دخل</span>
+                  </td>
+                </tr>
+                <tr className="border-b border-gray-200 hover:bg-gray-50">
+                  <td className="px-6 py-4 font-medium">إجمالي المصروفات</td>
+                  <td className="px-6 py-4 text-center font-bold text-red-600">{formatCurrency(totalExpenses)}</td>
+                  <td className="px-6 py-4 text-center">
+                    <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm">مصروف</span>
+                  </td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white">
+                  <td className="px-6 py-4 font-bold text-lg">الرصيد النهائي</td>
+                  <td className="px-6 py-4 text-center font-bold text-xl">{formatCurrency(remainingBalance)}</td>
+                  <td className="px-6 py-4 text-center">
+                    <span className={`px-4 py-2 rounded-full font-bold ${remainingBalance >= 0 ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
+                      {remainingBalance >= 0 ? 'فائض' : 'عجز'}
+                    </span>
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
           </div>
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
-            <p className="text-sm font-medium text-green-600 mb-1">إجمالي الواردات</p>
-            <p className="text-xl font-bold text-green-800">{formatCurrency(totalIncome)}</p>
-          </div>
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
-            <p className="text-sm font-medium text-red-600 mb-1">إجمالي المصروفات</p>
-            <p className="text-xl font-bold text-red-800">{formatCurrency(totalExpenses)}</p>
-          </div>
-          <div className={`${remainingBalance >= 0 ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'} border rounded-lg p-4 text-center`}>
-            <p className="text-sm font-medium text-gray-600 mb-1">الرصيد المتبقي</p>
-            <p className={`text-xl font-bold ${remainingBalance >= 0 ? 'text-green-800' : 'text-red-800'}`}>
-              {formatCurrency(remainingBalance)}
-            </p>
-          </div>
-        </div>
 
-        {/* Fund Transfers */}
-        {fundTransfers.length > 0 && (
-          <div className="mb-6">
-            <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
-              <DollarSign className="h-5 w-5" />
-              تحويلات العهدة ({fundTransfers.length})
-            </h3>
-            <div className="overflow-x-auto">
-              <table className="w-full border border-gray-300 rounded-lg">
-                <thead className="bg-gray-100">
-                  <tr>
-                    <th className="border border-gray-300 px-3 py-2 text-right">رقم الحوالة</th>
-                    <th className="border border-gray-300 px-3 py-2 text-right">المرسل</th>
-                    <th className="border border-gray-300 px-3 py-2 text-right">المبلغ</th>
-                    <th className="border border-gray-300 px-3 py-2 text-right">الملاحظات</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {fundTransfers.map((transfer: any, index: number) => (
-                    <tr key={index}>
-                      <td className="border border-gray-300 px-3 py-2">{transfer.transferNumber}</td>
-                      <td className="border border-gray-300 px-3 py-2">{transfer.senderName}</td>
-                      <td className="border border-gray-300 px-3 py-2 font-medium text-green-600">
-                        {formatCurrency(transfer.amount)}
-                      </td>
-                      <td className="border border-gray-300 px-3 py-2">{transfer.notes || '-'}</td>
+          {/* Fund Transfers */}
+          {fundTransfers.length > 0 && (
+            <div className="mb-8">
+              <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white p-4 rounded-t-lg">
+                <h3 className="text-lg font-bold flex items-center gap-2">
+                  <DollarSign className="h-5 w-5" />
+                  تحويلات العهدة ({fundTransfers.length})
+                </h3>
+              </div>
+              <div className="overflow-x-auto shadow-lg">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="bg-green-50">
+                      <th className="border border-green-200 px-4 py-3 text-right font-semibold text-green-800">م.</th>
+                      <th className="border border-green-200 px-4 py-3 text-right font-semibold text-green-800">رقم الحوالة</th>
+                      <th className="border border-green-200 px-4 py-3 text-right font-semibold text-green-800">المرسل</th>
+                      <th className="border border-green-200 px-4 py-3 text-center font-semibold text-green-800">المبلغ (ر.ي)</th>
+                      <th className="border border-green-200 px-4 py-3 text-right font-semibold text-green-800">الملاحظات</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="bg-white">
+                    {fundTransfers.map((transfer: any, index: number) => (
+                      <tr key={index} className="hover:bg-green-25 border-b border-green-100">
+                        <td className="border border-green-200 px-4 py-3 text-center font-medium">{index + 1}</td>
+                        <td className="border border-green-200 px-4 py-3">{transfer.transferNumber}</td>
+                        <td className="border border-green-200 px-4 py-3">{transfer.senderName}</td>
+                        <td className="border border-green-200 px-4 py-3 text-center font-bold text-green-600">
+                          {formatCurrency(transfer.amount)}
+                        </td>
+                        <td className="border border-green-200 px-4 py-3">{transfer.notes || '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="bg-green-100">
+                      <td colSpan={3} className="border border-green-200 px-4 py-3 text-right font-bold text-green-800">
+                        إجمالي التحويلات:
+                      </td>
+                      <td className="border border-green-200 px-4 py-3 text-center font-bold text-green-800">
+                        {formatCurrency(totalFundTransfers)}
+                      </td>
+                      <td className="border border-green-200 px-4 py-3"></td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Worker Attendance */}
+          {workerAttendance.length > 0 && (
+            <div className="mb-8">
+              <div className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-4 rounded-t-lg">
+                <h3 className="text-lg font-bold flex items-center gap-2">
+                  <Users className="h-5 w-5" />
+                  حضور العمال ({workerAttendance.length})
+                </h3>
+              </div>
+              <div className="overflow-x-auto shadow-lg">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="bg-blue-50">
+                      <th className="border border-blue-200 px-4 py-3 text-right font-semibold text-blue-800">م.</th>
+                      <th className="border border-blue-200 px-4 py-3 text-right font-semibold text-blue-800">اسم العامل</th>
+                      <th className="border border-blue-200 px-4 py-3 text-right font-semibold text-blue-800">نوع العمل</th>
+                      <th className="border border-blue-200 px-4 py-3 text-center font-semibold text-blue-800">ساعات العمل</th>
+                      <th className="border border-blue-200 px-4 py-3 text-center font-semibold text-blue-800">المبلغ (ر.ي)</th>
+                      <th className="border border-blue-200 px-4 py-3 text-right font-semibold text-blue-800">ملاحظات</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white">
+                    {workerAttendance.map((attendance: any, index: number) => (
+                      <tr key={index} className="hover:bg-blue-25 border-b border-blue-100">
+                        <td className="border border-blue-200 px-4 py-3 text-center font-medium">{index + 1}</td>
+                        <td className="border border-blue-200 px-4 py-3">{attendance.worker?.name || 'غير محدد'}</td>
+                        <td className="border border-blue-200 px-4 py-3">{attendance.worker?.type || 'غير محدد'}</td>
+                        <td className="border border-blue-200 px-4 py-3 text-center">{attendance.hoursWorked}</td>
+                        <td className="border border-blue-200 px-4 py-3 text-center font-bold text-red-600">
+                          {formatCurrency(attendance.paidAmount)}
+                        </td>
+                        <td className="border border-blue-200 px-4 py-3">{attendance.notes || '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="bg-blue-100">
+                      <td colSpan={4} className="border border-blue-200 px-4 py-3 text-right font-bold text-blue-800">
+                        إجمالي أجور العمال:
+                      </td>
+                      <td className="border border-blue-200 px-4 py-3 text-center font-bold text-blue-800">
+                        {formatCurrency(totalWorkerCosts)}
+                      </td>
+                      <td className="border border-blue-200 px-4 py-3"></td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Material Purchases */}
+          {materialPurchases.length > 0 && (
+            <div className="mb-8">
+              <div className="bg-gradient-to-r from-orange-500 to-amber-600 text-white p-4 rounded-t-lg">
+                <h3 className="text-lg font-bold flex items-center gap-2">
+                  <Package className="h-5 w-5" />
+                  مشتريات المواد ({materialPurchases.length})
+                </h3>
+              </div>
+              <div className="overflow-x-auto shadow-lg">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="bg-orange-50">
+                      <th className="border border-orange-200 px-4 py-3 text-right font-semibold text-orange-800">م.</th>
+                      <th className="border border-orange-200 px-4 py-3 text-right font-semibold text-orange-800">المادة</th>
+                      <th className="border border-orange-200 px-4 py-3 text-center font-semibold text-orange-800">الكمية</th>
+                      <th className="border border-orange-200 px-4 py-3 text-center font-semibold text-orange-800">سعر الوحدة</th>
+                      <th className="border border-orange-200 px-4 py-3 text-center font-semibold text-orange-800">المبلغ الإجمالي</th>
+                      <th className="border border-orange-200 px-4 py-3 text-right font-semibold text-orange-800">المورد</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white">
+                    {materialPurchases.map((purchase: any, index: number) => (
+                      <tr key={index} className="hover:bg-orange-25 border-b border-orange-100">
+                        <td className="border border-orange-200 px-4 py-3 text-center font-medium">{index + 1}</td>
+                        <td className="border border-orange-200 px-4 py-3">{purchase.material?.name || 'غير محدد'}</td>
+                        <td className="border border-orange-200 px-4 py-3 text-center">{purchase.quantity} {purchase.material?.unit || ''}</td>
+                        <td className="border border-orange-200 px-4 py-3 text-center">{formatCurrency(purchase.unitPrice)}</td>
+                        <td className="border border-orange-200 px-4 py-3 text-center font-bold text-red-600">
+                          {formatCurrency(purchase.totalAmount)}
+                        </td>
+                        <td className="border border-orange-200 px-4 py-3">{purchase.supplierName || '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="bg-orange-100">
+                      <td colSpan={4} className="border border-orange-200 px-4 py-3 text-right font-bold text-orange-800">
+                        إجمالي قيمة المواد:
+                      </td>
+                      <td className="border border-orange-200 px-4 py-3 text-center font-bold text-orange-800">
+                        {formatCurrency(totalMaterialCosts)}
+                      </td>
+                      <td className="border border-orange-200 px-4 py-3"></td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Transportation Expenses */}
+          {transportationExpenses.length > 0 && (
+            <div className="mb-8">
+              <div className="bg-gradient-to-r from-purple-500 to-violet-600 text-white p-4 rounded-t-lg">
+                <h3 className="text-lg font-bold flex items-center gap-2">
+                  <Activity className="h-5 w-5" />
+                  مصاريف النقل ({transportationExpenses.length})
+                </h3>
+              </div>
+              <div className="overflow-x-auto shadow-lg">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="bg-purple-50">
+                      <th className="border border-purple-200 px-4 py-3 text-right font-semibold text-purple-800">م.</th>
+                      <th className="border border-purple-200 px-4 py-3 text-right font-semibold text-purple-800">الوصف</th>
+                      <th className="border border-purple-200 px-4 py-3 text-right font-semibold text-purple-800">العامل</th>
+                      <th className="border border-purple-200 px-4 py-3 text-center font-semibold text-purple-800">المبلغ (ر.ي)</th>
+                      <th className="border border-purple-200 px-4 py-3 text-right font-semibold text-purple-800">ملاحظات</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white">
+                    {transportationExpenses.map((expense: any, index: number) => (
+                      <tr key={index} className="hover:bg-purple-25 border-b border-purple-100">
+                        <td className="border border-purple-200 px-4 py-3 text-center font-medium">{index + 1}</td>
+                        <td className="border border-purple-200 px-4 py-3">{expense.description}</td>
+                        <td className="border border-purple-200 px-4 py-3">{expense.worker?.name || '-'}</td>
+                        <td className="border border-purple-200 px-4 py-3 text-center font-bold text-red-600">
+                          {formatCurrency(expense.amount)}
+                        </td>
+                        <td className="border border-purple-200 px-4 py-3">{expense.notes || '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="bg-purple-100">
+                      <td colSpan={3} className="border border-purple-200 px-4 py-3 text-right font-bold text-purple-800">
+                        إجمالي مصاريف النقل:
+                      </td>
+                      <td className="border border-purple-200 px-4 py-3 text-center font-bold text-purple-800">
+                        {formatCurrency(totalTransportCosts)}
+                      </td>
+                      <td className="border border-purple-200 px-4 py-3"></td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Professional Footer */}
+          <div className="mt-12 pt-8 border-t-4 border-gradient-to-r from-cyan-500 to-blue-600">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Signature Section */}
+              <div>
+                <h4 className="font-bold text-gray-800 mb-4">التوقيع والاعتماد:</h4>
+                <div className="border-2 border-gray-300 rounded-lg p-6 bg-gray-50">
+                  <div className="space-y-4">
+                    <div>
+                      <p className="text-sm text-gray-600 mb-2">مُعد التقرير:</p>
+                      <div className="border-b-2 border-gray-300 h-8"></div>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600 mb-2">مراجع التقرير:</p>
+                      <div className="border-b-2 border-gray-300 h-8"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Report Information */}
+              <div>
+                <h4 className="font-bold text-gray-800 mb-4">معلومات التقرير:</h4>
+                <div className="bg-gradient-to-r from-cyan-50 to-blue-50 p-6 rounded-lg border border-cyan-200">
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">رقم التقرير:</span>
+                      <span className="font-semibold">RPT-{Math.floor(Math.random() * 10000).toString().padStart(4, '0')}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">تاريخ الإنشاء:</span>
+                      <span className="font-semibold">{new Date().toLocaleDateString('ar-YE')}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">وقت الإنشاء:</span>
+                      <span className="font-semibold">{new Date().toLocaleTimeString('ar-YE')}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">النظام:</span>
+                      <span className="font-semibold">نظام إدارة المشاريع v2.0</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Footer */}
+            <div className="mt-8 text-center py-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-lg">
+              <p className="font-bold">نظام إدارة المشاريع - الحلول المتكاملة لإدارة المشاريع الهندسية</p>
+              <p className="text-sm text-cyan-100 mt-1">تم إنشاء هذا التقرير تلقائياً بواسطة النظام</p>
             </div>
           </div>
-        )}
-
-        {/* Worker Attendance */}
-        {workerAttendance.length > 0 && (
-          <div className="mb-6">
-            <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
-              <Users className="h-5 w-5" />
-              حضور العمال ({workerAttendance.length})
-            </h3>
-            <div className="overflow-x-auto">
-              <table className="w-full border border-gray-300 rounded-lg">
-                <thead className="bg-gray-100">
-                  <tr>
-                    <th className="border border-gray-300 px-3 py-2 text-right">اسم العامل</th>
-                    <th className="border border-gray-300 px-3 py-2 text-right">نوع العمل</th>
-                    <th className="border border-gray-300 px-3 py-2 text-right">ساعات العمل</th>
-                    <th className="border border-gray-300 px-3 py-2 text-right">المبلغ المدفوع</th>
-                    <th className="border border-gray-300 px-3 py-2 text-right">ملاحظات</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {workerAttendance.map((attendance: any, index: number) => (
-                    <tr key={index}>
-                      <td className="border border-gray-300 px-3 py-2">{attendance.worker?.name || 'غير محدد'}</td>
-                      <td className="border border-gray-300 px-3 py-2">{attendance.worker?.type || 'غير محدد'}</td>
-                      <td className="border border-gray-300 px-3 py-2">{attendance.hoursWorked}</td>
-                      <td className="border border-gray-300 px-3 py-2 font-medium text-red-600">
-                        {formatCurrency(attendance.paidAmount)}
-                      </td>
-                      <td className="border border-gray-300 px-3 py-2">{attendance.notes || '-'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Material Purchases */}
-        {materialPurchases.length > 0 && (
-          <div className="mb-6">
-            <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
-              <Package className="h-5 w-5" />
-              مشتريات المواد ({materialPurchases.length})
-            </h3>
-            <div className="overflow-x-auto">
-              <table className="w-full border border-gray-300 rounded-lg">
-                <thead className="bg-gray-100">
-                  <tr>
-                    <th className="border border-gray-300 px-3 py-2 text-right">المادة</th>
-                    <th className="border border-gray-300 px-3 py-2 text-right">الكمية</th>
-                    <th className="border border-gray-300 px-3 py-2 text-right">سعر الوحدة</th>
-                    <th className="border border-gray-300 px-3 py-2 text-right">المبلغ الإجمالي</th>
-                    <th className="border border-gray-300 px-3 py-2 text-right">اسم المورد</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {materialPurchases.map((purchase: any, index: number) => (
-                    <tr key={index}>
-                      <td className="border border-gray-300 px-3 py-2">{purchase.material?.name || 'غير محدد'}</td>
-                      <td className="border border-gray-300 px-3 py-2">{purchase.quantity} {purchase.material?.unit || ''}</td>
-                      <td className="border border-gray-300 px-3 py-2">{formatCurrency(purchase.unitPrice)}</td>
-                      <td className="border border-gray-300 px-3 py-2 font-medium text-red-600">
-                        {formatCurrency(purchase.totalAmount)}
-                      </td>
-                      <td className="border border-gray-300 px-3 py-2">{purchase.supplierName || '-'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Transportation Expenses */}
-        {transportationExpenses.length > 0 && (
-          <div className="mb-6">
-            <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
-              <Activity className="h-5 w-5" />
-              مصاريف النقل ({transportationExpenses.length})
-            </h3>
-            <div className="overflow-x-auto">
-              <table className="w-full border border-gray-300 rounded-lg">
-                <thead className="bg-gray-100">
-                  <tr>
-                    <th className="border border-gray-300 px-3 py-2 text-right">الوصف</th>
-                    <th className="border border-gray-300 px-3 py-2 text-right">العامل</th>
-                    <th className="border border-gray-300 px-3 py-2 text-right">المبلغ</th>
-                    <th className="border border-gray-300 px-3 py-2 text-right">ملاحظات</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {transportationExpenses.map((expense: any, index: number) => (
-                    <tr key={index}>
-                      <td className="border border-gray-300 px-3 py-2">{expense.description}</td>
-                      <td className="border border-gray-300 px-3 py-2">{expense.worker?.name || '-'}</td>
-                      <td className="border border-gray-300 px-3 py-2 font-medium text-red-600">
-                        {formatCurrency(expense.amount)}
-                      </td>
-                      <td className="border border-gray-300 px-3 py-2">{expense.notes || '-'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Footer */}
-        <div className="border-t-2 border-gray-300 pt-4 mt-8 text-center">
-          <p className="text-sm text-gray-600">تم إنشاء التقرير بواسطة نظام إدارة المشاريع</p>
-          <p className="text-xs text-gray-500 mt-2">التاريخ والوقت: {new Date().toLocaleString('ar-YE')}</p>
         </div>
       </div>
     );
