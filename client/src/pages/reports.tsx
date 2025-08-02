@@ -27,6 +27,11 @@ export default function Reports() {
   const [, setLocation] = useLocation();
   const { selectedProjectId, selectProject } = useSelectedProject();
   const { toast } = useToast();
+
+  // Fetch real statistics data
+  const { data: projectsWithStats = [] } = useQuery<any[]>({
+    queryKey: ["/api/projects/with-stats"],
+  });
   
   // Report form states
   const [dailyReportDate, setDailyReportDate] = useState(getCurrentDate());
@@ -55,6 +60,19 @@ export default function Reports() {
   });
 
   const selectedProject = projects.find(p => p.id === selectedProjectId);
+
+  // Calculate real statistics
+  const totalActiveProjects = projects.filter(p => p.status === 'active').length;
+  const totalWorkers = workers.length;
+  
+  // Calculate statistics for selected project only
+  const selectedProjectWithStats = projectsWithStats.find((p: any) => p.id === selectedProjectId);
+  const selectedProjectStats = selectedProjectWithStats?.stats || {};
+  
+  const totalFundTransfers = selectedProjectStats.totalFundTransfers || 0;
+  const totalExpenses = selectedProjectStats.totalExpenses || 0;
+  const totalReportsGenerated = selectedProjectStats.daysWithData || 0;
+  const currentBalance = selectedProjectStats.currentBalance || 0;
 
   // Generate Reports Functions
   const generateDailyExpensesReport = async () => {
@@ -328,10 +346,9 @@ export default function Reports() {
                 <span className="text-blue-200 font-medium text-sm sm:text-base">المشروع النشط:</span>
               </div>
               <div className="flex-1 w-full sm:w-auto">
-                <ProjectSelector 
-                  onProjectChange={selectProject}
-                  className="bg-white/20 border-white/30 text-white placeholder:text-white/70 mobile-touch-target"
-                />
+                <div className="bg-white/20 border border-white/30 rounded-lg mobile-touch-target">
+                  <ProjectSelector onProjectChange={selectProject} />
+                </div>
               </div>
               {selectedProject && (
                 <div className="flex items-center gap-2">
@@ -379,17 +396,17 @@ export default function Reports() {
 
           {/* Mobile-optimized Dashboard Tab */}
           <TabsContent value="dashboard" className="mt-4 sm:mt-8">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
               {/* Mobile-optimized KPI Cards */}
               <Card className="mobile-card group hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 bg-gradient-to-br from-blue-50 to-blue-100 border-0 overflow-hidden">
                 <CardContent className="p-4 sm:p-6">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-blue-600 text-xs sm:text-sm font-medium mb-1">التقارير المُنشأة</p>
-                      <p className="text-2xl sm:text-3xl font-bold text-blue-900">12</p>
+                      <p className="text-2xl sm:text-3xl font-bold text-blue-900">{totalReportsGenerated}</p>
                       <div className="flex items-center gap-1 mt-2">
                         <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-green-500" />
-                        <span className="text-green-600 text-xs sm:text-sm font-medium">+23%</span>
+                        <span className="text-green-600 text-xs sm:text-sm font-medium">هذا الشهر</span>
                       </div>
                     </div>
                     <div className="p-3 sm:p-4 bg-blue-500/10 rounded-2xl group-hover:bg-blue-500/20 transition-colors duration-300">
@@ -404,10 +421,10 @@ export default function Reports() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-green-600 text-xs sm:text-sm font-medium mb-1">المشاريع النشطة</p>
-                      <p className="text-2xl sm:text-3xl font-bold text-green-900">{projects.filter(p => p.status === 'active').length}</p>
+                      <p className="text-2xl sm:text-3xl font-bold text-green-900">{totalActiveProjects}</p>
                       <div className="flex items-center gap-1 mt-2">
                         <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-green-500" />
-                        <span className="text-green-600 text-xs sm:text-sm font-medium">+5%</span>
+                        <span className="text-green-600 text-xs sm:text-sm font-medium">قيد التنفيذ</span>
                       </div>
                     </div>
                     <div className="p-3 sm:p-4 bg-green-500/10 rounded-2xl group-hover:bg-green-500/20 transition-colors duration-300">
@@ -421,11 +438,11 @@ export default function Reports() {
                 <CardContent className="p-4 sm:p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-purple-600 text-xs sm:text-sm font-medium mb-1">إجمالي المصروفات</p>
-                      <p className="text-2xl sm:text-3xl font-bold text-purple-900">298,200</p>
+                      <p className="text-purple-600 text-xs sm:text-sm font-medium mb-1">إجمالي التحويلات</p>
+                      <p className="text-2xl sm:text-3xl font-bold text-purple-900">{totalFundTransfers.toLocaleString()}</p>
                       <div className="flex items-center gap-1 mt-2">
-                        <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-green-500" />
-                        <span className="text-green-600 text-xs sm:text-sm font-medium">+12%</span>
+                        <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-purple-500" />
+                        <span className="text-purple-600 text-xs sm:text-sm font-medium">ر.ي</span>
                       </div>
                     </div>
                     <div className="p-3 sm:p-4 bg-purple-500/10 rounded-2xl group-hover:bg-purple-500/20 transition-colors duration-300">
@@ -439,15 +456,36 @@ export default function Reports() {
                 <CardContent className="p-4 sm:p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-orange-600 text-xs sm:text-sm font-medium mb-1">العمال النشطين</p>
-                      <p className="text-2xl sm:text-3xl font-bold text-orange-900">{workers.length}</p>
+                      <p className="text-orange-600 text-xs sm:text-sm font-medium mb-1">إجمالي المصروفات</p>
+                      <p className="text-2xl sm:text-3xl font-bold text-orange-900">{totalExpenses.toLocaleString()}</p>
                       <div className="flex items-center gap-1 mt-2">
-                        <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-green-500" />
-                        <span className="text-green-600 text-xs sm:text-sm font-medium">+8%</span>
+                        <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-red-500" />
+                        <span className="text-red-600 text-xs sm:text-sm font-medium">ر.ي</span>
                       </div>
                     </div>
                     <div className="p-3 sm:p-4 bg-orange-500/10 rounded-2xl group-hover:bg-orange-500/20 transition-colors duration-300">
-                      <Users className="h-6 w-6 sm:h-8 sm:w-8 text-orange-600" />
+                      <DollarSign className="h-6 w-6 sm:h-8 sm:w-8 text-orange-600" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* البطاقة الرابعة - الرصيد الحالي */}
+              <Card className="mobile-card group hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 bg-gradient-to-br from-cyan-50 to-cyan-100 border-0 overflow-hidden">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-cyan-600 text-xs sm:text-sm font-medium mb-1">الرصيد الحالي</p>
+                      <p className={`text-2xl sm:text-3xl font-bold ${currentBalance >= 0 ? 'text-green-900' : 'text-red-900'}`}>
+                        {currentBalance.toLocaleString()}
+                      </p>
+                      <div className="flex items-center gap-1 mt-2">
+                        <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-cyan-500" />
+                        <span className="text-cyan-600 text-xs sm:text-sm font-medium">ر.ي</span>
+                      </div>
+                    </div>
+                    <div className="p-3 sm:p-4 bg-cyan-500/10 rounded-2xl group-hover:bg-cyan-500/20 transition-colors duration-300">
+                      <Activity className="h-6 w-6 sm:h-8 sm:w-8 text-cyan-600" />
                     </div>
                   </div>
                 </CardContent>
