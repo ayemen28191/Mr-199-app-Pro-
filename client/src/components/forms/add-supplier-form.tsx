@@ -87,7 +87,7 @@ export default function AddSupplierForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim()) {
+    if (!name?.trim()) {
       toast({
         title: "خطأ",
         description: "يرجى ملء اسم المورد",
@@ -97,14 +97,14 @@ export default function AddSupplierForm({
     }
 
     const supplierData: InsertSupplier = {
-      name: name.trim(),
-      contactPerson: contactPerson.trim() || null,
-      phone: phone.trim() || null,
-      address: address.trim() || null,
-      paymentTerms: paymentTerms.trim() || "نقد",
-      notes: notes.trim() || null,
+      name: name?.trim() || "",
+      contactPerson: contactPerson?.trim() || null,
+      phone: phone?.trim() || null,
+      address: address?.trim() || null,
+      paymentTerms: paymentTerms?.trim() || "نقد",
+      notes: notes?.trim() || null,
       isActive,
-      totalDebt: supplier?.totalDebt || 0,
+      totalDebt: supplier?.totalDebt?.toString() || "0",
     };
 
     addSupplierMutation.mutate(supplierData);

@@ -76,7 +76,7 @@ export function AutocompleteInput({
     setSearchQuery('');
     
     // حفظ البيانات في قاعدة البيانات (سيزيد عدد الاستخدام)
-    if (selectedValue.trim()) {
+    if (selectedValue && typeof selectedValue === 'string' && selectedValue.trim()) {
       saveDataMutation.mutate({
         category,
         value: selectedValue.trim()
@@ -93,7 +93,7 @@ export function AutocompleteInput({
         setSearchQuery('');
         
         // حفظ البيانات إذا كانت موجودة وليست فارغة
-        if (value.trim() && value.trim().length >= 2) {
+        if (value && typeof value === 'string' && value.trim() && value.trim().length >= 2) {
           // دائماً حفظ القيمة (سيتم تحديث عدد الاستخدام إذا كانت موجودة مسبقاً)
           saveDataMutation.mutate({
             category,
