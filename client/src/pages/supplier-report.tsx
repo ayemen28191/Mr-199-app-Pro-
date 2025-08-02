@@ -56,7 +56,7 @@ export default function SupplierReportPage() {
   // Get purchases for the selected supplier
   const { data: purchases = [], isLoading: isLoadingPurchases } = useQuery<MaterialPurchase[]>({
     queryKey: ["/api/suppliers", selectedSupplierId, "purchases", { 
-      projectId: selectedProjectId, 
+      projectId: selectedProjectId === "all" ? undefined : selectedProjectId, 
       dateFrom, 
       dateTo, 
       paymentType: paymentTypeFilter === "all" ? undefined : paymentTypeFilter 
@@ -65,7 +65,7 @@ export default function SupplierReportPage() {
   });
 
   const selectedSupplier = suppliers.find(s => s.id === selectedSupplierId);
-  const selectedProject = projects.find((p: any) => p.id === selectedProjectId);
+  const selectedProject = selectedProjectId === "all" ? null : projects.find((p: any) => p.id === selectedProjectId);
 
   // Calculate totals
   const totals = purchases.reduce((acc, purchase) => {
@@ -212,7 +212,7 @@ export default function SupplierReportPage() {
                   <SelectValue placeholder="جميع المشاريع" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">جميع المشاريع</SelectItem>
+                  <SelectItem value="all">جميع المشاريع</SelectItem>
                   {projects.map((project: any) => (
                     <SelectItem key={project.id} value={project.id}>
                       {project.name}

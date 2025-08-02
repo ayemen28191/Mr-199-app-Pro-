@@ -66,7 +66,7 @@ export default function SuppliersPage() {
     total: suppliers.length,
     active: suppliers.filter((s: Supplier) => s.isActive).length,
     inactive: suppliers.filter((s: Supplier) => !s.isActive).length,
-    totalDebt: suppliers.reduce((sum: number, s: Supplier) => sum + (s.totalDebt || 0), 0),
+    totalDebt: suppliers.reduce((sum: number, s: Supplier) => sum + (parseFloat(s.totalDebt?.toString() || '0') || 0), 0),
   };
 
   const formatCurrency = (amount: number) => {
@@ -161,7 +161,7 @@ export default function SuppliersPage() {
             </DialogHeader>
 
             <AddSupplierForm
-              supplier={selectedSupplier}
+              supplier={selectedSupplier as any}
               onSuccess={() => {
                 resetForm();
                 queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
@@ -298,11 +298,11 @@ export default function SuppliersPage() {
                 )}
 
                 {/* Debt Info */}
-                {supplier.totalDebt > 0 && (
+                {parseFloat(supplier.totalDebt?.toString() || '0') > 0 && (
                   <div className="flex items-center gap-2 text-xs">
                     <AlertCircle className="h-3 w-3 flex-shrink-0 text-red-500" />
                     <span className="font-medium text-red-600">
-                      {formatCurrency(supplier.totalDebt)}
+                      {formatCurrency(parseFloat(supplier.totalDebt?.toString() || '0'))}
                     </span>
                   </div>
                 )}
