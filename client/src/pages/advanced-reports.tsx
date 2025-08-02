@@ -91,7 +91,7 @@ export default function AdvancedReports() {
               width: 100% !important;
               max-width: none !important;
               margin: 0 !important;
-              padding: 15mm !important;
+              padding: 10mm !important;
               box-shadow: none !important;
               border: none !important;
               background: white !important;
@@ -136,25 +136,29 @@ export default function AdvancedReports() {
             .data-table {
               width: 100% !important;
               border-collapse: collapse !important;
-              margin-bottom: 30px !important;
-              font-size: 11px !important;
+              margin-bottom: 20px !important;
+              font-size: 10px !important;
+              table-layout: fixed !important;
             }
             
             .data-table th {
               background-color: #f3f4f6 !important;
               border: 1px solid #d1d5db !important;
-              padding: 8px 6px !important;
+              padding: 6px 4px !important;
               text-align: center !important;
               font-weight: bold !important;
               color: #374151 !important;
               -webkit-print-color-adjust: exact !important;
+              white-space: nowrap !important;
             }
             
             .data-table td {
               border: 1px solid #d1d5db !important;
-              padding: 6px 6px !important;
+              padding: 4px 3px !important;
               text-align: center !important;
               color: #374151 !important;
+              word-wrap: break-word !important;
+              overflow: hidden !important;
             }
             
             .data-table tr:nth-child(even) td {
@@ -349,27 +353,27 @@ export default function AdvancedReports() {
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th style={{ width: '10%' }}>التاريخ</th>
-                    <th style={{ width: '12%' }}>الفئة</th>
-                    <th style={{ width: '12%' }}>الفئة الفرعية</th>
-                    <th style={{ width: '25%' }}>الوصف</th>
+                    <th style={{ width: '8%' }}>التاريخ</th>
+                    <th style={{ width: '10%' }}>الفئة</th>
+                    <th style={{ width: '10%' }}>الفئة الفرعية</th>
+                    <th style={{ width: '30%' }}>الوصف</th>
                     <th style={{ width: '12%' }}>المبلغ (ريال)</th>
                     <th style={{ width: '15%' }}>المورد</th>
-                    <th style={{ width: '14%' }}>ملاحظات</th>
+                    <th style={{ width: '15%' }}>ملاحظات</th>
                   </tr>
                 </thead>
                 <tbody>
                   {reportData.expenses.map((expense, index) => (
                     <tr key={index}>
-                      <td>{new Date(expense.date).toLocaleDateString('ar-SA')}</td>
+                      <td style={{ fontSize: '9px' }}>{new Date(expense.date).toLocaleDateString('en-CA')}</td>
                       <td>{expense.category}</td>
                       <td>{expense.subcategory || '-'}</td>
-                      <td style={{ textAlign: 'right', paddingRight: '8px' }}>{expense.description}</td>
+                      <td style={{ textAlign: 'right', paddingRight: '4px', fontSize: '9px' }}>{expense.description}</td>
                       <td style={{ color: '#dc2626', fontWeight: 'bold' }}>
-                        {expense.amount.toLocaleString('ar-SA')}
+                        {expense.amount.toLocaleString('en-US')}
                       </td>
-                      <td>{expense.vendor || '-'}</td>
-                      <td style={{ textAlign: 'right', paddingRight: '8px' }}>{expense.notes || '-'}</td>
+                      <td style={{ fontSize: '9px' }}>{expense.vendor || '-'}</td>
+                      <td style={{ textAlign: 'right', paddingRight: '4px', fontSize: '9px' }}>{expense.notes || '-'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -384,14 +388,14 @@ export default function AdvancedReports() {
                   <div key={category} className="total-row">
                     <span>{category}</span>
                     <span style={{ color: '#dc2626', fontWeight: 'bold' }}>
-                      {total.toLocaleString('ar-SA')} ريال
+                      {total.toLocaleString('en-US')} ريال
                     </span>
                   </div>
                 ))}
                 
                 <div className="total-row grand-total">
                   <span>إجمالي المصروفات</span>
-                  <span>{reportData.totalExpenses?.toLocaleString('ar-SA')} ريال</span>
+                  <span>{reportData.totalExpenses?.toLocaleString('en-US')} ريال</span>
                 </div>
               </div>
             </>
@@ -403,25 +407,25 @@ export default function AdvancedReports() {
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th style={{ width: '12%' }}>التاريخ</th>
+                    <th style={{ width: '10%' }}>التاريخ</th>
                     <th style={{ width: '15%' }}>رقم الحوالة</th>
-                    <th style={{ width: '20%' }}>اسم المرسل</th>
+                    <th style={{ width: '25%' }}>اسم المرسل</th>
                     <th style={{ width: '15%' }}>نوع الحوالة</th>
                     <th style={{ width: '15%' }}>المبلغ (ريال)</th>
-                    <th style={{ width: '23%' }}>ملاحظات</th>
+                    <th style={{ width: '20%' }}>ملاحظات</th>
                   </tr>
                 </thead>
                 <tbody>
                   {reportData.income.map((income, index) => (
                     <tr key={index}>
-                      <td>{new Date(income.date).toLocaleDateString('ar-SA')}</td>
+                      <td style={{ fontSize: '9px' }}>{new Date(income.date).toLocaleDateString('en-CA')}</td>
                       <td>{income.transferNumber}</td>
-                      <td style={{ textAlign: 'right', paddingRight: '8px' }}>{income.senderName}</td>
-                      <td>{income.transferType}</td>
+                      <td style={{ textAlign: 'right', paddingRight: '4px', fontSize: '9px' }}>{income.senderName}</td>
+                      <td style={{ fontSize: '9px' }}>{income.transferType}</td>
                       <td style={{ color: '#059669', fontWeight: 'bold' }}>
-                        {income.amount.toLocaleString('ar-SA')}
+                        {income.amount.toLocaleString('en-US')}
                       </td>
-                      <td style={{ textAlign: 'right', paddingRight: '8px' }}>{income.notes || '-'}</td>
+                      <td style={{ textAlign: 'right', paddingRight: '4px', fontSize: '9px' }}>{income.notes || '-'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -430,7 +434,7 @@ export default function AdvancedReports() {
               <div className="totals-section">
                 <div className="total-row grand-total">
                   <span>إجمالي الإيرادات</span>
-                  <span style={{ color: '#059669' }}>{reportData.totalIncome?.toLocaleString('ar-SA')} ريال</span>
+                  <span style={{ color: '#059669' }}>{reportData.totalIncome?.toLocaleString('en-US')} ريال</span>
                 </div>
               </div>
             </>
@@ -463,7 +467,7 @@ export default function AdvancedReports() {
                     يحتوي التقرير على {reportType === 'expenses' ? reportData.expenses?.length : reportData.income?.length} عنصر
                   </p>
                   <p className="text-sm text-gray-600">
-                    الإجمالي: {reportType === 'expenses' ? reportData.totalExpenses?.toLocaleString('ar-SA') : reportData.totalIncome?.toLocaleString('ar-SA')} ريال
+                    الإجمالي: {reportType === 'expenses' ? reportData.totalExpenses?.toLocaleString('en-US') : reportData.totalIncome?.toLocaleString('en-US')} ريال
                   </p>
                   <Button 
                     onClick={printReport}
