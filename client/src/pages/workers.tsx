@@ -209,7 +209,7 @@ export default function WorkersPage() {
 
   const updateWorkerMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => 
-      apiRequest("PUT", `/api/workers/${id}`, data),
+      apiRequest("PATCH", `/api/workers/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/workers'] });
       toast({
