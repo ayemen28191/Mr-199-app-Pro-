@@ -1,266 +1,44 @@
-# مشروع إدارة مشاريع البناء العربي
-Arabic Construction Project Management System
+# Arabic Construction Project Management System
 
-## نظرة عامة على المشروع
-تطبيق ويب شامل لإدارة مشاريع البناء باللغة العربية، يوفر أدوات قوية لتتبع المصاريف وإدارة العمال وإعداد التقارير التفصيلية مع تركيز على واجهة عربية دقيقة وتصميم متجاوب.
+## Overview
+This is a comprehensive web application for managing construction projects in Arabic. It provides robust tools for expense tracking, worker management, and detailed reporting, emphasizing an accurate Arabic interface and responsive design. The system aims to streamline construction project oversight, financial management, and workforce administration.
 
-## المكونات الرئيسية
-- **إدارة المشاريع**: إنشاء وتتبع مشاريع البناء المتعددة
-- **إدارة العمال**: نظام شامل لتسجيل العمال وحضورهم وأجورهم
-- **تتبع المصاريف**: تسجيل مفصل لجميع أنواع المصاريف
-- **نظام التقارير**: تقارير مالية شاملة وكشوف حسابات مفصلة
-- **نظام الإكمال التلقائي**: اقتراحات ذكية مبنية على الاستخدام السابق
-
-## التحسينات الأخيرة (أغسطس 2025)
-
-### تحسين نظام الإكمال التلقائي
-تم تطبيق تحسينات شاملة على نظام الإكمال التلقائي بناءً على تحليل شامل للأداء والتوصيات المقترحة:
-
-### تحسينات الأداء المتقدمة (أغسطس 2025)
-تم تطبيق حلول متقدمة لمعالجة البطء في عمليات INSERT و DELETE:
-
-#### الحلول المطبقة:
-1. **فهارس قاعدة البيانات المحسنة**:
-   - `idx_autocomplete_category_usage`: لتحسين البحث والترتيب
-   - `idx_autocomplete_value_search`: للبحث النصي السريع
-   - `idx_autocomplete_cleanup`: لعمليات التنظيف
-   - `idx_autocomplete_stats`: لإحصائيات النظام
-
-2. **نظام تنظيف دوري ذكي**:
-   - حذف تلقائي للبيانات القديمة (أكثر من 6 أشهر وأقل من 3 استخدامات)
-   - صيانة يومية مجدولة
-   - صيانة أسبوعية شاملة
-
-3. **حدود ذكية للبيانات**:
-   - حد أقصى 100 اقتراح لكل فئة
-   - حذف تلقائي للاقتراحات الأقل استخداماً
-
-4. **واجهة إدارية متقدمة**:
-   - إحصائيات مفصلة للنظام
-   - أدوات صيانة يدوية
-   - مراقبة صحة النظام
-
-#### الملفات المضافة:
-- `server/autocomplete-optimizer.ts`: محرك التحسين والتنظيف
-- `server/autocomplete-scheduler.ts`: جدولة المهام الدورية
-- `server/db/run-autocomplete-migrations.ts`: نقل فهارس قاعدة البيانات
-- `client/src/pages/autocomplete-admin.tsx`: واجهة الإدارة
-- `server/batch-operations-optimizer.ts`: محسن العمليات الجماعية
-- `server/materialized-view-manager.ts`: مدير العروض المادية
-- `server/database-performance-analyzer.ts`: محلل أداء قاعدة البيانات المتقدم
-
-#### التحسينات في الأداء:
-- تحسين استعلامات قاعدة البيانات بفهارس محسنة
-- تقليل استهلاك الذاكرة عبر التنظيف الدوري
-- تسريع زمن الاستجابة (هدف أقل من 100ms)
-
-#### حلول الأداء المتقدمة المطبقة:
-1. **العمليات الجماعية (Batch Operations)**:
-   - حذف جماعي محسن للمئات من السجلات دفعة واحدة
-   - إدخال جماعي مع معالجة التكرار
-   - عمليات مقسمة للكميات الكبيرة (+100 سجل)
-   - fallback للعمليات الفردية عند الحاجة
-
-2. **العروض المادية (Materialized Views)**:
-   - view للملخص اليومي بدلاً من triggers مباشرة
-   - view لإحصائيات الإكمال التلقائي
-   - تحديث متزامن مجدول كل 6 ساعات
-   - فهارس محسنة على العروض المادية
-
-3. **تحسينات قاعدة البيانات**:
-   - VACUUM تلقائي بعد العمليات الكبيرة
-   - مراقبة أحجام الجداول والفهارس
-   - كشف المشاكل الحرجة تلقائياً
-
-## التكنولوجيات المستخدمة
-- **Frontend**: React.js، TypeScript، Tailwind CSS
-- **Backend**: Node.js، Express.js
-- **Database**: Supabase PostgreSQL
-- **ORM**: Drizzle ORM
-- **State Management**: TanStack Query
-- **Routing**: Wouter
-
-## تفضيلات المستخدم
+## User Preferences
 - اللغة الأساسية: العربية
 - الاتجاه: من اليمين لليسار (RTL)
 - التركيز على البساطة والوضوح في الواجهة
 - التحسين المستمر للأداء
-- **التواصل**: جميع الردود والملاحظات يجب أن تكون باللغة العربية (محدث في 2 أغسطس 2025)
+- التواصل: جميع الردود والملاحظات يجب أن تكون باللغة العربية
 
-## القرارات التقنية الأخيرة
-- تطبيق الحل الأول لتحسين نظام الإكمال التلقائي (Solution 1)
-- التركيز على تحسين النظام الحالي بدلاً من إعادة بنائه
-- استخدام صيانة دورية مجدولة لضمان الأداء المستمر
-- إضافة واجهة إدارية لمراقبة النظام
+## System Architecture
+The system is built as a comprehensive web application with distinct frontend and backend components.
 
-## الأهداف المستقبلية
-- مراقبة أداء النظام المحسن وقياس التحسينات
-- تطبيق نظام هجين إذا تطلب الأمر (عند نمو البيانات)
-- إضافة ميزات ذكاء اصطناعي للاقتراحات المحسنة
-- تحسين تجربة المستخدم بناءً على الاستخدام الفعلي
+### UI/UX Decisions
+The interface prioritizes simplicity and clarity, adhering to an Arabic-first, Right-to-Left (RTL) design. It is fully responsive to ensure compatibility across various devices. Key design elements include interactive tables with filtering and sorting, professional layouts for reports, and optimized print views.
 
-## ملاحظات التطوير
-- جميع التحديثات تتم مع مراعاة التوافق العكسي
-- التركيز على سلامة البيانات وعدم فقدانها
-- اختبار شامل قبل تطبيق أي تغييرات على قاعدة البيانات
-- توثيق جميع التغييرات بالتفصيل
+### Technical Implementations
+- **Project Management**: Create and track multiple construction projects.
+- **Worker Management**: Comprehensive system for worker registration, attendance, and wages.
+- **Expense Tracking**: Detailed recording of all expense types.
+- **Reporting System**: Comprehensive financial reports and detailed account statements.
+- **Advanced Autocompletion**: Smart suggestions based on previous usage.
+- **Advanced Reporting**: Professional reporting system for expenses and income, with filtering by project and date range. Includes detailed categories for expenses (labor, petty cash, purchases, wages, transportation, engineers) and income (trust transfers, transaction details). Outputs are interactive tables with automatic totals, Excel export, and print functionality.
+- **Supplier Management**: Full system for managing suppliers, including `total_debt` tracking, support for cash and deferred transactions, and linking to projects and payments. Includes supplier administration, account statements, and reports with smart autocompletion for contact persons, phone numbers, addresses, and payment terms (cash/30 days/60 days).
 
-## إصلاحات أغسطس 2025 - إحصائيات المشاريع
+### System Design Choices
+- **Performance Optimization**:
+    - **Database Indexing**: Optimized indexes (`idx_autocomplete_category_usage`, `idx_autocomplete_value_search`, `idx_autocomplete_cleanup`, `idx_autocomplete_stats`) to improve search, sorting, and cleanup operations.
+    - **Intelligent Cleanup System**: Automated deletion of old data (over 6 months and less than 3 uses) with daily and weekly scheduled maintenance.
+    - **Smart Data Limits**: Maximum of 100 suggestions per category, with automatic deletion of least-used suggestions.
+    - **Batch Operations**: Optimized batch deletions and insertions for hundreds of records, with operations split for large quantities (+100 records) and individual fallbacks.
+    - **Materialized Views**: Used for daily summaries and autocompletion statistics, updated synchronously every 6 hours with optimized indexes.
+    - **Database Performance**: Automatic VACUUM after large operations, monitoring table and index sizes, and automatic critical issue detection.
+- **Project Statistics**: Utilizes the latest daily summary for accurate balance calculation, incorporating carried-over amounts from previous days.
+- **Data Unification**: Standardized Gregorian calendar dates and Yemeni Rial (ر.ي) currency across the entire application for consistency in display and reporting.
+- **Administrative Interface**: Provides detailed system statistics, manual maintenance tools, and system health monitoring.
 
-### مشكلة حساب الرصيد المتبقي (2 أغسطس 2025)
-تم اكتشاف وإصلاح مشكلة خطيرة في حساب إحصائيات المشاريع:
-
-#### المشكلة الأصلية:
-- الإحصائيات تظهر إجمالي دخل ومصروفات غير صحيحة
-- الرصيد المتبقي لا يطابق الحسابات الفعلية
-- عدم مراعاة المبالغ المرحلة من الأيام السابقة
-
-#### الحل المطبق:
-1. **استخدام آخر ملخص يومي كمرجع أساسي**:
-   - الملخص اليومي يحتوي على الحسابات الصحيحة مع المبلغ المرحل
-   - يشمل جميع أنواع المصروفات والدخل بشكل متراكم
-
-2. **تحسين دالة getProjectStatistics**:
-   - إزالة الحساب المباشر من البيانات الخام
-   - الاعتماد على الملخص اليومي الأحدث
-   - إضافة fallback للمشاريع بدون ملخصات يومية
-
-3. **تحسين سجلات التشخيص**:
-   - إضافة تفاصيل واضحة عن مصدر البيانات
-   - مقارنة بين الطرق المختلفة للحساب
-   - تحديد نوع البيانات المستخدمة
-
-#### النتائج:
-- ✅ إصلاح دقة حساب الرصيد المتبقي (24,200 ريال)
-- ✅ إحصائيات صحيحة لإجمالي الدخل والمصروفات
-- ✅ مراعاة المبالغ المرحلة من الأيام السابقة
-- ✅ حماية من الأخطاء المحاسبية المستقبلية
-- ✅ تطبيق الحل النهائي واختباره بنجاح (2 أغسطس 2025)
-
-## إضافة التقارير المتقدمة (أغسطس 2025)
-
-### نظام التقارير المتقدم الجديد
-تم إنشاء نظام تقارير احترافي شامل يتضمن:
-
-#### الميزات الأساسية:
-1. **اختيار نوع التقرير**: مصروفات أو إيرادات
-2. **تحديد المشروع والفترة الزمنية**: من تاريخ إلى تاريخ
-3. **تقارير المصروفات الشاملة**:
-   - جميع المصروفات اليومية العامة
-   - أجور العمال وحضورهم
-   - مشتريات المواد والمعدات
-   - تحويلات العمال
-   - تصنيف حسب الفئات (عمالة، نثريات، مشتريات، أجور، مواصلات، مهندسين)
-
-4. **تقارير الإيرادات**:
-   - تحويلات العهدة
-   - رقم الحوالة واسم المرسل
-   - نوع الحوالة والتاريخ
-
-#### المخرجات الاحترافية:
-- **جداول تفاعلية**: تصميم احترافي مع فلترة وترتيب
-- **إجماليات تلقائية**: حساب الإجماليات لكل فئة والإجمالي العام
-- **تصدير Excel**: تصدير كامل مع التنسيق والعناوين
-- **طباعة**: تخطيط محسن للطباعة
-- **تصميم متجاوب**: يعمل على جميع الأجهزة
-
-#### الملفات المضافة:
-- `client/src/pages/advanced-reports.tsx`: الواجهة الرئيسية
-- `server/storage.ts`: دوال `getExpensesForReport` و `getIncomeForReport`
-- `server/routes.ts`: مسار API `/api/reports/advanced`
-
-#### المسار:
-- متاح عبر `/advanced-reports` في التطبيق
-- مدمج في نظام التنقل الأساسي
-
-## إصلاحات أغسطس 2025 - توحيد التاريخ والعملة
-
-### تحويل التاريخ والعملة (2 أغسطس 2025)
-تم توحيد استخدام التاريخ الميلادي والعملة اليمنية في جميع أنحاء التطبيق:
-
-#### التحديثات المطبقة:
-1. **التاريخ الميلادي**:
-   - تحويل جميع التواريخ من استخدام ar-SA إلى en-GB (التاريخ الميلادي)
-   - إصلاح عرض التواريخ في صفحة العمال
-   - تحديث التقارير المتقدمة لاستخدام التاريخ الميلادي
-   - إصلاح كشوف العمال وملخص المصاريف اليومية
-
-2. **العملة اليمنية (ر.ي)**:
-   - تحويل جميع العملات من "ريال" إلى "ر.ي" (ريال يمني)
-   - إصلاح عرض الأجور في صفحة العمال
-   - تحديث التقارير المتقدمة
-   - إصلاح كشوف الحضور والرواتب
-   - تحديث رسائل التشخيص في server logs
-
-#### الملفات المحدثة:
-- `client/src/pages/workers.tsx`: إصلاح عرض الأجور والتواريخ
-- `client/src/pages/worker-attendance.tsx`: تحديث عرض الرواتب
-- `client/src/pages/advanced-reports.tsx`: توحيد العملة والتاريخ
-- `client/src/pages/excel-style-daily-expenses.tsx`: إصلاح التاريخ
-- `client/src/pages/excel-style-worker-statement.tsx`: تحديث التاريخ
-- `client/src/pages/autocomplete-admin.tsx`: إصلاح تنسيق الأرقام
-- `server/routes.ts`: تحديث رسائل التشخيص
-
-#### النتائج:
-- ✅ جميع التواريخ تعرض بالتقويم الميلادي
-- ✅ جميع المبالغ تعرض بالريال اليمني (ر.ي)
-- ✅ تطبيق موحد عبر جميع واجهات التطبيق
-- ✅ سهولة قراءة وفهم البيانات المالية
-
-## نظام إدارة الموردين الشامل (أغسطس 2025)
-
-### تطوير نظام الموردين الكامل
-تم تطوير نظام إدارة الموردين الشامل مع التركيز على المعاملات الآجلة وتحسين تجربة المستخدم:
-
-#### الميزات المطبقة:
-1. **قاعدة بيانات الموردين**:
-   - جدول suppliers مع جميع البيانات الأساسية
-   - حقل total_debt لتتبع المديونيات
-   - دعم المعاملات النقدية والآجلة
-   - ربط بالمشاريع والمدفوعات
-
-2. **واجهات الموردين**:
-   - صفحة إدارة الموردين `/suppliers`
-   - كشوف حسابات الموردين `/supplier-accounts`
-   - تقارير الموردين `/supplier-report`
-   - إضافة وتعديل وحذف الموردين
-
-3. **نظام الإكمال التلقائي المحسن**:
-   - اقتراحات ذكية لحقل الشخص المسؤول
-   - إكمال تلقائي لأرقام الهواتف
-   - اقتراحات العناوين السابقة
-   - إكمال شروط الدفع (نقد/30 يوم/60 يوم)
-   - حفظ البيانات تلقائياً لإعادة الاستخدام
-
-4. **التقارير والتصدير**:
-   - كشوف حسابات مفصلة للموردين
-   - تصدير Excel احترافي مع التنسيق
-   - طباعة محسنة للتقارير
-   - فلترة بالتاريخ والمشروع ونوع الدفع
-
-#### الملفات المضافة/المحدثة:
-- `shared/schema.ts`: جداول الموردين والمدفوعات
-- `server/storage.ts`: دوال إدارة الموردين
-- `server/routes.ts`: مسارات API للموردين  
-- `client/src/pages/suppliers-fixed.tsx`: واجهة إدارة الموردين
-- `client/src/pages/supplier-accounts.tsx`: كشوف الحسابات
-- `client/src/pages/supplier-report.tsx`: تقارير الموردين
-- `client/src/App.tsx`: تسجيل المسارات الجديدة
-
-#### التحسينات المطبقة:
-- ✅ حل مشكلة حقل total_debt في قاعدة البيانات
-- ✅ إضافة نظام الإكمال التلقائي لجميع الحقول
-- ✅ تحسين تجربة المستخدم مع الاقتراحات الذكية
-- ✅ ربط كامل مع نظام التنقل
-- ✅ دعم كامل للمعاملات الآجلة والنقدية
-
-## حالة المشروع الحالية
-✅ نظام الإكمال التلقائي محسن ويعمل بكفاءة عالية
-✅ فهارس قاعدة البيانات مطبقة
-✅ نظام التنظيف الدوري نشط
-✅ واجهة الإدارة متاحة للمراقبة والصيانة
-✅ إحصائيات المشاريع تعمل بدقة عالية ومحاسبة صحيحة
-✅ التقارير المتقدمة الاحترافية متاحة مع تصدير Excel وطباعة
-✅ توحيد التاريخ الميلادي والعملة اليمنية في جميع الواجهات
-✅ نظام إدارة الموردين الشامل مع الإكمال التلقائي
-✅ جميع الأنظمة الأساسية تعمل بشكل مثالي
+## External Dependencies
+- **Frontend**: React.js, TypeScript, Tailwind CSS, TanStack Query, Wouter
+- **Backend**: Node.js, Express.js
+- **Database**: Supabase PostgreSQL
+- **ORM**: Drizzle ORM
