@@ -9,7 +9,7 @@ import WorkerAttendance from "@/pages/worker-attendance";
 import WorkerAccounts from "@/pages/worker-accounts";
 import DailyExpenses from "@/pages/daily-expenses";
 import MaterialPurchase from "@/pages/material-purchase";
-import ReportsFixed from "@/pages/reports-fixed";
+import ReportsFixed from "@/pages/reports";
 import ExcelStyleWorkerStatement from "@/pages/excel-style-worker-statement";
 import DailyExpensesReport from "@/pages/daily-expenses-report";
 import ExcelStyleDailyExpenses from "@/pages/excel-style-daily-expenses";
