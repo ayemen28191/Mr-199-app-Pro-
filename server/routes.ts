@@ -1645,15 +1645,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
           dateTo as string
         );
         
-        const totalExpenses = expenses.reduce((sum, exp) => sum + parseFloat(exp.amount.toString()), 0);
-        
-        // حساب الإجماليات حسب الفئة
+        // حساب الإجماليات حسب الفئة أولاً
         const categoryTotals: Record<string, number> = {};
         expenses.forEach(expense => {
           const category = expense.category;
           const amount = parseFloat(expense.amount.toString());
-          categoryTotals[category] = (categoryTotals[category] || 0) + amount;
+          if (!isNaN(amount)) {
+            categoryTotals[category] = (categoryTotals[category] || 0) + amount;
+          }
         });
+
+        // حساب الإجمالي العام من مجموع الفئات
+        const totalExpenses = Object.values(categoryTotals).reduce((sum, amount) => sum + amount, 0);
+
+        // سجلات تشخيصية للتحقق من دقة الحسابات
+        console.log('🔍 تشخيص حسابات التقرير:');
+        console.log(`📊 عدد المصروفات: ${expenses.length}`);
+        console.log('💰 إجماليات الفئات:');
+        Object.entries(categoryTotals).forEach(([category, total]) => {
+          console.log(`   ${category}: ${total.toLocaleString('en-US')} ريال`);
+        });
+        console.log(`🔢 الإجمالي العام: ${totalExpenses.toLocaleString('en-US')} ريال`);
+        console.log(`✅ التحقق: مجموع الفئات = ${Object.values(categoryTotals).reduce((a, b) => a + b, 0).toLocaleString('en-US')}`);
 
         res.json({
           expenses,
