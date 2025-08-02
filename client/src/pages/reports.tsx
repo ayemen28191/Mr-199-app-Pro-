@@ -360,229 +360,84 @@ export default function Reports() {
           </div>
         </div>
 
-        {/* Main Content - Full Width No Margins */}
-        <div style={{padding: '10px 5px'}}>
-          {/* Compact Invoice Table */}
-          <table className="w-full border-collapse" style={{fontSize: '12px', lineHeight: '1.2'}}>
+        {/* Main Content - Single Page Layout */}
+        <div style={{padding: '5px 3px'}}>
+          {/* Main Summary Table - Compact */}
+          <table className="invoice-table w-full border-collapse" style={{fontSize: '10px', lineHeight: '1.1', pageBreakInside: 'avoid'}}>
             <thead>
               <tr className="professional-gradient preserve-color text-white">
-                <th className="px-2 py-2 text-center font-bold border border-white" style={{width: '5%'}}>م.</th>
-                <th className="px-3 py-2 text-right font-bold border border-white" style={{width: '50%'}}>وصف البند</th>
-                <th className="px-2 py-2 text-center font-bold border border-white" style={{width: '15%'}}>السعر</th>
-                <th className="px-2 py-2 text-center font-bold border border-white" style={{width: '10%'}}>الكمية</th>
-                <th className="px-2 py-2 text-center font-bold border border-white" style={{width: '20%'}}>المجموع</th>
+                <th className="px-1 py-1 text-center font-bold border border-white" style={{width: '5%'}}>م.</th>
+                <th className="px-2 py-1 text-right font-bold border border-white" style={{width: '50%'}}>وصف البند</th>
+                <th className="px-1 py-1 text-center font-bold border border-white" style={{width: '15%'}}>السعر</th>
+                <th className="px-1 py-1 text-center font-bold border border-white" style={{width: '10%'}}>الكمية</th>
+                <th className="px-1 py-1 text-center font-bold border border-white" style={{width: '20%'}}>المجموع</th>
               </tr>
             </thead>
             <tbody className="bg-white">
               <tr className="odd:bg-gray-50 even:bg-white">
-                <td className="px-2 py-2 text-center font-medium border">01</td>
-                <td className="px-3 py-2 text-right border">الرصيد المرحل من اليوم السابق</td>
-                <td className="px-2 py-2 text-center font-bold border">{formatCurrency(carriedForward)}</td>
-                <td className="px-2 py-2 text-center border">1</td>
-                <td className="px-2 py-2 text-center font-bold border">{formatCurrency(carriedForward)}</td>
+                <td className="px-1 py-1 text-center font-medium border">01</td>
+                <td className="px-2 py-1 text-right border">الرصيد المرحل من اليوم السابق</td>
+                <td className="px-1 py-1 text-center font-bold border">{formatCurrency(carriedForward)}</td>
+                <td className="px-1 py-1 text-center border">1</td>
+                <td className="px-1 py-1 text-center font-bold border">{formatCurrency(carriedForward)}</td>
               </tr>
               <tr className="odd:bg-gray-50 even:bg-white">
-                <td className="px-2 py-2 text-center font-medium border">02</td>
-                <td className="px-3 py-2 text-right border">تحويلات العهدة</td>
-                <td className="px-2 py-2 text-center font-bold border">{formatCurrency(totalIncome)}</td>
-                <td className="px-2 py-2 text-center border">{fundTransfers.length}</td>
-                <td className="px-2 py-2 text-center font-bold border">{formatCurrency(totalIncome)}</td>
+                <td className="px-1 py-1 text-center font-medium border">02</td>
+                <td className="px-2 py-1 text-right border">تحويلات العهدة</td>
+                <td className="px-1 py-1 text-center font-bold border">{formatCurrency(totalIncome)}</td>
+                <td className="px-1 py-1 text-center border">{fundTransfers.length}</td>
+                <td className="px-1 py-1 text-center font-bold border">{formatCurrency(totalIncome)}</td>
               </tr>
               <tr className="odd:bg-gray-50 even:bg-white">
-                <td className="px-2 py-2 text-center font-medium border">03</td>
-                <td className="px-3 py-2 text-right border">أجور العمال</td>
-                <td className="px-2 py-2 text-center font-bold border">{formatCurrency(totalWorkerCosts)}</td>
-                <td className="px-2 py-2 text-center border">{workerAttendance.length}</td>
-                <td className="px-2 py-2 text-center font-bold border">{formatCurrency(totalWorkerCosts)}</td>
+                <td className="px-1 py-1 text-center font-medium border">03</td>
+                <td className="px-2 py-1 text-right border">أجور العمال</td>
+                <td className="px-1 py-1 text-center font-bold border">{formatCurrency(totalWorkerCosts)}</td>
+                <td className="px-1 py-1 text-center border">{workerAttendance.length}</td>
+                <td className="px-1 py-1 text-center font-bold border">{formatCurrency(totalWorkerCosts)}</td>
               </tr>
               <tr className="odd:bg-gray-50 even:bg-white">
-                <td className="px-2 py-2 text-center font-medium border">04</td>
-                <td className="px-3 py-2 text-right border">مشتريات المواد</td>
-                <td className="px-2 py-2 text-center font-bold border">{formatCurrency(totalMaterialCosts)}</td>
-                <td className="px-2 py-2 text-center border">{materialPurchases.length}</td>
-                <td className="px-2 py-2 text-center font-bold border">{formatCurrency(totalMaterialCosts)}</td>
+                <td className="px-1 py-1 text-center font-medium border">04</td>
+                <td className="px-2 py-1 text-right border">مشتريات المواد</td>
+                <td className="px-1 py-1 text-center font-bold border">{formatCurrency(totalMaterialCosts)}</td>
+                <td className="px-1 py-1 text-center border">{materialPurchases.length}</td>
+                <td className="px-1 py-1 text-center font-bold border">{formatCurrency(totalMaterialCosts)}</td>
               </tr>
               <tr className="odd:bg-gray-50 even:bg-white">
-                <td className="px-2 py-2 text-center font-medium border">05</td>
-                <td className="px-3 py-2 text-right border">مصاريف النقل والتشغيل</td>
-                <td className="px-2 py-2 text-center font-bold border">{formatCurrency(totalTransportCosts)}</td>
-                <td className="px-2 py-2 text-center border">{transportationExpenses.length}</td>
-                <td className="px-2 py-2 text-center font-bold border">{formatCurrency(totalTransportCosts)}</td>
+                <td className="px-1 py-1 text-center font-medium border">05</td>
+                <td className="px-2 py-1 text-right border">مصاريف النقل والتشغيل</td>
+                <td className="px-1 py-1 text-center font-bold border">{formatCurrency(totalTransportCosts)}</td>
+                <td className="px-1 py-1 text-center border">{transportationExpenses.length}</td>
+                <td className="px-1 py-1 text-center font-bold border">{formatCurrency(totalTransportCosts)}</td>
               </tr>
             </tbody>
           </table>
 
-          {/* Compact Summary Tables in Two Columns */}
-          <div className="grid grid-cols-2 gap-2 mt-4" style={{fontSize: '10px'}}>
-            {/* Fund Transfers Summary */}
-            {fundTransfers.length > 0 && (
-              <div>
-                <div className="professional-gradient text-white p-1 text-center font-bold preserve-color">
-                  تحويلات العهدة ({fundTransfers.length})
-                </div>
-                <table className="w-full border-collapse text-xs">
-                  <thead>
-                    <tr className="bg-green-50">
-                      <th className="border px-1 py-1 text-center">م</th>
-                      <th className="border px-1 py-1 text-right">المرسل</th>
-                      <th className="border px-1 py-1 text-center">المبلغ</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {fundTransfers.slice(0, 3).map((transfer: any, index: number) => (
-                      <tr key={index}>
-                        <td className="border px-1 py-1 text-center">{index + 1}</td>
-                        <td className="border px-1 py-1">{transfer.senderName}</td>
-                        <td className="border px-1 py-1 text-center font-bold">{formatCurrency(transfer.amount)}</td>
-                      </tr>
-                    ))}
-                    {fundTransfers.length > 3 && (
-                      <tr><td colSpan={3} className="border px-1 py-1 text-center text-gray-500">...والمزيد</td></tr>
-                    )}
-                    <tr className="bg-green-100">
-                      <td colSpan={2} className="border px-1 py-1 text-right font-bold">الإجمالي:</td>
-                      <td className="border px-1 py-1 text-center font-bold">{formatCurrency(totalFundTransfers)}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            )}
 
-            {/* Worker Attendance Summary */}
-            {workerAttendance.length > 0 && (
-              <div>
-                <div className="professional-gradient text-white p-1 text-center font-bold preserve-color">
-                  حضور العمال ({workerAttendance.length})
-                </div>
-                <table className="w-full border-collapse text-xs">
-                  <thead>
-                    <tr className="bg-blue-50">
-                      <th className="border px-1 py-1 text-center">م</th>
-                      <th className="border px-1 py-1 text-right">العامل</th>
-                      <th className="border px-1 py-1 text-center">المبلغ</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {workerAttendance.slice(0, 3).map((attendance: any, index: number) => (
-                      <tr key={index}>
-                        <td className="border px-1 py-1 text-center">{index + 1}</td>
-                        <td className="border px-1 py-1">{attendance.worker?.name || 'غير محدد'}</td>
-                        <td className="border px-1 py-1 text-center font-bold">{formatCurrency(attendance.paidAmount)}</td>
-                      </tr>
-                    ))}
-                    {workerAttendance.length > 3 && (
-                      <tr><td colSpan={3} className="border px-1 py-1 text-center text-gray-500">...والمزيد</td></tr>
-                    )}
-                    <tr className="bg-blue-100">
-                      <td colSpan={2} className="border px-1 py-1 text-right font-bold">الإجمالي:</td>
-                      <td className="border px-1 py-1 text-center font-bold">{formatCurrency(totalWorkerCosts)}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            )}
 
-            {/* Material Purchases Summary */}
-            {materialPurchases.length > 0 && (
-              <div>
-                <div className="professional-gradient text-white p-1 text-center font-bold preserve-color">
-                  مشتريات المواد ({materialPurchases.length})
-                </div>
-                <table className="w-full border-collapse text-xs">
-                  <thead>
-                    <tr className="bg-orange-50">
-                      <th className="border px-1 py-1 text-center">م</th>
-                      <th className="border px-1 py-1 text-right">المادة</th>
-                      <th className="border px-1 py-1 text-center">المبلغ</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {materialPurchases.slice(0, 3).map((purchase: any, index: number) => (
-                      <tr key={index}>
-                        <td className="border px-1 py-1 text-center">{index + 1}</td>
-                        <td className="border px-1 py-1">{purchase.material?.name || 'غير محدد'}</td>
-                        <td className="border px-1 py-1 text-center font-bold">{formatCurrency(purchase.totalAmount)}</td>
-                      </tr>
-                    ))}
-                    {materialPurchases.length > 3 && (
-                      <tr><td colSpan={3} className="border px-1 py-1 text-center text-gray-500">...والمزيد</td></tr>
-                    )}
-                    <tr className="bg-orange-100">
-                      <td colSpan={2} className="border px-1 py-1 text-right font-bold">الإجمالي:</td>
-                      <td className="border px-1 py-1 text-center font-bold">{formatCurrency(totalMaterialCosts)}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-            {/* Transportation Summary */}
-            {transportationExpenses.length > 0 && (
-              <div>
-                <div className="professional-gradient text-white p-1 text-center font-bold preserve-color">
-                  مصاريف النقل ({transportationExpenses.length})
-                </div>
-                <table className="w-full border-collapse text-xs">
-                  <thead>
-                    <tr className="bg-purple-50">
-                      <th className="border px-1 py-1 text-center">م</th>
-                      <th className="border px-1 py-1 text-right">الوصف</th>
-                      <th className="border px-1 py-1 text-center">المبلغ</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {transportationExpenses.slice(0, 3).map((expense: any, index: number) => (
-                      <tr key={index}>
-                        <td className="border px-1 py-1 text-center">{index + 1}</td>
-                        <td className="border px-1 py-1">{expense.description}</td>
-                        <td className="border px-1 py-1 text-center font-bold">{formatCurrency(expense.amount)}</td>
-                      </tr>
-                    ))}
-                    {transportationExpenses.length > 3 && (
-                      <tr><td colSpan={3} className="border px-1 py-1 text-center text-gray-500">...والمزيد</td></tr>
-                    )}
-                    <tr className="bg-purple-100">
-                      <td colSpan={2} className="border px-1 py-1 text-right font-bold">الإجمالي:</td>
-                      <td className="border px-1 py-1 text-center font-bold">{formatCurrency(totalTransportCosts)}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            )}
+          {/* Ultra Compact Summary - One Line */}
+          <div className="flex justify-between items-center mt-2 text-xs" style={{padding: '2px 0'}}>
+            <span>المجموع الفرعي: <strong>{formatCurrency(totalIncome + carriedForward)}</strong></span>
+            <span>المصروفات: <strong>{formatCurrency(totalExpenses)}</strong></span>
+            <span className="professional-gradient text-white px-3 py-1 rounded preserve-color font-bold">
+              الرصيد النهائي: {formatCurrency(remainingBalance)}
+            </span>
           </div>
 
-          {/* Compact Summary - Single Line */}
-          <div className="grid grid-cols-3 gap-2 mt-4 text-sm">
-            <div className="flex justify-between py-1">
-              <span>المجموع الفرعي:</span>
-              <span className="font-bold">{formatCurrency(totalIncome + carriedForward)}</span>
-            </div>
-            <div className="flex justify-between py-1">
-              <span>المصروفات:</span>
-              <span className="font-bold">{formatCurrency(totalExpenses)}</span>
-            </div>
-            <div className="flex justify-between py-1 professional-gradient text-white px-2 rounded preserve-color">
-              <span className="font-bold">الرصيد النهائي:</span>
-              <span className="font-bold">{formatCurrency(remainingBalance)}</span>
-            </div>
-          </div>
-
-          {/* Compact Payment & Signature in One Row */}
-          <div className="flex justify-between items-center mt-4 text-xs">
-            <div className="flex gap-8">
-              <div><span className="text-gray-600">رقم الحساب:</span> <span className="font-semibold">000000000</span></div>
-              <div><span className="text-gray-600">البنك:</span> <span className="font-semibold">البنك المحلي للتنمية</span></div>
+          {/* Ultra Compact Footer with Payment & Signature */}
+          <div className="flex justify-between items-center mt-3" style={{fontSize: '9px'}}>
+            <div className="flex gap-4">
+              <span>حساب: 000000000</span>
+              <span>البنك المحلي</span>
             </div>
             <div className="text-center">
-              <div className="border-b border-gray-400 w-32 mb-1"></div>
-              <p className="text-xs text-gray-600">توقيع المسؤول</p>
+              <div className="border-b border-gray-400 w-20 mb-1"></div>
+              <span>توقيع المسؤول</span>
             </div>
           </div>
 
-          {/* Compact Footer */}
-          <div className="professional-gradient preserve-color text-white p-2 rounded text-center mt-4 text-sm">
-            <p className="font-bold">نظام إدارة المشاريع الهندسية والإنشائية</p>
-            <p className="text-cyan-100 text-xs">الهاتف / العنوان / الموقع الإلكتروني</p>
+          {/* Minimal Footer */}
+          <div className="professional-gradient preserve-color text-white p-1 text-center mt-2" style={{fontSize: '9px'}}>
+            <span className="font-bold">نظام إدارة المشاريع الهندسية والإنشائية - الهاتف / العنوان / الموقع</span>
           </div>
         </div>
       </div>

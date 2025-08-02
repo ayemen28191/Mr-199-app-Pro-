@@ -31,31 +31,33 @@
     margin: 0 !important;
     padding: 0 !important;
     background: white !important;
-    font-size: 10px !important;
-    line-height: 1.1 !important;
+    font-size: 8px !important;
+    line-height: 1.0 !important;
     page-break-inside: avoid !important;
-    transform: scale(0.85) !important;
+    transform: scale(0.75) !important;
     transform-origin: top left !important;
+    height: 100vh !important;
+    overflow: hidden !important;
   }
 
   /* Compact header */
   .print-header {
-    padding: 8px 10px !important;
+    padding: 4px 5px !important;
     margin: 0 !important;
   }
 
   .print-header h1 {
-    font-size: 16px !important;
+    font-size: 12px !important;
     margin: 0 !important;
   }
 
   .print-header h2 {
-    font-size: 18px !important;
+    font-size: 14px !important;
     margin: 0 !important;
   }
 
   .print-header p {
-    font-size: 9px !important;
+    font-size: 7px !important;
     margin: 0 !important;
   }
 
@@ -169,10 +171,33 @@
     border-radius: 0 !important;
   }
 
-  /* Ensure proper print scaling */
+  /* Ensure proper print scaling - Zero margins */
   @page {
-    margin: 0.3in !important;
+    margin: 0 !important;
     size: A4 !important;
+  }
+
+  /* Force single page */
+  body {
+    page-break-inside: avoid !important;
+  }
+
+  .print-content {
+    page-break-after: avoid !important;
+    page-break-before: avoid !important;
+  }
+
+  /* Make everything fit in one page */
+  .invoice-table th,
+  .invoice-table td {
+    padding: 1px 3px !important;
+    font-size: 8px !important;
+    line-height: 1.0 !important;
+  }
+
+  .grid {
+    gap: 2px !important;
+    margin: 2px 0 !important;
   }
 }
 
