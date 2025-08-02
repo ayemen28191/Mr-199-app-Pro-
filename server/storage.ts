@@ -586,7 +586,6 @@ export class DatabaseStorage implements IStorage {
         quantity: materialPurchases.quantity,
         unitPrice: materialPurchases.unitPrice,
         totalAmount: materialPurchases.totalAmount,
-        paymentType: materialPurchases.paymentType,
         supplierName: materialPurchases.supplierName,
         invoiceNumber: materialPurchases.invoiceNumber,
         invoiceDate: materialPurchases.invoiceDate,
@@ -620,7 +619,7 @@ export class DatabaseStorage implements IStorage {
       quantity: purchase.quantity,
       unitPrice: purchase.unitPrice,
       totalAmount: purchase.totalAmount,
-      paymentType: purchase.paymentType,
+      paymentType: "نقد", // قيمة افتراضية مؤقتة
       supplierName: purchase.supplierName,
       invoiceNumber: purchase.invoiceNumber,
       invoiceDate: purchase.invoiceDate,
