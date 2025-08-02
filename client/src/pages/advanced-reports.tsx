@@ -124,7 +124,7 @@ export default function AdvancedReports() {
               width: 100% !important;
               max-width: none !important;
               margin: 0 !important;
-              padding: 5mm !important;
+              padding: 3mm !important;
               box-shadow: none !important;
               border: none !important;
               background: white !important;
@@ -169,29 +169,31 @@ export default function AdvancedReports() {
             .data-table {
               width: 100% !important;
               border-collapse: collapse !important;
-              margin-bottom: 10px !important;
-              font-size: 9px !important;
+              margin: 0 !important;
+              font-size: 8px !important;
               table-layout: fixed !important;
             }
             
             .data-table th {
               background-color: #f3f4f6 !important;
               border: 1px solid #d1d5db !important;
-              padding: 4px 2px !important;
+              padding: 3px 1px !important;
               text-align: center !important;
               font-weight: bold !important;
               color: #374151 !important;
               -webkit-print-color-adjust: exact !important;
               white-space: nowrap !important;
+              font-size: 8px !important;
             }
             
             .data-table td {
               border: 1px solid #d1d5db !important;
-              padding: 4px 3px !important;
+              padding: 2px 1px !important;
               text-align: center !important;
               color: #374151 !important;
               word-wrap: break-word !important;
               overflow: hidden !important;
+              font-size: 7px !important;
             }
             
             .data-table tr:nth-child(even) td {
@@ -391,7 +393,7 @@ export default function AdvancedReports() {
         <div className="print-container print-only">
           {/* Report Header */}
           <div className="report-header">
-            <div className="company-title">شركة المشاريع الإنشائية المتقدمة</div>
+            <div className="company-title">شركة الفتيني للمقاولات</div>
             <div className="report-title">
               {reportType === 'expenses' ? 'تقرير المصروفات المفصل' : 'تقرير الإيرادات المفصل'}
             </div>
@@ -414,13 +416,13 @@ export default function AdvancedReports() {
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th style={{ width: '6%' }}>التاريخ</th>
+                    <th style={{ width: '7%' }}>التاريخ</th>
                     <th style={{ width: '8%' }}>الفئة</th>
                     <th style={{ width: '8%' }}>الفئة الفرعية</th>
-                    <th style={{ width: '35%' }}>الوصف</th>
-                    <th style={{ width: '12%' }}>المبلغ (ريال)</th>
+                    <th style={{ width: '37%' }}>الوصف</th>
+                    <th style={{ width: '10%' }}>المبلغ (ريال)</th>
                     <th style={{ width: '15%' }}>المورد</th>
-                    <th style={{ width: '18%' }}>ملاحظات</th>
+                    <th style={{ width: '15%' }}>ملاحظات</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -468,12 +470,12 @@ export default function AdvancedReports() {
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th style={{ width: '8%' }}>التاريخ</th>
-                    <th style={{ width: '15%' }}>رقم الحوالة</th>
-                    <th style={{ width: '30%' }}>اسم المرسل</th>
-                    <th style={{ width: '15%' }}>نوع الحوالة</th>
-                    <th style={{ width: '15%' }}>المبلغ (ريال)</th>
-                    <th style={{ width: '18%' }}>ملاحظات</th>
+                    <th style={{ width: '7%' }}>التاريخ</th>
+                    <th style={{ width: '13%' }}>رقم الحوالة</th>
+                    <th style={{ width: '35%' }}>اسم المرسل</th>
+                    <th style={{ width: '13%' }}>نوع الحوالة</th>
+                    <th style={{ width: '12%' }}>المبلغ (ريال)</th>
+                    <th style={{ width: '20%' }}>ملاحظات</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -511,9 +513,6 @@ export default function AdvancedReports() {
           
           {/* Page Counter for Print */}
           <div className="page-counter print-only">
-            <span style={{ fontSize: '10px', color: '#6b7280', textAlign: 'center', display: 'block' }}>
-              --- ترقيم الصفحات التلقائي ---
-            </span>
           </div>
         </div>
       )}
