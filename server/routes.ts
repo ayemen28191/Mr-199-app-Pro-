@@ -678,6 +678,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { projectId, date } = req.params;
       
+      console.log(`🟦 Generating daily expense report for project ${projectId}, date ${date}`);
+      
       const [
         fundTransfers,
         workerAttendance,
@@ -693,6 +695,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         storage.getFilteredWorkerTransfers(projectId, date),
         storage.getDailyExpenseSummary(projectId, date)
       ]);
+
+      console.log(`📊 Data found for ${date}:`);
+      console.log(`  - Fund transfers: ${fundTransfers.length}`);
+      console.log(`  - Worker attendance: ${workerAttendance.length}`);
+      console.log(`  - Material purchases: ${materialPurchases.length}`);
+      console.log(`  - Transportation expenses: ${transportationExpenses.length}`);
+      console.log(`  - Worker transfers: ${workerTransfers.length}`);
 
       // حساب الرصيد المرحل (من اليوم السابق)
       const prevDate = new Date(date);
