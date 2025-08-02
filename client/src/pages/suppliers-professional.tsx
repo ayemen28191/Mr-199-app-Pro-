@@ -250,105 +250,123 @@ export default function SuppliersPage() {
       </Card>
 
       {/* Suppliers Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
         {filteredSuppliers.map((supplier: Supplier) => (
-          <Card key={supplier.id} className="hover:shadow-lg transition-all duration-200 border hover:border-primary/50">
-            <CardHeader className="pb-3">
-              <div className="flex items-start justify-between gap-2">
-                <div className="space-y-1 min-w-0 flex-1">
-                  <CardTitle className="text-sm sm:text-base font-semibold truncate">{supplier.name}</CardTitle>
-                  {supplier.contactPerson && (
-                    <CardDescription className="flex items-center gap-1 text-xs">
-                      <User className="h-3 w-3 flex-shrink-0" />
-                      <span className="truncate">{supplier.contactPerson}</span>
-                    </CardDescription>
+          <Card key={supplier.id} className="border border-border/40 bg-card/50 hover:shadow-md transition-all duration-200 hover:border-primary/30">
+            <CardContent className="p-3">
+              <div className="space-y-3">
+                {/* Header with Status */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                        supplier.isActive ? "bg-green-100 dark:bg-green-900/30" : "bg-gray-100 dark:bg-gray-800"
+                      }`}>
+                        <Building className={`h-4 w-4 ${
+                          supplier.isActive ? "text-green-600 dark:text-green-400" : "text-gray-500"
+                        }`} />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="font-medium text-sm truncate">{supplier.name}</h3>
+                        <p className="text-xs text-muted-foreground flex items-center gap-1">
+                          {supplier.contactPerson && (
+                            <>
+                              <User className="h-3 w-3 flex-shrink-0" />
+                              <span className="truncate">{supplier.contactPerson}</span>
+                            </>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <Badge 
+                    variant={supplier.isActive ? "default" : "secondary"}
+                    className="text-xs px-1.5 py-0.5 h-auto"
+                  >
+                    {supplier.isActive ? "نشط" : "معطل"}
+                  </Badge>
+                </div>
+
+                {/* Compact Info Grid */}
+                <div className="bg-muted/30 p-2 rounded-lg space-y-2">
+                  {/* Phone & Payment Terms Row */}
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    {supplier.phone && (
+                      <div className="flex items-center gap-1 min-w-0">
+                        <Phone className="h-3 w-3 flex-shrink-0 text-blue-500" />
+                        <span className="truncate font-mono">{supplier.phone}</span>
+                      </div>
+                    )}
+                    {supplier.paymentTerms && (
+                      <div className="flex items-center gap-1 min-w-0">
+                        <CreditCard className="h-3 w-3 flex-shrink-0 text-purple-500" />
+                        <span className="truncate">{supplier.paymentTerms}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Address */}
+                  {supplier.address && (
+                    <div className="flex items-start gap-1 text-xs">
+                      <MapPin className="h-3 w-3 flex-shrink-0 text-green-500 mt-0.5" />
+                      <span className="line-clamp-2 leading-relaxed text-muted-foreground">{supplier.address}</span>
+                    </div>
                   )}
+
+                  {/* Financial Info */}
+                  <div className="flex items-center justify-between pt-1 border-t border-border/50">
+                    <div className="flex items-center gap-1">
+                      {parseFloat(supplier.totalDebt?.toString() || '0') > 0 ? (
+                        <>
+                          <AlertCircle className="h-3 w-3 text-red-500" />
+                          <span className="text-xs font-medium text-red-600">
+                            مديونية: {formatCurrency(parseFloat(supplier.totalDebt?.toString() || '0'))}
+                          </span>
+                        </>
+                      ) : (
+                        <div className="flex items-center gap-1">
+                          <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                          <span className="text-xs text-green-600 font-medium">رصيد سليم</span>
+                        </div>
+                      )}
+                    </div>
+                    {supplier.createdAt && (
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Calendar className="h-3 w-3" />
+                        <span>{new Date(supplier.createdAt).toLocaleDateString('en-GB')}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <Badge 
-                  variant={supplier.isActive ? "default" : "secondary"}
-                  className="text-xs flex-shrink-0"
-                >
-                  {supplier.isActive ? "نشط" : "معطل"}
-                </Badge>
-              </div>
-            </CardHeader>
-            
-            <CardContent className="space-y-3 pt-0">
-              {/* Contact Info */}
-              <div className="space-y-2">
-                {supplier.phone && (
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Phone className="h-3 w-3 flex-shrink-0" />
-                    <span className="truncate">{supplier.phone}</span>
+
+                {/* Notes Preview */}
+                {supplier.notes && (
+                  <div className="p-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded text-xs">
+                    <p className="line-clamp-2 text-amber-800 dark:text-amber-200">{supplier.notes}</p>
                   </div>
                 )}
                 
-                {supplier.address && (
-                  <div className="flex items-start gap-2 text-xs text-muted-foreground">
-                    <MapPin className="h-3 w-3 flex-shrink-0 mt-0.5" />
-                    <span className="line-clamp-2 leading-relaxed">{supplier.address}</span>
-                  </div>
-                )}
-                
-                {supplier.paymentTerms && (
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <CreditCard className="h-3 w-3 flex-shrink-0" />
-                    <span className="truncate">{supplier.paymentTerms}</span>
-                  </div>
-                )}
-
-                {/* Debt Info */}
-                {parseFloat(supplier.totalDebt?.toString() || '0') > 0 && (
-                  <div className="flex items-center gap-2 text-xs">
-                    <AlertCircle className="h-3 w-3 flex-shrink-0 text-red-500" />
-                    <span className="font-medium text-red-600">
-                      {formatCurrency(parseFloat(supplier.totalDebt?.toString() || '0'))}
-                    </span>
-                  </div>
-                )}
-
-                {/* Created Date */}
-                {supplier.createdAt && (
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Calendar className="h-3 w-3 flex-shrink-0" />
-                    <span>
-                      {new Date(supplier.createdAt).toLocaleDateString('ar-SA', {
-                        year: 'numeric',
-                        month: 'short',
-                        day: 'numeric'
-                      })}
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              {/* Notes Preview */}
-              {supplier.notes && (
-                <div className="p-2 bg-muted/50 rounded text-xs">
-                  <p className="line-clamp-2 text-muted-foreground">{supplier.notes}</p>
+                {/* Compact Action Buttons */}
+                <div className="flex gap-1.5 pt-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleEdit(supplier)}
+                    className="flex-1 gap-1 text-xs h-7 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700"
+                  >
+                    <Edit2 className="h-3 w-3" />
+                    تعديل
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDelete(supplier)}
+                    className="flex-1 gap-1 text-xs h-7 hover:bg-red-50 hover:border-red-200 hover:text-red-700"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                    حذف
+                  </Button>
                 </div>
-              )}
-              
-              {/* Action Buttons */}
-              <div className="flex gap-2 pt-2 border-t">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleEdit(supplier)}
-                  className="flex-1 gap-1 text-xs h-8"
-                >
-                  <Edit2 className="h-3 w-3" />
-                  تعديل
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleDelete(supplier)}
-                  className="flex-1 gap-1 text-xs h-8 text-destructive hover:text-destructive"
-                >
-                  <Trash2 className="h-3 w-3" />
-                  حذف
-                </Button>
               </div>
             </CardContent>
           </Card>
