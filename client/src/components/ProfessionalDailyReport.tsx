@@ -8,7 +8,7 @@ interface ProfessionalDailyReportProps {
 
 export const ProfessionalDailyReport = ({ data, selectedProject, selectedDate }: ProfessionalDailyReportProps) => {
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('ar-SA', {
+    return new Intl.NumberFormat('en-US', {
       style: 'decimal',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
@@ -16,7 +16,7 @@ export const ProfessionalDailyReport = ({ data, selectedProject, selectedDate }:
   };
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('ar-SA', {
+    return new Date(dateStr).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
@@ -59,7 +59,7 @@ export const ProfessionalDailyReport = ({ data, selectedProject, selectedDate }:
         <div className="flex items-center justify-between">
           <div style={{width: '70px', height: '70px', backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column'}}>
             <div style={{fontSize: '24px', fontWeight: 'bold', lineHeight: '1'}}>{new Date(selectedDate).getDate()}</div>
-            <div style={{fontSize: '10px', opacity: '0.9'}}>{new Date(selectedDate).toLocaleDateString('ar-SA', {month: 'short'})}</div>
+            <div style={{fontSize: '10px', opacity: '0.9'}}>{new Date(selectedDate).toLocaleDateString('en-US', {month: 'short'})}</div>
           </div>
           <div className="text-center flex-1" style={{margin: '0 20px'}}>
             <h1 style={{fontSize: '28px', fontWeight: 'bold', margin: '0', lineHeight: '1.2'}}>كشف المصروفات اليومية</h1>
@@ -78,12 +78,12 @@ export const ProfessionalDailyReport = ({ data, selectedProject, selectedDate }:
         {/* Main Financial Summary Table */}
         <table className="w-full border-collapse" style={{fontSize: '13px', lineHeight: '1.6', marginBottom: '15px', border: '2px solid #1e40af'}}>
           <thead>
-            <tr className="professional-gradient preserve-color text-white">
-              <th style={{padding: '12px 8px', textAlign: 'center', fontWeight: 'bold', border: '1px solid rgba(255,255,255,0.3)', width: '8%', minHeight: '45px'}}>م.</th>
-              <th style={{padding: '12px 8px', textAlign: 'right', fontWeight: 'bold', border: '1px solid rgba(255,255,255,0.3)', width: '40%', minHeight: '45px'}}>البيان والوصف</th>
-              <th style={{padding: '12px 8px', textAlign: 'center', fontWeight: 'bold', border: '1px solid rgba(255,255,255,0.3)', width: '12%', minHeight: '45px'}}>العدد</th>
-              <th style={{padding: '12px 8px', textAlign: 'center', fontWeight: 'bold', border: '1px solid rgba(255,255,255,0.3)', width: '18%', minHeight: '45px'}}>متوسط السعر</th>
-              <th style={{padding: '12px 8px', textAlign: 'center', fontWeight: 'bold', border: '1px solid rgba(255,255,255,0.3)', width: '22%', minHeight: '45px'}}>إجمالي المبلغ (ر.ي)</th>
+            <tr className="professional-gradient preserve-color" style={{color: '#1e293b'}}>
+              <th style={{padding: '12px 8px', textAlign: 'center', fontWeight: 'bold', border: '1px solid #cbd5e1', width: '8%', minHeight: '45px'}}>م.</th>
+              <th style={{padding: '12px 8px', textAlign: 'right', fontWeight: 'bold', border: '1px solid #cbd5e1', width: '40%', minHeight: '45px'}}>البيان والوصف</th>
+              <th style={{padding: '12px 8px', textAlign: 'center', fontWeight: 'bold', border: '1px solid #cbd5e1', width: '12%', minHeight: '45px'}}>العدد</th>
+              <th style={{padding: '12px 8px', textAlign: 'center', fontWeight: 'bold', border: '1px solid #cbd5e1', width: '18%', minHeight: '45px'}}>متوسط السعر</th>
+              <th style={{padding: '12px 8px', textAlign: 'center', fontWeight: 'bold', border: '1px solid #cbd5e1', width: '22%', minHeight: '45px'}}>إجمالي المبلغ (ر.ي)</th>
             </tr>
           </thead>
           <tbody>
@@ -144,7 +144,7 @@ export const ProfessionalDailyReport = ({ data, selectedProject, selectedDate }:
           <div>
             {fundTransfers.length > 0 && (
               <div style={{marginBottom: '12px'}}>
-                <div className="professional-gradient text-white" style={{padding: '6px 10px', fontSize: '12px', fontWeight: 'bold', borderRadius: '4px 4px 0 0'}}>
+                <div className="professional-gradient" style={{padding: '6px 10px', fontSize: '12px', fontWeight: 'bold', borderRadius: '4px 4px 0 0', color: '#1e293b'}}>
                   تفاصيل التحويلات النقدية ({fundTransfers.length})
                 </div>
                 <table className="w-full border-collapse" style={{fontSize: '10px', border: '1px solid #e2e8f0'}}>
@@ -173,7 +173,7 @@ export const ProfessionalDailyReport = ({ data, selectedProject, selectedDate }:
 
             {workerAttendance.length > 0 && (
               <div>
-                <div className="professional-gradient text-white" style={{padding: '6px 10px', fontSize: '12px', fontWeight: 'bold', borderRadius: '4px 4px 0 0'}}>
+                <div className="professional-gradient" style={{padding: '6px 10px', fontSize: '12px', fontWeight: 'bold', borderRadius: '4px 4px 0 0', color: '#1e293b'}}>
                   تفاصيل حضور العمال ({workerAttendance.length})
                 </div>
                 <table className="w-full border-collapse" style={{fontSize: '10px', border: '1px solid #e2e8f0'}}>
@@ -185,16 +185,13 @@ export const ProfessionalDailyReport = ({ data, selectedProject, selectedDate }:
                     </tr>
                   </thead>
                   <tbody>
-                    {workerAttendance.slice(0, 5).map((attendance: any, index: number) => (
+                    {workerAttendance.map((attendance: any, index: number) => (
                       <tr key={index} style={{backgroundColor: index % 2 === 0 ? '#ffffff' : '#f8fafc', minHeight: '28px'}}>
                         <td style={{padding: '4px 6px', border: '1px solid #e2e8f0', textAlign: 'center', minHeight: '28px'}}>{index + 1}</td>
                         <td style={{padding: '4px 6px', border: '1px solid #e2e8f0', textAlign: 'right', minHeight: '28px'}}>{attendance.worker?.name || 'غير محدد'}</td>
                         <td style={{padding: '4px 6px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: 'bold', minHeight: '28px'}}>{formatCurrency(attendance.paidAmount)}</td>
                       </tr>
                     ))}
-                    {workerAttendance.length > 5 && (
-                      <tr><td colSpan={3} style={{padding: '4px 6px', textAlign: 'center', fontSize: '9px', color: '#6b7280', fontStyle: 'italic', minHeight: '24px'}}>...و {workerAttendance.length - 5} عمال آخرين</td></tr>
-                    )}
                   </tbody>
                 </table>
               </div>
@@ -205,7 +202,7 @@ export const ProfessionalDailyReport = ({ data, selectedProject, selectedDate }:
           <div>
             {materialPurchases.length > 0 && (
               <div style={{marginBottom: '12px'}}>
-                <div className="professional-gradient text-white" style={{padding: '6px 10px', fontSize: '12px', fontWeight: 'bold', borderRadius: '4px 4px 0 0'}}>
+                <div className="professional-gradient" style={{padding: '6px 10px', fontSize: '12px', fontWeight: 'bold', borderRadius: '4px 4px 0 0', color: '#1e293b'}}>
                   تفاصيل مشتريات المواد ({materialPurchases.length})
                 </div>
                 <table className="w-full border-collapse" style={{fontSize: '10px', border: '1px solid #e2e8f0'}}>
@@ -234,7 +231,7 @@ export const ProfessionalDailyReport = ({ data, selectedProject, selectedDate }:
 
             {transportationExpenses.length > 0 && (
               <div>
-                <div className="professional-gradient text-white" style={{padding: '6px 10px', fontSize: '12px', fontWeight: 'bold', borderRadius: '4px 4px 0 0'}}>
+                <div className="professional-gradient" style={{padding: '6px 10px', fontSize: '12px', fontWeight: 'bold', borderRadius: '4px 4px 0 0', color: '#1e293b'}}>
                   تفاصيل مصاريف النقل ({transportationExpenses.length})
                 </div>
                 <table className="w-full border-collapse" style={{fontSize: '10px', border: '1px solid #e2e8f0'}}>
@@ -282,7 +279,7 @@ export const ProfessionalDailyReport = ({ data, selectedProject, selectedDate }:
             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
               <span style={{fontWeight: 'bold'}}>نظام إدارة مشاريع البناء العربي</span>
               <span>المشروع: {selectedProject?.name || 'غير محدد'} | الحالة: {selectedProject?.status === 'active' ? 'نشط' : 'متوقف'}</span>
-              <span>تاريخ الطباعة: {new Date().toLocaleDateString('ar-SA')} - {new Date().toLocaleTimeString('ar-SA', {hour: '2-digit', minute: '2-digit'})}</span>
+              <span>تاريخ الطباعة: {new Date().toLocaleDateString('en-US')} - {new Date().toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit'})}</span>
             </div>
           </div>
         </div>
