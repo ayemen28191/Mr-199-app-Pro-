@@ -16,7 +16,6 @@ import ExcelStyleDailyExpenses from "@/pages/excel-style-daily-expenses";
 
 import ProjectsPage from "@/pages/projects";
 import WorkersPage from "@/pages/workers";
-import SuppliersPage from "@/pages/suppliers-fixed";
 import SuppliersProPage from "@/pages/suppliers-professional";
 import SupplierAccountsPage from "@/pages/supplier-accounts";
 import SupplierReportPage from "@/pages/supplier-report";
@@ -31,7 +30,6 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route path="/projects" component={ProjectsPage} />
       <Route path="/workers" component={WorkersPage} />
-      <Route path="/suppliers" component={SuppliersPage} />
       <Route path="/suppliers-pro" component={SuppliersProPage} />
       <Route path="/supplier-accounts" component={SupplierAccountsPage} />
       <Route path="/supplier-report" component={SupplierReportPage} />
