@@ -104,7 +104,7 @@ export default function AutocompleteAdminPage() {
   };
 
   const formatNumber = (num: number) => {
-    return new Intl.NumberFormat('ar-SA').format(num);
+    return new Intl.NumberFormat('en-US').format(num);
   };
 
   if (statsLoading) {

@@ -1681,9 +1681,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`📊 عدد المصروفات: ${expenses.length}`);
         console.log('💰 إجماليات الفئات:');
         Object.entries(categoryTotals).forEach(([category, total]) => {
-          console.log(`   ${category}: ${total.toLocaleString('en-US')} ريال`);
+          console.log(`   ${category}: ${total.toLocaleString('en-US')} ر.ي`);
         });
-        console.log(`🔢 الإجمالي العام: ${totalExpenses.toLocaleString('en-US')} ريال`);
+        console.log(`🔢 الإجمالي العام: ${totalExpenses.toLocaleString('en-US')} ر.ي`);
         console.log(`✅ التحقق: مجموع الفئات = ${Object.values(categoryTotals).reduce((a, b) => a + b, 0).toLocaleString('en-US')}`);
 
         res.json({

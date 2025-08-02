@@ -111,7 +111,7 @@ const WorkerCard = ({ worker, onEdit, onDelete, onToggleStatus }: {
             <DollarSign className="h-4 w-4 text-green-600" />
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">الأجر اليومي</p>
-              <p className="font-bold text-green-600">{parseFloat(worker.dailyWage).toFixed(0)} ريال</p>
+              <p className="font-bold text-green-600">{parseFloat(worker.dailyWage).toFixed(0)} ر.ي</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -119,7 +119,7 @@ const WorkerCard = ({ worker, onEdit, onDelete, onToggleStatus }: {
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">تاريخ التسجيل</p>
               <p className="font-medium text-gray-700 dark:text-gray-300">
-                {new Date(worker.createdAt).toLocaleDateString('ar-SA')}
+                {new Date(worker.createdAt).toLocaleDateString('en-GB')}
               </p>
             </div>
           </div>
@@ -355,7 +355,7 @@ export default function WorkersPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-purple-100 text-sm">متوسط الأجر</p>
-                <p className="text-2xl font-bold">{stats.avgWage.toFixed(0)} ريال</p>
+                <p className="text-2xl font-bold">{stats.avgWage.toFixed(0)} ر.ي</p>
               </div>
               <DollarSign className="h-8 w-8 text-purple-200" />
             </div>

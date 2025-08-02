@@ -97,7 +97,7 @@ export default function AdvancedReports() {
   };
 
   const projectName = projects.find((p: any) => p.id === projectId)?.name || '';
-  const currentDate = new Date().toLocaleDateString('ar-SA');
+  const currentDate = new Date().toLocaleDateString('en-GB');
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -442,7 +442,7 @@ export default function AdvancedReports() {
                     <th style={{ width: '8%' }}>الفئة</th>
                     <th style={{ width: '8%' }}>الفئة الفرعية</th>
                     <th style={{ width: '37%' }}>الوصف</th>
-                    <th style={{ width: '10%' }}>المبلغ (ريال)</th>
+                    <th style={{ width: '10%' }}>المبلغ (ر.ي)</th>
                     <th style={{ width: '15%' }}>المورد</th>
                     <th style={{ width: '15%' }}>ملاحظات</th>
                   </tr>
@@ -473,14 +473,14 @@ export default function AdvancedReports() {
                   <div key={category} className="total-row">
                     <span>{category}</span>
                     <span style={{ color: '#dc2626', fontWeight: 'bold' }}>
-                      {total.toLocaleString('en-US')} ريال
+                      {total.toLocaleString('en-US')} ر.ي
                     </span>
                   </div>
                 ))}
                 
                 <div className="total-row grand-total">
                   <span>إجمالي المصروفات</span>
-                  <span>{reportData.totalExpenses?.toLocaleString('en-US')} ريال</span>
+                  <span>{reportData.totalExpenses?.toLocaleString('en-US')} ر.ي</span>
                 </div>
               </div>
             </>
@@ -496,7 +496,7 @@ export default function AdvancedReports() {
                     <th style={{ width: '13%' }}>رقم الحوالة</th>
                     <th style={{ width: '35%' }}>اسم المرسل</th>
                     <th style={{ width: '13%' }}>نوع الحوالة</th>
-                    <th style={{ width: '12%' }}>المبلغ (ريال)</th>
+                    <th style={{ width: '12%' }}>المبلغ (ر.ي)</th>
                     <th style={{ width: '20%' }}>ملاحظات</th>
                   </tr>
                 </thead>
@@ -519,7 +519,7 @@ export default function AdvancedReports() {
               <div className="totals-section">
                 <div className="total-row grand-total">
                   <span>إجمالي الإيرادات</span>
-                  <span style={{ color: '#059669' }}>{reportData.totalIncome?.toLocaleString('en-US')} ريال</span>
+                  <span style={{ color: '#059669' }}>{reportData.totalIncome?.toLocaleString('en-US')} ر.ي</span>
                 </div>
               </div>
             </>

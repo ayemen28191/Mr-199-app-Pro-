@@ -335,7 +335,7 @@ export default function ExcelStyleWorkerStatement() {
               <tbody>
                 {workerStatement.attendance.map((record, index) => {
                   const recordDate = new Date(record.date);
-                  const dayName = recordDate.toLocaleDateString('ar-SA', { weekday: 'long' });
+                  const dayName = recordDate.toLocaleDateString('ar', { weekday: 'long' });
                   const project = workerStatement.projects.find(p => p.id === record.projectId);
                   const dailyWage = parseFloat(record.dailyWage) || 0;
                   const workDays = parseFloat(record.workDays || '1');

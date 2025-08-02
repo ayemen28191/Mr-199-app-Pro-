@@ -113,7 +113,7 @@ export default function ExcelStyleDailyExpenses() {
         operationType: 'ترجيل',
         amount: reportData.summary.carriedForward,
         balanceAfter: runningBalance,
-        notes: `مرحلة من تاريخ ${new Date(new Date(reportData.date).getTime() - 24*60*60*1000).toLocaleDateString('ar-SA')}`
+        notes: `مرحلة من تاريخ ${new Date(new Date(reportData.date).getTime() - 24*60*60*1000).toLocaleDateString('en-GB')}`
       });
     }
 

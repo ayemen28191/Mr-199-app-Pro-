@@ -490,8 +490,8 @@ export default function WorkerAttendance() {
                         </div>
                         <div className="text-sm text-muted-foreground space-y-1">
                           <p>الوقت: {record.startTime} - {record.endTime}</p>
-                          <p>الراتب اليومي: {record.dailyWage} ريال</p>
-                          <p>المدفوع: {record.paidAmount} ريال | المتبقي: {record.remainingAmount} ريال</p>
+                          <p>الراتب اليومي: {record.dailyWage} ر.ي</p>
+                          <p>المدفوع: {record.paidAmount} ر.ي | المتبقي: {record.remainingAmount} ر.ي</p>
                           {record.workDescription && <p>الوصف: {record.workDescription}</p>}
                         </div>
                       </div>
