@@ -1788,6 +1788,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Supplier account statement
+  app.get("/api/suppliers/:id/account", async (req, res) => {
+    try {
+      const { projectId, dateFrom, dateTo } = req.query;
+      const statement = await storage.getSupplierAccountStatement(
+        req.params.id,
+        projectId as string,
+        dateFrom as string,
+        dateTo as string
+      );
+      res.json(statement);
+    } catch (error) {
+      console.error("Error fetching supplier account statement:", error);
+      res.status(500).json({ message: "خطأ في جلب كشف حساب المورد" });
+    }
+  });
+
+  // Supplier purchases
+  app.get("/api/suppliers/:id/purchases", async (req, res) => {
+    try {
+      const { paymentType, dateFrom, dateTo } = req.query;
+      const purchases = await storage.getPurchasesBySupplier(
+        req.params.id,
+        paymentType as string,
+        dateFrom as string,
+        dateTo as string
+      );
+      res.json(purchases);
+    } catch (error) {
+      console.error("Error fetching supplier purchases:", error);
+      res.status(500).json({ message: "خطأ في جلب مشتريات المورد" });
+    }
+  });
+
   // Supplier payments routes
   app.get("/api/suppliers/:supplierId/payments", async (req, res) => {
     try {

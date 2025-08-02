@@ -1,10 +1,9 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Building2, Phone, Mail, CreditCard, Edit, Trash2, Eye } from "lucide-react";
+import { Plus, Building2, Phone, CreditCard, Edit, Trash2, Eye, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import {
   Dialog,
@@ -13,13 +12,6 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -44,10 +36,7 @@ export default function SuppliersPage() {
       contactPerson: "",
       phone: "",
       address: "",
-      email: "",
-      taxNumber: "",
-      creditLimit: "0",
-      paymentTerms: 30,
+      paymentTerms: "نقد",
       notes: "",
       isActive: true,
     },
@@ -165,10 +154,7 @@ export default function SuppliersPage() {
       contactPerson: supplier.contactPerson || "",
       phone: supplier.phone || "",
       address: supplier.address || "",
-      email: supplier.email || "",
-      taxNumber: supplier.taxNumber || "",
-      creditLimit: supplier.creditLimit || "0",
-      paymentTerms: supplier.paymentTerms || 30,
+      paymentTerms: supplier.paymentTerms || "نقد",
       notes: supplier.notes || "",
       isActive: supplier.isActive ?? true,
     });
@@ -182,7 +168,7 @@ export default function SuppliersPage() {
   };
 
   // Filter suppliers based on search term
-  const filteredSuppliers = suppliers.filter((supplier: Supplier) =>
+  const filteredSuppliers = (suppliers as Supplier[]).filter((supplier: Supplier) =>
     supplier.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (supplier.contactPerson?.toLowerCase().includes(searchTerm.toLowerCase())) ||
     (supplier.phone?.includes(searchTerm))
@@ -213,7 +199,7 @@ export default function SuppliersPage() {
               <FormItem>
                 <FormLabel>الشخص المسؤول</FormLabel>
                 <FormControl>
-                  <Input placeholder="اسم الشخص المسؤول" {...field} />
+                  <Input placeholder="اسم الشخص المسؤول" {...field} value={field.value || ""} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -227,7 +213,7 @@ export default function SuppliersPage() {
               <FormItem>
                 <FormLabel>رقم الهاتف</FormLabel>
                 <FormControl>
-                  <Input placeholder="777123456" {...field} />
+                  <Input placeholder="777123456" {...field} value={field.value || ""} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -236,12 +222,12 @@ export default function SuppliersPage() {
 
           <FormField
             control={form.control}
-            name="email"
+            name="paymentTerms"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>البريد الإلكتروني</FormLabel>
+                <FormLabel>شروط الدفع</FormLabel>
                 <FormControl>
-                  <Input type="email" placeholder="supplier@example.com" {...field} />
+                  <Input placeholder="نقد / 30 يوم / 60 يوم" {...field} value={field.value || ""} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -256,61 +242,12 @@ export default function SuppliersPage() {
             <FormItem>
               <FormLabel>العنوان</FormLabel>
               <FormControl>
-                <Input placeholder="العنوان الكامل" {...field} />
+                <Input placeholder="العنوان الكامل" {...field} value={field.value || ""} />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <FormField
-            control={form.control}
-            name="taxNumber"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>الرقم الضريبي</FormLabel>
-                <FormControl>
-                  <Input placeholder="الرقم الضريبي" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="creditLimit"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>الحد الائتماني (ر.ي)</FormLabel>
-                <FormControl>
-                  <Input type="number" placeholder="0" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="paymentTerms"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>مدة السداد (يوم)</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="number" 
-                    placeholder="30" 
-                    {...field}
-                    onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
 
         <FormField
           control={form.control}
@@ -319,7 +256,7 @@ export default function SuppliersPage() {
             <FormItem>
               <FormLabel>ملاحظات</FormLabel>
               <FormControl>
-                <Textarea placeholder="ملاحظات إضافية" rows={3} {...field} />
+                <Textarea placeholder="ملاحظات إضافية" rows={3} {...field} value={field.value || ""} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -386,7 +323,7 @@ export default function SuppliersPage() {
         <div>
           <h1 className="text-3xl font-bold">إدارة الموردين</h1>
           <p className="text-muted-foreground">
-            إدارة شاملة لجميع الموردين والموردات الآجلة
+            إدارة شاملة لجميع الموردين والمشتريات الآجلة
           </p>
         </div>
 
@@ -456,22 +393,15 @@ export default function SuppliersPage() {
                 </div>
               )}
               
-              {supplier.email && (
+              {supplier.totalDebt && parseFloat(supplier.totalDebt) > 0 && (
                 <div className="flex items-center gap-2 text-sm">
-                  <Mail className="w-4 h-4 text-gray-500" />
-                  <span className="truncate">{supplier.email}</span>
-                </div>
-              )}
-              
-              {supplier.creditLimit && parseFloat(supplier.creditLimit) > 0 && (
-                <div className="flex items-center gap-2 text-sm">
-                  <CreditCard className="w-4 h-4 text-gray-500" />
-                  <span>حد ائتماني: {parseFloat(supplier.creditLimit).toLocaleString()} ر.ي</span>
+                  <CreditCard className="w-4 h-4 text-red-500" />
+                  <span>مديونية: {parseFloat(supplier.totalDebt).toLocaleString('en-GB')} ر.ي</span>
                 </div>
               )}
               
               <div className="text-sm text-gray-600">
-                مدة السداد: {supplier.paymentTerms || 30} يوم
+                شروط الدفع: {supplier.paymentTerms || "نقد"}
               </div>
               
               {supplier.address && (
@@ -484,6 +414,14 @@ export default function SuppliersPage() {
                 <Button
                   variant="outline"
                   size="sm"
+                  onClick={() => window.open(`/supplier-report?supplier=${supplier.id}`, '_blank')}
+                  title="كشف حساب المورد"
+                >
+                  <FileText className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
                   onClick={() => handleEdit(supplier)}
                 >
                   <Edit className="w-4 h-4" />
@@ -492,7 +430,6 @@ export default function SuppliersPage() {
                   variant="outline"
                   size="sm"
                   onClick={() => handleDelete(supplier.id, supplier.name)}
-                  className="text-red-600 hover:text-red-700"
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>
@@ -505,12 +442,9 @@ export default function SuppliersPage() {
       {filteredSuppliers.length === 0 && (
         <div className="text-center py-12">
           <Building2 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">لا يوجد موردين</h3>
-          <p className="text-gray-500 mb-4">ابدأ بإضافة موردين جدد لإدارة المشتريات الآجلة</p>
-          <Button onClick={() => setIsAddDialogOpen(true)}>
-            <Plus className="w-4 h-4 ml-2" />
-            إضافة مورد جديد
-          </Button>
+          <p className="text-gray-500">
+            {searchTerm ? "لا توجد موردين مطابقين للبحث" : "لا توجد موردين مسجلين"}
+          </p>
         </div>
       )}
     </div>

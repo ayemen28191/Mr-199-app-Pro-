@@ -16,7 +16,9 @@ import ExcelStyleDailyExpenses from "@/pages/excel-style-daily-expenses";
 
 import ProjectsPage from "@/pages/projects";
 import WorkersPage from "@/pages/workers";
-import SuppliersPage from "@/pages/suppliers";
+import SuppliersPage from "@/pages/suppliers-fixed";
+import SupplierAccountsPage from "@/pages/supplier-accounts";
+import SupplierReportPage from "@/pages/supplier-report";
 import AutocompleteAdminPage from "@/pages/autocomplete-admin";
 import AdvancedReports from "@/pages/advanced-reports";
 import Header from "@/components/layout/header";
@@ -29,6 +31,8 @@ function Router() {
       <Route path="/projects" component={ProjectsPage} />
       <Route path="/workers" component={WorkersPage} />
       <Route path="/suppliers" component={SuppliersPage} />
+      <Route path="/supplier-accounts" component={SupplierAccountsPage} />
+      <Route path="/supplier-report" component={SupplierReportPage} />
       <Route path="/worker-attendance" component={WorkerAttendance} />
       <Route path="/worker-accounts" component={WorkerAccounts} />
       <Route path="/daily-expenses" component={DailyExpenses} />
