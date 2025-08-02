@@ -44,16 +44,16 @@ export default function MaterialPurchase() {
   const queryClient = useQueryClient();
 
   // دالة مساعدة لحفظ القيم في autocomplete_data
-  const saveAutocompleteValue = async (field: string, value: string | null | undefined) => {
+  const saveAutocompleteValue = async (category: string, value: string | null | undefined) => {
     if (!value || typeof value !== 'string' || !value.trim()) return;
     try {
       await apiRequest("POST", "/api/autocomplete", { 
-        field, 
+        category, 
         value: value.trim() 
       });
     } catch (error) {
       // تجاهل الأخطاء لأن هذه عملية مساعدة
-      console.log(`Failed to save autocomplete value for ${field}:`, error);
+      console.log(`Failed to save autocomplete value for ${category}:`, error);
     }
   };
 
