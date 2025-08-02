@@ -315,25 +315,31 @@ export default function ReportsFixed() {
   );
 
   return (
-    <div className="p-4 slide-in">
-      {/* Header with Back Button */}
-      <div className="flex items-center mb-4">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setLocation("/")}
-          className="ml-3 p-2"
-        >
-          <ArrowRight className="h-5 w-5" />
-        </Button>
-        <h2 className="text-xl font-bold text-foreground">التقارير المحسنة</h2>
+    <div className="mobile-reports-container mobile-smooth-scroll">
+      {/* Mobile-optimized Header */}
+      <div className="sticky top-0 z-50 mobile-sticky-header p-4">
+        <div className="flex items-center mb-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setLocation("/")}
+            className="mobile-touch-target mobile-focus-visible ml-3"
+          >
+            <ArrowRight className="h-5 w-5" />
+            <span className="hidden sm:inline mr-2">العودة</span>
+          </Button>
+          <h2 className="text-xl font-bold text-foreground mobile-fade-in">التقارير المحسنة</h2>
+        </div>
       </div>
 
+      {/* Mobile Content Container */}
+      <div className="p-4 pb-20">{/* Added bottom padding for mobile nav */}
+
       {/* التقارير المحسنة للهواتف */}
-      <Card className="mb-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800">
+      <Card className="mb-4 mobile-card mobile-card-gradient-green mobile-slide-in">
         <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-reverse space-x-4">
+          <div className="flex items-center justify-between flex-col sm:flex-row gap-4">
+            <div className="flex items-center space-x-reverse space-x-4 flex-1">
               <div className="bg-green-600 p-3 rounded-lg">
                 <BarChart className="h-6 w-6 text-white" />
               </div>
@@ -342,16 +348,16 @@ export default function ReportsFixed() {
                 <p className="text-sm text-green-700 dark:text-green-300 mt-1">
                   تصميم احترافي محسن خصيصاً للهواتف المحمولة مع واجهة سهلة الاستخدام
                 </p>
-                <div className="flex gap-4 mt-2 text-xs text-green-600 dark:text-green-400">
-                  <span>• تصميم متجاوب للهواتف</span>
-                  <span>• واجهة سهلة ومبسطة</span>
-                  <span>• تفاعل محسن</span>
+                <div className="flex flex-wrap gap-2 mt-2 text-xs text-green-600 dark:text-green-400">
+                  <span className="mobile-badge bg-green-100 text-green-700">تصميم متجاوب</span>
+                  <span className="mobile-badge bg-green-100 text-green-700">واجهة مبسطة</span>
+                  <span className="mobile-badge bg-green-100 text-green-700">تفاعل محسن</span>
                 </div>
               </div>
             </div>
             <Button
               onClick={() => setLocation("/mobile-reports")}
-              className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 flex items-center gap-2 font-medium"
+              className="bg-green-600 hover:bg-green-700 text-white mobile-touch-target mobile-focus-visible flex items-center gap-2 font-medium w-full sm:w-auto"
               size="lg"
             >
               <BarChart className="h-4 w-4" />
@@ -362,10 +368,10 @@ export default function ReportsFixed() {
       </Card>
 
       {/* زر التقارير المتقدمة */}
-      <Card className="mb-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-200 dark:border-blue-800">
+      <Card className="mb-4 mobile-card mobile-card-gradient-blue mobile-slide-in">
         <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-reverse space-x-4">
+          <div className="flex items-center justify-between flex-col sm:flex-row gap-4">
+            <div className="flex items-center space-x-reverse space-x-4 flex-1">
               <div className="bg-blue-600 p-3 rounded-lg">
                 <FileText className="h-6 w-6 text-white" />
               </div>
@@ -374,16 +380,16 @@ export default function ReportsFixed() {
                 <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
                   إنشاء تقارير مخصصة للمصروفات والإيرادات مع إمكانية التصدير والطباعة
                 </p>
-                <div className="flex gap-4 mt-2 text-xs text-blue-600 dark:text-blue-400">
-                  <span>• تقارير حسب الفترة الزمنية</span>
-                  <span>• تصدير Excel احترافي</span>
-                  <span>• طباعة محسنة</span>
+                <div className="flex flex-wrap gap-2 mt-2 text-xs text-blue-600 dark:text-blue-400">
+                  <span className="mobile-badge bg-blue-100 text-blue-700">تقارير مخصصة</span>
+                  <span className="mobile-badge bg-blue-100 text-blue-700">تصدير Excel</span>
+                  <span className="mobile-badge bg-blue-100 text-blue-700">طباعة محسنة</span>
                 </div>
               </div>
             </div>
             <Button
               onClick={() => setLocation("/advanced-reports")}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 flex items-center gap-2 font-medium"
+              className="bg-blue-600 hover:bg-blue-700 text-white mobile-touch-target mobile-focus-visible flex items-center gap-2 font-medium w-full sm:w-auto"
               size="lg"
             >
               <FileText className="h-4 w-4" />
@@ -399,27 +405,35 @@ export default function ReportsFixed() {
       />
 
       {/* Worker Statement Button */}
-      <div className="mb-4 space-y-3">
-        <Button 
-          variant="outline" 
-          className="w-full h-16 border-3 border-orange-500 hover:bg-orange-50 shadow-lg"
-          onClick={() => setLocation("/excel-format-worker-statement")}
-        >
-          <FileSpreadsheet className="ml-2 h-7 w-7 text-orange-600" />
-          <div className="text-right">
-            <div className="text-orange-800 font-bold text-lg">كشف حساب العامل - نمط Excel</div>
-            <div className="text-orange-600 text-sm">تصميم مطابق للنموذج المرفق - دعم المشاريع المتعددة</div>
-          </div>
-        </Button>
-      </div>
+      <Card className="mb-4 mobile-card mobile-card-gradient-orange mobile-slide-in">
+        <CardContent className="p-4">
+          <Button 
+            variant="outline" 
+            className="w-full mobile-touch-target mobile-focus-visible bg-transparent border-0 p-0"
+            onClick={() => setLocation("/excel-format-worker-statement")}
+          >
+            <div className="flex items-center gap-4 w-full">
+              <div className="bg-orange-600 p-3 rounded-lg">
+                <FileSpreadsheet className="h-6 w-6 text-white" />
+              </div>
+              <div className="text-right flex-1">
+                <div className="text-orange-800 font-bold text-lg">كشف حساب العامل - نمط Excel</div>
+                <div className="text-orange-600 text-sm">تصميم مطابق للنموذج المرفق - دعم المشاريع المتعددة</div>
+              </div>
+            </div>
+          </Button>
+        </CardContent>
+      </Card>
 
       {/* Report Types */}
       <div className="space-y-3">
-        <Card>
+        <Card className="mobile-card mobile-card-gradient-purple mobile-slide-in">
           <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center space-x-reverse space-x-3">
-                <Receipt className="h-6 w-6 text-blue-600" />
+            <div className="flex items-center justify-between mb-3 flex-col sm:flex-row gap-3">
+              <div className="flex items-center space-x-reverse space-x-3 flex-1">
+                <div className="bg-purple-600 p-2 rounded-lg">
+                  <Receipt className="h-5 w-5 text-white" />
+                </div>
                 <div>
                   <h4 className="font-medium text-foreground">كشف المصروفات اليومية</h4>
                   <p className="text-sm text-muted-foreground">تقرير تفصيلي للمصروفات في يوم محدد</p>
@@ -427,9 +441,9 @@ export default function ReportsFixed() {
               </div>
               <Button
                 onClick={generateDailyExpensesReport}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm"
+                className="bg-purple-600 hover:bg-purple-700 text-white mobile-touch-target mobile-focus-visible px-4 py-2 text-sm w-full sm:w-auto"
               >
-                إنشاء
+                إنشاء التقرير
               </Button>
             </div>
             <div className="space-y-3">
@@ -438,7 +452,7 @@ export default function ReportsFixed() {
                 value={dailyReportDate}
                 onChange={(e) => setDailyReportDate(e.target.value)}
                 placeholder="اختر التاريخ"
-                className="text-sm"
+                className="text-sm mobile-touch-target"
               />
             </div>
           </CardContent>
@@ -597,6 +611,7 @@ export default function ReportsFixed() {
           </CardContent>
         </Card>
       )}
+      </div>
     </div>
   );
 }
