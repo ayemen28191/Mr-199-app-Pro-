@@ -299,17 +299,7 @@ export default function Reports() {
       {/* Mobile-optimized Premium Header */}
       <div className="sticky top-0 z-50 mobile-sticky-header bg-gradient-to-r from-purple-900 via-blue-900 to-indigo-900 text-white shadow-2xl">
         <div className="container mx-auto px-4 py-4 sm:px-6 sm:py-8">
-          <div className="flex items-center justify-between flex-col sm:flex-row gap-4">
-            <Button
-              variant="ghost" 
-              onClick={() => setLocation("/")}
-              className="text-white hover:bg-white/10 mobile-touch-target mobile-focus-visible transition-all duration-300"
-            >
-              <ArrowRight className="ml-2 h-5 w-5" />
-              <span className="hidden sm:inline">العودة للرئيسية</span>
-              <span className="sm:hidden">العودة</span>
-            </Button>
-            
+          <div className="flex items-center justify-center flex-col sm:flex-row gap-4">
             <div className="flex items-center gap-4 flex-col sm:flex-row text-center sm:text-right">
               <div className="flex items-center gap-3">
                 <div className="p-3 bg-white/10 rounded-full backdrop-blur-sm">
@@ -335,32 +325,6 @@ export default function Reports() {
                   محدث اليوم
                 </Badge>
               </div>
-            </div>
-          </div>
-          
-          {/* Mobile-optimized Project Selector - Compact version in header */}
-          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-white/10 rounded-xl backdrop-blur-sm border border-white/20">
-            <div className="flex items-center gap-3 sm:gap-4 flex-col sm:flex-row">
-              <div className="flex items-center gap-2 text-center sm:text-right">
-                <Globe className="h-4 w-4 sm:h-5 sm:w-5 text-blue-300" />
-                <span className="text-blue-200 font-medium text-sm sm:text-base">المشروع النشط:</span>
-              </div>
-              <div className="flex-1 w-full sm:w-auto">
-                <ProjectSelector 
-                  selectedProjectId={selectedProjectId}
-                  onProjectChange={selectProject} 
-                  variant="compact"
-                  showHeader={false}
-                />
-              </div>
-              {selectedProject && (
-                <div className="flex items-center gap-2">
-                  <Award className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-300" />
-                  <span className="text-yellow-300 font-medium text-sm sm:text-base">
-                    {selectedProject.name}
-                  </span>
-                </div>
-              )}
             </div>
           </div>
         </div>
