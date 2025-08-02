@@ -114,10 +114,21 @@ export default function AddWorkerForm({ worker, onSuccess, onCancel, submitLabel
       return;
     }
 
+    const parsedWage = parseFloat(dailyWage);
+    
+    if (isNaN(parsedWage) || parsedWage <= 0) {
+      toast({
+        title: "خطأ",
+        description: "يرجى إدخال مبلغ صحيح للأجر اليومي",
+        variant: "destructive",
+      });
+      return;
+    }
+
     addWorkerMutation.mutate({
       name: name.trim(),
       type,
-      dailyWage,
+      dailyWage: parsedWage.toString(),
       isActive: true,
     });
   };

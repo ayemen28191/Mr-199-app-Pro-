@@ -145,6 +145,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/workers/:id", async (req, res) => {
+    try {
+      const result = insertWorkerSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "Invalid worker data", errors: result.error.issues });
+      }
+      
+      const worker = await storage.updateWorker(req.params.id, result.data);
+      if (!worker) {
+        return res.status(404).json({ message: "العامل غير موجود" });
+      }
+      res.json(worker);
+    } catch (error) {
+      console.error("Error updating worker:", error);
+      res.status(500).json({ message: "خطأ في تحديث العامل" });
+    }
+  });
+
   app.patch("/api/workers/:id", async (req, res) => {
     try {
       const worker = await storage.updateWorker(req.params.id, req.body);
