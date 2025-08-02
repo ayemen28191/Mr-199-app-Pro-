@@ -70,6 +70,20 @@ export const workerAttendance = pgTable("worker_attendance", {
   uniqueWorkerDate: sql`UNIQUE (worker_id, date, project_id)`
 }));
 
+// Suppliers (الموردين)
+export const suppliers = pgTable("suppliers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull().unique(),
+  contactPerson: text("contact_person"), // الشخص المسؤول
+  phone: text("phone"),
+  address: text("address"),
+  paymentTerms: text("payment_terms").default("نقد"), // نقد، 30 يوم، 60 يوم، etc
+  totalDebt: decimal("total_debt", { precision: 12, scale: 2 }).default('0').notNull(), // إجمالي المديونية
+  isActive: boolean("is_active").default(true).notNull(),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Materials
 export const materials = pgTable("materials", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -79,21 +93,39 @@ export const materials = pgTable("materials", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// Material purchases
+// Material purchases - محسن للمحاسبة الصحيحة
 export const materialPurchases = pgTable("material_purchases", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   projectId: varchar("project_id").notNull().references(() => projects.id),
+  supplierId: varchar("supplier_id").references(() => suppliers.id), // ربط بالمورد
   materialId: varchar("material_id").notNull().references(() => materials.id),
   quantity: decimal("quantity", { precision: 10, scale: 3 }).notNull(),
   unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
   totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
-  purchaseType: text("purchase_type").notNull(), // نقد، آجل، توريد
-  supplierName: text("supplier_name"),
+  paymentType: text("payment_type").notNull().default("نقد"), // نقد، أجل
+  paidAmount: decimal("paid_amount", { precision: 10, scale: 2 }).default('0').notNull(), // المبلغ المدفوع
+  remainingAmount: decimal("remaining_amount", { precision: 10, scale: 2 }).default('0').notNull(), // المتبقي
+  supplierName: text("supplier_name"), // اسم المورد (للتوافق العكسي)
   invoiceNumber: text("invoice_number"),
-  invoiceDate: text("invoice_date"), // YYYY-MM-DD format
+  invoiceDate: text("invoice_date").notNull(), // تاريخ الفاتورة - YYYY-MM-DD format
+  dueDate: text("due_date"), // تاريخ الاستحقاق للفواتير الآجلة - YYYY-MM-DD format
   invoicePhoto: text("invoice_photo"), // base64 or file path
   notes: text("notes"),
   purchaseDate: text("purchase_date").notNull(), // YYYY-MM-DD format
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Supplier payments (مدفوعات الموردين)
+export const supplierPayments = pgTable("supplier_payments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  supplierId: varchar("supplier_id").notNull().references(() => suppliers.id),
+  projectId: varchar("project_id").notNull().references(() => projects.id),
+  purchaseId: varchar("purchase_id").references(() => materialPurchases.id), // ربط بفاتورة محددة
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  paymentMethod: text("payment_method").notNull().default("نقد"), // نقد، حوالة، شيك
+  paymentDate: text("payment_date").notNull(), // YYYY-MM-DD format
+  referenceNumber: text("reference_number"), // رقم المرجع أو الشيك
+  notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -203,6 +235,8 @@ export const insertWorkerTypeSchema = createInsertSchema(workerTypes).omit({ id:
 export const insertAutocompleteDataSchema = createInsertSchema(autocompleteData).omit({ id: true, createdAt: true, lastUsed: true });
 export const insertWorkerMiscExpenseSchema = createInsertSchema(workerMiscExpenses).omit({ id: true, createdAt: true });
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, updatedAt: true, lastLogin: true });
+export const insertSupplierSchema = createInsertSchema(suppliers).omit({ id: true, createdAt: true });
+export const insertSupplierPaymentSchema = createInsertSchema(supplierPayments).omit({ id: true, createdAt: true });
 
 // Type definitions
 export type Project = typeof projects.$inferSelect;
@@ -219,6 +253,8 @@ export type WorkerType = typeof workerTypes.$inferSelect;
 export type AutocompleteData = typeof autocompleteData.$inferSelect;
 export type WorkerMiscExpense = typeof workerMiscExpenses.$inferSelect;
 export type User = typeof users.$inferSelect;
+export type Supplier = typeof suppliers.$inferSelect;
+export type SupplierPayment = typeof supplierPayments.$inferSelect;
 
 export type InsertProject = z.infer<typeof insertProjectSchema>;
 export type InsertWorker = z.infer<typeof insertWorkerSchema>;
@@ -234,3 +270,5 @@ export type InsertWorkerType = z.infer<typeof insertWorkerTypeSchema>;
 export type InsertAutocompleteData = z.infer<typeof insertAutocompleteDataSchema>;
 export type InsertWorkerMiscExpense = z.infer<typeof insertWorkerMiscExpenseSchema>;
 export type InsertUser = z.infer<typeof insertUserSchema>;
+export type InsertSupplier = z.infer<typeof insertSupplierSchema>;
+export type InsertSupplierPayment = z.infer<typeof insertSupplierPaymentSchema>;

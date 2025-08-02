@@ -6,7 +6,7 @@ import {
   insertWorkerAttendanceSchema, insertMaterialSchema, insertMaterialPurchaseSchema,
   insertTransportationExpenseSchema, insertDailyExpenseSummarySchema, insertWorkerTransferSchema,
   insertWorkerBalanceSchema, insertAutocompleteDataSchema, insertWorkerTypeSchema,
-  insertWorkerMiscExpenseSchema, insertUserSchema
+  insertWorkerMiscExpenseSchema, insertUserSchema, insertSupplierSchema, insertSupplierPaymentSchema
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -1711,6 +1711,190 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("خطأ في إنشاء التقرير:", error);
       res.status(500).json({ message: "خطأ في إنشاء التقرير المتقدم" });
+    }
+  });
+
+  // Suppliers routes
+  app.get("/api/suppliers", async (req, res) => {
+    try {
+      const suppliers = await storage.getSuppliers();
+      res.json(suppliers);
+    } catch (error) {
+      console.error("Error fetching suppliers:", error);
+      res.status(500).json({ message: "خطأ في جلب قائمة الموردين" });
+    }
+  });
+
+  app.post("/api/suppliers", async (req, res) => {
+    try {
+      const result = insertSupplierSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "بيانات مورد غير صحيحة", errors: result.error.issues });
+      }
+      
+      // فحص عدم تكرار اسم المورد
+      const existingSupplier = await storage.getSupplierByName(result.data.name);
+      if (existingSupplier) {
+        return res.status(400).json({ message: "يوجد مورد بنفس الاسم مسبقاً" });
+      }
+      
+      const supplier = await storage.createSupplier(result.data);
+      res.status(201).json(supplier);
+    } catch (error) {
+      console.error("Error creating supplier:", error);
+      res.status(500).json({ message: "خطأ في إنشاء المورد" });
+    }
+  });
+
+  app.get("/api/suppliers/:id", async (req, res) => {
+    try {
+      const supplier = await storage.getSupplier(req.params.id);
+      if (!supplier) {
+        return res.status(404).json({ message: "المورد غير موجود" });
+      }
+      res.json(supplier);
+    } catch (error) {
+      console.error("Error fetching supplier:", error);
+      res.status(500).json({ message: "خطأ في جلب المورد" });
+    }
+  });
+
+  app.put("/api/suppliers/:id", async (req, res) => {
+    try {
+      const result = insertSupplierSchema.partial().safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "بيانات مورد غير صحيحة", errors: result.error.issues });
+      }
+      
+      const supplier = await storage.updateSupplier(req.params.id, result.data);
+      if (!supplier) {
+        return res.status(404).json({ message: "المورد غير موجود" });
+      }
+      
+      res.json(supplier);
+    } catch (error) {
+      console.error("Error updating supplier:", error);
+      res.status(500).json({ message: "خطأ في تحديث المورد" });
+    }
+  });
+
+  app.delete("/api/suppliers/:id", async (req, res) => {
+    try {
+      await storage.deleteSupplier(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting supplier:", error);
+      res.status(500).json({ message: "خطأ في حذف المورد" });
+    }
+  });
+
+  // Supplier payments routes
+  app.get("/api/suppliers/:supplierId/payments", async (req, res) => {
+    try {
+      const { supplierId } = req.params;
+      const projectId = req.query.projectId as string;
+      
+      const payments = await storage.getSupplierPayments(supplierId, projectId);
+      res.json(payments);
+    } catch (error) {
+      console.error("Error fetching supplier payments:", error);
+      res.status(500).json({ message: "خطأ في جلب مدفوعات المورد" });
+    }
+  });
+
+  app.post("/api/supplier-payments", async (req, res) => {
+    try {
+      const result = insertSupplierPaymentSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "بيانات دفعة غير صحيحة", errors: result.error.issues });
+      }
+      
+      const payment = await storage.createSupplierPayment(result.data);
+      res.status(201).json(payment);
+    } catch (error) {
+      console.error("Error creating supplier payment:", error);
+      res.status(500).json({ message: "خطأ في إنشاء دفعة المورد" });
+    }
+  });
+
+  app.get("/api/supplier-payments/:id", async (req, res) => {
+    try {
+      const payment = await storage.getSupplierPayment(req.params.id);
+      if (!payment) {
+        return res.status(404).json({ message: "الدفعة غير موجودة" });
+      }
+      res.json(payment);
+    } catch (error) {
+      console.error("Error fetching supplier payment:", error);
+      res.status(500).json({ message: "خطأ في جلب الدفعة" });
+    }
+  });
+
+  app.put("/api/supplier-payments/:id", async (req, res) => {
+    try {
+      const result = insertSupplierPaymentSchema.partial().safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "بيانات دفعة غير صحيحة", errors: result.error.issues });
+      }
+      
+      const payment = await storage.updateSupplierPayment(req.params.id, result.data);
+      if (!payment) {
+        return res.status(404).json({ message: "الدفعة غير موجودة" });
+      }
+      
+      res.json(payment);
+    } catch (error) {
+      console.error("Error updating supplier payment:", error);
+      res.status(500).json({ message: "خطأ في تحديث الدفعة" });
+    }
+  });
+
+  app.delete("/api/supplier-payments/:id", async (req, res) => {
+    try {
+      await storage.deleteSupplierPayment(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting supplier payment:", error);
+      res.status(500).json({ message: "خطأ في حذف الدفعة" });
+    }
+  });
+
+  // Supplier reports
+  app.get("/api/suppliers/:supplierId/statement", async (req, res) => {
+    try {
+      const { supplierId } = req.params;
+      const { projectId, dateFrom, dateTo } = req.query;
+      
+      const statement = await storage.getSupplierAccountStatement(
+        supplierId,
+        projectId as string,
+        dateFrom as string,
+        dateTo as string
+      );
+      
+      res.json(statement);
+    } catch (error) {
+      console.error("Error fetching supplier statement:", error);
+      res.status(500).json({ message: "خطأ في جلب كشف حساب المورد" });
+    }
+  });
+
+  app.get("/api/suppliers/:supplierId/purchases", async (req, res) => {
+    try {
+      const { supplierId } = req.params;
+      const { paymentType, dateFrom, dateTo } = req.query;
+      
+      const purchases = await storage.getPurchasesBySupplier(
+        supplierId,
+        paymentType as string,
+        dateFrom as string,
+        dateTo as string
+      );
+      
+      res.json(purchases);
+    } catch (error) {
+      console.error("Error fetching supplier purchases:", error);
+      res.status(500).json({ message: "خطأ في جلب مشتريات المورد" });
     }
   });
 

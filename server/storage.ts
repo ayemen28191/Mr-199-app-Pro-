@@ -2,11 +2,13 @@ import {
   type Project, type Worker, type FundTransfer, type WorkerAttendance, 
   type Material, type MaterialPurchase, type TransportationExpense, type DailyExpenseSummary,
   type WorkerTransfer, type WorkerBalance, type AutocompleteData, type WorkerType, type WorkerMiscExpense, type User,
+  type Supplier, type SupplierPayment,
   type InsertProject, type InsertWorker, type InsertFundTransfer, type InsertWorkerAttendance,
   type InsertMaterial, type InsertMaterialPurchase, type InsertTransportationExpense, type InsertDailyExpenseSummary,
   type InsertWorkerTransfer, type InsertWorkerBalance, type InsertAutocompleteData, type InsertWorkerType, type InsertWorkerMiscExpense, type InsertUser,
+  type InsertSupplier, type InsertSupplierPayment,
   projects, workers, fundTransfers, workerAttendance, materials, materialPurchases, transportationExpenses, dailyExpenseSummaries,
-  workerTransfers, workerBalances, autocompleteData, workerTypes, workerMiscExpenses, users
+  workerTransfers, workerBalances, autocompleteData, workerTypes, workerMiscExpenses, users, suppliers, supplierPayments
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, gte, lte, sql, inArray, or } from "drizzle-orm";
@@ -135,6 +137,34 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: string, user: Partial<InsertUser>): Promise<User | undefined>;
   deleteUser(id: string): Promise<void>;
+  
+  // Suppliers
+  getSuppliers(): Promise<Supplier[]>;
+  getSupplier(id: string): Promise<Supplier | undefined>;
+  getSupplierByName(name: string): Promise<Supplier | undefined>;
+  createSupplier(supplier: InsertSupplier): Promise<Supplier>;
+  updateSupplier(id: string, supplier: Partial<InsertSupplier>): Promise<Supplier | undefined>;
+  deleteSupplier(id: string): Promise<void>;
+  
+  // Supplier Payments
+  getSupplierPayments(supplierId: string, projectId?: string): Promise<SupplierPayment[]>;
+  getSupplierPayment(id: string): Promise<SupplierPayment | undefined>;
+  createSupplierPayment(payment: InsertSupplierPayment): Promise<SupplierPayment>;
+  updateSupplierPayment(id: string, payment: Partial<InsertSupplierPayment>): Promise<SupplierPayment | undefined>;
+  deleteSupplierPayment(id: string): Promise<void>;
+  
+  // Supplier Reports
+  getSupplierAccountStatement(supplierId: string, projectId?: string, dateFrom?: string, dateTo?: string): Promise<{
+    supplier: Supplier;
+    purchases: MaterialPurchase[];
+    payments: SupplierPayment[];
+    totalDebt: string;
+    totalPaid: string;
+    remainingDebt: string;
+  }>;
+  
+  // Purchase filtering for supplier reports
+  getPurchasesBySupplier(supplierId: string, paymentType?: string, dateFrom?: string, dateTo?: string): Promise<MaterialPurchase[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -556,7 +586,7 @@ export class DatabaseStorage implements IStorage {
         quantity: materialPurchases.quantity,
         unitPrice: materialPurchases.unitPrice,
         totalAmount: materialPurchases.totalAmount,
-        purchaseType: materialPurchases.purchaseType,
+        paymentType: materialPurchases.paymentType,
         supplierName: materialPurchases.supplierName,
         invoiceNumber: materialPurchases.invoiceNumber,
         invoiceDate: materialPurchases.invoiceDate,
@@ -590,7 +620,7 @@ export class DatabaseStorage implements IStorage {
       quantity: purchase.quantity,
       unitPrice: purchase.unitPrice,
       totalAmount: purchase.totalAmount,
-      purchaseType: purchase.purchaseType,
+      paymentType: purchase.paymentType,
       supplierName: purchase.supplierName,
       invoiceNumber: purchase.invoiceNumber,
       invoiceDate: purchase.invoiceDate,
@@ -1842,6 +1872,226 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error deleting user:', error);
       throw error;
+    }
+  }
+
+  // Suppliers methods
+  async getSuppliers(): Promise<Supplier[]> {
+    try {
+      return await db.select().from(suppliers).orderBy(suppliers.name);
+    } catch (error) {
+      console.error('Error getting suppliers:', error);
+      return [];
+    }
+  }
+
+  async getSupplier(id: string): Promise<Supplier | undefined> {
+    try {
+      const [supplier] = await db.select().from(suppliers).where(eq(suppliers.id, id));
+      return supplier || undefined;
+    } catch (error) {
+      console.error('Error getting supplier:', error);
+      return undefined;
+    }
+  }
+
+  async getSupplierByName(name: string): Promise<Supplier | undefined> {
+    try {
+      const [supplier] = await db.select().from(suppliers).where(eq(suppliers.name, name));
+      return supplier || undefined;
+    } catch (error) {
+      console.error('Error getting supplier by name:', error);
+      return undefined;
+    }
+  }
+
+  async createSupplier(supplier: InsertSupplier): Promise<Supplier> {
+    try {
+      const [newSupplier] = await db
+        .insert(suppliers)
+        .values(supplier)
+        .returning();
+      return newSupplier;
+    } catch (error) {
+      console.error('Error creating supplier:', error);
+      throw error;
+    }
+  }
+
+  async updateSupplier(id: string, supplier: Partial<InsertSupplier>): Promise<Supplier | undefined> {
+    try {
+      const [updated] = await db
+        .update(suppliers)
+        .set(supplier)
+        .where(eq(suppliers.id, id))
+        .returning();
+      return updated || undefined;
+    } catch (error) {
+      console.error('Error updating supplier:', error);
+      throw error;
+    }
+  }
+
+  async deleteSupplier(id: string): Promise<void> {
+    try {
+      await db.delete(suppliers).where(eq(suppliers.id, id));
+    } catch (error) {
+      console.error('Error deleting supplier:', error);
+      throw error;
+    }
+  }
+
+  // Supplier Payments methods
+  async getSupplierPayments(supplierId: string, projectId?: string): Promise<SupplierPayment[]> {
+    try {
+      const conditions = [eq(supplierPayments.supplierId, supplierId)];
+      if (projectId) {
+        conditions.push(eq(supplierPayments.projectId, projectId));
+      }
+      
+      return await db.select().from(supplierPayments)
+        .where(and(...conditions))
+        .orderBy(supplierPayments.paymentDate);
+    } catch (error) {
+      console.error('Error getting supplier payments:', error);
+      return [];
+    }
+  }
+
+  async getSupplierPayment(id: string): Promise<SupplierPayment | undefined> {
+    try {
+      const [payment] = await db.select().from(supplierPayments).where(eq(supplierPayments.id, id));
+      return payment || undefined;
+    } catch (error) {
+      console.error('Error getting supplier payment:', error);
+      return undefined;
+    }
+  }
+
+  async createSupplierPayment(payment: InsertSupplierPayment): Promise<SupplierPayment> {
+    try {
+      const [newPayment] = await db
+        .insert(supplierPayments)
+        .values(payment)
+        .returning();
+      return newPayment;
+    } catch (error) {
+      console.error('Error creating supplier payment:', error);
+      throw error;
+    }
+  }
+
+  async updateSupplierPayment(id: string, payment: Partial<InsertSupplierPayment>): Promise<SupplierPayment | undefined> {
+    try {
+      const [updated] = await db
+        .update(supplierPayments)
+        .set(payment)
+        .where(eq(supplierPayments.id, id))
+        .returning();
+      return updated || undefined;
+    } catch (error) {
+      console.error('Error updating supplier payment:', error);
+      throw error;
+    }
+  }
+
+  async deleteSupplierPayment(id: string): Promise<void> {
+    try {
+      await db.delete(supplierPayments).where(eq(supplierPayments.id, id));
+    } catch (error) {
+      console.error('Error deleting supplier payment:', error);
+      throw error;
+    }
+  }
+
+  // Supplier Reports methods
+  async getSupplierAccountStatement(supplierId: string, projectId?: string, dateFrom?: string, dateTo?: string): Promise<{
+    supplier: Supplier;
+    purchases: MaterialPurchase[];
+    payments: SupplierPayment[];
+    totalDebt: string;
+    totalPaid: string;
+    remainingDebt: string;
+  }> {
+    try {
+      // جلب بيانات المورد
+      const supplier = await this.getSupplier(supplierId);
+      if (!supplier) {
+        throw new Error('المورد غير موجود');
+      }
+
+      // شروط التصفية
+      const purchaseConditions = [eq(materialPurchases.supplierId, supplierId)];
+      const paymentConditions = [eq(supplierPayments.supplierId, supplierId)];
+      
+      if (projectId) {
+        purchaseConditions.push(eq(materialPurchases.projectId, projectId));
+        paymentConditions.push(eq(supplierPayments.projectId, projectId));
+      }
+      
+      if (dateFrom && dateTo) {
+        purchaseConditions.push(
+          gte(materialPurchases.invoiceDate, dateFrom),
+          lte(materialPurchases.invoiceDate, dateTo)
+        );
+        paymentConditions.push(
+          gte(supplierPayments.paymentDate, dateFrom),
+          lte(supplierPayments.paymentDate, dateTo)
+        );
+      }
+
+      // جلب المشتريات
+      const purchases = await db.select().from(materialPurchases)
+        .where(and(...purchaseConditions))
+        .orderBy(materialPurchases.invoiceDate);
+
+      // جلب المدفوعات
+      const payments = await db.select().from(supplierPayments)
+        .where(and(...paymentConditions))
+        .orderBy(supplierPayments.paymentDate);
+
+      // حساب الإجماليات
+      const totalDebt = purchases.reduce((sum, purchase) => 
+        sum + parseFloat(purchase.totalAmount || '0'), 0);
+      const totalPaid = payments.reduce((sum, payment) => 
+        sum + parseFloat(payment.amount || '0'), 0);
+      const remainingDebt = totalDebt - totalPaid;
+
+      return {
+        supplier,
+        purchases,
+        payments,
+        totalDebt: totalDebt.toString(),
+        totalPaid: totalPaid.toString(),
+        remainingDebt: remainingDebt.toString()
+      };
+    } catch (error) {
+      console.error('Error getting supplier account statement:', error);
+      throw error;
+    }
+  }
+
+  async getPurchasesBySupplier(supplierId: string, paymentType?: string, dateFrom?: string, dateTo?: string): Promise<MaterialPurchase[]> {
+    try {
+      const conditions = [eq(materialPurchases.supplierId, supplierId)];
+      
+      if (paymentType) {
+        conditions.push(eq(materialPurchases.paymentType, paymentType));
+      }
+      
+      if (dateFrom && dateTo) {
+        conditions.push(
+          gte(materialPurchases.invoiceDate, dateFrom),
+          lte(materialPurchases.invoiceDate, dateTo)
+        );
+      }
+
+      return await db.select().from(materialPurchases)
+        .where(and(...conditions))
+        .orderBy(materialPurchases.invoiceDate);
+    } catch (error) {
+      console.error('Error getting purchases by supplier:', error);
+      return [];
     }
   }
 }
