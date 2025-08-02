@@ -8,11 +8,12 @@ interface ProfessionalDailyReportProps {
 
 export const ProfessionalDailyReport = ({ data, selectedProject, selectedDate }: ProfessionalDailyReportProps) => {
   const formatCurrency = (amount: number) => {
+    const validAmount = isNaN(amount) || amount === null || amount === undefined ? 0 : Number(amount);
     return new Intl.NumberFormat('en-US', {
       style: 'decimal',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
-    }).format(amount) + ' ر.ي';
+    }).format(validAmount) + ' ر.ي';
   };
 
   const formatDate = (dateStr: string) => {
@@ -32,12 +33,49 @@ export const ProfessionalDailyReport = ({ data, selectedProject, selectedDate }:
     carriedForward = 0
   } = data || {};
 
-  const totalIncome = fundTransfers.reduce((sum: number, transfer: any) => sum + (transfer.amount || 0), 0);
-  const totalWorkerCosts = workerAttendance.reduce((sum: number, attendance: any) => sum + (attendance.paidAmount || 0), 0);
-  const totalMaterialCosts = materialPurchases.reduce((sum: number, purchase: any) => sum + (purchase.totalAmount || 0), 0);
-  const totalTransportCosts = transportationExpenses.reduce((sum: number, expense: any) => sum + (expense.amount || 0), 0);
+  // Debug logging
+  console.log('🔍 ProfessionalDailyReport Data Debug:', {
+    data,
+    fundTransfers,
+    workerAttendance,
+    materialPurchases,
+    transportationExpenses,
+    carriedForward
+  });
+
+  const totalIncome = fundTransfers.reduce((sum: number, transfer: any) => {
+    const amount = Number(transfer.amount) || 0;
+    return sum + amount;
+  }, 0);
+
+  const totalWorkerCosts = workerAttendance.reduce((sum: number, attendance: any) => {
+    const amount = Number(attendance.paidAmount) || 0;
+    console.log('Worker attendance:', attendance, 'Amount:', amount);
+    return sum + amount;
+  }, 0);
+
+  const totalMaterialCosts = materialPurchases.reduce((sum: number, purchase: any) => {
+    const amount = Number(purchase.totalAmount) || 0;
+    return sum + amount;
+  }, 0);
+
+  const totalTransportCosts = transportationExpenses.reduce((sum: number, expense: any) => {
+    const amount = Number(expense.amount) || 0;
+    console.log('Transport expense:', expense, 'Amount:', amount);
+    return sum + amount;
+  }, 0);
+
   const totalExpenses = totalWorkerCosts + totalMaterialCosts + totalTransportCosts;
   const remainingBalance = (carriedForward + totalIncome) - totalExpenses;
+
+  console.log('📊 Calculated totals:', {
+    totalIncome,
+    totalWorkerCosts,
+    totalMaterialCosts,
+    totalTransportCosts,
+    totalExpenses,
+    remainingBalance
+  });
 
   return (
     <div 
