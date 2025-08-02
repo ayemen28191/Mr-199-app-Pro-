@@ -1,7 +1,14 @@
 # Arabic Construction Project Management System
 
 ## Overview
-This is a comprehensive web application for managing construction projects in Arabic. It provides robust tools for expense tracking, worker management, and detailed reporting, emphasizing an accurate Arabic interface and responsive design. The system aims to streamline construction project oversight, financial management, and workforce administration.
+This is a comprehensive web application for managing construction projects in Arabic. It provides robust tools for expense tracking, worker management, supplier administration, and detailed reporting, emphasizing an accurate Arabic interface and responsive design. The system aims to streamline construction project oversight, financial management, and workforce administration.
+
+### Recent Changes (أغسطس 2025)
+- إصلاح جذري لمشكلة العمود المفقود `total_debt` في جدول الموردين
+- إنشاء استعلامات SQL شاملة لإصلاح هيكل قاعدة البيانات
+- حل جميع مشاكل type safety والأخطاء في runtime
+- استعادة وظائف إدارة مديونية الموردين بالكامل
+- تحسين معالجة الأخطاء وfunctions التحقق من صحة البيانات
 
 ## User Preferences
 - اللغة الأساسية: العربية

@@ -104,7 +104,7 @@ export default function AddSupplierForm({
       paymentTerms: (paymentTerms && typeof paymentTerms === 'string') ? paymentTerms.trim() || "نقد" : "نقد",
       notes: (notes && typeof notes === 'string') ? notes.trim() || null : null,
       isActive,
-      // totalDebt: supplier?.totalDebt?.toString() || "0", // مؤقتاً معطل حتى إضافة العمود
+      totalDebt: supplier?.totalDebt?.toString() || "0",
     };
 
     addSupplierMutation.mutate(supplierData);

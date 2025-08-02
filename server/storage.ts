@@ -1917,8 +1917,10 @@ export class DatabaseStorage implements IStorage {
 
   async createSupplier(supplier: InsertSupplier): Promise<Supplier> {
     try {
-      // إزالة totalDebt مؤقتاً حتى يتم إضافة العمود لقاعدة البيانات
-      const supplierData = supplier;
+      const supplierData = {
+        ...supplier,
+        totalDebt: supplier.totalDebt || '0' // إضافة القيمة الافتراضية للمديونية
+      };
       const [newSupplier] = await db
         .insert(suppliers)
         .values(supplierData)
@@ -1932,11 +1934,9 @@ export class DatabaseStorage implements IStorage {
 
   async updateSupplier(id: string, supplier: Partial<InsertSupplier>): Promise<Supplier | undefined> {
     try {
-      // إزالة totalDebt مؤقتاً حتى يتم إضافة العمود لقاعدة البيانات
-      const supplierData = supplier;
       const [updated] = await db
         .update(suppliers)
-        .set(supplierData)
+        .set(supplier)
         .where(eq(suppliers.id, id))
         .returning();
       return updated || undefined;
