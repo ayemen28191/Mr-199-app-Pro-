@@ -327,6 +327,32 @@ export default function Reports() {
               </div>
             </div>
           </div>
+          
+          {/* Project Selector تحت مربع العرض */}
+          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-white/10 rounded-xl backdrop-blur-sm border border-white/20">
+            <div className="flex items-center gap-3 sm:gap-4 flex-col sm:flex-row">
+              <div className="flex items-center gap-2 text-center sm:text-right">
+                <Globe className="h-4 w-4 sm:h-5 sm:w-5 text-blue-300" />
+                <span className="text-blue-200 font-medium text-sm sm:text-base">المشروع النشط:</span>
+              </div>
+              <div className="flex-1 w-full sm:w-auto">
+                <ProjectSelector 
+                  selectedProjectId={selectedProjectId}
+                  onProjectChange={selectProject} 
+                  variant="compact"
+                  showHeader={false}
+                />
+              </div>
+              {selectedProject && (
+                <div className="flex items-center gap-2">
+                  <Award className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-300" />
+                  <span className="text-yellow-300 font-medium text-sm sm:text-base">
+                    {selectedProject.name}
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -504,14 +530,6 @@ export default function Reports() {
 
           {/* Reports Tab */}
           <TabsContent value="reports" className="mt-8">
-            {/* Enhanced Project Selection Card */}
-            <ProjectSelector 
-              selectedProjectId={selectedProjectId}
-              onProjectChange={selectProject} 
-              variant="premium"
-              className="mb-8"
-            />
-            
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Daily Expenses Report */}
               <Card className="group hover:shadow-2xl transition-all duration-500 bg-gradient-to-br from-blue-50 to-blue-100 border-0 rounded-2xl overflow-hidden">
