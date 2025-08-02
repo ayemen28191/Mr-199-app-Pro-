@@ -1,0 +1,158 @@
+/* Professional Daily Report Print Styles */
+@media print {
+  /* Hide everything except the professional report */
+  * {
+    visibility: hidden !important;
+  }
+
+  #professional-daily-report, 
+  #professional-daily-report * {
+    visibility: visible !important;
+  }
+
+  /* Force single page layout */
+  @page {
+    size: A4 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    font-family: 'Arial', sans-serif !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  #professional-daily-report {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100vh !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    transform: scale(0.95) !important;
+    transform-origin: top left !important;
+    background: white !important;
+    page-break-inside: avoid !important;
+    page-break-after: avoid !important;
+    page-break-before: avoid !important;
+    overflow: hidden !important;
+  }
+
+  /* Preserve colors for professional gradient */
+  .professional-gradient {
+    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #06b6d4 100%) !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  .preserve-color {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* Table styling for print */
+  table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+    page-break-inside: avoid !important;
+  }
+
+  th, td {
+    border: 1px solid #000 !important;
+    padding: 4px 6px !important;
+    font-size: 10px !important;
+    line-height: 1.2 !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Header styling */
+  .professional-gradient h1 {
+    color: white !important;
+    font-size: 22px !important;
+    font-weight: bold !important;
+    margin: 0 !important;
+  }
+
+  .professional-gradient p {
+    color: white !important;
+    margin: 2px 0 !important;
+  }
+
+  /* Grid layout optimization */
+  .grid {
+    display: grid !important;
+    gap: 8px !important;
+  }
+
+  /* Compact text for maximum space usage */
+  .text-xs {
+    font-size: 8px !important;
+  }
+
+  .text-sm {
+    font-size: 9px !important;
+  }
+
+  /* Ensure borders are visible */
+  .border {
+    border: 1px solid #000 !important;
+  }
+
+  /* Footer styling */
+  #professional-daily-report .professional-gradient:last-child {
+    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #06b6d4 100%) !important;
+    color: white !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Remove any shadows or effects that don't print well */
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /* Force black text for better readability */
+  td, th, p, span, div {
+    color: #000 !important;
+  }
+
+  /* Exception for white text in gradients */
+  .professional-gradient,
+  .professional-gradient * {
+    color: white !important;
+  }
+
+  /* Ensure adequate spacing */
+  .mt-2 { margin-top: 4px !important; }
+  .mt-3 { margin-top: 6px !important; }
+  .mb-2 { margin-bottom: 4px !important; }
+  .mb-3 { margin-bottom: 6px !important; }
+  .p-1 { padding: 2px !important; }
+  .p-2 { padding: 4px !important; }
+  .px-3 { padding-left: 6px !important; padding-right: 6px !important; }
+  .py-1 { padding-top: 2px !important; padding-bottom: 2px !important; }
+
+  /* Signature line styling */
+  .border-b {
+    border-bottom: 2px solid #000 !important;
+  }
+}
+
+/* Screen styles for preview */
+@media screen {
+  #professional-daily-report {
+    max-width: 21cm;
+    min-height: 29.7cm;
+    margin: 0 auto;
+    background: white;
+    box-shadow: 0 0 20px rgba(0,0,0,0.1);
+  }
+}

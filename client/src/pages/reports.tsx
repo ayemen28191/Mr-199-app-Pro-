@@ -22,8 +22,10 @@ import { getCurrentDate, formatCurrency, formatDate } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Worker, Project } from "@shared/schema";
+import { ProfessionalDailyReport } from "@/components/ProfessionalDailyReport";
 import "@/components/print-styles.css";
 import "@/components/invoice-print-styles.css";
+import "@/components/professional-report-print.css";
 
 export default function Reports() {
   const [, setLocation] = useLocation();
@@ -726,18 +728,43 @@ export default function Reports() {
                       className="h-12 text-lg border-2 border-blue-200 focus:border-blue-500 rounded-xl"
                     />
                   </div>
-                  <Button 
-                    onClick={generateDailyExpensesReport}
-                    disabled={isGenerating}
-                    className="w-full h-12 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium text-lg rounded-xl transform hover:scale-105 transition-all duration-300"
-                  >
-                    {isGenerating ? (
-                      <RefreshCw className="h-5 w-5 mr-2 animate-spin" />
-                    ) : (
-                      <Eye className="h-5 w-5 mr-2" />
-                    )}
-                    إنشاء التقرير
-                  </Button>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <Button 
+                      onClick={generateDailyExpensesReport}
+                      disabled={isGenerating}
+                      className="h-12 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium text-base rounded-xl transform hover:scale-105 transition-all duration-300"
+                    >
+                      {isGenerating ? (
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Eye className="h-4 w-4 mr-2" />
+                      )}
+                      عادي
+                    </Button>
+                    <Button 
+                      onClick={() => {
+                        if (!selectedProjectId || !dailyReportDate) {
+                          toast({
+                            title: "خطأ",
+                            description: "يرجى اختيار مشروع وتاريخ",
+                            variant: "destructive",
+                          });
+                          return;
+                        }
+                        setActiveReportType("professional");
+                        generateDailyExpensesReport();
+                      }}
+                      disabled={isGenerating}
+                      className="h-12 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-medium text-base rounded-xl transform hover:scale-105 transition-all duration-300"
+                    >
+                      {isGenerating ? (
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <Printer className="h-4 w-4 mr-2" />
+                      )}
+                      احترافي
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
 
@@ -959,6 +986,13 @@ export default function Reports() {
             </CardHeader>
             <CardContent className="p-8">
               {activeReportType === 'daily' && renderDailyExpensesReport(reportData)}
+              {activeReportType === 'professional' && (
+                <ProfessionalDailyReport 
+                  data={reportData}
+                  selectedProject={selectedProject}
+                  selectedDate={dailyReportDate}
+                />
+              )}
               {activeReportType === 'worker' && renderWorkerAccountReport(reportData)}
               {activeReportType === 'material' && renderMaterialPurchasesReport(reportData)}
               {activeReportType === 'project' && renderProjectSummaryReport(reportData)}
