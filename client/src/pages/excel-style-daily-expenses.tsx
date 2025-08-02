@@ -534,7 +534,7 @@ export default function ExcelStyleDailyExpenses() {
                         <td className="amount-cell">{formatCurrency(reportData.summary?.carriedForward || 0)}</td>
                         <td>مرحل</td>
                         <td className="balance-cell">{formatCurrency(runningBalance)}</td>
-                        <td>مرحل من تاريخ {formatDate(new Date(new Date(selectedDate).getTime() - 24*60*60*1000))}</td>
+                        <td className="notes-cell">مرحل من تاريخ {formatDate(new Date(new Date(selectedDate).getTime() - 24*60*60*1000))}</td>
                       </tr>
                     );
                   }
@@ -547,7 +547,7 @@ export default function ExcelStyleDailyExpenses() {
                         <td className="amount-cell">{formatCurrency(parseFloat(transfer.amount))}</td>
                         <td>حوالة</td>
                         <td className="balance-cell">{formatCurrency(runningBalance)}</td>
-                        <td>الحوالة من {transfer.senderName} باسم المهندس محمد تاريخ {formatDate(transfer.transferDate)}</td>
+                        <td className="notes-cell">الحوالة من {transfer.senderName} باسم المهندس محمد تاريخ {formatDate(transfer.transferDate)}</td>
                       </tr>
                     );
                   });
@@ -565,7 +565,7 @@ export default function ExcelStyleDailyExpenses() {
                         <td className="amount-cell">{formatCurrency(parseFloat(attendance.paidAmount))}</td>
                         <td>{workerType}</td>
                         <td className="balance-cell">{formatCurrency(runningBalance)}</td>
-                        <td>{attendance.workDescription || `العمل ${attendance.workDays} أيام العمل ${attendance.hoursWorked || 8} ساعات`}</td>
+                        <td className="notes-cell">{attendance.workDescription || `العمل ${attendance.workDays} أيام العمل ${attendance.hoursWorked || 8} ساعات`}</td>
                       </tr>
                     );
                   });
@@ -578,7 +578,7 @@ export default function ExcelStyleDailyExpenses() {
                         <td className="amount-cell">{formatCurrency(parseFloat(expense.amount))}</td>
                         <td>نقليات</td>
                         <td className="balance-cell">{formatCurrency(runningBalance)}</td>
-                        <td>{expense.description} - {expense.worker?.name || ''}</td>
+                        <td className="notes-cell">{expense.description} - {expense.worker?.name || ''}</td>
                       </tr>
                     );
                   });
@@ -591,7 +591,7 @@ export default function ExcelStyleDailyExpenses() {
                         <td className="amount-cell">{formatCurrency(parseFloat(transfer.amount))}</td>
                         <td>نقليات العمال</td>
                         <td className="balance-cell">{formatCurrency(runningBalance)}</td>
-                        <td>حق {transfer.worker?.name} بترول مع {transfer.recipientName}</td>
+                        <td className="notes-cell">حق {transfer.worker?.name} بترول مع {transfer.recipientName}</td>
                       </tr>
                     );
                   });
@@ -604,7 +604,7 @@ export default function ExcelStyleDailyExpenses() {
                         <td className="amount-cell">{formatCurrency(parseFloat(purchase.totalAmount))}</td>
                         <td>مشتريات</td>
                         <td className="balance-cell">{formatCurrency(runningBalance)}</td>
-                        <td>شراء {purchase.material?.name} من {purchase.supplierName}</td>
+                        <td className="notes-cell">شراء {purchase.material?.name} من {purchase.supplierName}</td>
                       </tr>
                     );
                   });

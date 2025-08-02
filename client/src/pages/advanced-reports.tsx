@@ -192,8 +192,30 @@ export default function AdvancedReports() {
               text-align: center !important;
               color: #374151 !important;
               word-wrap: break-word !important;
+              word-break: break-word !important;
+              overflow-wrap: break-word !important;
+              hyphens: auto !important;
+              white-space: normal !important;
+              vertical-align: top !important;
               overflow: hidden !important;
               font-size: 7px !important;
+              line-height: 1.2 !important;
+            }
+
+            .data-table td.description-cell,
+            .data-table td.notes-cell {
+              text-align: right !important;
+              padding: 4px 6px !important;
+              max-width: 120px !important;
+              min-width: 80px !important;
+              word-wrap: break-word !important;
+              word-break: break-word !important;
+              overflow-wrap: break-word !important;
+              hyphens: auto !important;
+              white-space: normal !important;
+              line-height: 1.3 !important;
+              vertical-align: top !important;
+              font-size: 6px !important;
             }
             
             .data-table tr:nth-child(even) td {
@@ -431,12 +453,12 @@ export default function AdvancedReports() {
                       <td style={{ fontSize: '9px' }}>{new Date(expense.date).toLocaleDateString('en-CA')}</td>
                       <td>{expense.category}</td>
                       <td>{expense.subcategory || '-'}</td>
-                      <td style={{ textAlign: 'right', paddingRight: '4px', fontSize: '9px' }}>{expense.description}</td>
+                      <td className="description-cell">{expense.description}</td>
                       <td style={{ color: '#dc2626', fontWeight: 'bold' }}>
                         {expense.amount.toLocaleString('en-US')}
                       </td>
                       <td style={{ fontSize: '9px' }}>{expense.vendor || '-'}</td>
-                      <td style={{ textAlign: 'right', paddingRight: '4px', fontSize: '9px' }}>{expense.notes || '-'}</td>
+                      <td className="notes-cell">{expense.notes || '-'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -483,12 +505,12 @@ export default function AdvancedReports() {
                     <tr key={index}>
                       <td style={{ fontSize: '9px' }}>{new Date(income.date).toLocaleDateString('en-CA')}</td>
                       <td>{income.transferNumber}</td>
-                      <td style={{ textAlign: 'right', paddingRight: '4px', fontSize: '9px' }}>{income.senderName}</td>
+                      <td className="description-cell">{income.senderName}</td>
                       <td style={{ fontSize: '9px' }}>{income.transferType}</td>
                       <td style={{ color: '#059669', fontWeight: 'bold' }}>
                         {income.amount.toLocaleString('en-US')}
                       </td>
-                      <td style={{ textAlign: 'right', paddingRight: '4px', fontSize: '9px' }}>{income.notes || '-'}</td>
+                      <td className="notes-cell">{income.notes || '-'}</td>
                     </tr>
                   ))}
                 </tbody>

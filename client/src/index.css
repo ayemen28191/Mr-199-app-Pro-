@@ -83,6 +83,82 @@
 }
 
 @layer components {
+  /* Text Wrapping and Layout Improvements */
+  .text-wrap {
+    word-wrap: break-word;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    white-space: normal;
+  }
+
+  .text-wrap-anywhere {
+    word-break: break-all;
+    overflow-wrap: anywhere;
+    hyphens: auto;
+  }
+
+  /* Table Text Wrapping */
+  .table-cell-wrap {
+    word-wrap: break-word;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    white-space: normal;
+    max-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .table-cell-wrap:hover {
+    overflow: visible;
+    text-overflow: initial;
+    white-space: normal;
+    position: relative;
+    z-index: 10;
+    background: white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    border-radius: 4px;
+    padding: 8px;
+    max-width: none;
+  }
+
+  /* Description and Notes Cells */
+  .description-cell,
+  .notes-cell {
+    word-wrap: break-word;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    white-space: normal;
+    max-width: 200px;
+    line-height: 1.4;
+    text-align: right;
+    padding: 8px 12px;
+  }
+
+  /* Long Text Container */
+  .long-text-container {
+    word-wrap: break-word;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    white-space: pre-wrap;
+    line-height: 1.5;
+  }
+
+  /* Responsive Text for Mobile */
+  @media (max-width: 768px) {
+    .mobile-text-wrap {
+      word-wrap: break-word;
+      word-break: break-word;
+      overflow-wrap: break-word;
+      white-space: normal;
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+  }
+
   /* Form Error Handling Styles */
   .form-group {
     position: relative;

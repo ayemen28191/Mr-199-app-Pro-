@@ -237,6 +237,20 @@ export default function ExcelStyleWorkerStatement() {
               height: 16px;
               line-height: 1.2;
             }
+
+            .excel-table td.notes-cell {
+              white-space: normal !important;
+              word-wrap: break-word !important;
+              word-break: break-word !important;
+              overflow-wrap: break-word !important;
+              hyphens: auto !important;
+              text-align: right !important;
+              padding: 2px 4px !important;
+              line-height: 1.3 !important;
+              vertical-align: top !important;
+              max-width: 120px !important;
+              min-height: 16px !important;
+            }
             
             .excel-header {
               background-color: #FFA500;
@@ -343,7 +357,7 @@ export default function ExcelStyleWorkerStatement() {
                       <td className={remaining >= 0 ? 'amount-positive' : 'amount-negative'}>
                         {formatCurrency(Math.abs(remaining))}
                       </td>
-                      <td style={{ fontSize: '8px' }}>{record.workDescription || ''}</td>
+                      <td className="notes-cell" style={{ fontSize: '8px' }}>{record.workDescription || ''}</td>
                     </tr>
                   );
                 })}
@@ -367,7 +381,7 @@ export default function ExcelStyleWorkerStatement() {
                       <td className="amount-negative">-{formatCurrency(transferAmount)}</td>
                       <td className="amount-negative">{formatCurrency(transferAmount)}</td>
                       <td>0</td>
-                      <td style={{ fontSize: '7px' }}>{transfer.notes || transfer.transferNumber || ''}</td>
+                      <td className="notes-cell" style={{ fontSize: '7px' }}>{transfer.notes || transfer.transferNumber || ''}</td>
                     </tr>
                   );
                 })}
