@@ -338,7 +338,7 @@ export default function Reports() {
             </div>
           </div>
           
-          {/* Mobile-optimized Project Selector */}
+          {/* Mobile-optimized Project Selector - Compact version in header */}
           <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-white/10 rounded-xl backdrop-blur-sm border border-white/20">
             <div className="flex items-center gap-3 sm:gap-4 flex-col sm:flex-row">
               <div className="flex items-center gap-2 text-center sm:text-right">
@@ -346,9 +346,12 @@ export default function Reports() {
                 <span className="text-blue-200 font-medium text-sm sm:text-base">المشروع النشط:</span>
               </div>
               <div className="flex-1 w-full sm:w-auto">
-                <div className="bg-white/20 border border-white/30 rounded-lg mobile-touch-target">
-                  <ProjectSelector onProjectChange={selectProject} />
-                </div>
+                <ProjectSelector 
+                  selectedProjectId={selectedProjectId}
+                  onProjectChange={selectProject} 
+                  variant="compact"
+                  showHeader={false}
+                />
               </div>
               {selectedProject && (
                 <div className="flex items-center gap-2">
@@ -365,6 +368,14 @@ export default function Reports() {
 
       {/* Mobile-optimized Main Content */}
       <div className="container mx-auto px-3 sm:px-6 py-4 sm:py-8">
+        {/* Enhanced Project Selection Card */}
+        <ProjectSelector 
+          selectedProjectId={selectedProjectId}
+          onProjectChange={selectProject} 
+          variant="premium"
+          className="mb-8"
+        />
+
         {/* Mobile-optimized Enhanced Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3 bg-white shadow-lg rounded-xl p-1 sm:p-2 border-0 mobile-glass-effect">
