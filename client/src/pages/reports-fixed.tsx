@@ -329,6 +329,38 @@ export default function ReportsFixed() {
         <h2 className="text-xl font-bold text-foreground">التقارير المحسنة</h2>
       </div>
 
+      {/* التقارير المحسنة للهواتف */}
+      <Card className="mb-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border-green-200 dark:border-green-800">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-reverse space-x-4">
+              <div className="bg-green-600 p-3 rounded-lg">
+                <BarChart className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg text-green-900 dark:text-green-100">واجهة التقارير المحسنة للهواتف</h3>
+                <p className="text-sm text-green-700 dark:text-green-300 mt-1">
+                  تصميم احترافي محسن خصيصاً للهواتف المحمولة مع واجهة سهلة الاستخدام
+                </p>
+                <div className="flex gap-4 mt-2 text-xs text-green-600 dark:text-green-400">
+                  <span>• تصميم متجاوب للهواتف</span>
+                  <span>• واجهة سهلة ومبسطة</span>
+                  <span>• تفاعل محسن</span>
+                </div>
+              </div>
+            </div>
+            <Button
+              onClick={() => setLocation("/mobile-reports")}
+              className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 flex items-center gap-2 font-medium"
+              size="lg"
+            >
+              <BarChart className="h-4 w-4" />
+              واجهة الهواتف
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* زر التقارير المتقدمة */}
       <Card className="mb-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-blue-200 dark:border-blue-800">
         <CardContent className="p-4">

@@ -21,6 +21,7 @@ import SupplierAccountsPage from "@/pages/supplier-accounts";
 import SupplierReportPage from "@/pages/supplier-report";
 import AutocompleteAdminPage from "@/pages/autocomplete-admin";
 import AdvancedReports from "@/pages/advanced-reports";
+import MobileReports from "@/pages/mobile-reports";
 import Header from "@/components/layout/header";
 import BottomNavigation from "@/components/layout/bottom-navigation";
 
@@ -43,6 +44,7 @@ function Router() {
       <Route path="/autocomplete-admin" component={AutocompleteAdminPage} />
 
       <Route path="/reports" component={ReportsFixed} />
+      <Route path="/mobile-reports" component={MobileReports} />
       <Route path="/advanced-reports" component={AdvancedReports} />
       <Route component={NotFound} />
     </Switch>
