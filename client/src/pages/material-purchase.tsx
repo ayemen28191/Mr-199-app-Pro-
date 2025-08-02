@@ -43,6 +43,20 @@ export default function MaterialPurchase() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // دالة مساعدة لحفظ القيم في autocomplete_data
+  const saveAutocompleteValue = async (field: string, value: string | null | undefined) => {
+    if (!value || typeof value !== 'string' || !value.trim()) return;
+    try {
+      await apiRequest("POST", "/api/autocomplete", { 
+        field, 
+        value: value.trim() 
+      });
+    } catch (error) {
+      // تجاهل الأخطاء لأن هذه عملية مساعدة
+      console.log(`Failed to save autocomplete value for ${field}:`, error);
+    }
+  };
+
   const { data: materials = [] } = useQuery<Material[]>({
     queryKey: ["/api/materials"],
   });
@@ -106,7 +120,17 @@ export default function MaterialPurchase() {
       // The server will handle creating the material if needed
       return apiRequest("POST", "/api/material-purchases", data);
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      // حفظ القيم في autocomplete_data
+      await Promise.all([
+        saveAutocompleteValue('materialNames', materialName),
+        saveAutocompleteValue('materialCategories', materialCategory),
+        saveAutocompleteValue('materialUnits', materialUnit),
+        saveAutocompleteValue('supplierNames', supplierName),
+        saveAutocompleteValue('invoiceNumbers', invoiceNumber),
+        saveAutocompleteValue('notes', notes)
+      ]);
+      
       toast({
         title: "تم الحفظ",
         description: "تم حفظ شراء المواد بنجاح",
@@ -151,7 +175,17 @@ export default function MaterialPurchase() {
   const updateMaterialPurchaseMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => 
       apiRequest("PUT", `/api/material-purchases/${id}`, data),
-    onSuccess: () => {
+    onSuccess: async () => {
+      // حفظ القيم في autocomplete_data
+      await Promise.all([
+        saveAutocompleteValue('materialNames', materialName),
+        saveAutocompleteValue('materialCategories', materialCategory),
+        saveAutocompleteValue('materialUnits', materialUnit),
+        saveAutocompleteValue('supplierNames', supplierName),
+        saveAutocompleteValue('invoiceNumbers', invoiceNumber),
+        saveAutocompleteValue('notes', notes)
+      ]);
+      
       toast({
         title: "تم التحديث",
         description: "تم تحديث شراء المواد بنجاح",

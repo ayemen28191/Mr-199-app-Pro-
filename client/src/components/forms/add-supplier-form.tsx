@@ -46,6 +46,20 @@ export default function AddSupplierForm({
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // دالة مساعدة لحفظ القيم في autocomplete_data
+  const saveAutocompleteValue = async (field: string, value: string | null | undefined) => {
+    if (!value || typeof value !== 'string' || !value.trim()) return;
+    try {
+      await apiRequest("POST", "/api/autocomplete", { 
+        field, 
+        value: value.trim() 
+      });
+    } catch (error) {
+      // تجاهل الأخطاء لأن هذه عملية مساعدة
+      console.log(`Failed to save autocomplete value for ${field}:`, error);
+    }
+  };
+
   const addSupplierMutation = useMutation({
     mutationFn: (data: InsertSupplier) => {
       if (supplier) {
@@ -54,11 +68,21 @@ export default function AddSupplierForm({
         return apiRequest("POST", "/api/suppliers", data);
       }
     },
-    onSuccess: () => {
+    onSuccess: async (data) => {
       toast({
         title: "تم الحفظ",
         description: supplier ? "تم تعديل المورد بنجاح" : "تم إضافة المورد بنجاح",
       });
+
+      // حفظ القيم في autocomplete_data
+      await Promise.all([
+        saveAutocompleteValue('supplier_name', name),
+        saveAutocompleteValue('supplier_contact_person', contactPerson),
+        saveAutocompleteValue('supplier_phone', phone),
+        saveAutocompleteValue('supplier_address', address),
+        saveAutocompleteValue('supplier_payment_terms', paymentTerms)
+      ]);
+
       if (!supplier) {
         resetForm();
       }

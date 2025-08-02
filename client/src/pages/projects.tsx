@@ -82,11 +82,28 @@ export default function ProjectsPage() {
     },
   });
 
+  // دالة مساعدة لحفظ القيم في autocomplete_data
+  const saveAutocompleteValue = async (field: string, value: string | null | undefined) => {
+    if (!value || typeof value !== 'string' || !value.trim()) return;
+    try {
+      await apiRequest("POST", "/api/autocomplete", { 
+        field, 
+        value: value.trim() 
+      });
+    } catch (error) {
+      // تجاهل الأخطاء لأن هذه عملية مساعدة
+      console.log(`Failed to save autocomplete value for ${field}:`, error);
+    }
+  };
+
   // Create project mutation
   const createProjectMutation = useMutation({
     mutationFn: (data: InsertProject) =>
       apiRequest("POST", "/api/projects", data),
-    onSuccess: () => {
+    onSuccess: async (data, variables) => {
+      // حفظ اسم المشروع في autocomplete_data
+      await saveAutocompleteValue('projectNames', variables.name);
+      
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
       queryClient.invalidateQueries({ queryKey: ["/api/projects/with-stats"] });
       toast({ title: "تم إنشاء المشروع بنجاح" });
@@ -106,7 +123,10 @@ export default function ProjectsPage() {
   const updateProjectMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: InsertProject }) =>
       apiRequest("PATCH", `/api/projects/${id}`, data),
-    onSuccess: () => {
+    onSuccess: async (result, variables) => {
+      // حفظ اسم المشروع في autocomplete_data
+      await saveAutocompleteValue('projectNames', variables.data.name);
+      
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
       queryClient.invalidateQueries({ queryKey: ["/api/projects/with-stats"] });
       toast({ title: "تم تحديث المشروع بنجاح" });
