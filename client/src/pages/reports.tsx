@@ -1,13 +1,21 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Receipt, UserCheck, Package, PieChart, Eye, Download, Share2, FileSpreadsheet, Printer } from "lucide-react";
+import { 
+  ArrowRight, Receipt, UserCheck, Package, PieChart, Eye, Download, Share2, 
+  FileSpreadsheet, Printer, Calendar, TrendingUp, Filter, RefreshCw,
+  BarChart3, Database, Clock, Settings, Users, DollarSign, FileText,
+  Activity, Target, Briefcase, ChevronRight, Grid3X3, List, Search,
+  ExternalLink, AlertCircle, CheckCircle2
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { useSelectedProject } from "@/hooks/use-selected-project";
 import ProjectSelector from "@/components/project-selector";
 import { getCurrentDate, formatCurrency, formatDate } from "@/lib/utils";
@@ -33,6 +41,9 @@ export default function Reports() {
   // Report display states
   const [activeReportType, setActiveReportType] = useState<string | null>(null);
   const [reportData, setReportData] = useState<any>(null);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [activeTab, setActiveTab] = useState('quick-reports');
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // Fetch projects and workers data
   const { data: projects = [] } = useQuery<Project[]>({
@@ -253,120 +264,226 @@ export default function Reports() {
     }
   };
 
+  const quickStats = [
+    {
+      title: "التقارير المُنشأة اليوم",
+      value: "12",
+      change: "+23%",
+      icon: FileText,
+      color: "text-blue-600",
+      bgColor: "bg-blue-50",
+      trend: "up"
+    },
+    {
+      title: "المشاريع النشطة",
+      value: projects.filter(p => p.status === 'active').length.toString(),
+      change: "+5%",
+      icon: Briefcase,
+      color: "text-green-600",
+      bgColor: "bg-green-50",
+      trend: "up"
+    },
+    {
+      title: "إجمالي المصروفات",
+      value: "298,200",
+      change: "+12%",
+      icon: DollarSign,
+      color: "text-purple-600",
+      bgColor: "bg-purple-50",
+      trend: "up"
+    },
+    {
+      title: "العمال النشطين",
+      value: workers.length.toString(),
+      change: "+8%",
+      icon: Users,
+      color: "text-orange-600",
+      bgColor: "bg-orange-50",
+      trend: "up"
+    }
+  ];
+
   const reportTypes = [
     {
+      id: 'daily-expenses',
       icon: Receipt,
       title: "كشف المصروفات اليومية",
-      description: "عرض مصروفات يوم محدد",
-      color: "bg-primary",
-      hoverColor: "hover:bg-primary/90",
-      textColor: "text-primary-foreground",
+      description: "عرض تفصيلي لمصروفات يوم محدد مع الحوالات والأرصدة",
+      category: "مالية",
+      complexity: "بسيط",
+      estimatedTime: "2-3 دقائق",
+      color: "bg-gradient-to-br from-blue-500 to-blue-600",
+      hoverColor: "hover:from-blue-600 hover:to-blue-700",
+      textColor: "text-white",
       form: (
-        <div className="grid grid-cols-2 gap-3">
-          <Input
-            type="date"
-            value={dailyReportDate}
-            onChange={(e) => setDailyReportDate(e.target.value)}
-            className="text-sm"
-          />
-          <div className="text-sm p-2 bg-muted rounded border">
-            {selectedProject?.name || "لم يتم اختيار مشروع"}
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 gap-3">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">التاريخ المطلوب</label>
+              <Input
+                type="date"
+                value={dailyReportDate}
+                onChange={(e) => setDailyReportDate(e.target.value)}
+                className="h-11"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">المشروع</label>
+              <div className="p-3 bg-gray-50 rounded-lg border text-sm font-medium">
+                <div className="flex items-center gap-2">
+                  <Briefcase className="h-4 w-4 text-gray-500" />
+                  {selectedProject?.name || "لم يتم اختيار مشروع"}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       ),
       onGenerate: generateDailyExpensesReport,
     },
     {
+      id: 'worker-account',
       icon: UserCheck,
       title: "كشف حساب عامل",
-      description: "حساب عامل لفترة محددة",
-      color: "bg-secondary",
-      hoverColor: "hover:bg-secondary/90",
-      textColor: "text-secondary-foreground",
+      description: "تقرير مفصل لحساب عامل محدد لفترة زمنية",
+      category: "موارد بشرية",
+      complexity: "متوسط",
+      estimatedTime: "3-5 دقائق",
+      color: "bg-gradient-to-br from-green-500 to-green-600",
+      hoverColor: "hover:from-green-600 hover:to-green-700",
+      textColor: "text-white",
       form: (
-        <div className="space-y-2">
-          <Select value={selectedWorkerId} onValueChange={setSelectedWorkerId}>
-            <SelectTrigger className="text-sm">
-              <SelectValue placeholder="اختر العامل..." />
-            </SelectTrigger>
-            <SelectContent>
-              {workers.map((worker) => (
-                <SelectItem key={worker.id} value={worker.id}>
-                  {worker.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">اختيار العامل</label>
+            <Select value={selectedWorkerId} onValueChange={setSelectedWorkerId}>
+              <SelectTrigger className="h-11">
+                <SelectValue placeholder="اختر العامل..." />
+              </SelectTrigger>
+              <SelectContent>
+                {workers.map((worker) => (
+                  <SelectItem key={worker.id} value={worker.id}>
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      {worker.name}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <div className="grid grid-cols-2 gap-3">
-            <Input
-              type="date"
-              value={workerAccountDate1}
-              onChange={(e) => setWorkerAccountDate1(e.target.value)}
-              placeholder="من تاريخ"
-              className="text-sm"
-            />
-            <Input
-              type="date"
-              value={workerAccountDate2}
-              onChange={(e) => setWorkerAccountDate2(e.target.value)}
-              placeholder="إلى تاريخ"
-              className="text-sm"
-            />
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">من تاريخ</label>
+              <Input
+                type="date"
+                value={workerAccountDate1}
+                onChange={(e) => setWorkerAccountDate1(e.target.value)}
+                className="h-11"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">إلى تاريخ</label>
+              <Input
+                type="date"
+                value={workerAccountDate2}
+                onChange={(e) => setWorkerAccountDate2(e.target.value)}
+                className="h-11"
+              />
+            </div>
           </div>
         </div>
       ),
       onGenerate: generateWorkerAccountReport,
     },
     {
+      id: 'material-purchases',
       icon: Package,
       title: "كشف المواد المشتراة",
-      description: "تقرير المواد والتوريدات",
-      color: "bg-success",
-      hoverColor: "hover:bg-success/90",
-      textColor: "text-success-foreground",
+      description: "تقرير شامل للمواد والتوريدات مع التفاصيل المالية",
+      category: "مواد",
+      complexity: "متوسط",
+      estimatedTime: "4-6 دقائق",
+      color: "bg-gradient-to-br from-orange-500 to-orange-600",
+      hoverColor: "hover:from-orange-600 hover:to-orange-700",
+      textColor: "text-white",
       form: (
-        <div className="grid grid-cols-2 gap-3">
-          <Input
-            type="date"
-            value={materialReportDate1}
-            onChange={(e) => setMaterialReportDate1(e.target.value)}
-            placeholder="من تاريخ"
-            className="text-sm"
-          />
-          <Input
-            type="date"
-            value={materialReportDate2}
-            onChange={(e) => setMaterialReportDate2(e.target.value)}
-            placeholder="إلى تاريخ"
-            className="text-sm"
-          />
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">من تاريخ</label>
+              <Input
+                type="date"
+                value={materialReportDate1}
+                onChange={(e) => setMaterialReportDate1(e.target.value)}
+                className="h-11"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">إلى تاريخ</label>
+              <Input
+                type="date"
+                value={materialReportDate2}
+                onChange={(e) => setMaterialReportDate2(e.target.value)}
+                className="h-11"
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">المشروع</label>
+            <div className="p-3 bg-gray-50 rounded-lg border text-sm font-medium">
+              <div className="flex items-center gap-2">
+                <Package className="h-4 w-4 text-gray-500" />
+                {selectedProject?.name || "لم يتم اختيار مشروع"}
+              </div>
+            </div>
+          </div>
         </div>
       ),
       onGenerate: generateMaterialPurchasesReport,
     },
     {
+      id: 'project-summary',
       icon: PieChart,
       title: "ملخص المشروع",
-      description: "تقرير شامل للمشروع",
-      color: "bg-purple-600",
-      hoverColor: "hover:bg-purple-700",
+      description: "تقرير شامل ومفصل للمشروع مع الإحصائيات والمؤشرات",
+      category: "إحصائيات",
+      complexity: "متقدم",
+      estimatedTime: "5-8 دقائق",
+      color: "bg-gradient-to-br from-purple-500 to-purple-600",
+      hoverColor: "hover:from-purple-600 hover:to-purple-700",
       textColor: "text-white",
       form: (
-        <div className="grid grid-cols-2 gap-3">
-          <Input
-            type="date"
-            value={projectSummaryDate1}
-            onChange={(e) => setProjectSummaryDate1(e.target.value)}
-            placeholder="من تاريخ"
-            className="text-sm"
-          />
-          <Input
-            type="date"
-            value={projectSummaryDate2}
-            onChange={(e) => setProjectSummaryDate2(e.target.value)}
-            placeholder="إلى تاريخ"
-            className="text-sm"
-          />
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">من تاريخ</label>
+              <Input
+                type="date"
+                value={projectSummaryDate1}
+                onChange={(e) => setProjectSummaryDate1(e.target.value)}
+                className="h-11"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">إلى تاريخ</label>
+              <Input
+                type="date"
+                value={projectSummaryDate2}
+                onChange={(e) => setProjectSummaryDate2(e.target.value)}
+                className="h-11"
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700">المشروع</label>
+            <div className="p-3 bg-gray-50 rounded-lg border text-sm font-medium">
+              <div className="flex items-center gap-2">
+                <BarChart3 className="h-4 w-4 text-gray-500" />
+                {selectedProject?.name || "لم يتم اختيار مشروع"}
+              </div>
+            </div>
+          </div>
         </div>
       ),
       onGenerate: generateProjectSummaryReport,
@@ -574,11 +691,13 @@ export default function Reports() {
               <div>
                 <div className="font-medium">{purchase.material?.name}</div>
                 <div className="text-muted-foreground">{purchase.quantity} {purchase.material?.unit}</div>
-                <div className="text-muted-foreground">{purchase.supplierName}</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  {purchase.supplierName} • {formatDate(purchase.purchaseDate)}
+                </div>
               </div>
-              <div className="text-left">
+              <div className="text-right">
                 <div className="font-medium">{formatCurrency(purchase.totalAmount)}</div>
-                <div className="text-muted-foreground">{formatDate(purchase.purchaseDate)}</div>
+                <div className="text-xs text-muted-foreground">{formatCurrency(purchase.unitPrice)}/وحدة</div>
               </div>
             </div>
           </div>
@@ -588,12 +707,12 @@ export default function Reports() {
   );
 
   const ProjectSummaryReport = ({ data }: { data: any }) => (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="bg-muted p-4 rounded-lg">
-        <h5 className="font-medium mb-2">ملخص {data.project?.name}</h5>
+        <h5 className="font-medium mb-3">ملخص المشروع من {formatDate(data.dateFrom)} إلى {formatDate(data.dateTo)}</h5>
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
-            <span>إجمالي الدخل: </span>
+            <span>إجمالي الإيرادات: </span>
             <span className="font-bold text-green-600">{formatCurrency(data.summary?.totalIncome || 0)}</span>
           </div>
           <div>
@@ -612,147 +731,382 @@ export default function Reports() {
   );
 
   return (
-    <div className="p-4 slide-in">
-      {/* Header with Back Button */}
-      <div className="flex items-center mb-4">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setLocation("/")}
-          className="ml-3 p-2"
-        >
-          <ArrowRight className="h-5 w-5" />
-        </Button>
-        <h2 className="text-xl font-bold text-foreground">التقارير</h2>
-      </div>
-
-      <ProjectSelector
-        selectedProjectId={selectedProjectId}
-        onProjectChange={selectProject}
-      />
-
-      {/* Report Types */}
-      <div className="space-y-3">
-        {reportTypes.map((report, index) => {
-          const Icon = report.icon;
-          return (
-            <Card key={index}>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center space-x-reverse space-x-3">
-                    <Icon className={`h-6 w-6 ${report.color.replace('bg-', 'text-')}`} />
-                    <div>
-                      <h4 className="font-medium text-foreground">{report.title}</h4>
-                      <p className="text-sm text-muted-foreground">{report.description}</p>
-                    </div>
-                  </div>
-                  <Button
-                    onClick={report.onGenerate}
-                    className={`${report.color} ${report.hoverColor} ${report.textColor} px-4 py-2 text-sm`}
-                  >
-                    إنشاء
-                  </Button>
-                </div>
-                {report.form}
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
-
-      {/* Generated Report Display */}
-      {activeReportType && reportData && (
-        <Card className="mt-6">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <Eye className="h-5 w-5 text-primary" />
-                {activeReportType === 'daily' && 'كشف المصروفات اليومية'}
-                {activeReportType === 'worker' && 'كشف حساب العامل'}
-                {activeReportType === 'materials' && 'كشف المواد المشتراة'}
-                {activeReportType === 'summary' && 'ملخص المشروع'}
-              </CardTitle>
-              <div className="flex gap-2 no-print">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={printReport}
-                  className="flex items-center gap-2 hover:bg-blue-50 hover:text-blue-700 transition-colors"
-                >
-                  <Printer className="h-4 w-4" />
-                  طباعة
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => {
-                    let exportData: any[] = [];
-                    let filename = '';
-                    
-                    if (activeReportType === 'daily') {
-                      exportData = [
-                        ...reportData.fundTransfers?.map((t: any) => ({
-                          نوع: 'حوالة مالية',
-                          المرسل: t.senderName,
-                          المبلغ: t.amount,
-                          التاريخ: t.transferDate
-                        })) || [],
-                        ...reportData.workerAttendance?.map((a: any) => ({
-                          نوع: 'حضور عامل',
-                          العامل: a.worker?.name,
-                          المبلغ: a.paidAmount,
-                          التاريخ: a.date
-                        })) || []
-                      ];
-                      filename = `daily-expenses-${reportData.date}`;
-                    } else if (activeReportType === 'materials') {
-                      exportData = reportData.purchases?.map((p: any) => ({
-                        المادة: p.material?.name,
-                        الكمية: p.quantity,
-                        الوحدة: p.material?.unit,
-                        'سعر الوحدة': p.unitPrice,
-                        'المبلغ الإجمالي': p.totalAmount,
-                        المورد: p.supplierName,
-                        'تاريخ الشراء': p.purchaseDate
-                      })) || [];
-                      filename = `material-purchases-${reportData.dateFrom}-${reportData.dateTo}`;
-                    }
-                    
-                    if (exportData.length > 0) {
-                      exportToCSV(exportData, filename);
-                    }
-                  }}
-                  className="flex items-center gap-2 hover:bg-green-50 hover:text-green-700 transition-colors"
-                >
-                  <FileSpreadsheet className="h-4 w-4" />
-                  تصدير Excel
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => {
-                    setActiveReportType(null);
-                    setReportData(null);
-                  }}
-                  className="hover:bg-red-50 hover:text-red-700 transition-colors"
-                >
-                  إغلاق
-                </Button>
+    <div className="min-h-screen bg-gray-50/50">
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="container mx-auto px-6 py-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <BarChart3 className="h-8 w-8 text-blue-600" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">مركز التقارير والتحليلات</h1>
+                <p className="text-gray-600 mt-1">إدارة وإنشاء التقارير المالية والإدارية المتقدمة</p>
               </div>
             </div>
-          </CardHeader>
-          <CardContent>
-            {activeReportType === 'daily' && <DailyExpensesReport data={reportData} />}
-            {activeReportType === 'worker' && (
-              <div className="text-center py-8 text-muted-foreground">
-                عذراً، تقرير حساب العامل غير متوفر حالياً
+            <div className="flex items-center gap-3">
+              <Button variant="outline" size="sm" className="gap-2">
+                <Settings className="h-4 w-4" />
+                إعدادات
+              </Button>
+              <Button variant="outline" onClick={() => setLocation("/")} className="gap-2">
+                <ArrowRight className="h-4 w-4" />
+                العودة للرئيسية
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-6 py-6 space-y-6">
+        {/* Quick Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {quickStats.map((stat, index) => {
+            const IconComponent = stat.icon;
+            return (
+              <Card key={index} className="relative overflow-hidden hover:shadow-lg transition-all duration-300">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600 mb-1">{stat.title}</p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-2xl font-bold text-gray-900">{stat.value}</span>
+                        <Badge variant={stat.trend === 'up' ? 'default' : 'secondary'} className="text-xs">
+                          {stat.change}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div className={`p-3 rounded-lg ${stat.bgColor}`}>
+                      <IconComponent className={`h-6 w-6 ${stat.color}`} />
+                    </div>
+                  </div>
+                  <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 to-purple-500"></div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+
+        {/* Project Selector */}
+        <Card className="border-2 border-dashed border-gray-300 hover:border-blue-400 transition-colors">
+          <CardContent className="p-6">
+            <div className="flex items-center gap-4">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <Target className="h-6 w-6 text-blue-600" />
               </div>
-            )}
-            {activeReportType === 'materials' && <MaterialPurchasesReport data={reportData} />}
-            {activeReportType === 'summary' && <ProjectSummaryReport data={reportData} />}
+              <div className="flex-1">
+                <h3 className="font-semibold text-gray-900 mb-1">اختيار المشروع</h3>
+                <p className="text-sm text-gray-600">يرجى اختيار المشروع لإنشاء التقارير</p>
+              </div>
+              <div className="min-w-[300px]">
+                <ProjectSelector 
+                  selectedProjectId={selectedProjectId} 
+                  onProjectChange={selectProject} 
+                />
+              </div>
+            </div>
           </CardContent>
         </Card>
-      )}
+
+        {/* Main Content */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <div className="flex items-center justify-between">
+            <TabsList className="grid w-full max-w-md grid-cols-2">
+              <TabsTrigger value="quick-reports" className="gap-2">
+                <Activity className="h-4 w-4" />
+                التقارير السريعة
+              </TabsTrigger>
+              <TabsTrigger value="advanced-reports" className="gap-2">
+                <Database className="h-4 w-4" />
+                التقارير المتقدمة
+              </TabsTrigger>
+            </TabsList>
+            
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Clock className="h-4 w-4" />
+                آخر تحديث: {new Date().toLocaleTimeString('ar-EG')}
+              </div>
+              <Button variant="outline" size="sm" className="gap-2">
+                <RefreshCw className="h-4 w-4" />
+                تحديث
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="gap-2">
+                    {viewMode === 'grid' ? <Grid3X3 className="h-4 w-4" /> : <List className="h-4 w-4" />}
+                    العرض
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => setViewMode('grid')}>
+                    <Grid3X3 className="h-4 w-4 mr-2" />
+                    عرض شبكي
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setViewMode('list')}>
+                    <List className="h-4 w-4 mr-2" />
+                    عرض قائمة
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+
+          <TabsContent value="quick-reports" className="space-y-6">
+            {viewMode === 'grid' ? (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {reportTypes.map((reportType, index) => {
+                  const IconComponent = reportType.icon;
+                  return (
+                    <Card key={reportType.id} className="group relative overflow-hidden hover:shadow-xl transition-all duration-300 border-0 shadow-lg">
+                      {/* Header */}
+                      <div className={`${reportType.color} ${reportType.hoverColor} ${reportType.textColor} p-6 transition-all duration-300`}>
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
+                              <IconComponent className="h-7 w-7" />
+                            </div>
+                            <div>
+                              <h3 className="text-xl font-bold mb-1">{reportType.title}</h3>
+                              <p className="text-sm opacity-90 leading-relaxed">{reportType.description}</p>
+                            </div>
+                          </div>
+                          <ChevronRight className="h-5 w-5 opacity-70 group-hover:translate-x-1 transition-transform" />
+                        </div>
+                        
+                        <div className="flex items-center gap-4 mt-4">
+                          <Badge variant="secondary" className="bg-white/20 text-white border-white/30">
+                            {reportType.category}
+                          </Badge>
+                          <Badge variant="outline" className="bg-white/10 text-white border-white/30">
+                            {reportType.complexity}
+                          </Badge>
+                          <div className="flex items-center gap-1 text-xs opacity-75">
+                            <Clock className="h-3 w-3" />
+                            {reportType.estimatedTime}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Content */}
+                      <CardContent className="p-6 bg-white">
+                        <div className="space-y-6">
+                          {reportType.form}
+                          
+                          <div className="flex items-center gap-3">
+                            <Button 
+                              onClick={() => {
+                                setIsGenerating(true);
+                                reportType.onGenerate();
+                                setTimeout(() => setIsGenerating(false), 2000);
+                              }}
+                              disabled={isGenerating}
+                              className="flex-1 h-12 text-base font-semibold gap-2 shadow-lg hover:shadow-xl transition-all"
+                            >
+                              {isGenerating ? (
+                                <RefreshCw className="h-5 w-5 animate-spin" />
+                              ) : (
+                                <Eye className="h-5 w-5" />
+                              )}
+                              {isGenerating ? 'جاري الإنشاء...' : 'إنشاء التقرير'}
+                            </Button>
+                            
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="lg" className="px-4">
+                                  <Settings className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-48">
+                                <DropdownMenuItem>
+                                  <Calendar className="h-4 w-4 mr-2" />
+                                  جدولة التقرير
+                                </DropdownMenuItem>
+                                <DropdownMenuItem>
+                                  <Share2 className="h-4 w-4 mr-2" />
+                                  مشاركة النموذج
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem>
+                                  <ExternalLink className="h-4 w-4 mr-2" />
+                                  فتح في نافذة جديدة
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </div>
+                      </CardContent>
+                      
+                      {/* Status Indicator */}
+                      <div className="absolute top-4 right-4">
+                        {selectedProjectId ? (
+                          <CheckCircle2 className="h-5 w-5 text-white opacity-80" />
+                        ) : (
+                          <AlertCircle className="h-5 w-5 text-white opacity-80" />
+                        )}
+                      </div>
+                    </Card>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {reportTypes.map((reportType, index) => {
+                  const IconComponent = reportType.icon;
+                  return (
+                    <Card key={reportType.id} className="hover:shadow-lg transition-all duration-300">
+                      <CardContent className="p-6">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-4">
+                            <div className={`p-3 rounded-lg ${reportType.color.replace('bg-gradient-to-br from-', 'bg-').replace(' to-' + reportType.color.split(' to-')[1], '')}/10`}>
+                              <IconComponent className="h-6 w-6 text-gray-700" />
+                            </div>
+                            <div>
+                              <h3 className="font-semibold text-gray-900">{reportType.title}</h3>
+                              <p className="text-sm text-gray-600 mt-1">{reportType.description}</p>
+                              <div className="flex items-center gap-2 mt-2">
+                                <Badge variant="secondary" className="text-xs">{reportType.category}</Badge>
+                                <Badge variant="outline" className="text-xs">{reportType.complexity}</Badge>
+                              </div>
+                            </div>
+                          </div>
+                          <Button onClick={reportType.onGenerate} className="gap-2">
+                            <Eye className="h-4 w-4" />
+                            إنشاء
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="advanced-reports" className="space-y-6">
+            <Card>
+              <CardContent className="p-8 text-center">
+                <div className="max-w-md mx-auto">
+                  <div className="p-4 bg-gray-100 rounded-full w-16 h-16 mx-auto mb-4">
+                    <Database className="h-8 w-8 text-gray-600 mx-auto mt-1" />
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">التقارير المتقدمة</h3>
+                  <p className="text-gray-600 mb-6">
+                    ستتوفر قريباً مجموعة من التقارير المتقدمة والتحليلات التفصيلية
+                  </p>
+                  <Button variant="outline" disabled>
+                    قريباً
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+
+        {/* Generated Report Display */}
+        {activeReportType && reportData && (
+          <Card className="shadow-xl border-0">
+            <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 border-b">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-3">
+                  <div className="p-2 bg-white rounded-lg shadow-sm">
+                    <Eye className="h-5 w-5 text-blue-600" />
+                  </div>
+                  <div>
+                    <div className="text-lg font-bold text-gray-900">
+                      {activeReportType === 'daily' && 'كشف المصروفات اليومية'}
+                      {activeReportType === 'worker' && 'كشف حساب العامل'}
+                      {activeReportType === 'materials' && 'كشف المواد المشتراة'}
+                      {activeReportType === 'summary' && 'ملخص المشروع'}
+                    </div>
+                    <div className="text-sm text-gray-600 mt-1">
+                      تم إنشاؤه في {new Date().toLocaleString('ar-EG')}
+                    </div>
+                  </div>
+                </CardTitle>
+                <div className="flex gap-2 no-print">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={printReport}
+                    className="flex items-center gap-2 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                  >
+                    <Printer className="h-4 w-4" />
+                    طباعة
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => {
+                      let exportData: any[] = [];
+                      let filename = '';
+                      
+                      if (activeReportType === 'daily') {
+                        exportData = [
+                          ...reportData.fundTransfers?.map((t: any) => ({
+                            نوع: 'حوالة مالية',
+                            المرسل: t.senderName,
+                            المبلغ: t.amount,
+                            التاريخ: t.transferDate
+                          })) || [],
+                          ...reportData.workerAttendance?.map((a: any) => ({
+                            نوع: 'حضور عامل',
+                            العامل: a.worker?.name,
+                            المبلغ: a.paidAmount,
+                            التاريخ: a.date
+                          })) || []
+                        ];
+                        filename = `daily-expenses-${reportData.date}`;
+                      } else if (activeReportType === 'materials') {
+                        exportData = reportData.purchases?.map((p: any) => ({
+                          المادة: p.material?.name,
+                          الكمية: p.quantity,
+                          الوحدة: p.material?.unit,
+                          'سعر الوحدة': p.unitPrice,
+                          'المبلغ الإجمالي': p.totalAmount,
+                          المورد: p.supplierName,
+                          'تاريخ الشراء': p.purchaseDate
+                        })) || [];
+                        filename = `material-purchases-${reportData.dateFrom}-${reportData.dateTo}`;
+                      }
+                      
+                      if (exportData.length > 0) {
+                        exportToCSV(exportData, filename);
+                      }
+                    }}
+                    className="flex items-center gap-2 hover:bg-green-50 hover:text-green-700 transition-colors"
+                  >
+                    <FileSpreadsheet className="h-4 w-4" />
+                    تصدير Excel
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => {
+                      setActiveReportType(null);
+                      setReportData(null);
+                    }}
+                    className="hover:bg-red-50 hover:text-red-700 transition-colors"
+                  >
+                    إغلاق
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-6">
+              {activeReportType === 'daily' && <DailyExpensesReport data={reportData} />}
+              {activeReportType === 'worker' && (
+                <div className="text-center py-8 text-muted-foreground">
+                  عذراً، تقرير حساب العامل غير متوفر حالياً
+                </div>
+              )}
+              {activeReportType === 'materials' && <MaterialPurchasesReport data={reportData} />}
+              {activeReportType === 'summary' && <ProjectSummaryReport data={reportData} />}
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   );
 }
