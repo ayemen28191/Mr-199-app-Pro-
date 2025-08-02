@@ -23,6 +23,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Worker, Project } from "@shared/schema";
 import "@/components/print-styles.css";
+import "@/components/invoice-print-styles.css";
 
 export default function Reports() {
   const [, setLocation] = useLocation();
@@ -319,10 +320,10 @@ export default function Reports() {
     const selectedProject = projects.find(p => p.id === selectedProjectId);
 
     return (
-      <div className="print-content bg-white min-h-screen" dir="rtl">
-        {/* Professional Header with Wave Design */}
-        <div className="relative bg-gradient-to-r from-cyan-500 to-blue-600 text-white overflow-hidden">
-          {/* Wave shape at bottom */}
+      <div className="print-content invoice-preview bg-white min-h-screen" dir="rtl">
+        {/* Professional Invoice Header */}
+        <div className="relative professional-gradient print-header text-white overflow-hidden preserve-color">
+          {/* Decorative Wave */}
           <div className="absolute bottom-0 left-0 w-full h-16">
             <svg viewBox="0 0 1200 120" preserveAspectRatio="none" className="w-full h-full">
               <path d="M0,120 C150,80 350,40 600,60 C850,80 1050,100 1200,80 L1200,120 Z" fill="white"></path>
@@ -333,36 +334,42 @@ export default function Reports() {
             <div className="flex justify-between items-start mb-8">
               {/* Company Logo and Name */}
               <div className="flex items-center gap-4">
-                <div className="w-16 h-16 bg-white bg-opacity-20 rounded-lg flex items-center justify-center backdrop-blur-sm">
+                <div className="company-logo w-16 h-16 bg-white bg-opacity-20 rounded-lg flex items-center justify-center backdrop-blur-sm">
                   <FileText className="h-8 w-8 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold">نظام إدارة المشاريع</h1>
-                  <p className="text-cyan-100 text-sm">المشاريع الهندسية والإنشائية</p>
+                  <h1 className="text-2xl font-bold">نظام إدارة البناء</h1>
+                  <p className="text-cyan-100 text-sm">Building Management System</p>
                 </div>
               </div>
               
-              {/* Invoice Title */}
+              {/* Invoice Title - Similar to template */}
               <div className="text-left">
-                <h2 className="text-4xl font-bold text-white mb-2">كشف المصروفات</h2>
-                <div className="bg-white bg-opacity-20 rounded-lg p-3 backdrop-blur-sm">
-                  <p className="text-sm mb-1">رقم الكشف: {Math.floor(Math.random() * 10000).toString().padStart(4, '0')}</p>
-                  <p className="text-sm">التاريخ: {formatDate(dailyReportDate)}</p>
-                </div>
+                <h2 className="text-4xl font-bold text-white mb-2">كشف مصروفات</h2>
+                <p className="text-cyan-100 text-sm">DAILY EXPENSE REPORT</p>
               </div>
             </div>
 
-            {/* Project Information */}
+            {/* Project Information - Invoice to: section */}
             <div className="bg-white bg-opacity-10 rounded-lg p-6 backdrop-blur-sm">
-              <h3 className="text-lg font-bold mb-3">معلومات المشروع:</h3>
-              <div className="grid grid-cols-2 gap-4">
+              <h3 className="text-lg font-bold mb-3">كشف مصروفات إلى:</h3>
+              <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <p className="text-cyan-100 text-sm">اسم المشروع</p>
-                  <p className="font-semibold">{selectedProject?.name || 'غير محدد'}</p>
+                  <p className="font-bold text-lg">{selectedProject?.name || 'غير محدد'}</p>
+                  <p className="text-cyan-100 text-sm">{selectedProject?.location || 'الموقع غير محدد'}</p>
+                  <p className="text-cyan-100 text-sm">{selectedProject?.manager || 'المدير غير محدد'}</p>
                 </div>
-                <div>
-                  <p className="text-cyan-100 text-sm">تاريخ التقرير</p>
-                  <p className="font-semibold">{formatDate(dailyReportDate)}</p>
+                <div className="text-left">
+                  <div className="space-y-2">
+                    <div>
+                      <span className="text-cyan-100 text-sm">رقم الكشف:</span>
+                      <p className="font-bold text-lg">{Math.floor(Math.random() * 10000).toString().padStart(4, '0')}</p>
+                    </div>
+                    <div>
+                      <span className="text-cyan-100 text-sm">التاريخ:</span>
+                      <p className="font-bold">{formatDate(dailyReportDate)}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -370,51 +377,56 @@ export default function Reports() {
         </div>
 
         {/* Main Content */}
-        <div className="px-8 py-8">
-          {/* Financial Summary Table */}
-          <div className="mb-8">
-            <table className="w-full border-collapse shadow-lg rounded-lg overflow-hidden">
+        <div className="px-8 py-8 page-break-inside-avoid">
+          {/* Invoice-Style Items Table */}
+          <div className="mb-8 print-spacing">
+            <table className="invoice-table invoice-table-screen w-full border-collapse shadow-lg rounded-lg overflow-hidden">
               <thead>
-                <tr className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white">
-                  <th className="px-6 py-4 text-right font-bold">البيان</th>
-                  <th className="px-6 py-4 text-center font-bold">المبلغ (ر.ي)</th>
-                  <th className="px-6 py-4 text-center font-bold">النوع</th>
+                <tr className="professional-gradient preserve-color text-white">
+                  <th className="px-4 py-4 text-center font-bold border border-white">م.</th>
+                  <th className="px-6 py-4 text-right font-bold border border-white">وصف البند</th>
+                  <th className="px-4 py-4 text-center font-bold border border-white">السعر</th>
+                  <th className="px-4 py-4 text-center font-bold border border-white">الكمية</th>
+                  <th className="px-4 py-4 text-center font-bold border border-white">المجموع</th>
                 </tr>
               </thead>
               <tbody className="bg-white">
-                <tr className="border-b border-gray-200 hover:bg-gray-50">
-                  <td className="px-6 py-4 font-medium">الرصيد المرحل من اليوم السابق</td>
-                  <td className="px-6 py-4 text-center font-bold text-blue-600">{formatCurrency(carriedForward)}</td>
-                  <td className="px-6 py-4 text-center">
-                    <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">رصيد مرحل</span>
-                  </td>
+                <tr className="odd:bg-gray-50 even:bg-white border-b">
+                  <td className="px-4 py-3 text-center font-medium border">01</td>
+                  <td className="px-6 py-3 text-right border">الرصيد المرحل من اليوم السابق</td>
+                  <td className="px-4 py-3 text-center font-bold currency-amount border">{formatCurrency(carriedForward)}</td>
+                  <td className="px-4 py-3 text-center border">1</td>
+                  <td className="px-4 py-3 text-center font-bold currency-amount border">{formatCurrency(carriedForward)}</td>
                 </tr>
-                <tr className="border-b border-gray-200 hover:bg-gray-50">
-                  <td className="px-6 py-4 font-medium">إجمالي الواردات (تحويلات العهدة)</td>
-                  <td className="px-6 py-4 text-center font-bold text-green-600">{formatCurrency(totalIncome)}</td>
-                  <td className="px-6 py-4 text-center">
-                    <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm">دخل</span>
-                  </td>
+                <tr className="odd:bg-gray-50 even:bg-white border-b">
+                  <td className="px-4 py-3 text-center font-medium border">02</td>
+                  <td className="px-6 py-3 text-right border">تحويلات العهدة</td>
+                  <td className="px-4 py-3 text-center font-bold currency-amount border">{formatCurrency(totalIncome)}</td>
+                  <td className="px-4 py-3 text-center border">{fundTransfers.length}</td>
+                  <td className="px-4 py-3 text-center font-bold currency-amount border">{formatCurrency(totalIncome)}</td>
                 </tr>
-                <tr className="border-b border-gray-200 hover:bg-gray-50">
-                  <td className="px-6 py-4 font-medium">إجمالي المصروفات</td>
-                  <td className="px-6 py-4 text-center font-bold text-red-600">{formatCurrency(totalExpenses)}</td>
-                  <td className="px-6 py-4 text-center">
-                    <span className="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm">مصروف</span>
-                  </td>
+                <tr className="odd:bg-gray-50 even:bg-white border-b">
+                  <td className="px-4 py-3 text-center font-medium border">03</td>
+                  <td className="px-6 py-3 text-right border">أجور العمال</td>
+                  <td className="px-4 py-3 text-center font-bold currency-amount border">{formatCurrency(totalWorkerCosts)}</td>
+                  <td className="px-4 py-3 text-center border">{workerAttendance.length}</td>
+                  <td className="px-4 py-3 text-center font-bold currency-amount border">{formatCurrency(totalWorkerCosts)}</td>
+                </tr>
+                <tr className="odd:bg-gray-50 even:bg-white border-b">
+                  <td className="px-4 py-3 text-center font-medium border">04</td>
+                  <td className="px-6 py-3 text-right border">مشتريات المواد</td>
+                  <td className="px-4 py-3 text-center font-bold currency-amount border">{formatCurrency(totalMaterialCosts)}</td>
+                  <td className="px-4 py-3 text-center border">{materialPurchases.length}</td>
+                  <td className="px-4 py-3 text-center font-bold currency-amount border">{formatCurrency(totalMaterialCosts)}</td>
+                </tr>
+                <tr className="odd:bg-gray-50 even:bg-white border-b">
+                  <td className="px-4 py-3 text-center font-medium border">05</td>
+                  <td className="px-6 py-3 text-right border">مصاريف النقل والتشغيل</td>
+                  <td className="px-4 py-3 text-center font-bold currency-amount border">{formatCurrency(totalTransportCosts)}</td>
+                  <td className="px-4 py-3 text-center border">{transportationExpenses.length}</td>
+                  <td className="px-4 py-3 text-center font-bold currency-amount border">{formatCurrency(totalTransportCosts)}</td>
                 </tr>
               </tbody>
-              <tfoot>
-                <tr className="bg-gradient-to-r from-cyan-500 to-blue-600 text-white">
-                  <td className="px-6 py-4 font-bold text-lg">الرصيد النهائي</td>
-                  <td className="px-6 py-4 text-center font-bold text-xl">{formatCurrency(remainingBalance)}</td>
-                  <td className="px-6 py-4 text-center">
-                    <span className={`px-4 py-2 rounded-full font-bold ${remainingBalance >= 0 ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
-                      {remainingBalance >= 0 ? 'فائض' : 'عجز'}
-                    </span>
-                  </td>
-                </tr>
-              </tfoot>
             </table>
           </div>
 
@@ -618,57 +630,72 @@ export default function Reports() {
             </div>
           )}
 
+          {/* Invoice-Style Summary Section */}
+          <div className="mb-8 grid grid-cols-1 md:grid-cols-2 gap-8 print-spacing">
+            {/* Thank You Message */}
+            <div>
+              <h3 className="font-bold text-gray-800 mb-4">شكراً لكم على ثقتكم</h3>
+              <div className="text-gray-600 text-sm space-y-2">
+                <p><strong>الشروط والأحكام:</strong></p>
+                <p>تم إعداد هذا الكشف وفقاً للمعايير المحاسبية المعتمدة في الجمهورية اليمنية.</p>
+                <p>جميع المبالغ محسوبة بالريال اليمني (ر.ي) وتخضع للمراجعة والتدقيق.</p>
+              </div>
+            </div>
+
+            {/* Summary Totals - Invoice Style */}
+            <div className="text-left">
+              <div className="space-y-3">
+                <div className="flex justify-between py-2 text-lg">
+                  <span className="font-medium">المجموع الفرعي:</span>
+                  <span className="font-bold currency-amount">{formatCurrency(totalIncome + carriedForward)}</span>
+                </div>
+                <div className="flex justify-between py-2 text-lg border-t">
+                  <span className="font-medium">المصروفات:</span>
+                  <span className="font-bold currency-amount">{formatCurrency(totalExpenses)}</span>
+                </div>
+                <div className="flex justify-between py-4 border-t-2 border-gray-400">
+                  <span className="font-bold text-xl">الرصيد النهائي:</span>
+                  <span className={`font-bold text-2xl px-6 py-3 rounded-lg text-white professional-gradient preserve-color currency-amount`}>
+                    {formatCurrency(remainingBalance)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Payment Information */}          
+          <div className="mb-8 print-spacing">
+            <h3 className="font-bold text-gray-800 mb-4">معلومات الدفع:</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <div>
+                <span className="text-gray-600">رقم الحساب:</span>
+                <p className="font-semibold">000000000</p>
+              </div>
+              <div>
+                <span className="text-gray-600">اسم الحساب:</span>
+                <p className="font-semibold">{selectedProject?.name || 'مشروع البناء'}</p>
+              </div>
+              <div>
+                <span className="text-gray-600">تفاصيل البنك:</span>
+                <p className="font-semibold">البنك المحلي للتنمية</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Signature Section - Professional */}
+          <div className="mb-8 flex justify-between items-end print-spacing">
+            <div className="text-right">
+              <div className="signature-line border-b-2 border-gray-400 w-48 mb-2"></div>
+              <p className="text-sm text-gray-600 font-medium">توقيع المسؤول</p>
+              <p className="text-xs text-gray-500 mt-1">Author Signature</p>
+            </div>
+          </div>
+
           {/* Professional Footer */}
-          <div className="mt-12 pt-8 border-t-4 border-gradient-to-r from-cyan-500 to-blue-600">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* Signature Section */}
-              <div>
-                <h4 className="font-bold text-gray-800 mb-4">التوقيع والاعتماد:</h4>
-                <div className="border-2 border-gray-300 rounded-lg p-6 bg-gray-50">
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-sm text-gray-600 mb-2">مُعد التقرير:</p>
-                      <div className="border-b-2 border-gray-300 h-8"></div>
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-600 mb-2">مراجع التقرير:</p>
-                      <div className="border-b-2 border-gray-300 h-8"></div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Report Information */}
-              <div>
-                <h4 className="font-bold text-gray-800 mb-4">معلومات التقرير:</h4>
-                <div className="bg-gradient-to-r from-cyan-50 to-blue-50 p-6 rounded-lg border border-cyan-200">
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">رقم التقرير:</span>
-                      <span className="font-semibold">RPT-{Math.floor(Math.random() * 10000).toString().padStart(4, '0')}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">تاريخ الإنشاء:</span>
-                      <span className="font-semibold">{new Date().toLocaleDateString('ar-YE')}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">وقت الإنشاء:</span>
-                      <span className="font-semibold">{new Date().toLocaleTimeString('ar-YE')}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">النظام:</span>
-                      <span className="font-semibold">نظام إدارة المشاريع v2.0</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Bottom Footer */}
-            <div className="mt-8 text-center py-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white rounded-lg">
-              <p className="font-bold">نظام إدارة المشاريع - الحلول المتكاملة لإدارة المشاريع الهندسية</p>
-              <p className="text-sm text-cyan-100 mt-1">تم إنشاء هذا التقرير تلقائياً بواسطة النظام</p>
-            </div>
+          <div className="invoice-footer professional-gradient preserve-color text-white p-6 rounded-lg text-center">
+            <p className="font-bold text-lg">نظام إدارة المشاريع الهندسية والإنشائية</p>
+            <p className="text-cyan-100 text-sm mt-2">الهاتف / العنوان / الموقع الإلكتروني</p>
+            <p className="text-xs text-cyan-200 mt-2">Phone # / Address / Website</p>
           </div>
         </div>
       </div>
