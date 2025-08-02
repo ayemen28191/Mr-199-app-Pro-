@@ -60,7 +60,40 @@ export default function AdvancedReports() {
   };
 
   const printReport = () => {
-    window.print();
+    // Add page numbering before printing
+    const style = document.createElement('style');
+    style.innerHTML = `
+      @page {
+        margin: 10mm !important;
+        @bottom-center {
+          content: "صفحة " counter(page) " من " counter(pages);
+          font-size: 10px;
+          color: #6b7280;
+          margin-top: 5mm;
+        }
+      }
+      @media print {
+        .page-counter {
+          display: block !important;
+          position: fixed !important;
+          bottom: 5mm !important;
+          left: 50% !important;
+          transform: translateX(-50%) !important;
+          font-size: 10px !important;
+          color: #6b7280 !important;
+          z-index: 1000 !important;
+          background: transparent !important;
+          border: none !important;
+          text-align: center !important;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+    
+    setTimeout(() => {
+      window.print();
+      document.head.removeChild(style);
+    }, 100);
   };
 
   const projectName = projects.find((p: any) => p.id === projectId)?.name || '';
@@ -91,7 +124,7 @@ export default function AdvancedReports() {
               width: 100% !important;
               max-width: none !important;
               margin: 0 !important;
-              padding: 10mm !important;
+              padding: 5mm !important;
               box-shadow: none !important;
               border: none !important;
               background: white !important;
@@ -136,15 +169,15 @@ export default function AdvancedReports() {
             .data-table {
               width: 100% !important;
               border-collapse: collapse !important;
-              margin-bottom: 20px !important;
-              font-size: 10px !important;
+              margin-bottom: 10px !important;
+              font-size: 9px !important;
               table-layout: fixed !important;
             }
             
             .data-table th {
               background-color: #f3f4f6 !important;
               border: 1px solid #d1d5db !important;
-              padding: 6px 4px !important;
+              padding: 4px 2px !important;
               text-align: center !important;
               font-weight: bold !important;
               color: #374151 !important;
@@ -194,6 +227,34 @@ export default function AdvancedReports() {
               font-size: 10px;
               color: #6b7280;
               text-align: center;
+            }
+            
+            .page-break {
+              page-break-before: always !important;
+            }
+            
+            .page-counter {
+              position: fixed !important;
+              bottom: 8mm !important;
+              right: 50% !important;
+              transform: translateX(50%) !important;
+              font-size: 10px !important;
+              color: #6b7280 !important;
+              z-index: 1000 !important;
+              background: white !important;
+              padding: 2px 8px !important;
+              border: 1px solid #e5e7eb !important;
+              border-radius: 4px !important;
+            }
+            
+            @page {
+              margin: 10mm !important;
+              @bottom-center {
+                content: "صفحة " counter(page) " من " counter(pages);
+                font-size: 10px;
+                color: #6b7280;
+                margin-top: 5mm;
+              }
             }
           }
           
@@ -353,13 +414,13 @@ export default function AdvancedReports() {
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th style={{ width: '8%' }}>التاريخ</th>
-                    <th style={{ width: '10%' }}>الفئة</th>
-                    <th style={{ width: '10%' }}>الفئة الفرعية</th>
-                    <th style={{ width: '30%' }}>الوصف</th>
+                    <th style={{ width: '6%' }}>التاريخ</th>
+                    <th style={{ width: '8%' }}>الفئة</th>
+                    <th style={{ width: '8%' }}>الفئة الفرعية</th>
+                    <th style={{ width: '35%' }}>الوصف</th>
                     <th style={{ width: '12%' }}>المبلغ (ريال)</th>
                     <th style={{ width: '15%' }}>المورد</th>
-                    <th style={{ width: '15%' }}>ملاحظات</th>
+                    <th style={{ width: '18%' }}>ملاحظات</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -407,12 +468,12 @@ export default function AdvancedReports() {
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th style={{ width: '10%' }}>التاريخ</th>
+                    <th style={{ width: '8%' }}>التاريخ</th>
                     <th style={{ width: '15%' }}>رقم الحوالة</th>
-                    <th style={{ width: '25%' }}>اسم المرسل</th>
+                    <th style={{ width: '30%' }}>اسم المرسل</th>
                     <th style={{ width: '15%' }}>نوع الحوالة</th>
                     <th style={{ width: '15%' }}>المبلغ (ريال)</th>
-                    <th style={{ width: '20%' }}>ملاحظات</th>
+                    <th style={{ width: '18%' }}>ملاحظات</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -446,6 +507,13 @@ export default function AdvancedReports() {
             <div style={{ marginTop: '5px' }}>
               الهاتف: 123-456-7890 | البريد الإلكتروني: info@construction.com
             </div>
+          </div>
+          
+          {/* Page Counter for Print */}
+          <div className="page-counter print-only">
+            <span style={{ fontSize: '10px', color: '#6b7280', textAlign: 'center', display: 'block' }}>
+              --- ترقيم الصفحات التلقائي ---
+            </span>
           </div>
         </div>
       )}
