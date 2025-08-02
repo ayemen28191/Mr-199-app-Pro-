@@ -79,7 +79,7 @@ export default function Reports() {
   const currentBalance = selectedProjectStats.currentBalance || 0;
 
   // Generate Reports Functions
-  const generateDailyExpensesReport = async () => {
+  const generateDailyExpensesReport = async (reportType: string = "daily") => {
     if (!selectedProjectId || !dailyReportDate) {
       toast({
         title: "خطأ",
@@ -93,11 +93,11 @@ export default function Reports() {
     try {
       const data = await apiRequest("GET", `/api/reports/daily-expenses/${selectedProjectId}/${dailyReportDate}`);
       setReportData(data);
-      setActiveReportType("daily");
+      setActiveReportType(reportType);
       
       toast({
         title: "تم إنشاء التقرير",
-        description: "تم إنشاء كشف المصروفات اليومية بنجاح",
+        description: `تم إنشاء كشف المصروفات ${reportType === 'professional' ? 'الاحترافي' : 'العادي'} بنجاح`,
       });
     } catch (error) {
       toast({
@@ -730,7 +730,7 @@ export default function Reports() {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <Button 
-                      onClick={generateDailyExpensesReport}
+                      onClick={() => generateDailyExpensesReport("daily")}
                       disabled={isGenerating}
                       className="h-12 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium text-base rounded-xl transform hover:scale-105 transition-all duration-300"
                     >
@@ -742,18 +742,7 @@ export default function Reports() {
                       عادي
                     </Button>
                     <Button 
-                      onClick={() => {
-                        if (!selectedProjectId || !dailyReportDate) {
-                          toast({
-                            title: "خطأ",
-                            description: "يرجى اختيار مشروع وتاريخ",
-                            variant: "destructive",
-                          });
-                          return;
-                        }
-                        setActiveReportType("professional");
-                        generateDailyExpensesReport();
-                      }}
+                      onClick={() => generateDailyExpensesReport("professional")}
                       disabled={isGenerating}
                       className="h-12 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-medium text-base rounded-xl transform hover:scale-105 transition-all duration-300"
                     >
