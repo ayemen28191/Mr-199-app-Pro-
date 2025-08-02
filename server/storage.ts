@@ -1885,6 +1885,7 @@ export class DatabaseStorage implements IStorage {
         phone: suppliers.phone,
         address: suppliers.address,
         paymentTerms: suppliers.paymentTerms,
+        totalDebt: suppliers.totalDebt,
         notes: suppliers.notes,
         isActive: suppliers.isActive,
         createdAt: suppliers.createdAt,
@@ -1917,10 +1918,20 @@ export class DatabaseStorage implements IStorage {
 
   async createSupplier(supplier: InsertSupplier): Promise<Supplier> {
     try {
+      // إنشاء كائن البيانات مع تحديد صريح للحقول
       const supplierData = {
-        ...supplier,
-        totalDebt: supplier.totalDebt || '0' // إضافة القيمة الافتراضية للمديونية
+        name: supplier.name,
+        contactPerson: supplier.contactPerson || null,
+        phone: supplier.phone || null,
+        address: supplier.address || null,
+        paymentTerms: supplier.paymentTerms || "نقد",
+        totalDebt: supplier.totalDebt || '0',
+        isActive: supplier.isActive !== undefined ? supplier.isActive : true,
+        notes: supplier.notes || null
       };
+      
+      console.log('Creating supplier with data:', supplierData);
+      
       const [newSupplier] = await db
         .insert(suppliers)
         .values(supplierData)
