@@ -277,65 +277,66 @@ export default function Reports() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Premium Header */}
-      <div className="bg-gradient-to-r from-purple-900 via-blue-900 to-indigo-900 text-white shadow-2xl">
-        <div className="container mx-auto px-6 py-8">
-          <div className="flex items-center justify-between">
+    <div className="mobile-reports-container mobile-smooth-scroll">
+      {/* Mobile-optimized Premium Header */}
+      <div className="sticky top-0 z-50 mobile-sticky-header bg-gradient-to-r from-purple-900 via-blue-900 to-indigo-900 text-white shadow-2xl">
+        <div className="container mx-auto px-4 py-4 sm:px-6 sm:py-8">
+          <div className="flex items-center justify-between flex-col sm:flex-row gap-4">
             <Button
               variant="ghost" 
               onClick={() => setLocation("/")}
-              className="text-white hover:bg-white/10 mb-4 transition-all duration-300"
+              className="text-white hover:bg-white/10 mobile-touch-target mobile-focus-visible transition-all duration-300"
             >
               <ArrowRight className="ml-2 h-5 w-5" />
-              العودة للرئيسية
+              <span className="hidden sm:inline">العودة للرئيسية</span>
+              <span className="sm:hidden">العودة</span>
             </Button>
             
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-4 flex-col sm:flex-row text-center sm:text-right">
               <div className="flex items-center gap-3">
                 <div className="p-3 bg-white/10 rounded-full backdrop-blur-sm">
-                  <BarChart3 className="h-8 w-8" />
+                  <BarChart3 className="h-6 w-6 sm:h-8 sm:w-8" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-gray-200 bg-clip-text text-transparent">
+                  <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-white to-gray-200 bg-clip-text text-transparent mobile-fade-in">
                     مركز التقارير التنفيذية
                   </h1>
-                  <p className="text-blue-200 text-lg">
+                  <p className="text-blue-200 text-sm sm:text-lg">
                     التقارير المتقدمة وتحليل البيانات المالية
                   </p>
                 </div>
               </div>
               
-              <div className="flex items-center gap-3">
-                <Badge className="bg-green-500/20 text-green-300 border-green-400/30 text-sm px-3 py-1">
-                  <CheckCircle2 className="h-4 w-4 mr-1" />
+              <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-center sm:justify-start">
+                <Badge className="mobile-badge bg-green-500/20 text-green-300 border-green-400/30">
+                  <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                   نظام نشط
                 </Badge>
-                <Badge className="bg-orange-500/20 text-orange-300 border-orange-400/30 text-sm px-3 py-1">
-                  <Zap className="h-4 w-4 mr-1" />
+                <Badge className="mobile-badge bg-orange-500/20 text-orange-300 border-orange-400/30">
+                  <Zap className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                   محدث اليوم
                 </Badge>
               </div>
             </div>
           </div>
           
-          {/* Project Selector with New Design */}
-          <div className="mt-6 p-4 bg-white/10 rounded-xl backdrop-blur-sm border border-white/20">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Globe className="h-5 w-5 text-blue-300" />
-                <span className="text-blue-200 font-medium">المشروع النشط:</span>
+          {/* Mobile-optimized Project Selector */}
+          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-white/10 rounded-xl backdrop-blur-sm border border-white/20">
+            <div className="flex items-center gap-3 sm:gap-4 flex-col sm:flex-row">
+              <div className="flex items-center gap-2 text-center sm:text-right">
+                <Globe className="h-4 w-4 sm:h-5 sm:w-5 text-blue-300" />
+                <span className="text-blue-200 font-medium text-sm sm:text-base">المشروع النشط:</span>
               </div>
-              <div className="flex-1">
+              <div className="flex-1 w-full sm:w-auto">
                 <ProjectSelector 
                   onProjectChange={selectProject}
-                  className="bg-white/20 border-white/30 text-white placeholder:text-white/70"
+                  className="bg-white/20 border-white/30 text-white placeholder:text-white/70 mobile-touch-target"
                 />
               </div>
               {selectedProject && (
                 <div className="flex items-center gap-2">
-                  <Award className="h-5 w-5 text-yellow-300" />
-                  <span className="text-yellow-300 font-medium">
+                  <Award className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-300" />
+                  <span className="text-yellow-300 font-medium text-sm sm:text-base">
                     {selectedProject.name}
                   </span>
                 </div>
@@ -345,147 +346,150 @@ export default function Reports() {
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="container mx-auto px-6 py-8">
-        {/* Enhanced Tabs */}
+      {/* Mobile-optimized Main Content */}
+      <div className="container mx-auto px-3 sm:px-6 py-4 sm:py-8">
+        {/* Mobile-optimized Enhanced Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 bg-white shadow-lg rounded-xl p-2 border-0">
+          <TabsList className="grid w-full grid-cols-3 bg-white shadow-lg rounded-xl p-1 sm:p-2 border-0 mobile-glass-effect">
             <TabsTrigger 
               value="dashboard" 
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-600 data-[state=active]:text-white text-lg font-medium py-3 rounded-lg transition-all duration-300"
+              className="mobile-tab-trigger data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-purple-600 data-[state=active]:text-white text-xs sm:text-lg font-medium py-2 sm:py-3 rounded-lg transition-all duration-300"
             >
-              <BarChart3 className="h-5 w-5 mr-2" />
-              لوحة المعلومات
+              <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">لوحة المعلومات</span>
+              <span className="sm:hidden">المعلومات</span>
             </TabsTrigger>
             <TabsTrigger 
               value="reports" 
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white text-lg font-medium py-3 rounded-lg transition-all duration-300"
+              className="mobile-tab-trigger data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-600 data-[state=active]:text-white text-xs sm:text-lg font-medium py-2 sm:py-3 rounded-lg transition-all duration-300"
             >
-              <FileText className="h-5 w-5 mr-2" />
-              التقارير المتقدمة
+              <FileText className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">التقارير المتقدمة</span>
+              <span className="sm:hidden">التقارير</span>
             </TabsTrigger>
             <TabsTrigger 
               value="analytics" 
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-red-600 data-[state=active]:text-white text-lg font-medium py-3 rounded-lg transition-all duration-300"
+              className="mobile-tab-trigger data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-red-600 data-[state=active]:text-white text-xs sm:text-lg font-medium py-2 sm:py-3 rounded-lg transition-all duration-300"
             >
-              <Activity className="h-5 w-5 mr-2" />
-              التحليلات والإحصائيات
+              <Activity className="h-4 w-4 sm:h-5 sm:w-5 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">التحليلات والإحصائيات</span>
+              <span className="sm:hidden">التحليلات</span>
             </TabsTrigger>
           </TabsList>
 
-          {/* Dashboard Tab */}
-          <TabsContent value="dashboard" className="mt-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              {/* KPI Cards with New Design */}
-              <Card className="group hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 bg-gradient-to-br from-blue-50 to-blue-100 border-0 overflow-hidden">
-                <CardContent className="p-6">
+          {/* Mobile-optimized Dashboard Tab */}
+          <TabsContent value="dashboard" className="mt-4 sm:mt-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
+              {/* Mobile-optimized KPI Cards */}
+              <Card className="mobile-card group hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 bg-gradient-to-br from-blue-50 to-blue-100 border-0 overflow-hidden">
+                <CardContent className="p-4 sm:p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-blue-600 text-sm font-medium mb-1">التقارير المُنشأة</p>
-                      <p className="text-3xl font-bold text-blue-900">12</p>
+                      <p className="text-blue-600 text-xs sm:text-sm font-medium mb-1">التقارير المُنشأة</p>
+                      <p className="text-2xl sm:text-3xl font-bold text-blue-900">12</p>
                       <div className="flex items-center gap-1 mt-2">
-                        <TrendingUp className="h-4 w-4 text-green-500" />
-                        <span className="text-green-600 text-sm font-medium">+23%</span>
+                        <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-green-500" />
+                        <span className="text-green-600 text-xs sm:text-sm font-medium">+23%</span>
                       </div>
                     </div>
-                    <div className="p-4 bg-blue-500/10 rounded-2xl group-hover:bg-blue-500/20 transition-colors duration-300">
-                      <FileText className="h-8 w-8 text-blue-600" />
+                    <div className="p-3 sm:p-4 bg-blue-500/10 rounded-2xl group-hover:bg-blue-500/20 transition-colors duration-300">
+                      <FileText className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="group hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 bg-gradient-to-br from-green-50 to-green-100 border-0 overflow-hidden">
-                <CardContent className="p-6">
+              <Card className="mobile-card group hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 bg-gradient-to-br from-green-50 to-green-100 border-0 overflow-hidden">
+                <CardContent className="p-4 sm:p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-green-600 text-sm font-medium mb-1">المشاريع النشطة</p>
-                      <p className="text-3xl font-bold text-green-900">{projects.filter(p => p.status === 'active').length}</p>
+                      <p className="text-green-600 text-xs sm:text-sm font-medium mb-1">المشاريع النشطة</p>
+                      <p className="text-2xl sm:text-3xl font-bold text-green-900">{projects.filter(p => p.status === 'active').length}</p>
                       <div className="flex items-center gap-1 mt-2">
-                        <TrendingUp className="h-4 w-4 text-green-500" />
-                        <span className="text-green-600 text-sm font-medium">+5%</span>
+                        <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-green-500" />
+                        <span className="text-green-600 text-xs sm:text-sm font-medium">+5%</span>
                       </div>
                     </div>
-                    <div className="p-4 bg-green-500/10 rounded-2xl group-hover:bg-green-500/20 transition-colors duration-300">
-                      <Briefcase className="h-8 w-8 text-green-600" />
+                    <div className="p-3 sm:p-4 bg-green-500/10 rounded-2xl group-hover:bg-green-500/20 transition-colors duration-300">
+                      <Briefcase className="h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="group hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 bg-gradient-to-br from-purple-50 to-purple-100 border-0 overflow-hidden">
-                <CardContent className="p-6">
+              <Card className="mobile-card group hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 bg-gradient-to-br from-purple-50 to-purple-100 border-0 overflow-hidden">
+                <CardContent className="p-4 sm:p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-purple-600 text-sm font-medium mb-1">إجمالي المصروفات</p>
-                      <p className="text-3xl font-bold text-purple-900">298,200</p>
+                      <p className="text-purple-600 text-xs sm:text-sm font-medium mb-1">إجمالي المصروفات</p>
+                      <p className="text-2xl sm:text-3xl font-bold text-purple-900">298,200</p>
                       <div className="flex items-center gap-1 mt-2">
-                        <TrendingUp className="h-4 w-4 text-green-500" />
-                        <span className="text-green-600 text-sm font-medium">+12%</span>
+                        <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-green-500" />
+                        <span className="text-green-600 text-xs sm:text-sm font-medium">+12%</span>
                       </div>
                     </div>
-                    <div className="p-4 bg-purple-500/10 rounded-2xl group-hover:bg-purple-500/20 transition-colors duration-300">
-                      <DollarSign className="h-8 w-8 text-purple-600" />
+                    <div className="p-3 sm:p-4 bg-purple-500/10 rounded-2xl group-hover:bg-purple-500/20 transition-colors duration-300">
+                      <DollarSign className="h-6 w-6 sm:h-8 sm:w-8 text-purple-600" />
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="group hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 bg-gradient-to-br from-orange-50 to-orange-100 border-0 overflow-hidden">
-                <CardContent className="p-6">
+              <Card className="mobile-card group hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 bg-gradient-to-br from-orange-50 to-orange-100 border-0 overflow-hidden">
+                <CardContent className="p-4 sm:p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-orange-600 text-sm font-medium mb-1">العمال النشطين</p>
-                      <p className="text-3xl font-bold text-orange-900">{workers.length}</p>
+                      <p className="text-orange-600 text-xs sm:text-sm font-medium mb-1">العمال النشطين</p>
+                      <p className="text-2xl sm:text-3xl font-bold text-orange-900">{workers.length}</p>
                       <div className="flex items-center gap-1 mt-2">
-                        <TrendingUp className="h-4 w-4 text-green-500" />
-                        <span className="text-green-600 text-sm font-medium">+8%</span>
+                        <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-green-500" />
+                        <span className="text-green-600 text-xs sm:text-sm font-medium">+8%</span>
                       </div>
                     </div>
-                    <div className="p-4 bg-orange-500/10 rounded-2xl group-hover:bg-orange-500/20 transition-colors duration-300">
-                      <Users className="h-8 w-8 text-orange-600" />
+                    <div className="p-3 sm:p-4 bg-orange-500/10 rounded-2xl group-hover:bg-orange-500/20 transition-colors duration-300">
+                      <Users className="h-6 w-6 sm:h-8 sm:w-8 text-orange-600" />
                     </div>
                   </div>
                 </CardContent>
               </Card>
             </div>
 
-            {/* Quick Actions */}
-            <Card className="bg-white shadow-xl border-0 rounded-2xl overflow-hidden">
-              <CardHeader className="bg-gradient-to-r from-slate-800 to-slate-900 text-white p-6">
-                <CardTitle className="text-2xl font-bold flex items-center gap-3">
-                  <Zap className="h-7 w-7" />
+            {/* Mobile-optimized Quick Actions */}
+            <Card className="mobile-card bg-white shadow-xl border-0 rounded-2xl overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-slate-800 to-slate-900 text-white p-4 sm:p-6">
+                <CardTitle className="text-xl sm:text-2xl font-bold flex items-center gap-3">
+                  <Zap className="h-6 w-6 sm:h-7 sm:w-7" />
                   الإجراءات السريعة
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <CardContent className="p-4 sm:p-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                   <Button 
-                    className="h-16 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium text-lg rounded-xl shadow-lg transform hover:scale-105 transition-all duration-300"
+                    className="mobile-touch-target mobile-action-button h-14 sm:h-16 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium text-base sm:text-lg rounded-xl shadow-lg transform hover:scale-105 transition-all duration-300"
                     onClick={() => setActiveTab('reports')}
                   >
-                    <Receipt className="h-6 w-6 mr-2" />
+                    <Receipt className="h-5 w-5 sm:h-6 sm:w-6 mr-2" />
                     كشف يومي
                   </Button>
                   <Button 
-                    className="h-16 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-medium text-lg rounded-xl shadow-lg transform hover:scale-105 transition-all duration-300"
+                    className="mobile-touch-target mobile-action-button h-14 sm:h-16 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-medium text-base sm:text-lg rounded-xl shadow-lg transform hover:scale-105 transition-all duration-300"
                     onClick={() => setActiveTab('reports')}
                   >
-                    <UserCheck className="h-6 w-6 mr-2" />
+                    <UserCheck className="h-5 w-5 sm:h-6 sm:w-6 mr-2" />
                     حساب عامل
                   </Button>
                   <Button 
-                    className="h-16 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-medium text-lg rounded-xl shadow-lg transform hover:scale-105 transition-all duration-300"
+                    className="mobile-touch-target mobile-action-button h-14 sm:h-16 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-medium text-base sm:text-lg rounded-xl shadow-lg transform hover:scale-105 transition-all duration-300"
                     onClick={() => setActiveTab('reports')}
                   >
-                    <Package className="h-6 w-6 mr-2" />
+                    <Package className="h-5 w-5 sm:h-6 sm:w-6 mr-2" />
                     كشف المواد
                   </Button>
                   <Button 
-                    className="h-16 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-medium text-lg rounded-xl shadow-lg transform hover:scale-105 transition-all duration-300"
+                    className="mobile-touch-target mobile-action-button h-14 sm:h-16 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-medium text-base sm:text-lg rounded-xl shadow-lg transform hover:scale-105 transition-all duration-300"
                     onClick={() => setActiveTab('analytics')}
                   >
-                    <PieChart className="h-6 w-6 mr-2" />
+                    <PieChart className="h-5 w-5 sm:h-6 sm:w-6 mr-2" />
                     ملخص مشروع
                   </Button>
                 </div>
