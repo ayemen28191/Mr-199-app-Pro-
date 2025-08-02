@@ -1,38 +1,31 @@
--- إصلاح طارئ لمشكلة الموردين
--- يجب تنفيذ هذا فوراً في Supabase SQL Editor
+-- ============================================
+-- إصلاح طارئ للأعمدة المفقودة فقط
+-- تركيز على المشاكل الأساسية
+-- ============================================
 
--- 1. حذف الجدول الحالي وإعادة إنشاؤه (آمن - لا يحذف البيانات إذا كانت موجودة)
-DROP TABLE IF EXISTS suppliers CASCADE;
+-- إضافة العمود المفقود في جدول daily_expense_summaries
+ALTER TABLE daily_expense_summaries 
+ADD COLUMN IF NOT EXISTS carried_forward_amount DECIMAL(10,2) DEFAULT 0;
 
--- 2. إنشاء جدول suppliers بالهيكل الصحيح
-CREATE TABLE suppliers (
-    id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
-    name TEXT NOT NULL UNIQUE,
-    contact_person TEXT,
-    phone TEXT,
-    address TEXT,
-    payment_terms TEXT DEFAULT 'نقد',
-    total_debt DECIMAL(12,2) DEFAULT 0 NOT NULL,
-    is_active BOOLEAN DEFAULT true NOT NULL,
-    notes TEXT,
-    created_at TIMESTAMP DEFAULT NOW() NOT NULL
-);
+-- إضافة الأعمدة المفقودة في جدول material_purchases
+ALTER TABLE material_purchases 
+ADD COLUMN IF NOT EXISTS payment_type TEXT DEFAULT 'نقد';
 
--- 3. إنشاء الفهارس
-CREATE INDEX idx_suppliers_name ON suppliers(name);
-CREATE INDEX idx_suppliers_active ON suppliers(is_active);
-CREATE INDEX idx_suppliers_total_debt ON suppliers(total_debt);
+ALTER TABLE material_purchases 
+ADD COLUMN IF NOT EXISTS paid_amount DECIMAL(10,2) DEFAULT 0;
 
--- 4. إضافة بيانات تجريبية للاختبار
-INSERT INTO suppliers (name, contact_person, phone, address, payment_terms, total_debt, is_active, notes) VALUES
-('مورد تجريبي 1', 'أحمد محمد', '777123456', 'صنعاء - شارع الزبيري', 'نقد', 0, true, 'مورد موثوق للحديد والأسمنت'),
-('شركة البناء المتطورة', 'علي أحمد', '777987654', 'عدن', '30 يوم', 15000, true, 'مورد مواد البناء الأساسية');
+ALTER TABLE material_purchases 
+ADD COLUMN IF NOT EXISTS remaining_amount DECIMAL(10,2) DEFAULT 0;
 
--- 5. التحقق من البيانات
-SELECT * FROM suppliers;
+ALTER TABLE material_purchases 
+ADD COLUMN IF NOT EXISTS supplier_id VARCHAR;
 
--- 6. التحقق من هيكل الجدول
-SELECT column_name, data_type, ordinal_position, is_nullable, column_default
-FROM information_schema.columns 
-WHERE table_name = 'suppliers' 
-ORDER BY ordinal_position;
+ALTER TABLE material_purchases 
+ADD COLUMN IF NOT EXISTS due_date TEXT;
+
+-- إضافة العمود المفقود في جدول suppliers
+ALTER TABLE suppliers 
+ADD COLUMN IF NOT EXISTS total_debt DECIMAL(12,2) DEFAULT 0;
+
+-- التحقق من النتائج
+SELECT 'تم إصلاح جميع الأعمدة المفقودة!' as result;
