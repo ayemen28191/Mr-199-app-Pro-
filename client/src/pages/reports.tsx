@@ -22,6 +22,7 @@ import { getCurrentDate, formatCurrency, formatDate } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Worker, Project } from "@shared/schema";
+import "@/components/print-styles.css";
 
 export default function Reports() {
   const [, setLocation] = useLocation();
@@ -293,6 +294,228 @@ export default function Reports() {
       });
     }
   };
+
+  // Render Daily Expenses Report
+  const renderDailyExpensesReport = (data: any) => {
+    if (!data) return null;
+
+    const {
+      fundTransfers = [],
+      workerAttendance = [],
+      materialPurchases = [],
+      transportationExpenses = [],
+      workerTransfers = [],
+      carriedForward = 0,
+      totalFundTransfers = 0,
+      totalWorkerCosts = 0,
+      totalMaterialCosts = 0,
+      totalTransportCosts = 0,
+      totalTransferCosts = 0,
+      totalExpenses = 0,
+      totalIncome = 0,
+      remainingBalance = 0
+    } = data;
+
+    const selectedProject = projects.find(p => p.id === selectedProjectId);
+
+    return (
+      <div className="print-content space-y-6" dir="rtl">
+        {/* Report Header */}
+        <div className="text-center border-b-2 border-gray-300 pb-6 mb-6">
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">كشف المصروفات اليومية</h1>
+          <h2 className="text-xl text-gray-600 mb-4">{selectedProject?.name || 'غير محدد'}</h2>
+          <p className="text-lg text-gray-700">التاريخ: {formatDate(dailyReportDate)}</p>
+        </div>
+
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+            <p className="text-sm font-medium text-blue-600 mb-1">الرصيد المرحل</p>
+            <p className="text-xl font-bold text-blue-800">{formatCurrency(carriedForward)}</p>
+          </div>
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+            <p className="text-sm font-medium text-green-600 mb-1">إجمالي الواردات</p>
+            <p className="text-xl font-bold text-green-800">{formatCurrency(totalIncome)}</p>
+          </div>
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+            <p className="text-sm font-medium text-red-600 mb-1">إجمالي المصروفات</p>
+            <p className="text-xl font-bold text-red-800">{formatCurrency(totalExpenses)}</p>
+          </div>
+          <div className={`${remainingBalance >= 0 ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'} border rounded-lg p-4 text-center`}>
+            <p className="text-sm font-medium text-gray-600 mb-1">الرصيد المتبقي</p>
+            <p className={`text-xl font-bold ${remainingBalance >= 0 ? 'text-green-800' : 'text-red-800'}`}>
+              {formatCurrency(remainingBalance)}
+            </p>
+          </div>
+        </div>
+
+        {/* Fund Transfers */}
+        {fundTransfers.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+              <DollarSign className="h-5 w-5" />
+              تحويلات العهدة ({fundTransfers.length})
+            </h3>
+            <div className="overflow-x-auto">
+              <table className="w-full border border-gray-300 rounded-lg">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="border border-gray-300 px-3 py-2 text-right">رقم الحوالة</th>
+                    <th className="border border-gray-300 px-3 py-2 text-right">المرسل</th>
+                    <th className="border border-gray-300 px-3 py-2 text-right">المبلغ</th>
+                    <th className="border border-gray-300 px-3 py-2 text-right">الملاحظات</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {fundTransfers.map((transfer: any, index: number) => (
+                    <tr key={index}>
+                      <td className="border border-gray-300 px-3 py-2">{transfer.transferNumber}</td>
+                      <td className="border border-gray-300 px-3 py-2">{transfer.senderName}</td>
+                      <td className="border border-gray-300 px-3 py-2 font-medium text-green-600">
+                        {formatCurrency(transfer.amount)}
+                      </td>
+                      <td className="border border-gray-300 px-3 py-2">{transfer.notes || '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Worker Attendance */}
+        {workerAttendance.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              حضور العمال ({workerAttendance.length})
+            </h3>
+            <div className="overflow-x-auto">
+              <table className="w-full border border-gray-300 rounded-lg">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="border border-gray-300 px-3 py-2 text-right">اسم العامل</th>
+                    <th className="border border-gray-300 px-3 py-2 text-right">نوع العمل</th>
+                    <th className="border border-gray-300 px-3 py-2 text-right">ساعات العمل</th>
+                    <th className="border border-gray-300 px-3 py-2 text-right">المبلغ المدفوع</th>
+                    <th className="border border-gray-300 px-3 py-2 text-right">ملاحظات</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {workerAttendance.map((attendance: any, index: number) => (
+                    <tr key={index}>
+                      <td className="border border-gray-300 px-3 py-2">{attendance.worker?.name || 'غير محدد'}</td>
+                      <td className="border border-gray-300 px-3 py-2">{attendance.worker?.type || 'غير محدد'}</td>
+                      <td className="border border-gray-300 px-3 py-2">{attendance.hoursWorked}</td>
+                      <td className="border border-gray-300 px-3 py-2 font-medium text-red-600">
+                        {formatCurrency(attendance.paidAmount)}
+                      </td>
+                      <td className="border border-gray-300 px-3 py-2">{attendance.notes || '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Material Purchases */}
+        {materialPurchases.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              مشتريات المواد ({materialPurchases.length})
+            </h3>
+            <div className="overflow-x-auto">
+              <table className="w-full border border-gray-300 rounded-lg">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="border border-gray-300 px-3 py-2 text-right">المادة</th>
+                    <th className="border border-gray-300 px-3 py-2 text-right">الكمية</th>
+                    <th className="border border-gray-300 px-3 py-2 text-right">سعر الوحدة</th>
+                    <th className="border border-gray-300 px-3 py-2 text-right">المبلغ الإجمالي</th>
+                    <th className="border border-gray-300 px-3 py-2 text-right">اسم المورد</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {materialPurchases.map((purchase: any, index: number) => (
+                    <tr key={index}>
+                      <td className="border border-gray-300 px-3 py-2">{purchase.material?.name || 'غير محدد'}</td>
+                      <td className="border border-gray-300 px-3 py-2">{purchase.quantity} {purchase.material?.unit || ''}</td>
+                      <td className="border border-gray-300 px-3 py-2">{formatCurrency(purchase.unitPrice)}</td>
+                      <td className="border border-gray-300 px-3 py-2 font-medium text-red-600">
+                        {formatCurrency(purchase.totalAmount)}
+                      </td>
+                      <td className="border border-gray-300 px-3 py-2">{purchase.supplierName || '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Transportation Expenses */}
+        {transportationExpenses.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center gap-2">
+              <Activity className="h-5 w-5" />
+              مصاريف النقل ({transportationExpenses.length})
+            </h3>
+            <div className="overflow-x-auto">
+              <table className="w-full border border-gray-300 rounded-lg">
+                <thead className="bg-gray-100">
+                  <tr>
+                    <th className="border border-gray-300 px-3 py-2 text-right">الوصف</th>
+                    <th className="border border-gray-300 px-3 py-2 text-right">العامل</th>
+                    <th className="border border-gray-300 px-3 py-2 text-right">المبلغ</th>
+                    <th className="border border-gray-300 px-3 py-2 text-right">ملاحظات</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {transportationExpenses.map((expense: any, index: number) => (
+                    <tr key={index}>
+                      <td className="border border-gray-300 px-3 py-2">{expense.description}</td>
+                      <td className="border border-gray-300 px-3 py-2">{expense.worker?.name || '-'}</td>
+                      <td className="border border-gray-300 px-3 py-2 font-medium text-red-600">
+                        {formatCurrency(expense.amount)}
+                      </td>
+                      <td className="border border-gray-300 px-3 py-2">{expense.notes || '-'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Footer */}
+        <div className="border-t-2 border-gray-300 pt-4 mt-8 text-center">
+          <p className="text-sm text-gray-600">تم إنشاء التقرير بواسطة نظام إدارة المشاريع</p>
+          <p className="text-xs text-gray-500 mt-2">التاريخ والوقت: {new Date().toLocaleString('ar-YE')}</p>
+        </div>
+      </div>
+    );
+  };
+
+  // Placeholder functions for other report types
+  const renderWorkerAccountReport = (data: any) => (
+    <div className="text-center py-8">
+      <p className="text-gray-600">تقرير حساب العامل - قيد التطوير</p>
+    </div>
+  );
+
+  const renderMaterialPurchasesReport = (data: any) => (
+    <div className="text-center py-8">
+      <p className="text-gray-600">تقرير مشتريات المواد - قيد التطوير</p>
+    </div>
+  );
+
+  const renderProjectSummaryReport = (data: any) => (
+    <div className="text-center py-8">
+      <p className="text-gray-600">تقرير ملخص المشروع - قيد التطوير</p>
+    </div>
+  );
 
   return (
     <div className="mobile-reports-container mobile-smooth-scroll">
@@ -772,7 +995,7 @@ export default function Reports() {
                 </CardTitle>
                 <div className="flex items-center gap-3">
                   <Button
-                    onClick={() => exportToCSV(reportData, `report-${activeReportType}`)}
+                    onClick={() => exportToCSV([reportData], `report-${activeReportType}`)}
                     className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-xl"
                   >
                     <Download className="h-4 w-4 mr-2" />
@@ -789,11 +1012,10 @@ export default function Reports() {
               </div>
             </CardHeader>
             <CardContent className="p-8">
-              <div className="bg-gray-50 p-6 rounded-xl">
-                <p className="text-gray-600 text-center text-lg">
-                  تم إنشاء التقرير بنجاح. يمكنك الآن طباعته أو تصديره.
-                </p>
-              </div>
+              {activeReportType === 'daily' && renderDailyExpensesReport(reportData)}
+              {activeReportType === 'worker' && renderWorkerAccountReport(reportData)}
+              {activeReportType === 'material' && renderMaterialPurchasesReport(reportData)}
+              {activeReportType === 'project' && renderProjectSummaryReport(reportData)}
             </CardContent>
           </Card>
         )}
