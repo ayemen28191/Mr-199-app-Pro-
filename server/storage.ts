@@ -1907,9 +1907,13 @@ export class DatabaseStorage implements IStorage {
 
   async createSupplier(supplier: InsertSupplier): Promise<Supplier> {
     try {
+      const supplierData = {
+        ...supplier,
+        totalDebt: '0' // إضافة القيمة الافتراضية للمديونية
+      };
       const [newSupplier] = await db
         .insert(suppliers)
-        .values(supplier)
+        .values(supplierData)
         .returning();
       return newSupplier;
     } catch (error) {

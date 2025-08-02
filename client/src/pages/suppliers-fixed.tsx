@@ -1,10 +1,24 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Building2, Phone, CreditCard, Edit, Trash2, Eye, FileText } from "lucide-react";
+import { Plus, Building2, Phone, CreditCard, Edit, Trash2, Eye, FileText, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Dialog,
   DialogContent,
@@ -13,7 +27,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -25,6 +38,13 @@ export default function SuppliersPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  
+  // Autocomplete states
+  const [isContactPersonOpen, setIsContactPersonOpen] = useState(false);
+  const [isPhoneOpen, setIsPhoneOpen] = useState(false);
+  const [isAddressOpen, setIsAddressOpen] = useState(false);
+  const [isPaymentTermsOpen, setIsPaymentTermsOpen] = useState(false);
+  
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -45,6 +65,23 @@ export default function SuppliersPage() {
   // Get suppliers
   const { data: suppliers = [], isLoading } = useQuery({
     queryKey: ["/api/suppliers"],
+  });
+
+  // Get autocomplete suggestions
+  const { data: contactPersonSuggestions = [] } = useQuery({
+    queryKey: ["/api/autocomplete", "supplier_contact_person"],
+  });
+
+  const { data: phoneSuggestions = [] } = useQuery({
+    queryKey: ["/api/autocomplete", "supplier_phone"],
+  });
+
+  const { data: addressSuggestions = [] } = useQuery({
+    queryKey: ["/api/autocomplete", "supplier_address"],
+  });
+
+  const { data: paymentTermsSuggestions = [] } = useQuery({
+    queryKey: ["/api/autocomplete", "supplier_payment_terms"],
   });
 
   // Create supplier mutation
@@ -139,7 +176,52 @@ export default function SuppliersPage() {
     },
   });
 
-  const onSubmit = (data: InsertSupplier) => {
+  const onSubmit = async (data: InsertSupplier) => {
+    // Add autocomplete data
+    if (data.contactPerson) {
+      await fetch("/api/autocomplete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          category: "supplier_contact_person",
+          value: data.contactPerson,
+        }),
+      });
+    }
+
+    if (data.phone) {
+      await fetch("/api/autocomplete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          category: "supplier_phone",
+          value: data.phone,
+        }),
+      });
+    }
+
+    if (data.address) {
+      await fetch("/api/autocomplete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          category: "supplier_address",
+          value: data.address,
+        }),
+      });
+    }
+
+    if (data.paymentTerms) {
+      await fetch("/api/autocomplete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          category: "supplier_payment_terms",
+          value: data.paymentTerms,
+        }),
+      });
+    }
+
     if (selectedSupplier) {
       updateSupplierMutation.mutate({ id: selectedSupplier.id, supplier: data });
     } else {
@@ -198,9 +280,47 @@ export default function SuppliersPage() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>الشخص المسؤول</FormLabel>
-                <FormControl>
-                  <Input placeholder="اسم الشخص المسؤول" {...field} value={field.value || ""} />
-                </FormControl>
+                <Popover open={isContactPersonOpen} onOpenChange={setIsContactPersonOpen}>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Input 
+                        placeholder="اسم الشخص المسؤول" 
+                        value={field.value || ""} 
+                        onChange={(e) => {
+                          field.onChange(e);
+                          setIsContactPersonOpen(e.target.value.length > 0);
+                        }}
+                        onFocus={() => setIsContactPersonOpen(field.value ? field.value.length > 0 : false)}
+                      />
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[300px] p-0">
+                    <Command>
+                      <CommandInput placeholder="البحث..." />
+                      <CommandList>
+                        <CommandEmpty>لا توجد نتائج</CommandEmpty>
+                        <CommandGroup>
+                          {contactPersonSuggestions
+                            .filter((suggestion: any) => 
+                              suggestion.value.toLowerCase().includes((field.value || "").toLowerCase())
+                            )
+                            .slice(0, 5)
+                            .map((suggestion: any) => (
+                              <CommandItem
+                                key={suggestion.id}
+                                onSelect={() => {
+                                  field.onChange(suggestion.value);
+                                  setIsContactPersonOpen(false);
+                                }}
+                              >
+                                {suggestion.value}
+                              </CommandItem>
+                            ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
                 <FormMessage />
               </FormItem>
             )}
@@ -212,9 +332,47 @@ export default function SuppliersPage() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>رقم الهاتف</FormLabel>
-                <FormControl>
-                  <Input placeholder="777123456" {...field} value={field.value || ""} />
-                </FormControl>
+                <Popover open={isPhoneOpen} onOpenChange={setIsPhoneOpen}>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Input 
+                        placeholder="777123456" 
+                        value={field.value || ""} 
+                        onChange={(e) => {
+                          field.onChange(e);
+                          setIsPhoneOpen(e.target.value.length > 0);
+                        }}
+                        onFocus={() => setIsPhoneOpen(field.value ? field.value.length > 0 : false)}
+                      />
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[300px] p-0">
+                    <Command>
+                      <CommandInput placeholder="البحث..." />
+                      <CommandList>
+                        <CommandEmpty>لا توجد نتائج</CommandEmpty>
+                        <CommandGroup>
+                          {phoneSuggestions
+                            .filter((suggestion: any) => 
+                              suggestion.value.includes(field.value || "")
+                            )
+                            .slice(0, 5)
+                            .map((suggestion: any) => (
+                              <CommandItem
+                                key={suggestion.id}
+                                onSelect={() => {
+                                  field.onChange(suggestion.value);
+                                  setIsPhoneOpen(false);
+                                }}
+                              >
+                                {suggestion.value}
+                              </CommandItem>
+                            ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
                 <FormMessage />
               </FormItem>
             )}
@@ -226,9 +384,47 @@ export default function SuppliersPage() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>شروط الدفع</FormLabel>
-                <FormControl>
-                  <Input placeholder="نقد / 30 يوم / 60 يوم" {...field} value={field.value || ""} />
-                </FormControl>
+                <Popover open={isPaymentTermsOpen} onOpenChange={setIsPaymentTermsOpen}>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Input 
+                        placeholder="نقد / 30 يوم / 60 يوم" 
+                        value={field.value || ""} 
+                        onChange={(e) => {
+                          field.onChange(e);
+                          setIsPaymentTermsOpen(e.target.value.length > 0);
+                        }}
+                        onFocus={() => setIsPaymentTermsOpen(field.value ? field.value.length > 0 : false)}
+                      />
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[300px] p-0">
+                    <Command>
+                      <CommandInput placeholder="البحث..." />
+                      <CommandList>
+                        <CommandEmpty>لا توجد نتائج</CommandEmpty>
+                        <CommandGroup>
+                          {paymentTermsSuggestions
+                            .filter((suggestion: any) => 
+                              suggestion.value.toLowerCase().includes((field.value || "").toLowerCase())
+                            )
+                            .slice(0, 5)
+                            .map((suggestion: any) => (
+                              <CommandItem
+                                key={suggestion.id}
+                                onSelect={() => {
+                                  field.onChange(suggestion.value);
+                                  setIsPaymentTermsOpen(false);
+                                }}
+                              >
+                                {suggestion.value}
+                              </CommandItem>
+                            ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
                 <FormMessage />
               </FormItem>
             )}
@@ -241,9 +437,47 @@ export default function SuppliersPage() {
           render={({ field }) => (
             <FormItem>
               <FormLabel>العنوان</FormLabel>
-              <FormControl>
-                <Input placeholder="العنوان الكامل" {...field} value={field.value || ""} />
-              </FormControl>
+              <Popover open={isAddressOpen} onOpenChange={setIsAddressOpen}>
+                <PopoverTrigger asChild>
+                  <FormControl>
+                    <Input 
+                      placeholder="العنوان الكامل" 
+                      value={field.value || ""} 
+                      onChange={(e) => {
+                        field.onChange(e);
+                        setIsAddressOpen(e.target.value.length > 0);
+                      }}
+                      onFocus={() => setIsAddressOpen(field.value ? field.value.length > 0 : false)}
+                    />
+                  </FormControl>
+                </PopoverTrigger>
+                <PopoverContent className="w-[400px] p-0">
+                  <Command>
+                    <CommandInput placeholder="البحث..." />
+                    <CommandList>
+                      <CommandEmpty>لا توجد نتائج</CommandEmpty>
+                      <CommandGroup>
+                        {addressSuggestions
+                          .filter((suggestion: any) => 
+                            suggestion.value.toLowerCase().includes((field.value || "").toLowerCase())
+                          )
+                          .slice(0, 5)
+                          .map((suggestion: any) => (
+                            <CommandItem
+                              key={suggestion.id}
+                              onSelect={() => {
+                                field.onChange(suggestion.value);
+                                setIsAddressOpen(false);
+                              }}
+                            >
+                              {suggestion.value}
+                            </CommandItem>
+                          ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
               <FormMessage />
             </FormItem>
           )}
