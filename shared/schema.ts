@@ -78,7 +78,7 @@ export const suppliers = pgTable("suppliers", {
   phone: text("phone"),
   address: text("address"),
   paymentTerms: text("payment_terms").default("نقد"), // نقد، 30 يوم، 60 يوم، etc
-  totalDebt: decimal("total_debt", { precision: 12, scale: 2 }).default('0').notNull(), // إجمالي المديونية
+  // totalDebt: decimal("total_debt", { precision: 12, scale: 2 }).default('0').notNull(), // إجمالي المديونية - معطل مؤقتاً
   isActive: boolean("is_active").default(true).notNull(),
   notes: text("notes"),
   createdAt: timestamp("created_at").defaultNow().notNull(),

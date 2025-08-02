@@ -63,10 +63,10 @@ export default function SuppliersPage() {
 
   // Calculate statistics
   const stats = {
-    total: suppliers.length,
-    active: suppliers.filter((s: Supplier) => s.isActive).length,
-    inactive: suppliers.filter((s: Supplier) => !s.isActive).length,
-    totalDebt: suppliers.reduce((sum: number, s: Supplier) => sum + (parseFloat(s.totalDebt?.toString() || '0') || 0), 0),
+    total: (suppliers as Supplier[]).length,
+    active: (suppliers as Supplier[]).filter((s: Supplier) => s.isActive).length,
+    inactive: (suppliers as Supplier[]).filter((s: Supplier) => !s.isActive).length,
+    totalDebt: 0, // مؤقتاً معطل حتى إضافة عمود totalDebt
   };
 
   const formatCurrency = (amount: number) => {
@@ -297,12 +297,12 @@ export default function SuppliersPage() {
                   </div>
                 )}
 
-                {/* Debt Info */}
-                {parseFloat(supplier.totalDebt?.toString() || '0') > 0 && (
+                {/* Debt Info - معطل مؤقتاً */}
+                {false && (
                   <div className="flex items-center gap-2 text-xs">
                     <AlertCircle className="h-3 w-3 flex-shrink-0 text-red-500" />
                     <span className="font-medium text-red-600">
-                      {formatCurrency(parseFloat(supplier.totalDebt?.toString() || '0'))}
+                      {formatCurrency(0)}
                     </span>
                   </div>
                 )}
