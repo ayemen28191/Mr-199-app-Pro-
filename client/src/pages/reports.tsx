@@ -987,11 +987,14 @@ export default function Reports() {
             <CardContent className="p-8">
               {activeReportType === 'daily' && renderDailyExpensesReport(reportData)}
               {activeReportType === 'professional' && (
-                <ProfessionalDailyReport 
-                  data={reportData}
-                  selectedProject={selectedProject}
-                  selectedDate={dailyReportDate}
-                />
+                <div>
+                  <h2 className="text-lg font-bold mb-4 text-blue-600">الكشف الاحترافي الجديد</h2>
+                  <ProfessionalDailyReport 
+                    data={reportData}
+                    selectedProject={selectedProject}
+                    selectedDate={dailyReportDate}
+                  />
+                </div>
               )}
               {activeReportType === 'worker' && renderWorkerAccountReport(reportData)}
               {activeReportType === 'material' && renderMaterialPurchasesReport(reportData)}
