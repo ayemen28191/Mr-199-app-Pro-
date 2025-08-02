@@ -1878,7 +1878,17 @@ export class DatabaseStorage implements IStorage {
   // Suppliers methods
   async getSuppliers(): Promise<Supplier[]> {
     try {
-      return await db.select().from(suppliers).orderBy(suppliers.name);
+      return await db.select({
+        id: suppliers.id,
+        name: suppliers.name,
+        contactPerson: suppliers.contactPerson,
+        phone: suppliers.phone,
+        address: suppliers.address,
+        paymentTerms: suppliers.paymentTerms,
+        notes: suppliers.notes,
+        isActive: suppliers.isActive,
+        createdAt: suppliers.createdAt,
+      }).from(suppliers).orderBy(suppliers.name);
     } catch (error) {
       console.error('Error getting suppliers:', error);
       return [];

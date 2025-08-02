@@ -40,10 +40,12 @@ export default function SuppliersPage() {
   const [searchTerm, setSearchTerm] = useState("");
   
   // Autocomplete states
+  const [isSupplierNameOpen, setIsSupplierNameOpen] = useState(false);
   const [isContactPersonOpen, setIsContactPersonOpen] = useState(false);
   const [isPhoneOpen, setIsPhoneOpen] = useState(false);
   const [isAddressOpen, setIsAddressOpen] = useState(false);
   const [isPaymentTermsOpen, setIsPaymentTermsOpen] = useState(false);
+  const [isNotesOpen, setIsNotesOpen] = useState(false);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -68,6 +70,10 @@ export default function SuppliersPage() {
   });
 
   // Get autocomplete suggestions
+  const { data: supplierNameSuggestions = [] } = useQuery({
+    queryKey: ["/api/autocomplete", "supplier_name"],
+  });
+
   const { data: contactPersonSuggestions = [] } = useQuery({
     queryKey: ["/api/autocomplete", "supplier_contact_person"],
   });
@@ -82,6 +88,10 @@ export default function SuppliersPage() {
 
   const { data: paymentTermsSuggestions = [] } = useQuery({
     queryKey: ["/api/autocomplete", "supplier_payment_terms"],
+  });
+
+  const { data: notesSuggestions = [] } = useQuery({
+    queryKey: ["/api/autocomplete", "supplier_notes"],
   });
 
   // Create supplier mutation
@@ -222,6 +232,28 @@ export default function SuppliersPage() {
       });
     }
 
+    if (data.notes) {
+      await fetch("/api/autocomplete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          category: "supplier_notes",
+          value: data.notes,
+        }),
+      });
+    }
+
+    if (data.name) {
+      await fetch("/api/autocomplete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          category: "supplier_name",
+          value: data.name,
+        }),
+      });
+    }
+
     if (selectedSupplier) {
       updateSupplierMutation.mutate({ id: selectedSupplier.id, supplier: data });
     } else {
@@ -266,9 +298,49 @@ export default function SuppliersPage() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>اسم المورد *</FormLabel>
-                <FormControl>
-                  <Input placeholder="اسم المورد" {...field} />
-                </FormControl>
+                <Popover open={isSupplierNameOpen} onOpenChange={setIsSupplierNameOpen}>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Input 
+                        placeholder="اسم المورد" 
+                        value={field.value || ""} 
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/[^a-zA-Zأ-ي0-9\s]/g, '');
+                          field.onChange(value);
+                          setIsSupplierNameOpen(value.length > 0);
+                        }}
+                        onBlur={() => setIsSupplierNameOpen(false)}
+                        autoComplete="off"
+                      />
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[300px] p-0">
+                    <Command>
+                      <CommandInput placeholder="البحث..." />
+                      <CommandList>
+                        <CommandEmpty>لا توجد نتائج</CommandEmpty>
+                        <CommandGroup>
+                          {supplierNameSuggestions
+                            .filter((suggestion: any) => 
+                              suggestion.value.toLowerCase().includes((field.value || "").toLowerCase())
+                            )
+                            .slice(0, 5)
+                            .map((suggestion: any) => (
+                              <CommandItem
+                                key={suggestion.id}
+                                onSelect={() => {
+                                  field.onChange(suggestion.value);
+                                  setIsSupplierNameOpen(false);
+                                }}
+                              >
+                                {suggestion.value}
+                              </CommandItem>
+                            ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
                 <FormMessage />
               </FormItem>
             )}
@@ -287,10 +359,13 @@ export default function SuppliersPage() {
                         placeholder="اسم الشخص المسؤول" 
                         value={field.value || ""} 
                         onChange={(e) => {
-                          field.onChange(e);
-                          setIsContactPersonOpen(e.target.value.length > 0);
+                          // السماح بالحروف العربية والإنجليزية والمسافات فقط
+                          const value = e.target.value.replace(/[^a-zA-Zأ-ي\s]/g, '');
+                          field.onChange(value);
+                          setIsContactPersonOpen(value.length > 0);
                         }}
-                        onFocus={() => setIsContactPersonOpen(field.value ? field.value.length > 0 : false)}
+                        onBlur={() => setIsContactPersonOpen(false)}
+                        autoComplete="off"
                       />
                     </FormControl>
                   </PopoverTrigger>
@@ -339,10 +414,15 @@ export default function SuppliersPage() {
                         placeholder="777123456" 
                         value={field.value || ""} 
                         onChange={(e) => {
-                          field.onChange(e);
-                          setIsPhoneOpen(e.target.value.length > 0);
+                          // السماح بالأرقام فقط
+                          const value = e.target.value.replace(/[^0-9]/g, '');
+                          field.onChange(value);
+                          setIsPhoneOpen(value.length > 0);
                         }}
-                        onFocus={() => setIsPhoneOpen(field.value ? field.value.length > 0 : false)}
+                        onBlur={() => setIsPhoneOpen(false)}
+                        autoComplete="off"
+                        type="tel"
+                        maxLength={15}
                       />
                     </FormControl>
                   </PopoverTrigger>
@@ -391,10 +471,11 @@ export default function SuppliersPage() {
                         placeholder="نقد / 30 يوم / 60 يوم" 
                         value={field.value || ""} 
                         onChange={(e) => {
-                          field.onChange(e);
+                          field.onChange(e.target.value);
                           setIsPaymentTermsOpen(e.target.value.length > 0);
                         }}
-                        onFocus={() => setIsPaymentTermsOpen(field.value ? field.value.length > 0 : false)}
+                        onBlur={() => setIsPaymentTermsOpen(false)}
+                        autoComplete="off"
                       />
                     </FormControl>
                   </PopoverTrigger>
@@ -444,10 +525,11 @@ export default function SuppliersPage() {
                       placeholder="العنوان الكامل" 
                       value={field.value || ""} 
                       onChange={(e) => {
-                        field.onChange(e);
+                        field.onChange(e.target.value);
                         setIsAddressOpen(e.target.value.length > 0);
                       }}
-                      onFocus={() => setIsAddressOpen(field.value ? field.value.length > 0 : false)}
+                      onBlur={() => setIsAddressOpen(false)}
+                      autoComplete="off"
                     />
                   </FormControl>
                 </PopoverTrigger>
@@ -489,9 +571,49 @@ export default function SuppliersPage() {
           render={({ field }) => (
             <FormItem>
               <FormLabel>ملاحظات</FormLabel>
-              <FormControl>
-                <Textarea placeholder="ملاحظات إضافية" rows={3} {...field} value={field.value || ""} />
-              </FormControl>
+              <Popover open={isNotesOpen} onOpenChange={setIsNotesOpen}>
+                <PopoverTrigger asChild>
+                  <FormControl>
+                    <Textarea 
+                      placeholder="ملاحظات إضافية" 
+                      rows={3}
+                      value={field.value || ""} 
+                      onChange={(e) => {
+                        field.onChange(e.target.value);
+                        setIsNotesOpen(e.target.value.length > 0);
+                      }}
+                      onBlur={() => setIsNotesOpen(false)}
+                      autoComplete="off"
+                    />
+                  </FormControl>
+                </PopoverTrigger>
+                <PopoverContent className="w-[400px] p-0">
+                  <Command>
+                    <CommandInput placeholder="البحث..." />
+                    <CommandList>
+                      <CommandEmpty>لا توجد نتائج</CommandEmpty>
+                      <CommandGroup>
+                        {notesSuggestions
+                          .filter((suggestion: any) => 
+                            suggestion.value.toLowerCase().includes((field.value || "").toLowerCase())
+                          )
+                          .slice(0, 5)
+                          .map((suggestion: any) => (
+                            <CommandItem
+                              key={suggestion.id}
+                              onSelect={() => {
+                                field.onChange(suggestion.value);
+                                setIsNotesOpen(false);
+                              }}
+                            >
+                              {suggestion.value}
+                            </CommandItem>
+                          ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
               <FormMessage />
             </FormItem>
           )}
