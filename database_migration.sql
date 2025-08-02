@@ -345,14 +345,20 @@ CREATE INDEX IF NOT EXISTS idx_autocomplete_usage ON autocomplete_data(usage_cou
 -- ============================================
 
 -- قيد فريد لملخص المصروفات اليومية
-ALTER TABLE daily_expense_summaries 
-ADD CONSTRAINT IF NOT EXISTS unique_project_date 
-UNIQUE (project_id, date);
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'unique_project_date') THEN
+        ALTER TABLE daily_expense_summaries ADD CONSTRAINT unique_project_date UNIQUE (project_id, date);
+    END IF;
+END $$;
 
 -- قيد فريد لأسماء المشاريع
-ALTER TABLE projects 
-ADD CONSTRAINT IF NOT EXISTS unique_project_name 
-UNIQUE (name);
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'unique_project_name') THEN
+        ALTER TABLE projects ADD CONSTRAINT unique_project_name UNIQUE (name);
+    END IF;
+END $$;
 
 -- ============================================
 -- تقرير النتائج
