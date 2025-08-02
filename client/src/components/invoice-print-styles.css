@@ -1,54 +1,94 @@
-/* Professional Invoice Print Styles */
+/* Invoice Print Styles - Single Page Layout */
 @media print {
-  @page {
-    size: A4;
-    margin: 0.5in;
+  /* Remove all margins and padding for full page usage */
+  * {
+    margin: 0 !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
   }
 
-  body {
-    font-family: 'Times New Roman', serif;
-    color: #000;
-    line-height: 1.4;
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  /* Hide all elements except the invoice */
+  body * {
+    visibility: hidden;
+  }
+
+  .print-content, .print-content * {
+    visibility: visible !important;
   }
 
   .print-content {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
     width: 100% !important;
-    max-width: none !important;
     margin: 0 !important;
     padding: 0 !important;
-    box-shadow: none !important;
-    border: none !important;
+    background: white !important;
+    font-size: 10px !important;
+    line-height: 1.1 !important;
+    page-break-inside: avoid !important;
+    transform: scale(0.85) !important;
+    transform-origin: top left !important;
   }
 
-  /* Header styling for print */
+  /* Compact header */
   .print-header {
-    background: linear-gradient(135deg, #0891b2, #3b82f6) !important;
+    padding: 8px 10px !important;
+    margin: 0 !important;
+  }
+
+  .print-header h1 {
+    font-size: 16px !important;
+    margin: 0 !important;
+  }
+
+  .print-header h2 {
+    font-size: 18px !important;
+    margin: 0 !important;
+  }
+
+  .print-header p {
+    font-size: 9px !important;
+    margin: 0 !important;
+  }
+
+  /* Professional gradient for print */
+  .professional-gradient.preserve-color {
+    background: linear-gradient(135deg, #0891b2 0%, #1e40af 100%) !important;
     color: white !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
 
-  /* Table styling for professional look */
+  /* Compact table styling */
   .invoice-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 20px 0;
-    font-size: 14px;
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin: 5px 0 !important;
+    font-size: 10px !important;
   }
 
   .invoice-table th,
   .invoice-table td {
-    border: 1px solid #333;
-    padding: 12px 8px;
-    text-align: center;
+    border: 1px solid #666 !important;
+    padding: 3px 5px !important;
+    font-size: 10px !important;
+    line-height: 1.1 !important;
   }
 
   .invoice-table th {
-    background-color: #0891b2 !important;
+    background: linear-gradient(135deg, #0891b2 0%, #1e40af 100%) !important;
     color: white !important;
-    font-weight: bold;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+    font-weight: bold !important;
   }
 
   .invoice-table tbody tr:nth-child(odd) {
@@ -57,136 +97,101 @@
     print-color-adjust: exact !important;
   }
 
-  /* Summary section */
-  .summary-section {
-    background-color: #f5f5f5 !important;
-    border: 2px solid #0891b2 !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
+  /* Compact grid for detail tables */
+  .grid {
+    display: grid !important;
+    gap: 5px !important;
+    margin: 5px 0 !important;
   }
 
-  /* Total row */
-  .total-row {
-    background: linear-gradient(135deg, #0891b2, #3b82f6) !important;
-    color: white !important;
+  .grid-cols-2 {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  .grid-cols-3 {
+    grid-template-columns: 1fr 1fr 1fr !important;
+  }
+
+  /* Summary styling */
+  .currency-amount {
     font-weight: bold !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
+  }
+
+  /* Hide screen-only elements */
+  .no-print {
+    display: none !important;
+  }
+
+  /* Compact spacing */
+  .print-spacing {
+    margin: 3px 0 !important;
+    padding: 0 !important;
   }
 
   /* Footer styling */
   .invoice-footer {
-    background: linear-gradient(135deg, #0891b2, #3b82f6) !important;
+    background: linear-gradient(135deg, #0891b2 0%, #1e40af 100%) !important;
     color: white !important;
-    text-align: center !important;
-    padding: 15px !important;
-    margin-top: 30px !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
-  }
-
-  /* Hide elements not needed in print */
-  .no-print,
-  .print-hide,
-  button,
-  .mobile-sticky-header,
-  .sticky {
-    display: none !important;
+    padding: 6px !important;
+    margin: 5px 0 0 0 !important;
+    border-radius: 3px !important;
   }
 
   /* Signature line */
   .signature-line {
-    border-bottom: 2px solid #333 !important;
-    width: 200px !important;
-    margin: 30px 0 10px auto !important;
+    border-bottom: 1px solid #666 !important;
   }
 
-  /* Logo and branding */
-  .company-logo {
-    width: 60px !important;
-    height: 60px !important;
-  }
-
-  /* Arabic text alignment */
-  .rtl-text {
-    direction: rtl;
-    text-align: right;
-  }
-
-  /* Color preservation for important elements */
-  .preserve-color {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-
-  /* Page breaks */
-  .page-break-before {
-    page-break-before: always;
-  }
-
-  .page-break-after {
-    page-break-after: always;
-  }
-
+  /* Force single page */
   .page-break-inside-avoid {
-    page-break-inside: avoid;
+    page-break-inside: avoid !important;
   }
 
-  /* Ensure tables don't break awkwardly */
-  table {
-    page-break-inside: avoid;
+  /* Company logo */
+  .company-logo {
+    width: 35px !important;
+    height: 35px !important;
   }
 
-  thead {
-    display: table-header-group;
+  /* Compact text sizes */
+  .text-xs { font-size: 8px !important; }
+  .text-sm { font-size: 9px !important; }
+  .text-base { font-size: 10px !important; }
+  .text-lg { font-size: 11px !important; }
+  .text-xl { font-size: 12px !important; }
+  .text-2xl { font-size: 14px !important; }
+
+  /* Remove shadows and rounded corners for print */
+  .shadow-lg, .rounded-lg, .rounded {
+    box-shadow: none !important;
+    border-radius: 0 !important;
   }
 
-  tfoot {
-    display: table-footer-group;
-  }
-
-  /* High contrast for better print quality */
-  .high-contrast {
-    color: #000 !important;
-    background: white !important;
-  }
-
-  /* Professional spacing */
-  .print-spacing {
-    margin: 20px 0;
-  }
-
-  /* Currency amounts styling */
-  .currency-amount {
-    font-weight: bold;
-    font-family: 'Courier New', monospace;
-  }
-
-  /* Status badges for print */
-  .status-badge {
-    border: 1px solid #333 !important;
-    padding: 2px 6px !important;
-    border-radius: 4px !important;
-    font-size: 12px !important;
+  /* Ensure proper print scaling */
+  @page {
+    margin: 0.3in !important;
+    size: A4 !important;
   }
 }
 
 /* Screen styles for preview */
 @media screen {
   .invoice-preview {
-    box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    max-width: 21cm;
+    margin: 0 auto;
     background: white;
-    border-radius: 8px;
-    overflow: hidden;
+    box-shadow: 0 0 20px rgba(0,0,0,0.1);
   }
 
   .professional-gradient {
-    background: linear-gradient(135deg, #0891b2, #3b82f6);
+    background: linear-gradient(135deg, #0891b2 0%, #1e40af 100%);
   }
 
   .invoice-table-screen {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     border-radius: 8px;
     overflow: hidden;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
   }
 }
