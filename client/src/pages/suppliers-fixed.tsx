@@ -40,7 +40,6 @@ export default function SuppliersPage() {
   const [searchTerm, setSearchTerm] = useState("");
   
   // Autocomplete states
-  const [isSupplierNameOpen, setIsSupplierNameOpen] = useState(false);
   const [isContactPersonOpen, setIsContactPersonOpen] = useState(false);
   const [isPhoneOpen, setIsPhoneOpen] = useState(false);
   const [isAddressOpen, setIsAddressOpen] = useState(false);
@@ -70,10 +69,6 @@ export default function SuppliersPage() {
   });
 
   // Get autocomplete suggestions
-  const { data: supplierNameSuggestions = [] } = useQuery({
-    queryKey: ["/api/autocomplete", "supplier_name"],
-  });
-
   const { data: contactPersonSuggestions = [] } = useQuery({
     queryKey: ["/api/autocomplete", "supplier_contact_person"],
   });
@@ -243,16 +238,7 @@ export default function SuppliersPage() {
       });
     }
 
-    if (data.name) {
-      await fetch("/api/autocomplete", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          category: "supplier_name",
-          value: data.name,
-        }),
-      });
-    }
+
 
     if (selectedSupplier) {
       updateSupplierMutation.mutate({ id: selectedSupplier.id, supplier: data });
@@ -298,49 +284,17 @@ export default function SuppliersPage() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>اسم المورد *</FormLabel>
-                <Popover open={isSupplierNameOpen} onOpenChange={setIsSupplierNameOpen}>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Input 
-                        placeholder="اسم المورد" 
-                        value={field.value || ""} 
-                        onChange={(e) => {
-                          const value = e.target.value.replace(/[^a-zA-Zأ-ي0-9\s]/g, '');
-                          field.onChange(value);
-                          setIsSupplierNameOpen(value.length > 0);
-                        }}
-                        onBlur={() => setIsSupplierNameOpen(false)}
-                        autoComplete="off"
-                      />
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-[300px] p-0">
-                    <Command>
-                      <CommandInput placeholder="البحث..." />
-                      <CommandList>
-                        <CommandEmpty>لا توجد نتائج</CommandEmpty>
-                        <CommandGroup>
-                          {supplierNameSuggestions
-                            .filter((suggestion: any) => 
-                              suggestion.value.toLowerCase().includes((field.value || "").toLowerCase())
-                            )
-                            .slice(0, 5)
-                            .map((suggestion: any) => (
-                              <CommandItem
-                                key={suggestion.id}
-                                onSelect={() => {
-                                  field.onChange(suggestion.value);
-                                  setIsSupplierNameOpen(false);
-                                }}
-                              >
-                                {suggestion.value}
-                              </CommandItem>
-                            ))}
-                        </CommandGroup>
-                      </CommandList>
-                    </Command>
-                  </PopoverContent>
-                </Popover>
+                <FormControl>
+                  <Input 
+                    placeholder="اسم المورد" 
+                    value={field.value || ""} 
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/[^a-zA-Zأ-ي0-9\s]/g, '');
+                      field.onChange(value);
+                    }}
+                    autoComplete="off"
+                  />
+                </FormControl>
                 <FormMessage />
               </FormItem>
             )}
@@ -362,9 +316,9 @@ export default function SuppliersPage() {
                           // السماح بالحروف العربية والإنجليزية والمسافات فقط
                           const value = e.target.value.replace(/[^a-zA-Zأ-ي\s]/g, '');
                           field.onChange(value);
-                          setIsContactPersonOpen(value.length > 0);
+                          setIsContactPersonOpen(value.length > 1);
                         }}
-                        onBlur={() => setIsContactPersonOpen(false)}
+                          onBlur={() => setTimeout(() => setIsContactPersonOpen(false), 150)}
                         autoComplete="off"
                       />
                     </FormControl>
@@ -417,9 +371,9 @@ export default function SuppliersPage() {
                           // السماح بالأرقام فقط
                           const value = e.target.value.replace(/[^0-9]/g, '');
                           field.onChange(value);
-                          setIsPhoneOpen(value.length > 0);
+                          setIsPhoneOpen(value.length > 2);
                         }}
-                        onBlur={() => setIsPhoneOpen(false)}
+                        onBlur={() => setTimeout(() => setIsPhoneOpen(false), 150)}
                         autoComplete="off"
                         type="tel"
                         maxLength={15}
@@ -472,9 +426,9 @@ export default function SuppliersPage() {
                         value={field.value || ""} 
                         onChange={(e) => {
                           field.onChange(e.target.value);
-                          setIsPaymentTermsOpen(e.target.value.length > 0);
+                          setIsPaymentTermsOpen(e.target.value.length > 1);
                         }}
-                        onBlur={() => setIsPaymentTermsOpen(false)}
+                        onBlur={() => setTimeout(() => setIsPaymentTermsOpen(false), 150)}
                         autoComplete="off"
                       />
                     </FormControl>
@@ -526,9 +480,9 @@ export default function SuppliersPage() {
                       value={field.value || ""} 
                       onChange={(e) => {
                         field.onChange(e.target.value);
-                        setIsAddressOpen(e.target.value.length > 0);
+                        setIsAddressOpen(e.target.value.length > 2);
                       }}
-                      onBlur={() => setIsAddressOpen(false)}
+                      onBlur={() => setTimeout(() => setIsAddressOpen(false), 150)}
                       autoComplete="off"
                     />
                   </FormControl>
@@ -580,9 +534,9 @@ export default function SuppliersPage() {
                       value={field.value || ""} 
                       onChange={(e) => {
                         field.onChange(e.target.value);
-                        setIsNotesOpen(e.target.value.length > 0);
+                        setIsNotesOpen(e.target.value.length > 2);
                       }}
-                      onBlur={() => setIsNotesOpen(false)}
+                      onBlur={() => setTimeout(() => setIsNotesOpen(false), 150)}
                       autoComplete="off"
                     />
                   </FormControl>
