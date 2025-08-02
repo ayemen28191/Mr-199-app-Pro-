@@ -332,14 +332,6 @@ export default function Reports() {
 
       {/* Mobile-optimized Main Content */}
       <div className="container mx-auto px-3 sm:px-6 py-4 sm:py-8">
-        {/* Enhanced Project Selection Card */}
-        <ProjectSelector 
-          selectedProjectId={selectedProjectId}
-          onProjectChange={selectProject} 
-          variant="premium"
-          className="mb-8"
-        />
-
         {/* Mobile-optimized Enhanced Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3 bg-white shadow-lg rounded-xl p-1 sm:p-2 border-0 mobile-glass-effect">
@@ -512,6 +504,14 @@ export default function Reports() {
 
           {/* Reports Tab */}
           <TabsContent value="reports" className="mt-8">
+            {/* Enhanced Project Selection Card */}
+            <ProjectSelector 
+              selectedProjectId={selectedProjectId}
+              onProjectChange={selectProject} 
+              variant="premium"
+              className="mb-8"
+            />
+            
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Daily Expenses Report */}
               <Card className="group hover:shadow-2xl transition-all duration-500 bg-gradient-to-br from-blue-50 to-blue-100 border-0 rounded-2xl overflow-hidden">
