@@ -61,8 +61,10 @@ BEGIN
         RAISE NOTICE 'تم إضافة القيد الفريد على اسم المورد';
     END IF;
 EXCEPTION
-    WHEN duplicate_key THEN
+    WHEN unique_violation THEN
         RAISE NOTICE 'القيد الفريد موجود مسبقاً أو هناك أسماء مكررة';
+    WHEN OTHERS THEN
+        RAISE NOTICE 'تم تخطي إضافة القيد الفريد - قد يكون موجوداً مسبقاً';
 END $$;
 
 -- 6. التحقق من وجود جدول autocomplete_data وإنشاؤه إذا لم يكن موجوداً
