@@ -40,6 +40,7 @@ export default function SuppliersPage() {
   const [searchTerm, setSearchTerm] = useState("");
   
   // Autocomplete states
+  const [isSupplierNameOpen, setIsSupplierNameOpen] = useState(false);
   const [isContactPersonOpen, setIsContactPersonOpen] = useState(false);
   const [isPhoneOpen, setIsPhoneOpen] = useState(false);
   const [isAddressOpen, setIsAddressOpen] = useState(false);
@@ -69,6 +70,10 @@ export default function SuppliersPage() {
   });
 
   // Get autocomplete suggestions
+  const { data: supplierNameSuggestions = [] } = useQuery({
+    queryKey: ["/api/autocomplete", "supplier_name"],
+  });
+
   const { data: contactPersonSuggestions = [] } = useQuery({
     queryKey: ["/api/autocomplete", "supplier_contact_person"],
   });
@@ -238,7 +243,16 @@ export default function SuppliersPage() {
       });
     }
 
-
+    if (data.name) {
+      await fetch("/api/autocomplete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          category: "supplier_name",
+          value: data.name,
+        }),
+      });
+    }
 
     if (selectedSupplier) {
       updateSupplierMutation.mutate({ id: selectedSupplier.id, supplier: data });
@@ -284,17 +298,49 @@ export default function SuppliersPage() {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>اسم المورد *</FormLabel>
-                <FormControl>
-                  <Input 
-                    placeholder="اسم المورد" 
-                    value={field.value || ""} 
-                    onChange={(e) => {
-                      const value = e.target.value.replace(/[^a-zA-Zأ-ي0-9\s]/g, '');
-                      field.onChange(value);
-                    }}
-                    autoComplete="off"
-                  />
-                </FormControl>
+                <Popover open={isSupplierNameOpen} onOpenChange={setIsSupplierNameOpen}>
+                  <PopoverTrigger asChild>
+                    <FormControl>
+                      <Input 
+                        placeholder="اسم المورد" 
+                        value={field.value || ""} 
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/[^a-zA-Zأ-ي0-9\s]/g, '');
+                          field.onChange(value);
+                          setIsSupplierNameOpen(value.length > 1);
+                        }}
+                        onBlur={() => setTimeout(() => setIsSupplierNameOpen(false), 150)}
+                        autoComplete="off"
+                      />
+                    </FormControl>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[300px] p-0">
+                    <Command>
+                      <CommandInput placeholder="البحث..." />
+                      <CommandList>
+                        <CommandEmpty>لا توجد نتائج</CommandEmpty>
+                        <CommandGroup>
+                          {supplierNameSuggestions
+                            .filter((suggestion: any) => 
+                              suggestion.value.toLowerCase().includes((field.value || "").toLowerCase())
+                            )
+                            .slice(0, 5)
+                            .map((suggestion: any) => (
+                              <CommandItem
+                                key={suggestion.id}
+                                onSelect={() => {
+                                  field.onChange(suggestion.value);
+                                  setIsSupplierNameOpen(false);
+                                }}
+                              >
+                                {suggestion.value}
+                              </CommandItem>
+                            ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
                 <FormMessage />
               </FormItem>
             )}
