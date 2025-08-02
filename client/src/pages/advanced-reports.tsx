@@ -42,7 +42,7 @@ export default function AdvancedReports() {
       const fromStr = format(dateFrom, 'yyyy-MM-dd');
       const toStr = format(dateTo, 'yyyy-MM-dd');
       
-      const response = await fetch(`/api/reports/advanced?type=${reportType}&projectId=${projectId}&dateFrom=${fromStr}&dateTo=${toStr}`);
+      const response = await fetch(`/api/reports/advanced?reportType=${reportType}&projectId=${projectId}&dateFrom=${fromStr}&dateTo=${toStr}`);
       const data = await response.json();
       
       if (response.ok) {

@@ -1637,15 +1637,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      let reportData: any = {
-        expenses: [],
-        income: [],
-        totals: {
-          totalAmount: 0,
-          categoryTotals: {}
-        }
-      };
-
       if (reportType === 'expenses') {
         // جلب المصروفات من جميع الجداول
         const expenses = await storage.getExpensesForReport(
@@ -1654,14 +1645,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           dateTo as string
         );
         
-        reportData.expenses = expenses;
-        reportData.totals.totalAmount = expenses.reduce((sum, exp) => sum + parseFloat(exp.amount.toString()), 0);
+        const totalExpenses = expenses.reduce((sum, exp) => sum + parseFloat(exp.amount.toString()), 0);
         
         // حساب الإجماليات حسب الفئة
+        const categoryTotals: Record<string, number> = {};
         expenses.forEach(expense => {
           const category = expense.category;
           const amount = parseFloat(expense.amount.toString());
-          reportData.totals.categoryTotals[category] = (reportData.totals.categoryTotals[category] || 0) + amount;
+          categoryTotals[category] = (categoryTotals[category] || 0) + amount;
+        });
+
+        res.json({
+          expenses,
+          totalExpenses,
+          categoryTotals
         });
 
       } else if (reportType === 'income') {
@@ -1672,11 +1669,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           dateTo as string
         );
         
-        reportData.income = income;
-        reportData.totals.totalAmount = income.reduce((sum, inc) => sum + parseFloat(inc.amount.toString()), 0);
+        const totalIncome = income.reduce((sum, inc) => sum + parseFloat(inc.amount.toString()), 0);
+        
+        res.json({
+          income,
+          totalIncome
+        });
       }
-
-      res.json(reportData);
       
     } catch (error) {
       console.error("خطأ في إنشاء التقرير:", error);
