@@ -231,9 +231,23 @@ export function applyPrintSettings(reportType: string, customSettings?: PrintSet
  * دالة للطباعة مع تطبيق الإعدادات تلقائياً
  * @param reportType نوع التقرير
  * @param delay تأخير قبل الطباعة (ميلي ثانية)
+ * @param customSettings إعدادات مخصصة (اختيارية)
  */
-export function printWithSettings(reportType: string, delay: number = 500) {
-  applyPrintSettings(reportType);
+export function printWithSettings(reportType: string, delay: number = 500, customSettings?: any) {
+  if (customSettings) {
+    // تطبيق الإعدادات المخصصة فوراً
+    const existingStyle = document.getElementById('dynamic-print-styles');
+    if (existingStyle) {
+      existingStyle.remove();
+    }
+
+    const styleElement = document.createElement('style');
+    styleElement.id = 'dynamic-print-styles';
+    styleElement.innerHTML = generatePrintCSS(customSettings);
+    document.head.appendChild(styleElement);
+  } else {
+    applyPrintSettings(reportType);
+  }
   
   setTimeout(() => {
     window.print();

@@ -9,6 +9,7 @@ interface PrintButtonProps {
   children?: React.ReactNode;
   className?: string;
   variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
+  printSettings?: any; // إعدادات الطباعة المخصصة
 }
 
 /**
@@ -19,10 +20,11 @@ export function PrintButton({
   disabled = false, 
   children, 
   className = "",
-  variant = "outline" 
+  variant = "outline",
+  printSettings
 }: PrintButtonProps) {
   const handlePrint = () => {
-    printWithSettings(reportType, 500);
+    printWithSettings(reportType, 500, printSettings);
   };
 
   return (

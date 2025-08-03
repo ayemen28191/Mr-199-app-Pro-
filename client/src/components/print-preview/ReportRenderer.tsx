@@ -6,13 +6,14 @@ import { usePrintSettings } from '@/hooks/usePrintSettings';
 interface ReportRendererProps {
   reportType: string;
   className?: string;
+  printSettings?: any; // إعدادات الطباعة المرسلة من المكون الأب
 }
 
 /**
  * مكون عرض التقارير الحقيقية للمعاينة
  * يجلب ويعرض البيانات الفعلية حسب نوع التقرير المحدد
  */
-export function ReportRenderer({ reportType, className = "" }: ReportRendererProps) {
+export function ReportRenderer({ reportType, className = "", printSettings: passedSettings }: ReportRendererProps) {
   
   // جلب البيانات حسب نوع التقرير
   const { data: reportData, isLoading, error } = useQuery({
@@ -28,8 +29,9 @@ export function ReportRenderer({ reportType, className = "" }: ReportRendererPro
     queryKey: ['/api/workers'],
   });
 
-  // جلب إعدادات الطباعة لهذا النوع من التقارير
-  const { settings: printSettings } = usePrintSettings(reportType);
+  // استخدام الإعدادات الممررة من المكون الأب أو جلب الإعدادات الافتراضية
+  const { settings: defaultSettings } = usePrintSettings(reportType);
+  const printSettings = passedSettings || defaultSettings;
 
   if (isLoading) {
     return (
@@ -74,16 +76,38 @@ export function ReportRenderer({ reportType, className = "" }: ReportRendererPro
     const attendanceData = actualData.attendanceData || [];
     const transfers = actualData.transfers || [];
     
-    return (
-      <div className="worker-statement-preview">
-        <div className="print-header text-center p-4 mb-4 bg-blue-600 text-white">
-          <h1 className="text-xl font-bold">كشف حساب العامل</h1>
-          <h2 className="text-lg">شركة الإنشاءات المتقدمة</h2>
-          <p className="text-sm">المملكة العربية السعودية</p>
-        </div>
+    // تطبيق إعدادات الطباعة على العناصر
+    const headerStyle = {
+      backgroundColor: printSettings?.headerBackgroundColor || '#2563eb',
+      color: printSettings?.headerTextColor || '#ffffff',
+      fontSize: `${printSettings?.headerFontSize || 18}px`,
+      fontFamily: printSettings?.fontFamily || 'Cairo, Arial, sans-serif',
+      display: printSettings?.showHeader !== false ? 'block' : 'none'
+    };
 
-        <div className="project-info grid grid-cols-2 gap-4 mb-4 p-3 bg-gray-50 rounded">
-          <div>
+    const containerStyle = {
+      fontSize: `${printSettings?.fontSize || 16}px`,
+      fontFamily: printSettings?.fontFamily || 'Cairo, Arial, sans-serif'
+    };
+
+    const tableHeaderStyle = {
+      backgroundColor: printSettings?.tableHeaderColor || '#2563eb',
+      fontSize: `${printSettings?.tableFontSize || 14}px`
+    };
+
+    return (
+      <div className="worker-statement-preview" style={containerStyle}>
+        {printSettings?.showHeader !== false && (
+          <div className="print-header text-center p-4 mb-4" style={headerStyle}>
+            <h1 className="text-xl font-bold">كشف حساب العامل</h1>
+            <h2 className="text-lg">شركة الإنشاءات المتقدمة</h2>
+            <p className="text-sm">المملكة العربية السعودية</p>
+          </div>
+        )}
+
+        {printSettings?.showProjectInfo !== false && (
+          <div className="project-info grid grid-cols-2 gap-4 mb-4 p-3 bg-gray-50 rounded">
+            <div>
             <h3 className="font-semibold mb-2 text-blue-800">معلومات المشروع:</h3>
             <p className="text-sm"><strong>اسم المشروع:</strong> {project.name}</p>
             <p className="text-sm"><strong>الموقع:</strong> {project.location || 'غير محدد'}</p>
@@ -95,9 +119,11 @@ export function ReportRenderer({ reportType, className = "" }: ReportRendererPro
             <p className="text-sm"><strong>نوع العمل:</strong> {worker.workerType}</p>
             <p className="text-sm"><strong>الأجر اليومي:</strong> {worker.dailyWage} ر.ي</p>
           </div>
-        </div>
+          </div>
+        )}
 
-        <table className="print-table w-full border-collapse mb-4">
+        {printSettings?.showAttendanceTable !== false && (
+          <table className="print-table w-full border-collapse mb-4" style={tableHeaderStyle}>
           <thead>
             <tr className="bg-blue-600 text-white">
               <th className="border p-2">التاريخ</th>
@@ -126,9 +152,11 @@ export function ReportRenderer({ reportType, className = "" }: ReportRendererPro
               </tr>
             ))}
           </tbody>
-        </table>
+          </table>
+        )}
 
-        <div className="transfers-table mb-4">
+        {printSettings?.showTransfers !== false && (
+          <div className="transfers-table mb-4">
           <h3 className="font-semibold mb-2 text-purple-800">الحوالات المرسلة:</h3>
           <table className="w-full border-collapse">
             <thead>
@@ -148,9 +176,11 @@ export function ReportRenderer({ reportType, className = "" }: ReportRendererPro
               </tr>
             </tbody>
           </table>
-        </div>
+          </div>
+        )}
 
-        <div className="summary-section p-4 bg-green-50 rounded mb-4">
+        {printSettings?.showSummary !== false && (
+          <div className="summary-section p-4 bg-green-50 rounded mb-4">
           <h3 className="font-semibold text-green-800 mb-3">الملخص النهائي:</h3>
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
@@ -162,9 +192,11 @@ export function ReportRenderer({ reportType, className = "" }: ReportRendererPro
               <p className="text-lg font-bold text-green-700"><strong>الرصيد النهائي:</strong> {5 * worker.dailyWage - 500} ر.ي</p>
             </div>
           </div>
-        </div>
+          </div>
+        )}
 
-        <div className="signatures-section grid grid-cols-3 gap-4 mt-6">
+        {printSettings?.showSignatures !== false && (
+          <div className="signatures-section grid grid-cols-3 gap-4 mt-6">
           <div className="text-center">
             <div className="h-16 border-b-2 border-gray-400 mb-2"></div>
             <p className="text-sm font-semibold">توقيع العامل</p>
@@ -177,7 +209,8 @@ export function ReportRenderer({ reportType, className = "" }: ReportRendererPro
             <div className="h-16 border-b-2 border-gray-400 mb-2"></div>
             <p className="text-sm font-semibold">توقيع المسؤول</p>
           </div>
-        </div>
+          </div>
+        )}
       </div>
     );
   };

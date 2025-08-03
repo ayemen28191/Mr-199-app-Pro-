@@ -33,6 +33,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import ReportRenderer from '@/components/print-preview/ReportRenderer';
+import { PrintButton } from '@/components/PrintButton';
 
 // استيراد النوع الصحيح من schema
 import type { PrintSettings as DBPrintSettings, InsertPrintSettings } from '@shared/schema';
@@ -1012,10 +1013,14 @@ export default function PrintControlPage() {
                 </Button>
               </div>
               
-              <Button onClick={handlePrint} className="w-full bg-green-600 hover:bg-green-700">
-                <Printer className="h-4 w-4 mr-2" />
-                طباعة فورية
-              </Button>
+              <PrintButton 
+                reportType={currentSettings.reportType}
+                printSettings={currentSettings}
+                className="w-full bg-green-600 hover:bg-green-700"
+                variant="default"
+              >
+                طباعة مع الإعدادات المخصصة
+              </PrintButton>
               
               <Button 
                 variant="outline" 
@@ -1050,6 +1055,7 @@ export default function PrintControlPage() {
             {/* عرض التقرير الحقيقي حسب النوع المحدد */}
             <ReportRenderer 
               reportType={currentSettings.reportType}
+              printSettings={currentSettings}
               className="border rounded-lg"
             />
           </div>
