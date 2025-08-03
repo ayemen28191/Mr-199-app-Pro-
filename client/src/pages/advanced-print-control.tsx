@@ -1183,14 +1183,22 @@ export default function AdvancedPrintControl() {
 
               <div>
                 <Label>الإعدادات المحفوظة</Label>
-                <div className="space-y-2 mt-2 max-h-60 overflow-y-auto bg-gray-50 rounded-md p-2">
-                  {Array.from(new Set(savedSettingsList.map(s => s.id)))
-                    .map(id => savedSettingsList.find(s => s.id === id))
-                    .filter((settings): settings is NonNullable<typeof settings> => Boolean(settings))
-                    .map((settings) => (
+                <div className="space-y-2 mt-2 max-h-60 overflow-y-auto bg-gray-50 rounded-md p-2 settings-list-container">
+                  {savedSettingsList.length === 0 ? (
+                    <div className="text-center text-gray-500 text-sm py-4">
+                      لا توجد إعدادات محفوظة
+                    </div>
+                  ) : (
+                    // إزالة التكرار بتجميع الإعدادات حسب الـ ID
+                    Object.values(
+                      savedSettingsList.reduce((acc, settings) => {
+                        acc[settings.id] = settings;
+                        return acc;
+                      }, {} as Record<string, typeof savedSettingsList[0]>)
+                    ).map((settings) => (
                       <div
                         key={settings.id}
-                        className={`p-3 border rounded-lg cursor-pointer transition-all duration-200 bg-white hover:shadow-md ${
+                        className={`settings-list-item p-3 border rounded-lg cursor-pointer transition-all duration-200 bg-white hover:shadow-md ${
                           selectedSettingsId === settings.id ? 'border-blue-500 bg-blue-50 shadow-md' : 'border-gray-200'
                         }`}
                         onClick={() => loadSettings(settings.id)}
@@ -1198,11 +1206,7 @@ export default function AdvancedPrintControl() {
                         <div className="font-medium text-sm text-gray-800">{settings.name}</div>
                         <div className="text-xs text-gray-500 mt-1">{settings.reportType}</div>
                       </div>
-                    ))}
-                  {savedSettingsList.length === 0 && (
-                    <div className="text-center text-gray-500 text-sm py-4">
-                      لا توجد إعدادات محفوظة
-                    </div>
+                    ))
                   )}
                 </div>
               </div>
@@ -1289,9 +1293,9 @@ export default function AdvancedPrintControl() {
         </div>
       </div>
 
-      {/* المعاينة المباشرة للتقرير الحقيقي - إصدار واحد فقط */}
+      {/* المعاينة المباشرة للتقرير الحقيقي */}
       {reportContext && (
-        <div className="mt-8 w-full">
+        <div className="mt-8 w-full" key="live-preview-section">
           <Card className="bg-white shadow-xl border rounded-2xl overflow-hidden relative z-0">
             <CardHeader className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-6">
               <div className="flex items-center justify-between">
@@ -1313,6 +1317,7 @@ export default function AdvancedPrintControl() {
             <CardContent className="p-8 overflow-hidden">
               <div 
                 id="live-report-preview"
+                key={`preview-${reportContext.type}-${currentSettings.reportType}`}
                 className="print-preview-container bg-white border rounded-lg shadow-sm p-6 max-h-[800px] overflow-y-auto"
                 style={{
                   fontFamily: currentSettings.fontFamily,
