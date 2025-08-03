@@ -146,7 +146,7 @@ export const ProfessionalDailyReport = ({ data, selectedProject, selectedDate }:
               <td style={{padding: '20px 15px', textAlign: 'center', border: '2px solid #dc2626', fontWeight: '700', fontSize: '22px', color: '#dc2626'}}>04</td>
               <td style={{padding: '20px 25px', textAlign: 'right', border: '2px solid #dc2626', fontWeight: '600', fontSize: '20px', color: '#dc2626'}}>مشتريات المواد والمعدات والأدوات الإنشائية (مصروفات المواد)</td>
               <td style={{padding: '20px 15px', textAlign: 'center', border: '2px solid #dc2626', fontSize: '20px', fontWeight: '600', color: '#64748b'}}>{materialPurchases.length}</td>
-              <td style={{padding: '20px 25px', textAlign: 'center', border: '2px solid #dc2626', fontWeight: 'bold', color: '#991b1b', fontSize: '24px', background: 'linear-gradient(135deg, #fca5a5, #f87171)'}}>{formatCurrency(totalMaterialCosts)}</td>
+              <td style={{padding: '10px 15px', textAlign: 'center', border: '2px solid #dc2626', fontWeight: 'bold', color: '#991b1b', fontSize: '34px', background: 'linear-gradient(135deg, #fca5a5, #f87171)'}}>{formatCurrency(totalMaterialCosts)}</td>
             </tr>
             <tr className="expense-row" style={{background: 'linear-gradient(135deg, #fee2e2, #fecaca)', minHeight: '70px', borderBottom: '2px solid #dc2626'}}>
               <td style={{padding: '20px 15px', textAlign: 'center', border: '2px solid #dc2626', fontWeight: '700', fontSize: '22px', color: '#dc2626'}}>05</td>
