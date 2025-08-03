@@ -104,10 +104,29 @@ export default function Reports() {
       
       // حفظ بيانات التقرير في localStorage للاستخدام في إعدادات الطباعة
       setTimeout(() => {
+        // محاولة التقاط HTML المُولّد
+        let reportHTML = '';
+        const reportElements = [
+          document.getElementById('professional-report-content'),
+          document.getElementById('daily-report-content'),
+          document.querySelector('[data-report-content="daily_expenses"]'),
+          document.querySelector('[data-report-content]'),
+          document.querySelector('.daily-report-container'),
+          document.querySelector('.professional-report-container')
+        ];
+        
+        for (const element of reportElements) {
+          if (element && element.innerHTML.trim()) {
+            reportHTML = element.outerHTML;
+            console.log('✅ تم التقاط HTML من:', element.id || element.className);
+            break;
+          }
+        }
+        
         const reportContext = {
           type: reportType === 'professional' ? 'daily_expenses' : 'daily_expenses',
           data: data,
-          html: '', // سيتم تحديثه بعد الرندر
+          html: reportHTML,
           title: `كشف المصروفات اليومية - ${dailyReportDate}`,
           timestamp: Date.now(),
           hasRealData: true,
@@ -115,8 +134,11 @@ export default function Reports() {
           reportDate: dailyReportDate
         };
         localStorage.setItem('printReportContext', JSON.stringify(reportContext));
-        console.log('💾 تم حفظ سياق التقرير تلقائياً:', reportContext.title);
-      }, 100);
+        console.log('💾 تم حفظ سياق التقرير مع HTML:', {
+          title: reportContext.title,
+          htmlLength: reportHTML.length
+        });
+      }, 500);
       
       toast({
         title: "تم إنشاء التقرير",
@@ -158,10 +180,29 @@ export default function Reports() {
       // حفظ بيانات التقرير في localStorage للاستخدام في إعدادات الطباعة
       setTimeout(() => {
         const worker = workers.find(w => w.id === selectedWorkerId);
+        
+        // محاولة التقاط HTML المُولّد
+        let reportHTML = '';
+        const reportElements = [
+          document.querySelector('[data-report-content] .enhanced-worker-account-report'),
+          document.querySelector('.enhanced-worker-account-report'),
+          document.querySelector('.worker-statement-preview'),
+          document.querySelector('[data-report-content]'),
+          document.querySelector('.print-content')
+        ];
+        
+        for (const element of reportElements) {
+          if (element && element.innerHTML.trim()) {
+            reportHTML = element.outerHTML;
+            console.log('✅ تم التقاط HTML لكشف العامل من:', element.className);
+            break;
+          }
+        }
+        
         const reportContext = {
           type: 'worker_statement',
           data: reportDataExtended,
-          html: '', // سيتم تحديثه بعد الرندر
+          html: reportHTML,
           title: `كشف حساب العامل - ${worker?.name || 'غير محدد'} (${workerAccountDate1} إلى ${workerAccountDate2})`,
           timestamp: Date.now(),
           hasRealData: true,
@@ -170,8 +211,11 @@ export default function Reports() {
           workerInfo: worker
         };
         localStorage.setItem('printReportContext', JSON.stringify(reportContext));
-        console.log('💾 تم حفظ سياق كشف حساب العامل تلقائياً:', reportContext.title);
-      }, 100);
+        console.log('💾 تم حفظ سياق كشف حساب العامل مع HTML:', {
+          title: reportContext.title,
+          htmlLength: reportHTML.length
+        });
+      }, 500);
 
       toast({
         title: "تم إنشاء التقرير",
@@ -206,10 +250,27 @@ export default function Reports() {
 
       // حفظ بيانات التقرير في localStorage للاستخدام في إعدادات الطباعة
       setTimeout(() => {
+        // محاولة التقاط HTML المُولّد
+        let reportHTML = '';
+        const reportElements = [
+          document.querySelector('[data-report-content]'),
+          document.querySelector('.material-purchases-report'),
+          document.querySelector('.report-content'),
+          document.querySelector('table')
+        ];
+        
+        for (const element of reportElements) {
+          if (element && element.innerHTML.trim()) {
+            reportHTML = element.outerHTML;
+            console.log('✅ تم التقاط HTML لتقرير المواد من:', element.className || element.tagName);
+            break;
+          }
+        }
+        
         const reportContext = {
           type: 'material_purchases',
           data: data,
-          html: '', // سيتم تحديثه بعد الرندر
+          html: reportHTML,
           title: `تقرير مشتريات المواد (${materialReportDate1} إلى ${materialReportDate2})`,
           timestamp: Date.now(),
           hasRealData: true,
@@ -217,8 +278,11 @@ export default function Reports() {
           reportDate: `${materialReportDate1} إلى ${materialReportDate2}`
         };
         localStorage.setItem('printReportContext', JSON.stringify(reportContext));
-        console.log('💾 تم حفظ سياق تقرير مشتريات المواد تلقائياً:', reportContext.title);
-      }, 100);
+        console.log('💾 تم حفظ سياق تقرير مشتريات المواد مع HTML:', {
+          title: reportContext.title,
+          htmlLength: reportHTML.length
+        });
+      }, 500);
 
       toast({
         title: "تم إنشاء التقرير",
@@ -253,10 +317,28 @@ export default function Reports() {
 
       // حفظ بيانات التقرير في localStorage للاستخدام في إعدادات الطباعة
       setTimeout(() => {
+        // محاولة التقاط HTML المُولّد
+        let reportHTML = '';
+        const reportElements = [
+          document.querySelector('[data-report-content]'),
+          document.querySelector('.project-summary-report'),
+          document.querySelector('.advanced-report-content'),
+          document.querySelector('.report-content'),
+          document.querySelector('table')
+        ];
+        
+        for (const element of reportElements) {
+          if (element && element.innerHTML.trim()) {
+            reportHTML = element.outerHTML;
+            console.log('✅ تم التقاط HTML لملخص المشروع من:', element.className || element.tagName);
+            break;
+          }
+        }
+        
         const reportContext = {
           type: 'advanced_reports',
           data: data,
-          html: '', // سيتم تحديثه بعد الرندر
+          html: reportHTML,
           title: `ملخص المشروع (${projectSummaryDate1} إلى ${projectSummaryDate2})`,
           timestamp: Date.now(),
           hasRealData: true,
@@ -264,8 +346,11 @@ export default function Reports() {
           reportDate: `${projectSummaryDate1} إلى ${projectSummaryDate2}`
         };
         localStorage.setItem('printReportContext', JSON.stringify(reportContext));
-        console.log('💾 تم حفظ سياق ملخص المشروع تلقائياً:', reportContext.title);
-      }, 100);
+        console.log('💾 تم حفظ سياق ملخص المشروع مع HTML:', {
+          title: reportContext.title,
+          htmlLength: reportHTML.length
+        });
+      }, 500);
 
       toast({
         title: "تم إنشاء التقرير",
