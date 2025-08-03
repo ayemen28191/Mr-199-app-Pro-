@@ -2,13 +2,13 @@ import {
   type Project, type Worker, type FundTransfer, type WorkerAttendance, 
   type Material, type MaterialPurchase, type TransportationExpense, type DailyExpenseSummary,
   type WorkerTransfer, type WorkerBalance, type AutocompleteData, type WorkerType, type WorkerMiscExpense, type User,
-  type Supplier, type SupplierPayment,
+  type Supplier, type SupplierPayment, type PrintSettings,
   type InsertProject, type InsertWorker, type InsertFundTransfer, type InsertWorkerAttendance,
   type InsertMaterial, type InsertMaterialPurchase, type InsertTransportationExpense, type InsertDailyExpenseSummary,
   type InsertWorkerTransfer, type InsertWorkerBalance, type InsertAutocompleteData, type InsertWorkerType, type InsertWorkerMiscExpense, type InsertUser,
-  type InsertSupplier, type InsertSupplierPayment,
+  type InsertSupplier, type InsertSupplierPayment, type InsertPrintSettings,
   projects, workers, fundTransfers, workerAttendance, materials, materialPurchases, transportationExpenses, dailyExpenseSummaries,
-  workerTransfers, workerBalances, autocompleteData, workerTypes, workerMiscExpenses, users, suppliers, supplierPayments
+  workerTransfers, workerBalances, autocompleteData, workerTypes, workerMiscExpenses, users, suppliers, supplierPayments, printSettings
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, gte, lte, sql, inArray, or } from "drizzle-orm";
@@ -165,6 +165,14 @@ export interface IStorage {
   
   // Purchase filtering for supplier reports
   getPurchasesBySupplier(supplierId: string, paymentType?: string, dateFrom?: string, dateTo?: string): Promise<MaterialPurchase[]>;
+  
+  // Print Settings
+  getPrintSettings(reportType?: string, userId?: string): Promise<PrintSettings[]>;
+  getPrintSettingsById(id: string): Promise<PrintSettings | undefined>;
+  createPrintSettings(settings: InsertPrintSettings): Promise<PrintSettings>;
+  updatePrintSettings(id: string, settings: Partial<InsertPrintSettings>): Promise<PrintSettings | undefined>;
+  deletePrintSettings(id: string): Promise<void>;
+  getDefaultPrintSettings(reportType: string): Promise<PrintSettings | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2117,6 +2125,89 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error getting purchases by supplier:', error);
       return [];
+    }
+  }
+
+  // Print Settings Methods
+  async getPrintSettings(reportType?: string, userId?: string): Promise<PrintSettings[]> {
+    try {
+      const conditions = [];
+      
+      if (reportType) {
+        conditions.push(eq(printSettings.reportType, reportType));
+      }
+      
+      if (userId) {
+        conditions.push(eq(printSettings.userId, userId));
+      }
+      
+      return await db.select().from(printSettings)
+        .where(conditions.length > 0 ? and(...conditions) : undefined)
+        .orderBy(printSettings.createdAt);
+    } catch (error) {
+      console.error('Error getting print settings:', error);
+      return [];
+    }
+  }
+
+  async getPrintSettingsById(id: string): Promise<PrintSettings | undefined> {
+    try {
+      const [settings] = await db.select().from(printSettings).where(eq(printSettings.id, id));
+      return settings || undefined;
+    } catch (error) {
+      console.error('Error getting print settings by id:', error);
+      return undefined;
+    }
+  }
+
+  async createPrintSettings(settings: InsertPrintSettings): Promise<PrintSettings> {
+    try {
+      const [newSettings] = await db
+        .insert(printSettings)
+        .values(settings)
+        .returning();
+      return newSettings;
+    } catch (error) {
+      console.error('Error creating print settings:', error);
+      throw error;
+    }
+  }
+
+  async updatePrintSettings(id: string, settings: Partial<InsertPrintSettings>): Promise<PrintSettings | undefined> {
+    try {
+      const [updated] = await db
+        .update(printSettings)
+        .set(settings)
+        .where(eq(printSettings.id, id))
+        .returning();
+      return updated || undefined;
+    } catch (error) {
+      console.error('Error updating print settings:', error);
+      throw error;
+    }
+  }
+
+  async deletePrintSettings(id: string): Promise<void> {
+    try {
+      await db.delete(printSettings).where(eq(printSettings.id, id));
+    } catch (error) {
+      console.error('Error deleting print settings:', error);
+      throw error;
+    }
+  }
+
+  async getDefaultPrintSettings(reportType: string): Promise<PrintSettings | undefined> {
+    try {
+      const [settings] = await db.select().from(printSettings)
+        .where(and(
+          eq(printSettings.reportType, reportType),
+          eq(printSettings.isDefault, true)
+        ))
+        .limit(1);
+      return settings || undefined;
+    } catch (error) {
+      console.error('Error getting default print settings:', error);
+      return undefined;
     }
   }
 }

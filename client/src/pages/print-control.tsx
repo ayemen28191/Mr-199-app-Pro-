@@ -29,8 +29,9 @@ import {
   FileText,
   Monitor
 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { useToast } from "@/hooks/use-toast";
+import { queryClient, apiRequest } from '@/lib/queryClient';
 
 interface PrintSettings {
   id?: string;
@@ -115,7 +116,6 @@ const defaultSettings: PrintSettings = {
 export default function PrintControlPage() {
   const [currentSettings, setCurrentSettings] = useState<PrintSettings>(defaultSettings);
   const [selectedSettingsId, setSelectedSettingsId] = useState<string>('');
-  const [savedSettings, setSavedSettings] = useState<PrintSettings[]>([]);
   const [previewMode, setPreviewMode] = useState<'screen' | 'print'>('screen');
   const { toast } = useToast();
 
@@ -128,6 +128,55 @@ export default function PrintControlPage() {
     queryKey: ['/api/workers'],
   });
 
+  // جلب إعدادات الطباعة المحفوظة
+  const { data: savedSettingsList = [], refetch: refetchSettings } = useQuery({
+    queryKey: ['/api/print-settings'],
+  });
+
+  // طفرة لحفظ الإعدادات
+  const saveSettingsMutation = useMutation({
+    mutationFn: async (settings: Partial<PrintSettings>) => {
+      if (settings.id) {
+        return apiRequest(`/api/print-settings/${settings.id}`, 'PUT', settings);
+      } else {
+        return apiRequest('/api/print-settings', 'POST', settings);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/print-settings'] });
+      toast({
+        title: "✅ تم الحفظ",
+        description: "تم حفظ الإعدادات بنجاح",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "❌ خطأ",
+        description: "فشل في حفظ الإعدادات",
+      });
+    }
+  });
+
+  // طفرة لحذف الإعدادات
+  const deleteSettingsMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return apiRequest(`/api/print-settings/${id}`, 'DELETE');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/print-settings'] });
+      toast({
+        title: "✅ تم الحذف",
+        description: "تم حذف الإعدادات بنجاح",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "❌ خطأ",
+        description: "فشل في حذف الإعدادات",
+      });
+    }
+  });
+
   // دالة تحديث الإعدادات
   const updateSetting = (key: keyof PrintSettings, value: any) => {
     setCurrentSettings(prev => ({
@@ -138,24 +187,17 @@ export default function PrintControlPage() {
 
   // دالة حفظ الإعدادات
   const saveSettings = () => {
-    const newSettings = { 
-      ...currentSettings, 
-      id: selectedSettingsId || `setting_${Date.now()}` 
+    const settingsToSave = {
+      ...currentSettings,
+      id: selectedSettingsId || undefined
     };
     
-    const updatedSettings = savedSettings.filter(s => s.id !== newSettings.id);
-    setSavedSettings([...updatedSettings, newSettings]);
-    setSelectedSettingsId(newSettings.id!);
-    
-    toast({
-      title: "✅ تم الحفظ",
-      description: "تم حفظ الإعدادات بنجاح",
-    });
+    saveSettingsMutation.mutate(settingsToSave);
   };
 
   // دالة تحميل إعدادات محفوظة
   const loadSettings = (settingsId: string) => {
-    const settings = savedSettings.find(s => s.id === settingsId);
+    const settings = savedSettingsList.find((s: any) => s.id === settingsId);
     if (settings) {
       setCurrentSettings(settings);
       setSelectedSettingsId(settingsId);
@@ -659,22 +701,20 @@ export default function PrintControlPage() {
               
               <div className="space-y-2">
                 <Label>الإعدادات المحفوظة</Label>
-                {savedSettings.map((settings) => (
+                {savedSettingsList.map((settings: any) => (
                   <div key={settings.id} className="flex gap-2">
                     <Button
                       variant="outline"
                       size="sm"
                       className="flex-1 text-xs"
-                      onClick={() => loadSettings(settings.id!)}
+                      onClick={() => loadSettings(settings.id)}
                     >
                       {settings.name}
                     </Button>
                     <Button
                       variant="destructive"
                       size="sm"
-                      onClick={() => {
-                        setSavedSettings(prev => prev.filter(s => s.id !== settings.id));
-                      }}
+                      onClick={() => deleteSettingsMutation.mutate(settings.id)}
                     >
                       <Trash2 className="h-3 w-3" />
                     </Button>

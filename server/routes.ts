@@ -6,7 +6,8 @@ import {
   insertWorkerAttendanceSchema, insertMaterialSchema, insertMaterialPurchaseSchema,
   insertTransportationExpenseSchema, insertDailyExpenseSummarySchema, insertWorkerTransferSchema,
   insertWorkerBalanceSchema, insertAutocompleteDataSchema, insertWorkerTypeSchema,
-  insertWorkerMiscExpenseSchema, insertUserSchema, insertSupplierSchema, insertSupplierPaymentSchema
+  insertWorkerMiscExpenseSchema, insertUserSchema, insertSupplierSchema, insertSupplierPaymentSchema,
+  insertPrintSettingsSchema
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -1938,6 +1939,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching supplier purchases:", error);
       res.status(500).json({ message: "خطأ في جلب مشتريات المورد" });
+    }
+  });
+
+  // Print Settings Routes
+  app.get("/api/print-settings", async (req, res) => {
+    try {
+      const { reportType, userId } = req.query;
+      const settings = await storage.getPrintSettings(reportType as string, userId as string);
+      res.json(settings);
+    } catch (error) {
+      console.error("Error fetching print settings:", error);
+      res.status(500).json({ message: "خطأ في جلب إعدادات الطباعة" });
+    }
+  });
+
+  app.post("/api/print-settings", async (req, res) => {
+    try {
+      const result = insertPrintSettingsSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "بيانات إعدادات الطباعة غير صحيحة", errors: result.error.issues });
+      }
+      
+      const settings = await storage.createPrintSettings(result.data);
+      res.status(201).json(settings);
+    } catch (error) {
+      console.error("Error creating print settings:", error);
+      res.status(500).json({ message: "خطأ في إنشاء إعدادات الطباعة" });
+    }
+  });
+
+  app.get("/api/print-settings/:id", async (req, res) => {
+    try {
+      const settings = await storage.getPrintSettingsById(req.params.id);
+      if (!settings) {
+        return res.status(404).json({ message: "إعدادات الطباعة غير موجودة" });
+      }
+      res.json(settings);
+    } catch (error) {
+      console.error("Error fetching print settings:", error);
+      res.status(500).json({ message: "خطأ في جلب إعدادات الطباعة" });
+    }
+  });
+
+  app.put("/api/print-settings/:id", async (req, res) => {
+    try {
+      const result = insertPrintSettingsSchema.partial().safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ message: "بيانات إعدادات الطباعة غير صحيحة", errors: result.error.issues });
+      }
+      
+      const settings = await storage.updatePrintSettings(req.params.id, result.data);
+      if (!settings) {
+        return res.status(404).json({ message: "إعدادات الطباعة غير موجودة" });
+      }
+      
+      res.json(settings);
+    } catch (error) {
+      console.error("Error updating print settings:", error);
+      res.status(500).json({ message: "خطأ في تحديث إعدادات الطباعة" });
+    }
+  });
+
+  app.delete("/api/print-settings/:id", async (req, res) => {
+    try {
+      await storage.deletePrintSettings(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting print settings:", error);
+      res.status(500).json({ message: "خطأ في حذف إعدادات الطباعة" });
+    }
+  });
+
+  // Get default print settings by report type
+  app.get("/api/print-settings/default/:reportType", async (req, res) => {
+    try {
+      const settings = await storage.getDefaultPrintSettings(req.params.reportType);
+      res.json(settings);
+    } catch (error) {
+      console.error("Error fetching default print settings:", error);
+      res.status(500).json({ message: "خطأ في جلب الإعدادات الافتراضية للطباعة" });
     }
   });
 
