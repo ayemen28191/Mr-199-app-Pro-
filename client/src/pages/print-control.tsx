@@ -32,6 +32,7 @@ import {
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from '@/lib/queryClient';
+import ReportRenderer from '@/components/print-preview/ReportRenderer';
 
 // استيراد النوع الصحيح من schema
 import type { PrintSettings as DBPrintSettings, InsertPrintSettings } from '@shared/schema';
@@ -375,24 +376,24 @@ export default function PrintControlPage() {
       description: 'كشف تفصيلي بجميع المعاملات والحضور'
     },
     {
-      value: 'worker_statement_compact',
-      label: 'كشف حساب العامل المضغوط',
-      description: 'كشف مختصر في صفحة واحدة'
-    },
-    {
-      value: 'project_summary',
-      label: 'ملخص المشروع',
-      description: 'ملخص إجمالي للمشروع والمصاريف'
-    },
-    {
-      value: 'financial_report',
-      label: 'التقرير المالي',
-      description: 'تقرير مالي شامل للإيرادات والنفقات'
-    },
-    {
       value: 'supplier_statement',
       label: 'كشف حساب المورد',
-      description: 'كشف تفصيلي لحساب المورد'
+      description: 'تقرير مديونية ومشتريات المورد'
+    },
+    {
+      value: 'daily_expenses',
+      label: 'تقرير المصروفات اليومية',
+      description: 'كشف مفصل بمصروفات اليوم'
+    },
+    {
+      value: 'material_purchases',
+      label: 'تقرير مشتريات المواد',
+      description: 'كشف بجميع مشتريات المواد'
+    },
+    {
+      value: 'advanced_reports',
+      label: 'التقارير المتقدمة',
+      description: 'تقارير شاملة مع إحصائيات متطورة'
     }
   ];
 
@@ -912,216 +913,18 @@ export default function PrintControlPage() {
         <CardContent>
           <div 
             id="dynamic-print-preview"
-            className={`border rounded-lg p-4 bg-white ${previewMode === 'print' ? 'print-preview-mode' : ''}`}
+            className={`${previewMode === 'print' ? 'print-preview-mode' : ''}`}
             style={{
               fontFamily: currentSettings.fontFamily,
               fontSize: `${currentSettings.fontSize}px`,
               direction: 'rtl'
             }}
           >
-            {/* المحتوى التجريبي للمعاينة */}
-            {currentSettings.showHeader && (
-              <div 
-                className="print-header mb-4 p-4 rounded text-center"
-                style={{
-                  backgroundColor: currentSettings.headerBackgroundColor,
-                  color: currentSettings.headerTextColor,
-                  fontSize: `${currentSettings.headerFontSize}px`
-                }}
-              >
-                <h1>كشف حساب العامل التفصيلي والشامل</h1>
-                <p>تقرير حضور العمال ومستحقاتهم المالية</p>
-              </div>
-            )}
-
-            {currentSettings.showProjectInfo && (
-              <div className="project-info mb-4 p-3 bg-gray-50 rounded">
-                <h3 className="font-bold mb-2">معلومات المشروع</h3>
-                <p>اسم المشروع: مشروع تجريبي</p>
-                <p>الفترة: من 2025-08-01 إلى 2025-08-03</p>
-              </div>
-            )}
-
-            {currentSettings.showWorkerInfo && (
-              <div className="worker-info mb-4 p-3 bg-blue-50 rounded">
-                <h3 className="font-bold mb-2">معلومات العامل</h3>
-                <p>الاسم: عامل تجريبي</p>
-                <p>النوع: معلم</p>
-                <p>الأجر اليومي: 15,000 ر.ي</p>
-              </div>
-            )}
-
-            {currentSettings.showAttendanceTable && (
-              <table 
-                className="print-table w-full mb-4"
-                style={{
-                  fontSize: `${currentSettings.tableFontSize}px`,
-                  borderCollapse: 'collapse'
-                }}
-              >
-                <thead>
-                  <tr>
-                    <th 
-                      style={{
-                        backgroundColor: currentSettings.tableHeaderColor,
-                        color: 'white',
-                        border: `${currentSettings.tableBorderWidth}px solid ${currentSettings.tableBorderColor}`,
-                        padding: `${currentSettings.tableCellPadding}mm`
-                      }}
-                    >
-                      م
-                    </th>
-                    <th 
-                      style={{
-                        backgroundColor: currentSettings.tableHeaderColor,
-                        color: 'white',
-                        border: `${currentSettings.tableBorderWidth}px solid ${currentSettings.tableBorderColor}`,
-                        padding: `${currentSettings.tableCellPadding}mm`
-                      }}
-                    >
-                      التاريخ
-                    </th>
-                    <th 
-                      style={{
-                        backgroundColor: currentSettings.tableHeaderColor,
-                        color: 'white',
-                        border: `${currentSettings.tableBorderWidth}px solid ${currentSettings.tableBorderColor}`,
-                        padding: `${currentSettings.tableCellPadding}mm`
-                      }}
-                    >
-                      وصف العمل
-                    </th>
-                    <th 
-                      style={{
-                        backgroundColor: currentSettings.tableHeaderColor,
-                        color: 'white',
-                        border: `${currentSettings.tableBorderWidth}px solid ${currentSettings.tableBorderColor}`,
-                        padding: `${currentSettings.tableCellPadding}mm`
-                      }}
-                    >
-                      المستحق
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td 
-                      style={{
-                        backgroundColor: currentSettings.tableRowEvenColor,
-                        border: `${currentSettings.tableBorderWidth}px solid ${currentSettings.tableBorderColor}`,
-                        padding: `${currentSettings.tableCellPadding}mm`,
-                        textAlign: 'center'
-                      }}
-                    >
-                      1
-                    </td>
-                    <td 
-                      style={{
-                        backgroundColor: currentSettings.tableRowEvenColor,
-                        border: `${currentSettings.tableBorderWidth}px solid ${currentSettings.tableBorderColor}`,
-                        padding: `${currentSettings.tableCellPadding}mm`,
-                        textAlign: 'center'
-                      }}
-                    >
-                      2025-08-01
-                    </td>
-                    <td 
-                      style={{
-                        backgroundColor: currentSettings.tableRowEvenColor,
-                        border: `${currentSettings.tableBorderWidth}px solid ${currentSettings.tableBorderColor}`,
-                        padding: `${currentSettings.tableCellPadding}mm`,
-                        textAlign: 'center'
-                      }}
-                    >
-                      أعمال البناء والتشطيب
-                    </td>
-                    <td 
-                      style={{
-                        backgroundColor: currentSettings.tableRowEvenColor,
-                        border: `${currentSettings.tableBorderWidth}px solid ${currentSettings.tableBorderColor}`,
-                        padding: `${currentSettings.tableCellPadding}mm`,
-                        textAlign: 'center'
-                      }}
-                    >
-                      15,000 ر.ي
-                    </td>
-                  </tr>
-                  <tr>
-                    <td 
-                      style={{
-                        backgroundColor: currentSettings.tableRowOddColor,
-                        border: `${currentSettings.tableBorderWidth}px solid ${currentSettings.tableBorderColor}`,
-                        padding: `${currentSettings.tableCellPadding}mm`,
-                        textAlign: 'center'
-                      }}
-                    >
-                      2
-                    </td>
-                    <td 
-                      style={{
-                        backgroundColor: currentSettings.tableRowOddColor,
-                        border: `${currentSettings.tableBorderWidth}px solid ${currentSettings.tableBorderColor}`,
-                        padding: `${currentSettings.tableCellPadding}mm`,
-                        textAlign: 'center'
-                      }}
-                    >
-                      2025-08-02
-                    </td>
-                    <td 
-                      style={{
-                        backgroundColor: currentSettings.tableRowOddColor,
-                        border: `${currentSettings.tableBorderWidth}px solid ${currentSettings.tableBorderColor}`,
-                        padding: `${currentSettings.tableCellPadding}mm`,
-                        textAlign: 'center'
-                      }}
-                    >
-                      أعمال الدهان والتركيب
-                    </td>
-                    <td 
-                      style={{
-                        backgroundColor: currentSettings.tableRowOddColor,
-                        border: `${currentSettings.tableBorderWidth}px solid ${currentSettings.tableBorderColor}`,
-                        padding: `${currentSettings.tableCellPadding}mm`,
-                        textAlign: 'center'
-                      }}
-                    >
-                      15,000 ر.ي
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            )}
-
-            {currentSettings.showSummary && (
-              <div className="summary-section p-4 bg-green-50 rounded">
-                <h3 className="font-bold mb-2">الملخص المالي</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>إجمالي المستحق: 30,000 ر.ي</div>
-                  <div>إجمالي المدفوع: 20,000 ر.ي</div>
-                  <div>الرصيد المتبقي: 10,000 ر.ي</div>
-                  <div>عدد أيام العمل: 2</div>
-                </div>
-              </div>
-            )}
-
-            {currentSettings.showSignatures && (
-              <div className="signatures-section mt-6 pt-4 border-t">
-                <div className="grid grid-cols-3 gap-8 text-center">
-                  <div>
-                    <div className="border-b border-gray-400 mb-2 pb-8"></div>
-                    <p>توقيع العامل</p>
-                  </div>
-                  <div>
-                    <div className="border-b border-gray-400 mb-2 pb-8"></div>
-                    <p>توقيع المسؤول</p>
-                  </div>
-                  <div>
-                    <div className="border-b border-gray-400 mb-2 pb-8"></div>
-                    <p>ختم الشركة</p>
-                  </div>
-                </div>
-              </div>
-            )}
+            {/* عرض التقرير الحقيقي حسب النوع المحدد */}
+            <ReportRenderer 
+              reportType={currentSettings.reportType}
+              className="border rounded-lg"
+            />
           </div>
         </CardContent>
       </Card>

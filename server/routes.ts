@@ -2022,6 +2022,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Print Preview API - للمعاينة المباشرة للتقارير
+  app.get("/api/print-preview/:reportType", async (req, res) => {
+    try {
+      const { reportType } = req.params;
+      let previewData = {};
+
+      switch (reportType) {
+        case 'worker_statement':
+          // جلب بيانات تجريبية لكشف حساب العامل
+          const workers = await storage.getWorkers();
+          const projects = await storage.getProjects();
+          previewData = {
+            type: 'worker_statement',
+            worker: workers[0] || { name: 'عامل تجريبي', workerType: 'معلم بناء', dailyWage: 200 },
+            project: projects[0] || { name: 'مشروع تجريبي', location: 'الرياض' },
+            attendanceData: [
+              { date: '2025-08-01', hours: 8, description: 'أعمال البناء', amount: 200 },
+              { date: '2025-08-02', hours: 8, description: 'أعمال التشطيب', amount: 200 },
+              { date: '2025-08-03', hours: 8, description: 'أعمال الدهان', amount: 200 }
+            ],
+            transfers: [
+              { date: '2025-08-03', amount: 300, transferNumber: '12345', recipient: 'الأهل' }
+            ]
+          };
+          break;
+
+        case 'supplier_statement':
+          const suppliers = await storage.getSuppliers();
+          previewData = {
+            type: 'supplier_statement',
+            supplier: suppliers[0] || { name: 'مورد تجريبي', phone: '+966501234567' },
+            purchases: [
+              { date: '2025-08-01', material: 'أسمنت', quantity: 50, unitPrice: 25, total: 1250, paymentType: 'deferred' },
+              { date: '2025-08-02', material: 'حديد', quantity: 2, unitPrice: 2500, total: 5000, paymentType: 'cash' }
+            ]
+          };
+          break;
+
+        case 'daily_expenses':
+          const projectsForDaily = await storage.getProjects();
+          previewData = {
+            type: 'daily_expenses',
+            date: new Date().toISOString().split('T')[0],
+            project: projectsForDaily[0] || { name: 'مشروع تجريبي' },
+            expenses: [
+              { time: '08:00', category: 'عمالة', description: 'أجور عمال اليوم', amount: 1500, notes: '5 عمال' },
+              { time: '10:30', category: 'مواد', description: 'شراء أسمنت', amount: 800, notes: 'من المورد الرئيسي' },
+              { time: '14:00', category: 'مواصلات', description: 'نقل مواد', amount: 200, notes: 'شاحنة كبيرة' }
+            ]
+          };
+          break;
+
+        case 'material_purchases':
+          previewData = {
+            type: 'material_purchases',
+            purchases: [
+              { date: '2025-08-03', material: 'أسمنت بورتلاندي', supplier: 'مصنع الرياض', quantity: 100, price: 25, total: 2500 },
+              { date: '2025-08-03', material: 'حديد تسليح', supplier: 'مصنع الحديد', quantity: 3, price: 3000, total: 9000 }
+            ]
+          };
+          break;
+
+        case 'advanced_reports':
+          previewData = {
+            type: 'advanced_reports',
+            analysis: {
+              totalExpenses: 50000,
+              categories: {
+                labor: { amount: 30000, percentage: 60 },
+                materials: { amount: 15000, percentage: 30 },
+                transportation: { amount: 5000, percentage: 10 }
+              },
+              dailyAverage: 2500,
+              projectDuration: 20
+            }
+          };
+          break;
+
+        default:
+          return res.status(400).json({ message: "نوع تقرير غير مدعوم" });
+      }
+
+      res.json(previewData);
+    } catch (error) {
+      console.error("Error generating print preview:", error);
+      res.status(500).json({ message: "خطأ في إنشاء معاينة التقرير" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
