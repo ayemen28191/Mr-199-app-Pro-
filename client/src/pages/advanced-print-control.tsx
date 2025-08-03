@@ -20,6 +20,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from '@/lib/queryClient';
 import { useLocation } from "wouter";
+import { printWithSettings } from '@/hooks/usePrintSettings';
 import type { PrintSettings as DBPrintSettings, InsertPrintSettings } from '@shared/schema';
 
 interface PrintSettings extends Omit<DBPrintSettings, 'marginTop' | 'marginBottom' | 'marginLeft' | 'marginRight' | 'tableColumnWidths' | 'createdAt' | 'updatedAt'> {
@@ -226,7 +227,316 @@ export default function AdvancedPrintControl() {
 
   // دالة الطباعة
   const handlePrint = () => {
-    window.print();
+    const printContent = document.getElementById('live-report-preview');
+    if (printContent) {
+      printContent.classList.add('print-content', 'report-preview');
+    }
+    printWithSettings(currentSettings.reportType, 500);
+  };
+
+  // دالة عرض التقرير الحقيقي مع الإعدادات
+  const renderReportPreview = () => {
+    if (!reportContext || !reportContext.data) {
+      return (
+        <div className="text-center py-8 text-gray-500">
+          <p>لا توجد بيانات للمعاينة</p>
+          <p className="text-sm mt-2">قم بإنشاء تقرير من صفحة التقارير أولاً</p>
+        </div>
+      );
+    }
+
+    const { type, data, projectInfo } = reportContext;
+
+    // تطبيق الإعدادات الحالية على التقرير
+    const customStyle = {
+      '--header-bg-color': currentSettings.headerBackgroundColor,
+      '--header-text-color': currentSettings.headerTextColor,
+      '--table-header-color': currentSettings.tableHeaderColor,
+      '--table-even-row': currentSettings.tableRowEvenColor,
+      '--table-odd-row': currentSettings.tableRowOddColor,
+      '--table-border-color': currentSettings.tableBorderColor,
+      '--table-border-width': `${currentSettings.tableBorderWidth}px`,
+      '--table-padding': `${currentSettings.tableCellPadding}px`,
+      '--font-size': `${currentSettings.fontSize}px`,
+      '--header-font-size': `${currentSettings.headerFontSize}px`,
+      '--table-font-size': `${currentSettings.tableFontSize}px`,
+    } as React.CSSProperties;
+
+    if (type === 'worker_statement') {
+      return (
+        <div style={customStyle} className="worker-statement-print-preview">
+          {currentSettings.showHeader && (
+            <div 
+              className="text-center p-4 mb-6 rounded-lg font-bold"
+              style={{ 
+                backgroundColor: currentSettings.headerBackgroundColor,
+                color: currentSettings.headerTextColor,
+                fontSize: `${currentSettings.headerFontSize}px`
+              }}
+            >
+              كشف حساب العامل
+            </div>
+          )}
+
+          {currentSettings.showProjectInfo && projectInfo && (
+            <div className="mb-4 p-3 bg-gray-50 rounded">
+              <h3 className="font-bold text-lg mb-2">معلومات المشروع</h3>
+              <p><strong>اسم المشروع:</strong> {projectInfo.name}</p>
+              <p><strong>الحالة:</strong> {projectInfo.status}</p>
+            </div>
+          )}
+
+          {currentSettings.showWorkerInfo && data.worker && (
+            <div className="mb-4 p-3 bg-gray-50 rounded">
+              <h3 className="font-bold text-lg mb-2">معلومات العامل</h3>
+              <p><strong>الاسم:</strong> {data.worker.name}</p>
+              <p><strong>النوع:</strong> {data.worker.type}</p>
+              <p><strong>الأجر اليومي:</strong> {data.worker.dailyWage} ر.ي</p>
+            </div>
+          )}
+
+          {currentSettings.showAttendanceTable && data.attendance && data.attendance.length > 0 && (
+            <div className="mb-6">
+              <h3 className="font-bold text-lg mb-3">جدول الحضور والمدفوعات</h3>
+              <table 
+                className="w-full border-collapse"
+                style={{ 
+                  borderColor: currentSettings.tableBorderColor,
+                  fontSize: `${currentSettings.tableFontSize}px`
+                }}
+              >
+                <thead>
+                  <tr 
+                    style={{ 
+                      backgroundColor: currentSettings.tableHeaderColor,
+                      color: currentSettings.headerTextColor
+                    }}
+                  >
+                    <th style={{ padding: `${currentSettings.tableCellPadding}px`, border: `${currentSettings.tableBorderWidth}px solid ${currentSettings.tableBorderColor}` }}>التاريخ</th>
+                    <th style={{ padding: `${currentSettings.tableCellPadding}px`, border: `${currentSettings.tableBorderWidth}px solid ${currentSettings.tableBorderColor}` }}>الحضور</th>
+                    <th style={{ padding: `${currentSettings.tableCellPadding}px`, border: `${currentSettings.tableBorderWidth}px solid ${currentSettings.tableBorderColor}` }}>الأجر</th>
+                    <th style={{ padding: `${currentSettings.tableCellPadding}px`, border: `${currentSettings.tableBorderWidth}px solid ${currentSettings.tableBorderColor}` }}>المدفوع</th>
+                    <th style={{ padding: `${currentSettings.tableCellPadding}px`, border: `${currentSettings.tableBorderWidth}px solid ${currentSettings.tableBorderColor}` }}>الرصيد</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.attendance.map((record: any, index: number) => (
+                    <tr 
+                      key={index}
+                      style={{ 
+                        backgroundColor: index % 2 === 0 
+                          ? currentSettings.tableRowEvenColor 
+                          : currentSettings.tableRowOddColor
+                      }}
+                    >
+                      <td style={{ padding: `${currentSettings.tableCellPadding}px`, border: `${currentSettings.tableBorderWidth}px solid ${currentSettings.tableBorderColor}`, textAlign: 'center' }}>
+                        {new Date(record.date).toLocaleDateString('ar-SA')}
+                      </td>
+                      <td style={{ padding: `${currentSettings.tableCellPadding}px`, border: `${currentSettings.tableBorderWidth}px solid ${currentSettings.tableBorderColor}`, textAlign: 'center' }}>
+                        {record.attendanceStatus === 'present' ? 'حاضر' : 'غائب'}
+                      </td>
+                      <td style={{ padding: `${currentSettings.tableCellPadding}px`, border: `${currentSettings.tableBorderWidth}px solid ${currentSettings.tableBorderColor}`, textAlign: 'center' }}>
+                        {record.dailyWage} ر.ي
+                      </td>
+                      <td style={{ padding: `${currentSettings.tableCellPadding}px`, border: `${currentSettings.tableBorderWidth}px solid ${currentSettings.tableBorderColor}`, textAlign: 'center' }}>
+                        {record.amountPaid || 0} ر.ي
+                      </td>
+                      <td style={{ padding: `${currentSettings.tableCellPadding}px`, border: `${currentSettings.tableBorderWidth}px solid ${currentSettings.tableBorderColor}`, textAlign: 'center' }}>
+                        {record.balance || 0} ر.ي
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {currentSettings.showTransfersTable && data.transfers && data.transfers.length > 0 && (
+            <div className="mb-6">
+              <h3 className="font-bold text-lg mb-3">التحويلات المرسلة</h3>
+              <table 
+                className="w-full border-collapse"
+                style={{ 
+                  borderColor: currentSettings.tableBorderColor,
+                  fontSize: `${currentSettings.tableFontSize}px`
+                }}
+              >
+                <thead>
+                  <tr 
+                    style={{ 
+                      backgroundColor: currentSettings.tableHeaderColor,
+                      color: currentSettings.headerTextColor
+                    }}
+                  >
+                    <th style={{ padding: `${currentSettings.tableCellPadding}px`, border: `${currentSettings.tableBorderWidth}px solid ${currentSettings.tableBorderColor}` }}>التاريخ</th>
+                    <th style={{ padding: `${currentSettings.tableCellPadding}px`, border: `${currentSettings.tableBorderWidth}px solid ${currentSettings.tableBorderColor}` }}>المبلغ</th>
+                    <th style={{ padding: `${currentSettings.tableCellPadding}px`, border: `${currentSettings.tableBorderWidth}px solid ${currentSettings.tableBorderColor}` }}>البيان</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.transfers.map((transfer: any, index: number) => (
+                    <tr 
+                      key={index}
+                      style={{ 
+                        backgroundColor: index % 2 === 0 
+                          ? currentSettings.tableRowEvenColor 
+                          : currentSettings.tableRowOddColor
+                      }}
+                    >
+                      <td style={{ padding: `${currentSettings.tableCellPadding}px`, border: `${currentSettings.tableBorderWidth}px solid ${currentSettings.tableBorderColor}`, textAlign: 'center' }}>
+                        {new Date(transfer.date).toLocaleDateString('ar-SA')}
+                      </td>
+                      <td style={{ padding: `${currentSettings.tableCellPadding}px`, border: `${currentSettings.tableBorderWidth}px solid ${currentSettings.tableBorderColor}`, textAlign: 'center' }}>
+                        {transfer.amount} ر.ي
+                      </td>
+                      <td style={{ padding: `${currentSettings.tableCellPadding}px`, border: `${currentSettings.tableBorderWidth}px solid ${currentSettings.tableBorderColor}` }}>
+                        {transfer.description || 'تحويل للعامل'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {currentSettings.showSummary && data.summary && (
+            <div className="mb-6 p-4 bg-blue-50 rounded">
+              <h3 className="font-bold text-lg mb-3">الملخص المالي</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p><strong>إجمالي الأجور:</strong> {data.summary.totalWages || 0} ر.ي</p>
+                  <p><strong>إجمالي المدفوع:</strong> {data.summary.totalPaid || 0} ر.ي</p>
+                </div>
+                <div>
+                  <p><strong>الرصيد النهائي:</strong> {data.summary.finalBalance || 0} ر.ي</p>
+                  <p><strong>عدد أيام العمل:</strong> {data.summary.workDays || 0} يوم</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {currentSettings.showSignatures && (
+            <div className="mt-8 flex justify-between items-end">
+              <div className="text-center">
+                <div className="w-32 border-b-2 border-gray-400 mb-2"></div>
+                <p className="text-sm">توقيع العامل</p>
+              </div>
+              <div className="text-center">
+                <div className="w-32 border-b-2 border-gray-400 mb-2"></div>
+                <p className="text-sm">توقيع المسؤول</p>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    if (type === 'daily_expenses') {
+      return (
+        <div style={customStyle} className="daily-expenses-print-preview">
+          {currentSettings.showHeader && (
+            <div 
+              className="text-center p-4 mb-6 rounded-lg font-bold"
+              style={{ 
+                backgroundColor: currentSettings.headerBackgroundColor,
+                color: currentSettings.headerTextColor,
+                fontSize: `${currentSettings.headerFontSize}px`
+              }}
+            >
+              كشف المصروفات اليومية
+            </div>
+          )}
+
+          {currentSettings.showProjectInfo && projectInfo && (
+            <div className="mb-4 p-3 bg-gray-50 rounded">
+              <h3 className="font-bold text-lg mb-2">معلومات المشروع</h3>
+              <p><strong>اسم المشروع:</strong> {projectInfo.name}</p>
+              <p><strong>التاريخ:</strong> {data.date}</p>
+            </div>
+          )}
+
+          {data.expenses && data.expenses.length > 0 && (
+            <div className="mb-6">
+              <h3 className="font-bold text-lg mb-3">تفاصيل المصروفات</h3>
+              <table 
+                className="w-full border-collapse"
+                style={{ 
+                  borderColor: currentSettings.tableBorderColor,
+                  fontSize: `${currentSettings.tableFontSize}px`
+                }}
+              >
+                <thead>
+                  <tr 
+                    style={{ 
+                      backgroundColor: currentSettings.tableHeaderColor,
+                      color: currentSettings.headerTextColor
+                    }}
+                  >
+                    <th style={{ padding: `${currentSettings.tableCellPadding}px`, border: `${currentSettings.tableBorderWidth}px solid ${currentSettings.tableBorderColor}` }}>البند</th>
+                    <th style={{ padding: `${currentSettings.tableCellPadding}px`, border: `${currentSettings.tableBorderWidth}px solid ${currentSettings.tableBorderColor}` }}>المبلغ</th>
+                    <th style={{ padding: `${currentSettings.tableCellPadding}px`, border: `${currentSettings.tableBorderWidth}px solid ${currentSettings.tableBorderColor}` }}>البيان</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.expenses.map((expense: any, index: number) => (
+                    <tr 
+                      key={index}
+                      style={{ 
+                        backgroundColor: index % 2 === 0 
+                          ? currentSettings.tableRowEvenColor 
+                          : currentSettings.tableRowOddColor
+                      }}
+                    >
+                      <td style={{ padding: `${currentSettings.tableCellPadding}px`, border: `${currentSettings.tableBorderWidth}px solid ${currentSettings.tableBorderColor}` }}>
+                        {expense.category || expense.type}
+                      </td>
+                      <td style={{ padding: `${currentSettings.tableCellPadding}px`, border: `${currentSettings.tableBorderWidth}px solid ${currentSettings.tableBorderColor}`, textAlign: 'center' }}>
+                        {expense.amount} ر.ي
+                      </td>
+                      <td style={{ padding: `${currentSettings.tableCellPadding}px`, border: `${currentSettings.tableBorderWidth}px solid ${currentSettings.tableBorderColor}` }}>
+                        {expense.description || expense.details || '-'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {currentSettings.showSummary && data.summary && (
+            <div className="mb-6 p-4 bg-blue-50 rounded">
+              <h3 className="font-bold text-lg mb-3">الملخص المالي</h3>
+              <p><strong>إجمالي المصروفات:</strong> {data.summary.totalExpenses || 0} ر.ي</p>
+              <p><strong>الرصيد المنقول:</strong> {data.summary.carriedForward || 0} ر.ي</p>
+              <p><strong>الرصيد النهائي:</strong> {data.summary.finalBalance || 0} ر.ي</p>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // التقارير الأخرى
+    return (
+      <div style={customStyle} className="generic-report-preview">
+        {currentSettings.showHeader && (
+          <div 
+            className="text-center p-4 mb-6 rounded-lg font-bold"
+            style={{ 
+              backgroundColor: currentSettings.headerBackgroundColor,
+              color: currentSettings.headerTextColor,
+              fontSize: `${currentSettings.headerFontSize}px`
+            }}
+          >
+            {reportContext.title}
+          </div>
+        )}
+        
+        <div className="p-4 bg-gray-50 rounded text-center">
+          <p>معاينة التقرير مع الإعدادات المطبقة</p>
+          <p className="text-sm text-gray-600 mt-2">نوع التقرير: {type}</p>
+        </div>
+      </div>
+    );
   };
 
   // أنواع التقارير المتاحة
@@ -968,6 +1278,49 @@ export default function AdvancedPrintControl() {
           </Card>
         </div>
       </div>
+
+      {/* المعاينة المباشرة للتقرير الحقيقي */}
+      {reportContext && (
+        <Card className="mt-8 bg-white shadow-2xl border-0 rounded-2xl overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-6">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-2xl font-bold flex items-center gap-3">
+                <Eye className="h-7 w-7" />
+                المعاينة المباشرة مع الإعدادات
+              </CardTitle>
+              <div className="flex items-center gap-3">
+                <Button
+                  onClick={() => {
+                    // تطبيق الإعدادات الحالية والطباعة
+                    const printContent = document.getElementById('live-report-preview');
+                    if (printContent) {
+                      printContent.classList.add('print-content', 'report-preview');
+                    }
+                    printWithSettings(currentSettings.reportType, 500);
+                  }}
+                  className="bg-white/10 hover:bg-white/20 text-white px-6 py-2 rounded-xl backdrop-blur-sm"
+                >
+                  <Printer className="h-4 w-4 mr-2" />
+                  طباعة المعاينة
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="p-8">
+            <div 
+              id="live-report-preview"
+              className="print-preview report-preview enhanced-worker-account-report worker-statement-preview"
+              style={{
+                fontFamily: currentSettings.fontFamily,
+                fontSize: `${currentSettings.fontSize}px`,
+                margin: `${currentSettings.marginTop}mm ${currentSettings.marginRight}mm ${currentSettings.marginBottom}mm ${currentSettings.marginLeft}mm`
+              }}
+            >
+              {renderReportPreview()}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
