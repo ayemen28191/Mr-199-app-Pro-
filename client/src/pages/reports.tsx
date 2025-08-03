@@ -23,6 +23,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Worker, Project } from "@shared/schema";
 import { ProfessionalDailyReport } from "@/components/ProfessionalDailyReport";
+import { ProfessionalWorkerAccountReport } from "@/components/ProfessionalWorkerAccountReport";
 import "@/components/print-styles.css";
 import "@/components/invoice-print-styles.css";
 import "@/components/professional-report-print.css";
@@ -447,11 +448,27 @@ export default function Reports() {
   };
 
   // Placeholder functions for other report types
-  const renderWorkerAccountReport = (data: any) => (
-    <div className="text-center py-8">
-      <p className="text-gray-600">تقرير حساب العامل - قيد التطوير</p>
-    </div>
-  );
+  const renderWorkerAccountReport = (data: any) => {
+    if (!data || !selectedProject) {
+      return (
+        <div className="text-center py-8">
+          <p className="text-red-600">لا توجد بيانات لعرض التقرير</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="print-preview">
+        <ProfessionalWorkerAccountReport
+          data={data}
+          selectedProject={selectedProject}
+          workerId={data.workerId}
+          dateFrom={data.dateFrom}
+          dateTo={data.dateTo}
+        />
+      </div>
+    );
+  };
 
   const renderMaterialPurchasesReport = (data: any) => (
     <div className="text-center py-8">
