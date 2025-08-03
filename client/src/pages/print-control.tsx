@@ -120,10 +120,11 @@ export default function PrintControlPage() {
         description: "تم حفظ الإعدادات بنجاح",
       });
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error('Save settings error:', error);
       toast({
         title: "❌ خطأ",
-        description: "فشل في حفظ الإعدادات",
+        description: error?.message || "فشل في حفظ الإعدادات",
       });
     }
   });
@@ -158,20 +159,53 @@ export default function PrintControlPage() {
 
   // دالة حفظ الإعدادات
   const saveSettings = () => {
+    // التأكد من وجود اسم للإعداد
+    if (!currentSettings.name || currentSettings.name.trim() === '') {
+      toast({
+        title: "❌ خطأ في البيانات",
+        description: "يجب إدخال اسم للإعداد",
+      });
+      return;
+    }
+
     const settingsToSave: Partial<InsertPrintSettings & { id?: string }> = {
-      ...currentSettings,
-      id: selectedSettingsId || undefined,
-      // تحويل الهوامش إلى strings مع التنسيق الصحيح
+      reportType: currentSettings.reportType,
+      name: currentSettings.name.trim(),
+      pageSize: currentSettings.pageSize,
+      pageOrientation: currentSettings.pageOrientation,
       marginTop: currentSettings.marginTop.toString(),
       marginBottom: currentSettings.marginBottom.toString(),
       marginLeft: currentSettings.marginLeft.toString(),
       marginRight: currentSettings.marginRight.toString(),
-      // التأكد من tableColumnWidths كـ string
+      fontFamily: currentSettings.fontFamily,
+      fontSize: Number(currentSettings.fontSize),
+      headerFontSize: Number(currentSettings.headerFontSize),
+      tableFontSize: Number(currentSettings.tableFontSize),
+      headerBackgroundColor: currentSettings.headerBackgroundColor,
+      headerTextColor: currentSettings.headerTextColor,
+      tableHeaderColor: currentSettings.tableHeaderColor,
+      tableRowEvenColor: currentSettings.tableRowEvenColor,
+      tableRowOddColor: currentSettings.tableRowOddColor,
+      tableBorderColor: currentSettings.tableBorderColor,
+      tableBorderWidth: Number(currentSettings.tableBorderWidth),
+      tableCellPadding: Number(currentSettings.tableCellPadding),
       tableColumnWidths: Array.isArray(currentSettings.tableColumnWidths) 
         ? JSON.stringify(currentSettings.tableColumnWidths)
-        : currentSettings.tableColumnWidths || "[8,12,10,30,12,15,15,12]"
+        : currentSettings.tableColumnWidths || "[8,12,10,30,12,15,15,12]",
+      showHeader: Boolean(currentSettings.showHeader),
+      showLogo: Boolean(currentSettings.showLogo),
+      showProjectInfo: Boolean(currentSettings.showProjectInfo),
+      showWorkerInfo: Boolean(currentSettings.showWorkerInfo),
+      showAttendanceTable: Boolean(currentSettings.showAttendanceTable),
+      showTransfersTable: Boolean(currentSettings.showTransfersTable),
+      showSummary: Boolean(currentSettings.showSummary),
+      showSignatures: Boolean(currentSettings.showSignatures),
+      isDefault: Boolean(currentSettings.isDefault),
+      isActive: Boolean(currentSettings.isActive),
+      id: selectedSettingsId || undefined
     };
     
+    console.log('Saving settings:', settingsToSave);
     saveSettingsMutation.mutate(settingsToSave);
   };
 
