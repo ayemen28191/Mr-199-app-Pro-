@@ -25,39 +25,70 @@ export function PrintSettingsButton({
 
   const handleOpenSettings = () => {
     // حفظ بيانات التقرير + HTML الكامل في localStorage للوصول إليها في صفحة إعدادات الطباعة
-    if (reportData) {
-      // جلب HTML الكامل للتقرير من المنطقة المعروضة حالياً
-      const reportElement = document.querySelector('[data-report-content]');
+    const saveReportContext = () => {
+      // البحث عن عنصر التقرير بعدة طرق مختلفة
+      let reportElement = document.querySelector('[data-report-content]') ||
+                         document.querySelector('.enhanced-worker-account-report') ||
+                         document.querySelector('.daily-report-container') ||
+                         document.querySelector('.report-content') ||
+                         document.querySelector('.print-content') ||
+                         document.querySelector('.worker-statement-preview') ||
+                         document.querySelector('.report-preview') ||
+                         document.querySelector('table'); // كحل أخير، ابحث عن أي جدول
+      
       let reportHTML = '';
       
       if (reportElement) {
-        // نسخ العنصر مع جميع الأنماط المطبقة
+        console.log('🔍 تم العثور على عنصر التقرير:', reportElement.className);
+        
+        // نسخ العنصر مع جميع المحتويات
         const clonedElement = reportElement.cloneNode(true) as HTMLElement;
         
-        // إضافة الأنماط المحسوبة للحفاظ على التنسيق
-        const allElements = clonedElement.querySelectorAll('*');
-        allElements.forEach((el) => {
-          const computedStyle = window.getComputedStyle(el as Element);
-          const inlineStyle = computedStyle.cssText;
-          if (inlineStyle) {
-            (el as HTMLElement).style.cssText = inlineStyle;
-          }
-        });
+        // الحفاظ على الأنماط المهمة
+        clonedElement.classList.add('print-content', 'report-preview');
         
         reportHTML = clonedElement.outerHTML;
+        
+        console.log('📄 تم حفظ HTML:', reportHTML.substring(0, 200) + '...');
+      } else {
+        console.warn('⚠️ لم يتم العثور على عنصر التقرير، سيتم استخدام البيانات فقط');
+        
+        // إنشاء HTML بسيط من البيانات المتاحة
+        if (reportData) {
+          reportHTML = `
+            <div class="print-content report-preview">
+              <div class="print-header text-center p-4 mb-4 bg-blue-600 text-white">
+                <h1>${reportTitle || 'تقرير'}</h1>
+                <h2>شركة الإنشاءات المتقدمة</h2>
+              </div>
+              <div class="report-data">
+                <pre>${JSON.stringify(reportData, null, 2)}</pre>
+              </div>
+            </div>
+          `;
+        }
       }
       
       const reportContext = {
         type: reportType,
-        data: reportData,
-        html: reportHTML, // إضافة HTML الكامل مع الأنماط
-        title: reportTitle || 'تقرير',
-        timestamp: Date.now()
+        data: reportData || {},
+        html: reportHTML,
+        title: reportTitle || `تقرير ${reportType}`,
+        timestamp: Date.now(),
+        hasRealData: !!reportData
       };
+      
       localStorage.setItem('printReportContext', JSON.stringify(reportContext));
-    }
+      console.log('💾 تم حفظ سياق التقرير:', reportContext.title);
+      
+      return reportContext;
+    };
     
-    setLocation(`/print-control?reportType=${reportType}&withData=true`);
+    // حفظ البيانات أولاً
+    const savedContext = saveReportContext();
+    
+    // الانتقال إلى صفحة إعدادات الطباعة
+    setLocation(`/print-control?reportType=${reportType}&withData=true&title=${encodeURIComponent(savedContext.title)}`);
   };
 
   return (

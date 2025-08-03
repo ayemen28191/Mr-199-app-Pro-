@@ -221,8 +221,8 @@ export function ReportRenderer({ reportType, className = "", printSettings: pass
 
   const renderSupplierStatement = () => {
     return (
-      <div className="supplier-statement-preview">
-        <div className="print-header text-center p-4 mb-4 bg-green-600 text-white">
+      <div className="supplier-statement-preview print-content report-preview" data-report-content="supplier-statement">
+        <div className="print-header report-header text-center p-4 mb-4 bg-green-600 text-white page-break-avoid">
           <h1 className="text-xl font-bold">كشف حساب المورد</h1>
           <h2 className="text-lg">شركة الإنشاءات المتقدمة</h2>
         </div>
@@ -277,8 +277,8 @@ export function ReportRenderer({ reportType, className = "", printSettings: pass
 
   const renderDailyExpenses = () => {
     return (
-      <div className="daily-expenses-preview">
-        <div className="print-header text-center p-4 mb-4 bg-red-600 text-white">
+      <div className="daily-expenses-preview daily-report-container print-content report-preview" data-report-content="daily-expenses">
+        <div className="print-header report-header text-center p-4 mb-4 bg-red-600 text-white page-break-avoid">
           <h1 className="text-xl font-bold">تقرير المصروفات اليومية</h1>
           <h2 className="text-lg">شركة الإنشاءات المتقدمة</h2>
         </div>
@@ -342,7 +342,7 @@ export function ReportRenderer({ reportType, className = "", printSettings: pass
 
   const renderMaterialPurchases = () => {
     return (
-      <div className="material-purchases-preview">
+      <div className="material-purchases-preview print-content report-preview" data-report-content="material-purchases">
         <div className="print-header text-center p-4 mb-4 bg-orange-600 text-white">
           <h1 className="text-xl font-bold">تقرير مشتريات المواد</h1>
           <h2 className="text-lg">شركة الإنشاءات المتقدمة</h2>

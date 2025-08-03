@@ -249,7 +249,8 @@ export const EnhancedWorkerAccountStatement = ({
 
       <div 
         id="enhanced-worker-account-statement" 
-        className="enhanced-worker-statement-print bg-white"
+        className="enhanced-worker-statement-print enhanced-worker-account-report print-content report-preview bg-white"
+        data-report-content="worker-statement"
         style={{
           direction: 'rtl',
           width: '210mm',
