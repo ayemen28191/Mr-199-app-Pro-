@@ -100,11 +100,15 @@ export default function PrintControlPage() {
     const withData = urlParams.get('withData');
     const reportTypeParam = urlParams.get('reportType');
     
+    console.log('🔄 تحميل صفحة إعدادات الطباعة:', { withData, reportTypeParam });
+    
     if (withData === 'true') {
       try {
         const storedContext = localStorage.getItem('printReportContext');
         if (storedContext) {
           const context = JSON.parse(storedContext);
+          console.log('📥 استقبال سياق التقرير:', context);
+          
           setReportContext(context);
           
           // تحديث نوع التقرير من البيانات المرسلة
@@ -113,15 +117,36 @@ export default function PrintControlPage() {
               ...prev,
               reportType: context.type
             }));
+            console.log('🔄 تحديث نوع التقرير إلى:', context.type);
+          }
+          
+          // تحديث عنوان الإعداد ليطابق التقرير
+          if (context.title) {
+            setCurrentSettings(prev => ({
+              ...prev,
+              name: `إعدادات طباعة - ${context.title}`
+            }));
           }
           
           toast({
-            title: "📋 تم استقبال التقرير",
-            description: `تم تحميل بيانات ${context.title} للمعاينة والتخصيص`,
+            title: "تم استقبال التقرير بنجاح",
+            description: `تم تحميل بيانات ${context.title || 'التقرير'} للمعاينة والتخصيص`,
+          });
+        } else {
+          console.warn('⚠️ لم يتم العثور على بيانات التقرير في localStorage');
+          toast({
+            title: "تنبيه",
+            description: "لم يتم العثور على بيانات التقرير. يرجى العودة لصفحة التقارير وإنشاء تقرير أولاً",
+            variant: "destructive"
           });
         }
       } catch (error) {
-        console.error('خطأ في استقبال بيانات التقرير:', error);
+        console.error('❌ خطأ في استقبال بيانات التقرير:', error);
+        toast({
+          title: "خطأ في استقبال البيانات",
+          description: "حدث خطأ أثناء تحميل بيانات التقرير",
+          variant: "destructive"
+        });
       }
     } else if (reportTypeParam) {
       // إذا كان هناك نوع تقرير محدد في URL
@@ -129,6 +154,7 @@ export default function PrintControlPage() {
         ...prev,
         reportType: reportTypeParam
       }));
+      console.log('🔄 تحديث نوع التقرير من URL:', reportTypeParam);
     }
   }, []);
 
@@ -1433,35 +1459,85 @@ export default function PrintControlPage() {
       {/* معاينة الكشف */}
       <Card className="mt-6">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Eye className="h-5 w-5" />
-            معاينة مباشرة
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Eye className="h-5 w-5" />
+              معاينة مباشرة
+              {reportContext?.title && (
+                <span className="text-sm text-blue-600 font-normal">
+                  • {reportContext.title}
+                </span>
+              )}
+            </CardTitle>
+            <div className="flex items-center gap-2 text-sm">
+              {reportContext?.hasRealData && (
+                <span className="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs">
+                  بيانات حقيقية
+                </span>
+              )}
+              <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs">
+                {previewMode === 'print' ? 'وضع الطباعة' : 'وضع الشاشة'}
+              </span>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <div 
-            className={`${previewMode === 'print' ? 'print-preview-mode' : ''}`}
+            id="dynamic-print-preview"
+            className={`report-preview-container ${previewMode === 'print' ? 'print-preview-mode' : ''}`}
             style={{
               fontFamily: currentSettings.fontFamily,
               fontSize: `${currentSettings.fontSize}px`,
-              direction: 'rtl'
+              direction: 'rtl',
+              backgroundColor: previewMode === 'print' ? '#ffffff' : '#fafafa',
+              border: previewMode === 'print' ? '1px solid #e5e7eb' : 'none',
+              borderRadius: '8px',
+              padding: '20px',
+              minHeight: '400px'
             }}
           >
             {/* عرض التقرير الحقيقي المنقول أو التقرير المُولّد حسب النوع المحدد */}
             {reportContext?.html ? (
-              // عرض التقرير المنقول بنفس التصميم
-              <div 
-                className="border rounded-lg report-preview"
-                dangerouslySetInnerHTML={{ __html: reportContext.html }}
-              />
+              <div>
+                {/* رسالة تأكيد استقبال البيانات */}
+                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-800 text-sm">
+                  ✅ تم استقبال التقرير من صفحة التقارير • 
+                  آخر تحديث: {new Date(reportContext.timestamp || Date.now()).toLocaleString('ar-SA')}
+                </div>
+                
+                {/* عرض التقرير المنقول مع تطبيق الإعدادات */}
+                <div 
+                  className="report-preview print-content"
+                  dangerouslySetInnerHTML={{ __html: reportContext.html }}
+                />
+              </div>
+            ) : reportContext?.data ? (
+              <div>
+                {/* رسالة تأكيد وجود البيانات */}
+                <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg text-blue-800 text-sm">
+                  📊 تم استقبال بيانات التقرير • سيتم عرضها باستخدام المُولّد الافتراضي
+                </div>
+                
+                {/* عرض تقرير مُولّد من البيانات */}
+                <ReportRenderer 
+                  reportType={currentSettings.reportType}
+                  printSettings={currentSettings}
+                  reportData={reportContext.data}
+                />
+              </div>
             ) : (
-              // عرض تقرير افتراضي عند عدم وجود HTML مُرسل
-              <ReportRenderer 
-                reportType={currentSettings.reportType}
-                printSettings={currentSettings}
-                className="border rounded-lg"
-                reportData={reportContext?.data}
-              />
+              <div>
+                {/* رسالة عدم وجود بيانات */}
+                <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-yellow-800 text-sm">
+                  ⚠️ لا توجد بيانات تقرير • يُعرض نموذج افتراضي
+                </div>
+                
+                {/* عرض نموذج افتراضي */}
+                <ReportRenderer 
+                  reportType={currentSettings.reportType}
+                  printSettings={currentSettings}
+                />
+              </div>
             )}
           </div>
         </CardContent>

@@ -151,8 +151,27 @@ export default function Reports() {
     setIsGenerating(true);
     try {
       const data = await apiRequest("GET", `/api/workers/${selectedWorkerId}/account-statement?projectId=${selectedProjectId}&dateFrom=${workerAccountDate1}&dateTo=${workerAccountDate2}`);
-      setReportData({ ...data, workerId: selectedWorkerId, dateFrom: workerAccountDate1, dateTo: workerAccountDate2 });
+      const reportDataExtended = { ...data, workerId: selectedWorkerId, dateFrom: workerAccountDate1, dateTo: workerAccountDate2 };
+      setReportData(reportDataExtended);
       setActiveReportType("worker");
+
+      // حفظ بيانات التقرير في localStorage للاستخدام في إعدادات الطباعة
+      setTimeout(() => {
+        const worker = workers.find(w => w.id === selectedWorkerId);
+        const reportContext = {
+          type: 'worker_statement',
+          data: reportDataExtended,
+          html: '', // سيتم تحديثه بعد الرندر
+          title: `كشف حساب العامل - ${worker?.name || 'غير محدد'} (${workerAccountDate1} إلى ${workerAccountDate2})`,
+          timestamp: Date.now(),
+          hasRealData: true,
+          projectName: selectedProject?.name || 'مشروع غير محدد',
+          reportDate: `${workerAccountDate1} إلى ${workerAccountDate2}`,
+          workerInfo: worker
+        };
+        localStorage.setItem('printReportContext', JSON.stringify(reportContext));
+        console.log('💾 تم حفظ سياق كشف حساب العامل تلقائياً:', reportContext.title);
+      }, 100);
 
       toast({
         title: "تم إنشاء التقرير",
@@ -185,6 +204,22 @@ export default function Reports() {
       setReportData(data);
       setActiveReportType("materials");
 
+      // حفظ بيانات التقرير في localStorage للاستخدام في إعدادات الطباعة
+      setTimeout(() => {
+        const reportContext = {
+          type: 'material_purchases',
+          data: data,
+          html: '', // سيتم تحديثه بعد الرندر
+          title: `تقرير مشتريات المواد (${materialReportDate1} إلى ${materialReportDate2})`,
+          timestamp: Date.now(),
+          hasRealData: true,
+          projectName: selectedProject?.name || 'مشروع غير محدد',
+          reportDate: `${materialReportDate1} إلى ${materialReportDate2}`
+        };
+        localStorage.setItem('printReportContext', JSON.stringify(reportContext));
+        console.log('💾 تم حفظ سياق تقرير مشتريات المواد تلقائياً:', reportContext.title);
+      }, 100);
+
       toast({
         title: "تم إنشاء التقرير",
         description: "تم إنشاء كشف المواد المشتراة بنجاح",
@@ -215,6 +250,22 @@ export default function Reports() {
       const data = await apiRequest("GET", `/api/reports/project-summary/${selectedProjectId}?dateFrom=${projectSummaryDate1}&dateTo=${projectSummaryDate2}`);
       setReportData(data);
       setActiveReportType("summary");
+
+      // حفظ بيانات التقرير في localStorage للاستخدام في إعدادات الطباعة
+      setTimeout(() => {
+        const reportContext = {
+          type: 'advanced_reports',
+          data: data,
+          html: '', // سيتم تحديثه بعد الرندر
+          title: `ملخص المشروع (${projectSummaryDate1} إلى ${projectSummaryDate2})`,
+          timestamp: Date.now(),
+          hasRealData: true,
+          projectName: selectedProject?.name || 'مشروع غير محدد',
+          reportDate: `${projectSummaryDate1} إلى ${projectSummaryDate2}`
+        };
+        localStorage.setItem('printReportContext', JSON.stringify(reportContext));
+        console.log('💾 تم حفظ سياق ملخص المشروع تلقائياً:', reportContext.title);
+      }, 100);
 
       toast({
         title: "تم إنشاء التقرير",

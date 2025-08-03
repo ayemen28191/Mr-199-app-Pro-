@@ -4,6 +4,14 @@
 This is a comprehensive web application for managing construction projects in Arabic. It provides robust tools for expense tracking, worker management, supplier administration, and detailed reporting, emphasizing an accurate Arabic interface and responsive design. The system aims to streamline construction project oversight, financial management, and workforce administration.
 
 ### Recent Changes (أغسطس 2025)
+- **إصلاح وتطوير نظام التكامل بين صفحة التقارير وإعدادات الطباعة (3 أغسطس 2025):**
+  - **إصلاح آلية استقبال التقارير:** تطوير نظام متكامل لنقل التقارير من صفحة `/reports` إلى `/print-control`
+  - **تحسين حفظ البيانات:** إضافة نظام حفظ تلقائي لجميع أنواع التقارير في localStorage
+  - **معاينة محسنة:** تطوير واجهة معاينة متقدمة مع رسائل حالة وتأكيد استقبال البيانات
+  - **معالجة الأخطاء:** إضافة تحقق شامل من وجود البيانات مع رسائل توضيحية
+  - تحديث دوال إنشاء التقارير لحفظ البيانات تلقائياً (كشف المصاريف، حساب العامل، مشتريات المواد، ملخص المشروع)
+  - إضافة معرفات ومعلومات إضافية لكل نوع تقرير (اسم العامل، فترة التقرير، معلومات المشروع)
+  - **مكتمل:** النظام يعمل بالكامل مع نقل سلس للتقارير والمعاينة الفورية
 - **نظام التحكم الشامل في طباعة الكشوف (3 أغسطس 2025):**
   - إنشاء صفحة تحكم متقدمة `/print-control` للتحكم الكامل في تنسيق الطباعة
   - إضافة جدول `print_settings` لحفظ إعدادات الطباعة المخصصة لكل نوع كشف
