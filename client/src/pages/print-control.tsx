@@ -86,7 +86,46 @@ export default function PrintControlPage() {
   const [currentSettings, setCurrentSettings] = useState<PrintSettings>(defaultSettings as PrintSettings);
   const [selectedSettingsId, setSelectedSettingsId] = useState<string>('');
   const [previewMode, setPreviewMode] = useState<'screen' | 'print'>('screen');
+  const [reportContext, setReportContext] = useState<any>(null);
   const { toast } = useToast();
+
+  // استقبال بيانات التقرير من localStorage عند تحميل الصفحة
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const withData = urlParams.get('withData');
+    const reportTypeParam = urlParams.get('reportType');
+    
+    if (withData === 'true') {
+      try {
+        const storedContext = localStorage.getItem('printReportContext');
+        if (storedContext) {
+          const context = JSON.parse(storedContext);
+          setReportContext(context);
+          
+          // تحديث نوع التقرير من البيانات المرسلة
+          if (context.type && context.type !== currentSettings.reportType) {
+            setCurrentSettings(prev => ({
+              ...prev,
+              reportType: context.type
+            }));
+          }
+          
+          toast({
+            title: "📋 تم استقبال التقرير",
+            description: `تم تحميل بيانات ${context.title} للمعاينة والتخصيص`,
+          });
+        }
+      } catch (error) {
+        console.error('خطأ في استقبال بيانات التقرير:', error);
+      }
+    } else if (reportTypeParam) {
+      // إذا كان هناك نوع تقرير محدد في URL
+      setCurrentSettings(prev => ({
+        ...prev,
+        reportType: reportTypeParam
+      }));
+    }
+  }, []);
 
   // جلب الإعدادات المحفوظة
   const { data: projects } = useQuery({
@@ -559,6 +598,16 @@ export default function PrintControlPage() {
         <p className="text-gray-600 text-center">
           تحكم كامل في جميع جوانب التنسيق والطباعة مع معاينة فورية
         </p>
+        {reportContext && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center mt-4">
+            <p className="text-blue-700 font-medium">
+              📋 تم استقبال تقرير: {reportContext.title}
+            </p>
+            <p className="text-blue-600 text-sm mt-1">
+              يمكنك الآن تخصيص إعدادات الطباعة ومعاينة التقرير مع بياناته الحقيقية
+            </p>
+          </div>
+        )}
       </div>
 
       {/* قسم اختيار نوع التقرير */}
@@ -1057,6 +1106,7 @@ export default function PrintControlPage() {
               reportType={currentSettings.reportType}
               printSettings={currentSettings}
               className="border rounded-lg"
+              reportData={reportContext?.data}
             />
           </div>
         </CardContent>

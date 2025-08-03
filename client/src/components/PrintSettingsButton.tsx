@@ -7,6 +7,8 @@ interface PrintSettingsButtonProps {
   reportType: string;
   className?: string;
   variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
+  reportData?: any; // بيانات التقرير للمعاينة
+  reportTitle?: string; // عنوان التقرير
 }
 
 /**
@@ -15,12 +17,25 @@ interface PrintSettingsButtonProps {
 export function PrintSettingsButton({ 
   reportType, 
   className = "",
-  variant = "ghost" 
+  variant = "ghost",
+  reportData,
+  reportTitle
 }: PrintSettingsButtonProps) {
   const [, setLocation] = useLocation();
 
   const handleOpenSettings = () => {
-    setLocation(`/print-control?reportType=${reportType}`);
+    // حفظ بيانات التقرير في localStorage للوصول إليها في صفحة إعدادات الطباعة
+    if (reportData) {
+      const reportContext = {
+        type: reportType,
+        data: reportData,
+        title: reportTitle || 'تقرير',
+        timestamp: Date.now()
+      };
+      localStorage.setItem('printReportContext', JSON.stringify(reportContext));
+    }
+    
+    setLocation(`/print-control?reportType=${reportType}&withData=true`);
   };
 
   return (

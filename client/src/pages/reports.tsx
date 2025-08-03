@@ -1001,6 +1001,11 @@ export default function Reports() {
                                activeReportType === 'material' ? 'material_purchases' : 'daily_expenses'}
                     className="px-6 py-2 rounded-xl"
                     variant="outline"
+                    reportData={reportData}
+                    reportTitle={`تقرير ${activeReportType === 'daily' ? 'المصاريف اليومية' :
+                                        activeReportType === 'professional' ? 'المصاريف المهنية' :
+                                        activeReportType === 'worker' ? 'حساب العامل' :
+                                        activeReportType === 'material' ? 'المواد والمشتريات' : 'التقرير'}`}
                   />
                   <Button
                     onClick={printReport}

@@ -7,19 +7,23 @@ interface ReportRendererProps {
   reportType: string;
   className?: string;
   printSettings?: any; // إعدادات الطباعة المرسلة من المكون الأب
+  reportData?: any; // بيانات التقرير المرسلة من المكون الأب
 }
 
 /**
  * مكون عرض التقارير الحقيقية للمعاينة
  * يجلب ويعرض البيانات الفعلية حسب نوع التقرير المحدد
  */
-export function ReportRenderer({ reportType, className = "", printSettings: passedSettings }: ReportRendererProps) {
+export function ReportRenderer({ reportType, className = "", printSettings: passedSettings, reportData: passedReportData }: ReportRendererProps) {
   
-  // جلب البيانات حسب نوع التقرير
-  const { data: reportData, isLoading, error } = useQuery({
+  // جلب البيانات حسب نوع التقرير (إذا لم تكن مُمررة من المكون الأب)
+  const { data: fetchedReportData, isLoading, error } = useQuery({
     queryKey: [`/api/print-preview/${reportType}`],
-    enabled: !!reportType
+    enabled: !!reportType && !passedReportData
   });
+
+  // استخدام البيانات المُمررة من المكون الأب أو البيانات المجلبة
+  const reportData = passedReportData || fetchedReportData;
 
   const { data: projects = [] } = useQuery<any[]>({
     queryKey: ['/api/projects'],
