@@ -11,6 +11,7 @@ This is a comprehensive web application for managing construction projects in Ar
   - معاينة فورية مع إمكانية التبديل بين وضع الشاشة ووضع الطباعة
   - نظام حفظ وتحميل الإعدادات مع إمكانية التصدير والاستيراد
   - تطبيق CSS ديناميكي للطباعة مع تحديث فوري عند تغيير الإعدادات
+  - **مطلوب:** تنفيذ استعلام `database_print_settings_migration.sql` في Supabase SQL Editor لإضافة جدول print_settings
 - **تطوير كشف حساب العامل الاحترافي المحسن الجديد (3 أغسطس 2025):**
   - إنشاء مكون جديد `EnhancedWorkerAccountStatement` مع تصميم مضغوط لصفحة A4 واحدة
   - تطوير ملف CSS متخصص `enhanced-worker-statement-print.css` للطباعة الاحترافية
