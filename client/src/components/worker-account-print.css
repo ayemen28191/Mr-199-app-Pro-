@@ -3,7 +3,7 @@
 /* تحسين إعدادات الصفحة - خارج @media print حسب المواصفة */
 @page {
   size: A4 portrait;
-  margin: 1cm; /* هوامش كافية للطباعة الفيزيائية */
+  margin: 0.5cm; /* هوامش أقل لأن padding داخلي في المحتوى */
 }
 
 /* أصناف CSS للألوان والتنسيق بدلاً من انتقائية [style*="..."] */
@@ -43,14 +43,21 @@
     font-family: 'Arial', 'Times New Roman', serif !important;
     font-size: 14px !important;
     line-height: 1.3 !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  /* ضمان ظهور المحتوى من بداية الصفحة الأولى */
+  body {
+    page-break-before: avoid !important;
   }
 
   #professional-worker-account-report {
-    position: static !important;
+    position: relative !important;
     width: 100% !important;
     height: auto !important; /* تلقائي للتوسع مع المحتوى */
     margin: 0 !important;
-    padding: 0 !important;
+    padding: 1cm !important; /* padding داخلي بدلاً من الهوامش */
     background: white !important;
     font-size: 16px !important;
     line-height: 1.4 !important;
@@ -67,6 +74,8 @@
     background: linear-gradient(135deg, #f8fafc, #e2e8f0) !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+    page-break-before: avoid !important; /* ضمان عدم بداية صفحة جديدة قبل العنوان */
+    page-break-after: avoid !important; /* ضمان عدم كسر الصفحة بعد العنوان مباشرة */
   }
 
   .enhanced-header h1 {
