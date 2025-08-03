@@ -77,6 +77,7 @@ interface PrintSettings {
   
   isDefault: boolean;
   isActive: boolean;
+  isPublic?: boolean;
 }
 
 const defaultSettings: PrintSettings = {
@@ -111,6 +112,7 @@ const defaultSettings: PrintSettings = {
   showSignatures: true,
   isDefault: false,
   isActive: true,
+  isPublic: false,
 };
 
 export default function PrintControlPage() {
@@ -189,7 +191,16 @@ export default function PrintControlPage() {
   const saveSettings = () => {
     const settingsToSave = {
       ...currentSettings,
-      id: selectedSettingsId || undefined
+      id: selectedSettingsId || undefined,
+      // تحويل الهوامش إلى strings مع التنسيق الصحيح
+      marginTop: currentSettings.marginTop.toString(),
+      marginBottom: currentSettings.marginBottom.toString(),
+      marginLeft: currentSettings.marginLeft.toString(),
+      marginRight: currentSettings.marginRight.toString(),
+      // التأكد من tableColumnWidths كـ string
+      tableColumnWidths: Array.isArray(currentSettings.tableColumnWidths) 
+        ? JSON.stringify(currentSettings.tableColumnWidths)
+        : currentSettings.tableColumnWidths
     };
     
     saveSettingsMutation.mutate(settingsToSave);
@@ -199,7 +210,19 @@ export default function PrintControlPage() {
   const loadSettings = (settingsId: string) => {
     const settings = savedSettingsList.find((s: any) => s.id === settingsId);
     if (settings) {
-      setCurrentSettings(settings);
+      // تحويل البيانات المحملة للنسق الصحيح
+      const formattedSettings = {
+        ...settings,
+        marginTop: parseFloat(settings.marginTop),
+        marginBottom: parseFloat(settings.marginBottom),
+        marginLeft: parseFloat(settings.marginLeft),
+        marginRight: parseFloat(settings.marginRight),
+        tableColumnWidths: typeof settings.tableColumnWidths === 'string' 
+          ? JSON.parse(settings.tableColumnWidths)
+          : settings.tableColumnWidths
+      };
+      
+      setCurrentSettings(formattedSettings);
       setSelectedSettingsId(settingsId);
       toast({
         title: "📂 تم التحميل",
