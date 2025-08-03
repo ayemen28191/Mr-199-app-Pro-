@@ -33,54 +33,19 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { useToast } from "@/hooks/use-toast";
 import { queryClient, apiRequest } from '@/lib/queryClient';
 
-interface PrintSettings {
-  id?: string;
-  reportType: string;
-  name: string;
-  
-  // إعدادات الصفحة
-  pageSize: string;
-  pageOrientation: string;
+// استيراد النوع الصحيح من schema
+import type { PrintSettings as DBPrintSettings, InsertPrintSettings } from '@shared/schema';
+
+interface PrintSettings extends Omit<DBPrintSettings, 'marginTop' | 'marginBottom' | 'marginLeft' | 'marginRight' | 'tableColumnWidths' | 'createdAt' | 'updatedAt'> {
+  // تحويل الهوامش من decimal (string) إلى number للواجهة
   marginTop: number;
   marginBottom: number;
   marginLeft: number;
   marginRight: number;
-  
-  // إعدادات الخطوط
-  fontFamily: string;
-  fontSize: number;
-  headerFontSize: number;
-  tableFontSize: number;
-  
-  // إعدادات الألوان
-  headerBackgroundColor: string;
-  headerTextColor: string;
-  tableHeaderColor: string;
-  tableRowEvenColor: string;
-  tableRowOddColor: string;
-  tableBorderColor: string;
-  
-  // إعدادات الجدول
-  tableBorderWidth: number;
-  tableCellPadding: number;
   tableColumnWidths?: number[];
-  
-  // إعدادات العناصر المرئية
-  showHeader: boolean;
-  showLogo: boolean;
-  showProjectInfo: boolean;
-  showWorkerInfo: boolean;
-  showAttendanceTable: boolean;
-  showTransfersTable: boolean;
-  showSummary: boolean;
-  showSignatures: boolean;
-  
-  isDefault: boolean;
-  isActive: boolean;
-  isPublic?: boolean;
 }
 
-const defaultSettings: PrintSettings = {
+const defaultSettings: Omit<PrintSettings, 'id'> = {
   reportType: 'worker_statement',
   name: 'إعداد جديد',
   pageSize: 'A4',
@@ -112,11 +77,11 @@ const defaultSettings: PrintSettings = {
   showSignatures: true,
   isDefault: false,
   isActive: true,
-  isPublic: false,
+  userId: null,
 };
 
 export default function PrintControlPage() {
-  const [currentSettings, setCurrentSettings] = useState<PrintSettings>(defaultSettings);
+  const [currentSettings, setCurrentSettings] = useState<PrintSettings>(defaultSettings as PrintSettings);
   const [selectedSettingsId, setSelectedSettingsId] = useState<string>('');
   const [previewMode, setPreviewMode] = useState<'screen' | 'print'>('screen');
   const { toast } = useToast();
@@ -131,13 +96,13 @@ export default function PrintControlPage() {
   });
 
   // جلب إعدادات الطباعة المحفوظة
-  const { data: savedSettingsList = [], refetch: refetchSettings } = useQuery({
+  const { data: savedSettingsList = [], refetch: refetchSettings } = useQuery<DBPrintSettings[]>({
     queryKey: ['/api/print-settings'],
   });
 
   // طفرة لحفظ الإعدادات
   const saveSettingsMutation = useMutation({
-    mutationFn: async (settings: Partial<PrintSettings>) => {
+    mutationFn: async (settings: Partial<InsertPrintSettings & { id?: string }>) => {
       if (settings.id) {
         return apiRequest(`/api/print-settings/${settings.id}`, 'PUT', settings);
       } else {
@@ -189,7 +154,7 @@ export default function PrintControlPage() {
 
   // دالة حفظ الإعدادات
   const saveSettings = () => {
-    const settingsToSave = {
+    const settingsToSave: Partial<InsertPrintSettings & { id?: string }> = {
       ...currentSettings,
       id: selectedSettingsId || undefined,
       // تحويل الهوامش إلى strings مع التنسيق الصحيح
@@ -200,7 +165,7 @@ export default function PrintControlPage() {
       // التأكد من tableColumnWidths كـ string
       tableColumnWidths: Array.isArray(currentSettings.tableColumnWidths) 
         ? JSON.stringify(currentSettings.tableColumnWidths)
-        : currentSettings.tableColumnWidths
+        : currentSettings.tableColumnWidths || "[8,12,10,30,12,15,15,12]"
     };
     
     saveSettingsMutation.mutate(settingsToSave);
@@ -208,10 +173,10 @@ export default function PrintControlPage() {
 
   // دالة تحميل إعدادات محفوظة
   const loadSettings = (settingsId: string) => {
-    const settings = savedSettingsList.find((s: any) => s.id === settingsId);
+    const settings = savedSettingsList.find((s) => s.id === settingsId);
     if (settings) {
       // تحويل البيانات المحملة للنسق الصحيح
-      const formattedSettings = {
+      const formattedSettings: PrintSettings = {
         ...settings,
         marginTop: parseFloat(settings.marginTop),
         marginBottom: parseFloat(settings.marginBottom),
@@ -219,7 +184,7 @@ export default function PrintControlPage() {
         marginRight: parseFloat(settings.marginRight),
         tableColumnWidths: typeof settings.tableColumnWidths === 'string' 
           ? JSON.parse(settings.tableColumnWidths)
-          : settings.tableColumnWidths
+          : (settings.tableColumnWidths as any) || [8, 12, 10, 30, 12, 15, 15, 12]
       };
       
       setCurrentSettings(formattedSettings);
@@ -782,7 +747,7 @@ export default function PrintControlPage() {
               
               <Button 
                 variant="outline" 
-                onClick={() => setCurrentSettings(defaultSettings)}
+                onClick={() => setCurrentSettings({...defaultSettings, id: undefined})}
                 className="w-full"
               >
                 <RotateCcw className="h-4 w-4 mr-2" />
