@@ -1,7 +1,7 @@
 // صفحة التحكم الشامل في طباعة الكشوف
 // نظام متقدم للتحكم في جميع جوانب التنسيق والطباعة
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { usePrintSettings } from '@/hooks/usePrintSettings';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -129,60 +129,107 @@ export default function PrintControlPage() {
   }, []);
 
   // تطبيق إعدادات الطباعة على التقرير المنقول
-  useEffect(() => {
-    if (reportContext?.html && currentSettings) {
-      // إنشاء CSS مخصص وتطبيقه على التقرير المنقول
-      const styleId = 'transferred-report-styles';
-      const existingStyle = document.getElementById(styleId);
-      
-      if (existingStyle) {
-        existingStyle.remove();
-      }
-
-      const customCSS = `
-        .report-preview {
-          font-family: ${currentSettings.fontFamily} !important;
-          font-size: ${currentSettings.fontSize}px !important;
-          direction: rtl !important;
-        }
-        .report-preview * {
-          font-family: ${currentSettings.fontFamily} !important;
-        }
-        .report-preview h1, .report-preview h2, .report-preview h3 {
-          font-size: ${currentSettings.headerFontSize}px !important;
-          color: ${currentSettings.headerTextColor} !important;
-        }
-        .report-preview table {
-          font-size: ${currentSettings.tableFontSize}px !important;
-          border: ${currentSettings.tableBorderWidth}px solid ${currentSettings.tableBorderColor} !important;
-        }
-        .report-preview table th {
-          background-color: ${currentSettings.tableHeaderColor} !important;
-          color: ${currentSettings.headerTextColor} !important;
-          padding: ${currentSettings.tableCellPadding}px !important;
-        }
-        .report-preview table td {
-          padding: ${currentSettings.tableCellPadding}px !important;
-        }
-        .report-preview table tr:nth-child(even) {
-          background-color: ${currentSettings.tableRowEvenColor} !important;
-        }
-        .report-preview table tr:nth-child(odd) {
-          background-color: ${currentSettings.tableRowOddColor} !important;
-        }
-        @media print {
-          .report-preview {
-            margin: ${currentSettings.marginTop}mm ${currentSettings.marginRight}mm ${currentSettings.marginBottom}mm ${currentSettings.marginLeft}mm !important;
-          }
-        }
-      `;
-
-      const styleElement = document.createElement('style');
-      styleElement.id = styleId;
-      styleElement.textContent = customCSS;
-      document.head.appendChild(styleElement);
+  const applySettingsToReport = useCallback(() => {
+    if (!reportContext?.html || !currentSettings) return;
+    
+    // إنشاء CSS مخصص وتطبيقه على التقرير المنقول
+    const styleId = 'transferred-report-styles';
+    const existingStyle = document.getElementById(styleId);
+    
+    if (existingStyle) {
+      existingStyle.remove();
     }
+
+    const customCSS = `
+      /* تطبيق الخط الأساسي */
+      .report-preview, .report-preview * {
+        font-family: ${currentSettings.fontFamily} !important;
+        font-size: ${currentSettings.fontSize}px !important;
+        direction: rtl !important;
+      }
+      
+      /* العناوين */
+      .report-preview h1, 
+      .report-preview h2, 
+      .report-preview h3,
+      .report-preview .report-title,
+      .report-preview .main-title {
+        font-size: ${currentSettings.headerFontSize}px !important;
+        color: ${currentSettings.headerTextColor} !important;
+        font-weight: bold !important;
+      }
+      
+      /* الجداول */
+      .report-preview table {
+        font-size: ${currentSettings.tableFontSize}px !important;
+        border-collapse: collapse !important;
+        width: 100% !important;
+        border: ${currentSettings.tableBorderWidth}px solid ${currentSettings.tableBorderColor} !important;
+      }
+      
+      .report-preview table th {
+        background-color: ${currentSettings.tableHeaderColor} !important;
+        color: ${currentSettings.headerTextColor} !important;
+        padding: ${currentSettings.tableCellPadding}px !important;
+        border: ${currentSettings.tableBorderWidth}px solid ${currentSettings.tableBorderColor} !important;
+        font-weight: bold !important;
+      }
+      
+      .report-preview table td {
+        padding: ${currentSettings.tableCellPadding}px !important;
+        border: ${currentSettings.tableBorderWidth}px solid ${currentSettings.tableBorderColor} !important;
+      }
+      
+      .report-preview table tbody tr:nth-child(even) {
+        background-color: ${currentSettings.tableRowEvenColor} !important;
+      }
+      
+      .report-preview table tbody tr:nth-child(odd) {
+        background-color: ${currentSettings.tableRowOddColor} !important;
+      }
+      
+      /* النصوص العامة */
+      .report-preview p,
+      .report-preview div,
+      .report-preview span {
+        font-size: ${currentSettings.fontSize}px !important;
+        line-height: 1.4 !important;
+      }
+      
+      /* إعدادات الطباعة */
+      @media print {
+        .report-preview {
+          margin: ${currentSettings.marginTop}mm ${currentSettings.marginRight}mm ${currentSettings.marginBottom}mm ${currentSettings.marginLeft}mm !important;
+          print-color-adjust: exact !important;
+          -webkit-print-color-adjust: exact !important;
+        }
+        
+        .report-preview * {
+          print-color-adjust: exact !important;
+          -webkit-print-color-adjust: exact !important;
+        }
+      }
+    `;
+
+    const styleElement = document.createElement('style');
+    styleElement.id = styleId;
+    styleElement.textContent = customCSS;
+    document.head.appendChild(styleElement);
+    
+    // فرض إعادة عرض المحتوى
+    setTimeout(() => {
+      const previewElement = document.querySelector('.report-preview') as HTMLElement;
+      if (previewElement) {
+        previewElement.style.display = 'none';
+        previewElement.offsetHeight; // trigger reflow
+        previewElement.style.display = '';
+      }
+    }, 100);
   }, [currentSettings, reportContext?.html]);
+
+  useEffect(() => {
+    applySettingsToReport();
+  }, [applySettingsToReport]);
 
   // جلب الإعدادات المحفوظة
   const { data: projects } = useQuery({
@@ -247,12 +294,14 @@ export default function PrintControlPage() {
     }
   });
 
-  // دالة تحديث الإعدادات
+  // دالة تحديث الإعدادات مع التطبيق الفوري
   const updateSetting = (key: keyof PrintSettings, value: any) => {
     setCurrentSettings(prev => ({
       ...prev,
       [key]: value
     }));
+    // تطبيق الإعدادات فوراً عند تغييرها
+    setTimeout(() => applySettingsToReport(), 50);
   };
 
   // دالة حفظ الإعدادات
@@ -325,6 +374,8 @@ export default function PrintControlPage() {
       
       setCurrentSettings(formattedSettings);
       setSelectedSettingsId(settingsId);
+      // تطبيق الإعدادات المحملة على التقرير
+      setTimeout(() => applySettingsToReport(), 100);
       toast({
         title: "📂 تم التحميل",
         description: `تم تحميل إعدادات: ${settings.name}`,
