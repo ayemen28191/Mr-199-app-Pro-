@@ -693,3 +693,148 @@
 }
 
 /* Font loading for Arabic - moved to top */
+
+/* CSS محسن للطباعة - حل مشكلة الهوامش والعرض */
+@media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* إخفاء عناصر الواجهة */
+  .no-print,
+  nav,
+  .sidebar,
+  header:not(.print-header),
+  footer,
+  .card:not(.print-content),
+  button,
+  .btn,
+  .card-header,
+  .card-title,
+  .controls,
+  .settings-panel,
+  .tabs,
+  .form-group,
+  .input-group,
+  .dropdown,
+  .modal,
+  .overlay {
+    display: none !important;
+  }
+
+  /* إعداد الصفحة والهوامش */
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    background: white !important;
+    direction: rtl !important;
+    font-family: 'Cairo', Arial, sans-serif !important;
+  }
+  
+  /* المحتوى الرئيسي للطباعة */
+  #dynamic-print-preview,
+  .print-preview,
+  .report-renderer,
+  .print-preview-mode {
+    display: block !important;
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    box-shadow: none !important;
+    border: none !important;
+    position: static !important;
+    overflow: visible !important;
+  }
+  
+  /* تحسين عرض الجداول */
+  .print-table,
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin: 3mm 0 !important;
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+  }
+  
+  .print-table th,
+  .print-table td,
+  table th,
+  table td {
+    border: 1px solid #000 !important;
+    padding: 2mm !important;
+    text-align: center !important;
+    -webkit-print-color-adjust: exact !important;
+    font-size: inherit !important;
+  }
+  
+  .print-table th,
+  table th {
+    background: #f0f0f0 !important;
+    font-weight: bold !important;
+    break-inside: avoid !important;
+  }
+
+  /* تحسين عرض الرؤوس */
+  .print-header {
+    margin: 0 0 5mm 0 !important;
+    padding: 5mm !important;
+    text-align: center !important;
+    break-inside: avoid !important;
+    -webkit-print-color-adjust: exact !important;
+  }
+
+  /* تحسين عرض المعلومات */
+  .project-info,
+  .worker-info,
+  .supplier-info,
+  .date-info {
+    margin: 0 0 5mm 0 !important;
+    padding: 2mm !important;
+    border: 1px solid #ddd !important;
+    background: #f9f9f9 !important;
+    -webkit-print-color-adjust: exact !important;
+    break-inside: avoid !important;
+  }
+
+  /* تحسين عرض الملخصات */
+  .summary-section {
+    margin: 5mm 0 0 0 !important;
+    padding: 3mm !important;
+    border: 1px solid #ddd !important;
+    background: #f5f5f5 !important;
+    -webkit-print-color-adjust: exact !important;
+    break-inside: avoid !important;
+  }
+
+  /* تحسين عرض المحتوى المختلف */
+  .report-renderer,
+  .worker-statement-preview,
+  .supplier-statement-preview,
+  .daily-expenses-preview,
+  .material-purchases-preview,
+  .advanced-reports-preview {
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: white !important;
+    width: 100% !important;
+  }
+
+  /* تحسين النصوص والخطوط */
+  p, div, span {
+    font-size: inherit !important;
+    line-height: 1.4 !important;
+  }
+
+  h1, h2, h3 {
+    break-after: avoid !important;
+    margin: 0 0 3mm 0 !important;
+  }
+}

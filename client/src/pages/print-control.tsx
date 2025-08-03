@@ -244,17 +244,38 @@ export default function PrintControlPage() {
       }
       
       @media print {
-        .no-print { display: none !important; }
+        * {
+          -webkit-print-color-adjust: exact !important;
+          color-adjust: exact !important;
+          print-color-adjust: exact !important;
+        }
+
+        .no-print, 
+        nav, 
+        .sidebar, 
+        header, 
+        footer,
+        .card:not(.print-content),
+        button,
+        .btn {
+          display: none !important;
+        }
         
-        body {
+        html, body {
           font-family: ${currentSettings.fontFamily}, Arial, sans-serif !important;
           font-size: ${currentSettings.fontSize}px !important;
           color: #000 !important;
           background: white !important;
           direction: rtl !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          width: 100% !important;
+          height: auto !important;
         }
         
-        #dynamic-print-preview {
+        #dynamic-print-preview,
+        .report-renderer,
+        .print-preview-mode {
           display: block !important;
           position: static !important;
           width: 100% !important;
@@ -263,6 +284,8 @@ export default function PrintControlPage() {
           padding: 0 !important;
           background: white !important;
           overflow: visible !important;
+          box-shadow: none !important;
+          border: none !important;
         }
         
         .print-header {
@@ -271,38 +294,50 @@ export default function PrintControlPage() {
           color: ${currentSettings.headerTextColor} !important;
           font-size: ${currentSettings.headerFontSize}px !important;
           padding: 5mm !important;
-          margin-bottom: 3mm !important;
+          margin: 0 0 5mm 0 !important;
           text-align: center !important;
+          -webkit-print-color-adjust: exact !important;
+          break-inside: avoid !important;
         }
         
-        .print-table {
+        .print-table,
+        table {
           ${currentSettings.showAttendanceTable ? '' : 'display: none !important;'}
           width: 100% !important;
           border-collapse: collapse !important;
           margin: 3mm 0 !important;
           font-size: ${currentSettings.tableFontSize}px !important;
+          break-inside: auto !important;
+          page-break-inside: auto !important;
         }
         
-        .print-table th {
+        .print-table th,
+        table th {
           background: ${currentSettings.tableHeaderColor} !important;
           color: white !important;
           border: ${currentSettings.tableBorderWidth}px solid ${currentSettings.tableBorderColor} !important;
           padding: ${currentSettings.tableCellPadding}mm !important;
           text-align: center !important;
           font-weight: bold !important;
+          -webkit-print-color-adjust: exact !important;
+          break-inside: avoid !important;
         }
         
-        .print-table td {
+        .print-table td,
+        table td {
           border: ${currentSettings.tableBorderWidth}px solid ${currentSettings.tableBorderColor} !important;
           padding: ${currentSettings.tableCellPadding}mm !important;
           text-align: center !important;
+          -webkit-print-color-adjust: exact !important;
         }
         
-        .print-table tr:nth-child(even) td {
+        .print-table tbody tr:nth-child(even) td,
+        table tbody tr:nth-child(even) td {
           background: ${currentSettings.tableRowEvenColor} !important;
         }
         
-        .print-table tr:nth-child(odd) td {
+        .print-table tbody tr:nth-child(odd) td,
+        table tbody tr:nth-child(odd) td {
           background: ${currentSettings.tableRowOddColor} !important;
         }
         
@@ -324,6 +359,60 @@ export default function PrintControlPage() {
         
         .signatures-section {
           ${currentSettings.showSignatures ? '' : 'display: none !important;'}
+        }
+
+        /* إخفاء جميع عناصر الواجهة غير المطلوبة للطباعة */
+        .card-header,
+        .card-title,
+        .sidebar,
+        .navigation,
+        .controls,
+        .settings-panel,
+        .tabs,
+        .tab-content:not(.print-content),
+        .form-group,
+        .input-group,
+        .dropdown,
+        .tooltip,
+        .modal,
+        .overlay {
+          display: none !important;
+        }
+
+        /* تحسين عرض المحتوى */
+        .report-renderer,
+        .worker-statement-preview,
+        .supplier-statement-preview,
+        .daily-expenses-preview,
+        .material-purchases-preview,
+        .advanced-reports-preview {
+          margin: 0 !important;
+          padding: 0 !important;
+          border: none !important;
+          box-shadow: none !important;
+          background: white !important;
+          width: 100% !important;
+        }
+
+        /* تحسين عرض العناصر المعلوماتية */
+        .project-info,
+        .worker-info,
+        .supplier-info,
+        .date-info {
+          margin: 0 0 5mm 0 !important;
+          padding: 2mm !important;
+          border: 1px solid #ddd !important;
+          background: #f9f9f9 !important;
+          -webkit-print-color-adjust: exact !important;
+        }
+
+        /* تحسين عرض الملخصات */
+        .summary-section {
+          margin: 5mm 0 0 0 !important;
+          padding: 3mm !important;
+          border: 1px solid #ddd !important;
+          background: #f5f5f5 !important;
+          -webkit-print-color-adjust: exact !important;
         }
       }
     `;
