@@ -436,73 +436,356 @@ export default function AdvancedPrintControl() {
             </CardContent>
           </Card>
 
-          {/* إعدادات سريعة */}
+          {/* لوحة التحكم المتقدم */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Type className="h-5 w-5" />
-                الإعدادات الأساسية
+                <Settings className="h-5 w-5" />
+                لوحة التحكم المتقدم
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>حجم الصفحة</Label>
-                  <Select 
-                    value={currentSettings.pageSize} 
-                    onValueChange={(value) => updateSetting('pageSize', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="A4">A4</SelectItem>
-                      <SelectItem value="A3">A3</SelectItem>
-                      <SelectItem value="Letter">Letter</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+            <CardContent>
+              <Tabs defaultValue="page" className="w-full">
+                <TabsList className="grid w-full grid-cols-5">
+                  <TabsTrigger value="page">الصفحة</TabsTrigger>
+                  <TabsTrigger value="fonts">الخطوط</TabsTrigger>
+                  <TabsTrigger value="colors">الألوان</TabsTrigger>
+                  <TabsTrigger value="table">الجدول</TabsTrigger>
+                  <TabsTrigger value="elements">العناصر</TabsTrigger>
+                </TabsList>
 
-                <div className="space-y-2">
-                  <Label>اتجاه الصفحة</Label>
-                  <Select 
-                    value={currentSettings.pageOrientation} 
-                    onValueChange={(value) => updateSetting('pageOrientation', value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="portrait">عمودي</SelectItem>
-                      <SelectItem value="landscape">أفقي</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+                {/* تبويب إعدادات الصفحة */}
+                <TabsContent value="page" className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>حجم الصفحة</Label>
+                      <Select 
+                        value={currentSettings.pageSize} 
+                        onValueChange={(value) => updateSetting('pageSize', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="A4">A4</SelectItem>
+                          <SelectItem value="A3">A3</SelectItem>
+                          <SelectItem value="Letter">Letter</SelectItem>
+                          <SelectItem value="Legal">Legal</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
 
-              <div className="space-y-3">
-                <Label>حجم الخط: {currentSettings.fontSize}px</Label>
-                <Slider
-                  value={[currentSettings.fontSize]}
-                  onValueChange={([value]) => updateSetting('fontSize', value)}
-                  min={8}
-                  max={20}
-                  step={1}
-                  className="w-full"
-                />
-              </div>
+                    <div className="space-y-2">
+                      <Label>اتجاه الصفحة</Label>
+                      <Select 
+                        value={currentSettings.pageOrientation} 
+                        onValueChange={(value) => updateSetting('pageOrientation', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="portrait">عمودي</SelectItem>
+                          <SelectItem value="landscape">أفقي</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
 
-              <div className="space-y-3">
-                <Label>حجم خط العنوان: {currentSettings.headerFontSize}px</Label>
-                <Slider
-                  value={[currentSettings.headerFontSize]}
-                  onValueChange={([value]) => updateSetting('headerFontSize', value)}
-                  min={12}
-                  max={28}
-                  step={1}
-                  className="w-full"
-                />
-              </div>
+                  {/* إعدادات الهوامش */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-3">
+                      <Label>الهامش العلوي: {currentSettings.marginTop}مم</Label>
+                      <Slider
+                        value={[currentSettings.marginTop]}
+                        onValueChange={([value]) => updateSetting('marginTop', value)}
+                        min={5}
+                        max={50}
+                        step={1}
+                        className="w-full"
+                      />
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <Label>الهامش السفلي: {currentSettings.marginBottom}مم</Label>
+                      <Slider
+                        value={[currentSettings.marginBottom]}
+                        onValueChange={([value]) => updateSetting('marginBottom', value)}
+                        min={5}
+                        max={50}
+                        step={1}
+                        className="w-full"
+                      />
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <Label>الهامش الأيمن: {currentSettings.marginRight}مم</Label>
+                      <Slider
+                        value={[currentSettings.marginRight]}
+                        onValueChange={([value]) => updateSetting('marginRight', value)}
+                        min={5}
+                        max={50}
+                        step={1}
+                        className="w-full"
+                      />
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <Label>الهامش الأيسر: {currentSettings.marginLeft}مم</Label>
+                      <Slider
+                        value={[currentSettings.marginLeft]}
+                        onValueChange={([value]) => updateSetting('marginLeft', value)}
+                        min={5}
+                        max={50}
+                        step={1}
+                        className="w-full"
+                      />
+                    </div>
+                  </div>
+                </TabsContent>
+
+                {/* تبويب الخطوط */}
+                <TabsContent value="fonts" className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>نوع الخط</Label>
+                      <Select 
+                        value={currentSettings.fontFamily} 
+                        onValueChange={(value) => updateSetting('fontFamily', value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Arial">Arial</SelectItem>
+                          <SelectItem value="Times New Roman">Times New Roman</SelectItem>
+                          <SelectItem value="Helvetica">Helvetica</SelectItem>
+                          <SelectItem value="Tahoma">Tahoma</SelectItem>
+                          <SelectItem value="Calibri">Calibri</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label>معاينة الخط</Label>
+                      <div className="p-3 border rounded-lg bg-gray-50" style={{ fontFamily: currentSettings.fontFamily }}>
+                        نموذج النص بالخط المحدد - Sample Text 123
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-3">
+                      <Label>حجم الخط العام: {currentSettings.fontSize}px</Label>
+                      <Slider
+                        value={[currentSettings.fontSize]}
+                        onValueChange={([value]) => updateSetting('fontSize', value)}
+                        min={8}
+                        max={20}
+                        step={1}
+                        className="w-full"
+                      />
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <Label>حجم خط العناوين: {currentSettings.headerFontSize}px</Label>
+                      <Slider
+                        value={[currentSettings.headerFontSize]}
+                        onValueChange={([value]) => updateSetting('headerFontSize', value)}
+                        min={12}
+                        max={28}
+                        step={1}
+                        className="w-full"
+                      />
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <Label>حجم خط الجدول: {currentSettings.tableFontSize}px</Label>
+                      <Slider
+                        value={[currentSettings.tableFontSize]}
+                        onValueChange={([value]) => updateSetting('tableFontSize', value)}
+                        min={6}
+                        max={16}
+                        step={1}
+                        className="w-full"
+                      />
+                    </div>
+                  </div>
+                </TabsContent>
+
+                {/* تبويب الألوان */}
+                <TabsContent value="colors" className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>لون خلفية الرأسية</Label>
+                      <Input
+                        type="color"
+                        value={currentSettings.headerBackgroundColor}
+                        onChange={(e) => updateSetting('headerBackgroundColor', e.target.value)}
+                        className="h-10"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label>لون نص الرأسية</Label>
+                      <Input
+                        type="color"
+                        value={currentSettings.headerTextColor}
+                        onChange={(e) => updateSetting('headerTextColor', e.target.value)}
+                        className="h-10"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label>لون رأس الجدول</Label>
+                      <Input
+                        type="color"
+                        value={currentSettings.tableHeaderColor}
+                        onChange={(e) => updateSetting('tableHeaderColor', e.target.value)}
+                        className="h-10"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label>لون حدود الجدول</Label>
+                      <Input
+                        type="color"
+                        value={currentSettings.tableBorderColor}
+                        onChange={(e) => updateSetting('tableBorderColor', e.target.value)}
+                        className="h-10"
+                      />
+                    </div>
+                  </div>
+                </TabsContent>
+
+                {/* تبويب الجدول */}
+                <TabsContent value="table" className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-3">
+                      <Label>سمك حدود الجدول: {currentSettings.tableBorderWidth}px</Label>
+                      <Slider
+                        value={[currentSettings.tableBorderWidth]}
+                        onValueChange={([value]) => updateSetting('tableBorderWidth', value)}
+                        min={0}
+                        max={5}
+                        step={1}
+                        className="w-full"
+                      />
+                    </div>
+                    
+                    <div className="space-y-3">
+                      <Label>حشو الخلايا: {currentSettings.tableCellPadding}مم</Label>
+                      <Slider
+                        value={[currentSettings.tableCellPadding]}
+                        onValueChange={([value]) => updateSetting('tableCellPadding', value)}
+                        min={1}
+                        max={10}
+                        step={1}
+                        className="w-full"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>لون الصفوف الزوجية</Label>
+                      <Input
+                        type="color"
+                        value={currentSettings.tableRowEvenColor}
+                        onChange={(e) => updateSetting('tableRowEvenColor', e.target.value)}
+                        className="h-10"
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label>لون الصفوف الفردية</Label>
+                      <Input
+                        type="color"
+                        value={currentSettings.tableRowOddColor}
+                        onChange={(e) => updateSetting('tableRowOddColor', e.target.value)}
+                        className="h-10"
+                      />
+                    </div>
+                  </div>
+                </TabsContent>
+
+                {/* تبويب العناصر */}
+                <TabsContent value="elements" className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex items-center space-x-2 space-x-reverse">
+                      <Switch
+                        id="show-header"
+                        checked={currentSettings.showHeader}
+                        onCheckedChange={(checked) => updateSetting('showHeader', checked)}
+                      />
+                      <Label htmlFor="show-header">إظهار الرأسية</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2 space-x-reverse">
+                      <Switch
+                        id="show-logo"
+                        checked={currentSettings.showLogo}
+                        onCheckedChange={(checked) => updateSetting('showLogo', checked)}
+                      />
+                      <Label htmlFor="show-logo">إظهار الشعار</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2 space-x-reverse">
+                      <Switch
+                        id="show-project-info"
+                        checked={currentSettings.showProjectInfo}
+                        onCheckedChange={(checked) => updateSetting('showProjectInfo', checked)}
+                      />
+                      <Label htmlFor="show-project-info">إظهار معلومات المشروع</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2 space-x-reverse">
+                      <Switch
+                        id="show-worker-info"
+                        checked={currentSettings.showWorkerInfo}
+                        onCheckedChange={(checked) => updateSetting('showWorkerInfo', checked)}
+                      />
+                      <Label htmlFor="show-worker-info">إظهار معلومات العامل</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2 space-x-reverse">
+                      <Switch
+                        id="show-attendance"
+                        checked={currentSettings.showAttendanceTable}
+                        onCheckedChange={(checked) => updateSetting('showAttendanceTable', checked)}
+                      />
+                      <Label htmlFor="show-attendance">إظهار جدول الحضور</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2 space-x-reverse">
+                      <Switch
+                        id="show-transfers"
+                        checked={currentSettings.showTransfersTable}
+                        onCheckedChange={(checked) => updateSetting('showTransfersTable', checked)}
+                      />
+                      <Label htmlFor="show-transfers">إظهار جدول الحوالات</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2 space-x-reverse">
+                      <Switch
+                        id="show-summary"
+                        checked={currentSettings.showSummary}
+                        onCheckedChange={(checked) => updateSetting('showSummary', checked)}
+                      />
+                      <Label htmlFor="show-summary">إظهار الملخص</Label>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2 space-x-reverse">
+                      <Switch
+                        id="show-signatures"
+                        checked={currentSettings.showSignatures}
+                        onCheckedChange={(checked) => updateSetting('showSignatures', checked)}
+                      />
+                      <Label htmlFor="show-signatures">إظهار التوقيعات</Label>
+                    </div>
+                  </div>
+                </TabsContent>
+              </Tabs>
             </CardContent>
           </Card>
         </div>
