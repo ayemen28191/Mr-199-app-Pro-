@@ -6,13 +6,8 @@
 /* إعدادات الصفحة الأساسية للطباعة */
 @page {
   size: A4;
-  margin: 8mm;
-  @top-center {
-    content: "كشف حساب العامل - صفحة " counter(page);
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    font-size: 8px;
-    color: #6b7280;
-  }
+  margin: 5mm;
+  background: white;
 }
 
 /* إعدادات الطباعة الخاصة */
@@ -22,23 +17,32 @@
     display: none !important;
   }
 
+  /* عرض كامل الصفحة وإخفاء العناصر غير المرغوبة */
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+  }
+
   /* إخفاء كل شيء ما عدا التقرير */
-  body > *:not(#enhanced-worker-account-statement) {
-    display: none !important;
+  body * {
+    visibility: hidden !important;
   }
   
+  /* إظهار التقرير والعناصر المرتبطة به */
+  #enhanced-worker-account-statement,
+  #enhanced-worker-account-statement *,
+  .enhanced-worker-statement-print,
+  .enhanced-worker-statement-print * {
+    visibility: visible !important;
+  }
+
   /* التأكد من عرض التقرير بالمعرف */
   #enhanced-worker-account-statement {
     display: block !important;
-  }
-  
-  /* التأكد من عرض التقرير فقط */
-  #enhanced-worker-account-statement,
-  .enhanced-worker-statement-print {
-    display: block !important;
+    position: relative !important;
     width: 210mm !important;
     min-height: 297mm !important;
-    max-height: 297mm !important;
     margin: 0 !important;
     padding: 8mm !important;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
@@ -50,7 +54,33 @@
     border: none !important;
     page-break-inside: avoid !important;
     page-break-after: avoid !important;
-    overflow: hidden !important;
+    overflow: visible !important;
+  }
+  
+  /* التأكد من عرض التقرير فقط */
+  .enhanced-worker-statement-print {
+    display: block !important;
+    width: 210mm !important;
+    min-height: 297mm !important;
+    margin: 0 !important;
+    padding: 8mm !important;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+    font-size: 9px !important;
+    line-height: 1.2 !important;
+    color: #1a1a1a !important;
+    background: white !important;
+    box-shadow: none !important;
+    border: none !important;
+    page-break-inside: avoid !important;
+    page-break-after: avoid !important;
+    overflow: visible !important;
+  }
+
+  /* تأكد من أن جميع العناصر مرئية في الطباعة */
+  table, thead, tbody, tfoot, tr, th, td, div, span, p, h1, h2, h3, h4, h5, h6 {
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+    color-adjust: exact !important;
   }
 
   /* رأس التقرير */
@@ -263,5 +293,57 @@
     filter: none !important;
     opacity: 1 !important;
     transform: none !important;
+  }
+
+  /* إصلاح مشكلة الطباعة الفارغة */
+  html, body {
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  /* تأكد من أن المحتوى مرئي تماماً */
+  .enhanced-worker-statement-print {
+    position: static !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    z-index: 9999 !important;
+  }
+
+  /* تأكد من أن جميع عناصر التقرير مرئية */
+  #enhanced-worker-account-statement,
+  #enhanced-worker-account-statement * {
+    visibility: visible !important;
+    opacity: 1 !important;
+    display: inline !important;
+  }
+
+  #enhanced-worker-account-statement div {
+    display: block !important;
+  }
+
+  #enhanced-worker-account-statement table {
+    display: table !important;
+  }
+
+  #enhanced-worker-account-statement thead {
+    display: table-header-group !important;
+  }
+
+  #enhanced-worker-account-statement tbody {
+    display: table-row-group !important;
+  }
+
+  #enhanced-worker-account-statement tfoot {
+    display: table-footer-group !important;
+  }
+
+  #enhanced-worker-account-statement tr {
+    display: table-row !important;
+  }
+
+  #enhanced-worker-account-statement th,
+  #enhanced-worker-account-statement td {
+    display: table-cell !important;
   }
 }
