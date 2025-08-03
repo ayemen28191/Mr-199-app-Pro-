@@ -100,7 +100,7 @@ export default function PrintControlPage() {
     queryKey: ['/api/print-settings', currentSettings.reportType],
     queryFn: ({ queryKey }) => {
       const [, reportType] = queryKey;
-      return apiRequest(`/api/print-settings?reportType=${reportType || ''}`);
+      return apiRequest('GET', `/api/print-settings?reportType=${reportType || ''}`);
     },
   });
 
@@ -108,9 +108,9 @@ export default function PrintControlPage() {
   const saveSettingsMutation = useMutation({
     mutationFn: async (settings: Partial<InsertPrintSettings & { id?: string }>) => {
       if (settings.id) {
-        return apiRequest(`/api/print-settings/${settings.id}`, 'PUT', settings);
+        return apiRequest('PUT', `/api/print-settings/${settings.id}`, settings);
       } else {
-        return apiRequest('/api/print-settings', 'POST', settings);
+        return apiRequest('POST', '/api/print-settings', settings);
       }
     },
     onSuccess: () => {
@@ -132,7 +132,7 @@ export default function PrintControlPage() {
   // طفرة لحذف الإعدادات
   const deleteSettingsMutation = useMutation({
     mutationFn: async (id: string) => {
-      return apiRequest(`/api/print-settings/${id}`, 'DELETE');
+      return apiRequest('DELETE', `/api/print-settings/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/print-settings'] });
