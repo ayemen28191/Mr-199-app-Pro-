@@ -26,6 +26,9 @@ import { ProfessionalDailyReport } from "@/components/ProfessionalDailyReport";
 import { ProfessionalWorkerAccountReport } from "@/components/ProfessionalWorkerAccountReport";
 import { CompactWorkerAccountReport } from "@/components/CompactWorkerAccountReport";
 import { EnhancedWorkerAccountStatement } from "@/components/EnhancedWorkerAccountStatementFixed";
+import { PrintButton } from "@/components/PrintButton";
+import { PrintSettingsButton } from "@/components/PrintSettingsButton";
+import { printWithSettings, usePrintSettings } from "@/hooks/usePrintSettings";
 import "@/components/print-styles.css";
 import "@/components/invoice-print-styles.css";
 import "@/components/professional-report-print.css";
@@ -268,34 +271,16 @@ export default function Reports() {
 
   const printReport = () => {
     try {
-      // تطبيق تنسيقات الطباعة
-      document.body.classList.add('printing');
-      
-      // إخفاء عناصر الواجهة غير المطلوبة للطباعة
-      const elementsToHide = document.querySelectorAll('.no-print, nav, .sidebar, .header-controls, .print\\:hidden');
-      const originalStyles: { element: HTMLElement; display: string }[] = [];
-      
-      elementsToHide.forEach((el) => {
-        const element = el as HTMLElement;
-        originalStyles.push({
-          element: element,
-          display: element.style.display
-        });
-        element.style.display = 'none';
-      });
-      
-      // تأخير قصير للتأكد من تطبيق التنسيقات
-      setTimeout(() => {
-        window.print();
-        
-        // استعادة العناصر المخفية بعد الطباعة
-        setTimeout(() => {
-          originalStyles.forEach(({ element, display }) => {
-            element.style.display = display;
-          });
-          document.body.classList.remove('printing');
-        }, 100);
-      }, 100);
+      // تحديد نوع التقرير بناءً على التقرير النشط
+      let reportType = 'daily_expenses'; // افتراضي
+      if (activeReportType === 'daily') reportType = 'daily_expenses';
+      else if (activeReportType === 'professional') reportType = 'daily_expenses';
+      else if (activeReportType === 'worker') reportType = 'worker_statement';
+      else if (activeReportType === 'material') reportType = 'material_purchases';
+      else if (activeReportType === 'project') reportType = 'project_summary';
+
+      // استخدام دالة الطباعة مع الإعدادات المحفوظة
+      printWithSettings(reportType, 500);
       
     } catch (error) {
       console.error('خطأ في الطباعة:', error);
@@ -1009,6 +994,14 @@ export default function Reports() {
                     <Download className="h-4 w-4 mr-2" />
                     تصدير Excel
                   </Button>
+                  <PrintSettingsButton
+                    reportType={activeReportType === 'daily' ? 'daily_expenses' : 
+                               activeReportType === 'professional' ? 'daily_expenses' :
+                               activeReportType === 'worker' ? 'worker_statement' :
+                               activeReportType === 'material' ? 'material_purchases' : 'daily_expenses'}
+                    className="px-6 py-2 rounded-xl"
+                    variant="outline"
+                  />
                   <Button
                     onClick={printReport}
                     className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-xl"
