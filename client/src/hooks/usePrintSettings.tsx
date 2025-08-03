@@ -65,7 +65,20 @@ export function usePrintSettings(reportType: string) {
 export function generatePrintCSS(settings: PrintSettings): string {
   if (!settings) return '';
 
-  const tableColumnWidths = JSON.parse(settings.tableColumnWidths || '[10,20,15,25,15,15]');
+  // معالجة tableColumnWidths بشكل آمن
+  let tableColumnWidths = [10, 20, 15, 25, 15, 15]; // القيم الافتراضية
+  try {
+    if (settings.tableColumnWidths) {
+      if (Array.isArray(settings.tableColumnWidths)) {
+        tableColumnWidths = settings.tableColumnWidths;
+      } else if (typeof settings.tableColumnWidths === 'string') {
+        tableColumnWidths = JSON.parse(settings.tableColumnWidths);
+      }
+    }
+  } catch (error) {
+    console.warn('خطأ في تحليل tableColumnWidths، استخدام القيم الافتراضية:', error);
+    tableColumnWidths = [10, 20, 15, 25, 15, 15];
+  }
   
   return `
     @media print {
