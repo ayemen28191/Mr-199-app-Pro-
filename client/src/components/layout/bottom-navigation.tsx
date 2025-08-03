@@ -1,5 +1,5 @@
 import { useLocation } from "wouter";
-import { Home, Users, Receipt, BarChart, CreditCard, Building2, Truck, Settings } from "lucide-react";
+import { Home, Users, Receipt, BarChart, CreditCard, Building2, Truck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const navigationItems = [
@@ -7,7 +7,6 @@ const navigationItems = [
   { path: "/projects", icon: Building2, label: "المشاريع", key: "projects" },
   { path: "/workers", icon: Users, label: "العمال", key: "workers" },
   { path: "/suppliers-pro", icon: Truck, label: "الموردين", key: "suppliers" },
-  { path: "/print-control", icon: Settings, label: "إعدادات الطباعة", key: "print-settings" },
 ];
 
 export default function BottomNavigation() {
@@ -15,7 +14,7 @@ export default function BottomNavigation() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-card border-t border-border z-50">
-      <div className="grid grid-cols-5 h-16">
+      <div className="grid grid-cols-4 h-16">
         {navigationItems.map((item) => {
           const Icon = item.icon;
           const isActive = location === item.path;
