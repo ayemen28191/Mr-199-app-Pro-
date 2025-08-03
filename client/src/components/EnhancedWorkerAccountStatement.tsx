@@ -1,7 +1,10 @@
 // كشف حساب العامل الاحترافي المحسن - تصميم مضغوط لصفحة A4 واحدة
 // يحتوي على جميع البيانات المطلوبة في تخطيط مدروس وأنيق
 
-import { FileText, Building2, Calendar, User, Phone, MapPin, Banknote, Clock, CheckCircle, AlertCircle, TrendingUp, Calculator } from 'lucide-react';
+import { FileText, Building2, Calendar, User, Phone, MapPin, Banknote, Clock, CheckCircle, AlertCircle, TrendingUp, Calculator, Download, FileSpreadsheet, Printer } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 import './enhanced-worker-statement-print.css';
 
 // واجهة خصائص المكون
@@ -29,6 +32,155 @@ export const EnhancedWorkerAccountStatement = ({
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
     }).format(validAmount) + ' ر.ي';
+  };
+
+  // دالة التصدير إلى Excel
+  const exportToExcel = async () => {
+    try {
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('كشف حساب العامل');
+
+      // إعداد اتجاه الكتابة من اليمين لليسار
+      worksheet.views = [{ rightToLeft: true }];
+
+      // إضافة العنوان الرئيسي
+      worksheet.mergeCells('A1:H1');
+      const titleCell = worksheet.getCell('A1');
+      titleCell.value = 'كشف حساب العامل التفصيلي والشامل';
+      titleCell.font = { name: 'Arial', size: 16, bold: true };
+      titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1e40af' } };
+      titleCell.font.color = { argb: 'FFFFFFFF' };
+
+      // معلومات المشروع والعامل
+      worksheet.getCell('A3').value = 'اسم العامل:';
+      worksheet.getCell('B3').value = worker.name || 'غير محدد';
+      worksheet.getCell('D3').value = 'المشروع:';
+      worksheet.getCell('E3').value = selectedProject?.name || 'غير محدد';
+
+      worksheet.getCell('A4').value = 'نوع العامل:';
+      worksheet.getCell('B4').value = worker.type || 'عامل';
+      worksheet.getCell('D4').value = 'الفترة:';
+      worksheet.getCell('E4').value = `${formatDate(dateFrom)} - ${formatDate(dateTo)}`;
+
+      worksheet.getCell('A5').value = 'الأجر اليومي:';
+      worksheet.getCell('B5').value = formatCurrency(Number(worker.dailyWage) || 0);
+      worksheet.getCell('D5').value = 'تاريخ الإصدار:';
+      worksheet.getCell('E5').value = formatDate(new Date().toISOString().split('T')[0]);
+
+      // رؤوس جدول الحضور
+      const headers = ['م', 'التاريخ', 'اليوم', 'وصف العمل', 'الساعات', 'الأجر المستحق', 'المبلغ المدفوع', 'الحالة'];
+      const headerRow = worksheet.getRow(7);
+      headers.forEach((header, index) => {
+        const cell = headerRow.getCell(index + 1);
+        cell.value = header;
+        cell.font = { name: 'Arial', size: 11, bold: true };
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF3b82f6' } };
+        cell.font.color = { argb: 'FFFFFFFF' };
+        cell.border = {
+          top: { style: 'thin' },
+          left: { style: 'thin' },
+          bottom: { style: 'thin' },
+          right: { style: 'thin' }
+        };
+      });
+
+      // بيانات الحضور
+      attendance.forEach((record: any, index: number) => {
+        const row = worksheet.getRow(8 + index);
+        const status = Number(record.paidAmount) >= Number(record.dailyWage) ? 'مدفوع كاملاً' : 'مدفوع جزئياً';
+        
+        row.getCell(1).value = index + 1;
+        row.getCell(2).value = formatDate(record.date);
+        row.getCell(3).value = formatDay(record.date);
+        row.getCell(4).value = record.workDescription || 'عمل يومي حسب متطلبات المشروع';
+        row.getCell(5).value = record.startTime && record.endTime ? `${record.startTime}-${record.endTime}` : '8 ساعات';
+        row.getCell(6).value = Number(record.dailyWage) || 0;
+        row.getCell(7).value = Number(record.paidAmount) || 0;
+        row.getCell(8).value = status;
+
+        // تنسيق الصف
+        row.eachCell((cell) => {
+          cell.alignment = { horizontal: 'center', vertical: 'middle' };
+          cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+          };
+          if (index % 2 === 0) {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
+          }
+        });
+      });
+
+      // صف الإجماليات
+      const totalRowIndex = 8 + attendance.length;
+      const totalRow = worksheet.getRow(totalRowIndex);
+      totalRow.getCell(1).value = 'الإجماليات';
+      worksheet.mergeCells(`A${totalRowIndex}:E${totalRowIndex}`);
+      totalRow.getCell(6).value = totalEarned;
+      totalRow.getCell(7).value = totalPaid;
+      totalRow.getCell(8).value = `${((totalPaid / totalEarned) * 100).toFixed(0)}%`;
+
+      // تنسيق صف الإجماليات
+      totalRow.eachCell((cell) => {
+        cell.font = { name: 'Arial', size: 11, bold: true };
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF10b981' } };
+        cell.font.color = { argb: 'FFFFFFFF' };
+        cell.border = {
+          top: { style: 'medium' },
+          left: { style: 'thin' },
+          bottom: { style: 'medium' },
+          right: { style: 'thin' }
+        };
+      });
+
+      // الملخص المالي
+      const summaryStartRow = totalRowIndex + 3;
+      worksheet.getCell(`A${summaryStartRow}`).value = 'الملخص المالي';
+      worksheet.mergeCells(`A${summaryStartRow}:B${summaryStartRow}`);
+      worksheet.getCell(`A${summaryStartRow}`).font = { name: 'Arial', size: 14, bold: true };
+      worksheet.getCell(`A${summaryStartRow}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF059669' } };
+      worksheet.getCell(`A${summaryStartRow}`).font.color = { argb: 'FFFFFFFF' };
+
+      worksheet.getCell(`A${summaryStartRow + 1}`).value = 'إجمالي المكتسب:';
+      worksheet.getCell(`B${summaryStartRow + 1}`).value = totalEarned;
+      worksheet.getCell(`A${summaryStartRow + 2}`).value = 'إجمالي المدفوع:';
+      worksheet.getCell(`B${summaryStartRow + 2}`).value = totalPaid;
+      worksheet.getCell(`A${summaryStartRow + 3}`).value = 'إجمالي المحول:';
+      worksheet.getCell(`B${summaryStartRow + 3}`).value = totalTransferred;
+      worksheet.getCell(`A${summaryStartRow + 4}`).value = 'الرصيد النهائي:';
+      worksheet.getCell(`B${summaryStartRow + 4}`).value = currentBalance;
+
+      // ضبط عرض الأعمدة
+      worksheet.columns = [
+        { width: 8 },   // م
+        { width: 12 },  // التاريخ
+        { width: 10 },  // اليوم
+        { width: 30 },  // وصف العمل
+        { width: 12 },  // الساعات
+        { width: 15 },  // الأجر المستحق
+        { width: 15 },  // المبلغ المدفوع
+        { width: 12 }   // الحالة
+      ];
+
+      // إنشاء الملف وتحميله
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const fileName = `كشف_حساب_العامل_${worker.name || 'غير_محدد'}_${formatDate(dateFrom)}_${formatDate(dateTo)}.xlsx`;
+      saveAs(blob, fileName);
+    } catch (error) {
+      console.error('خطأ في تصدير Excel:', error);
+      alert('حدث خطأ أثناء تصدير الملف');
+    }
+  };
+
+  // دالة الطباعة
+  const handlePrint = () => {
+    window.print();
   };
 
   // دالة تنسيق التاريخ
@@ -71,23 +223,47 @@ export const EnhancedWorkerAccountStatement = ({
   }, 0);
 
   return (
-    <div 
-      id="enhanced-worker-account-statement" 
-      className="enhanced-worker-statement-print bg-white"
-      style={{
-        direction: 'rtl',
-        width: '210mm',
-        minHeight: '297mm',
-        margin: '0 auto',
-        padding: '8mm',
-        fontFamily: '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
-        fontSize: '9px',
-        lineHeight: '1.2',
-        color: '#1a1a1a',
-        background: 'white',
-        pageBreakAfter: 'avoid'
-      }}
-    >
+    <div style={{ direction: 'rtl' }}>
+      {/* أزرار التحكم - تخفى عند الطباعة */}
+      <div className="no-print" style={{ 
+        marginBottom: '20px', 
+        display: 'flex', 
+        gap: '10px', 
+        justifyContent: 'center'
+      }}>
+        <Button
+          onClick={handlePrint}
+          className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-2 rounded-lg shadow-lg transform hover:scale-105 transition-all duration-300"
+        >
+          <Printer className="h-4 w-4 mr-2" />
+          طباعة الكشف
+        </Button>
+        <Button
+          onClick={exportToExcel}
+          className="bg-green-600 hover:bg-green-700 text-white font-medium px-6 py-2 rounded-lg shadow-lg transform hover:scale-105 transition-all duration-300"
+        >
+          <FileSpreadsheet className="h-4 w-4 mr-2" />
+          تصدير إلى Excel
+        </Button>
+      </div>
+
+      <div 
+        id="enhanced-worker-account-statement" 
+        className="enhanced-worker-statement-print bg-white"
+        style={{
+          direction: 'rtl',
+          width: '210mm',
+          minHeight: '297mm',
+          margin: '0 auto',
+          padding: '8mm',
+          fontFamily: '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
+          fontSize: '9px',
+          lineHeight: '1.2',
+          color: '#1a1a1a',
+          background: 'white',
+          pageBreakAfter: 'avoid'
+        }}
+      >
       
       {/* الرأسية الرئيسية - مضغوطة ومهنية */}
       <div className="statement-header" style={{
@@ -556,6 +732,7 @@ export const EnhancedWorkerAccountStatement = ({
         }}>
           <p style={{margin: '0'}}>تم إنشاء هذا التقرير آلياً بواسطة نظام إدارة المشاريع الإنشائية • جميع الأرقام بالريال اليمني</p>
           <p style={{margin: '1mm 0 0 0'}}>للاستفسارات والمراجعات يرجى التواصل مع قسم المحاسبة</p>
+          </div>
         </div>
       </div>
     </div>

@@ -17,12 +17,23 @@
 
 /* إعدادات الطباعة الخاصة */
 @media print {
+  /* إخفاء عناصر التحكم */
+  .no-print {
+    display: none !important;
+  }
+
   /* إخفاء كل شيء ما عدا التقرير */
-  body > *:not(.enhanced-worker-statement-print) {
+  body > *:not(#enhanced-worker-account-statement) {
     display: none !important;
   }
   
+  /* التأكد من عرض التقرير بالمعرف */
+  #enhanced-worker-account-statement {
+    display: block !important;
+  }
+  
   /* التأكد من عرض التقرير فقط */
+  #enhanced-worker-account-statement,
   .enhanced-worker-statement-print {
     display: block !important;
     width: 210mm !important;

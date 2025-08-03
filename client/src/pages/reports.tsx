@@ -25,7 +25,7 @@ import type { Worker, Project } from "@shared/schema";
 import { ProfessionalDailyReport } from "@/components/ProfessionalDailyReport";
 import { ProfessionalWorkerAccountReport } from "@/components/ProfessionalWorkerAccountReport";
 import { CompactWorkerAccountReport } from "@/components/CompactWorkerAccountReport";
-import { EnhancedWorkerAccountStatement } from "@/components/EnhancedWorkerAccountStatement";
+import { EnhancedWorkerAccountStatement } from "@/components/EnhancedWorkerAccountStatementFixed";
 import "@/components/print-styles.css";
 import "@/components/invoice-print-styles.css";
 import "@/components/professional-report-print.css";
