@@ -25,9 +25,11 @@ import type { Worker, Project } from "@shared/schema";
 import { ProfessionalDailyReport } from "@/components/ProfessionalDailyReport";
 import { ProfessionalWorkerAccountReport } from "@/components/ProfessionalWorkerAccountReport";
 import { CompactWorkerAccountReport } from "@/components/CompactWorkerAccountReport";
+import { EnhancedWorkerAccountStatement } from "@/components/EnhancedWorkerAccountStatement";
 import "@/components/print-styles.css";
 import "@/components/invoice-print-styles.css";
 import "@/components/professional-report-print.css";
+import "@/components/enhanced-worker-statement-print.css";
 
 export default function Reports() {
   const [, setLocation] = useLocation();
@@ -465,7 +467,7 @@ export default function Reports() {
 
     return (
       <div className="print-preview">
-        <CompactWorkerAccountReport
+        <EnhancedWorkerAccountStatement
           data={data}
           selectedProject={selectedProject}
           workerId={data.workerId}
@@ -850,21 +852,19 @@ export default function Reports() {
                       ) : (
                         <FileText className="h-4 w-4 mr-2" />
                       )}
-                      مضغوط
+                      مضغوط بسيط
                     </Button>
                     <Button 
-                      onClick={() => {
-                        // للمستقبل - تقرير مفصل
-                        toast({
-                          title: "قريباً",
-                          description: "التقرير المفصل سيكون متوفراً قريباً",
-                        });
-                      }}
+                      onClick={generateWorkerAccountReport}
                       disabled={isGenerating}
                       className="h-12 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-medium text-base rounded-xl transform hover:scale-105 transition-all duration-300"
                     >
-                      <FileSpreadsheet className="h-4 w-4 mr-2" />
-                      مفصل
+                      {isGenerating ? (
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <FileSpreadsheet className="h-4 w-4 mr-2" />
+                      )}
+                      احترافي محسن
                     </Button>
                   </div>
                 </CardContent>

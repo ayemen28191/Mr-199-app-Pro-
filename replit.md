@@ -4,6 +4,15 @@
 This is a comprehensive web application for managing construction projects in Arabic. It provides robust tools for expense tracking, worker management, supplier administration, and detailed reporting, emphasizing an accurate Arabic interface and responsive design. The system aims to streamline construction project oversight, financial management, and workforce administration.
 
 ### Recent Changes (أغسطس 2025)
+- **تطوير كشف حساب العامل الاحترافي المحسن الجديد (3 أغسطس 2025):**
+  - إنشاء مكون جديد `EnhancedWorkerAccountStatement` مع تصميم مضغوط لصفحة A4 واحدة
+  - تطوير ملف CSS متخصص `enhanced-worker-statement-print.css` للطباعة الاحترافية
+  - دمج جميع البيانات المطلوبة في تخطيط مدروس وأنيق
+  - إضافة إحصائيات العمل التفصيلية (أيام العمل، إجمالي الساعات، متوسط يومي)
+  - تحسين عرض الحوالات المرسلة في جدول منفصل ومنسق
+  - إضافة قسم التوقيعات والاعتماد للمستندات الرسمية
+  - تحسين الملخص النهائي مع حساب الرصيد الموجب/السالب
+  - ضبط أحجام النصوص والمسافات للاستفادة القصوى من مساحة الصفحة
 - **تحسين شامل لتقرير كشف حساب العمال المهني:**
   - إضافة عنصر "المتبقي في ذمة الشركة" للملخص المالي
   - تحسين ملف CSS للطباعة الاحترافية مع دعم الصفحات المتعددة
