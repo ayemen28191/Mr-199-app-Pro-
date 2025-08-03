@@ -26,11 +26,10 @@ export const ProfessionalWorkerAccountReport = ({
   };
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('ar-SA', {
+    return new Date(dateStr).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
-      weekday: 'long'
     });
   };
 
@@ -40,6 +39,11 @@ export const ProfessionalWorkerAccountReport = ({
     transfers = [],
     summary = {}
   } = data || {};
+
+  // Debug: log data to console
+  console.log('Worker Account Report Data:', { worker, attendance, transfers, summary });
+  console.log('Attendance length:', attendance.length);
+  console.log('Transfers length:', transfers.length);
 
   const totalEarned = attendance.reduce((sum: number, record: any) => {
     const amount = Number(record.dailyWage) || 0;

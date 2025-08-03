@@ -42,7 +42,7 @@
     line-height: 1.4 !important;
     overflow: visible !important;
     page-break-inside: avoid !important;
-    transform: scale(1.2) !important; /* تكبير المحتوى */
+    transform: scale(0.9) !important; /* تكبير المحتوى */
     transform-origin: top left !important;
   }
 
