@@ -43,22 +43,23 @@
     overflow: visible !important;
   }
 
-  /* إخفاء كل شيء ما عدا التقرير */
-  body > * {
+  /* إخفاء العناصر غير المطلوبة فقط عند الطباعة */
+  body > *:not(div) {
     display: none !important;
   }
 
-  /* إظهار التقرير فقط */
+  /* إعدادات التقرير للطباعة */
   #enhanced-worker-account-statement {
     display: block !important;
     position: static !important;
     width: 100% !important;
+    max-width: 190mm !important;
     height: auto !important;
-    margin: 0 !important;
-    padding: 0 !important;
+    margin: 0 auto !important;
+    padding: 5mm !important;
     background: white !important;
     color: #000 !important;
-    font-size: 14px !important;
+    font-size: 12px !important;
     line-height: 1.4 !important;
     direction: rtl !important;
     text-align: right !important;
@@ -66,13 +67,10 @@
     page-break-inside: avoid !important;
   }
 
-  /* إظهار جميع عناصر التقرير */
+  /* إظهار جميع عناصر التقرير بشكل صحيح */
   #enhanced-worker-account-statement * {
-    display: block !important;
     visibility: visible !important;
     opacity: 1 !important;
-    color: #000 !important;
-    background: white !important;
   }
 
   /* تخصيص الجداول */
@@ -213,6 +211,21 @@
     -ms-transform: scale(1) !important;
     transform: scale(1) !important;
   }
+}
+
+/* إعدادات عامة للمحتوى - تعمل على الشاشة والطباعة */
+#enhanced-worker-account-statement {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  color: #000 !important;
+  direction: rtl !important;
+  text-align: right !important;
+}
+
+#enhanced-worker-account-statement * {
+  visibility: visible !important;
+  opacity: 1 !important;
 }
 
 /* للعرض على الشاشة فقط */
