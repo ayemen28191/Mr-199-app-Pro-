@@ -73,6 +73,104 @@
   * {
     font-variant-numeric: tabular-nums;
   }
+}
+
+/* أنماط معاينة الطباعة في صفحة إعدادات الطباعة */
+.print-preview-mode {
+  background: white !important;
+  color: black !important;
+  font-family: Arial, sans-serif !important;
+  border: 1px solid #ddd !important;
+  padding: 20px !important;
+  margin: 10px 0 !important;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1) !important;
+  min-height: 297mm !important; /* A4 height */
+  width: 100% !important;
+  max-width: 210mm !important; /* A4 width */
+  margin: 0 auto !important;
+  direction: rtl !important;
+  text-align: right !important;
+}
+
+.print-preview-mode * {
+  color: black !important;
+}
+
+.print-preview-mode .print-header {
+  background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%) !important;
+  color: white !important;
+  padding: 15px !important;
+  text-align: center !important;
+  margin-bottom: 20px !important;
+  border-radius: 5px !important;
+}
+
+.print-preview-mode .print-header * {
+  color: white !important;
+}
+
+.print-preview-mode table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  margin: 10px 0 !important;
+  font-size: 12px !important;
+}
+
+.print-preview-mode th,
+.print-preview-mode td {
+  border: 1px solid #000 !important;
+  padding: 8px 4px !important;
+  text-align: center !important;
+  color: black !important;
+}
+
+.print-preview-mode th {
+  background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%) !important;
+  color: white !important;
+  font-weight: bold !important;
+}
+
+.print-preview-mode .summary-section {
+  background: #f0f8ff !important;
+  padding: 15px !important;
+  border: 1px solid #ddd !important;
+  border-radius: 5px !important;
+  margin: 15px 0 !important;
+}
+
+/* إعدادات الطباعة الفعلية */
+@media print {
+  /* إخفاء كل شيء ما عدا المعاينة */
+  body * {
+    visibility: hidden !important;
+  }
+  
+  #dynamic-print-preview,
+  #dynamic-print-preview * {
+    visibility: visible !important;
+  }
+  
+  #dynamic-print-preview {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 15mm !important;
+    background: white !important;
+    color: black !important;
+    font-size: 12px !important;
+    line-height: 1.4 !important;
+  }
+  
+  .print-preview-mode {
+    min-height: auto !important;
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
 
   /* تحسينات اختيار المشروع */
   .project-selector-premium {

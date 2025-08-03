@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
+import { usePrintSettings } from '@/hooks/usePrintSettings';
 
 interface ReportRendererProps {
   reportType: string;
@@ -26,6 +27,9 @@ export function ReportRenderer({ reportType, className = "" }: ReportRendererPro
   const { data: workers = [] } = useQuery<any[]>({
     queryKey: ['/api/workers'],
   });
+
+  // جلب إعدادات الطباعة لهذا النوع من التقارير
+  const { settings: printSettings } = usePrintSettings(reportType);
 
   if (isLoading) {
     return (
@@ -63,8 +67,12 @@ export function ReportRenderer({ reportType, className = "" }: ReportRendererPro
   };
 
   const renderWorkerStatement = () => {
-    const project = projects[0] || { name: 'مشروع تجريبي', location: 'الرياض' };
-    const worker = workers[0] || { name: 'عامل تجريبي', workerType: 'معلم بناء', dailyWage: 200 };
+    // استخدام البيانات الحقيقية من API أو البيانات التجريبية كبديل
+    const actualData = reportData || {};
+    const project = actualData.project || projects[0] || { name: 'مشروع تجريبي', location: 'الرياض' };
+    const worker = actualData.worker || workers[0] || { name: 'عامل تجريبي', workerType: 'معلم بناء', dailyWage: 200 };
+    const attendanceData = actualData.attendanceData || [];
+    const transfers = actualData.transfers || [];
     
     return (
       <div className="worker-statement-preview">
@@ -100,7 +108,15 @@ export function ReportRenderer({ reportType, className = "" }: ReportRendererPro
             </tr>
           </thead>
           <tbody>
-            {[1, 2, 3, 4, 5].map((day, index) => (
+            {attendanceData.length > 0 ? attendanceData.map((attendance: any, index: number) => (
+              <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                <td className="border p-2 text-center">{new Date(attendance.date).toLocaleDateString('ar-SA')}</td>
+                <td className="border p-2 text-center">{attendance.hours}</td>
+                <td className="border p-2">{attendance.description}</td>
+                <td className="border p-2 text-center">{attendance.amount} ر.ي</td>
+                <td className="border p-2">عمل عادي</td>
+              </tr>
+            )) : [1, 2, 3, 4, 5].map((day, index) => (
               <tr key={day} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
                 <td className="border p-2 text-center">{new Date(Date.now() - day * 24 * 60 * 60 * 1000).toLocaleDateString('ar-SA')}</td>
                 <td className="border p-2 text-center">8</td>
@@ -401,7 +417,7 @@ export function ReportRenderer({ reportType, className = "" }: ReportRendererPro
   };
 
   return (
-    <div className={`report-renderer bg-white rounded-lg shadow-sm ${className}`}>
+    <div id="dynamic-print-preview" className={`report-renderer print-preview-mode bg-white rounded-lg shadow-sm ${className}`}>
       {renderReportContent()}
     </div>
   );

@@ -349,12 +349,52 @@ export default function PrintControlPage() {
     applyPrintCSS();
   }, [currentSettings]);
 
-  // دالة الطباعة
+  // دالة الطباعة المحسنة
   const handlePrint = () => {
+    console.log('Starting print process...');
+    
+    // تطبيق CSS الطباعة
     applyPrintCSS();
+    
+    // العثور على عنصر المعاينة
+    const previewElement = document.getElementById('dynamic-print-preview');
+    if (!previewElement) {
+      console.error('Preview element not found');
+      toast({
+        title: "خطأ في الطباعة",
+        description: "لم يتم العثور على عنصر المعاينة",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    console.log('Preview element found:', previewElement);
+    console.log('Preview content:', previewElement.innerHTML.substring(0, 200));
+
+    // التأكد من وجود المحتوى
+    if (!previewElement.innerHTML.trim()) {
+      console.error('Preview element is empty');
+      toast({
+        title: "خطأ في الطباعة",
+        description: "المعاينة فارغة. يرجى اختيار نوع تقرير صالح",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // تطبيق كلاس الطباعة وبدء الطباعة
+    document.body.classList.add('print-mode');
+    
+    toast({
+      title: "جاري الطباعة...",
+      description: "سيتم فتح نافذة الطباعة قريباً"
+    });
+
     setTimeout(() => {
       window.print();
-    }, 100);
+      // إزالة كلاس الطباعة بعد الطباعة
+      document.body.classList.remove('print-mode');
+    }, 300);
   };
 
   // دالة تصدير الإعدادات
@@ -414,9 +454,8 @@ export default function PrintControlPage() {
       setCurrentSettings({
         ...defaultSettings,
         reportType: newReportType,
-        name: `إعداد ${reportLabel}`,
-        id: undefined
-      } as PrintSettings);
+        name: `إعداد ${reportLabel}`
+      } as any);
     }
   };
 
@@ -891,7 +930,7 @@ export default function PrintControlPage() {
               
               <Button 
                 variant="outline" 
-                onClick={() => setCurrentSettings({...defaultSettings, id: undefined} as PrintSettings)}
+                onClick={() => setCurrentSettings({...defaultSettings} as any)}
                 className="w-full"
               >
                 <RotateCcw className="h-4 w-4 mr-2" />
@@ -912,7 +951,6 @@ export default function PrintControlPage() {
         </CardHeader>
         <CardContent>
           <div 
-            id="dynamic-print-preview"
             className={`${previewMode === 'print' ? 'print-preview-mode' : ''}`}
             style={{
               fontFamily: currentSettings.fontFamily,
