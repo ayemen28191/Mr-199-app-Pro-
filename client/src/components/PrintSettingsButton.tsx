@@ -26,9 +26,23 @@ export function PrintSettingsButton({
   const handleOpenSettings = () => {
     // حفظ بيانات التقرير + HTML الكامل في localStorage للوصول إليها في صفحة إعدادات الطباعة
     const saveReportContext = () => {
+      // تحديث البيانات الموجودة في localStorage
+      const existingContext = localStorage.getItem('printReportContext');
+      let reportContext: any = {};
+      
+      if (existingContext) {
+        try {
+          reportContext = JSON.parse(existingContext);
+        } catch (e) {
+          console.warn('خطأ في تحليل السياق الموجود');
+        }
+      }
+
       // البحث عن عنصر التقرير حسب نوع التقرير المحدد
       let reportElement = 
-        // البحث حسب نوع التقرير أولاً
+        // البحث المحدد أولاً
+        document.getElementById('professional-report-content') ||
+        document.getElementById('daily-report-content') ||
         document.querySelector(`[data-report-content="${reportType}"]`) ||
         document.querySelector(`[data-report-content]`) ||
         // أو البحث بالكلاسات المحددة
@@ -44,14 +58,15 @@ export function PrintSettingsButton({
         // كحل أخير
         document.querySelector('table');
       
-      let reportHTML = '';
+      let reportHTML = reportContext.html || '';
       
       if (reportElement) {
         console.log('🔍 تم العثور على عنصر التقرير:', {
           tagName: reportElement.tagName,
           className: reportElement.className,
           dataAttribute: reportElement.getAttribute('data-report-content'),
-          reportType: reportType
+          reportType: reportType,
+          id: reportElement.id
         });
         
         // نسخ العنصر مع جميع المحتويات والأنماط
@@ -60,6 +75,7 @@ export function PrintSettingsButton({
         // الحفاظ على الأنماط المهمة وإضافة معرفات للطباعة
         clonedElement.classList.add('print-content', 'report-preview');
         clonedElement.setAttribute('data-report-type', reportType);
+        clonedElement.id = 'live-report-preview';
         
         // الحفاظ على الأنماط الحالية
         const computedStyle = window.getComputedStyle(reportElement);
@@ -77,17 +93,18 @@ export function PrintSettingsButton({
       } else {
         console.warn('⚠️ لم يتم العثور على عنصر التقرير. البحث عن:', {
           reportType: reportType,
-          availableElements: Array.from(document.querySelectorAll('[data-report-content], .print-content, .report-preview')).map(el => ({
+          availableElements: Array.from(document.querySelectorAll('[data-report-content], .print-content, .report-preview, [id*="report"]')).map(el => ({
             tagName: el.tagName,
             className: el.className,
-            dataAttribute: el.getAttribute('data-report-content')
+            dataAttribute: el.getAttribute('data-report-content'),
+            id: el.id
           }))
         });
         
         // إنشاء HTML بسيط من البيانات المتاحة
         if (reportData) {
           reportHTML = `
-            <div class="print-content report-preview">
+            <div id="live-report-preview" class="print-content report-preview">
               <div class="print-header text-center p-4 mb-4 bg-blue-600 text-white">
                 <h1>${reportTitle || 'تقرير'}</h1>
                 <h2>شركة الإنشاءات المتقدمة</h2>
@@ -100,19 +117,21 @@ export function PrintSettingsButton({
         }
       }
       
-      const reportContext = {
+      // تحديث السياق مع البيانات الجديدة
+      const updatedContext = {
+        ...reportContext,
         type: reportType,
-        data: reportData || {},
+        data: reportData || reportContext.data || {},
         html: reportHTML,
-        title: reportTitle || `تقرير ${reportType}`,
+        title: reportTitle || reportContext.title || `تقرير ${reportType}`,
         timestamp: Date.now(),
-        hasRealData: !!reportData
+        hasRealData: !!(reportData || reportContext.data)
       };
       
-      localStorage.setItem('printReportContext', JSON.stringify(reportContext));
-      console.log('💾 تم حفظ سياق التقرير:', reportContext.title);
+      localStorage.setItem('printReportContext', JSON.stringify(updatedContext));
+      console.log('💾 تم حفظ سياق التقرير المحدث:', updatedContext.title);
       
-      return reportContext;
+      return updatedContext;
     };
     
     // حفظ البيانات أولاً

@@ -102,6 +102,22 @@ export default function Reports() {
       setReportData(data);
       setActiveReportType(reportType);
       
+      // حفظ بيانات التقرير في localStorage للاستخدام في إعدادات الطباعة
+      setTimeout(() => {
+        const reportContext = {
+          type: reportType === 'professional' ? 'daily_expenses' : 'daily_expenses',
+          data: data,
+          html: '', // سيتم تحديثه بعد الرندر
+          title: `كشف المصروفات اليومية - ${dailyReportDate}`,
+          timestamp: Date.now(),
+          hasRealData: true,
+          projectName: selectedProject?.name || 'مشروع غير محدد',
+          reportDate: dailyReportDate
+        };
+        localStorage.setItem('printReportContext', JSON.stringify(reportContext));
+        console.log('💾 تم حفظ سياق التقرير تلقائياً:', reportContext.title);
+      }, 100);
+      
       toast({
         title: "تم إنشاء التقرير",
         description: `تم إنشاء كشف المصروفات ${reportType === 'professional' ? 'الاحترافي' : 'العادي'} بنجاح`,
@@ -1042,10 +1058,13 @@ export default function Reports() {
               </div>
             </CardHeader>
             <CardContent className="p-8" data-report-content>
-              {activeReportType === 'daily' && renderDailyExpensesReport(reportData)}
+              {activeReportType === 'daily' && (
+                <div id="daily-report-content" data-report-content="daily_expenses">
+                  {renderDailyExpensesReport(reportData)}
+                </div>
+              )}
               {activeReportType === 'professional' && (
-                <div className="professional-report-container" data-report-content="professional-report">
-                  <h2 className="text-lg font-bold mb-4 text-blue-600">الكشف الاحترافي الجديد</h2>
+                <div id="professional-report-content" className="professional-report-container" data-report-content="daily_expenses">
                   <ProfessionalDailyReport 
                     data={reportData}
                     selectedProject={selectedProject}

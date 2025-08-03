@@ -254,25 +254,60 @@ export default function AdvancedPrintControl() {
     if (reportContext.html && reportContext.html.trim()) {
       return (
         <div className="bg-white border rounded-lg overflow-hidden report-html-preview" style={{ direction: 'rtl' }}>
+          <style dangerouslySetInnerHTML={{
+            __html: `
+              .report-html-preview .print-content,
+              .report-html-preview .report-preview,
+              .report-html-preview .professional-report-container,
+              .report-html-preview .daily-report-container {
+                font-family: ${currentSettings.fontFamily} !important;
+                font-size: ${currentSettings.fontSize}px !important;
+                direction: rtl !important;
+              }
+              .report-html-preview .print-header,
+              .report-html-preview h1,
+              .report-html-preview h2 {
+                background-color: ${currentSettings.headerBackgroundColor} !important;
+                color: ${currentSettings.headerTextColor} !important;
+                font-size: ${currentSettings.headerFontSize}px !important;
+              }
+              .report-html-preview table {
+                border-color: ${currentSettings.tableBorderColor} !important;
+                font-size: ${currentSettings.tableFontSize}px !important;
+              }
+              .report-html-preview th {
+                background-color: ${currentSettings.tableHeaderColor} !important;
+                color: ${currentSettings.headerTextColor} !important;
+                padding: ${currentSettings.tableCellPadding}px !important;
+                border: ${currentSettings.tableBorderWidth}px solid ${currentSettings.tableBorderColor} !important;
+              }
+              .report-html-preview td {
+                padding: ${currentSettings.tableCellPadding}px !important;
+                border: ${currentSettings.tableBorderWidth}px solid ${currentSettings.tableBorderColor} !important;
+              }
+              .report-html-preview tr:nth-child(even) {
+                background-color: ${currentSettings.tableRowEvenColor} !important;
+              }
+              .report-html-preview tr:nth-child(odd) {
+                background-color: ${currentSettings.tableRowOddColor} !important;
+              }
+              @media print {
+                .report-html-preview .print-content,
+                .report-html-preview .report-preview {
+                  font-family: ${currentSettings.fontFamily} !important;
+                  font-size: ${currentSettings.fontSize}px !important;
+                }
+              }
+            `
+          }} />
           <div 
             id="live-report-preview"
             dangerouslySetInnerHTML={{ __html: reportContext.html }}
             style={{
               fontFamily: currentSettings.fontFamily,
               fontSize: `${currentSettings.fontSize}px`,
-              direction: 'rtl',
-              '--header-bg-color': currentSettings.headerBackgroundColor,
-              '--header-text-color': currentSettings.headerTextColor,
-              '--table-header-color': currentSettings.tableHeaderColor,
-              '--table-even-row': currentSettings.tableRowEvenColor,
-              '--table-odd-row': currentSettings.tableRowOddColor,
-              '--table-border-color': currentSettings.tableBorderColor,
-              '--table-border-width': `${currentSettings.tableBorderWidth}px`,
-              '--table-padding': `${currentSettings.tableCellPadding}px`,
-              '--font-size': `${currentSettings.fontSize}px`,
-              '--header-font-size': `${currentSettings.headerFontSize}px`,
-              '--table-font-size': `${currentSettings.tableFontSize}px`
-            } as React.CSSProperties}
+              direction: 'rtl'
+            }}
           />
         </div>
       );
