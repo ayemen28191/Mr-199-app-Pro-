@@ -9,6 +9,7 @@ import { CalendarIcon, FileText, Printer } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
+import { applyPrintSettings } from '@/hooks/usePrintSettings';
 
 interface ReportData {
   expenses?: any[];
@@ -60,11 +61,13 @@ export default function AdvancedReports() {
   };
 
   const printReport = () => {
-    // Add page numbering before printing
+    // تطبيق إعدادات الطباعة المحفوظة
+    applyPrintSettings('advanced_reports');
+    
+    // إضافة ترقيم الصفحات
     const style = document.createElement('style');
     style.innerHTML = `
       @page {
-        margin: 10mm !important;
         @bottom-center {
           content: "صفحة " counter(page) " من " counter(pages);
           font-size: 10px;
@@ -93,7 +96,7 @@ export default function AdvancedReports() {
     setTimeout(() => {
       window.print();
       document.head.removeChild(style);
-    }, 100);
+    }, 500);
   };
 
   const projectName = projects.find((p: any) => p.id === projectId)?.name || '';
