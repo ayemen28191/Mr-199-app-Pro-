@@ -113,9 +113,14 @@ export default function Reports() {
 
   const generateWorkerAccountReport = async () => {
     if (!selectedWorkerId || !workerAccountDate1 || !workerAccountDate2) {
+      let missingFields = [];
+      if (!selectedWorkerId) missingFields.push("العامل");
+      if (!workerAccountDate1) missingFields.push("تاريخ البداية");
+      if (!workerAccountDate2) missingFields.push("تاريخ النهاية");
+      
       toast({
-        title: "خطأ",
-        description: "يرجى اختيار عامل والتواريخ",
+        title: "بيانات ناقصة",
+        description: `يرجى تحديد: ${missingFields.join(", ")}`,
         variant: "destructive",
       });
       return;
@@ -792,9 +797,10 @@ export default function Reports() {
                     <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
                       <Users className="h-4 w-4" />
                       اختيار العامل
+                      {!selectedWorkerId && <span className="text-red-500 text-xs">*مطلوب</span>}
                     </label>
                     <Select value={selectedWorkerId} onValueChange={setSelectedWorkerId}>
-                      <SelectTrigger className="h-12 text-lg border-2 border-green-200 focus:border-green-500 rounded-xl">
+                      <SelectTrigger className={`h-12 text-lg border-2 ${!selectedWorkerId ? 'border-red-200' : 'border-green-200'} focus:border-green-500 rounded-xl`}>
                         <SelectValue placeholder="اختر العامل..." />
                       </SelectTrigger>
                       <SelectContent>
@@ -808,21 +814,27 @@ export default function Reports() {
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-700">من تاريخ</label>
+                      <label className="text-sm font-medium text-gray-700 flex items-center gap-1">
+                        من تاريخ
+                        {!workerAccountDate1 && <span className="text-red-500 text-xs">*مطلوب</span>}
+                      </label>
                       <Input
                         type="date"
                         value={workerAccountDate1}
                         onChange={(e) => setWorkerAccountDate1(e.target.value)}
-                        className="h-12 border-2 border-green-200 focus:border-green-500 rounded-xl"
+                        className={`h-12 border-2 ${!workerAccountDate1 ? 'border-red-200' : 'border-green-200'} focus:border-green-500 rounded-xl`}
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-700">إلى تاريخ</label>
+                      <label className="text-sm font-medium text-gray-700 flex items-center gap-1">
+                        إلى تاريخ
+                        {!workerAccountDate2 && <span className="text-red-500 text-xs">*مطلوب</span>}
+                      </label>
                       <Input
                         type="date"
                         value={workerAccountDate2}
                         onChange={(e) => setWorkerAccountDate2(e.target.value)}
-                        className="h-12 border-2 border-green-200 focus:border-green-500 rounded-xl"
+                        className={`h-12 border-2 ${!workerAccountDate2 ? 'border-red-200' : 'border-green-200'} focus:border-green-500 rounded-xl`}
                       />
                     </div>
                   </div>
