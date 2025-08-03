@@ -13,7 +13,7 @@
   /* تحسين إعدادات الصفحة للاستفادة الكاملة من المساحة */
   @page {
     size: A4 !important;
-    margin: 0.5cm !important; /* هوامش صغيرة جداً */
+    margin: 0.3cm !important; /* هوامش أصغر بكثير */
     padding: 0 !important;
   }
 
@@ -36,26 +36,28 @@
     width: 100% !important;
     height: 100% !important;
     margin: 0 !important;
-    padding: 0.3cm !important; /* تباعد داخلي صغير */
+    padding: 0.2cm !important; /* تباعد داخلي أصغر */
     background: white !important;
-    font-size: 13px !important;
-    line-height: 1.3 !important;
+    font-size: 16px !important; /* خط أكبر */
+    line-height: 1.4 !important;
     overflow: visible !important;
     page-break-inside: avoid !important;
+    transform: scale(1.2) !important; /* تكبير المحتوى */
+    transform-origin: top left !important;
   }
 
   /* تحسين العنوان الرئيسي */
   .enhanced-header {
-    margin: 0 0 0.4cm 0 !important;
-    padding: 0.3cm 0 !important;
-    border: 2px solid #7c3aed !important;
-    border-radius: 6px !important;
+    margin: 0 0 0.3cm 0 !important;
+    padding: 0.4cm 0 !important;
+    border: 3px solid #7c3aed !important;
+    border-radius: 8px !important;
   }
 
   .enhanced-header h1 {
-    font-size: 24px !important;
+    font-size: 32px !important;
     font-weight: bold !important;
-    margin: 0.2cm 0 !important;
+    margin: 0.3cm 0 !important;
     color: #7c3aed !important;
     text-align: center !important;
   }
@@ -74,124 +76,126 @@
 
   /* تحسين لوحات المعلومات */
   .enhanced-worker-account-report > div:nth-child(2) {
-    margin-bottom: 0.4cm !important;
-    gap: 0.4cm !important;
+    margin-bottom: 0.5cm !important;
+    gap: 0.5cm !important;
   }
 
   .enhanced-worker-account-report > div:nth-child(2) > div {
-    padding: 0.4cm !important;
-    border-radius: 6px !important;
-    border: 1px solid #ccc !important;
+    padding: 0.6cm !important;
+    border-radius: 8px !important;
+    border: 2px solid #ccc !important;
   }
 
   .enhanced-worker-account-report > div:nth-child(2) h3 {
-    font-size: 16px !important;
-    margin-bottom: 0.3cm !important;
+    font-size: 22px !important;
+    margin-bottom: 0.4cm !important;
     font-weight: bold !important;
   }
 
   .enhanced-worker-account-report > div:nth-child(2) div[style*="grid"] {
-    font-size: 14px !important;
-    gap: 0.2cm !important;
+    font-size: 18px !important;
+    gap: 0.3cm !important;
   }
 
   /* تحسين الجداول */
   .enhanced-summary-table {
     width: 100% !important;
     border-collapse: collapse !important;
-    margin: 0 0 0.4cm 0 !important;
-    font-size: 12px !important;
-    line-height: 1.2 !important;
-    border: 2px solid #1e40af !important;
+    margin: 0 0 0.3cm 0 !important;
+    font-size: 16px !important;
+    line-height: 1.4 !important;
+    border: 3px solid #1e40af !important;
   }
 
   .enhanced-summary-table th {
-    padding: 0.3cm 0.2cm !important;
-    font-size: 13px !important;
+    padding: 0.4cm 0.3cm !important;
+    font-size: 18px !important;
     font-weight: bold !important;
-    border: 1px solid #1e3a8a !important;
+    border: 2px solid #1e3a8a !important;
     background: #1e40af !important;
     color: white !important;
     text-align: center !important;
     -webkit-print-color-adjust: exact !important;
     height: auto !important;
+    min-height: 1cm !important;
   }
 
   .enhanced-summary-table td {
-    padding: 0.25cm 0.15cm !important;
-    font-size: 12px !important;
+    padding: 0.35cm 0.25cm !important;
+    font-size: 15px !important;
     border: 1px solid #cbd5e1 !important;
     text-align: center !important;
     vertical-align: middle !important;
-    line-height: 1.3 !important;
+    line-height: 1.4 !important;
+    min-height: 0.8cm !important;
   }
 
   /* تحسين العناوين الجانبية */
   .enhanced-worker-account-report h2 {
-    font-size: 18px !important;
-    margin: 0.3cm 0 !important;
-    padding: 0.25cm !important;
-    border-radius: 6px !important;
+    font-size: 24px !important;
+    margin: 0.4cm 0 !important;
+    padding: 0.4cm !important;
+    border-radius: 8px !important;
     text-align: center !important;
     font-weight: bold !important;
   }
 
   /* تحسين الملخص النهائي */
   .enhanced-worker-account-report > div:last-child {
-    margin-top: 0.4cm !important;
-    padding: 0.4cm !important;
-    border-radius: 8px !important;
-    border: 2px solid #f59e0b !important;
+    margin-top: 0.5cm !important;
+    padding: 0.6cm !important;
+    border-radius: 10px !important;
+    border: 3px solid #f59e0b !important;
   }
 
   .enhanced-worker-account-report > div:last-child h2 {
-    font-size: 20px !important;
-    margin-bottom: 0.3cm !important;
+    font-size: 28px !important;
+    margin-bottom: 0.5cm !important;
   }
 
   .enhanced-worker-account-report > div:last-child > div:first-of-type {
-    gap: 0.3cm !important;
-    font-size: 15px !important;
+    gap: 0.4cm !important;
+    font-size: 18px !important;
   }
 
   .enhanced-worker-account-report > div:last-child > div:first-of-type > div {
-    padding: 0.3cm !important;
-    border-radius: 6px !important;
-    border: 1px solid #ccc !important;
+    padding: 0.5cm !important;
+    border-radius: 8px !important;
+    border: 2px solid #ccc !important;
   }
 
   .enhanced-worker-account-report > div:last-child > div:first-of-type > div > div:first-child {
-    font-size: 13px !important;
-    margin-bottom: 0.1cm !important;
+    font-size: 16px !important;
+    margin-bottom: 0.2cm !important;
   }
 
   .enhanced-worker-account-report > div:last-child > div:first-of-type > div > div:last-child {
-    font-size: 18px !important;
+    font-size: 24px !important;
     font-weight: bold !important;
   }
 
   /* تحسين الرصيد النهائي */
   .enhanced-worker-account-report > div:last-child > div:last-child {
-    margin-top: 0.4cm !important;
-    padding: 0.4cm !important;
-    border-radius: 8px !important;
-    border: 2px solid #10b981 !important;
+    margin-top: 0.6cm !important;
+    padding: 0.8cm !important;
+    border-radius: 12px !important;
+    border: 3px solid #10b981 !important;
     text-align: center !important;
   }
 
   .enhanced-worker-account-report > div:last-child > div:last-child > div:first-child {
-    font-size: 16px !important;
-    margin-bottom: 0.2cm !important;
+    font-size: 20px !important;
+    margin-bottom: 0.3cm !important;
   }
 
   .enhanced-worker-account-report > div:last-child > div:last-child > div:nth-child(2) {
-    font-size: 26px !important;
+    font-size: 36px !important;
     font-weight: bold !important;
   }
 
   .enhanced-worker-account-report > div:last-child > div:last-child > div:last-child {
-    font-size: 12px !important;
-    margin-top: 0.1cm !important;
+    font-size: 16px !important;
+    margin-top: 0.2cm !important;
   }
 
   /* تحسين التذييل */
