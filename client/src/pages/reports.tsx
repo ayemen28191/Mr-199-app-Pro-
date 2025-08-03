@@ -316,7 +316,7 @@ export default function Reports() {
     const selectedProject = projects.find(p => p.id === selectedProjectId);
 
     return (
-      <div className="print-content invoice-preview bg-white w-full" dir="rtl" style={{margin: 0, padding: 0}}>
+      <div className="print-content invoice-preview daily-report-container bg-white w-full" dir="rtl" style={{margin: 0, padding: 0}} data-report-content="daily-expenses">
         {/* Compact Professional Header */}
         <div className="relative professional-gradient print-header text-white preserve-color" style={{padding: '20px 15px'}}>
           <div className="flex justify-between items-center">
@@ -451,7 +451,7 @@ export default function Reports() {
     }
 
     return (
-      <div className="print-preview">
+      <div className="print-preview worker-statement-preview" data-report-content="worker-statement">
         <EnhancedWorkerAccountStatement
           data={data}
           selectedProject={selectedProject}
@@ -1044,7 +1044,7 @@ export default function Reports() {
             <CardContent className="p-8" data-report-content>
               {activeReportType === 'daily' && renderDailyExpensesReport(reportData)}
               {activeReportType === 'professional' && (
-                <div>
+                <div className="professional-report-container" data-report-content="professional-report">
                   <h2 className="text-lg font-bold mb-4 text-blue-600">الكشف الاحترافي الجديد</h2>
                   <ProfessionalDailyReport 
                     data={reportData}

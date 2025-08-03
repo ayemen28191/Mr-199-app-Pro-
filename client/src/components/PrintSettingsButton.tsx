@@ -26,32 +26,63 @@ export function PrintSettingsButton({
   const handleOpenSettings = () => {
     // حفظ بيانات التقرير + HTML الكامل في localStorage للوصول إليها في صفحة إعدادات الطباعة
     const saveReportContext = () => {
-      // البحث عن عنصر التقرير بعدة طرق مختلفة
-      let reportElement = document.querySelector('[data-report-content]') ||
-                         document.querySelector('.enhanced-worker-account-report') ||
-                         document.querySelector('.daily-report-container') ||
-                         document.querySelector('.report-content') ||
-                         document.querySelector('.print-content') ||
-                         document.querySelector('.worker-statement-preview') ||
-                         document.querySelector('.report-preview') ||
-                         document.querySelector('table'); // كحل أخير، ابحث عن أي جدول
+      // البحث عن عنصر التقرير حسب نوع التقرير المحدد
+      let reportElement = 
+        // البحث حسب نوع التقرير أولاً
+        document.querySelector(`[data-report-content="${reportType}"]`) ||
+        document.querySelector(`[data-report-content]`) ||
+        // أو البحث بالكلاسات المحددة
+        document.querySelector('.daily-report-container') ||
+        document.querySelector('.worker-statement-preview') ||
+        document.querySelector('.professional-report-container') ||
+        document.querySelector('.enhanced-worker-account-report') ||
+        document.querySelector('.print-content') ||
+        document.querySelector('.print-preview') ||
+        // البحث في المحتوى النشط
+        document.querySelector('[data-report-content] .print-content') ||
+        document.querySelector('[data-report-content] table') ||
+        // كحل أخير
+        document.querySelector('table');
       
       let reportHTML = '';
       
       if (reportElement) {
-        console.log('🔍 تم العثور على عنصر التقرير:', reportElement.className);
+        console.log('🔍 تم العثور على عنصر التقرير:', {
+          tagName: reportElement.tagName,
+          className: reportElement.className,
+          dataAttribute: reportElement.getAttribute('data-report-content'),
+          reportType: reportType
+        });
         
-        // نسخ العنصر مع جميع المحتويات
+        // نسخ العنصر مع جميع المحتويات والأنماط
         const clonedElement = reportElement.cloneNode(true) as HTMLElement;
         
-        // الحفاظ على الأنماط المهمة
+        // الحفاظ على الأنماط المهمة وإضافة معرفات للطباعة
         clonedElement.classList.add('print-content', 'report-preview');
+        clonedElement.setAttribute('data-report-type', reportType);
+        
+        // الحفاظ على الأنماط الحالية
+        const computedStyle = window.getComputedStyle(reportElement);
+        clonedElement.style.fontFamily = computedStyle.fontFamily;
+        clonedElement.style.fontSize = computedStyle.fontSize;
+        clonedElement.style.direction = 'rtl';
         
         reportHTML = clonedElement.outerHTML;
         
-        console.log('📄 تم حفظ HTML:', reportHTML.substring(0, 200) + '...');
+        console.log('📄 تم حفظ HTML بنجاح:', {
+          length: reportHTML.length,
+          preview: reportHTML.substring(0, 200) + '...',
+          reportType: reportType
+        });
       } else {
-        console.warn('⚠️ لم يتم العثور على عنصر التقرير، سيتم استخدام البيانات فقط');
+        console.warn('⚠️ لم يتم العثور على عنصر التقرير. البحث عن:', {
+          reportType: reportType,
+          availableElements: Array.from(document.querySelectorAll('[data-report-content], .print-content, .report-preview')).map(el => ({
+            tagName: el.tagName,
+            className: el.className,
+            dataAttribute: el.getAttribute('data-report-content')
+          }))
+        });
         
         // إنشاء HTML بسيط من البيانات المتاحة
         if (reportData) {
