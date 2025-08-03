@@ -2,6 +2,7 @@
 // نظام متقدم للتحكم في جميع جوانب التنسيق والطباعة
 
 import React, { useState, useEffect } from 'react';
+import { usePrintSettings } from '@/hooks/usePrintSettings';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -126,6 +127,62 @@ export default function PrintControlPage() {
       }));
     }
   }, []);
+
+  // تطبيق إعدادات الطباعة على التقرير المنقول
+  useEffect(() => {
+    if (reportContext?.html && currentSettings) {
+      // إنشاء CSS مخصص وتطبيقه على التقرير المنقول
+      const styleId = 'transferred-report-styles';
+      const existingStyle = document.getElementById(styleId);
+      
+      if (existingStyle) {
+        existingStyle.remove();
+      }
+
+      const customCSS = `
+        .report-preview {
+          font-family: ${currentSettings.fontFamily} !important;
+          font-size: ${currentSettings.fontSize}px !important;
+          direction: rtl !important;
+        }
+        .report-preview * {
+          font-family: ${currentSettings.fontFamily} !important;
+        }
+        .report-preview h1, .report-preview h2, .report-preview h3 {
+          font-size: ${currentSettings.headerFontSize}px !important;
+          color: ${currentSettings.headerTextColor} !important;
+        }
+        .report-preview table {
+          font-size: ${currentSettings.tableFontSize}px !important;
+          border: ${currentSettings.tableBorderWidth}px solid ${currentSettings.tableBorderColor} !important;
+        }
+        .report-preview table th {
+          background-color: ${currentSettings.tableHeaderColor} !important;
+          color: ${currentSettings.headerTextColor} !important;
+          padding: ${currentSettings.tableCellPadding}px !important;
+        }
+        .report-preview table td {
+          padding: ${currentSettings.tableCellPadding}px !important;
+        }
+        .report-preview table tr:nth-child(even) {
+          background-color: ${currentSettings.tableRowEvenColor} !important;
+        }
+        .report-preview table tr:nth-child(odd) {
+          background-color: ${currentSettings.tableRowOddColor} !important;
+        }
+        @media print {
+          .report-preview {
+            margin: ${currentSettings.marginTop}mm ${currentSettings.marginRight}mm ${currentSettings.marginBottom}mm ${currentSettings.marginLeft}mm !important;
+          }
+        }
+      `;
+
+      const styleElement = document.createElement('style');
+      styleElement.id = styleId;
+      styleElement.textContent = customCSS;
+      document.head.appendChild(styleElement);
+    }
+  }, [currentSettings, reportContext?.html]);
 
   // جلب الإعدادات المحفوظة
   const { data: projects } = useQuery({
@@ -1101,13 +1158,22 @@ export default function PrintControlPage() {
               direction: 'rtl'
             }}
           >
-            {/* عرض التقرير الحقيقي حسب النوع المحدد */}
-            <ReportRenderer 
-              reportType={currentSettings.reportType}
-              printSettings={currentSettings}
-              className="border rounded-lg"
-              reportData={reportContext?.data}
-            />
+            {/* عرض التقرير الحقيقي المنقول أو التقرير المُولّد حسب النوع المحدد */}
+            {reportContext?.html ? (
+              // عرض التقرير المنقول بنفس التصميم
+              <div 
+                className="border rounded-lg report-preview"
+                dangerouslySetInnerHTML={{ __html: reportContext.html }}
+              />
+            ) : (
+              // عرض تقرير افتراضي عند عدم وجود HTML مُرسل
+              <ReportRenderer 
+                reportType={currentSettings.reportType}
+                printSettings={currentSettings}
+                className="border rounded-lg"
+                reportData={reportContext?.data}
+              />
+            )}
           </div>
         </CardContent>
       </Card>

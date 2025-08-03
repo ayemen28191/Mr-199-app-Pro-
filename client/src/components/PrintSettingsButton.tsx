@@ -24,11 +24,33 @@ export function PrintSettingsButton({
   const [, setLocation] = useLocation();
 
   const handleOpenSettings = () => {
-    // حفظ بيانات التقرير في localStorage للوصول إليها في صفحة إعدادات الطباعة
+    // حفظ بيانات التقرير + HTML الكامل في localStorage للوصول إليها في صفحة إعدادات الطباعة
     if (reportData) {
+      // جلب HTML الكامل للتقرير من المنطقة المعروضة حالياً
+      const reportElement = document.querySelector('[data-report-content]');
+      let reportHTML = '';
+      
+      if (reportElement) {
+        // نسخ العنصر مع جميع الأنماط المطبقة
+        const clonedElement = reportElement.cloneNode(true) as HTMLElement;
+        
+        // إضافة الأنماط المحسوبة للحفاظ على التنسيق
+        const allElements = clonedElement.querySelectorAll('*');
+        allElements.forEach((el) => {
+          const computedStyle = window.getComputedStyle(el as Element);
+          const inlineStyle = computedStyle.cssText;
+          if (inlineStyle) {
+            (el as HTMLElement).style.cssText = inlineStyle;
+          }
+        });
+        
+        reportHTML = clonedElement.outerHTML;
+      }
+      
       const reportContext = {
         type: reportType,
         data: reportData,
+        html: reportHTML, // إضافة HTML الكامل مع الأنماط
         title: reportTitle || 'تقرير',
         timestamp: Date.now()
       };

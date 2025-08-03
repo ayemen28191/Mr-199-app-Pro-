@@ -1017,7 +1017,7 @@ export default function Reports() {
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="p-8">
+            <CardContent className="p-8" data-report-content>
               {activeReportType === 'daily' && renderDailyExpensesReport(reportData)}
               {activeReportType === 'professional' && (
                 <div>
