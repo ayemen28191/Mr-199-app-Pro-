@@ -119,6 +119,114 @@ export default function AdvancedPrintControl() {
     },
   });
 
+  // وظائف التحكم الاحترافية
+  const exportSettings = () => {
+    const settingsToExport = {
+      ...currentSettings,
+      exportDate: new Date().toISOString(),
+      version: '1.0'
+    };
+    
+    const blob = new Blob([JSON.stringify(settingsToExport, null, 2)], {
+      type: 'application/json'
+    });
+    
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `print-settings-${currentSettings.reportType}-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast({
+      title: "تم التصدير بنجاح",
+      description: "تم تصدير الإعدادات إلى ملف JSON",
+    });
+  };
+
+  const importSettings = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const imported = JSON.parse(e.target?.result as string);
+            // إزالة الحقول غير المطلوبة
+            const { id, exportDate, version, createdAt, updatedAt, ...settingsToImport } = imported;
+            setCurrentSettings({ ...currentSettings, ...settingsToImport });
+            toast({
+              title: "تم الاستيراد بنجاح",
+              description: "تم تحميل الإعدادات من الملف المحدد",
+            });
+          } catch (error) {
+            toast({
+              title: "خطأ في الاستيراد",
+              description: "فشل في قراءة ملف الإعدادات",
+              variant: "destructive"
+            });
+          }
+        };
+        reader.readAsText(file);
+      }
+    };
+    input.click();
+  };
+
+  const resetSettings = () => {
+    setCurrentSettings(defaultSettings as PrintSettings);
+    toast({
+      title: "تم إعادة التعيين",
+      description: "تم إعادة جميع الإعدادات إلى القيم الافتراضية",
+    });
+  };
+
+  const duplicateSettings = () => {
+    const duplicatedSettings = {
+      ...currentSettings,
+      name: `${currentSettings.name} - نسخة`,
+      id: undefined // إزالة ID لإنشاء إعداد جديد
+    };
+    setCurrentSettings(duplicatedSettings as PrintSettings);
+    toast({
+      title: "تم النسخ",
+      description: "تم إنشاء نسخة من الإعداد الحالي",
+    });
+  };
+
+  // طفرة لحذف الإعدادات
+  const deleteSettingsMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return apiRequest('DELETE', `/api/print-settings/${id}`);
+    },
+    onSuccess: () => {
+      refetchSettings();
+      setSelectedSettingsId('');
+      toast({
+        title: "تم الحذف بنجاح",
+        description: "تم حذف الإعداد المحدد",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "خطأ في الحذف",
+        description: "فشل في حذف الإعداد",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const deleteSetting = (id: string) => {
+    if (confirm('هل أنت متأكد من حذف هذا الإعداد؟')) {
+      deleteSettingsMutation.mutate(id);
+    }
+  };
+
   // طفرة لحفظ الإعدادات
   const saveSettingsMutation = useMutation({
     mutationFn: async (settings: Partial<InsertPrintSettings & { id?: string }>) => {
@@ -351,7 +459,7 @@ export default function AdvancedPrintControl() {
             العودة للتقارير
           </Button>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Button onClick={handlePrint} className="flex items-center gap-2">
               <Printer className="h-4 w-4" />
               طباعة
@@ -359,6 +467,22 @@ export default function AdvancedPrintControl() {
             <Button onClick={saveSettings} variant="outline" className="flex items-center gap-2">
               <Save className="h-4 w-4" />
               حفظ الإعدادات
+            </Button>
+            <Button onClick={exportSettings} variant="outline" className="flex items-center gap-2">
+              <Download className="h-4 w-4" />
+              تصدير
+            </Button>
+            <Button onClick={importSettings} variant="outline" className="flex items-center gap-2">
+              <Upload className="h-4 w-4" />
+              استيراد
+            </Button>
+            <Button onClick={resetSettings} variant="outline" className="flex items-center gap-2">
+              <RotateCcw className="h-4 w-4" />
+              إعادة تعيين
+            </Button>
+            <Button onClick={duplicateSettings} variant="outline" className="flex items-center gap-2">
+              <Copy className="h-4 w-4" />
+              نسخ الإعداد
             </Button>
           </div>
         </div>
@@ -417,21 +541,52 @@ export default function AdvancedPrintControl() {
 
               <div className="space-y-2">
                 <Label>الإعدادات المحفوظة</Label>
-                <Select 
-                  value={selectedSettingsId} 
-                  onValueChange={loadSettings}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="اختر إعداداً محفوظاً" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {savedSettingsList.map(setting => (
-                      <SelectItem key={setting.id} value={setting.id}>
-                        {setting.name} ({setting.reportType})
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex gap-2">
+                  <Select 
+                    value={selectedSettingsId} 
+                    onValueChange={loadSettings}
+                  >
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder="اختر إعداداً محفوظاً" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {savedSettingsList.map(setting => (
+                        <SelectItem key={setting.id} value={setting.id}>
+                          {setting.name} ({setting.reportType})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {selectedSettingsId && (
+                    <Button 
+                      onClick={() => deleteSetting(selectedSettingsId)} 
+                      variant="outline" 
+                      size="sm"
+                      className="px-3"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* أزرار التحكم السريع */}
+              <div className="flex gap-2 pt-2">
+                <Button onClick={saveSettings} size="sm" className="flex-1">
+                  <Save className="h-4 w-4 mr-1" />
+                  حفظ
+                </Button>
+                <Button onClick={exportSettings} variant="outline" size="sm" className="flex-1">
+                  <Download className="h-4 w-4 mr-1" />
+                  تصدير
+                </Button>
+                <Button onClick={importSettings} variant="outline" size="sm" className="flex-1">
+                  <Upload className="h-4 w-4 mr-1" />
+                  استيراد
+                </Button>
+                <Button onClick={resetSettings} variant="outline" size="sm">
+                  <RotateCcw className="h-4 w-4" />
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -794,15 +949,70 @@ export default function AdvancedPrintControl() {
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Eye className="h-5 w-5" />
-                المعاينة المباشرة
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Eye className="h-5 w-5" />
+                  المعاينة المباشرة
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button 
+                    onClick={() => window.location.reload()} 
+                    variant="outline" 
+                    size="sm"
+                    className="flex items-center gap-1"
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                    تحديث
+                  </Button>
+                  <Button 
+                    onClick={() => {
+                      const previewElement = document.getElementById('live-report-preview');
+                      if (previewElement) {
+                        window.print();
+                      }
+                    }} 
+                    variant="outline" 
+                    size="sm"
+                    className="flex items-center gap-1"
+                  >
+                    <Printer className="h-3 w-3" />
+                    معاينة الطباعة
+                  </Button>
+                </div>
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="border rounded-lg p-4 bg-gray-50 min-h-[500px] overflow-auto">
+              <div className="border rounded-lg p-4 bg-white min-h-[500px] overflow-auto shadow-inner">
                 {renderReportPreview()}
               </div>
+              
+              {/* إحصائيات سريعة عن المعاينة */}
+              {reportContext && (
+                <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                    <div className="text-center">
+                      <div className="font-medium text-blue-800">العنوان</div>
+                      <div className="text-blue-600 truncate" title={reportContext.title}>
+                        {reportContext.title}
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="font-medium text-blue-800">النوع</div>
+                      <div className="text-blue-600">{reportContext.type}</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="font-medium text-blue-800">حجم المحتوى</div>
+                      <div className="text-blue-600">
+                        {reportContext.html ? `${Math.round(reportContext.html.length / 1024)} KB` : '0 KB'}
+                      </div>
+                    </div>
+                    <div className="text-center">
+                      <div className="font-medium text-blue-800">الخط المطبق</div>
+                      <div className="text-blue-600">{currentSettings.fontFamily} {currentSettings.fontSize}px</div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
