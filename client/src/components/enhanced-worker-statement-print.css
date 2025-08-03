@@ -5,9 +5,9 @@
 
 /* إعدادات الصفحة الأساسية للطباعة */
 @page {
-  size: A4;
-  margin: 5mm;
-  background: white;
+  size: A4 portrait;
+  margin: 10mm 8mm;
+  padding: 0;
 }
 
 /* إعدادات الطباعة الخاصة */
@@ -17,63 +17,62 @@
     display: none !important;
   }
 
-  /* عرض كامل الصفحة وإخفاء العناصر غير المرغوبة */
+  /* إعدادات الجسم الأساسية للطباعة */
+  * {
+    box-sizing: border-box !important;
+  }
+
+  html {
+    width: 100% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
   body {
+    width: 100% !important;
+    height: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
     background: white !important;
+    font-size: 12px !important;
+    direction: rtl !important;
   }
 
-  /* إخفاء كل شيء ما عدا التقرير */
+  /* إخفاء العناصر غير المرغوبة */
+  body > *:not(div) {
+    display: none !important;
+  }
+
+  /* إخفاء كل العناصر أولاً */
   body * {
     visibility: hidden !important;
   }
   
-  /* إظهار التقرير والعناصر المرتبطة به */
+  /* إظهار التقرير فقط */
   #enhanced-worker-account-statement,
-  #enhanced-worker-account-statement *,
-  .enhanced-worker-statement-print,
-  .enhanced-worker-statement-print * {
+  #enhanced-worker-account-statement * {
     visibility: visible !important;
   }
 
-  /* التأكد من عرض التقرير بالمعرف */
+  /* تصميم التقرير للطباعة */
   #enhanced-worker-account-statement {
     display: block !important;
-    position: relative !important;
-    width: 210mm !important;
-    min-height: 297mm !important;
-    margin: 0 !important;
-    padding: 8mm !important;
+    position: static !important;
+    width: 100% !important;
+    max-width: 190mm !important;
+    height: auto !important;
+    margin: 0 auto !important;
+    padding: 5mm !important;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
-    font-size: 9px !important;
-    line-height: 1.2 !important;
-    color: #1a1a1a !important;
+    font-size: 11px !important;
+    line-height: 1.3 !important;
+    color: #000 !important;
     background: white !important;
     box-shadow: none !important;
     border: none !important;
-    page-break-inside: avoid !important;
-    page-break-after: avoid !important;
-    overflow: visible !important;
-  }
-  
-  /* التأكد من عرض التقرير فقط */
-  .enhanced-worker-statement-print {
-    display: block !important;
-    width: 210mm !important;
-    min-height: 297mm !important;
-    margin: 0 !important;
-    padding: 8mm !important;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
-    font-size: 9px !important;
-    line-height: 1.2 !important;
-    color: #1a1a1a !important;
-    background: white !important;
-    box-shadow: none !important;
-    border: none !important;
-    page-break-inside: avoid !important;
-    page-break-after: avoid !important;
-    overflow: visible !important;
+    direction: rtl !important;
+    text-align: right !important;
   }
 
   /* تأكد من أن جميع العناصر مرئية في الطباعة */
@@ -105,12 +104,13 @@
     page-break-after: avoid !important;
   }
 
-  /* الجداول */
-  .enhanced-worker-statement-print table {
+  /* تحسين الجداول للطباعة */
+  #enhanced-worker-account-statement table {
     border-collapse: collapse !important;
     width: 100% !important;
-    font-size: 7px !important;
-    page-break-inside: auto !important;
+    font-size: 9px !important;
+    margin: 3mm 0 !important;
+    table-layout: fixed !important;
   }
 
   .enhanced-worker-statement-print table thead {
@@ -136,43 +136,40 @@
     page-break-after: auto !important;
   }
 
-  .enhanced-worker-statement-print table th,
-  .enhanced-worker-statement-print table td {
-    border: 1px solid #cbd5e1 !important;
-    padding: 1mm !important;
-    font-size: 7px !important;
+  #enhanced-worker-account-statement table th,
+  #enhanced-worker-account-statement table td {
+    border: 1px solid #000 !important;
+    padding: 2mm !important;
+    font-size: 8px !important;
+    text-align: center !important;
+    background: white !important;
+    color: #000 !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
 
   /* رؤوس الجداول */
-  .enhanced-worker-statement-print table thead tr {
-    background: linear-gradient(135deg, #1e40af, #3b82f6) !important;
+  #enhanced-worker-account-statement table thead th {
+    background: #1e40af !important;
     color: white !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-
-  .enhanced-worker-statement-print table thead th {
-    border: 1px solid #1e3a8a !important;
+    border: 1px solid #000 !important;
     font-weight: bold !important;
     text-align: center !important;
-    font-size: 8px !important;
+    font-size: 9px !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   /* أذيال الجداول */
-  .enhanced-worker-statement-print table tfoot tr {
-    background: linear-gradient(135deg, #10b981, #059669) !important;
+  #enhanced-worker-account-statement table tfoot td {
+    background: #10b981 !important;
     color: white !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-
-  .enhanced-worker-statement-print table tfoot td {
-    border: 1px solid #047857 !important;
+    border: 1px solid #000 !important;
     font-weight: bold !important;
     text-align: center !important;
-    font-size: 8px !important;
+    font-size: 9px !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
   /* صفوف الجدول المتناوبة */
@@ -295,19 +292,37 @@
     transform: none !important;
   }
 
-  /* إصلاح مشكلة الطباعة الفارغة */
-  html, body {
+  /* إصلاح شامل لمشكلة الطباعة */
+  html {
     height: auto !important;
     overflow: visible !important;
+    zoom: 1 !important;
+    -webkit-transform: scale(1) !important;
+    transform: scale(1) !important;
   }
 
-  /* تأكد من أن المحتوى مرئي تماماً */
-  .enhanced-worker-statement-print {
+  body {
+    height: auto !important;
+    overflow: visible !important;
+    zoom: 1 !important;
+    -webkit-transform: scale(1) !important;
+    transform: scale(1) !important;
+  }
+
+  /* ضمان عرض المحتوى بالحجم الكامل */
+  #enhanced-worker-account-statement {
     position: static !important;
     display: block !important;
     visibility: visible !important;
     opacity: 1 !important;
     z-index: 9999 !important;
+    zoom: 1 !important;
+    -webkit-transform: scale(1) !important;
+    transform: scale(1) !important;
+    width: 100% !important;
+    max-width: none !important;
+    height: auto !important;
+    overflow: visible !important;
   }
 
   /* تأكد من أن جميع عناصر التقرير مرئية */
