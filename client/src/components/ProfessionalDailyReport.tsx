@@ -1,4 +1,4 @@
-import { FileText } from 'lucide-react';
+import { FileText, Building2, Calendar, User, FileSpreadsheet } from 'lucide-react';
 
 interface ProfessionalDailyReportProps {
   data: any;
@@ -61,97 +61,110 @@ export const ProfessionalDailyReport = ({ data, selectedProject, selectedDate }:
   return (
     <div 
       id="professional-daily-report" 
-      className="print-content bg-white" 
+      className="print-content bg-white enhanced-daily-report" 
       style={{
         direction: 'rtl',
-        width: '21cm',
-        minHeight: '29.7cm',
-        maxHeight: '29.7cm',
-        overflow: 'hidden',
+        width: '100%',
+        minHeight: '100vh',
+        margin: '0',
+        padding: '8mm',
         pageBreakAfter: 'avoid',
-        fontFamily: 'Arial, sans-serif'
+        fontFamily: 'Arial, sans-serif',
+        fontSize: '14px',
+        lineHeight: '1.3'
       }}
     >
       
-      {/* Professional Header - Full Width */}
-      <div className="professional-gradient preserve-color text-white" style={{padding: '10px 15px', margin: '0'}}>
-        <div className="flex items-center justify-between">
-          <div style={{width: '70px', height: '70px', backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column'}}>
-            <div style={{fontSize: '24px', fontWeight: 'bold', lineHeight: '1'}}>{new Date(selectedDate).getDate()}</div>
-            <div style={{fontSize: '10px', opacity: '0.9'}}>{new Date(selectedDate).toLocaleDateString('en-US', {month: 'short'})}</div>
+      {/* Enhanced Professional Header */}
+      <div className="enhanced-header preserve-color" style={{padding: '15mm 0', margin: '0 0 8mm 0', border: '3px solid #1e40af', borderRadius: '8px'}}>
+        <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 15mm'}}>
+          <div className="date-badge" style={{width: '80px', height: '90px', background: 'linear-gradient(135deg, #3b82f6, #1e40af)', color: 'white', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', boxShadow: '0 4px 12px rgba(0,0,0,0.2)'}}>
+            <div style={{fontSize: '32px', fontWeight: 'bold', lineHeight: '1'}}>{new Date(selectedDate).getDate()}</div>
+            <div style={{fontSize: '12px', opacity: '0.9', marginTop: '4px'}}>{new Date(selectedDate).toLocaleDateString('ar-SA', {month: 'long'})}</div>
+            <div style={{fontSize: '10px', opacity: '0.8'}}>{new Date(selectedDate).getFullYear()}</div>
           </div>
           <div className="text-center flex-1" style={{margin: '0 20px'}}>
-            <h1 style={{fontSize: '28px', fontWeight: 'bold', margin: '0', lineHeight: '1.2'}}>كشف المصروفات اليومية</h1>
-            <p style={{fontSize: '16px', margin: '4px 0', opacity: '0.95'}}>مشروع: {selectedProject?.name || 'غير محدد'}</p>
-            <p style={{fontSize: '14px', margin: '0', opacity: '0.85'}}>التاريخ: {formatDate(selectedDate)}</p>
+            <h1 style={{fontSize: '36px', fontWeight: 'bold', margin: '8px 0', color: '#1e40af', textShadow: '2px 2px 4px rgba(0,0,0,0.1)'}}>كشف المصروفات اليومية التفصيلي</h1>
+            <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '30px', marginTop: '12px'}}>
+              <div style={{display: 'flex', alignItems: 'center', gap: '8px', background: '#f1f5f9', padding: '8px 16px', borderRadius: '20px', border: '2px solid #e2e8f0'}}>
+                <Building2 style={{width: '20px', height: '20px', color: '#64748b'}} />
+                <span style={{fontSize: '16px', fontWeight: '600', color: '#1e293b'}}>مشروع: {selectedProject?.name || 'غير محدد'}</span>
+              </div>
+              <div style={{display: 'flex', alignItems: 'center', gap: '8px', background: '#f1f5f9', padding: '8px 16px', borderRadius: '20px', border: '2px solid #e2e8f0'}}>
+                <Calendar style={{width: '20px', height: '20px', color: '#64748b'}} />
+                <span style={{fontSize: '16px', fontWeight: '600', color: '#1e293b'}}>التاريخ: {formatDate(selectedDate)}</span>
+              </div>
+            </div>
           </div>
-          <div style={{width: '70px', height: '70px', backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-            <div style={{fontSize: '11px', fontWeight: 'bold', textAlign: 'center'}}>رقم<br/>الكشف<br/>{selectedProject?.id?.slice(-4) || '0001'}</div>
+          <div className="report-badge" style={{width: '80px', height: '90px', background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', boxShadow: '0 4px 12px rgba(0,0,0,0.2)'}}>
+            <FileSpreadsheet style={{width: '24px', height: '24px', marginBottom: '6px'}} />
+            <div style={{fontSize: '12px', fontWeight: 'bold', textAlign: 'center', lineHeight: '1.2'}}>كشف رقم</div>
+            <div style={{fontSize: '16px', fontWeight: 'bold'}}>{selectedProject?.id?.slice(-4) || '0001'}</div>
           </div>
         </div>
       </div>
 
-      {/* Main Content - Maximize Space Usage */}
-      <div style={{padding: '12px 15px', flex: '1', display: 'flex', flexDirection: 'column'}}>
+      {/* Enhanced Main Content */}
+      <div style={{padding: '0 5mm', flex: '1', display: 'flex', flexDirection: 'column', gap: '8mm'}}>
         
-        {/* Main Financial Summary Table */}
-        <table className="w-full border-collapse" style={{fontSize: '13px', lineHeight: '1.6', marginBottom: '15px', border: '2px solid #1e40af'}}>
+        {/* Enhanced Financial Summary Table */}
+        <table className="enhanced-summary-table" style={{width: '100%', borderCollapse: 'collapse', fontSize: '16px', lineHeight: '1.4', marginBottom: '8mm', border: '3px solid #1e40af', borderRadius: '8px', overflow: 'hidden'}}>
           <thead>
-            <tr className="professional-gradient preserve-color" style={{color: '#ffffff'}}>
-              <th style={{padding: '12px 8px', textAlign: 'center', fontWeight: 'bold', border: '1px solid #cbd5e1', width: '8%', minHeight: '45px'}}>م.</th>
-              <th style={{padding: '12px 8px', textAlign: 'right', fontWeight: 'bold', border: '1px solid #cbd5e1', width: '50%', minHeight: '45px'}}>البيان والوصف</th>
-              <th style={{padding: '12px 8px', textAlign: 'center', fontWeight: 'bold', border: '1px solid #cbd5e1', width: '12%', minHeight: '45px'}}>العدد</th>
-              <th style={{padding: '12px 8px', textAlign: 'center', fontWeight: 'bold', border: '1px solid #cbd5e1', width: '30%', minHeight: '45px'}}>إجمالي المبلغ (ر.ي)</th>
+            <tr className="enhanced-header-row preserve-color" style={{background: 'linear-gradient(135deg, #1e40af, #3b82f6)', color: '#ffffff', height: '60px'}}>
+              <th style={{padding: '15px 12px', textAlign: 'center', fontWeight: 'bold', border: '2px solid #1e3a8a', width: '10%', fontSize: '18px'}}>م.</th>
+              <th style={{padding: '15px 20px', textAlign: 'right', fontWeight: 'bold', border: '2px solid #1e3a8a', width: '45%', fontSize: '18px'}}>البيان والوصف التفصيلي</th>
+              <th style={{padding: '15px 12px', textAlign: 'center', fontWeight: 'bold', border: '2px solid #1e3a8a', width: '15%', fontSize: '18px'}}>العدد</th>
+              <th style={{padding: '15px 20px', textAlign: 'center', fontWeight: 'bold', border: '2px solid #1e3a8a', width: '30%', fontSize: '18px'}}>إجمالي المبلغ (ريال يمني)</th>
             </tr>
           </thead>
           <tbody>
-            <tr style={{backgroundColor: '#f0f9ff', minHeight: '40px'}}>
-              <td style={{padding: '10px 8px', textAlign: 'center', border: '1px solid #e2e8f0', fontWeight: '600', minHeight: '40px'}}>01</td>
-              <td style={{padding: '10px 8px', textAlign: 'right', border: '1px solid #e2e8f0', fontWeight: '500', minHeight: '40px'}}>الرصيد المرحل من اليوم السابق</td>
-              <td style={{padding: '10px 8px', textAlign: 'center', border: '1px solid #e2e8f0', minHeight: '40px'}}>1</td>
-              <td style={{padding: '10px 8px', textAlign: 'center', border: '1px solid #e2e8f0', fontWeight: 'bold', color: '#0ea5e9', fontSize: '14px', minHeight: '40px'}}>{formatCurrency(carriedForward)}</td>
+            <tr className="balance-row" style={{background: 'linear-gradient(135deg, #dbeafe, #bfdbfe)', minHeight: '50px', borderBottom: '2px solid #3b82f6'}}>
+              <td style={{padding: '15px 12px', textAlign: 'center', border: '2px solid #3b82f6', fontWeight: '700', fontSize: '18px', color: '#1e40af'}}>01</td>
+              <td style={{padding: '15px 20px', textAlign: 'right', border: '2px solid #3b82f6', fontWeight: '600', fontSize: '16px', color: '#1e40af'}}>الرصيد المرحل من اليوم السابق (النقدية المتوفرة)</td>
+              <td style={{padding: '15px 12px', textAlign: 'center', border: '2px solid #3b82f6', fontSize: '16px', fontWeight: '600', color: '#64748b'}}>1</td>
+              <td style={{padding: '15px 20px', textAlign: 'center', border: '2px solid #3b82f6', fontWeight: 'bold', color: '#0f766e', fontSize: '20px', background: 'linear-gradient(135deg, #a7f3d0, #6ee7b7)'}}>{formatCurrency(carriedForward)}</td>
             </tr>
-            <tr style={{backgroundColor: '#f0fdf4', minHeight: '40px'}}>
-              <td style={{padding: '10px 8px', textAlign: 'center', border: '1px solid #e2e8f0', fontWeight: '600', minHeight: '40px'}}>02</td>
-              <td style={{padding: '10px 8px', textAlign: 'right', border: '1px solid #e2e8f0', fontWeight: '500', minHeight: '40px'}}>تحويلات العهدة والإيرادات النقدية</td>
-              <td style={{padding: '10px 8px', textAlign: 'center', border: '1px solid #e2e8f0', minHeight: '40px'}}>{fundTransfers.length}</td>
-              <td style={{padding: '10px 8px', textAlign: 'center', border: '1px solid #e2e8f0', fontWeight: 'bold', color: '#16a34a', fontSize: '14px', minHeight: '40px'}}>{formatCurrency(totalIncome)}</td>
+            <tr className="income-row" style={{background: 'linear-gradient(135deg, #dcfce7, #bbf7d0)', minHeight: '50px', borderBottom: '2px solid #16a34a'}}>
+              <td style={{padding: '15px 12px', textAlign: 'center', border: '2px solid #16a34a', fontWeight: '700', fontSize: '18px', color: '#15803d'}}>02</td>
+              <td style={{padding: '15px 20px', textAlign: 'right', border: '2px solid #16a34a', fontWeight: '600', fontSize: '16px', color: '#15803d'}}>تحويلات العهدة والإيرادات النقدية المستلمة اليوم</td>
+              <td style={{padding: '15px 12px', textAlign: 'center', border: '2px solid #16a34a', fontSize: '16px', fontWeight: '600', color: '#64748b'}}>{fundTransfers.length}</td>
+              <td style={{padding: '15px 20px', textAlign: 'center', border: '2px solid #16a34a', fontWeight: 'bold', color: '#047857', fontSize: '20px', background: 'linear-gradient(135deg, #86efac, #4ade80)'}}>{formatCurrency(totalIncome)}</td>
             </tr>
-            <tr style={{backgroundColor: '#fef3c7', borderTop: '2px solid #f59e0b', minHeight: '45px'}}>
-              <td colSpan={3} style={{padding: '12px 8px', textAlign: 'right', border: '1px solid #e2e8f0', fontWeight: 'bold', fontSize: '15px', color: '#92400e', minHeight: '45px'}}>إجمالي الأموال المتاحة لليوم:</td>
-              <td style={{padding: '12px 8px', textAlign: 'center', border: '1px solid #e2e8f0', fontWeight: 'bold', color: '#92400e', fontSize: '16px', backgroundColor: '#fbbf24', minHeight: '45px'}}>{formatCurrency(totalIncome + carriedForward)}</td>
+            <tr className="total-available-row" style={{background: 'linear-gradient(135deg, #fef3c7, #fde68a)', borderTop: '3px solid #f59e0b', borderBottom: '3px solid #f59e0b', minHeight: '60px'}}>
+              <td colSpan={3} style={{padding: '20px 20px', textAlign: 'right', border: '2px solid #f59e0b', fontWeight: 'bold', fontSize: '20px', color: '#92400e'}}>إجمالي الأموال المتاحة لليوم (الرصيد + الإيرادات):</td>
+              <td style={{padding: '20px 20px', textAlign: 'center', border: '2px solid #f59e0b', fontWeight: 'bold', color: '#92400e', fontSize: '24px', background: 'linear-gradient(135deg, #fbbf24, #f59e0b)', textShadow: '1px 1px 2px rgba(0,0,0,0.2)'}}>{formatCurrency(totalIncome + carriedForward)}</td>
             </tr>
-            <tr style={{backgroundColor: '#fef2f2', minHeight: '40px'}}>
-              <td style={{padding: '10px 8px', textAlign: 'center', border: '1px solid #e2e8f0', fontWeight: '600', minHeight: '40px'}}>03</td>
-              <td style={{padding: '10px 8px', textAlign: 'right', border: '1px solid #e2e8f0', fontWeight: '500', minHeight: '40px'}}>أجور العمال والحضور اليومي</td>
-              <td style={{padding: '10px 8px', textAlign: 'center', border: '1px solid #e2e8f0', minHeight: '40px'}}>{workerAttendance.length}</td>
-              <td style={{padding: '10px 8px', textAlign: 'center', border: '1px solid #e2e8f0', fontWeight: 'bold', color: '#dc2626', fontSize: '14px', minHeight: '40px'}}>{formatCurrency(totalWorkerCosts)}</td>
+            <tr className="expense-row" style={{background: 'linear-gradient(135deg, #fee2e2, #fecaca)', minHeight: '50px', borderBottom: '2px solid #dc2626'}}>
+              <td style={{padding: '15px 12px', textAlign: 'center', border: '2px solid #dc2626', fontWeight: '700', fontSize: '18px', color: '#dc2626'}}>03</td>
+              <td style={{padding: '15px 20px', textAlign: 'right', border: '2px solid #dc2626', fontWeight: '600', fontSize: '16px', color: '#dc2626'}}>أجور العمال والحضور اليومي (مصروفات العمالة)</td>
+              <td style={{padding: '15px 12px', textAlign: 'center', border: '2px solid #dc2626', fontSize: '16px', fontWeight: '600', color: '#64748b'}}>{workerAttendance.length}</td>
+              <td style={{padding: '15px 20px', textAlign: 'center', border: '2px solid #dc2626', fontWeight: 'bold', color: '#991b1b', fontSize: '20px', background: 'linear-gradient(135deg, #fca5a5, #f87171)'}}>{formatCurrency(totalWorkerCosts)}</td>
             </tr>
-            <tr style={{backgroundColor: '#ffffff', minHeight: '40px'}}>
-              <td style={{padding: '10px 8px', textAlign: 'center', border: '1px solid #e2e8f0', fontWeight: '600', minHeight: '40px'}}>04</td>
-              <td style={{padding: '10px 8px', textAlign: 'right', border: '1px solid #e2e8f0', fontWeight: '500', minHeight: '40px'}}>مشتريات المواد والمعدات</td>
-              <td style={{padding: '10px 8px', textAlign: 'center', border: '1px solid #e2e8f0', minHeight: '40px'}}>{materialPurchases.length}</td>
-              <td style={{padding: '10px 8px', textAlign: 'center', border: '1px solid #e2e8f0', fontWeight: 'bold', color: '#dc2626', fontSize: '14px', minHeight: '40px'}}>{formatCurrency(totalMaterialCosts)}</td>
+            <tr className="expense-row" style={{background: 'linear-gradient(135deg, #fef2f2, #fee2e2)', minHeight: '50px', borderBottom: '2px solid #dc2626'}}>
+              <td style={{padding: '15px 12px', textAlign: 'center', border: '2px solid #dc2626', fontWeight: '700', fontSize: '18px', color: '#dc2626'}}>04</td>
+              <td style={{padding: '15px 20px', textAlign: 'right', border: '2px solid #dc2626', fontWeight: '600', fontSize: '16px', color: '#dc2626'}}>مشتريات المواد والمعدات والأدوات (مصروفات المواد)</td>
+              <td style={{padding: '15px 12px', textAlign: 'center', border: '2px solid #dc2626', fontSize: '16px', fontWeight: '600', color: '#64748b'}}>{materialPurchases.length}</td>
+              <td style={{padding: '15px 20px', textAlign: 'center', border: '2px solid #dc2626', fontWeight: 'bold', color: '#991b1b', fontSize: '20px', background: 'linear-gradient(135deg, #fca5a5, #f87171)'}}>{formatCurrency(totalMaterialCosts)}</td>
             </tr>
-            <tr style={{backgroundColor: '#fef2f2', minHeight: '40px'}}>
-              <td style={{padding: '10px 8px', textAlign: 'center', border: '1px solid #e2e8f0', fontWeight: '600', minHeight: '40px'}}>05</td>
-              <td style={{padding: '10px 8px', textAlign: 'right', border: '1px solid #e2e8f0', fontWeight: '500', minHeight: '40px'}}>مصاريف النقل والتشغيل</td>
-              <td style={{padding: '10px 8px', textAlign: 'center', border: '1px solid #e2e8f0', minHeight: '40px'}}>{transportationExpenses.length}</td>
-              <td style={{padding: '10px 8px', textAlign: 'center', border: '1px solid #e2e8f0', fontWeight: 'bold', color: '#dc2626', fontSize: '14px', minHeight: '40px'}}>{formatCurrency(totalTransportCosts)}</td>
+            <tr className="expense-row" style={{background: 'linear-gradient(135deg, #fee2e2, #fecaca)', minHeight: '50px', borderBottom: '2px solid #dc2626'}}>
+              <td style={{padding: '15px 12px', textAlign: 'center', border: '2px solid #dc2626', fontWeight: '700', fontSize: '18px', color: '#dc2626'}}>05</td>
+              <td style={{padding: '15px 20px', textAlign: 'right', border: '2px solid #dc2626', fontWeight: '600', fontSize: '16px', color: '#dc2626'}}>مصاريف النقل والتشغيل والمواصلات (مصروفات التشغيل)</td>
+              <td style={{padding: '15px 12px', textAlign: 'center', border: '2px solid #dc2626', fontSize: '16px', fontWeight: '600', color: '#64748b'}}>{transportationExpenses.length}</td>
+              <td style={{padding: '15px 20px', textAlign: 'center', border: '2px solid #dc2626', fontWeight: 'bold', color: '#991b1b', fontSize: '20px', background: 'linear-gradient(135deg, #fca5a5, #f87171)'}}>{formatCurrency(totalTransportCosts)}</td>
             </tr>
-            <tr style={{backgroundColor: '#fee2e2', borderTop: '2px solid #dc2626', minHeight: '45px'}}>
-              <td colSpan={3} style={{padding: '12px 8px', textAlign: 'right', border: '1px solid #e2e8f0', fontWeight: 'bold', fontSize: '15px', color: '#991b1b', minHeight: '45px'}}>إجمالي المصروفات اليومية:</td>
-              <td style={{padding: '12px 8px', textAlign: 'center', border: '1px solid #e2e8f0', fontWeight: 'bold', color: '#991b1b', fontSize: '16px', backgroundColor: '#fca5a5', minHeight: '45px'}}>{formatCurrency(totalExpenses)}</td>
+            <tr className="total-expenses-row" style={{background: 'linear-gradient(135deg, #fee2e2, #fca5a5)', borderTop: '3px solid #dc2626', borderBottom: '3px solid #dc2626', minHeight: '60px'}}>
+              <td colSpan={3} style={{padding: '20px 20px', textAlign: 'right', border: '2px solid #dc2626', fontWeight: 'bold', fontSize: '20px', color: '#991b1b'}}>إجمالي المصروفات اليومية (جميع المصروفات):</td>
+              <td style={{padding: '20px 20px', textAlign: 'center', border: '2px solid #dc2626', fontWeight: 'bold', color: '#991b1b', fontSize: '24px', background: 'linear-gradient(135deg, #f87171, #dc2626)', textShadow: '1px 1px 2px rgba(0,0,0,0.2)'}}>{formatCurrency(totalExpenses)}</td>
             </tr>
-            <tr style={{backgroundColor: '#1e40af', color: 'white', minHeight: '50px'}}>
-              <td colSpan={3} style={{padding: '15px 8px', textAlign: 'right', border: '1px solid #1e40af', fontWeight: 'bold', fontSize: '17px', minHeight: '50px'}}>الرصيد المتبقي في نهاية اليوم:</td>
-              <td style={{padding: '15px 8px', textAlign: 'center', border: '1px solid #1e40af', fontWeight: 'bold', fontSize: '19px', minHeight: '50px'}}>{formatCurrency(remainingBalance)}</td>
+            <tr className="final-balance-row" style={{background: 'linear-gradient(135deg, #1e40af, #3b82f6)', color: 'white', minHeight: '70px', border: '4px solid #1e40af'}}>
+              <td colSpan={3} style={{padding: '25px 20px', textAlign: 'right', border: '2px solid #1e3a8a', fontWeight: 'bold', fontSize: '22px', textShadow: '2px 2px 4px rgba(0,0,0,0.3)'}}>الرصيد المتبقي في نهاية اليوم (صافي المال المتبقي):</td>
+              <td style={{padding: '25px 20px', textAlign: 'center', border: '2px solid #1e3a8a', fontWeight: 'bold', fontSize: '28px', textShadow: '2px 2px 4px rgba(0,0,0,0.3)', background: remainingBalance >= 0 ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #ef4444, #dc2626)'}}>{formatCurrency(remainingBalance)}</td>
             </tr>
           </tbody>
         </table>
 
-        {/* Detailed Breakdown Section - Using Remaining Space */}
-        <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px', fontSize: '11px'}}>
+        {/* Enhanced Detailed Breakdown Section */}
+        <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8mm', marginBottom: '8mm', fontSize: '14px'}}>
           
           {/* Left Column - Fund Transfers & Workers */}
           <div>
