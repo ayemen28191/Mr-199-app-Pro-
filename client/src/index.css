@@ -75,6 +75,50 @@
   }
 }
 
+/* CSS للمعاينة المباشرة وحل مشاكل التداخل */
+.print-preview-container {
+  position: relative;
+  z-index: 1;
+  isolation: isolate;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.print-preview-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.print-preview-container::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.print-preview-container::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.print-preview-container::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* منع التداخل في الـ sticky elements */
+.sticky {
+  z-index: 10;
+  isolation: isolate;
+}
+
+/* تحسين طباعة المعاينة */
+@media print {
+  .print-preview-container {
+    box-shadow: none;
+    border: none;
+    max-height: none;
+    overflow: visible;
+  }
+}
+
 /* أنماط معاينة الطباعة في صفحة إعدادات الطباعة */
 .print-preview-mode {
   background: white !important;

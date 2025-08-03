@@ -1139,7 +1139,7 @@ export default function AdvancedPrintControl() {
 
         {/* لوحة الإعدادات المحفوظة */}
         <div className="lg:col-span-1">
-          <Card className="sticky top-6">
+          <Card className="sticky top-6 z-10">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Save className="h-5 w-5" />
@@ -1212,7 +1212,7 @@ export default function AdvancedPrintControl() {
           </Card>
 
           {/* معاينة سريعة */}
-          <Card className="mt-4">
+          <Card className="mt-4 z-10">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Monitor className="h-5 w-5" />
@@ -1279,47 +1279,43 @@ export default function AdvancedPrintControl() {
         </div>
       </div>
 
-      {/* المعاينة المباشرة للتقرير الحقيقي */}
+      {/* المعاينة المباشرة للتقرير الحقيقي - إصدار واحد فقط */}
       {reportContext && (
-        <Card className="mt-8 bg-white shadow-2xl border-0 rounded-2xl overflow-hidden">
-          <CardHeader className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-6">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-2xl font-bold flex items-center gap-3">
-                <Eye className="h-7 w-7" />
-                المعاينة المباشرة مع الإعدادات
-              </CardTitle>
-              <div className="flex items-center gap-3">
-                <Button
-                  onClick={() => {
-                    // تطبيق الإعدادات الحالية والطباعة
-                    const printContent = document.getElementById('live-report-preview');
-                    if (printContent) {
-                      printContent.classList.add('print-content', 'report-preview');
-                    }
-                    printWithSettings(currentSettings.reportType, 500);
-                  }}
-                  className="bg-white/10 hover:bg-white/20 text-white px-6 py-2 rounded-xl backdrop-blur-sm"
-                >
-                  <Printer className="h-4 w-4 mr-2" />
-                  طباعة المعاينة
-                </Button>
+        <div className="mt-8 w-full">
+          <Card className="bg-white shadow-xl border rounded-2xl overflow-hidden relative z-0">
+            <CardHeader className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-6">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-2xl font-bold flex items-center gap-3">
+                  <Eye className="h-7 w-7" />
+                  المعاينة المباشرة مع الإعدادات
+                </CardTitle>
+                <div className="flex items-center gap-3">
+                  <Button
+                    onClick={handlePrint}
+                    className="bg-white/10 hover:bg-white/20 text-white px-6 py-2 rounded-xl backdrop-blur-sm"
+                  >
+                    <Printer className="h-4 w-4 mr-2" />
+                    طباعة المعاينة
+                  </Button>
+                </div>
               </div>
-            </div>
-          </CardHeader>
-          <CardContent className="p-8">
-            <div 
-              id="live-report-preview"
-              className="print-preview report-preview enhanced-worker-account-report worker-statement-preview"
-              style={{
-                fontFamily: currentSettings.fontFamily,
-                fontSize: `${currentSettings.fontSize}px`,
-                margin: `${currentSettings.marginTop}mm ${currentSettings.marginRight}mm ${currentSettings.marginBottom}mm ${currentSettings.marginLeft}mm`
-              }}
-            >
-              {renderReportPreview()}
-            </div>
-          </CardContent>
-        </Card>
+            </CardHeader>
+            <CardContent className="p-8 overflow-hidden">
+              <div 
+                id="live-report-preview"
+                className="print-preview-container bg-white border rounded-lg shadow-sm p-6 max-h-[800px] overflow-y-auto"
+                style={{
+                  fontFamily: currentSettings.fontFamily,
+                  fontSize: `${currentSettings.fontSize}px`,
+                  position: 'relative',
+                  zIndex: 1
+                }}
+              >
+                {renderReportPreview()}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       )}
     </div>
   );
