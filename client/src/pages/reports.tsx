@@ -994,6 +994,30 @@ export default function Reports() {
                     <Download className="h-4 w-4 mr-2" />
                     تصدير Excel
                   </Button>
+                  <Button
+                    onClick={() => {
+                      // Save report context for advanced print control
+                      const printContext = {
+                        type: activeReportType === 'daily' ? 'daily_expenses' : 
+                              activeReportType === 'professional' ? 'daily_expenses' :
+                              activeReportType === 'worker' ? 'worker_statement' :
+                              activeReportType === 'material' ? 'material_purchases' : 'daily_expenses',
+                        title: `تقرير ${activeReportType === 'daily' ? 'المصاريف اليومية' :
+                                        activeReportType === 'professional' ? 'المصاريف المهنية' :
+                                        activeReportType === 'worker' ? 'حساب العامل' :
+                                        activeReportType === 'material' ? 'المواد والمشتريات' : 'التقرير'}`,
+                        data: reportData,
+                        projectInfo: selectedProject
+                      };
+                      localStorage.setItem('printReportContext', JSON.stringify(printContext));
+                      setLocation('/advanced-print-control?withData=true');
+                    }}
+                    variant="outline"
+                    className="border-purple-500 text-purple-600 hover:bg-purple-50 px-6 py-2 rounded-xl"
+                  >
+                    <Settings className="h-4 w-4 mr-2" />
+                    تحكم متقدم
+                  </Button>
                   <PrintSettingsButton
                     reportType={activeReportType === 'daily' ? 'daily_expenses' : 
                                activeReportType === 'professional' ? 'daily_expenses' :

@@ -23,6 +23,7 @@ import AutocompleteAdminPage from "@/pages/autocomplete-admin";
 import AdvancedReports from "@/pages/advanced-reports";
 import MobileReports from "@/pages/mobile-reports";
 import PrintControlPage from "@/pages/print-control";
+import AdvancedPrintControl from "@/pages/advanced-print-control";
 import PrintIntegrationDemo from "@/pages/print-integration-demo";
 import Header from "@/components/layout/header";
 import BottomNavigation from "@/components/layout/bottom-navigation";
@@ -49,6 +50,7 @@ function Router() {
       <Route path="/mobile-reports" component={MobileReports} />
       <Route path="/advanced-reports" component={AdvancedReports} />
       <Route path="/print-control" component={PrintControlPage} />
+      <Route path="/advanced-print-control" component={AdvancedPrintControl} />
       <Route path="/print-integration-demo" component={PrintIntegrationDemo} />
       <Route component={NotFound} />
     </Switch>

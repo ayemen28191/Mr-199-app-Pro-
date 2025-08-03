@@ -2,6 +2,7 @@
 // نظام متقدم للتحكم في جميع جوانب التنسيق والطباعة
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useLocation } from "wouter";
 import { usePrintSettings } from '@/hooks/usePrintSettings';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,7 +29,9 @@ import {
   Trash2,
   Plus,
   FileText,
-  Monitor
+  Monitor,
+  ArrowLeft,
+  Zap
 } from 'lucide-react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useToast } from "@/hooks/use-toast";
@@ -84,6 +87,7 @@ const defaultSettings: Omit<PrintSettings, 'id'> = {
 };
 
 export default function PrintControlPage() {
+  const [, setLocation] = useLocation();
   const [currentSettings, setCurrentSettings] = useState<PrintSettings>(defaultSettings as PrintSettings);
   const [selectedSettingsId, setSelectedSettingsId] = useState<string>('');
   const [previewMode, setPreviewMode] = useState<'screen' | 'print'>('screen');
@@ -699,6 +703,26 @@ export default function PrintControlPage() {
   return (
     <div className="container mx-auto p-6 max-w-7xl" style={{ direction: 'rtl' }}>
       <div className="mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <Button
+            onClick={() => setLocation('/reports')}
+            variant="ghost"
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            العودة للتقارير
+          </Button>
+          
+          <Button
+            onClick={() => setLocation('/advanced-print-control')}
+            variant="outline"
+            className="flex items-center gap-2 border-purple-500 text-purple-600 hover:bg-purple-50"
+          >
+            <Zap className="h-4 w-4" />
+            الإصدار المتقدم
+          </Button>
+        </div>
+        
         <h1 className="text-3xl font-bold text-center mb-2 flex items-center justify-center gap-3">
           <Settings className="h-8 w-8 text-blue-600" />
           نظام التحكم الشامل في طباعة الكشوف
@@ -817,55 +841,125 @@ export default function PrintControlPage() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label>الهامش العلوي (مم)</Label>
-                      <Slider
-                        value={[currentSettings.marginTop]}
-                        onValueChange={([value]) => updateSetting('marginTop', value)}
-                        max={50}
-                        min={5}
-                        step={1}
-                        className="mt-2"
-                      />
-                      <div className="text-sm text-gray-500 mt-1">{currentSettings.marginTop} مم</div>
+                      <Label className="flex items-center justify-between">
+                        الهامش العلوي (مم)
+                        <span className="text-sm font-normal bg-blue-100 px-2 py-1 rounded">{currentSettings.marginTop} مم</span>
+                      </Label>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Slider
+                          value={[currentSettings.marginTop]}
+                          onValueChange={([value]) => updateSetting('marginTop', value)}
+                          max={50}
+                          min={5}
+                          step={1}
+                          className="flex-1"
+                        />
+                        <Input
+                          type="number"
+                          value={currentSettings.marginTop}
+                          onChange={(e) => updateSetting('marginTop', Number(e.target.value))}
+                          className="w-16 text-center"
+                          min={5}
+                          max={50}
+                        />
+                      </div>
                     </div>
                     
                     <div>
-                      <Label>الهامش السفلي (مم)</Label>
-                      <Slider
-                        value={[currentSettings.marginBottom]}
-                        onValueChange={([value]) => updateSetting('marginBottom', value)}
-                        max={50}
-                        min={5}
-                        step={1}
-                        className="mt-2"
-                      />
-                      <div className="text-sm text-gray-500 mt-1">{currentSettings.marginBottom} مم</div>
+                      <Label className="flex items-center justify-between">
+                        الهامش السفلي (مم)
+                        <span className="text-sm font-normal bg-blue-100 px-2 py-1 rounded">{currentSettings.marginBottom} مم</span>
+                      </Label>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Slider
+                          value={[currentSettings.marginBottom]}
+                          onValueChange={([value]) => updateSetting('marginBottom', value)}
+                          max={50}
+                          min={5}
+                          step={1}
+                          className="flex-1"
+                        />
+                        <Input
+                          type="number"
+                          value={currentSettings.marginBottom}
+                          onChange={(e) => updateSetting('marginBottom', Number(e.target.value))}
+                          className="w-16 text-center"
+                          min={5}
+                          max={50}
+                        />
+                      </div>
                     </div>
                     
                     <div>
-                      <Label>الهامش الأيمن (مم)</Label>
-                      <Slider
-                        value={[currentSettings.marginRight]}
-                        onValueChange={([value]) => updateSetting('marginRight', value)}
-                        max={50}
-                        min={5}
-                        step={1}
-                        className="mt-2"
-                      />
-                      <div className="text-sm text-gray-500 mt-1">{currentSettings.marginRight} مم</div>
+                      <Label className="flex items-center justify-between">
+                        الهامش الأيمن (مم)
+                        <span className="text-sm font-normal bg-blue-100 px-2 py-1 rounded">{currentSettings.marginRight} مم</span>
+                      </Label>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Slider
+                          value={[currentSettings.marginRight]}
+                          onValueChange={([value]) => updateSetting('marginRight', value)}
+                          max={50}
+                          min={5}
+                          step={1}
+                          className="flex-1"
+                        />
+                        <Input
+                          type="number"
+                          value={currentSettings.marginRight}
+                          onChange={(e) => updateSetting('marginRight', Number(e.target.value))}
+                          className="w-16 text-center"
+                          min={5}
+                          max={50}
+                        />
+                      </div>
                     </div>
                     
                     <div>
-                      <Label>الهامش الأيسر (مم)</Label>
-                      <Slider
-                        value={[currentSettings.marginLeft]}
-                        onValueChange={([value]) => updateSetting('marginLeft', value)}
-                        max={50}
-                        min={5}
-                        step={1}
-                        className="mt-2"
+                      <Label className="flex items-center justify-between">
+                        الهامش الأيسر (مم)
+                        <span className="text-sm font-normal bg-blue-100 px-2 py-1 rounded">{currentSettings.marginLeft} مم</span>
+                      </Label>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Slider
+                          value={[currentSettings.marginLeft]}
+                          onValueChange={([value]) => updateSetting('marginLeft', value)}
+                          max={50}
+                          min={5}
+                          step={1}
+                          className="flex-1"
+                        />
+                        <Input
+                          type="number"
+                          value={currentSettings.marginLeft}
+                          onChange={(e) => updateSetting('marginLeft', Number(e.target.value))}
+                          className="w-16 text-center"
+                          min={5}
+                          max={50}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* إعدادات إضافية للصفحة */}
+                  <div className="grid grid-cols-1 gap-4">
+                    <div className="flex items-center space-x-2 space-x-reverse">
+                      <Switch
+                        id="auto-margins"
+                        checked={currentSettings.marginTop === currentSettings.marginBottom && currentSettings.marginLeft === currentSettings.marginRight}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            const avgMargin = Math.round((currentSettings.marginTop + currentSettings.marginBottom + currentSettings.marginLeft + currentSettings.marginRight) / 4);
+                            updateSetting('marginTop', avgMargin);
+                            updateSetting('marginBottom', avgMargin);
+                            updateSetting('marginLeft', avgMargin);
+                            updateSetting('marginRight', avgMargin);
+                          }
+                        }}
                       />
-                      <div className="text-sm text-gray-500 mt-1">{currentSettings.marginLeft} مم</div>
+                      <Label htmlFor="auto-margins">توحيد جميع الهوامش</Label>
                     </div>
                   </div>
                 </TabsContent>
@@ -888,122 +982,260 @@ export default function PrintControlPage() {
                           <SelectItem value="Helvetica">Helvetica</SelectItem>
                           <SelectItem value="Georgia">Georgia</SelectItem>
                           <SelectItem value="Verdana">Verdana</SelectItem>
+                          <SelectItem value="Tahoma">Tahoma</SelectItem>
+                          <SelectItem value="Calibri">Calibri</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
+                    
+                    <div>
+                      <Label>معاينة الخط</Label>
+                      <div className="p-3 border rounded-lg bg-gray-50" style={{ fontFamily: currentSettings.fontFamily, fontSize: '14px' }}>
+                        نموذج النص بالخط المحدد - Sample Text 123
+                      </div>
+                    </div>
                   </div>
+
+                  <Separator />
 
                   <div className="grid grid-cols-3 gap-4">
                     <div>
-                      <Label>حجم الخط العام</Label>
-                      <Slider
-                        value={[currentSettings.fontSize]}
-                        onValueChange={([value]) => updateSetting('fontSize', value)}
-                        max={20}
-                        min={8}
-                        step={1}
-                        className="mt-2"
-                      />
-                      <div className="text-sm text-gray-500 mt-1">{currentSettings.fontSize}px</div>
+                      <Label className="flex items-center justify-between">
+                        حجم الخط العام
+                        <span className="text-sm font-normal bg-green-100 px-2 py-1 rounded">{currentSettings.fontSize}px</span>
+                      </Label>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Slider
+                          value={[currentSettings.fontSize]}
+                          onValueChange={([value]) => updateSetting('fontSize', value)}
+                          max={20}
+                          min={8}
+                          step={1}
+                          className="flex-1"
+                        />
+                        <Input
+                          type="number"
+                          value={currentSettings.fontSize}
+                          onChange={(e) => updateSetting('fontSize', Number(e.target.value))}
+                          className="w-16 text-center"
+                          min={8}
+                          max={20}
+                        />
+                      </div>
                     </div>
                     
                     <div>
-                      <Label>حجم خط العناوين</Label>
-                      <Slider
-                        value={[currentSettings.headerFontSize]}
-                        onValueChange={([value]) => updateSetting('headerFontSize', value)}
-                        max={24}
-                        min={12}
-                        step={1}
-                        className="mt-2"
-                      />
-                      <div className="text-sm text-gray-500 mt-1">{currentSettings.headerFontSize}px</div>
+                      <Label className="flex items-center justify-between">
+                        حجم خط العناوين
+                        <span className="text-sm font-normal bg-green-100 px-2 py-1 rounded">{currentSettings.headerFontSize}px</span>
+                      </Label>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Slider
+                          value={[currentSettings.headerFontSize]}
+                          onValueChange={([value]) => updateSetting('headerFontSize', value)}
+                          max={28}
+                          min={12}
+                          step={1}
+                          className="flex-1"
+                        />
+                        <Input
+                          type="number"
+                          value={currentSettings.headerFontSize}
+                          onChange={(e) => updateSetting('headerFontSize', Number(e.target.value))}
+                          className="w-16 text-center"
+                          min={12}
+                          max={28}
+                        />
+                      </div>
                     </div>
                     
                     <div>
-                      <Label>حجم خط الجدول</Label>
-                      <Slider
-                        value={[currentSettings.tableFontSize]}
-                        onValueChange={([value]) => updateSetting('tableFontSize', value)}
-                        max={16}
-                        min={6}
-                        step={1}
-                        className="mt-2"
-                      />
-                      <div className="text-sm text-gray-500 mt-1">{currentSettings.tableFontSize}px</div>
+                      <Label className="flex items-center justify-between">
+                        حجم خط الجدول
+                        <span className="text-sm font-normal bg-green-100 px-2 py-1 rounded">{currentSettings.tableFontSize}px</span>
+                      </Label>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Slider
+                          value={[currentSettings.tableFontSize]}
+                          onValueChange={([value]) => updateSetting('tableFontSize', value)}
+                          max={16}
+                          min={6}
+                          step={1}
+                          className="flex-1"
+                        />
+                        <Input
+                          type="number"
+                          value={currentSettings.tableFontSize}
+                          onChange={(e) => updateSetting('tableFontSize', Number(e.target.value))}
+                          className="w-16 text-center"
+                          min={6}
+                          max={16}
+                        />
+                      </div>
                     </div>
                   </div>
                 </TabsContent>
 
                 {/* تبويب الألوان */}
                 <TabsContent value="colors" className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label>لون خلفية الرأسية</Label>
-                      <div className="flex gap-2 mt-1">
-                        <Input
-                          type="color"
-                          value={currentSettings.headerBackgroundColor}
-                          onChange={(e) => updateSetting('headerBackgroundColor', e.target.value)}
-                          className="w-16 h-10"
-                        />
-                        <Input
-                          value={currentSettings.headerBackgroundColor}
-                          onChange={(e) => updateSetting('headerBackgroundColor', e.target.value)}
-                          className="flex-1"
-                        />
+                  {/* ألوان الرأسية */}
+                  <div>
+                    <h4 className="font-medium mb-3 flex items-center gap-2">
+                      <Palette className="h-4 w-4" />
+                      ألوان الرأسية والعناوين
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label>لون خلفية الرأسية</Label>
+                        <div className="flex gap-2 mt-1">
+                          <Input
+                            type="color"
+                            value={currentSettings.headerBackgroundColor}
+                            onChange={(e) => updateSetting('headerBackgroundColor', e.target.value)}
+                            className="w-16 h-10"
+                          />
+                          <Input
+                            value={currentSettings.headerBackgroundColor}
+                            onChange={(e) => updateSetting('headerBackgroundColor', e.target.value)}
+                            className="flex-1"
+                            placeholder="#1e40af"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <Label>لون نص الرأسية</Label>
+                        <div className="flex gap-2 mt-1">
+                          <Input
+                            type="color"
+                            value={currentSettings.headerTextColor}
+                            onChange={(e) => updateSetting('headerTextColor', e.target.value)}
+                            className="w-16 h-10"
+                          />
+                          <Input
+                            value={currentSettings.headerTextColor}
+                            onChange={(e) => updateSetting('headerTextColor', e.target.value)}
+                            className="flex-1"
+                            placeholder="#ffffff"
+                          />
+                        </div>
                       </div>
                     </div>
-                    
-                    <div>
-                      <Label>لون نص الرأسية</Label>
-                      <div className="flex gap-2 mt-1">
-                        <Input
-                          type="color"
-                          value={currentSettings.headerTextColor}
-                          onChange={(e) => updateSetting('headerTextColor', e.target.value)}
-                          className="w-16 h-10"
-                        />
-                        <Input
-                          value={currentSettings.headerTextColor}
-                          onChange={(e) => updateSetting('headerTextColor', e.target.value)}
-                          className="flex-1"
-                        />
+                  </div>
+
+                  <Separator />
+
+                  {/* ألوان الجدول */}
+                  <div>
+                    <h4 className="font-medium mb-3 flex items-center gap-2">
+                      <Grid3x3 className="h-4 w-4" />
+                      ألوان الجدول
+                    </h4>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <Label>لون رأس الجدول</Label>
+                        <div className="flex gap-2 mt-1">
+                          <Input
+                            type="color"
+                            value={currentSettings.tableHeaderColor}
+                            onChange={(e) => updateSetting('tableHeaderColor', e.target.value)}
+                            className="w-16 h-10"
+                          />
+                          <Input
+                            value={currentSettings.tableHeaderColor}
+                            onChange={(e) => updateSetting('tableHeaderColor', e.target.value)}
+                            className="flex-1"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <Label>لون حدود الجدول</Label>
+                        <div className="flex gap-2 mt-1">
+                          <Input
+                            type="color"
+                            value={currentSettings.tableBorderColor}
+                            onChange={(e) => updateSetting('tableBorderColor', e.target.value)}
+                            className="w-16 h-10"
+                          />
+                          <Input
+                            value={currentSettings.tableBorderColor}
+                            onChange={(e) => updateSetting('tableBorderColor', e.target.value)}
+                            className="flex-1"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <Label>لون الصفوف الزوجية</Label>
+                        <div className="flex gap-2 mt-1">
+                          <Input
+                            type="color"
+                            value={currentSettings.tableRowEvenColor}
+                            onChange={(e) => updateSetting('tableRowEvenColor', e.target.value)}
+                            className="w-16 h-10"
+                          />
+                          <Input
+                            value={currentSettings.tableRowEvenColor}
+                            onChange={(e) => updateSetting('tableRowEvenColor', e.target.value)}
+                            className="flex-1"
+                          />
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <Label>لون الصفوف الفردية</Label>
+                        <div className="flex gap-2 mt-1">
+                          <Input
+                            type="color"
+                            value={currentSettings.tableRowOddColor}
+                            onChange={(e) => updateSetting('tableRowOddColor', e.target.value)}
+                            className="w-16 h-10"
+                          />
+                          <Input
+                            value={currentSettings.tableRowOddColor}
+                            onChange={(e) => updateSetting('tableRowOddColor', e.target.value)}
+                            className="flex-1"
+                          />
+                        </div>
                       </div>
                     </div>
-                    
-                    <div>
-                      <Label>لون رأس الجدول</Label>
-                      <div className="flex gap-2 mt-1">
-                        <Input
-                          type="color"
-                          value={currentSettings.tableHeaderColor}
-                          onChange={(e) => updateSetting('tableHeaderColor', e.target.value)}
-                          className="w-16 h-10"
-                        />
-                        <Input
-                          value={currentSettings.tableHeaderColor}
-                          onChange={(e) => updateSetting('tableHeaderColor', e.target.value)}
-                          className="flex-1"
-                        />
-                      </div>
-                    </div>
-                    
-                    <div>
-                      <Label>لون الحدود</Label>
-                      <div className="flex gap-2 mt-1">
-                        <Input
-                          type="color"
-                          value={currentSettings.tableBorderColor}
-                          onChange={(e) => updateSetting('tableBorderColor', e.target.value)}
-                          className="w-16 h-10"
-                        />
-                        <Input
-                          value={currentSettings.tableBorderColor}
-                          onChange={(e) => updateSetting('tableBorderColor', e.target.value)}
-                          className="flex-1"
-                        />
-                      </div>
+                  </div>
+
+                  <Separator />
+
+                  {/* نماذج ألوان جاهزة */}
+                  <div>
+                    <h4 className="font-medium mb-3">نماذج ألوان جاهزة</h4>
+                    <div className="grid grid-cols-4 gap-2">
+                      {[
+                        { name: 'أزرق كلاسيكي', header: '#1e40af', text: '#ffffff', table: '#1e40af', even: '#ffffff', odd: '#f0f9ff', border: '#1e40af' },
+                        { name: 'أخضر طبيعي', header: '#15803d', text: '#ffffff', table: '#15803d', even: '#ffffff', odd: '#f0fdf4', border: '#15803d' },
+                        { name: 'رمادي احترافي', header: '#374151', text: '#ffffff', table: '#374151', even: '#ffffff', odd: '#f9fafb', border: '#374151' },
+                        { name: 'بني دافئ', header: '#92400e', text: '#ffffff', table: '#92400e', even: '#ffffff', odd: '#fef3c7', border: '#92400e' }
+                      ].map((theme, index) => (
+                        <Button
+                          key={index}
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            updateSetting('headerBackgroundColor', theme.header);
+                            updateSetting('headerTextColor', theme.text);
+                            updateSetting('tableHeaderColor', theme.table);
+                            updateSetting('tableRowEvenColor', theme.even);
+                            updateSetting('tableRowOddColor', theme.odd);
+                            updateSetting('tableBorderColor', theme.border);
+                          }}
+                          className="p-2 h-auto flex flex-col items-center gap-1"
+                        >
+                          <div className="flex gap-1">
+                            <div className="w-4 h-4 rounded" style={{ backgroundColor: theme.header }}></div>
+                            <div className="w-4 h-4 rounded" style={{ backgroundColor: theme.even }}></div>
+                            <div className="w-4 h-4 rounded" style={{ backgroundColor: theme.odd }}></div>
+                          </div>
+                          <span className="text-xs">{theme.name}</span>
+                        </Button>
+                      ))}
                     </div>
                   </div>
                 </TabsContent>
