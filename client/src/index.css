@@ -109,6 +109,24 @@
   isolation: isolate;
 }
 
+/* منع التكرار في القوائم وتحسين الأداء */
+.settings-list-container {
+  contain: layout style;
+  will-change: scroll-position;
+}
+
+.settings-list-item {
+  contain: layout style paint;
+  transform: translateZ(0);
+}
+
+/* تحسين الانتقالات والحركة */
+.transition-all {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 200ms;
+}
+
 /* تحسين طباعة المعاينة */
 @media print {
   .print-preview-container {

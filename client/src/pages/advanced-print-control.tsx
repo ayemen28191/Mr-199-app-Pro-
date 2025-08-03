@@ -1139,13 +1139,14 @@ export default function AdvancedPrintControl() {
 
         {/* لوحة الإعدادات المحفوظة */}
         <div className="lg:col-span-1">
-          <Card className="sticky top-6 z-10">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Save className="h-5 w-5" />
-                الإعدادات المحفوظة
-              </CardTitle>
-            </CardHeader>
+          <div className="sticky top-6 z-10 space-y-4">
+            <Card className="bg-white shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Save className="h-5 w-5" />
+                  الإعدادات المحفوظة
+                </CardTitle>
+              </CardHeader>
             <CardContent className="space-y-4">
               <div>
                 <Label>اسم الإعداد</Label>
@@ -1182,19 +1183,27 @@ export default function AdvancedPrintControl() {
 
               <div>
                 <Label>الإعدادات المحفوظة</Label>
-                <div className="space-y-2 mt-2 max-h-60 overflow-y-auto">
-                  {savedSettingsList.map((settings) => (
-                    <div
-                      key={settings.id}
-                      className={`p-2 border rounded cursor-pointer hover:bg-gray-50 ${
-                        selectedSettingsId === settings.id ? 'border-blue-500 bg-blue-50' : ''
-                      }`}
-                      onClick={() => loadSettings(settings.id)}
-                    >
-                      <div className="font-medium text-sm">{settings.name}</div>
-                      <div className="text-xs text-gray-500">{settings.reportType}</div>
+                <div className="space-y-2 mt-2 max-h-60 overflow-y-auto bg-gray-50 rounded-md p-2">
+                  {Array.from(new Set(savedSettingsList.map(s => s.id)))
+                    .map(id => savedSettingsList.find(s => s.id === id))
+                    .filter((settings): settings is NonNullable<typeof settings> => Boolean(settings))
+                    .map((settings) => (
+                      <div
+                        key={settings.id}
+                        className={`p-3 border rounded-lg cursor-pointer transition-all duration-200 bg-white hover:shadow-md ${
+                          selectedSettingsId === settings.id ? 'border-blue-500 bg-blue-50 shadow-md' : 'border-gray-200'
+                        }`}
+                        onClick={() => loadSettings(settings.id)}
+                      >
+                        <div className="font-medium text-sm text-gray-800">{settings.name}</div>
+                        <div className="text-xs text-gray-500 mt-1">{settings.reportType}</div>
+                      </div>
+                    ))}
+                  {savedSettingsList.length === 0 && (
+                    <div className="text-center text-gray-500 text-sm py-4">
+                      لا توجد إعدادات محفوظة
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
 
@@ -1209,16 +1218,16 @@ export default function AdvancedPrintControl() {
                 </Label>
               </div>
             </CardContent>
-          </Card>
+            </Card>
 
-          {/* معاينة سريعة */}
-          <Card className="mt-4 z-10">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Monitor className="h-5 w-5" />
-                معاينة سريعة
-              </CardTitle>
-            </CardHeader>
+            {/* معاينة سريعة */}
+            <Card className="bg-white shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Monitor className="h-5 w-5" />
+                  معاينة سريعة
+                </CardTitle>
+              </CardHeader>
             <CardContent>
               <div className="border rounded-lg p-4 bg-white space-y-2 text-sm" style={{ fontFamily: currentSettings.fontFamily }}>
                 {currentSettings.showHeader && (
@@ -1275,7 +1284,8 @@ export default function AdvancedPrintControl() {
                 )}
               </div>
             </CardContent>
-          </Card>
+            </Card>
+          </div>
         </div>
       </div>
 
