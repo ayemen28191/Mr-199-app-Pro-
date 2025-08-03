@@ -97,7 +97,7 @@ export const ProfessionalDailyReport = ({ data, selectedProject, selectedDate }:
         {/* Main Financial Summary Table */}
         <table className="w-full border-collapse" style={{fontSize: '13px', lineHeight: '1.6', marginBottom: '15px', border: '2px solid #1e40af'}}>
           <thead>
-            <tr className="professional-gradient preserve-color" style={{color: '#000000'}}>
+            <tr className="professional-gradient preserve-color" style={{color: '#ffffff'}}>
               <th style={{padding: '12px 8px', textAlign: 'center', fontWeight: 'bold', border: '1px solid #cbd5e1', width: '8%', minHeight: '45px'}}>م.</th>
               <th style={{padding: '12px 8px', textAlign: 'right', fontWeight: 'bold', border: '1px solid #cbd5e1', width: '50%', minHeight: '45px'}}>البيان والوصف</th>
               <th style={{padding: '12px 8px', textAlign: 'center', fontWeight: 'bold', border: '1px solid #cbd5e1', width: '12%', minHeight: '45px'}}>العدد</th>
