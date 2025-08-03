@@ -33,15 +33,7 @@ export const ProfessionalDailyReport = ({ data, selectedProject, selectedDate }:
     carriedForward = 0
   } = data || {};
 
-  // Debug logging
-  console.log('🔍 ProfessionalDailyReport Data Debug:', {
-    data,
-    fundTransfers,
-    workerAttendance,
-    materialPurchases,
-    transportationExpenses,
-    carriedForward
-  });
+
 
   const totalIncome = fundTransfers.reduce((sum: number, transfer: any) => {
     const amount = Number(transfer.amount) || 0;
@@ -50,7 +42,6 @@ export const ProfessionalDailyReport = ({ data, selectedProject, selectedDate }:
 
   const totalWorkerCosts = workerAttendance.reduce((sum: number, attendance: any) => {
     const amount = Number(attendance.paidAmount) || 0;
-    console.log('Worker attendance:', attendance, 'Amount:', amount);
     return sum + amount;
   }, 0);
 
@@ -61,21 +52,11 @@ export const ProfessionalDailyReport = ({ data, selectedProject, selectedDate }:
 
   const totalTransportCosts = transportationExpenses.reduce((sum: number, expense: any) => {
     const amount = Number(expense.amount) || 0;
-    console.log('Transport expense:', expense, 'Amount:', amount);
     return sum + amount;
   }, 0);
 
   const totalExpenses = totalWorkerCosts + totalMaterialCosts + totalTransportCosts;
   const remainingBalance = (carriedForward + totalIncome) - totalExpenses;
-
-  console.log('📊 Calculated totals:', {
-    totalIncome,
-    totalWorkerCosts,
-    totalMaterialCosts,
-    totalTransportCosts,
-    totalExpenses,
-    remainingBalance
-  });
 
   return (
     <div 
@@ -105,7 +86,7 @@ export const ProfessionalDailyReport = ({ data, selectedProject, selectedDate }:
             <p style={{fontSize: '14px', margin: '0', opacity: '0.85'}}>التاريخ: {formatDate(selectedDate)}</p>
           </div>
           <div style={{width: '70px', height: '70px', backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
-            <div style={{fontSize: '11px', fontWeight: 'bold', textAlign: 'center'}}>رقم<br/>الكشف<br/>{Math.floor(Math.random() * 9999)}</div>
+            <div style={{fontSize: '11px', fontWeight: 'bold', textAlign: 'center'}}>رقم<br/>الكشف<br/>{selectedProject?.id?.slice(-4) || '0001'}</div>
           </div>
         </div>
       </div>
@@ -116,12 +97,11 @@ export const ProfessionalDailyReport = ({ data, selectedProject, selectedDate }:
         {/* Main Financial Summary Table */}
         <table className="w-full border-collapse" style={{fontSize: '13px', lineHeight: '1.6', marginBottom: '15px', border: '2px solid #1e40af'}}>
           <thead>
-            <tr className="professional-gradient preserve-color" style={{color: '#1e293b'}}>
+            <tr className="professional-gradient preserve-color" style={{color: '#000000'}}>
               <th style={{padding: '12px 8px', textAlign: 'center', fontWeight: 'bold', border: '1px solid #cbd5e1', width: '8%', minHeight: '45px'}}>م.</th>
-              <th style={{padding: '12px 8px', textAlign: 'right', fontWeight: 'bold', border: '1px solid #cbd5e1', width: '40%', minHeight: '45px'}}>البيان والوصف</th>
+              <th style={{padding: '12px 8px', textAlign: 'right', fontWeight: 'bold', border: '1px solid #cbd5e1', width: '50%', minHeight: '45px'}}>البيان والوصف</th>
               <th style={{padding: '12px 8px', textAlign: 'center', fontWeight: 'bold', border: '1px solid #cbd5e1', width: '12%', minHeight: '45px'}}>العدد</th>
-              <th style={{padding: '12px 8px', textAlign: 'center', fontWeight: 'bold', border: '1px solid #cbd5e1', width: '18%', minHeight: '45px'}}>متوسط السعر</th>
-              <th style={{padding: '12px 8px', textAlign: 'center', fontWeight: 'bold', border: '1px solid #cbd5e1', width: '22%', minHeight: '45px'}}>إجمالي المبلغ (ر.ي)</th>
+              <th style={{padding: '12px 8px', textAlign: 'center', fontWeight: 'bold', border: '1px solid #cbd5e1', width: '30%', minHeight: '45px'}}>إجمالي المبلغ (ر.ي)</th>
             </tr>
           </thead>
           <tbody>
@@ -129,47 +109,42 @@ export const ProfessionalDailyReport = ({ data, selectedProject, selectedDate }:
               <td style={{padding: '10px 8px', textAlign: 'center', border: '1px solid #e2e8f0', fontWeight: '600', minHeight: '40px'}}>01</td>
               <td style={{padding: '10px 8px', textAlign: 'right', border: '1px solid #e2e8f0', fontWeight: '500', minHeight: '40px'}}>الرصيد المرحل من اليوم السابق</td>
               <td style={{padding: '10px 8px', textAlign: 'center', border: '1px solid #e2e8f0', minHeight: '40px'}}>1</td>
-              <td style={{padding: '10px 8px', textAlign: 'center', border: '1px solid #e2e8f0', fontWeight: '600', color: '#0ea5e9', minHeight: '40px'}}>{formatCurrency(carriedForward)}</td>
               <td style={{padding: '10px 8px', textAlign: 'center', border: '1px solid #e2e8f0', fontWeight: 'bold', color: '#0ea5e9', fontSize: '14px', minHeight: '40px'}}>{formatCurrency(carriedForward)}</td>
             </tr>
             <tr style={{backgroundColor: '#f0fdf4', minHeight: '40px'}}>
               <td style={{padding: '10px 8px', textAlign: 'center', border: '1px solid #e2e8f0', fontWeight: '600', minHeight: '40px'}}>02</td>
               <td style={{padding: '10px 8px', textAlign: 'right', border: '1px solid #e2e8f0', fontWeight: '500', minHeight: '40px'}}>تحويلات العهدة والإيرادات النقدية</td>
               <td style={{padding: '10px 8px', textAlign: 'center', border: '1px solid #e2e8f0', minHeight: '40px'}}>{fundTransfers.length}</td>
-              <td style={{padding: '10px 8px', textAlign: 'center', border: '1px solid #e2e8f0', fontWeight: '600', color: '#16a34a', minHeight: '40px'}}>{fundTransfers.length > 0 ? formatCurrency(Math.round(totalIncome / fundTransfers.length)) : '0 ر.ي'}</td>
               <td style={{padding: '10px 8px', textAlign: 'center', border: '1px solid #e2e8f0', fontWeight: 'bold', color: '#16a34a', fontSize: '14px', minHeight: '40px'}}>{formatCurrency(totalIncome)}</td>
             </tr>
             <tr style={{backgroundColor: '#fef3c7', borderTop: '2px solid #f59e0b', minHeight: '45px'}}>
-              <td colSpan={4} style={{padding: '12px 8px', textAlign: 'right', border: '1px solid #e2e8f0', fontWeight: 'bold', fontSize: '15px', color: '#92400e', minHeight: '45px'}}>إجمالي الأموال المتاحة لليوم:</td>
+              <td colSpan={3} style={{padding: '12px 8px', textAlign: 'right', border: '1px solid #e2e8f0', fontWeight: 'bold', fontSize: '15px', color: '#92400e', minHeight: '45px'}}>إجمالي الأموال المتاحة لليوم:</td>
               <td style={{padding: '12px 8px', textAlign: 'center', border: '1px solid #e2e8f0', fontWeight: 'bold', color: '#92400e', fontSize: '16px', backgroundColor: '#fbbf24', minHeight: '45px'}}>{formatCurrency(totalIncome + carriedForward)}</td>
             </tr>
             <tr style={{backgroundColor: '#fef2f2', minHeight: '40px'}}>
               <td style={{padding: '10px 8px', textAlign: 'center', border: '1px solid #e2e8f0', fontWeight: '600', minHeight: '40px'}}>03</td>
               <td style={{padding: '10px 8px', textAlign: 'right', border: '1px solid #e2e8f0', fontWeight: '500', minHeight: '40px'}}>أجور العمال والحضور اليومي</td>
               <td style={{padding: '10px 8px', textAlign: 'center', border: '1px solid #e2e8f0', minHeight: '40px'}}>{workerAttendance.length}</td>
-              <td style={{padding: '10px 8px', textAlign: 'center', border: '1px solid #e2e8f0', fontWeight: '600', color: '#dc2626', minHeight: '40px'}}>{workerAttendance.length > 0 ? formatCurrency(Math.round(totalWorkerCosts / workerAttendance.length)) : '0 ر.ي'}</td>
               <td style={{padding: '10px 8px', textAlign: 'center', border: '1px solid #e2e8f0', fontWeight: 'bold', color: '#dc2626', fontSize: '14px', minHeight: '40px'}}>{formatCurrency(totalWorkerCosts)}</td>
             </tr>
             <tr style={{backgroundColor: '#ffffff', minHeight: '40px'}}>
               <td style={{padding: '10px 8px', textAlign: 'center', border: '1px solid #e2e8f0', fontWeight: '600', minHeight: '40px'}}>04</td>
               <td style={{padding: '10px 8px', textAlign: 'right', border: '1px solid #e2e8f0', fontWeight: '500', minHeight: '40px'}}>مشتريات المواد والمعدات</td>
               <td style={{padding: '10px 8px', textAlign: 'center', border: '1px solid #e2e8f0', minHeight: '40px'}}>{materialPurchases.length}</td>
-              <td style={{padding: '10px 8px', textAlign: 'center', border: '1px solid #e2e8f0', fontWeight: '600', color: '#dc2626', minHeight: '40px'}}>{materialPurchases.length > 0 ? formatCurrency(Math.round(totalMaterialCosts / materialPurchases.length)) : '0 ر.ي'}</td>
               <td style={{padding: '10px 8px', textAlign: 'center', border: '1px solid #e2e8f0', fontWeight: 'bold', color: '#dc2626', fontSize: '14px', minHeight: '40px'}}>{formatCurrency(totalMaterialCosts)}</td>
             </tr>
             <tr style={{backgroundColor: '#fef2f2', minHeight: '40px'}}>
               <td style={{padding: '10px 8px', textAlign: 'center', border: '1px solid #e2e8f0', fontWeight: '600', minHeight: '40px'}}>05</td>
               <td style={{padding: '10px 8px', textAlign: 'right', border: '1px solid #e2e8f0', fontWeight: '500', minHeight: '40px'}}>مصاريف النقل والتشغيل</td>
               <td style={{padding: '10px 8px', textAlign: 'center', border: '1px solid #e2e8f0', minHeight: '40px'}}>{transportationExpenses.length}</td>
-              <td style={{padding: '10px 8px', textAlign: 'center', border: '1px solid #e2e8f0', fontWeight: '600', color: '#dc2626', minHeight: '40px'}}>{transportationExpenses.length > 0 ? formatCurrency(Math.round(totalTransportCosts / transportationExpenses.length)) : '0 ر.ي'}</td>
               <td style={{padding: '10px 8px', textAlign: 'center', border: '1px solid #e2e8f0', fontWeight: 'bold', color: '#dc2626', fontSize: '14px', minHeight: '40px'}}>{formatCurrency(totalTransportCosts)}</td>
             </tr>
             <tr style={{backgroundColor: '#fee2e2', borderTop: '2px solid #dc2626', minHeight: '45px'}}>
-              <td colSpan={4} style={{padding: '12px 8px', textAlign: 'right', border: '1px solid #e2e8f0', fontWeight: 'bold', fontSize: '15px', color: '#991b1b', minHeight: '45px'}}>إجمالي المصروفات اليومية:</td>
+              <td colSpan={3} style={{padding: '12px 8px', textAlign: 'right', border: '1px solid #e2e8f0', fontWeight: 'bold', fontSize: '15px', color: '#991b1b', minHeight: '45px'}}>إجمالي المصروفات اليومية:</td>
               <td style={{padding: '12px 8px', textAlign: 'center', border: '1px solid #e2e8f0', fontWeight: 'bold', color: '#991b1b', fontSize: '16px', backgroundColor: '#fca5a5', minHeight: '45px'}}>{formatCurrency(totalExpenses)}</td>
             </tr>
             <tr style={{backgroundColor: '#1e40af', color: 'white', minHeight: '50px'}}>
-              <td colSpan={4} style={{padding: '15px 8px', textAlign: 'right', border: '1px solid #1e40af', fontWeight: 'bold', fontSize: '17px', minHeight: '50px'}}>الرصيد المتبقي في نهاية اليوم:</td>
+              <td colSpan={3} style={{padding: '15px 8px', textAlign: 'right', border: '1px solid #1e40af', fontWeight: 'bold', fontSize: '17px', minHeight: '50px'}}>الرصيد المتبقي في نهاية اليوم:</td>
               <td style={{padding: '15px 8px', textAlign: 'center', border: '1px solid #1e40af', fontWeight: 'bold', fontSize: '19px', minHeight: '50px'}}>{formatCurrency(remainingBalance)}</td>
             </tr>
           </tbody>
@@ -313,7 +288,7 @@ export const ProfessionalDailyReport = ({ data, selectedProject, selectedDate }:
             </div>
           </div>
           
-          <div className="professional-gradient preserve-color text-white" style={{padding: '10px 15px', textAlign: 'center', fontSize: '12px', borderRadius: '6px'}}>
+          <div className="professional-gradient preserve-color" style={{padding: '10px 15px', textAlign: 'center', fontSize: '12px', borderRadius: '6px', color: '#000000'}}>
             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
               <span style={{fontWeight: 'bold'}}>نظام إدارة مشاريع البناء العربي</span>
               <span>المشروع: {selectedProject?.name || 'غير محدد'} | الحالة: {selectedProject?.status === 'active' ? 'نشط' : 'متوقف'}</span>
