@@ -95,9 +95,13 @@ export default function PrintControlPage() {
     queryKey: ['/api/workers'],
   });
 
-  // جلب إعدادات الطباعة المحفوظة
+  // جلب إعدادات الطباعة المحفوظة مع تصفية حسب نوع التقرير
   const { data: savedSettingsList = [], refetch: refetchSettings } = useQuery<DBPrintSettings[]>({
-    queryKey: ['/api/print-settings'],
+    queryKey: ['/api/print-settings', currentSettings.reportType],
+    queryFn: ({ queryKey }) => {
+      const [, reportType] = queryKey;
+      return apiRequest(`/api/print-settings?reportType=${reportType || ''}`);
+    },
   });
 
   // طفرة لحفظ الإعدادات
@@ -329,6 +333,58 @@ export default function PrintControlPage() {
     link.click();
   };
 
+  // قائمة أنواع التقارير المتاحة
+  const reportTypes = [
+    {
+      value: 'worker_statement',
+      label: 'كشف حساب العامل الشامل',
+      description: 'كشف تفصيلي بجميع المعاملات والحضور'
+    },
+    {
+      value: 'worker_statement_compact',
+      label: 'كشف حساب العامل المضغوط',
+      description: 'كشف مختصر في صفحة واحدة'
+    },
+    {
+      value: 'project_summary',
+      label: 'ملخص المشروع',
+      description: 'ملخص إجمالي للمشروع والمصاريف'
+    },
+    {
+      value: 'financial_report',
+      label: 'التقرير المالي',
+      description: 'تقرير مالي شامل للإيرادات والنفقات'
+    },
+    {
+      value: 'supplier_statement',
+      label: 'كشف حساب المورد',
+      description: 'كشف تفصيلي لحساب المورد'
+    }
+  ];
+
+  // دالة لتحديث نوع التقرير وتحميل الإعدادات المناسبة
+  const changeReportType = (newReportType: string) => {
+    updateSetting('reportType', newReportType);
+    
+    // البحث عن إعدادات افتراضية لهذا النوع من التقارير
+    const defaultForType = savedSettingsList.find(
+      (setting) => setting.reportType === newReportType && setting.isDefault
+    );
+    
+    if (defaultForType) {
+      loadSettings(defaultForType.id);
+    } else {
+      // إعدادات افتراضية بسيطة لهذا النوع
+      const reportLabel = reportTypes.find(r => r.value === newReportType)?.label || 'جديد';
+      setCurrentSettings({
+        ...defaultSettings,
+        reportType: newReportType,
+        name: `إعداد ${reportLabel}`,
+        id: undefined
+      } as PrintSettings);
+    }
+  };
+
   return (
     <div className="container mx-auto p-6 max-w-7xl" style={{ direction: 'rtl' }}>
       <div className="mb-6">
@@ -340,6 +396,43 @@ export default function PrintControlPage() {
           تحكم كامل في جميع جوانب التنسيق والطباعة مع معاينة فورية
         </p>
       </div>
+
+      {/* قسم اختيار نوع التقرير */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            نوع التقرير
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {reportTypes.map((report) => (
+              <div
+                key={report.value}
+                className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                  currentSettings.reportType === report.value
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+                onClick={() => changeReportType(report.value)}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <div
+                    className={`w-4 h-4 rounded-full border-2 ${
+                      currentSettings.reportType === report.value
+                        ? 'bg-blue-500 border-blue-500'
+                        : 'border-gray-300'
+                    }`}
+                  />
+                  <h3 className="font-medium">{report.label}</h3>
+                </div>
+                <p className="text-sm text-gray-600">{report.description}</p>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* لوحة التحكم */}
@@ -674,40 +767,56 @@ export default function PrintControlPage() {
                 />
               </div>
               
-              <div className="flex gap-2">
-                <Button onClick={saveSettings} className="flex-1">
-                  <Save className="h-4 w-4 mr-2" />
-                  حفظ
-                </Button>
-                <Button variant="outline" onClick={exportSettings}>
-                  <Download className="h-4 w-4 mr-2" />
-                  تصدير
-                </Button>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    checked={currentSettings.isDefault}
+                    onCheckedChange={(checked) => updateSetting('isDefault', checked)}
+                  />
+                  <Label className="text-sm">تعيين كإعداد افتراضي لهذا النوع</Label>
+                </div>
+                
+                <div className="flex gap-2">
+                  <Button onClick={saveSettings} className="flex-1">
+                    <Save className="h-4 w-4 mr-2" />
+                    حفظ
+                  </Button>
+                  <Button variant="outline" onClick={exportSettings}>
+                    <Download className="h-4 w-4 mr-2" />
+                    تصدير
+                  </Button>
+                </div>
               </div>
               
               <Separator />
               
               <div className="space-y-2">
-                <Label>الإعدادات المحفوظة</Label>
-                {savedSettingsList.map((settings: any) => (
-                  <div key={settings.id} className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 text-xs"
-                      onClick={() => loadSettings(settings.id)}
-                    >
-                      {settings.name}
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => deleteSettingsMutation.mutate(settings.id)}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
-                  </div>
-                ))}
+                <Label>الإعدادات المحفوظة لـ {reportTypes.find(r => r.value === currentSettings.reportType)?.label}</Label>
+                {savedSettingsList.length === 0 ? (
+                  <p className="text-sm text-gray-500 p-3 border rounded-lg">
+                    لا توجد إعدادات محفوظة لهذا النوع من التقارير
+                  </p>
+                ) : (
+                  savedSettingsList.map((settings: any) => (
+                    <div key={settings.id} className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="flex-1 text-xs"
+                        onClick={() => loadSettings(settings.id)}
+                      >
+                        {settings.name} {settings.isDefault && '(افتراضي)'}
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => deleteSettingsMutation.mutate(settings.id)}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  ))
+                )}
               </div>
             </CardContent>
           </Card>
@@ -747,7 +856,7 @@ export default function PrintControlPage() {
               
               <Button 
                 variant="outline" 
-                onClick={() => setCurrentSettings({...defaultSettings, id: undefined})}
+                onClick={() => setCurrentSettings({...defaultSettings, id: undefined} as PrintSettings)}
                 className="w-full"
               >
                 <RotateCcw className="h-4 w-4 mr-2" />
