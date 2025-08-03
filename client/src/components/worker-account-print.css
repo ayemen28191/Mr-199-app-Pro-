@@ -42,24 +42,26 @@
     line-height: 1.4 !important;
     overflow: visible !important;
     page-break-inside: avoid !important;
-    transform: scale(0.9) !important; /* تكبير المحتوى */
+    transform: scale(1.1) !important; /* تكبير المحتوى للطباعة */
     transform-origin: top left !important;
   }
 
-  /* تحسين العنوان الرئيسي */
+  /* تحسين العنوان الرئيسي المدمج */
   .enhanced-header {
-    margin: 0 0 0.3cm 0 !important;
-    padding: 0.4cm 0 !important;
+    margin: 0 0 0.2cm 0 !important;
+    padding: 0.3cm 0 !important;
     border: 3px solid #7c3aed !important;
     border-radius: 8px !important;
+    background: linear-gradient(135deg, #f8fafc, #e2e8f0) !important;
   }
 
   .enhanced-header h1 {
-    font-size: 32px !important;
+    font-size: 28px !important;
     font-weight: bold !important;
-    margin: 0.3cm 0 !important;
+    margin: 0 !important;
     color: #7c3aed !important;
     text-align: center !important;
+    text-shadow: 1px 1px 2px rgba(0,0,0,0.1) !important;
   }
 
   /* تحسين بيانات العامل والملخص المالي */
@@ -74,27 +76,35 @@
     font-size: 11px !important;
   }
 
-  /* تحسين لوحات المعلومات */
+  /* تحسين لوحات المعلومات المدمجة */
   .enhanced-worker-account-report > div:nth-child(2) {
-    margin-bottom: 0.5cm !important;
-    gap: 0.5cm !important;
+    margin-bottom: 0.3cm !important;
+    gap: 0.2cm !important;
+    background: linear-gradient(135deg, #f3f4f6, #e5e7eb) !important;
+    padding: 8px !important;
+    border-radius: 8px !important;
+    border: 2px solid #9ca3af !important;
   }
 
   .enhanced-worker-account-report > div:nth-child(2) > div {
-    padding: 0.6cm !important;
-    border-radius: 8px !important;
-    border: 2px solid #ccc !important;
+    padding: 8px !important;
+    border-radius: 6px !important;
+    border: 1px solid #d1d5db !important;
+    background: #ffffff !important;
   }
 
   .enhanced-worker-account-report > div:nth-child(2) h3 {
-    font-size: 22px !important;
-    margin-bottom: 0.4cm !important;
+    font-size: 16px !important;
+    margin-bottom: 6px !important;
     font-weight: bold !important;
+    text-align: center !important;
+    padding: 4px !important;
+    border-radius: 4px !important;
   }
 
   .enhanced-worker-account-report > div:nth-child(2) div[style*="grid"] {
-    font-size: 18px !important;
-    gap: 0.3cm !important;
+    font-size: 14px !important;
+    gap: 6px !important;
   }
 
   /* تحسين الجداول */

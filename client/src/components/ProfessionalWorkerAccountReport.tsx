@@ -40,10 +40,7 @@ export const ProfessionalWorkerAccountReport = ({
     summary = {}
   } = data || {};
 
-  // Debug: log data to console
-  console.log('Worker Account Report Data:', { worker, attendance, transfers, summary });
-  console.log('Attendance length:', attendance.length);
-  console.log('Transfers length:', transfers.length);
+
 
   const totalEarned = attendance.reduce((sum: number, record: any) => {
     const amount = Number(record.dailyWage) || 0;
@@ -79,57 +76,57 @@ export const ProfessionalWorkerAccountReport = ({
       }}
     >
       
-      {/* Enhanced Professional Header */}
-      <div className="enhanced-header preserve-color" style={{padding: '8mm 0', margin: '0 0 4mm 0', border: '3px solid #7c3aed', borderRadius: '8px'}}>
-        <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 12mm'}}>
-          <div className="worker-info-badge" style={{width: '120px', height: '100px', background: 'linear-gradient(135deg, #7c3aed, #5b21b6)', color: 'white', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', boxShadow: '0 4px 12px rgba(0,0,0,0.2)'}}>
-            <User style={{width: '28px', height: '28px', marginBottom: '8px'}} />
-            <div style={{fontSize: '14px', fontWeight: 'bold', textAlign: 'center', lineHeight: '1.2'}}>كشف حساب</div>
-            <div style={{fontSize: '12px', opacity: '0.9', marginTop: '2px'}}>العامل</div>
+      {/* Compact Professional Header */}
+      <div className="enhanced-header preserve-color" style={{padding: '3mm 0', margin: '0 0 2mm 0', border: '3px solid #7c3aed', borderRadius: '8px', background: 'linear-gradient(135deg, #f8fafc, #e2e8f0)'}}>
+        <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 8mm'}}>
+          {/* Left Section - Main Title */}
+          <div style={{flex: '2', textAlign: 'center'}}>
+            <h1 style={{fontSize: '28px', fontWeight: 'bold', margin: '0', color: '#7c3aed', textShadow: '1px 1px 2px rgba(0,0,0,0.1)'}}>كشف حساب العامل التفصيلي والشامل</h1>
           </div>
-          <div className="text-center flex-1" style={{margin: '0 20px'}}>
-            <h1 style={{fontSize: '36px', fontWeight: 'bold', margin: '8px 0', color: '#7c3aed', textShadow: '2px 2px 4px rgba(0,0,0,0.1)'}}>كشف حساب العامل التفصيلي والشامل</h1>
-            <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '25px', marginTop: '10px', flexWrap: 'wrap'}}>
-              <div style={{display: 'flex', alignItems: 'center', gap: '8px', background: '#f1f5f9', padding: '8px 16px', borderRadius: '20px', border: '2px solid #e2e8f0'}}>
-                <Building2 style={{width: '18px', height: '18px', color: '#64748b'}} />
-                <span style={{fontSize: '17px', fontWeight: '600', color: '#1e293b'}}>مشروع: {selectedProject?.name || 'غير محدد'}</span>
-              </div>
-              <div style={{display: 'flex', alignItems: 'center', gap: '8px', background: '#f1f5f9', padding: '8px 16px', borderRadius: '20px', border: '2px solid #e2e8f0'}}>
-                <User style={{width: '18px', height: '18px', color: '#64748b'}} />
-                <span style={{fontSize: '17px', fontWeight: '600', color: '#1e293b'}}>العامل: {worker.name || 'غير محدد'}</span>
-              </div>
-              <div style={{display: 'flex', alignItems: 'center', gap: '8px', background: '#f1f5f9', padding: '8px 16px', borderRadius: '20px', border: '2px solid #e2e8f0'}}>
-                <Calendar style={{width: '18px', height: '18px', color: '#64748b'}} />
-                <span style={{fontSize: '17px', fontWeight: '600', color: '#1e293b'}}>من {formatDate(dateFrom)} إلى {formatDate(dateTo)}</span>
-              </div>
+          
+          {/* Right Section - Report Info & Year */}
+          <div style={{display: 'flex', alignItems: 'center', gap: '8mm'}}>
+            <div style={{textAlign: 'center', background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white', padding: '8px 12px', borderRadius: '8px', minWidth: '80px'}}>
+              <div style={{fontSize: '20px', fontWeight: 'bold', lineHeight: '1'}}>2025</div>
+            </div>
+            <div style={{textAlign: 'center', background: 'linear-gradient(135deg, #10b981, #059669)', color: 'white', padding: '8px 12px', borderRadius: '8px', minWidth: '100px'}}>
+              <div style={{fontSize: '12px', marginBottom: '2px'}}>تقرير رقم</div>
+              <div style={{fontSize: '16px', fontWeight: 'bold'}}>{workerId?.slice(-4) || 'a076'}</div>
             </div>
           </div>
-          <div className="report-badge" style={{width: '120px', height: '100px', background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: 'white', borderRadius: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', boxShadow: '0 4px 12px rgba(0,0,0,0.2)'}}>
-            <FileSpreadsheet style={{width: '24px', height: '24px', marginBottom: '6px'}} />
-            <div style={{fontSize: '12px', fontWeight: 'bold', textAlign: 'center', lineHeight: '1.2'}}>تقرير رقم</div>
-            <div style={{fontSize: '16px', fontWeight: 'bold'}}>{workerId?.slice(-4) || '0001'}</div>
+        </div>
+        
+        {/* Compact Info Row */}
+        <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '15px', marginTop: '8px', padding: '0 8mm', flexWrap: 'wrap'}}>
+          <div style={{display: 'flex', alignItems: 'center', gap: '6px', background: '#ffffff', padding: '4px 12px', borderRadius: '15px', border: '1px solid #d1d5db', fontSize: '14px'}}>
+            <Building2 style={{width: '14px', height: '14px', color: '#6b7280'}} />
+            <span style={{fontWeight: '600', color: '#374151'}}>مشروع: {selectedProject?.name || 'غير محدد'}</span>
+          </div>
+          <div style={{display: 'flex', alignItems: 'center', gap: '6px', background: '#ffffff', padding: '4px 12px', borderRadius: '15px', border: '1px solid #d1d5db', fontSize: '14px'}}>
+            <Calendar style={{width: '14px', height: '14px', color: '#6b7280'}} />
+            <span style={{fontWeight: '600', color: '#374151'}}>من {formatDate(dateFrom)} إلى {formatDate(dateTo)}</span>
           </div>
         </div>
       </div>
 
-      {/* Worker Information Panel */}
-      <div style={{display: 'flex', gap: '4mm', marginBottom: '4mm'}}>
-        <div style={{flex: '1', background: 'linear-gradient(135deg, #ddd6fe, #c4b5fd)', padding: '15px', borderRadius: '8px', border: '2px solid #7c3aed'}}>
-          <h3 style={{fontSize: '20px', fontWeight: 'bold', color: '#5b21b6', marginBottom: '10px', textAlign: 'center'}}>بيانات العامل الأساسية</h3>
-          <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '18px'}}>
+      {/* Compact Worker Information in Single Row */}
+      <div style={{display: 'flex', gap: '2mm', marginBottom: '3mm', background: 'linear-gradient(135deg, #f3f4f6, #e5e7eb)', padding: '8px', borderRadius: '8px', border: '2px solid #9ca3af'}}>
+        <div style={{flex: '1', background: '#ffffff', padding: '8px', borderRadius: '6px', border: '1px solid #d1d5db'}}>
+          <h3 style={{fontSize: '16px', fontWeight: 'bold', color: '#374151', marginBottom: '6px', textAlign: 'center', background: '#f9fafb', padding: '4px', borderRadius: '4px'}}>بيانات العامل الأساسية</h3>
+          <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', fontSize: '14px'}}>
             <div><strong>الاسم:</strong> {worker.name || 'غير محدد'}</div>
             <div><strong>النوع:</strong> {worker.type || 'غير محدد'}</div>
             <div><strong>الراتب اليومي:</strong> {formatCurrency(Number(worker.dailyWage) || 0)}</div>
             <div><strong>الوظيفة:</strong> {worker.type || 'عامل'}</div>
           </div>
         </div>
-        <div style={{flex: '1', background: 'linear-gradient(135deg, #ecfdf5, #d1fae5)', padding: '15px', borderRadius: '8px', border: '2px solid #10b981'}}>
-          <h3 style={{fontSize: '20px', fontWeight: 'bold', color: '#047857', marginBottom: '10px', textAlign: 'center'}}>الملخص المالي الإجمالي</h3>
-          <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '18px'}}>
+        <div style={{flex: '1', background: '#ffffff', padding: '8px', borderRadius: '6px', border: '1px solid #d1d5db'}}>
+          <h3 style={{fontSize: '16px', fontWeight: 'bold', color: '#047857', marginBottom: '6px', textAlign: 'center', background: '#f0fdf4', padding: '4px', borderRadius: '4px'}}>الملخص المالي الإجمالي</h3>
+          <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', fontSize: '14px'}}>
             <div><strong>إجمالي المكتسب:</strong> <span style={{color: '#059669', fontWeight: 'bold'}}>{formatCurrency(totalEarned)}</span></div>
             <div><strong>إجمالي المدفوع:</strong> <span style={{color: '#0d9488', fontWeight: 'bold'}}>{formatCurrency(totalPaid)}</span></div>
             <div><strong>إجمالي المحول:</strong> <span style={{color: '#dc2626', fontWeight: 'bold'}}>{formatCurrency(totalTransferred)}</span></div>
-            <div><strong>الرصيد الحالي:</strong> <span style={{color: currentBalance >= 0 ? '#059669' : '#dc2626', fontWeight: 'bold', fontSize: '18px'}}>{formatCurrency(currentBalance)}</span></div>
+            <div><strong>الرصيد الحالي:</strong> <span style={{color: currentBalance >= 0 ? '#059669' : '#dc2626', fontWeight: 'bold'}}>{formatCurrency(currentBalance)}</span></div>
           </div>
         </div>
       </div>
