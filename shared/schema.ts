@@ -216,6 +216,59 @@ export const workerMiscExpenses = pgTable("worker_misc_expenses", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+// Print Settings Table (إعدادات الطباعة)
+export const printSettings = pgTable('print_settings', {
+  id: varchar('id').primaryKey().default(sql`gen_random_uuid()`),
+  reportType: text('report_type').notNull().default('worker_statement'),
+  name: text('name').notNull(),
+  
+  // Page settings
+  pageSize: text('page_size').notNull().default('A4'),
+  pageOrientation: text('page_orientation').notNull().default('portrait'),
+  marginTop: decimal('margin_top', { precision: 5, scale: 2 }).notNull().default('15.00'),
+  marginBottom: decimal('margin_bottom', { precision: 5, scale: 2 }).notNull().default('15.00'),
+  marginLeft: decimal('margin_left', { precision: 5, scale: 2 }).notNull().default('15.00'),
+  marginRight: decimal('margin_right', { precision: 5, scale: 2 }).notNull().default('15.00'),
+  
+  // Font settings
+  fontFamily: text('font_family').notNull().default('Arial'),
+  fontSize: integer('font_size').notNull().default(12),
+  headerFontSize: integer('header_font_size').notNull().default(16),
+  tableFontSize: integer('table_font_size').notNull().default(10),
+  
+  // Color settings
+  headerBackgroundColor: text('header_background_color').notNull().default('#1e40af'),
+  headerTextColor: text('header_text_color').notNull().default('#ffffff'),
+  tableHeaderColor: text('table_header_color').notNull().default('#1e40af'),
+  tableRowEvenColor: text('table_row_even_color').notNull().default('#ffffff'),
+  tableRowOddColor: text('table_row_odd_color').notNull().default('#f9fafb'),
+  tableBorderColor: text('table_border_color').notNull().default('#000000'),
+  
+  // Table settings
+  tableBorderWidth: integer('table_border_width').notNull().default(1),
+  tableCellPadding: integer('table_cell_padding').notNull().default(3),
+  tableColumnWidths: text('table_column_widths').notNull().default('[8,12,10,30,12,15,15,12]'),
+  
+  // Visual elements settings
+  showHeader: boolean('show_header').notNull().default(true),
+  showLogo: boolean('show_logo').notNull().default(true),
+  showProjectInfo: boolean('show_project_info').notNull().default(true),
+  showWorkerInfo: boolean('show_worker_info').notNull().default(true),
+  showAttendanceTable: boolean('show_attendance_table').notNull().default(true),
+  showTransfersTable: boolean('show_transfers_table').notNull().default(true),
+  showSummary: boolean('show_summary').notNull().default(true),
+  showSignatures: boolean('show_signatures').notNull().default(true),
+  
+  // System settings
+  isDefault: boolean('is_default').notNull().default(false),
+  isActive: boolean('is_active').notNull().default(true),
+  userId: text('user_id'),
+  
+  // Timestamps
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
 // Schema definitions for forms
 export const insertProjectSchema = createInsertSchema(projects).omit({ id: true, createdAt: true });
 export const insertWorkerSchema = createInsertSchema(workers).omit({ id: true, createdAt: true });
@@ -237,6 +290,7 @@ export const insertWorkerMiscExpenseSchema = createInsertSchema(workerMiscExpens
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, updatedAt: true, lastLogin: true });
 export const insertSupplierSchema = createInsertSchema(suppliers).omit({ id: true, createdAt: true });
 export const insertSupplierPaymentSchema = createInsertSchema(supplierPayments).omit({ id: true, createdAt: true });
+export const insertPrintSettingsSchema = createInsertSchema(printSettings).omit({ id: true, createdAt: true, updatedAt: true });
 
 // Type definitions
 export type Project = typeof projects.$inferSelect;
@@ -255,6 +309,7 @@ export type WorkerMiscExpense = typeof workerMiscExpenses.$inferSelect;
 export type User = typeof users.$inferSelect;
 export type Supplier = typeof suppliers.$inferSelect;
 export type SupplierPayment = typeof supplierPayments.$inferSelect;
+export type PrintSettings = typeof printSettings.$inferSelect;
 
 export type InsertProject = z.infer<typeof insertProjectSchema>;
 export type InsertWorker = z.infer<typeof insertWorkerSchema>;
@@ -272,65 +327,4 @@ export type InsertWorkerMiscExpense = z.infer<typeof insertWorkerMiscExpenseSche
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertSupplier = z.infer<typeof insertSupplierSchema>;
 export type InsertSupplierPayment = z.infer<typeof insertSupplierPaymentSchema>;
-
-// Print Settings table (جدول إعدادات الطباعة للكشوف)
-export const printSettings = pgTable("print_settings", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  reportType: text("report_type").notNull(), // "worker_statement", "expense_report", etc.
-  name: text("name").notNull(), // اسم الإعداد
-  
-  // إعدادات الصفحة
-  pageSize: text("page_size").notNull().default("A4"), // A4, A3, Letter
-  pageOrientation: text("page_orientation").notNull().default("portrait"), // portrait, landscape
-  marginTop: decimal("margin_top", { precision: 5, scale: 2 }).notNull().default("15"), // بالمليمتر
-  marginBottom: decimal("margin_bottom", { precision: 5, scale: 2 }).notNull().default("15"),
-  marginLeft: decimal("margin_left", { precision: 5, scale: 2 }).notNull().default("15"),
-  marginRight: decimal("margin_right", { precision: 5, scale: 2 }).notNull().default("15"),
-  
-  // إعدادات الخطوط
-  fontFamily: text("font_family").notNull().default("Arial"),
-  fontSize: integer("font_size").notNull().default(12),
-  headerFontSize: integer("header_font_size").notNull().default(16),
-  tableFontSize: integer("table_font_size").notNull().default(10),
-  
-  // إعدادات الألوان
-  headerBackgroundColor: text("header_background_color").notNull().default("#1e40af"),
-  headerTextColor: text("header_text_color").notNull().default("#ffffff"),
-  tableHeaderColor: text("table_header_color").notNull().default("#1e40af"),
-  tableRowEvenColor: text("table_row_even_color").notNull().default("#ffffff"),
-  tableRowOddColor: text("table_row_odd_color").notNull().default("#f9fafb"),
-  tableBorderColor: text("table_border_color").notNull().default("#000000"),
-  
-  // إعدادات الجدول
-  tableBorderWidth: integer("table_border_width").notNull().default(1),
-  tableCellPadding: decimal("table_cell_padding", { precision: 5, scale: 2 }).notNull().default("3"),
-  tableColumnWidths: jsonb("table_column_widths"), // مصفوفة بعروض الأعمدة
-  
-  // إعدادات العناصر المرئية
-  showHeader: boolean("show_header").notNull().default(true),
-  showLogo: boolean("show_logo").notNull().default(true),
-  showProjectInfo: boolean("show_project_info").notNull().default(true),
-  showWorkerInfo: boolean("show_worker_info").notNull().default(true),
-  showAttendanceTable: boolean("show_attendance_table").notNull().default(true),
-  showTransfersTable: boolean("show_transfers_table").notNull().default(true),
-  showSummary: boolean("show_summary").notNull().default(true),
-  showSignatures: boolean("show_signatures").notNull().default(true),
-  
-  // معرف المستخدم (للإعدادات الشخصية)
-  userId: varchar("user_id").references(() => users.id),
-  isDefault: boolean("is_default").notNull().default(false),
-  isActive: boolean("is_active").notNull().default(true),
-  
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-// Insert schema for print settings
-export const insertPrintSettingsSchema = createInsertSchema(printSettings).omit({ 
-  id: true, 
-  createdAt: true, 
-  updatedAt: true 
-});
-
-export type PrintSettings = typeof printSettings.$inferSelect;
 export type InsertPrintSettings = z.infer<typeof insertPrintSettingsSchema>;
