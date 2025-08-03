@@ -241,14 +241,44 @@ export function applyPrintSettings(reportType: string, customSettings?: PrintSet
 }
 
 /**
- * دالة للطباعة مع تطبيق الإعدادات تلقائياً
+ * دالة للطباعة مع تطبيق الإعدادات تلقائياً - النظام الموحد
  * @param reportType نوع التقرير
  * @param delay تأخير قبل الطباعة (ميلي ثانية)
  * @param customSettings إعدادات مخصصة (اختيارية)
  */
 export function printWithSettings(reportType: string, delay: number = 500, customSettings?: any) {
+  // إضافة فئات CSS للطباعة إلى العناصر المناسبة
+  const prepareElementsForPrint = () => {
+    // البحث عن المحتوى الأساسي للتقرير
+    const reportElements = document.querySelectorAll(
+      '.worker-statement-preview, .enhanced-worker-account-report, .report-preview, .print-content'
+    );
+    
+    reportElements.forEach(element => {
+      element.classList.add('print-show', 'content-visibility-fix');
+    });
+
+    // إضافة فئات للجداول
+    const tables = document.querySelectorAll('table');
+    tables.forEach(table => {
+      table.classList.add('print-table');
+    });
+
+    // إضافة فئات للرؤوس
+    const headers = document.querySelectorAll('.print-header, .report-header, .enhanced-header');
+    headers.forEach(header => {
+      header.classList.add('print-show', 'page-break-avoid');
+    });
+
+    // إضافة فئات للملاخص
+    const summaries = document.querySelectorAll('.summary-section, .final-summary');
+    summaries.forEach(summary => {
+      summary.classList.add('print-show', 'page-break-avoid');
+    });
+  };
+
   if (customSettings) {
-    // تطبيق الإعدادات المخصصة فوراً
+    // تطبيق الإعدادات المخصصة
     const existingStyle = document.getElementById('dynamic-print-styles');
     if (existingStyle) {
       existingStyle.remove();
@@ -262,8 +292,20 @@ export function printWithSettings(reportType: string, delay: number = 500, custo
     applyPrintSettings(reportType);
   }
   
+  // إعداد العناصر للطباعة
+  prepareElementsForPrint();
+  
   setTimeout(() => {
+    console.log('🖨️ بدء الطباعة مع النظام الموحد...');
     window.print();
+    
+    // تنظيف ما بعد الطباعة
+    setTimeout(() => {
+      const reportElements = document.querySelectorAll('.print-show');
+      reportElements.forEach(element => {
+        element.classList.remove('print-show', 'content-visibility-fix', 'page-break-avoid');
+      });
+    }, 1000);
   }, delay);
 }
 

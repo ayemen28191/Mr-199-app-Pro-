@@ -100,9 +100,9 @@ export function ReportRenderer({ reportType, className = "", printSettings: pass
     };
 
     return (
-      <div className="worker-statement-preview" style={containerStyle}>
+      <div className="worker-statement-preview print-content print-show" style={containerStyle}>
         {printSettings?.showHeader !== false && (
-          <div className="print-header text-center p-4 mb-4" style={headerStyle}>
+          <div className="print-header report-header text-center p-4 mb-4 page-break-avoid" style={headerStyle}>
             <h1 className="text-xl font-bold">كشف حساب العامل</h1>
             <h2 className="text-lg">شركة الإنشاءات المتقدمة</h2>
             <p className="text-sm">المملكة العربية السعودية</p>
@@ -110,7 +110,7 @@ export function ReportRenderer({ reportType, className = "", printSettings: pass
         )}
 
         {printSettings?.showProjectInfo !== false && (
-          <div className="project-info grid grid-cols-2 gap-4 mb-4 p-3 bg-gray-50 rounded">
+          <div className="project-info grid grid-cols-2 gap-4 mb-4 p-3 bg-gray-50 rounded page-break-avoid">
             <div>
             <h3 className="font-semibold mb-2 text-blue-800">معلومات المشروع:</h3>
             <p className="text-sm"><strong>اسم المشروع:</strong> {project.name}</p>
@@ -127,7 +127,7 @@ export function ReportRenderer({ reportType, className = "", printSettings: pass
         )}
 
         {printSettings?.showAttendanceTable !== false && (
-          <table className="print-table w-full border-collapse mb-4" style={tableHeaderStyle}>
+          <table className="print-table report-table w-full border-collapse mb-4" style={tableHeaderStyle}>
           <thead>
             <tr className="bg-blue-600 text-white">
               <th className="border p-2">التاريخ</th>
@@ -184,7 +184,7 @@ export function ReportRenderer({ reportType, className = "", printSettings: pass
         )}
 
         {printSettings?.showSummary !== false && (
-          <div className="summary-section p-4 bg-green-50 rounded mb-4">
+          <div className="summary-section final-summary p-4 bg-green-50 rounded mb-4 page-break-avoid">
           <h3 className="font-semibold text-green-800 mb-3">الملخص النهائي:</h3>
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
@@ -193,25 +193,25 @@ export function ReportRenderer({ reportType, className = "", printSettings: pass
             </div>
             <div>
               <p><strong>إجمالي الحوالات:</strong> 500 ر.ي</p>
-              <p className="text-lg font-bold text-green-700"><strong>الرصيد النهائي:</strong> {5 * worker.dailyWage - 500} ر.ي</p>
+              <p className="balance-final text-lg font-bold text-green-700"><strong>الرصيد النهائي:</strong> {5 * worker.dailyWage - 500} ر.ي</p>
             </div>
           </div>
           </div>
         )}
 
         {printSettings?.showSignatures !== false && (
-          <div className="signatures-section grid grid-cols-3 gap-4 mt-6">
-          <div className="text-center">
+          <div className="signatures-section grid grid-cols-3 gap-4 mt-6 page-break-avoid">
+          <div className="text-center signature-box">
             <div className="h-16 border-b-2 border-gray-400 mb-2"></div>
-            <p className="text-sm font-semibold">توقيع العامل</p>
+            <p className="text-sm font-semibold signature-label">توقيع العامل</p>
           </div>
-          <div className="text-center">
+          <div className="text-center signature-box">
             <div className="h-16 border-b-2 border-gray-400 mb-2"></div>
-            <p className="text-sm font-semibold">توقيع المحاسب</p>
+            <p className="text-sm font-semibold signature-label">توقيع المحاسب</p>
           </div>
-          <div className="text-center">
+          <div className="text-center signature-box">
             <div className="h-16 border-b-2 border-gray-400 mb-2"></div>
-            <p className="text-sm font-semibold">توقيع المسؤول</p>
+            <p className="text-sm font-semibold signature-label">توقيع المسؤول</p>
           </div>
           </div>
         )}

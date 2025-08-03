@@ -1,0 +1,486 @@
+/* نظام الطباعة الموحد - حلول شاملة لجميع التقارير */
+/* يحل جميع مشاكل الصفحات الفارغة والتنسيقات المتضاربة */
+
+/* ======================================
+   إعدادات الصفحة الأساسية
+   ====================================== */
+
+@page {
+  size: A4 portrait;
+  margin: 10mm 8mm 10mm 8mm;
+  counter-increment: page;
+}
+
+/* ======================================
+   إعدادات الطباعة الموحدة
+   ====================================== */
+
+@media print {
+  /* إعادة تعيين شاملة لضمان عدم التعارض */
+  * {
+    box-sizing: border-box !important;
+  }
+
+  /* إخفاء عناصر الواجهة فقط - ليس كل شيء */
+  .no-print,
+  nav,
+  .sidebar,
+  .header-controls,
+  .mobile-sticky-header,
+  .print\:hidden,
+  button:not(.print-show),
+  .toast-container,
+  .dropdown-menu,
+  .modal-backdrop,
+  .card-header:not(.print-show),
+  .tabs:not(.print-show),
+  .form-controls:not(.print-show) {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  /* إظهار المحتوى المطلوب للطباعة */
+  .print-content,
+  .print-show,
+  .report-preview,
+  .worker-statement-preview,
+  .enhanced-worker-account-report {
+    display: block !important;
+    visibility: visible !important;
+    position: static !important;
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    color: black !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+
+  /* إعدادات الجسم الأساسي */
+  html, body {
+    width: 100% !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    color: black !important;
+    font-family: 'Arial', sans-serif !important;
+    font-size: 12pt !important;
+    line-height: 1.4 !important;
+    direction: rtl !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* إعدادات الحاويات الرئيسية */
+  .container,
+  .main-content,
+  .report-container {
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 15px !important;
+    background: white !important;
+    color: black !important;
+  }
+
+  /* ======================================
+     تنسيقات الرؤوس والعناوين
+     ====================================== */
+
+  .print-header,
+  .report-header,
+  .enhanced-header {
+    display: block !important;
+    width: 100% !important;
+    text-align: center !important;
+    margin-bottom: 15px !important;
+    padding: 10px !important;
+    background: #1e40af !important;
+    color: white !important;
+    border-radius: 5px !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    page-break-inside: avoid !important;
+  }
+
+  .print-header h1,
+  .report-header h1,
+  .enhanced-header h1 {
+    font-size: 20pt !important;
+    margin: 0 0 5px 0 !important;
+    font-weight: bold !important;
+    color: white !important;
+  }
+
+  .print-header h2,
+  .report-header h2,
+  .enhanced-header h2 {
+    font-size: 16pt !important;
+    margin: 0 0 3px 0 !important;
+    color: white !important;
+  }
+
+  .print-header p,
+  .report-header p,
+  .enhanced-header p {
+    font-size: 12pt !important;
+    margin: 0 !important;
+    color: white !important;
+  }
+
+  /* ======================================
+     تنسيقات الجداول الموحدة
+     ====================================== */
+
+  table,
+  .report-table,
+  .enhanced-summary-table,
+  .print-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin: 10px 0 !important;
+    page-break-inside: auto !important;
+    font-size: 10pt !important;
+    direction: rtl !important;
+  }
+
+  /* رؤوس الجداول */
+  table th,
+  .report-table th,
+  .enhanced-summary-table th,
+  .print-table th {
+    background: #1e40af !important;
+    color: white !important;
+    border: 1px solid #000 !important;
+    padding: 8px 6px !important;
+    text-align: center !important;
+    font-weight: bold !important;
+    font-size: 9pt !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* خلايا الجداول */
+  table td,
+  .report-table td,
+  .enhanced-summary-table td,
+  .print-table td {
+    border: 1px solid #666 !important;
+    padding: 6px 4px !important;
+    text-align: center !important;
+    font-size: 9pt !important;
+    line-height: 1.3 !important;
+    vertical-align: middle !important;
+    word-wrap: break-word !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* تلوين الصفوف المتناوبة */
+  table tbody tr:nth-child(even) td,
+  .report-table tbody tr:nth-child(even) td,
+  .enhanced-summary-table tbody tr:nth-child(even) td {
+    background: #f8f9fa !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  table tbody tr:nth-child(odd) td,
+  .report-table tbody tr:nth-child(odd) td,
+  .enhanced-summary-table tbody tr:nth-child(odd) td {
+    background: white !important;
+  }
+
+  /* ======================================
+     تنسيقات المعلومات والملاخص
+     ====================================== */
+
+  .project-info,
+  .worker-info,
+  .supplier-info {
+    display: flex !important;
+    justify-content: space-between !important;
+    margin: 10px 0 !important;
+    padding: 8px !important;
+    background: #f1f5f9 !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 4px !important;
+    font-size: 10pt !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    page-break-inside: avoid !important;
+  }
+
+  .summary-section,
+  .final-summary {
+    margin: 15px 0 !important;
+    padding: 10px !important;
+    background: #f0f9ff !important;
+    border: 2px solid #0ea5e9 !important;
+    border-radius: 5px !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    page-break-inside: avoid !important;
+  }
+
+  .summary-section h2,
+  .final-summary h2 {
+    font-size: 14pt !important;
+    margin: 0 0 8px 0 !important;
+    color: #0369a1 !important;
+    text-align: center !important;
+  }
+
+  .balance-final {
+    font-size: 16pt !important;
+    font-weight: bold !important;
+    text-align: center !important;
+    padding: 8px !important;
+    margin: 5px 0 !important;
+    border: 2px solid #059669 !important;
+    background: #ecfdf5 !important;
+    color: #059669 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* ======================================
+     إعدادات كسر الصفحات
+     ====================================== */
+
+  .page-break-before {
+    page-break-before: always !important;
+  }
+
+  .page-break-after {
+    page-break-after: always !important;
+  }
+
+  .page-break-avoid {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* منع كسر العناصر المهمة */
+  .print-header,
+  .report-header,
+  .enhanced-header,
+  .summary-section,
+  .final-summary,
+  .signatures-section {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* ======================================
+     تنسيقات التوقيعات والختم
+     ====================================== */
+
+  .signatures-section {
+    margin-top: 20px !important;
+    padding: 15px !important;
+    border-top: 2px solid #000 !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: flex-end !important;
+    page-break-inside: avoid !important;
+  }
+
+  .signature-box {
+    text-align: center !important;
+    min-width: 120px !important;
+    border-bottom: 1px solid #000 !important;
+    padding-bottom: 2px !important;
+    margin: 0 10px !important;
+  }
+
+  .signature-label {
+    font-size: 9pt !important;
+    margin-top: 5px !important;
+    font-weight: bold !important;
+  }
+
+  /* ======================================
+     تنسيقات النصوص والألوان
+     ====================================== */
+
+  .text-green-600,
+  .text-green-700,
+  .text-green-800 {
+    color: #059669 !important;
+  }
+
+  .text-red-600,
+  .text-red-700,
+  .text-red-800 {
+    color: #dc2626 !important;
+  }
+
+  .text-blue-600,
+  .text-blue-700,
+  .text-blue-800 {
+    color: #2563eb !important;
+  }
+
+  /* إزالة الخلفيات المتدرجة في الطباعة إلا إذا كانت محددة */
+  .bg-gradient-to-r:not(.preserve-gradient),
+  .bg-gradient-to-l:not(.preserve-gradient),
+  .bg-gradient-to-t:not(.preserve-gradient),
+  .bg-gradient-to-b:not(.preserve-gradient) {
+    background: white !important;
+  }
+
+  /* ======================================
+     تحسينات خاصة للتقارير المختلفة
+     ====================================== */
+
+  /* كشف حساب العامل المحسن */
+  .enhanced-worker-account-report {
+    font-size: 11pt !important;
+    line-height: 1.3 !important;
+  }
+
+  .enhanced-worker-account-report .enhanced-summary-table {
+    margin-bottom: 10px !important;
+  }
+
+  .enhanced-worker-account-report .enhanced-summary-table th {
+    padding: 10px 6px !important;
+    font-size: 10pt !important;
+  }
+
+  .enhanced-worker-account-report .enhanced-summary-table td {
+    padding: 8px 6px !important;
+    font-size: 9pt !important;
+  }
+
+  /* التقارير اليومية */
+  .daily-report {
+    font-size: 10pt !important;
+  }
+
+  .daily-report table th {
+    font-size: 8pt !important;
+    padding: 6px 4px !important;
+  }
+
+  .daily-report table td {
+    font-size: 8pt !important;
+    padding: 5px 3px !important;
+  }
+
+  /* ======================================
+     إعدادات الاستجابة للطباعة
+     ====================================== */
+
+  /* للجداول الكبيرة - تقليل الخطوط تلقائياً */
+  .large-table {
+    font-size: 8pt !important;
+  }
+
+  .large-table th {
+    font-size: 7pt !important;
+    padding: 4px 3px !important;
+  }
+
+  .large-table td {
+    font-size: 7pt !important;
+    padding: 3px 2px !important;
+  }
+
+  /* للمحتوى الطويل - السماح بالكسر */
+  .long-content {
+    page-break-inside: auto !important;
+  }
+
+  /* ======================================
+     إصلاحات المشاكل الشائعة
+     ====================================== */
+
+  /* إصلاح مشكلة الصفحات الفارغة */
+  .empty-page-fix {
+    min-height: 0 !important;
+    height: auto !important;
+  }
+
+  /* إصلاح مشكلة اختفاء المحتوى */
+  .content-visibility-fix {
+    visibility: visible !important;
+    display: block !important;
+    opacity: 1 !important;
+  }
+
+  /* إصلاح مشكلة التداخلات */
+  .overlap-fix {
+    position: static !important;
+    z-index: auto !important;
+    transform: none !important;
+  }
+
+  /* ======================================
+     تخصيصات نهائية للمتصفحات
+     ====================================== */
+
+  /* إصلاحات خاصة بكروم */
+  @media print and (-webkit-min-device-pixel-ratio: 0) {
+    body {
+      -webkit-print-color-adjust: exact !important;
+    }
+  }
+
+  /* إصلاحات خاصة بفايرفوكس */
+  @-moz-document url-prefix() {
+    body {
+      print-color-adjust: exact !important;
+    }
+  }
+}
+
+/* ======================================
+   فئات مساعدة للطباعة
+   ====================================== */
+
+/* فئات للإظهار/الإخفاء في الطباعة */
+.print-only {
+  display: none;
+}
+
+@media print {
+  .print-only {
+    display: block !important;
+  }
+  
+  .screen-only {
+    display: none !important;
+  }
+}
+
+/* فئات لتنسيق سريع */
+.print-center {
+  text-align: center !important;
+}
+
+.print-right {
+  text-align: right !important;
+}
+
+.print-left {
+  text-align: left !important;
+}
+
+.print-bold {
+  font-weight: bold !important;
+}
+
+.print-large {
+  font-size: 14pt !important;
+}
+
+.print-small {
+  font-size: 8pt !important;
+}

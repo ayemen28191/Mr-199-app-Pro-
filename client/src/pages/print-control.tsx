@@ -132,9 +132,15 @@ export default function PrintControlPage() {
     }
   }, []);
 
-  // تطبيق إعدادات الطباعة على التقرير المنقول
+  // تطبيق إعدادات الطباعة على التقرير المنقول - النظام الموحد
   const applySettingsToReport = useCallback(() => {
     if (!reportContext?.html || !currentSettings) return;
+    
+    // تطبيق النظام الموحد للطباعة مع الفئات المحسنة
+    const reportElements = document.querySelectorAll('.report-preview, .print-content');
+    reportElements.forEach(element => {
+      element.classList.add('print-show', 'content-visibility-fix');
+    });
     
     // إنشاء CSS مخصص وتطبيقه على التقرير المنقول
     const styleId = 'transferred-report-styles';
