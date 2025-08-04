@@ -437,6 +437,21 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  // دالة مساعدة لجلب عمليات ترحيل الأموال لمشروع معين في تاريخ محدد
+  async getProjectFundTransfersForDate(projectId: string, date: string): Promise<ProjectFundTransfer[]> {
+    const transfers = await db.select().from(projectFundTransfers)
+      .where(
+        and(
+          or(
+            eq(projectFundTransfers.fromProjectId, projectId),
+            eq(projectFundTransfers.toProjectId, projectId)
+          ),
+          eq(projectFundTransfers.transferDate, date)
+        )
+      );
+    return transfers;
+  }
+
   // Project Fund Transfers (ترحيل الأموال بين المشاريع)
   async getProjectFundTransfers(fromProjectId?: string, toProjectId?: string, date?: string): Promise<ProjectFundTransfer[]> {
     const conditions = [];
@@ -923,6 +938,7 @@ export class DatabaseStorage implements IStorage {
       // تشغيل جميع الاستعلامات بشكل متوازي لتحسين الأداء
       const [
         fundTransfers,
+        projectTransfers,
         workerAttendanceRecords,
         materialPurchases,
         transportationExpenses,
@@ -931,6 +947,7 @@ export class DatabaseStorage implements IStorage {
         carriedForwardAmount
       ] = await Promise.all([
         this.getFundTransfers(projectId, date),
+        this.getProjectFundTransfersForDate(projectId, date),
         this.getWorkerAttendance(projectId, date),
         this.getMaterialPurchases(projectId, date),
         this.getTransportationExpenses(projectId, date),
@@ -940,6 +957,11 @@ export class DatabaseStorage implements IStorage {
       ]);
 
       const totalFundTransfers = fundTransfers.reduce((sum, t) => sum + parseFloat(t.amount), 0);
+      
+      // حساب صافي عمليات ترحيل الأموال (الواردة - الصادرة)
+      const incomingTransfers = projectTransfers.filter(t => t.toProjectId === projectId).reduce((sum, t) => sum + parseFloat(t.amount), 0);
+      const outgoingTransfers = projectTransfers.filter(t => t.fromProjectId === projectId).reduce((sum, t) => sum + parseFloat(t.amount), 0);
+      const netProjectTransfers = incomingTransfers - outgoingTransfers;
       // استخدام المبلغ المدفوع بدلاً من إجمالي الأجر اليومي
       const totalWorkerWages = workerAttendanceRecords.reduce((sum, a) => sum + parseFloat(a.paidAmount || '0'), 0);
       const totalMaterialCosts = materialPurchases.reduce((sum, p) => sum + parseFloat(p.totalAmount), 0);
@@ -947,7 +969,7 @@ export class DatabaseStorage implements IStorage {
       const totalWorkerTransferCosts = workerTransfers.reduce((sum, t) => sum + parseFloat(t.amount), 0);
       const totalWorkerMiscCosts = workerMiscExpenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
 
-      const totalIncome = carriedForwardAmount + totalFundTransfers;
+      const totalIncome = carriedForwardAmount + totalFundTransfers + netProjectTransfers;
       const totalExpenses = totalWorkerWages + totalMaterialCosts + totalTransportationCosts + totalWorkerTransferCosts + totalWorkerMiscCosts;
       const remainingBalance = totalIncome - totalExpenses;
 
@@ -955,6 +977,7 @@ export class DatabaseStorage implements IStorage {
       console.log(`📊 Balance calculation for ${date}:`);
       console.log(`   Carried Forward: ${carriedForwardAmount}`);
       console.log(`   Fund Transfers: ${totalFundTransfers}`);
+      console.log(`   Project Transfers (Net): ${netProjectTransfers} (In: ${incomingTransfers}, Out: ${outgoingTransfers})`);
       console.log(`   Worker Wages: ${totalWorkerWages}`);
       console.log(`   Material Costs: ${totalMaterialCosts}`);
       console.log(`   Transportation: ${totalTransportationCosts}`);

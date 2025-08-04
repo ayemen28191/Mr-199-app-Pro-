@@ -122,16 +122,25 @@ export default function DailyExpenses() {
     enabled: !!selectedProjectId,
   });
 
-  // جلب عمليات ترحيل الأموال بين المشاريع
-  const { data: projectTransfers = [] } = useQuery<ProjectFundTransfer[]>({
+  // جلب عمليات ترحيل الأموال بين المشاريع مع أسماء المشاريع
+  const { data: projectTransfers = [] } = useQuery<(ProjectFundTransfer & { fromProjectName?: string; toProjectName?: string })[]>({
     queryKey: ["/api/project-fund-transfers", selectedProjectId, selectedDate],
     queryFn: async () => {
       const response = await apiRequest("GET", `/api/project-fund-transfers?date=${selectedDate}`);
-      return Array.isArray(response) ? response.filter((transfer: ProjectFundTransfer) => 
+      if (!Array.isArray(response)) return [];
+      
+      const filteredTransfers = response.filter((transfer: ProjectFundTransfer) => 
         transfer.fromProjectId === selectedProjectId || transfer.toProjectId === selectedProjectId
-      ) : [];
+      );
+      
+      // إضافة أسماء المشاريع
+      return filteredTransfers.map((transfer: ProjectFundTransfer) => ({
+        ...transfer,
+        fromProjectName: projects.find(p => p.id === transfer.fromProjectId)?.name || 'مشروع غير معروف',
+        toProjectName: projects.find(p => p.id === transfer.toProjectId)?.name || 'مشروع غير معروف'
+      }));
     },
-    enabled: !!selectedProjectId && showProjectTransfers,
+    enabled: !!selectedProjectId && showProjectTransfers && projects.length > 0,
   });
 
   const { data: todayFundTransfers = [], refetch: refetchFundTransfers, isLoading: fundTransfersLoading } = useQuery({
@@ -997,9 +1006,9 @@ export default function DailyExpenses() {
                           <div className="flex items-center justify-between mb-1">
                             <span className="text-sm font-medium">
                               {transfer.toProjectId === selectedProjectId ? (
-                                <span className="text-green-700">أموال واردة من مشروع آخر</span>
+                                <span className="text-green-700">أموال واردة من: {transfer.fromProjectName}</span>
                               ) : (
-                                <span className="text-red-700">أموال صادرة إلى مشروع آخر</span>
+                                <span className="text-red-700">أموال صادرة إلى: {transfer.toProjectName}</span>
                               )}
                             </span>
                             <span className={`font-bold arabic-numbers ${
