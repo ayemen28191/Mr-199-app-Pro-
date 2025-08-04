@@ -807,11 +807,53 @@ export default function Reports() {
         });
       }
 
+      // نثريات العمال المحسنة - الإضافة الجديدة
+      if (data.workerMiscExpenses && data.workerMiscExpenses.length > 0) {
+        // قسم فرعي لنثريات العمال
+        worksheet.mergeCells(`A${currentRow}:I${currentRow}`);
+        const miscExpensesSectionCell = worksheet.getCell(`A${currentRow}`);
+        miscExpensesSectionCell.value = '💰 نثريات العمال';
+        miscExpensesSectionCell.font = { name: 'Arial', size: 12, bold: true };
+        miscExpensesSectionCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        miscExpensesSectionCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFa855f7' } };
+        worksheet.getRow(currentRow).height = 30;
+        currentRow++;
+
+        data.workerMiscExpenses.forEach((expense: any) => {
+          const row = worksheet.getRow(currentRow);
+          
+          row.getCell(1).value = expenseNumber++;
+          row.getCell(2).value = Number(expense.amount) || 0;
+          row.getCell(3).value = expense.workerName || expense.worker?.name || 'عامل غير محدد';
+          row.getCell(4).value = 'نثريات';
+          row.getCell(5).value = expense.description || 'نثريات متنوعة للعامل';
+          row.getCell(6).value = 'إدارة المشروع';
+          row.getCell(7).value = '-';
+          row.getCell(8).value = formatDate(expense.date || dailyReportDate);
+          row.getCell(9).value = expense.notes || 'نثريات عامل';
+          
+          // تنسيق خلايا نثريات العمال
+          for (let i = 1; i <= 9; i++) {
+            const cell = row.getCell(i);
+            cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            cell.border = {
+              top: { style: 'thin' }, left: { style: 'thin' },
+              bottom: { style: 'thin' }, right: { style: 'thin' }
+            };
+            if (i === 2) cell.numFmt = '#,##0.00';
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFf3e8ff' } };
+          }
+          worksheet.getRow(currentRow).height = 35; // زيادة ارتفاع الصف
+          currentRow++;
+        });
+      }
+
       // إجمالي المصروفات المحسن
       const totalExpenses = (data.workerAttendance?.reduce((sum: number, a: any) => sum + (Number(a.paidAmount) || 0), 0) || 0) +
                            (data.materialPurchases?.reduce((sum: number, p: any) => sum + (Number(p.totalAmount) || 0), 0) || 0) +
                            (data.transportationExpenses?.reduce((sum: number, e: any) => sum + (Number(e.amount) || 0), 0) || 0) +
-                           (data.outgoingProjectTransfers?.reduce((sum: number, t: any) => sum + (Number(t.amount) || 0), 0) || 0);
+                           (data.outgoingProjectTransfers?.reduce((sum: number, t: any) => sum + (Number(t.amount) || 0), 0) || 0) +
+                           (data.workerMiscExpenses?.reduce((sum: number, e: any) => sum + (Number(e.amount) || 0), 0) || 0);
       
       const totalExpensesRow = worksheet.getRow(currentRow);
       worksheet.mergeCells(`A${currentRow}:A${currentRow}`);
@@ -861,8 +903,9 @@ export default function Reports() {
     const totalWorkerCosts = (data.workerAttendance?.reduce((sum: number, a: any) => sum + (Number(a.paidAmount) || 0), 0) || 0);
     const totalMaterialCosts = (data.materialPurchases?.reduce((sum: number, p: any) => sum + (Number(p.totalAmount) || 0), 0) || 0);
     const totalTransportCosts = (data.transportationExpenses?.reduce((sum: number, e: any) => sum + (Number(e.amount) || 0), 0) || 0);
+    const totalWorkerMiscCosts = (data.workerMiscExpenses?.reduce((sum: number, e: any) => sum + (Number(e.amount) || 0), 0) || 0);
     const totalOutgoingTransfers = Number(data.totalOutgoingTransfers) || Number(data.totalTransferCosts) || 0;
-    const totalExpensesFinal = totalWorkerCosts + totalMaterialCosts + totalTransportCosts + totalOutgoingTransfers;
+    const totalExpensesFinal = totalWorkerCosts + totalMaterialCosts + totalTransportCosts + totalWorkerMiscCosts + totalOutgoingTransfers;
     
     const remainingBalance = totalIncome - totalExpensesFinal;
 
@@ -875,6 +918,7 @@ export default function Reports() {
       { label: 'أجور العمال والموظفين', value: totalWorkerCosts, type: 'expense' },
       { label: 'مشتريات المواد والأدوات', value: totalMaterialCosts, type: 'expense' },
       { label: 'مصاريف النقل والمواصلات', value: totalTransportCosts, type: 'expense' },
+      { label: 'نثريات العمال', value: totalWorkerMiscCosts, type: 'expense' },
       { label: 'تحويلات صادرة لمشاريع أخرى', value: totalOutgoingTransfers, type: 'expense' },
       { label: 'إجمالي المصروفات', value: totalExpensesFinal, type: 'total-expense' },
       { label: 'الرصيد المتبقي النهائي', value: remainingBalance, type: 'balance' }
