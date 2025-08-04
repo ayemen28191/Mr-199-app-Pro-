@@ -383,7 +383,7 @@ export default function ProjectTransfers() {
                             </div>
                             
                             <div className="font-medium text-gray-800 text-xs">
-                              {new Date(transfer.transferDate).toLocaleDateString('ar-SA')}
+                              {new Date(transfer.transferDate).toLocaleDateString('en-GB')}
                             </div>
                             <div className="font-bold text-green-600 text-sm">
                               {parseFloat(transfer.amount).toLocaleString()} ر.ي
