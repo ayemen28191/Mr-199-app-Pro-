@@ -111,8 +111,8 @@ export default function WorkersFilterReport() {
 
         // Fetch worker attendance data for the period
         const attendanceResponse = await apiRequest(
-          `/api/worker-attendance-filter?workerId=${workerId}&dateFrom=${dateFrom}&dateTo=${dateTo}`,
-          { method: 'GET' }
+          'GET',
+          `/api/worker-attendance-filter?workerId=${workerId}&dateFrom=${dateFrom}&dateTo=${dateTo}`
         );
 
         const attendanceRecords: WorkerAttendance[] = attendanceResponse || [];

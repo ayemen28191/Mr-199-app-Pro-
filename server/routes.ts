@@ -366,9 +366,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/worker-attendance-filter", async (req, res) => {
     try {
       const { workerId, dateFrom, dateTo } = req.query;
+      console.log("Worker filter request:", { workerId, dateFrom, dateTo });
       
       if (!workerId) {
         return res.status(400).json({ message: "Worker ID is required" });
+      }
+
+      if (!dateFrom || !dateTo) {
+        return res.status(400).json({ message: "Date range is required" });
       }
 
       // Get worker attendance across all projects for the worker
@@ -376,22 +381,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const allAttendance = [];
       
       for (const project of projects) {
-        // Get attendance for each day in the date range
-        const fromDate = new Date(dateFrom as string);
-        const toDate = new Date(dateTo as string);
-        
-        for (let d = new Date(fromDate); d <= toDate; d.setDate(d.getDate() + 1)) {
-          const dateStr = d.toISOString().split('T')[0];
-          const dayAttendance = await storage.getWorkerAttendance(project.id, dateStr);
-          const workerDayAttendance = dayAttendance.filter((attendance: any) => attendance.workerId === workerId);
-          allAttendance.push(...workerDayAttendance);
+        try {
+          // Get attendance for each day in the date range
+          const fromDate = new Date(dateFrom as string);
+          const toDate = new Date(dateTo as string);
+          
+          for (let d = new Date(fromDate); d <= toDate; d.setDate(d.getDate() + 1)) {
+            const dateStr = d.toISOString().split('T')[0];
+            try {
+              const dayAttendance = await storage.getWorkerAttendance(project.id, dateStr);
+              const workerDayAttendance = dayAttendance.filter((attendance: any) => attendance.workerId === workerId);
+              allAttendance.push(...workerDayAttendance);
+            } catch (dayError) {
+              // Skip days with no data
+              console.log(`No attendance data for ${dateStr} in project ${project.id}`);
+            }
+          }
+        } catch (projectError) {
+          console.error(`Error processing project ${project.id}:`, projectError);
         }
       }
 
+      console.log(`Found ${allAttendance.length} attendance records for worker ${workerId}`);
       res.json(allAttendance);
     } catch (error) {
       console.error("Error fetching worker attendance:", error);
-      res.status(500).json({ message: "Error fetching worker attendance" });
+      res.status(500).json({ message: "Error fetching worker attendance", error: error instanceof Error ? error.message : 'Unknown error' });
     }
   });
 
