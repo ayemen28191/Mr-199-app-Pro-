@@ -817,6 +817,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         materialPurchases, 
         transportationExpenses,
         workerTransfers,
+        workerMiscExpenses,
         dailySummary,
         incomingProjectTransfers,
         outgoingProjectTransfers
@@ -826,6 +827,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         storage.getMaterialPurchases(projectId, date, date),
         storage.getTransportationExpenses(projectId, date),
         storage.getFilteredWorkerTransfers(projectId, date),
+        storage.getWorkerMiscExpenses(projectId, date),
         storage.getDailyExpenseSummary(projectId, date),
         storage.getProjectFundTransfers(undefined, projectId, date), // الأموال الواردة
         storage.getProjectFundTransfers(projectId, undefined, date) // الأموال الصادرة
@@ -837,6 +839,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`  - Material purchases: ${materialPurchases.length}`);
       console.log(`  - Transportation expenses: ${transportationExpenses.length}`);
       console.log(`  - Worker transfers: ${workerTransfers.length}`);
+      console.log(`  - Worker misc expenses: ${workerMiscExpenses.length}`);
       console.log(`  - Incoming project transfers: ${incomingProjectTransfers.length}`);
       console.log(`  - Outgoing project transfers: ${outgoingProjectTransfers.length}`);
 
@@ -853,12 +856,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const totalMaterialCosts = materialPurchases.reduce((sum, p) => sum + parseFloat(p.totalAmount), 0);
       const totalTransportCosts = transportationExpenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
       const totalTransferCosts = workerTransfers.reduce((sum, t) => sum + parseFloat(t.amount.toString()), 0);
+      const totalWorkerMiscCosts = workerMiscExpenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
       
       // حساب إجماليات ترحيل الأموال بين المشاريع
       const totalIncomingTransfers = incomingProjectTransfers.reduce((sum, t) => sum + parseFloat(t.amount), 0);
       const totalOutgoingTransfers = outgoingProjectTransfers.reduce((sum, t) => sum + parseFloat(t.amount), 0);
       
-      const totalExpenses = totalWorkerCosts + totalMaterialCosts + totalTransportCosts + totalTransferCosts + totalOutgoingTransfers;
+      const totalExpenses = totalWorkerCosts + totalMaterialCosts + totalTransportCosts + totalTransferCosts + totalWorkerMiscCosts + totalOutgoingTransfers;
       const totalIncome = totalFundTransfers + totalIncomingTransfers;
       const remainingBalance = parseFloat(carriedForward.toString()) + totalIncome - totalExpenses;
 
@@ -907,6 +911,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
       );
 
+      // إضافة معلومات العمال لنثريات العمال (نثريات عامة للمشروع)
+      const workerMiscExpensesWithWorkers = workerMiscExpenses.map((expense) => ({
+        ...expense,
+        workerName: 'نثريات عامة', // نثريات العمال ليست مربوطة بعامل محدد
+        worker: null
+      }));
+
       // إضافة معلومات المشاريع لترحيل الأموال الواردة
       const incomingProjectTransfersWithProjects = await Promise.all(
         incomingProjectTransfers.map(async (transfer) => {
@@ -943,6 +954,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         materialPurchases: materialPurchasesWithMaterials,
         transportationExpenses: transportationExpensesWithWorkers,
         workerTransfers: workerTransfersWithWorkers,
+        workerMiscExpenses: workerMiscExpensesWithWorkers,
         incomingProjectTransfers: incomingProjectTransfersWithProjects,
         outgoingProjectTransfers: outgoingProjectTransfersWithProjects,
         totalIncomingTransfers,
@@ -955,6 +967,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           totalMaterialCosts,
           totalTransportCosts,
           totalTransferCosts,
+          totalWorkerMiscCosts,
           totalIncome,
           totalExpenses,
           remainingBalance
