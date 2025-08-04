@@ -742,13 +742,13 @@ export default function Reports() {
           
           row.getCell(1).value = expenseNumber++;
           row.getCell(2).value = Number(expense.amount) || 0;
-          row.getCell(3).value = expense.description || expense.vehicleType || 'نقل ومواصلات';
+          row.getCell(3).value = expense.description || 'نقل ومواصلات';
           row.getCell(4).value = 'مواصلات';
-          row.getCell(5).value = `${expense.details || expense.description || 'نقل مواد أو عمال'} | مسافة: ${expense.distance || 'غير محدد'} كم`;
-          row.getCell(6).value = expense.supplier || expense.driverName || 'شركة نقل';
-          row.getCell(7).value = expense.trips ? `${expense.trips} رحلة` : (expense.distance ? `${expense.distance} كم` : '-');
+          row.getCell(5).value = `${expense.description || 'نقل مواد أو عمال'}${expense.notes ? ' | ملاحظات: ' + expense.notes : ''}`;
+          row.getCell(6).value = 'شركة نقل';
+          row.getCell(7).value = '-';
           row.getCell(8).value = formatDate(expense.date || dailyReportDate);
-          row.getCell(9).value = `${expense.notes || 'مصاريف نقل'} | ${expense.route ? `الطريق: ${expense.route}` : ''}`;
+          row.getCell(9).value = expense.notes || 'مصاريف نقل';
           
           // تنسيق خلايا النقل
           for (let i = 1; i <= 9; i++) {
