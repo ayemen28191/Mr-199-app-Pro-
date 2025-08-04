@@ -172,35 +172,19 @@ export default function DailyExpensesReport() {
       
       console.log('📋 إنشاء Excel مع البيانات الفعلية');
       
-      // إضافة عنوان الشركة مع تنسيق محسن
-      worksheet.mergeCells('A1:K2');
+      // إضافة عنوان الشركة
+      worksheet.mergeCells('A1:J2');
       const companyHeader = worksheet.getCell('A1');
       companyHeader.value = `شركة الحاج عبدالرحمن علي الجهني وأولاده\nكشف المصروفات اليومية - ${selectedProject?.name}`;
       companyHeader.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-      companyHeader.font = { size: 16, bold: true, color: { argb: 'FF1F2937' } };
-      companyHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF3F4F6' } };
-      companyHeader.border = {
-        top: { style: 'thick', color: { argb: 'FF2563EB' } },
-        left: { style: 'thick', color: { argb: 'FF2563EB' } },
-        bottom: { style: 'thick', color: { argb: 'FF2563EB' } },
-        right: { style: 'thick', color: { argb: 'FF2563EB' } }
-      };
+      companyHeader.font = { size: 16, bold: true };
       
-      // إضافة معلومات الفترة مع تحسينات
-      worksheet.mergeCells('A3:K3');
+      // إضافة معلومات الفترة
+      worksheet.mergeCells('A3:J3');
       const periodHeader = worksheet.getCell('A3');
-      periodHeader.value = `الفترة: من ${formatDate(dateFrom)} إلى ${formatDate(dateTo)} | تاريخ التقرير: ${formatDate(new Date())} | إجمالي الأيام: ${reportData.length}`;
+      periodHeader.value = `الفترة: من ${formatDate(dateFrom)} إلى ${formatDate(dateTo)} | تاريخ التقرير: ${formatDate(new Date())}`;
       periodHeader.alignment = { horizontal: 'center', vertical: 'middle' };
-      periodHeader.font = { size: 12, bold: false, color: { argb: 'FF374151' } };
-      periodHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEEF2FF' } };
-      
-      // إضافة ملخص الإجماليات
-      worksheet.mergeCells('A4:K4');
-      const summaryHeader = worksheet.getCell('A4');
-      summaryHeader.value = `ملخص سريع: إجمالي الإيرادات ${formatCurrency(totalIncome)} | إجمالي المصروفات ${formatCurrency(totalExpenses)} | الرصيد النهائي ${formatCurrency(finalBalance)}`;
-      summaryHeader.alignment = { horizontal: 'center', vertical: 'middle' };
-      summaryHeader.font = { size: 11, bold: true, color: { argb: 'FF059669' } };
-      summaryHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFECFDF5' } };
+      periodHeader.font = { size: 12, bold: false };
       
       // إضافة رؤوس الأعمدة مع تنسيق
       const headers = [
@@ -209,20 +193,8 @@ export default function DailyExpensesReport() {
       ];
       
       const headerRow = worksheet.addRow(headers);
-      headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-      headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2563EB' } };
-      headerRow.height = 35;
-      
-      // تنسيق خاص لكل header
-      headerRow.eachCell((cell, colNumber) => {
-        cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-        cell.border = {
-          top: { style: 'medium', color: { argb: 'FF1E40AF' } },
-          left: { style: 'medium', color: { argb: 'FF1E40AF' } },
-          bottom: { style: 'medium', color: { argb: 'FF1E40AF' } },
-          right: { style: 'medium', color: { argb: 'FF1E40AF' } }
-        };
-      });
+      headerRow.font = { bold: true };
+      headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE3F2FD' } };
       
       // إضافة البيانات مع console.log لكل صف
       console.log('📊 بدء إضافة بيانات الأيام إلى Excel');
@@ -244,59 +216,53 @@ export default function DailyExpensesReport() {
         
         console.log(`📅 إضافة الصف ${index + 1}:`, rowData);
         const dataRow = worksheet.addRow(rowData);
-        dataRow.height = 30;
         
-        // تنسيق خاص للصفوف
+        // تنسيق الأرقام
+        for (let i = 2; i <= 11; i++) {
+          dataRow.getCell(i).numFmt = '#,##0.00';
+        }
+        
         dataRow.eachCell((cell, colNumber) => {
-          // تنسيق عام
-          cell.alignment = { horizontal: 'center', vertical: 'middle' };
+          cell.alignment = { 
+            horizontal: colNumber === 1 ? 'center' : 'right',
+            vertical: 'middle',
+            readingOrder: 'rtl'
+          };
+          cell.font = { name: 'Arial', size: 10 };
           cell.border = {
-            top: { style: 'thin', color: { argb: 'FFE5E7EB' } },
-            left: { style: 'thin', color: { argb: 'FFE5E7EB' } },
-            bottom: { style: 'thin', color: { argb: 'FFE5E7EB' } },
-            right: { style: 'thin', color: { argb: 'FFE5E7EB' } }
+            top: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            left: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            bottom: { style: 'thin', color: { argb: 'FFE2E8F0' } },
+            right: { style: 'thin', color: { argb: 'FFE2E8F0' } }
           };
           
-          // تنسيق الأرقام والألوان
-          if (colNumber === 1) {
-            // عمود التاريخ
-            cell.font = { bold: true, color: { argb: 'FF1F2937' } };
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF9FAFB' } };
-          } else if (colNumber >= 2 && colNumber <= 11) {
-            // الأعمدة الرقمية
+          // تلوين الصفوف بالتناوب
+          if (index % 2 === 0) {
+            cell.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: { argb: 'FFF8FAFC' }
+            };
+          }
+          
+          // تنسيق الأرقام
+          if (colNumber > 1) {
             cell.numFmt = '#,##0.00';
-            
-            // ألوان مختلفة للأعمدة
-            if (colNumber <= 3) {
-              // الرصيد المرحل والحوالات
-              cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFECFDF5' } };
-            } else if (colNumber >= 4 && colNumber <= 8) {
-              // المصروفات
-              cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEF2F2' } };
-            } else if (colNumber === 9) {
-              // الإيرادات
-              cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0FDF4' } };
-              cell.font = { bold: true, color: { argb: 'FF059669' } };
-            } else if (colNumber === 10) {
-              // المصروفات
-              cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEF2F2' } };
-              cell.font = { bold: true, color: { argb: 'FFDC2626' } };
-            } else if (colNumber === 11) {
-              // الرصيد المتبقي
-              const balance = Number(rowData[10]) || 0;
-              cell.fill = { type: 'pattern', pattern: 'solid', fgColor: balance >= 0 ? { argb: 'FFDBEAFE' } : { argb: 'FFFECACA' } };
-              cell.font = { bold: true, color: balance >= 0 ? { argb: 'FF1D4ED8' } : { argb: 'FFDC2626' } };
-            }
+          }
+          
+          // تلوين الخلايا حسب النوع
+          if (colNumber === 3 || colNumber === 9) { // الحوالات والإيرادات
+            cell.font = { ...cell.font, color: { argb: 'FF166534' } };
+          } else if (colNumber >= 4 && colNumber <= 8 || colNumber === 10) { // المصروفات
+            cell.font = { ...cell.font, color: { argb: 'FF92400E' } };
           }
         });
-        
-
       });
       
-      // إضافة صف الإجماليات مع تنسيق احترافي
+      // إضافة صف الإجماليات
       console.log('📊 إضافة صف الإجماليات');
       const totalsRowData = [
-        'الإجمــــالي',
+        'الإجمالي',
         '-',
         totalFundTransfers,
         totalWorkerWages,
@@ -309,75 +275,32 @@ export default function DailyExpensesReport() {
         finalBalance
       ];
       
+      console.log('📈 بيانات صف الإجماليات:', totalsRowData);
       const totalsRow = worksheet.addRow(totalsRowData);
-      totalsRow.height = 40;
       
       // تنسيق صف الإجماليات
-      totalsRow.eachCell((cell, colNumber) => {
-        cell.alignment = { horizontal: 'center', vertical: 'middle' };
-        cell.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F2937' } };
-        cell.border = {
-          top: { style: 'thick', color: { argb: 'FF374151' } },
-          left: { style: 'thick', color: { argb: 'FF374151' } },
-          bottom: { style: 'thick', color: { argb: 'FF374151' } },
-          right: { style: 'thick', color: { argb: 'FF374151' } }
-        };
-        
-        // تنسيق أرقام الإجماليات
-        if (colNumber >= 3 && colNumber <= 11) {
-          cell.numFmt = '#,##0.00';
-          
-          // ألوان مميزة للإجماليات
-          if (colNumber === 9) { // إجمالي الإيرادات
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF059669' } };
-          } else if (colNumber === 10) { // إجمالي المصروفات  
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDC2626' } };
-          } else if (colNumber === 11) { // الرصيد النهائي
-            const balance = Number(finalBalance) || 0;
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: balance >= 0 ? { argb: 'FF1D4ED8' } : { argb: 'FFDC2626' } };
-            cell.font = { ...cell.font, size: 14 };
-          }
-        }
-      });
-
+      totalsRow.font = { bold: true };
+      totalsRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFDE68A' } };
       
-      // تحديد عرض الأعمدة ليظهر النص بوضوح مع عرض محسن
+      // تنسيق أرقام الإجماليات
+      for (let i = 2; i <= 11; i++) {
+        totalsRow.getCell(i).numFmt = '#,##0.00';
+      }
+      
+      // تحديد عرض الأعمدة ليظهر النص بوضوح
       worksheet.columns = [
-        { width: 18 }, // التاريخ
-        { width: 16 }, // الرصيد المرحل
-        { width: 18 }, // الحوالات المالية
-        { width: 16 }, // أجور العمال
-        { width: 16 }, // شراء المواد
-        { width: 18 }, // أجور المواصلات
-        { width: 16 }, // حوالات العمال
-        { width: 16 }, // نثريات العمال
-        { width: 18 }, // إجمالي الإيرادات
-        { width: 18 }, // إجمالي المصروفات
-        { width: 18 }  // الرصيد المتبقي
+        { width: 15 }, // التاريخ
+        { width: 15 }, // الرصيد المرحل
+        { width: 15 }, // الحوالات المالية
+        { width: 15 }, // أجور العمال
+        { width: 15 }, // شراء المواد
+        { width: 15 }, // أجور المواصلات
+        { width: 15 }, // حوالات العمال
+        { width: 15 }, // نثريات العمال
+        { width: 15 }, // إجمالي الإيرادات
+        { width: 15 }, // إجمالي المصروفات
+        { width: 15 }  // الرصيد المتبقي
       ];
-      
-      // إعداد الطباعة لصفحة A4
-      worksheet.pageSetup = {
-        paperSize: 9, // A4
-        orientation: 'landscape',
-        fitToPage: true,
-        fitToWidth: 1,
-        fitToHeight: 0,
-        margins: {
-          left: 0.5, right: 0.5, top: 0.75, bottom: 0.75,
-          header: 0.3, footer: 0.3
-        }
-      };
-      
-      // إضافة تذييل احترافي
-      const footerRowNumber = worksheet.lastRow.number + 2;
-      worksheet.mergeCells(`A${footerRowNumber}:K${footerRowNumber}`);
-      const footerCell = worksheet.getCell(`A${footerRowNumber}`);
-      footerCell.value = `تم إنشاء هذا التقرير من نظام إدارة مشاريع البناء | ${new Date().toLocaleString('ar-SA')} | شركة الحاج عبدالرحمن علي الجهني وأولاده`;
-      footerCell.alignment = { horizontal: 'center', vertical: 'middle' };
-      footerCell.font = { size: 10, italic: true, color: { argb: 'FF6B7280' } };
-      footerCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF9FAFB' } };
       
       console.log('💾 حفظ ملف Excel');
       
