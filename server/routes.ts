@@ -362,6 +362,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Worker Attendance Filter (for Workers Filter Report)
+  app.get("/api/worker-attendance-filter", async (req, res) => {
+    try {
+      const { workerId, dateFrom, dateTo } = req.query;
+      
+      if (!workerId) {
+        return res.status(400).json({ message: "Worker ID is required" });
+      }
+
+      // Get worker attendance across all projects for the worker
+      const projects = await storage.getProjects();
+      const allAttendance = [];
+      
+      for (const project of projects) {
+        // Get attendance for each day in the date range
+        const fromDate = new Date(dateFrom as string);
+        const toDate = new Date(dateTo as string);
+        
+        for (let d = new Date(fromDate); d <= toDate; d.setDate(d.getDate() + 1)) {
+          const dateStr = d.toISOString().split('T')[0];
+          const dayAttendance = await storage.getWorkerAttendance(project.id, dateStr);
+          const workerDayAttendance = dayAttendance.filter((attendance: any) => attendance.workerId === workerId);
+          allAttendance.push(...workerDayAttendance);
+        }
+      }
+
+      res.json(allAttendance);
+    } catch (error) {
+      console.error("Error fetching worker attendance:", error);
+      res.status(500).json({ message: "Error fetching worker attendance" });
+    }
+  });
+
   // Materials
   app.get("/api/materials", async (req, res) => {
     try {

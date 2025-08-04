@@ -13,6 +13,7 @@ import ReportsFixed from "@/pages/reports";
 import ExcelStyleWorkerStatement from "@/pages/excel-style-worker-statement";
 import DailyExpensesReport from "@/pages/daily-expenses-report";
 import ExcelStyleDailyExpenses from "@/pages/excel-style-daily-expenses";
+import WorkersFilterReport from "@/pages/workers-filter-report";
 
 import ProjectsPage from "@/pages/projects";
 import WorkersPage from "@/pages/workers";
@@ -44,6 +45,7 @@ function Router() {
       <Route path="/excel-format-worker-statement" component={ExcelStyleWorkerStatement} />
       <Route path="/daily-expenses-report" component={DailyExpensesReport} />
       <Route path="/excel-style-daily-expenses" component={ExcelStyleDailyExpenses} />
+      <Route path="/workers-filter-report" component={WorkersFilterReport} />
       <Route path="/autocomplete-admin" component={AutocompleteAdminPage} />
 
       <Route path="/reports" component={ReportsFixed} />

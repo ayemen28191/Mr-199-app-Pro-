@@ -1056,6 +1056,34 @@ export default function Reports() {
                 </CardContent>
               </Card>
 
+              {/* Workers Filter Report */}
+              <Card className="group hover:shadow-2xl transition-all duration-500 bg-gradient-to-br from-teal-50 to-teal-100 border-0 rounded-2xl overflow-hidden">
+                <div className="bg-gradient-to-r from-teal-500 to-teal-600 p-6 text-white">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-white/20 rounded-xl">
+                      <Users className="h-8 w-8" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-bold">تقرير تصفية العمال</h3>
+                      <p className="text-teal-100">تقرير شامل للعمال المحددين مع الأيام والأجور والمتبقي</p>
+                    </div>
+                  </div>
+                </div>
+                <CardContent className="p-6 space-y-4">
+                  <div className="text-center p-4 bg-teal-50 rounded-xl border-2 border-teal-200">
+                    <p className="text-teal-700 font-medium mb-3">تقرير متقدم لتصفية العمال</p>
+                    <p className="text-sm text-teal-600 mb-4">يتيح لك اختيار العمال وفترة زمنية لإنشاء تقرير شامل يحتوي على الأجور اليومية، عدد الأيام، المبالغ المستحقة والمستلمة، والمتبقي لكل عامل</p>
+                    <Button 
+                      onClick={() => setLocation('/workers-filter-report')}
+                      className="w-full h-12 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white font-medium text-lg rounded-xl transform hover:scale-105 transition-all duration-300"
+                    >
+                      <Users className="h-5 w-5 mr-2" />
+                      إنشاء تقرير تصفية العمال
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
               {/* Project Summary Report */}
               <Card className="group hover:shadow-2xl transition-all duration-500 bg-gradient-to-br from-purple-50 to-purple-100 border-0 rounded-2xl overflow-hidden">
                 <div className="bg-gradient-to-r from-purple-500 to-purple-600 p-6 text-white">
