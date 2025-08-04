@@ -1,86 +1,22 @@
 # Arabic Construction Project Management System
 
-## Overview
-This is a comprehensive web application for managing construction projects in Arabic. It provides robust tools for expense tracking, worker management, supplier administration, and detailed reporting, emphasizing an accurate Arabic interface and responsive design. The system aims to streamline construction project oversight, financial management, and workforce administration.
+## Recent Updates (أغسطس 2025)
+- **تحسين شامل واحترافي لتقرير Excel المصروفات اليومية (4 أغسطس 2025):**
+  - **إعداد طباعة A4 محسن:** ضبط مقاسات وهوامش مثالية مع رأس وتذييل تلقائي
+  - **جداول احترافية محسنة:** تنسيق بصري متقدم مع ألوان متدرجة وحدود واضحة
+  - **عرض أعمدة ديناميكي:** تعديل العرض حسب المحتوى مع تفعيل التفاف النصوص
+  - **بيانات حقيقية شاملة:** عرض أسماء العمال، المهن، الموردين، والكميات الفعلية
+  - **أقسام منظمة ملونة:** تقسيم المصروفات (عمال، مواد، نقل) مع رموز مميزة
+  - **ملخص مالي متطور:** حسابات دقيقة مع ألوان تمييز للواردات والمصروفات
+  - **تنسيق أرقام احترافي:** عملة بفواصل آلاف وعشريين مع توسيط مثالي
+  - **أسماء ملفات ذكية:** تتضمن اسم المشروع والتاريخ للتنظيم الأمثل
+- **إصلاح نهائي لحقل carried_forward_amount (4 أغسطس 2025):**
+  - تم حل المشكلة الجذرية في قاعدة بيانات Supabase بنجاح كامل
+  - إضافة الحقل بمواصفات decimal(10,2) مع فهارس محسنة للأداء
+  - تحديث جميع السجلات الموجودة وإزالة الكود المؤقت
 
-### Recent Changes (أغسطس 2025)
-- **إصلاح نهائي لحقل carried_forward_amount في جدول daily_expense_summaries (4 أغسطس 2025):**
-  - **حل المشكلة الجذرية:** تم تنفيذ استعلام SQL شامل لإضافة الحقل المفقود في قاعدة بيانات Supabase
-  - **مواصفات الحقل:** decimal(10,2) مع قيمة افتراضية 0.00 وخاصية NOT NULL
-  - **تحديث السجلات الموجودة:** تم تحديث جميع السجلات الموجودة بالقيمة الافتراضية
-  - **إنشاء فهارس محسنة:** تم إضافة فهارس للبحث والفرز السريع
-  - **التحقق من السلامة:** تم التأكد من صحة هيكل الجدول وسلامة البيانات
-  - **إزالة الكود المؤقت:** تم إزالة كود الإصلاح المؤقت بعد حل المشكلة نهائياً
-  - **مكتمل:** النظام يعمل الآن بشكل مثالي مع جميع الحقول المطلوبة
-- **إصلاح جذري لمشكلة تصدير Excel للتقارير اليومية (4 أغسطس 2025):**
-  - **حل مشكلة الملفات الفارغة:** كان الزر "تصدير Excel" يستدعي دالة CSV بدلاً من Excel حقيقي
-  - **إنشاء دالة exportToExcel شاملة:** دالة جديدة تستخدم مكتبة ExcelJS لإنشاء ملفات Excel حقيقية
-  - **تصدير بيانات كاملة:** جداول منفصلة للعهدة والواردات، المصروفات، والملخص المالي
-  - **تنسيق احترافي:** عناوين ملونة، حدود الخلايا، تنسيق الأرقام، واتجاه الكتابة من اليمين لليسار
-  - **بيانات تفصيلية:** أجور العمال، مشتريات المواد، مصاريف النقل، مع جميع التفاصيل
-  - **ملخص مالي دقيق:** إجمالي الواردات، المصروفات، والرصيد المتبقي مع ألوان تمييزية
-  - **مكتمل:** النظام ينتج الآن ملفات Excel غنية بالبيانات وقابلة للقراءة والطباعة
-- **إصلاح شامل لعرض ترحيل الأموال بين المشاريع في التقارير اليومية (4 أغسطس 2025):**
-  - **تصحيح منطق العرض:** الأموال الواردة من المشاريع الأخرى تظهر في جدول العهدة (توريد)
-  - **تصحيح منطق العرض:** الأموال الصادرة للمشاريع الأخرى تظهر في جدول المصروفات (منصرف)
-  - **دمج البيانات بشكل صحيح:** إضافة `incomingProjectTransfers` و `outgoingProjectTransfers` في مكون التقرير
-  - **تحسين تصنيف العمليات:** إضافة عمود "النوع" لتمييز تحويلات العهدة عن ترحيل الأموال
-  - **تحسين الألوان والتمييز البصري:** ألوان مختلفة للأموال الواردة (أخضر/بنفسجي) والصادرة (أحمر)
-  - **إجمالي العمليات محدث:** يشمل الآن جميع أنواع ترحيل الأموال في إحصائيات التقرير
-  - **مكتمل:** النظام يعرض الآن ترحيل الأموال بشكل صحيح ومتكامل في التقارير اليومية
-- **تطوير كشف حساب العامل الشامل والمحسن (4 أغسطس 2025):**
-  - **إنشاء مكون EnhancedWorkerAccountStatement:** كشف حساب شامل يحتوي على جميع البيانات المطلوبة
-  - **بيانات شاملة:** اسم العامل، اسم المشروع، التاريخ، المتبقي، المستحق، المستلم، عدد أيام العمل، عدد ساعات العمل، والإجماليات
-  - **حسابات تفصيلية:** إجمالي المستحق، المستلم، المحول، المتبقي في الذمة، الرصيد لدى الشركة
-  - **جداول احترافية:** سجل الحضور والعمل التفصيلي مع جميع المعلومات المطلوبة
-  - **جدول الحوالات:** سجل الحوالات المرسلة مع جميع التفاصيل (رقم الحوالة، المرسل، المستلم، طريقة التحويل)
-  - **تصميم احترافي:** ملف CSS متخصص للطباعة مع تنسيق A4 واستخدام الألوان والخطوط المناسبة
-  - **تصدير Excel:** إمكانية تصدير الكشف إلى ملف Excel مع تنسيق احترافي وجداول منظمة
-  - **صفحة منفصلة:** `/enhanced-worker-statement` لعرض الكشف مع واجهة مستخدم سهلة
-  - **توقيعات واعتماد:** قسم التوقيعات للعامل والمحاسب والإدارة مع تذييل احترافي
-  - **مكتمل:** النظام يعمل بالكامل مع جميع الحسابات الصحيحة وتنسيق الطباعة المثالي
-- **إصلاح وتطوير نظام التكامل بين صفحة التقارير وإعدادات الطباعة (3 أغسطس 2025) - إصلاح نهائي:**
-  - **إصلاح آلية استقبال التقارير:** تطوير نظام متكامل لنقل التقارير من صفحة `/reports` إلى `/print-control`
-  - **تحسين حفظ البيانات:** إضافة نظام حفظ تلقائي لجميع أنواع التقارير في localStorage
-  - **حل مشكلة HTML الفارغ:** إصلاح مشكلة استقبال HTML فارغ بنقل منطق التقاط HTML لصفحة التقارير مباشرة
-  - **تحسين التوقيت:** زيادة مهلة انتظار التقاط HTML إلى 500ms لضمان اكتمال عملية الرندر
-  - **تبسيط PrintSettingsButton:** إزالة منطق التقاط HTML المعقد وجعله يعتمد على البيانات المحفوظة مسبقاً
-  - تحديث جميع دوال إنشاء التقارير لالتقاط HTML مباشرة بعد الرندر (كشف المصاريف، حساب العامل، مشتريات المواد، ملخص المشروع)
-  - **إضافة معلومات إضافية:** معرفات، أسماء العمال، فترات التقارير، ومعلومات المشاريع لكل نوع تقرير
-  - **مكتمل:** النظام يعمل الآن بالكامل مع نقل سلس للتقارير ومعاينة فورية مع HTML صحيح
-- **نظام التحكم الشامل في طباعة الكشوف (3 أغسطس 2025):**
-  - إنشاء صفحة تحكم متقدمة `/print-control` للتحكم الكامل في تنسيق الطباعة
-  - إضافة جدول `print_settings` لحفظ إعدادات الطباعة المخصصة لكل نوع كشف
-  - تطوير واجهة شاملة للتحكم في: حجم الصفحة، الهوامش، الخطوط، الألوان، الجداول، العناصر المرئية
-  - معاينة فورية مع إمكانية التبديل بين وضع الشاشة ووضع الطباعة
-  - نظام حفظ وتحميل الإعدادات مع إمكانية التصدير والاستيراد
-  - تطبيق CSS ديناميكي للطباعة مع تحديث فوري عند تغيير الإعدادات
-  - **نظام تحديد نوع التقرير المتطور:** إضافة قائمة اختيار لـ5 أنواع تقارير مختلفة مع إعدادات منفصلة لكل نوع
-  - **إصلاح شامل لـ API calls:** تصحيح استدعاءات apiRequest وحل مشاكل fetch methods
-  - **تحسين معالجة الأخطاء:** إضافة رسائل خطأ تفصيلية والتحقق من صحة البيانات
-  - **مكتمل:** النظام يعمل بالكامل مع دعم جميع أنواع التقارير وحفظ الإعدادات
-- **تطوير كشف حساب العامل الاحترافي المحسن الجديد (3 أغسطس 2025):**
-  - إنشاء مكون جديد `EnhancedWorkerAccountStatement` مع تصميم مضغوط لصفحة A4 واحدة
-  - تطوير ملف CSS متخصص `enhanced-worker-statement-print.css` للطباعة الاحترافية
-  - دمج جميع البيانات المطلوبة في تخطيط مدروس وأنيق
-  - إضافة إحصائيات العمل التفصيلية (أيام العمل، إجمالي الساعات، متوسط يومي)
-  - تحسين عرض الحوالات المرسلة في جدول منفصل ومنسق
-  - إضافة قسم التوقيعات والاعتماد للمستندات الرسمية
-  - تحسين الملخص النهائي مع حساب الرصيد الموجب/السالب
-  - ضبط أحجام النصوص والمسافات للاستفادة القصوى من مساحة الصفحة
-- **تحسين شامل لتقرير كشف حساب العمال المهني:**
-  - إضافة عنصر "المتبقي في ذمة الشركة" للملخص المالي
-  - تحسين ملف CSS للطباعة الاحترافية مع دعم الصفحات المتعددة
-  - تطوير نظام تكرار رؤوس الجداول تلقائياً في كل صفحة
-  - إضافة تعليقات توضيحية شاملة باللغة العربية لجميع أنماط CSS
-  - تحسين تذييل التقرير مع معلومات مفصلة عن النظام والعامل
-  - ضمان طباعة الألوان بدقة عالية مع `print-color-adjust: exact`
-  - تحسين التخطيط للغة العربية (RTL) والنصوص ثنائية الاتجاه
-- إصلاح جذري لمشكلة العمود المفقود `total_debt` في جدول الموردين
-- إنشاء استعلامات SQL شاملة لإصلاح هيكل قاعدة البيانات
-- حل جميع مشاكل type safety والأخطاء في runtime
-- استعادة وظائف إدارة مديونية الموردين بالكامل
-- تحسين معالجة الأخطاء وfunctions التحقق من صحة البيانات
+## Overview
+This is a comprehensive web application designed for managing construction projects in Arabic. Its primary purpose is to streamline project oversight, financial management, and workforce administration. Key capabilities include robust tools for expense tracking, worker management, supplier administration, and detailed reporting, all within an accurate Arabic interface and responsive design. The system aims to provide a complete solution for managing construction projects, from financial movements to workforce and supplier interactions.
 
 ## User Preferences
 - اللغة الأساسية: العربية
@@ -90,31 +26,24 @@ This is a comprehensive web application for managing construction projects in Ar
 - التواصل: جميع الردود والملاحظات والتوجيهات يجب أن تكون باللغة العربية حصرياً
 
 ## System Architecture
-The system is built as a comprehensive web application with distinct frontend and backend components.
+The system is built as a comprehensive web application with distinct frontend and backend components, prioritizing an Arabic-first, Right-to-Left (RTL) design.
 
 ### UI/UX Decisions
-The interface prioritizes simplicity and clarity, adhering to an Arabic-first, Right-to-Left (RTL) design. It is fully responsive to ensure compatibility across various devices. Key design elements include interactive tables with filtering and sorting, professional layouts for reports, and optimized print views.
+The interface emphasizes simplicity, clarity, and full responsiveness across devices. Design elements include interactive tables with filtering and sorting, professional layouts for reports, and optimized print views to ensure a user-friendly experience.
 
 ### Technical Implementations
-- **Project Management**: Create and track multiple construction projects.
-- **Worker Management**: Comprehensive system for worker registration, attendance, and wages.
-- **Expense Tracking**: Detailed recording of all expense types.
-- **Reporting System**: Comprehensive financial reports and detailed account statements.
-- **Advanced Autocompletion**: Smart suggestions based on previous usage.
-- **Advanced Reporting**: Professional reporting system for expenses and income, with filtering by project and date range. Includes detailed categories for expenses (labor, petty cash, purchases, wages, transportation, engineers) and income (trust transfers, transaction details). Outputs are interactive tables with automatic totals, Excel export, and print functionality.
-- **Supplier Management**: Full system for managing suppliers, including `total_debt` tracking, support for cash and deferred transactions, and linking to projects and payments. Includes supplier administration, account statements, and reports with smart autocompletion for contact persons, phone numbers, addresses, and payment terms (cash/30 days/60 days).
+- **Project Management**: Comprehensive tools for creating and tracking multiple construction projects.
+- **Worker Management**: A complete system for worker registration, attendance, wage calculation, and detailed account statements.
+- **Expense Tracking**: Detailed recording and categorization of all project-related expenses.
+- **Reporting System**: Comprehensive financial reports, daily summaries, and detailed account statements for various entities. This includes advanced reporting with filtering by project and date range, detailed expense categories (labor, petty cash, purchases, wages, transportation, engineers), and income tracking (trust transfers, transaction details). Reports offer interactive tables with automatic totals, Excel export, and print functionality.
+- **Supplier Management**: A full system for managing suppliers, including tracking `total_debt`, support for cash and deferred transactions, and linking payments to projects. Features supplier administration, account statements, and smart autocompletion for contact details and payment terms.
+- **Advanced Autocompletion**: Provides smart suggestions based on previous usage across various input fields.
 
 ### System Design Choices
-- **Performance Optimization**:
-    - **Database Indexing**: Optimized indexes (`idx_autocomplete_category_usage`, `idx_autocomplete_value_search`, `idx_autocomplete_cleanup`, `idx_autocomplete_stats`) to improve search, sorting, and cleanup operations.
-    - **Intelligent Cleanup System**: Automated deletion of old data (over 6 months and less than 3 uses) with daily and weekly scheduled maintenance.
-    - **Smart Data Limits**: Maximum of 100 suggestions per category, with automatic deletion of least-used suggestions.
-    - **Batch Operations**: Optimized batch deletions and insertions for hundreds of records, with operations split for large quantities (+100 records) and individual fallbacks.
-    - **Materialized Views**: Used for daily summaries and autocompletion statistics, updated synchronously every 6 hours with optimized indexes.
-    - **Database Performance**: Automatic VACUUM after large operations, monitoring table and index sizes, and automatic critical issue detection.
-- **Project Statistics**: Utilizes the latest daily summary for accurate balance calculation, incorporating carried-over amounts from previous days.
-- **Data Unification**: Standardized Gregorian calendar dates and Yemeni Rial (ر.ي) currency across the entire application for consistency in display and reporting.
-- **Administrative Interface**: Provides detailed system statistics, manual maintenance tools, and system health monitoring.
+- **Performance Optimization**: Achieved through optimized database indexing (for search, sorting, and cleanup), an intelligent cleanup system for old data, smart data limits for autocompletion suggestions, and batch operations for efficient data handling. Materialized views are used for daily summaries and autocompletion statistics, updated regularly. Database performance is further ensured by automatic VACUUM operations and monitoring.
+- **Project Statistics**: Accurate balance calculation based on the latest daily summaries, including carried-over amounts.
+- **Data Unification**: Standardized Gregorian calendar dates and Yemeni Rial (ر.ي) currency for consistency across the application.
+- **Administrative Interface**: Provides detailed system statistics, manual maintenance tools, and system health monitoring capabilities.
 
 ## External Dependencies
 - **Frontend**: React.js, TypeScript, Tailwind CSS, TanStack Query, Wouter
