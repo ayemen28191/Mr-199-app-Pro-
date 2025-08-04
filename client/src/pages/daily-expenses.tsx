@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { ArrowRight, Save, Users, Car, Plus, Edit2, Trash2 } from "lucide-react";
+import { ArrowRight, Save, Users, Car, Plus, Edit2, Trash2, ChevronDown, ChevronUp, ArrowLeftRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Package, DollarSign } from "lucide-react";
@@ -25,7 +25,8 @@ import type {
   Worker,
   InsertFundTransfer,
   InsertTransportationExpense,
-  InsertDailyExpenseSummary 
+  InsertDailyExpenseSummary,
+  ProjectFundTransfer 
 } from "@shared/schema";
 
 export default function DailyExpenses() {
@@ -33,6 +34,7 @@ export default function DailyExpenses() {
   const { selectedProjectId, selectProject } = useSelectedProject();
   const [selectedDate, setSelectedDate] = useState(getCurrentDate());
   const [carriedForward, setCarriedForward] = useState<string>("0");
+  const [showProjectTransfers, setShowProjectTransfers] = useState<boolean>(false);
   
   // Fund transfer form
   const [fundAmount, setFundAmount] = useState<string>("");
@@ -118,6 +120,18 @@ export default function DailyExpenses() {
       return Array.isArray(response) ? response : [];
     },
     enabled: !!selectedProjectId,
+  });
+
+  // جلب عمليات ترحيل الأموال بين المشاريع
+  const { data: projectTransfers = [] } = useQuery<ProjectFundTransfer[]>({
+    queryKey: ["/api/project-fund-transfers", selectedProjectId, selectedDate],
+    queryFn: async () => {
+      const response = await apiRequest("GET", `/api/project-fund-transfers?date=${selectedDate}`);
+      return Array.isArray(response) ? response.filter((transfer: ProjectFundTransfer) => 
+        transfer.from_project_id === selectedProjectId || transfer.to_project_id === selectedProjectId
+      ) : [];
+    },
+    enabled: !!selectedProjectId && showProjectTransfers,
   });
 
   const { data: todayFundTransfers = [], refetch: refetchFundTransfers, isLoading: fundTransfersLoading } = useQuery({
@@ -932,6 +946,96 @@ export default function DailyExpenses() {
           selectedDate={selectedDate} 
         />
       )}
+
+      {/* Project Fund Transfers Section */}
+      <Card className="bg-background border-border/50">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <ArrowLeftRight className="h-5 w-5 text-orange-600" />
+              <h3 className="text-lg font-semibold text-foreground">ترحيل الأموال بين المشاريع</h3>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowProjectTransfers(!showProjectTransfers)}
+              className="text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+            >
+              {showProjectTransfers ? (
+                <>
+                  <ChevronUp className="h-4 w-4 ml-1" />
+                  إخفاء
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="h-4 w-4 ml-1" />
+                  إظهار
+                </>
+              )}
+            </Button>
+          </div>
+
+          {showProjectTransfers && (
+            <div className="space-y-3">
+              {projectTransfers.length === 0 ? (
+                <div className="text-center text-muted-foreground py-4">
+                  لا توجد عمليات ترحيل أموال لهذا التاريخ
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {projectTransfers.map((transfer) => (
+                    <div 
+                      key={transfer.id} 
+                      className={`p-3 rounded border-r-4 ${
+                        transfer.to_project_id === selectedProjectId 
+                          ? 'bg-green-50 border-green-500' 
+                          : 'bg-red-50 border-red-500'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="text-sm font-medium">
+                              {transfer.to_project_id === selectedProjectId ? (
+                                <span className="text-green-700">أموال واردة من مشروع آخر</span>
+                              ) : (
+                                <span className="text-red-700">أموال صادرة إلى مشروع آخر</span>
+                              )}
+                            </span>
+                            <span className={`font-bold arabic-numbers ${
+                              transfer.to_project_id === selectedProjectId ? 'text-green-600' : 'text-red-600'
+                            }`}>
+                              {transfer.to_project_id === selectedProjectId ? '+' : '-'}{formatCurrency(transfer.amount)}
+                            </span>
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            <div>السبب: {transfer.transfer_reason || 'ترحيل أموال'}</div>
+                            {transfer.description && (
+                              <div className="mt-1">الوصف: {transfer.description}</div>
+                            )}
+                            <div className="mt-1">التاريخ: {formatDate(transfer.transfer_date)}</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              <div className="mt-4 pt-3 border-t">
+                <Button
+                  variant="outline"
+                  onClick={() => setLocation("/project-transfers")}
+                  className="w-full border-2 border-dashed border-orange-300 text-orange-600 hover:bg-orange-50"
+                >
+                  <ArrowLeftRight className="ml-2 h-4 w-4" />
+                  إدارة عمليات ترحيل الأموال
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Total Summary */}
       <ExpenseSummary

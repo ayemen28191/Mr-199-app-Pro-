@@ -275,12 +275,11 @@ export const projectFundTransfers = pgTable("project_fund_transfers", {
   fromProjectId: varchar("from_project_id").notNull().references(() => projects.id),
   toProjectId: varchar("to_project_id").notNull().references(() => projects.id),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
-  transferReason: text("transfer_reason").notNull(), // سبب الترحيل
+  description: text("description"), // وصف الترحيل
+  transferReason: text("transfer_reason"), // سبب الترحيل
   transferDate: text("transfer_date").notNull(), // YYYY-MM-DD format
-  approvedBy: text("approved_by").notNull(), // اسم المعتمد
-  notes: text("notes"),
-  status: text("status").notNull().default("completed"), // completed, pending, cancelled
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
 // Schema definitions for forms
