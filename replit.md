@@ -79,8 +79,7 @@ This is a comprehensive web application for managing construction projects in Ar
 - الاتجاه: من اليمين لليسار (RTL)
 - التركيز على البساطة والوضوح في الواجهة
 - التحسين المستمر للأداء
-- التواصل: جميع الردود والملاحظات يجب أن تكون باللغة العربية
-- التواصل: جميع الردود والملاحظات يجب أن تكون باللغة العربية
+- التواصل: جميع الردود والملاحظات والتوجيهات يجب أن تكون باللغة العربية حصرياً
 
 ## System Architecture
 The system is built as a comprehensive web application with distinct frontend and backend components.
