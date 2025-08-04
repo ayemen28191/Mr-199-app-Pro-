@@ -4,6 +4,14 @@
 This is a comprehensive web application for managing construction projects in Arabic. It provides robust tools for expense tracking, worker management, supplier administration, and detailed reporting, emphasizing an accurate Arabic interface and responsive design. The system aims to streamline construction project oversight, financial management, and workforce administration.
 
 ### Recent Changes (أغسطس 2025)
+- **إصلاح جذري لمشكلة تصدير Excel للتقارير اليومية (4 أغسطس 2025):**
+  - **حل مشكلة الملفات الفارغة:** كان الزر "تصدير Excel" يستدعي دالة CSV بدلاً من Excel حقيقي
+  - **إنشاء دالة exportToExcel شاملة:** دالة جديدة تستخدم مكتبة ExcelJS لإنشاء ملفات Excel حقيقية
+  - **تصدير بيانات كاملة:** جداول منفصلة للعهدة والواردات، المصروفات، والملخص المالي
+  - **تنسيق احترافي:** عناوين ملونة، حدود الخلايا، تنسيق الأرقام، واتجاه الكتابة من اليمين لليسار
+  - **بيانات تفصيلية:** أجور العمال، مشتريات المواد، مصاريف النقل، مع جميع التفاصيل
+  - **ملخص مالي دقيق:** إجمالي الواردات، المصروفات، والرصيد المتبقي مع ألوان تمييزية
+  - **مكتمل:** النظام ينتج الآن ملفات Excel غنية بالبيانات وقابلة للقراءة والطباعة
 - **إصلاح شامل لعرض ترحيل الأموال بين المشاريع في التقارير اليومية (4 أغسطس 2025):**
   - **تصحيح منطق العرض:** الأموال الواردة من المشاريع الأخرى تظهر في جدول العهدة (توريد)
   - **تصحيح منطق العرض:** الأموال الصادرة للمشاريع الأخرى تظهر في جدول المصروفات (منصرف)

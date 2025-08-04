@@ -368,6 +368,293 @@ export default function Reports() {
   };
 
   // Export Functions
+  const exportToExcel = async (data: any, filename: string) => {
+    if (!data) {
+      toast({
+        title: "تنبيه",
+        description: "لا توجد بيانات للتصدير",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      // تحديد نوع التقرير وإنشاء Excel مناسب
+      if (activeReportType === 'daily' || activeReportType === 'professional') {
+        await exportDailyReportToExcel(data, filename);
+      } else if (activeReportType === 'worker') {
+        await exportWorkerReportToExcel(data, filename);
+      } else {
+        // تصدير عام للبيانات الأخرى
+        await exportGenericDataToExcel(data, filename);
+      }
+      
+      toast({
+        title: "تم التصدير",
+        description: "تم تصدير التقرير إلى Excel بنجاح",
+      });
+    } catch (error) {
+      console.error('خطأ في التصدير:', error);
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء تصدير التقرير",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const exportDailyReportToExcel = async (data: any, filename: string) => {
+    const ExcelJS = await import('exceljs');
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('التقرير اليومي');
+
+    // إعداد اتجاه الكتابة من اليمين لليسار
+    worksheet.views = [{ rightToLeft: true }];
+
+    // إضافة العنوان الرئيسي
+    worksheet.mergeCells('A1:H1');
+    const titleCell = worksheet.getCell('A1');
+    titleCell.value = 'كشف المصروفات اليومية التفصيلي';
+    titleCell.font = { name: 'Arial', size: 16, bold: true };
+    titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1e40af' } };
+    titleCell.font.color = { argb: 'FFFFFFFF' };
+
+    // معلومات التقرير
+    worksheet.getCell('A3').value = 'المشروع:';
+    worksheet.getCell('B3').value = selectedProject?.name || 'غير محدد';
+    worksheet.getCell('D3').value = 'التاريخ:';
+    worksheet.getCell('E3').value = dailyReportDate;
+
+    // جدول العهدة والواردات
+    let currentRow = 6;
+    if (data.fundTransfers && data.fundTransfers.length > 0) {
+      
+      // عنوان جدول العهدة
+      worksheet.mergeCells(`A${currentRow}:D${currentRow}`);
+      const custodyHeader = worksheet.getCell(`A${currentRow}`);
+      custodyHeader.value = 'جدول العهدة والواردات';
+      custodyHeader.font = { name: 'Arial', size: 14, bold: true };
+      custodyHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF3b82f6' } };
+      custodyHeader.font.color = { argb: 'FFFFFFFF' };
+      currentRow++;
+
+      // رؤوس جدول العهدة
+      const custodyHeaders = ['المبلغ', 'المرسل', 'رقم الحوالة', 'النوع'];
+      custodyHeaders.forEach((header, index) => {
+        const cell = worksheet.getCell(currentRow, index + 1);
+        cell.value = header;
+        cell.font = { name: 'Arial', size: 11, bold: true };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFe3f2fd' } };
+        cell.border = {
+          top: { style: 'thin' }, left: { style: 'thin' },
+          bottom: { style: 'thin' }, right: { style: 'thin' }
+        };
+      });
+      currentRow++;
+
+      // بيانات العهدة
+      data.fundTransfers.forEach((transfer: any) => {
+        const row = worksheet.getRow(currentRow);
+        row.getCell(1).value = Number(transfer.amount) || 0;
+        row.getCell(2).value = transfer.senderName || '-';
+        row.getCell(3).value = transfer.transferNumber || '-';
+        row.getCell(4).value = transfer.transferType || 'نقدي';
+        
+        // تنسيق الخلايا
+        for (let i = 1; i <= 4; i++) {
+          const cell = row.getCell(i);
+          cell.border = {
+            top: { style: 'thin' }, left: { style: 'thin' },
+            bottom: { style: 'thin' }, right: { style: 'thin' }
+          };
+          if (i === 1) cell.numFmt = '#,##0'; // تنسيق الأرقام
+        }
+        currentRow++;
+      });
+
+      // إجمالي العهدة
+      const totalCustodyRow = worksheet.getRow(currentRow);
+      totalCustodyRow.getCell(1).value = data.fundTransfers.reduce((sum: number, t: any) => sum + (Number(t.amount) || 0), 0);
+      totalCustodyRow.getCell(2).value = 'الإجمالي';
+      totalCustodyRow.getCell(1).font = { bold: true };
+      totalCustodyRow.getCell(2).font = { bold: true };
+      totalCustodyRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFfffde7' } };
+      totalCustodyRow.getCell(2).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFfffde7' } };
+      currentRow += 3;
+    }
+
+    // جدول المصروفات
+    if ((data.workerAttendance && data.workerAttendance.length > 0) || 
+        (data.materialPurchases && data.materialPurchases.length > 0) ||
+        (data.transportationExpenses && data.transportationExpenses.length > 0)) {
+      
+      // عنوان جدول المصروفات
+      worksheet.mergeCells(`A${currentRow}:E${currentRow}`);
+      const expensesHeader = worksheet.getCell(`A${currentRow}`);
+      expensesHeader.value = 'جدول المصروفات';
+      expensesHeader.font = { name: 'Arial', size: 14, bold: true };
+      expensesHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFef4444' } };
+      expensesHeader.font.color = { argb: 'FFFFFFFF' };
+      currentRow++;
+
+      // رؤوس جدول المصروفات
+      const expenseHeaders = ['المبلغ', 'الوصف', 'النوع', 'التاريخ', 'ملاحظات'];
+      expenseHeaders.forEach((header, index) => {
+        const cell = worksheet.getCell(currentRow, index + 1);
+        cell.value = header;
+        cell.font = { name: 'Arial', size: 11, bold: true };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFfee2e2' } };
+        cell.border = {
+          top: { style: 'thin' }, left: { style: 'thin' },
+          bottom: { style: 'thin' }, right: { style: 'thin' }
+        };
+      });
+      currentRow++;
+
+      // أجور العمال
+      if (data.workerAttendance && data.workerAttendance.length > 0) {
+        data.workerAttendance.forEach((attendance: any) => {
+          const row = worksheet.getRow(currentRow);
+          row.getCell(1).value = Number(attendance.paidAmount) || 0;
+          row.getCell(2).value = attendance.workerName || 'عامل';
+          row.getCell(3).value = 'أجور عمال';
+          row.getCell(4).value = attendance.date || dailyReportDate;
+          row.getCell(5).value = attendance.workDescription || '-';
+          
+          // تنسيق الخلايا
+          for (let i = 1; i <= 5; i++) {
+            const cell = row.getCell(i);
+            cell.border = {
+              top: { style: 'thin' }, left: { style: 'thin' },
+              bottom: { style: 'thin' }, right: { style: 'thin' }
+            };
+            if (i === 1) cell.numFmt = '#,##0';
+          }
+          currentRow++;
+        });
+      }
+
+      // مشتريات المواد
+      if (data.materialPurchases && data.materialPurchases.length > 0) {
+        data.materialPurchases.forEach((purchase: any) => {
+          const row = worksheet.getRow(currentRow);
+          row.getCell(1).value = Number(purchase.totalAmount) || 0;
+          row.getCell(2).value = purchase.materialName || 'مادة';
+          row.getCell(3).value = 'شراء مواد';
+          row.getCell(4).value = purchase.purchaseDate || dailyReportDate;
+          row.getCell(5).value = `الكمية: ${purchase.quantity || 0}`;
+          
+          // تنسيق الخلايا
+          for (let i = 1; i <= 5; i++) {
+            const cell = row.getCell(i);
+            cell.border = {
+              top: { style: 'thin' }, left: { style: 'thin' },
+              bottom: { style: 'thin' }, right: { style: 'thin' }
+            };
+            if (i === 1) cell.numFmt = '#,##0';
+          }
+          currentRow++;
+        });
+      }
+
+      // مصاريف النقل
+      if (data.transportationExpenses && data.transportationExpenses.length > 0) {
+        data.transportationExpenses.forEach((expense: any) => {
+          const row = worksheet.getRow(currentRow);
+          row.getCell(1).value = Number(expense.amount) || 0;
+          row.getCell(2).value = expense.description || 'نقل';
+          row.getCell(3).value = 'مواصلات';
+          row.getCell(4).value = expense.date || dailyReportDate;
+          row.getCell(5).value = expense.notes || '-';
+          
+          // تنسيق الخلايا
+          for (let i = 1; i <= 5; i++) {
+            const cell = row.getCell(i);
+            cell.border = {
+              top: { style: 'thin' }, left: { style: 'thin' },
+              bottom: { style: 'thin' }, right: { style: 'thin' }
+            };
+            if (i === 1) cell.numFmt = '#,##0';
+          }
+          currentRow++;
+        });
+      }
+
+      // إجمالي المصروفات
+      const totalExpenses = (data.workerAttendance?.reduce((sum: number, a: any) => sum + (Number(a.paidAmount) || 0), 0) || 0) +
+                           (data.materialPurchases?.reduce((sum: number, p: any) => sum + (Number(p.totalAmount) || 0), 0) || 0) +
+                           (data.transportationExpenses?.reduce((sum: number, e: any) => sum + (Number(e.amount) || 0), 0) || 0);
+      
+      const totalExpensesRow = worksheet.getRow(currentRow);
+      totalExpensesRow.getCell(1).value = totalExpenses;
+      totalExpensesRow.getCell(2).value = 'إجمالي المصروفات';
+      totalExpensesRow.getCell(1).font = { bold: true };
+      totalExpensesRow.getCell(2).font = { bold: true };
+      totalExpensesRow.getCell(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFffe4e6' } };
+      totalExpensesRow.getCell(2).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFffe4e6' } };
+      currentRow += 2;
+    }
+
+    // الملخص المالي
+    const summaryStartRow = currentRow;
+    worksheet.mergeCells(`A${summaryStartRow}:C${summaryStartRow}`);
+    const summaryHeader = worksheet.getCell(`A${summaryStartRow}`);
+    summaryHeader.value = 'الملخص المالي';
+    summaryHeader.font = { name: 'Arial', size: 14, bold: true };
+    summaryHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF10b981' } };
+    summaryHeader.font.color = { argb: 'FFFFFFFF' };
+    currentRow++;
+
+    const totalIncome = (data.fundTransfers?.reduce((sum: number, t: any) => sum + (Number(t.amount) || 0), 0) || 0) + 
+                       (data.totalIncomingTransfers || 0) + (data.summary?.carriedForward || 0);
+    const totalExpenses = (data.totalWorkerCosts || 0) + (data.totalMaterialCosts || 0) + 
+                         (data.totalTransportCosts || 0) + (data.totalOutgoingTransfers || 0);
+    const remainingBalance = totalIncome - totalExpenses;
+
+    worksheet.getCell(`A${currentRow}`).value = 'إجمالي الواردات:';
+    worksheet.getCell(`B${currentRow}`).value = totalIncome;
+    worksheet.getCell(`B${currentRow}`).numFmt = '#,##0';
+    currentRow++;
+
+    worksheet.getCell(`A${currentRow}`).value = 'إجمالي المصروفات:';
+    worksheet.getCell(`B${currentRow}`).value = totalExpenses;
+    worksheet.getCell(`B${currentRow}`).numFmt = '#,##0';
+    currentRow++;
+
+    worksheet.getCell(`A${currentRow}`).value = 'الرصيد المتبقي:';
+    worksheet.getCell(`B${currentRow}`).value = remainingBalance;
+    worksheet.getCell(`B${currentRow}`).numFmt = '#,##0';
+    worksheet.getCell(`B${currentRow}`).font = { bold: true };
+    worksheet.getCell(`B${currentRow}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: remainingBalance >= 0 ? 'FFd1fae5' : 'FFfee2e2' } };
+
+    // ضبط عرض الأعمدة
+    worksheet.columns = [
+      { width: 15 }, { width: 25 }, { width: 15 }, { width: 15 }, { width: 20 }
+    ];
+
+    // حفظ الملف
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { 
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+    });
+    
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${filename}-${new Date().toISOString().split('T')[0]}.xlsx`;
+    link.click();
+  };
+
+  const exportWorkerReportToExcel = async (data: any, filename: string) => {
+    // دالة تصدير تقرير العامل (يمكن تطويرها لاحقاً)
+    console.log('تصدير تقرير العامل قيد التطوير');
+  };
+
+  const exportGenericDataToExcel = async (data: any, filename: string) => {
+    // دالة تصدير عامة للبيانات الأخرى
+    console.log('تصدير البيانات العامة قيد التطوير');
+  };
+
   const exportToCSV = (data: any[], filename: string) => {
     if (!data || data.length === 0) {
       toast({
@@ -1188,7 +1475,7 @@ export default function Reports() {
                 </CardTitle>
                 <div className="flex items-center gap-3">
                   <Button
-                    onClick={() => exportToCSV([reportData], `report-${activeReportType}`)}
+                    onClick={() => exportToExcel(reportData, `report-${activeReportType}`)}
                     className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-xl"
                   >
                     <Download className="h-4 w-4 mr-2" />
