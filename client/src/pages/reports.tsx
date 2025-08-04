@@ -408,7 +408,7 @@ export default function Reports() {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('التقرير اليومي');
 
-    // إعداد الطباعة المحسنة لورقة A4
+    // إعداد طباعة A4 محسن مع رأس وتذييل
     worksheet.pageSetup = {
       paperSize: 9, // A4
       orientation: 'portrait',
@@ -416,10 +416,19 @@ export default function Reports() {
       fitToWidth: 1,
       fitToHeight: 0,
       margins: {
-        left: 0.5, right: 0.5, top: 0.75, bottom: 0.75,
-        header: 0.3, footer: 0.3
-      }
+        left: 0.4, right: 0.4, top: 0.8, bottom: 0.8,
+        header: 0.4, footer: 0.4
+      },
+      showGridLines: false,
+      horizontalCentered: true,
+      verticalCentered: false
     };
+
+    // رأس الصفحة
+    worksheet.headerFooter.oddHeader = `&C&\"Arial,Bold\"&14${selectedProject?.name || 'مشروع'} - تقرير المصروفات اليومية\n&C&\"Arial\"&10${formatDate(dailyReportDate)}`;
+    
+    // تذييل الصفحة  
+    worksheet.headerFooter.oddFooter = `&L&\"Arial\"&9تم إنشاؤه بواسطة نظام إدارة مشاريع البناء&C&\"Arial\"&9صفحة &P من &N&R&\"Arial\"&9${new Date().toLocaleDateString('ar-YE')}`;
 
     // إعداد اتجاه الكتابة من اليمين لليسار
     worksheet.views = [{ rightToLeft: true }];
@@ -581,7 +590,7 @@ export default function Reports() {
         workerSectionCell.font = { name: 'Arial', size: 12, bold: true };
         workerSectionCell.alignment = { horizontal: 'center', vertical: 'middle' };
         workerSectionCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFfbbf24' } };
-        worksheet.getRow(currentRow).height = 25;
+        worksheet.getRow(currentRow).height = 30;
         currentRow++;
 
         data.workerAttendance.forEach((attendance: any) => {
@@ -589,13 +598,13 @@ export default function Reports() {
           
           row.getCell(1).value = expenseNumber++;
           row.getCell(2).value = Number(attendance.paidAmount) || 0;
-          row.getCell(3).value = attendance.workerName || 'عامل غير محدد';
-          row.getCell(4).value = attendance.workerType || 'عامل';
-          row.getCell(5).value = attendance.workDescription || 'عمل يومي حسب متطلبات المشروع';
+          row.getCell(3).value = attendance.workerName || attendance.worker?.name || 'عامل غير محدد';
+          row.getCell(4).value = attendance.workerType || attendance.worker?.type || 'عامل';
+          row.getCell(5).value = `${attendance.workDescription || 'عمل يومي'} | ساعات: ${attendance.workHours || 8} | أيام: ${attendance.workDays || 1}`;
           row.getCell(6).value = 'إدارة المشروع';
-          row.getCell(7).value = `${attendance.workDays || 1} يوم`;
+          row.getCell(7).value = `${attendance.workHours || 8} ساعة / ${attendance.workDays || 1} يوم`;
           row.getCell(8).value = formatDate(attendance.date || dailyReportDate);
-          row.getCell(9).value = attendance.notes || 'أجر يومي';
+          row.getCell(9).value = `أجر يومي: ${formatCurrency(attendance.dailyWage || 0)} | ${attendance.notes || 'تم الدفع'}`;
           
           // تنسيق خلايا العمال
           for (let i = 1; i <= 9; i++) {
@@ -608,7 +617,7 @@ export default function Reports() {
             if (i === 2) cell.numFmt = '#,##0.00';
             cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFfef9e7' } };
           }
-          worksheet.getRow(currentRow).height = 25;
+          worksheet.getRow(currentRow).height = 35; // زيادة ارتفاع الصف
           currentRow++;
         });
       }
@@ -622,7 +631,7 @@ export default function Reports() {
         materialSectionCell.font = { name: 'Arial', size: 12, bold: true };
         materialSectionCell.alignment = { horizontal: 'center', vertical: 'middle' };
         materialSectionCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF8b5cf6' } };
-        worksheet.getRow(currentRow).height = 25;
+        worksheet.getRow(currentRow).height = 30;
         currentRow++;
 
         data.materialPurchases.forEach((purchase: any) => {
@@ -630,13 +639,13 @@ export default function Reports() {
           
           row.getCell(1).value = expenseNumber++;
           row.getCell(2).value = Number(purchase.totalAmount) || 0;
-          row.getCell(3).value = purchase.materialName || 'مادة غير محددة';
-          row.getCell(4).value = purchase.category || 'مواد بناء';
-          row.getCell(5).value = purchase.description || `شراء ${purchase.materialName || 'مادة'}`;
-          row.getCell(6).value = purchase.supplierName || 'مورد غير محدد';
-          row.getCell(7).value = `${purchase.quantity || 0} ${purchase.unit || 'وحدة'}`;
-          row.getCell(8).value = formatDate(purchase.purchaseDate || dailyReportDate);
-          row.getCell(9).value = purchase.notes || `سعر الوحدة: ${formatCurrency(purchase.unitPrice || 0)}`;
+          row.getCell(3).value = purchase.materialName || purchase.material?.name || 'مادة غير محددة';
+          row.getCell(4).value = purchase.category || purchase.material?.category || 'مواد بناء';
+          row.getCell(5).value = `${purchase.description || `شراء ${purchase.materialName || 'مادة'}`} | وحدة: ${purchase.unitPrice ? formatCurrency(purchase.unitPrice) : 'غير محدد'}`;
+          row.getCell(6).value = purchase.supplierName || purchase.supplier?.name || 'مورد غير محدد';
+          row.getCell(7).value = `${purchase.quantity || 0} ${purchase.unit || purchase.material?.unit || 'وحدة'}`;
+          row.getCell(8).value = formatDate(purchase.purchaseDate || purchase.invoiceDate || dailyReportDate);
+          row.getCell(9).value = `${purchase.notes || 'مشتريات'} | فاتورة: ${purchase.invoiceNumber || 'غير محدد'}`;
           
           // تنسيق خلايا المواد
           for (let i = 1; i <= 9; i++) {
@@ -649,21 +658,21 @@ export default function Reports() {
             if (i === 2) cell.numFmt = '#,##0.00';
             cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFf3e8ff' } };
           }
-          worksheet.getRow(currentRow).height = 25;
+          worksheet.getRow(currentRow).height = 35; // زيادة ارتفاع الصف
           currentRow++;
         });
       }
 
       // مصاريف النقل والمواصلات المحسنة
       if (data.transportationExpenses && data.transportationExpenses.length > 0) {
-        // قسم فرعي للنقل
+        // قسم فرعي للنقل  
         worksheet.mergeCells(`A${currentRow}:I${currentRow}`);
         const transportSectionCell = worksheet.getCell(`A${currentRow}`);
         transportSectionCell.value = '🚛 مصاريف النقل والمواصلات';
         transportSectionCell.font = { name: 'Arial', size: 12, bold: true };
         transportSectionCell.alignment = { horizontal: 'center', vertical: 'middle' };
         transportSectionCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF06b6d4' } };
-        worksheet.getRow(currentRow).height = 25;
+        worksheet.getRow(currentRow).height = 30;
         currentRow++;
 
         data.transportationExpenses.forEach((expense: any) => {
@@ -671,13 +680,13 @@ export default function Reports() {
           
           row.getCell(1).value = expenseNumber++;
           row.getCell(2).value = Number(expense.amount) || 0;
-          row.getCell(3).value = expense.description || 'نقل ومواصلات';
+          row.getCell(3).value = expense.description || expense.vehicleType || 'نقل ومواصلات';
           row.getCell(4).value = 'مواصلات';
-          row.getCell(5).value = expense.details || 'نقل مواد أو عمال';
-          row.getCell(6).value = expense.supplier || 'شركة نقل';
-          row.getCell(7).value = expense.distance ? `${expense.distance} كم` : '-';
+          row.getCell(5).value = `${expense.details || 'نقل مواد أو عمال'} | مسافة: ${expense.distance || 'غير محدد'} كم`;
+          row.getCell(6).value = expense.supplier || expense.driverName || 'شركة نقل';
+          row.getCell(7).value = expense.trips ? `${expense.trips} رحلة` : (expense.distance ? `${expense.distance} كم` : '-');
           row.getCell(8).value = formatDate(expense.date || dailyReportDate);
-          row.getCell(9).value = expense.notes || 'مصاريف نقل';
+          row.getCell(9).value = `${expense.notes || 'مصاريف نقل'} | ${expense.route ? `الطريق: ${expense.route}` : ''}`;
           
           // تنسيق خلايا النقل
           for (let i = 1; i <= 9; i++) {
@@ -690,7 +699,7 @@ export default function Reports() {
             if (i === 2) cell.numFmt = '#,##0.00';
             cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFecfeff' } };
           }
-          worksheet.getRow(currentRow).height = 25;
+          worksheet.getRow(currentRow).height = 35; // زيادة ارتفاع الصف
           currentRow++;
         });
       }
@@ -733,16 +742,16 @@ export default function Reports() {
     worksheet.getRow(summaryStartRow).height = 35;
     currentRow++;
 
-    // حسابات الملخص المالي
-    const carriedForward = data.summary?.carriedForward || 0;
+    // حسابات الملخص المالي المصححة
+    const carriedForward = Number(data.carriedForward) || Number(data.summary?.carriedForward) || 0;
     const totalFundTransfers = (data.fundTransfers?.reduce((sum: number, t: any) => sum + (Number(t.amount) || 0), 0) || 0);
-    const totalIncomingTransfers = data.totalIncomingTransfers || 0;
+    const totalIncomingTransfers = Number(data.totalIncomingTransfers) || 0;
     const totalIncome = carriedForward + totalFundTransfers + totalIncomingTransfers;
     
     const totalWorkerCosts = (data.workerAttendance?.reduce((sum: number, a: any) => sum + (Number(a.paidAmount) || 0), 0) || 0);
     const totalMaterialCosts = (data.materialPurchases?.reduce((sum: number, p: any) => sum + (Number(p.totalAmount) || 0), 0) || 0);
     const totalTransportCosts = (data.transportationExpenses?.reduce((sum: number, e: any) => sum + (Number(e.amount) || 0), 0) || 0);
-    const totalOutgoingTransfers = data.totalOutgoingTransfers || 0;
+    const totalOutgoingTransfers = Number(data.totalOutgoingTransfers) || Number(data.totalTransferCosts) || 0;
     const totalExpensesFinal = totalWorkerCosts + totalMaterialCosts + totalTransportCosts + totalOutgoingTransfers;
     
     const remainingBalance = totalIncome - totalExpensesFinal;
@@ -808,17 +817,17 @@ export default function Reports() {
     footerCell.alignment = { horizontal: 'center', vertical: 'middle' };
     footerCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFf1f5f9' } };
 
-    // ضبط عرض الأعمدة بشكل ديناميكي
+    // ضبط عرض الأعمدة المحسن لاستغلال مساحة A4 بشكل أمثل
     worksheet.columns = [
-      { width: 8 },   // رقم
-      { width: 15 },  // المبلغ
-      { width: 20 },  // الاسم
-      { width: 15 },  // المهنة/النوع
-      { width: 25 },  // الوصف
-      { width: 18 },  // المورد
-      { width: 12 },  // الكمية
-      { width: 12 },  // التاريخ
-      { width: 20 }   // ملاحظات
+      { width: 6 },   // رقم - مضغوط
+      { width: 12 },  // المبلغ - مناسب للأرقام
+      { width: 18 },  // الاسم - مناسب للأسماء العربية
+      { width: 12 },  // المهنة/النوع - مضغوط
+      { width: 30 },  // الوصف - موسع للنصوص الطويلة
+      { width: 16 },  // المورد - مناسب
+      { width: 10 },  // الكمية - مضغوط
+      { width: 11 },  // التاريخ - مناسب للتواريخ
+      { width: 25 }   // ملاحظات - موسع للملاحظات الطويلة
     ];
 
     // تطبيق التفاف النص على جميع الخلايا
