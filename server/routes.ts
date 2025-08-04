@@ -907,6 +907,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         })
       );
 
+      // إضافة معلومات المشاريع لترحيل الأموال الواردة
+      const incomingProjectTransfersWithProjects = await Promise.all(
+        incomingProjectTransfers.map(async (transfer) => {
+          const fromProject = await storage.getProject(transfer.fromProjectId);
+          return {
+            ...transfer,
+            fromProjectName: fromProject?.name || `مشروع ${transfer.fromProjectId}`,
+            transferReference: transfer.id.slice(-8).toUpperCase(),
+            transferNotes: transfer.description || `أموال مرحلة من مشروع ${fromProject?.name || transfer.fromProjectId} بتاريخ ${transfer.transferDate}`,
+            transferReason: transfer.transferReason || 'ترحيل أموال بين المشاريع'
+          };
+        })
+      );
+
+      // إضافة معلومات المشاريع لترحيل الأموال الصادرة
+      const outgoingProjectTransfersWithProjects = await Promise.all(
+        outgoingProjectTransfers.map(async (transfer) => {
+          const toProject = await storage.getProject(transfer.toProjectId);
+          return {
+            ...transfer,
+            toProjectName: toProject?.name || `مشروع ${transfer.toProjectId}`,
+            transferReference: transfer.id.slice(-8).toUpperCase(),
+            transferNotes: transfer.description || `أموال مرحلة إلى مشروع ${toProject?.name || transfer.toProjectId} بتاريخ ${transfer.transferDate}`,
+            transferReason: transfer.transferReason || 'ترحيل أموال بين المشاريع'
+          };
+        })
+      );
+
       res.json({
         date,
         projectId,
@@ -915,8 +943,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         materialPurchases: materialPurchasesWithMaterials,
         transportationExpenses: transportationExpensesWithWorkers,
         workerTransfers: workerTransfersWithWorkers,
-        incomingProjectTransfers,
-        outgoingProjectTransfers,
+        incomingProjectTransfers: incomingProjectTransfersWithProjects,
+        outgoingProjectTransfers: outgoingProjectTransfersWithProjects,
         totalIncomingTransfers,
         totalOutgoingTransfers,
         dailySummary,

@@ -4,6 +4,14 @@
 This is a comprehensive web application for managing construction projects in Arabic. It provides robust tools for expense tracking, worker management, supplier administration, and detailed reporting, emphasizing an accurate Arabic interface and responsive design. The system aims to streamline construction project oversight, financial management, and workforce administration.
 
 ### Recent Changes (أغسطس 2025)
+- **إصلاح شامل لعرض ترحيل الأموال بين المشاريع في التقارير اليومية (4 أغسطس 2025):**
+  - **تصحيح منطق العرض:** الأموال الواردة من المشاريع الأخرى تظهر في جدول العهدة (توريد)
+  - **تصحيح منطق العرض:** الأموال الصادرة للمشاريع الأخرى تظهر في جدول المصروفات (منصرف)
+  - **دمج البيانات بشكل صحيح:** إضافة `incomingProjectTransfers` و `outgoingProjectTransfers` في مكون التقرير
+  - **تحسين تصنيف العمليات:** إضافة عمود "النوع" لتمييز تحويلات العهدة عن ترحيل الأموال
+  - **تحسين الألوان والتمييز البصري:** ألوان مختلفة للأموال الواردة (أخضر/بنفسجي) والصادرة (أحمر)
+  - **إجمالي العمليات محدث:** يشمل الآن جميع أنواع ترحيل الأموال في إحصائيات التقرير
+  - **مكتمل:** النظام يعرض الآن ترحيل الأموال بشكل صحيح ومتكامل في التقارير اليومية
 - **تطوير كشف حساب العامل الشامل والمحسن (4 أغسطس 2025):**
   - **إنشاء مكون EnhancedWorkerAccountStatement:** كشف حساب شامل يحتوي على جميع البيانات المطلوبة
   - **بيانات شاملة:** اسم العامل، اسم المشروع، التاريخ، المتبقي، المستحق، المستلم، عدد أيام العمل، عدد ساعات العمل، والإجماليات

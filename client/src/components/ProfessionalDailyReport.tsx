@@ -30,6 +30,10 @@ export const ProfessionalDailyReport = ({ data, selectedProject, selectedDate }:
     workerAttendance = [],
     materialPurchases = [],
     transportationExpenses = [],
+    incomingProjectTransfers = [],
+    outgoingProjectTransfers = [],
+    totalIncomingTransfers = 0,
+    totalOutgoingTransfers = 0,
     summary = {}
   } = data || {};
 
@@ -37,10 +41,13 @@ export const ProfessionalDailyReport = ({ data, selectedProject, selectedDate }:
 
 
 
-  const totalIncome = fundTransfers.reduce((sum: number, transfer: any) => {
+  const totalFundTransfersAmount = fundTransfers.reduce((sum: number, transfer: any) => {
     const amount = Number(transfer.amount) || 0;
     return sum + amount;
   }, 0);
+
+  // حساب إجمالي الواردات (تحويلات العهدة + ترحيل الأموال الواردة)
+  const totalIncome = totalFundTransfersAmount + totalIncomingTransfers;
 
   const totalWorkerCosts = workerAttendance.reduce((sum: number, attendance: any) => {
     const amount = Number(attendance.paidAmount) || 0;
@@ -57,7 +64,7 @@ export const ProfessionalDailyReport = ({ data, selectedProject, selectedDate }:
     return sum + amount;
   }, 0);
 
-  const totalExpenses = totalWorkerCosts + totalMaterialCosts + totalTransportCosts;
+  const totalExpenses = totalWorkerCosts + totalMaterialCosts + totalTransportCosts + totalOutgoingTransfers;
   const remainingBalance = (carriedForward + totalIncome) - totalExpenses;
 
   return (
@@ -130,29 +137,41 @@ export const ProfessionalDailyReport = ({ data, selectedProject, selectedDate }:
               <td style={{padding: '20px 15px', textAlign: 'center', border: '2px solid #16a34a', fontWeight: '700', fontSize: '22px', color: '#15803d'}}>02</td>
               <td style={{padding: '20px 25px', textAlign: 'right', border: '2px solid #16a34a', fontWeight: '600', fontSize: '20px', color: '#15803d'}}>تحويلات العهدة والإيرادات النقدية المستلمة خلال اليوم الحالي</td>
               <td style={{padding: '20px 15px', textAlign: 'center', border: '2px solid #16a34a', fontSize: '20px', fontWeight: '600', color: '#64748b'}}>{fundTransfers.length}</td>
-              <td style={{padding: '20px 25px', textAlign: 'center', border: '2px solid #16a34a', fontWeight: 'bold', color: '#047857', fontSize: '24px', background: 'linear-gradient(135deg, #86efac, #4ade80)'}}>{formatCurrency(totalIncome)}</td>
+              <td style={{padding: '20px 25px', textAlign: 'center', border: '2px solid #16a34a', fontWeight: 'bold', color: '#047857', fontSize: '24px', background: 'linear-gradient(135deg, #86efac, #4ade80)'}}>{formatCurrency(totalFundTransfersAmount)}</td>
+            </tr>
+            <tr className="income-row" style={{background: 'linear-gradient(135deg, #ddd6fe, #c4b5fd)', minHeight: '70px', borderBottom: '2px solid #7c3aed'}}>
+              <td style={{padding: '20px 15px', textAlign: 'center', border: '2px solid #7c3aed', fontWeight: '700', fontSize: '22px', color: '#6b21a8'}}>03</td>
+              <td style={{padding: '20px 25px', textAlign: 'right', border: '2px solid #7c3aed', fontWeight: '600', fontSize: '20px', color: '#6b21a8'}}>أموال مرحلة واردة من مشاريع أخرى (ترحيل الأموال بين المشاريع)</td>
+              <td style={{padding: '20px 15px', textAlign: 'center', border: '2px solid #7c3aed', fontSize: '20px', fontWeight: '600', color: '#64748b'}}>{incomingProjectTransfers.length}</td>
+              <td style={{padding: '20px 25px', textAlign: 'center', border: '2px solid #7c3aed', fontWeight: 'bold', color: '#5b21b6', fontSize: '24px', background: 'linear-gradient(135deg, #c4b5fd, #a78bfa)'}}>{formatCurrency(totalIncomingTransfers)}</td>
             </tr>
             <tr className="total-available-row" style={{background: 'linear-gradient(135deg, #fef3c7, #fde68a)', borderTop: '3px solid #f59e0b', borderBottom: '3px solid #f59e0b', minHeight: '80px'}}>
               <td colSpan={3} style={{padding: '25px 25px', textAlign: 'right', border: '2px solid #f59e0b', fontWeight: 'bold', fontSize: '24px', color: '#92400e'}}>إجمالي الأموال المتاحة للصرف خلال اليوم (الرصيد المرحل + الإيرادات المستلمة):</td>
               <td style={{padding: '25px 25px', textAlign: 'center', border: '2px solid #f59e0b', fontWeight: 'bold', color: '#92400e', fontSize: '28px', background: 'linear-gradient(135deg, #fbbf24, #f59e0b)', textShadow: '1px 1px 2px rgba(0,0,0,0.2)'}}>{formatCurrency(totalIncome + carriedForward)}</td>
             </tr>
             <tr className="expense-row" style={{background: 'linear-gradient(135deg, #fee2e2, #fecaca)', minHeight: '70px', borderBottom: '2px solid #dc2626'}}>
-              <td style={{padding: '20px 15px', textAlign: 'center', border: '2px solid #dc2626', fontWeight: '700', fontSize: '22px', color: '#dc2626'}}>03</td>
+              <td style={{padding: '20px 15px', textAlign: 'center', border: '2px solid #dc2626', fontWeight: '700', fontSize: '22px', color: '#dc2626'}}>04</td>
               <td style={{padding: '20px 25px', textAlign: 'right', border: '2px solid #dc2626', fontWeight: '600', fontSize: '20px', color: '#dc2626'}}>أجور العمال والحضور اليومي (مصروفات العمالة والأجور)</td>
               <td style={{padding: '20px 15px', textAlign: 'center', border: '2px solid #dc2626', fontSize: '20px', fontWeight: '600', color: '#64748b'}}>{workerAttendance.length}</td>
               <td style={{padding: '20px 25px', textAlign: 'center', border: '2px solid #dc2626', fontWeight: 'bold', color: '#991b1b', fontSize: '24px', background: 'linear-gradient(135deg, #fca5a5, #f87171)'}}>{formatCurrency(totalWorkerCosts)}</td>
             </tr>
             <tr className="expense-row" style={{background: 'linear-gradient(135deg, #fef2f2, #fee2e2)', minHeight: '70px', borderBottom: '2px solid #dc2626'}}>
-              <td style={{padding: '20px 15px', textAlign: 'center', border: '2px solid #dc2626', fontWeight: '700', fontSize: '22px', color: '#dc2626'}}>04</td>
+              <td style={{padding: '20px 15px', textAlign: 'center', border: '2px solid #dc2626', fontWeight: '700', fontSize: '22px', color: '#dc2626'}}>05</td>
               <td style={{padding: '20px 25px', textAlign: 'right', border: '2px solid #dc2626', fontWeight: '600', fontSize: '20px', color: '#dc2626'}}>مشتريات المواد والمعدات والأدوات الإنشائية (مصروفات المواد)</td>
               <td style={{padding: '20px 15px', textAlign: 'center', border: '2px solid #dc2626', fontSize: '20px', fontWeight: '600', color: '#64748b'}}>{materialPurchases.length}</td>
-              <td style={{padding: '10px 15px', textAlign: 'center', border: '2px solid #dc2626', fontWeight: 'bold', color: '#991b1b', fontSize: '34px', background: 'linear-gradient(135deg, #fca5a5, #f87171)'}}>{formatCurrency(totalMaterialCosts)}</td>
+              <td style={{padding: '20px 25px', textAlign: 'center', border: '2px solid #dc2626', fontWeight: 'bold', color: '#991b1b', fontSize: '24px', background: 'linear-gradient(135deg, #fca5a5, #f87171)'}}>{formatCurrency(totalMaterialCosts)}</td>
             </tr>
             <tr className="expense-row" style={{background: 'linear-gradient(135deg, #fee2e2, #fecaca)', minHeight: '70px', borderBottom: '2px solid #dc2626'}}>
-              <td style={{padding: '20px 15px', textAlign: 'center', border: '2px solid #dc2626', fontWeight: '700', fontSize: '22px', color: '#dc2626'}}>05</td>
+              <td style={{padding: '20px 15px', textAlign: 'center', border: '2px solid #dc2626', fontWeight: '700', fontSize: '22px', color: '#dc2626'}}>06</td>
               <td style={{padding: '20px 25px', textAlign: 'right', border: '2px solid #dc2626', fontWeight: '600', fontSize: '20px', color: '#dc2626'}}>مصاريف النقل والتشغيل والمواصلات اليومية (مصروفات التشغيل)</td>
               <td style={{padding: '20px 15px', textAlign: 'center', border: '2px solid #dc2626', fontSize: '20px', fontWeight: '600', color: '#64748b'}}>{transportationExpenses.length}</td>
               <td style={{padding: '20px 25px', textAlign: 'center', border: '2px solid #dc2626', fontWeight: 'bold', color: '#991b1b', fontSize: '24px', background: 'linear-gradient(135deg, #fca5a5, #f87171)'}}>{formatCurrency(totalTransportCosts)}</td>
+            </tr>
+            <tr className="expense-row" style={{background: 'linear-gradient(135deg, #fed7d7, #f56565)', minHeight: '70px', borderBottom: '2px solid #e53e3e'}}>
+              <td style={{padding: '20px 15px', textAlign: 'center', border: '2px solid #e53e3e', fontWeight: '700', fontSize: '22px', color: '#742a2a'}}>07</td>
+              <td style={{padding: '20px 25px', textAlign: 'right', border: '2px solid #e53e3e', fontWeight: '600', fontSize: '20px', color: '#742a2a'}}>أموال مرحلة صادرة إلى مشاريع أخرى (ترحيل الأموال بين المشاريع)</td>
+              <td style={{padding: '20px 15px', textAlign: 'center', border: '2px solid #e53e3e', fontSize: '20px', fontWeight: '600', color: '#64748b'}}>{outgoingProjectTransfers.length}</td>
+              <td style={{padding: '20px 25px', textAlign: 'center', border: '2px solid #e53e3e', fontWeight: 'bold', color: '#9b2c2c', fontSize: '24px', background: 'linear-gradient(135deg, #fc8181, #f56565)'}}>{formatCurrency(totalOutgoingTransfers)}</td>
             </tr>
             <tr className="total-expenses-row" style={{background: 'linear-gradient(135deg, #fee2e2, #fca5a5)', borderTop: '3px solid #dc2626', borderBottom: '3px solid #dc2626', minHeight: '80px'}}>
               <td colSpan={3} style={{padding: '25px 25px', textAlign: 'right', border: '2px solid #dc2626', fontWeight: 'bold', fontSize: '24px', color: '#991b1b'}}>إجمالي المصروفات اليومية والنقديات المصروفة (جميع المصروفات):</td>
@@ -168,31 +187,44 @@ export const ProfessionalDailyReport = ({ data, selectedProject, selectedDate }:
         {/* Enhanced Detailed Breakdown Section */}
         <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8mm', marginBottom: '8mm', fontSize: '14px'}}>
           
-          {/* Left Column - Fund Transfers & Workers */}
+          {/* Left Column - Fund Transfers & Workers & Incoming Project Transfers */}
           <div>
-            {fundTransfers.length > 0 && (
+            {(fundTransfers.length > 0 || incomingProjectTransfers.length > 0) && (
               <div style={{marginBottom: '12px'}}>
                 <div className="professional-gradient" style={{padding: '6px 10px', fontSize: '12px', fontWeight: 'bold', borderRadius: '4px 4px 0 0', color: '#1e293b'}}>
-                  تفاصيل التحويلات النقدية ({fundTransfers.length})
+                  تفاصيل العهدة والأموال الواردة ({fundTransfers.length + incomingProjectTransfers.length})
                 </div>
                 <table className="w-full border-collapse" style={{fontSize: '10px', border: '1px solid #e2e8f0'}}>
                   <thead>
                     <tr style={{backgroundColor: '#f8fafc', minHeight: '32px'}}>
                       <th style={{padding: '6px 8px', border: '1px solid #e2e8f0', textAlign: 'center', fontSize: '9px', minHeight: '32px'}}>م</th>
-                      <th style={{padding: '6px 8px', border: '1px solid #e2e8f0', textAlign: 'right', fontSize: '9px', minHeight: '32px'}}>اسم المرسل</th>
+                      <th style={{padding: '6px 8px', border: '1px solid #e2e8f0', textAlign: 'right', fontSize: '9px', minHeight: '32px'}}>المصدر</th>
+                      <th style={{padding: '6px 8px', border: '1px solid #e2e8f0', textAlign: 'center', fontSize: '9px', minHeight: '32px'}}>التاريخ</th>
+                      <th style={{padding: '6px 8px', border: '1px solid #e2e8f0', textAlign: 'center', fontSize: '9px', minHeight: '32px'}}>رقم الحوالة</th>
                       <th style={{padding: '6px 8px', border: '1px solid #e2e8f0', textAlign: 'center', fontSize: '9px', minHeight: '32px'}}>المبلغ</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {fundTransfers.slice(0, 5).map((transfer: any, index: number) => (
-                      <tr key={index} style={{backgroundColor: index % 2 === 0 ? '#ffffff' : '#f8fafc', minHeight: '28px'}}>
+                    {fundTransfers.slice(0, 2).map((transfer: any, index: number) => (
+                      <tr key={`fund-${index}`} style={{backgroundColor: index % 2 === 0 ? '#ffffff' : '#f8fafc', minHeight: '28px'}}>
                         <td style={{padding: '4px 6px', border: '1px solid #e2e8f0', textAlign: 'center', minHeight: '28px'}}>{index + 1}</td>
                         <td style={{padding: '4px 6px', border: '1px solid #e2e8f0', textAlign: 'right', minHeight: '28px'}}>{transfer.senderName}</td>
-                        <td style={{padding: '4px 6px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: 'bold', minHeight: '28px'}}>{formatCurrency(transfer.amount)}</td>
+                        <td style={{padding: '4px 6px', border: '1px solid #e2e8f0', textAlign: 'center', fontSize: '8px', color: '#059669', minHeight: '28px'}}>{formatDate(transfer.date || selectedDate)}</td>
+                        <td style={{padding: '4px 6px', border: '1px solid #e2e8f0', textAlign: 'center', fontSize: '8px', color: '#059669', minHeight: '28px'}}>{transfer.id?.slice(-6).toUpperCase() || 'عهدة'}</td>
+                        <td style={{padding: '4px 6px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: 'bold', minHeight: '28px', color: '#059669'}}>{formatCurrency(transfer.amount)}</td>
                       </tr>
                     ))}
-                    {fundTransfers.length > 5 && (
-                      <tr><td colSpan={3} style={{padding: '4px 6px', textAlign: 'center', fontSize: '9px', color: '#6b7280', fontStyle: 'italic', minHeight: '24px'}}>...و {fundTransfers.length - 5} تحويلات أخرى</td></tr>
+                    {incomingProjectTransfers.slice(0, 2).map((transfer: any, index: number) => (
+                      <tr key={`incoming-${index}`} style={{backgroundColor: (fundTransfers.length + index) % 2 === 0 ? '#ffffff' : '#f8fafc', minHeight: '28px'}}>
+                        <td style={{padding: '4px 6px', border: '1px solid #e2e8f0', textAlign: 'center', minHeight: '28px'}}>{fundTransfers.length + index + 1}</td>
+                        <td style={{padding: '4px 6px', border: '1px solid #e2e8f0', textAlign: 'right', minHeight: '28px'}}>{transfer.fromProjectName || `مشروع ${transfer.fromProjectId}`}</td>
+                        <td style={{padding: '4px 6px', border: '1px solid #e2e8f0', textAlign: 'center', fontSize: '8px', color: '#7c3aed', minHeight: '28px'}}>{formatDate(transfer.transferDate)}</td>
+                        <td style={{padding: '4px 6px', border: '1px solid #e2e8f0', textAlign: 'center', fontSize: '8px', color: '#7c3aed', minHeight: '28px'}}>{transfer.transferReference || 'غير محدد'}</td>
+                        <td style={{padding: '4px 6px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: 'bold', minHeight: '28px', color: '#7c3aed'}}>{formatCurrency(transfer.amount)}</td>
+                      </tr>
+                    ))}
+                    {(fundTransfers.length + incomingProjectTransfers.length) > 4 && (
+                      <tr><td colSpan={5} style={{padding: '4px 6px', textAlign: 'center', fontSize: '9px', color: '#6b7280', fontStyle: 'italic', minHeight: '24px'}}>...و {(fundTransfers.length + incomingProjectTransfers.length) - 4} عمليات أخرى</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -226,7 +258,7 @@ export const ProfessionalDailyReport = ({ data, selectedProject, selectedDate }:
             )}
           </div>
 
-          {/* Right Column - Materials & Transportation */}
+          {/* Right Column - Materials & Transportation & Outgoing Project Transfers */}
           <div>
             {materialPurchases.length > 0 && (
               <div style={{marginBottom: '12px'}}>
@@ -257,29 +289,42 @@ export const ProfessionalDailyReport = ({ data, selectedProject, selectedDate }:
               </div>
             )}
 
-            {transportationExpenses.length > 0 && (
+            {(transportationExpenses.length > 0 || outgoingProjectTransfers.length > 0) && (
               <div>
                 <div className="professional-gradient" style={{padding: '6px 10px', fontSize: '12px', fontWeight: 'bold', borderRadius: '4px 4px 0 0', color: '#1e293b'}}>
-                  تفاصيل مصاريف النقل ({transportationExpenses.length})
+                  تفاصيل المصروفات والأموال الصادرة ({transportationExpenses.length + outgoingProjectTransfers.length})
                 </div>
                 <table className="w-full border-collapse" style={{fontSize: '10px', border: '1px solid #e2e8f0'}}>
                   <thead>
                     <tr style={{backgroundColor: '#f8fafc', minHeight: '32px'}}>
                       <th style={{padding: '6px 8px', border: '1px solid #e2e8f0', textAlign: 'center', fontSize: '9px', minHeight: '32px'}}>م</th>
                       <th style={{padding: '6px 8px', border: '1px solid #e2e8f0', textAlign: 'right', fontSize: '9px', minHeight: '32px'}}>الوصف</th>
+                      <th style={{padding: '6px 8px', border: '1px solid #e2e8f0', textAlign: 'center', fontSize: '9px', minHeight: '32px'}}>التاريخ</th>
+                      <th style={{padding: '6px 8px', border: '1px solid #e2e8f0', textAlign: 'center', fontSize: '9px', minHeight: '32px'}}>رقم الحوالة</th>
                       <th style={{padding: '6px 8px', border: '1px solid #e2e8f0', textAlign: 'center', fontSize: '9px', minHeight: '32px'}}>المبلغ</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {transportationExpenses.slice(0, 5).map((expense: any, index: number) => (
-                      <tr key={index} style={{backgroundColor: index % 2 === 0 ? '#ffffff' : '#f8fafc', minHeight: '28px'}}>
+                    {transportationExpenses.slice(0, 2).map((expense: any, index: number) => (
+                      <tr key={`transport-${index}`} style={{backgroundColor: index % 2 === 0 ? '#ffffff' : '#f8fafc', minHeight: '28px'}}>
                         <td style={{padding: '4px 6px', border: '1px solid #e2e8f0', textAlign: 'center', minHeight: '28px'}}>{index + 1}</td>
                         <td style={{padding: '4px 6px', border: '1px solid #e2e8f0', textAlign: 'right', minHeight: '28px'}}>{expense.description}</td>
-                        <td style={{padding: '4px 6px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: 'bold', minHeight: '28px'}}>{formatCurrency(expense.amount)}</td>
+                        <td style={{padding: '4px 6px', border: '1px solid #e2e8f0', textAlign: 'center', fontSize: '8px', color: '#dc2626', minHeight: '28px'}}>{formatDate(expense.date || selectedDate)}</td>
+                        <td style={{padding: '4px 6px', border: '1px solid #e2e8f0', textAlign: 'center', fontSize: '8px', color: '#dc2626', minHeight: '28px'}}>{expense.id?.slice(-6).toUpperCase() || 'نقل'}</td>
+                        <td style={{padding: '4px 6px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: 'bold', minHeight: '28px', color: '#dc2626'}}>{formatCurrency(expense.amount)}</td>
                       </tr>
                     ))}
-                    {transportationExpenses.length > 5 && (
-                      <tr><td colSpan={3} style={{padding: '4px 6px', textAlign: 'center', fontSize: '9px', color: '#6b7280', fontStyle: 'italic', minHeight: '24px'}}>...و {transportationExpenses.length - 5} مصاريف أخرى</td></tr>
+                    {outgoingProjectTransfers.slice(0, 2).map((transfer: any, index: number) => (
+                      <tr key={`outgoing-${index}`} style={{backgroundColor: (transportationExpenses.length + index) % 2 === 0 ? '#ffffff' : '#f8fafc', minHeight: '28px'}}>
+                        <td style={{padding: '4px 6px', border: '1px solid #e2e8f0', textAlign: 'center', minHeight: '28px'}}>{transportationExpenses.length + index + 1}</td>
+                        <td style={{padding: '4px 6px', border: '1px solid #e2e8f0', textAlign: 'right', minHeight: '28px'}}>ترحيل إلى {transfer.toProjectName || `مشروع ${transfer.toProjectId}`}</td>
+                        <td style={{padding: '4px 6px', border: '1px solid #e2e8f0', textAlign: 'center', fontSize: '8px', color: '#e53e3e', minHeight: '28px'}}>{formatDate(transfer.transferDate)}</td>
+                        <td style={{padding: '4px 6px', border: '1px solid #e2e8f0', textAlign: 'center', fontSize: '8px', color: '#e53e3e', minHeight: '28px'}}>{transfer.transferReference || 'غير محدد'}</td>
+                        <td style={{padding: '4px 6px', border: '1px solid #e2e8f0', textAlign: 'center', fontWeight: 'bold', minHeight: '28px', color: '#e53e3e'}}>{formatCurrency(transfer.amount)}</td>
+                      </tr>
+                    ))}
+                    {(transportationExpenses.length + outgoingProjectTransfers.length) > 4 && (
+                      <tr><td colSpan={5} style={{padding: '4px 6px', textAlign: 'center', fontSize: '9px', color: '#6b7280', fontStyle: 'italic', minHeight: '24px'}}>...و {(transportationExpenses.length + outgoingProjectTransfers.length) - 4} عمليات أخرى</td></tr>
                     )}
                   </tbody>
                 </table>
@@ -292,7 +337,7 @@ export const ProfessionalDailyReport = ({ data, selectedProject, selectedDate }:
         <div style={{marginTop: 'auto', paddingTop: '15px'}}>
           <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', fontSize: '12px', padding: '12px', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px'}}>
             <div style={{display: 'flex', gap: '30px', alignItems: 'center'}}>
-              <div><strong>إجمالي العمليات:</strong> {(fundTransfers.length + workerAttendance.length + materialPurchases.length + transportationExpenses.length)}</div>
+              <div><strong>إجمالي العمليات:</strong> {(fundTransfers.length + incomingProjectTransfers.length + workerAttendance.length + materialPurchases.length + transportationExpenses.length + outgoingProjectTransfers.length)}</div>
               <div><strong>عدد العمال الحاضرين:</strong> {workerAttendance.filter((a: any) => a.isPresent).length}</div>
               <div><strong>عدد المشتريات:</strong> {materialPurchases.length}</div>
             </div>
