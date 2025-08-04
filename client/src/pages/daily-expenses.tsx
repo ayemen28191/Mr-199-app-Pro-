@@ -34,7 +34,7 @@ export default function DailyExpenses() {
   const { selectedProjectId, selectProject } = useSelectedProject();
   const [selectedDate, setSelectedDate] = useState(getCurrentDate());
   const [carriedForward, setCarriedForward] = useState<string>("0");
-  const [showProjectTransfers, setShowProjectTransfers] = useState<boolean>(false);
+  const [showProjectTransfers, setShowProjectTransfers] = useState<boolean>(true);
   
   // Fund transfer form
   const [fundAmount, setFundAmount] = useState<string>("");
