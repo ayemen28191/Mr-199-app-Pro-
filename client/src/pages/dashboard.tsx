@@ -11,6 +11,7 @@ import ProjectSelector from "@/components/project-selector";
 import AddProjectForm from "@/components/forms/add-project-form";
 import EnhancedAddWorkerForm from "@/components/forms/enhanced-add-worker-form";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { LoadingCard, LoadingSpinner } from "@/components/ui/loading-spinner";
 import type { Project, DailyExpenseSummary } from "@shared/schema";
 
 interface ProjectStats {
@@ -34,16 +35,32 @@ export default function Dashboard() {
   const [showAddProject, setShowAddProject] = useState(false);
   const [showAddWorker, setShowAddWorker] = useState(false);
 
-  const { data: projects = [] } = useQuery<ProjectWithStats[]>({
-    queryKey: ["/api/projects/with-stats"],
+  // تحميل المشاريع الأساسية أولاً بدون إحصائيات
+  const { data: projects = [], isLoading: projectsLoading } = useQuery<Project[]>({
+    queryKey: ["/api/projects"],
+    staleTime: 1000 * 60 * 30, // 30 دقيقة للمشاريع
+  });
+
+  // تحميل الإحصائيات فقط للمشروع المحدد
+  const { data: selectedProjectStats, isLoading: statsLoading } = useQuery<ProjectStats>({
+    queryKey: ["/api/projects", selectedProjectId, "stats"],
+    enabled: !!selectedProjectId,
+    staleTime: 1000 * 60 * 10, // 10 دقائق للإحصائيات
   });
 
   const { data: todaySummary } = useQuery<DailyExpenseSummary>({
     queryKey: ["/api/projects", selectedProjectId, "daily-summary", new Date().toISOString().split('T')[0]],
     enabled: !!selectedProjectId,
+    staleTime: 1000 * 60 * 5, // 5 دقائق للملخص اليومي
   });
 
   const selectedProject = projects.find(p => p.id === selectedProjectId);
+  
+  // دمج بيانات المشروع مع الإحصائيات
+  const projectWithStats = selectedProject && selectedProjectStats ? {
+    ...selectedProject,
+    stats: selectedProjectStats
+  } : null;
 
   const quickActions = [
     {
@@ -87,6 +104,11 @@ export default function Dashboard() {
       action: () => setLocation("/project-transfers"),
     },
   ];
+
+  // عرض شاشة تحميل أولية إذا كانت المشاريع لم تحمل بعد
+  if (projectsLoading) {
+    return <LoadingCard />;
+  }
 
   return (
     <div className="p-4 fade-in">
@@ -164,19 +186,19 @@ export default function Dashboard() {
               <div className="bg-blue-50 dark:bg-blue-950/20 p-3 rounded-lg text-center">
                 <div className="text-sm text-muted-foreground mb-1">إجمالي التوريد</div>
                 <div className="text-lg font-bold text-primary arabic-numbers">
-                  {formatCurrency(selectedProject.stats.totalIncome)}
+                  {statsLoading ? <LoadingSpinner size="sm" className="mx-auto" /> : formatCurrency(projectWithStats?.stats?.totalIncome || 0)}
                 </div>
               </div>
               <div className="bg-red-50 dark:bg-red-950/20 p-3 rounded-lg text-center">
                 <div className="text-sm text-muted-foreground mb-1">إجمالي المنصرف</div>
                 <div className="text-lg font-bold text-destructive arabic-numbers">
-                  {formatCurrency(selectedProject.stats.totalExpenses)}
+                  {statsLoading ? <LoadingSpinner size="sm" className="mx-auto" /> : formatCurrency(projectWithStats?.stats?.totalExpenses || 0)}
                 </div>
               </div>
               <div className="bg-green-50 dark:bg-green-950/20 p-3 rounded-lg text-center">
                 <div className="text-sm text-muted-foreground mb-1">المتبقي الحالي</div>
                 <div className="text-lg font-bold text-success arabic-numbers">
-                  {formatCurrency(selectedProject.stats.currentBalance)}
+                  {statsLoading ? <LoadingSpinner size="sm" className="mx-auto" /> : formatCurrency(projectWithStats?.stats?.currentBalance || 0)}
                 </div>
               </div>
             </div>
@@ -186,19 +208,19 @@ export default function Dashboard() {
               <div className="bg-muted p-3 rounded-lg text-center">
                 <div className="text-sm text-muted-foreground mb-1">أيام العمل</div>
                 <div className="text-lg font-bold text-foreground arabic-numbers">
-                  {selectedProject.stats.completedDays}
+                  {statsLoading ? <LoadingSpinner size="sm" className="mx-auto" /> : (projectWithStats?.stats?.completedDays || "0")}
                 </div>
               </div>
               <div className="bg-muted p-3 rounded-lg text-center">
                 <div className="text-sm text-muted-foreground mb-1">المشتريات</div>
                 <div className="text-lg font-bold text-foreground arabic-numbers">
-                  {selectedProject.stats.materialPurchases}
+                  {statsLoading ? <LoadingSpinner size="sm" className="mx-auto" /> : (projectWithStats?.stats?.materialPurchases || "0")}
                 </div>
               </div>
               <div className="bg-muted p-3 rounded-lg text-center">
                 <div className="text-sm text-muted-foreground mb-1">العمال</div>
                 <div className="text-lg font-bold text-foreground arabic-numbers">
-                  {selectedProject.stats.activeWorkers}
+                  {statsLoading ? <LoadingSpinner size="sm" className="mx-auto" /> : (projectWithStats?.stats?.activeWorkers || "0")}
                 </div>
               </div>
             </div>

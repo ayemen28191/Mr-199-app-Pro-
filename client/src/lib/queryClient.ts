@@ -83,12 +83,13 @@ export const queryClient = new QueryClient({
     queries: {
       queryFn: getQueryFn({ on401: "throw" }),
       refetchInterval: false,
-      refetchOnWindowFocus: true,
-      staleTime: 1000 * 60 * 5, // 5 دقائق بدلاً من Infinity
+      refetchOnWindowFocus: false, // تقليل إعادة التحميل
+      staleTime: 1000 * 60 * 15, // 15 دقيقة للتخزين المؤقت
       retry: 1, // محاولة واحدة إضافية عند الفشل
+      refetchOnReconnect: false, // منع إعادة التحميل عند الاتصال
     },
     mutations: {
-      retry: 2, // محاولتان إضافيتان للطفرات
+      retry: 1, // تقليل المحاولات
     },
   },
 });
