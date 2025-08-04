@@ -128,7 +128,7 @@ export default function DailyExpenses() {
     queryFn: async () => {
       const response = await apiRequest("GET", `/api/project-fund-transfers?date=${selectedDate}`);
       return Array.isArray(response) ? response.filter((transfer: ProjectFundTransfer) => 
-        transfer.from_project_id === selectedProjectId || transfer.to_project_id === selectedProjectId
+        transfer.fromProjectId === selectedProjectId || transfer.toProjectId === selectedProjectId
       ) : [];
     },
     enabled: !!selectedProjectId && showProjectTransfers,
@@ -987,7 +987,7 @@ export default function DailyExpenses() {
                     <div 
                       key={transfer.id} 
                       className={`p-3 rounded border-r-4 ${
-                        transfer.to_project_id === selectedProjectId 
+                        transfer.toProjectId === selectedProjectId 
                           ? 'bg-green-50 border-green-500' 
                           : 'bg-red-50 border-red-500'
                       }`}
@@ -996,24 +996,24 @@ export default function DailyExpenses() {
                         <div className="flex-1">
                           <div className="flex items-center justify-between mb-1">
                             <span className="text-sm font-medium">
-                              {transfer.to_project_id === selectedProjectId ? (
+                              {transfer.toProjectId === selectedProjectId ? (
                                 <span className="text-green-700">أموال واردة من مشروع آخر</span>
                               ) : (
                                 <span className="text-red-700">أموال صادرة إلى مشروع آخر</span>
                               )}
                             </span>
                             <span className={`font-bold arabic-numbers ${
-                              transfer.to_project_id === selectedProjectId ? 'text-green-600' : 'text-red-600'
+                              transfer.toProjectId === selectedProjectId ? 'text-green-600' : 'text-red-600'
                             }`}>
-                              {transfer.to_project_id === selectedProjectId ? '+' : '-'}{formatCurrency(transfer.amount)}
+                              {transfer.toProjectId === selectedProjectId ? '+' : '-'}{formatCurrency(transfer.amount)}
                             </span>
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            <div>السبب: {transfer.transfer_reason || 'ترحيل أموال'}</div>
+                            <div>السبب: {transfer.transferReason || 'ترحيل أموال'}</div>
                             {transfer.description && (
                               <div className="mt-1">الوصف: {transfer.description}</div>
                             )}
-                            <div className="mt-1">التاريخ: {formatDate(transfer.transfer_date)}</div>
+                            <div className="mt-1">التاريخ: {formatDate(transfer.transferDate)}</div>
                           </div>
                         </div>
                       </div>

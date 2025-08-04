@@ -37,7 +37,7 @@ export default function ProjectTransfers() {
   // إنشاء عملية ترحيل جديدة
   const createTransferMutation = useMutation({
     mutationFn: (data: InsertProjectFundTransfer) =>
-      apiRequest("/api/project-fund-transfers", "POST", data),
+      apiRequest("POST", "/api/project-fund-transfers", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/project-fund-transfers"] });
       queryClient.invalidateQueries({ queryKey: ["/api/projects/with-stats"] });
@@ -66,9 +66,7 @@ export default function ProjectTransfers() {
       amount: "",
       transferReason: "",
       transferDate: new Date().toISOString().split('T')[0],
-      approvedBy: "",
-      notes: "",
-      status: "completed",
+      description: "",
     },
   });
 
@@ -227,6 +225,7 @@ export default function ProjectTransfers() {
                           <Input
                             placeholder="أدخل سبب الترحيل"
                             {...field}
+                            value={field.value || ""}
                             data-testid="input-transfer-reason"
                           />
                         </FormControl>
@@ -235,18 +234,19 @@ export default function ProjectTransfers() {
                     )}
                   />
 
-                  {/* اسم المعتمد */}
+                  {/* وصف الترحيل */}
                   <FormField
                     control={form.control}
-                    name="approvedBy"
+                    name="description"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>اسم المعتمد</FormLabel>
+                        <FormLabel>وصف الترحيل (اختياري)</FormLabel>
                         <FormControl>
-                          <Input
-                            placeholder="أدخل اسم المعتمد"
+                          <Textarea
+                            placeholder="أدخل وصف للترحيل"
                             {...field}
-                            data-testid="input-approved-by"
+                            value={field.value || ""}
+                            data-testid="textarea-description"
                           />
                         </FormControl>
                         <FormMessage />
@@ -254,26 +254,6 @@ export default function ProjectTransfers() {
                     )}
                   />
                 </div>
-
-                {/* ملاحظات */}
-                <FormField
-                  control={form.control}
-                  name="notes"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>ملاحظات (اختياري)</FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="أدخل أي ملاحظات إضافية"
-                          {...field}
-                          value={field.value || ""}
-                          data-testid="textarea-notes"
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
 
                 <div className="flex gap-2">
                   <Button
@@ -326,8 +306,7 @@ export default function ProjectTransfers() {
                     <TableHead className="text-right">إلى مشروع</TableHead>
                     <TableHead className="text-right">المبلغ</TableHead>
                     <TableHead className="text-right">السبب</TableHead>
-                    <TableHead className="text-right">المعتمد</TableHead>
-                    <TableHead className="text-right">الحالة</TableHead>
+                    <TableHead className="text-right">الوصف</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -344,28 +323,8 @@ export default function ProjectTransfers() {
                       <TableCell className="font-bold text-green-600">
                         {parseFloat(transfer.amount).toLocaleString()} ر.ي
                       </TableCell>
-                      <TableCell>{transfer.transferReason}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <User className="w-4 h-4 text-gray-500" />
-                          {transfer.approvedBy}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <span 
-                          className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            transfer.status === 'completed' 
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
-                              : transfer.status === 'pending'
-                              ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200'
-                              : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                          }`}
-                        >
-                          {transfer.status === 'completed' ? 'مكتمل' 
-                           : transfer.status === 'pending' ? 'في الانتظار' 
-                           : 'ملغي'}
-                        </span>
-                      </TableCell>
+                      <TableCell>{transfer.transferReason || '-'}</TableCell>
+                      <TableCell>{transfer.description || '-'}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
