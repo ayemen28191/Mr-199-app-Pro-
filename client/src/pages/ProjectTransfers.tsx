@@ -356,9 +356,9 @@ export default function ProjectTransfers() {
               {transfers.map((transfer: ProjectFundTransfer) => (
                 <Card key={transfer.id} className="relative overflow-hidden bg-gradient-to-r from-green-50 to-green-100 border-r-4 border-green-500 hover:shadow-lg transition-all duration-200" data-testid={`card-transfer-${transfer.id}`}>
                   <CardContent className="p-3">
-                    <div className="flex items-start justify-between">
+                    <div className="flex items-start justify-between gap-3">
                       {/* المحتوى الرئيسي */}
-                      <div className="flex items-start gap-3 flex-1">
+                      <div className="flex items-start gap-3 flex-1 min-w-0">
                         {/* أيقونة دائرية */}
                         <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white font-bold text-sm shrink-0">
                           ت
@@ -411,15 +411,15 @@ export default function ProjectTransfers() {
                       </div>
 
                       {/* أزرار العمليات */}
-                      <div className="flex flex-col gap-1 ml-3">
+                      <div className="flex flex-col gap-1 shrink-0">
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => startEdit(transfer)}
-                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 w-7 h-7 p-0"
+                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 w-8 h-8 p-0 border"
                           data-testid={`button-edit-${transfer.id}`}
                         >
-                          <Edit className="w-3 h-3" />
+                          <Edit className="w-4 h-4" />
                         </Button>
                         <Button
                           variant="outline"
@@ -429,16 +429,16 @@ export default function ProjectTransfers() {
                             getProjectName(transfer.fromProjectId), 
                             getProjectName(transfer.toProjectId)
                           )}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50 w-7 h-7 p-0"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50 w-8 h-8 p-0 border"
                           disabled={deleteTransferMutation.isPending}
                           data-testid={`button-delete-${transfer.id}`}
                         >
-                          <Trash2 className="w-3 h-3" />
+                          <Trash2 className="w-4 h-4" />
                         </Button>
                         <Button
                           variant="default"
                           size="sm"
-                          className="bg-red-500 hover:bg-red-600 text-white text-xs px-1.5 py-0.5 h-6 w-7"
+                          className="bg-red-500 hover:bg-red-600 text-white text-xs px-2 py-1 h-7 w-8"
                           onClick={() => alert('عرض تفاصيل العملية')}
                         >
                           إيقاف
