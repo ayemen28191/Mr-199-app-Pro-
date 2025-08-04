@@ -404,9 +404,10 @@ export default function Reports() {
   };
 
   const exportDailyReportToExcel = async (data: any, filename: string) => {
-    const ExcelJS = await import('exceljs');
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('التقرير اليومي');
+    try {
+      const ExcelJS = await import('exceljs');
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('التقرير اليومي');
 
     // إعداد طباعة A4 محسن مع رأس وتذييل
     worksheet.pageSetup = {
@@ -424,18 +425,12 @@ export default function Reports() {
       verticalCentered: false
     };
 
-    // رأس الصفحة
-    worksheet.headerFooter.oddHeader = `&C&\"Arial,Bold\"&14${selectedProject?.name || 'مشروع'} - تقرير المصروفات اليومية\n&C&\"Arial\"&10${formatDate(dailyReportDate)}`;
-    
-    // تذييل الصفحة  
-    worksheet.headerFooter.oddFooter = `&L&\"Arial\"&9تم إنشاؤه بواسطة نظام إدارة مشاريع البناء&C&\"Arial\"&9صفحة &P من &N&R&\"Arial\"&9${new Date().toLocaleDateString('ar-YE')}`;
-
     // إعداد اتجاه الكتابة من اليمين لليسار
     worksheet.views = [{ rightToLeft: true }];
 
-    // إعداد رأس التقرير
-    worksheet.headerFooter.oddHeader = '&C&"Arial,Bold"&16نظام إدارة مشاريع البناء';
-    worksheet.headerFooter.oddFooter = '&L&"Arial"&10تاريخ الطباعة: &D&C&"Arial"&10صفحة &P من &N&R&"Arial"&10النظام الشامل لإدارة البناء';
+    // رأس وتذييل الصفحة
+    worksheet.headerFooter.oddHeader = `&C&\"Arial,Bold\"&14${selectedProject?.name || 'مشروع'} - تقرير المصروفات اليومية\\n&C&\"Arial\"&10${formatDate(dailyReportDate)}`;
+    worksheet.headerFooter.oddFooter = `&L&\"Arial\"&9تم إنشاؤه بواسطة نظام إدارة مشاريع البناء&C&\"Arial\"&9صفحة &P من &N&R&\"Arial\"&9${new Date().toLocaleDateString('ar-YE')}`;
 
     const selectedProject = projects.find(p => p.id === selectedProjectId);
 
@@ -848,6 +843,16 @@ export default function Reports() {
     link.href = URL.createObjectURL(blob);
     link.download = `تقرير-مصروفات-يومي-${selectedProject?.name || 'مشروع'}-${dailyReportDate}.xlsx`;
     link.click();
+    
+    } catch (error) {
+      console.error('خطأ في تصدير Excel:', error);
+      toast({
+        title: "خطأ في التصدير",
+        description: "حدث خطأ أثناء تصدير التقرير إلى Excel",
+        variant: "destructive",
+      });
+      throw error;
+    }
   };
 
   const exportWorkerReportToExcel = async (data: any, filename: string) => {
