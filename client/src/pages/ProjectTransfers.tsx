@@ -43,9 +43,25 @@ export default function ProjectTransfers() {
       }
       return apiRequest("POST", "/api/project-fund-transfers", data);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/project-fund-transfers"] });
+    onSuccess: (newTransfer) => {
+      // تحديث فوري للقائمة بدلاً من إعادة التحميل
+      queryClient.setQueryData(["/api/project-fund-transfers"], (oldData: any[]) => {
+        if (!oldData) return [newTransfer];
+        
+        if (editingTransfer) {
+          // تحديث العنصر الموجود
+          return oldData.map(transfer => 
+            transfer.id === editingTransfer.id ? newTransfer : transfer
+          );
+        } else {
+          // إضافة عنصر جديد
+          return [newTransfer, ...oldData];
+        }
+      });
+      
+      // تحديث إحصائيات المشاريع في الخلفية
       queryClient.invalidateQueries({ queryKey: ["/api/projects/with-stats"] });
+      
       toast({
         title: "تم بنجاح",
         description: editingTransfer ? "تم تحديث عملية ترحيل الأموال بنجاح" : "تم إنشاء عملية ترحيل الأموال بنجاح",
@@ -67,9 +83,16 @@ export default function ProjectTransfers() {
   const deleteTransferMutation = useMutation({
     mutationFn: (transferId: string) =>
       apiRequest("DELETE", `/api/project-fund-transfers/${transferId}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/project-fund-transfers"] });
+    onSuccess: (_, transferId) => {
+      // حذف فوري من القائمة
+      queryClient.setQueryData(["/api/project-fund-transfers"], (oldData: any[]) => {
+        if (!oldData) return [];
+        return oldData.filter(transfer => transfer.id !== transferId);
+      });
+      
+      // تحديث إحصائيات المشاريع في الخلفية
       queryClient.invalidateQueries({ queryKey: ["/api/projects/with-stats"] });
+      
       toast({
         title: "تم الحذف",
         description: "تم حذف عملية ترحيل الأموال بنجاح",

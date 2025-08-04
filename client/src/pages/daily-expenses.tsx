@@ -23,6 +23,7 @@ import type {
   MaterialPurchase,
   WorkerTransfer,
   Worker,
+  Project,
   InsertFundTransfer,
   InsertTransportationExpense,
   InsertDailyExpenseSummary,
@@ -146,6 +147,8 @@ export default function DailyExpenses() {
       }));
     },
     enabled: !!selectedProjectId && showProjectTransfers && projects.length > 0,
+    staleTime: 60000, // البيانات صالحة لدقيقة واحدة
+    gcTime: 300000, // الاحتفاظ بالذاكرة لـ 5 دقائق
   });
 
   const { data: todayFundTransfers = [], refetch: refetchFundTransfers, isLoading: fundTransfersLoading } = useQuery({
@@ -189,7 +192,13 @@ export default function DailyExpenses() {
 
   const addFundTransferMutation = useMutation({
     mutationFn: (data: InsertFundTransfer) => apiRequest("POST", "/api/fund-transfers", data),
-    onSuccess: async () => {
+    onSuccess: async (newTransfer) => {
+      // تحديث فوري للقائمة
+      queryClient.setQueryData(["/api/projects", selectedProjectId, "fund-transfers", selectedDate], (oldData: any[]) => {
+        if (!oldData) return [newTransfer];
+        return [newTransfer, ...oldData];
+      });
+      
       toast({
         title: "تم إضافة العهدة",
         description: "تم إضافة تحويل العهدة بنجاح",
@@ -204,17 +213,18 @@ export default function DailyExpenses() {
       setSenderName("");
       setTransferNumber("");
       setTransferType("");
-      
-      // إعادة جلب البيانات
-      queryClient.invalidateQueries({ 
-        queryKey: ["/api/projects", selectedProjectId, "fund-transfers", selectedDate] 
-      });
     },
   });
 
   const addTransportationMutation = useMutation({
     mutationFn: (data: InsertTransportationExpense) => apiRequest("POST", "/api/transportation-expenses", data),
-    onSuccess: async () => {
+    onSuccess: async (newExpense) => {
+      // تحديث فوري للقائمة
+      queryClient.setQueryData(["/api/projects", selectedProjectId, "transportation-expenses", selectedDate], (oldData: any[]) => {
+        if (!oldData) return [newExpense];
+        return [newExpense, ...oldData];
+      });
+      
       toast({
         title: "تم إضافة المواصلات",
         description: "تم إضافة مصروف المواصلات بنجاح",
@@ -229,10 +239,7 @@ export default function DailyExpenses() {
       setTransportAmount("");
       setTransportNotes("");
       
-      // إعادة جلب البيانات
-      queryClient.invalidateQueries({ 
-        queryKey: ["/api/projects", selectedProjectId, "transportation-expenses", selectedDate] 
-      });
+
     },
   });
 
@@ -261,9 +268,11 @@ export default function DailyExpenses() {
   // Delete mutations
   const deleteFundTransferMutation = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/fund-transfers/${id}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ 
-        queryKey: ["/api/projects", selectedProjectId, "fund-transfers", selectedDate] 
+    onSuccess: (_, id) => {
+      // حذف فوري من القائمة
+      queryClient.setQueryData(["/api/projects", selectedProjectId, "fund-transfers", selectedDate], (oldData: any[]) => {
+        if (!oldData) return [];
+        return oldData.filter(transfer => transfer.id !== id);
       });
       toast({ title: "تم الحذف", description: "تم حذف العهدة بنجاح" });
     },
@@ -274,9 +283,11 @@ export default function DailyExpenses() {
 
   const deleteTransportationMutation = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/transportation-expenses/${id}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ 
-        queryKey: ["/api/projects", selectedProjectId, "transportation-expenses", selectedDate] 
+    onSuccess: (_, id) => {
+      // حذف فوري من القائمة
+      queryClient.setQueryData(["/api/projects", selectedProjectId, "transportation-expenses", selectedDate], (oldData: any[]) => {
+        if (!oldData) return [];
+        return oldData.filter(expense => expense.id !== id);
       });
       toast({ title: "تم الحذف", description: "تم حذف مصروف المواصلات بنجاح" });
     },
@@ -311,15 +322,18 @@ export default function DailyExpenses() {
   const updateFundTransferMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => 
       apiRequest("PUT", `/api/fund-transfers/${id}`, data),
-    onSuccess: async () => {
+    onSuccess: async (updatedTransfer, { id }) => {
+      // تحديث فوري للقائمة
+      queryClient.setQueryData(["/api/projects", selectedProjectId, "fund-transfers", selectedDate], (oldData: any[]) => {
+        if (!oldData) return [updatedTransfer];
+        return oldData.map(transfer => transfer.id === id ? updatedTransfer : transfer);
+      });
+      
       // حفظ قيم الإكمال التلقائي
       if (senderName) await saveAutocompleteValue('senderNames', senderName);
       if (transferNumber) await saveAutocompleteValue('transferNumbers', transferNumber);
       
       resetFundTransferForm();
-      queryClient.invalidateQueries({ 
-        queryKey: ["/api/projects", selectedProjectId, "fund-transfers", selectedDate] 
-      });
       toast({
         title: "تم التحديث",
         description: "تم تحديث العهدة بنجاح",
@@ -384,15 +398,18 @@ export default function DailyExpenses() {
   const updateTransportationMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => 
       apiRequest("PUT", `/api/transportation-expenses/${id}`, data),
-    onSuccess: async () => {
+    onSuccess: async (updatedExpense, { id }) => {
+      // تحديث فوري للقائمة
+      queryClient.setQueryData(["/api/projects", selectedProjectId, "transportation-expenses", selectedDate], (oldData: any[]) => {
+        if (!oldData) return [updatedExpense];
+        return oldData.map(expense => expense.id === id ? updatedExpense : expense);
+      });
+      
       // حفظ قيم الإكمال التلقائي
       if (transportDescription) await saveAutocompleteValue('transportDescriptions', transportDescription);
       if (transportNotes) await saveAutocompleteValue('notes', transportNotes);
       
       resetTransportationForm();
-      queryClient.invalidateQueries({ 
-        queryKey: ["/api/projects", selectedProjectId, "transportation-expenses"] 
-      });
       toast({
         title: "تم التحديث",
         description: "تم تحديث مصروف المواصلات بنجاح",
@@ -516,10 +533,7 @@ export default function DailyExpenses() {
       totalWorkerWages: totals.totalWorkerWages.toString(),
       totalMaterialCosts: totals.totalMaterialCosts.toString(),
       totalTransportationCosts: totals.totalTransportation.toString(),
-      totalWorkerTransfers: totals.totalWorkerTransfers.toString(),
-      totalMiscExpenses: totals.totalMiscExpenses.toString(),
-      incomingProjectTransfers: totals.incomingProjectTransfers.toString(),
-      outgoingProjectTransfers: totals.outgoingProjectTransfers.toString(),
+
       totalIncome: totals.totalIncome.toString(),
       totalExpenses: totals.totalExpenses.toString(),
       remainingBalance: totals.remainingBalance.toString(),
