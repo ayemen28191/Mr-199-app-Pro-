@@ -899,4 +899,48 @@
     break-after: avoid !important;
     margin: 0 0 3mm 0 !important;
   }
+
+  /* CSS خاص بتقرير تصفية العمال للطباعة */
+  .workers-filter-report .print\\:hidden {
+    display: none !important;
+  }
+  
+  .workers-filter-report .print\\:block {
+    display: block !important;
+  }
+  
+  .workers-filter-report .print-preview {
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+  }
+  
+  .workers-filter-report table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+    margin: 0 !important;
+    font-size: 11px !important;
+  }
+  
+  .workers-filter-report th, 
+  .workers-filter-report td {
+    border: 1px solid #000 !important;
+    padding: 4px !important;
+    text-align: center !important;
+    font-size: 11px !important;
+    color: #000 !important;
+    background: white !important;
+    -webkit-print-color-adjust: exact !important;
+  }
+  
+  .workers-filter-report th {
+    background: #f0f0f0 !important;
+    font-weight: bold !important;
+  }
+  
+  .workers-filter-report .grid {
+    display: none !important;
+  }
 }
