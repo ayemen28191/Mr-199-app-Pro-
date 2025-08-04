@@ -444,8 +444,6 @@ export default function Reports() {
     console.log('📅 Report date for Excel:', dailyReportDate);
     
     // إعداد رأس وتذييل بسيط وواضح للطباعة
-    //worksheet.headerFooter.oddHeader = `&C&\"Arial,Bold\"&12${selectedProject?.name || 'مشروع'} - تقرير المصروفات اليومية\\n&C&\"Arial\"&10${formatDate(dailyReportDate)}`;
-    //worksheet.headerFooter.oddFooter = `&C&\"Arial\"&9صفحة &P من &N - نظام إدارة مشاريع البناء`;
     
     // ضبط خصائص المصنف للعربية وإعدادات الطباعة المحسنة
     workbook.creator = 'نظام إدارة مشاريع البناء';
