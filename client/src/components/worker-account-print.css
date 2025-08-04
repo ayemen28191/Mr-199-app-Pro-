@@ -111,6 +111,9 @@
     line-height: 1.4 !important;           /* تباعد سطور محسن */
     overflow: visible !important;          /* إظهار المحتوى المتجاوز */
     direction: rtl !important;             /* اتجاه من اليمين لليسار للعربية */
+    zoom: 1.0 !important;                  /* إصلاح: تثبيت التكبير لمنع ظهور الأرقام الكبيرة */
+    transform: scale(1.0) !important;      /* إصلاح: تثبيت المقياس على 100% */
+    transform-origin: top right !important; /* نقطة التحويل من اليمين العلوي للعربية */
     /* إزالة page-break-inside: avoid للسماح بالتوزع على صفحات متعددة */
   }
 
@@ -295,10 +298,29 @@
     margin-bottom: 0.3cm !important;       /* مسافة من الأسفل */
   }
 
-  /* قيم البيانات المالية */
+  /* قيم البيانات المالية - إصلاح ظهور الأرقام الكبيرة */
   .enhanced-worker-account-report > div:last-child > div:first-of-type > div > div:last-child {
-    font-size: 26px !important;            /* حجم خط كبير للقيم */
+    font-size: 18px !important;            /* إصلاح: تقليل حجم الخط لمنع ظهور الأرقام الكبيرة */
     font-weight: bold !important;          /* خط عريض للبروز */
+    zoom: 1.0 !important;                  /* إصلاح: تثبيت التكبير */
+    transform: scale(1.0) !important;      /* إصلاح: تثبيت المقياس */
+    text-align: center !important;         /* توسيط الأرقام */
+    line-height: 1.2 !important;          /* تقليل تباعد الأسطر */
+    white-space: nowrap !important;        /* منع تقسيم الأرقام */
+    overflow: hidden !important;          /* إخفاء المحتوى المتجاوز */
+    text-overflow: ellipsis !important;   /* نقاط للمحتوى المقطوع */
+  }
+  
+  /* إعدادات إضافية للأرقام والعملات في جميع أنحاء التقرير */
+  .enhanced-worker-account-report .currency-amount,
+  .enhanced-worker-account-report [class*="currency"],
+  .enhanced-worker-account-report [style*="fontWeight: 'bold'"],
+  .enhanced-worker-account-report strong {
+    font-size: 16px !important;           /* إصلاح: تحديد حجم خط ثابت للعملات */
+    zoom: 1.0 !important;                 /* إصلاح: تثبيت التكبير */
+    transform: scale(1.0) !important;     /* إصلاح: تثبيت المقياس */
+    line-height: 1.2 !important;         /* تقليل تباعد الأسطر */
+    white-space: nowrap !important;       /* منع تقسيم الأرقام */
   }
 
   /* ===== تحسين الرصيد النهائي ===== */

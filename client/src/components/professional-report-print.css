@@ -34,13 +34,14 @@
     height: 100vh !important;
     margin: 0 !important;
     padding: 0 !important;
-    transform: scale(0.95) !important;
+    transform: scale(1.0) !important; /* إصلاح: تثبيت المقياس على 100% لمنع ظهور الأرقام الكبيرة */
     transform-origin: top left !important;
     background: white !important;
     page-break-inside: avoid !important;
     page-break-after: avoid !important;
     page-break-before: avoid !important;
     overflow: hidden !important;
+    zoom: 1.0 !important; /* إضافة: تثبيت التكبير لمنع التشويه */
   }
 
   /* Preserve colors for professional gradient */
@@ -70,6 +71,22 @@
     font-size: 10px !important;
     line-height: 1.2 !important;
     page-break-inside: avoid !important;
+    text-align: center !important; /* إصلاح: توسيط النص لمنع ظهور الأرقام في أماكن غريبة */
+    vertical-align: middle !important;
+    white-space: nowrap !important; /* منع تقسيم الأرقام على أسطر متعددة */
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+  
+  /* إصلاح خاص للأرقام والعملات */
+  td[style*="fontSize"], 
+  .currency-display,
+  .number-display {
+    font-size: 10px !important;
+    font-weight: normal !important;
+    transform: scale(1.0) !important;
+    zoom: 1.0 !important;
+    line-height: 1.2 !important;
   }
 
   /* Header styling */

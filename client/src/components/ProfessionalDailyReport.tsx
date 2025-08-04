@@ -70,7 +70,7 @@ export const ProfessionalDailyReport = ({ data, selectedProject, selectedDate }:
   return (
     <div 
       id="professional-daily-report" 
-      className="print-content bg-white enhanced-daily-report" 
+      className="print-content bg-white enhanced-daily-report prevent-large-numbers" 
       style={{
         direction: 'rtl',
         width: '100%',
@@ -80,7 +80,10 @@ export const ProfessionalDailyReport = ({ data, selectedProject, selectedDate }:
         pageBreakAfter: 'avoid',
         fontFamily: 'Arial, sans-serif',
         fontSize: '14px',
-        lineHeight: '1.3'
+        lineHeight: '1.3',
+        zoom: '1.0',
+        transform: 'scale(1.0)',
+        transformOrigin: 'top right'
       }}
     >
       

@@ -14,6 +14,7 @@ import { EnhancedWorkerAccountStatement } from "@/components/EnhancedWorkerAccou
 import type { Worker, Project, WorkerAttendance, WorkerTransfer } from "@shared/schema";
 import * as ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
+import "@/components/print-fix-large-numbers.css";
 
 interface WorkerStatementData {
   worker: Worker;
@@ -180,8 +181,31 @@ export default function EnhancedWorkerStatement() {
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('كشف حساب العامل');
 
-      // Set RTL direction
-      worksheet.views = [{ rightToLeft: true }];
+      // إعداد طباعة محسن وإصلاح مشكلة الأرقام الكبيرة
+      worksheet.pageSetup = {
+        paperSize: 9, // A4
+        orientation: 'portrait',
+        fitToPage: true,
+        fitToWidth: 1,
+        fitToHeight: 0,
+        scale: 100, // تثبيت المقياس على 100% لمنع ظهور الأرقام الكبيرة
+        margins: {
+          left: 0.5, right: 0.5, top: 1.0, bottom: 1.0,
+          header: 0.5, footer: 0.5
+        },
+        showGridLines: true,
+        horizontalCentered: true,
+        verticalCentered: false
+      };
+
+      // إعداد اتجاه الكتابة من اليمين لليسار مع تثبيت التكبير
+      worksheet.views = [{ 
+        rightToLeft: true,
+        showGridLines: true,
+        showRowColHeaders: true,
+        zoomScale: 100, // إصلاح: تثبيت التكبير على 100% لمنع ظهور الأرقام الكبيرة
+        state: 'normal'
+      }];
 
       // Add header
       worksheet.mergeCells('A1:L3');

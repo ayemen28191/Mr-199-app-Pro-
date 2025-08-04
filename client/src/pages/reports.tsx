@@ -33,6 +33,7 @@ import "@/components/print-styles.css";
 import "@/components/invoice-print-styles.css";
 import "@/components/professional-report-print.css";
 import "@/components/enhanced-worker-statement-print.css";
+import "@/components/print-fix-large-numbers.css";
 
 export default function Reports() {
   const [, setLocation] = useLocation();
@@ -410,13 +411,14 @@ export default function Reports() {
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('التقرير اليومي');
 
-    // إعداد طباعة A4 محسن مع رأس وتذييل
+    // إعداد طباعة A4 محسن مع رأس وتذييل - إصلاح مشكلة الأرقام الكبيرة
     worksheet.pageSetup = {
       paperSize: 9, // A4
       orientation: 'portrait',
       fitToPage: true,
       fitToWidth: 1,
       fitToHeight: 0,
+      scale: 100, // تثبيت المقياس على 100% لمنع ظهور الأرقام الكبيرة
       margins: {
         left: 0.5, right: 0.5, top: 1.0, bottom: 1.0,
         header: 0.5, footer: 0.5
@@ -427,12 +429,13 @@ export default function Reports() {
       printTitlesRow: '5:5' // تكرار رأس الجدول في كل صفحة
     };
 
-    // إعداد اتجاه الكتابة من اليمين لليسار وتحسين العرض
+    // إعداد اتجاه الكتابة من اليمين لليسار وتحسين العرض - إصلاح مشكلة التكبير
     worksheet.views = [{ 
       rightToLeft: true,
       showGridLines: true,
       showRowColHeaders: true,
-      zoomScale: 85 // تقليل حجم العرض لاستغلال أفضل للمساحة
+      zoomScale: 100, // إصلاح: تثبيت التكبير على 100% لمنع ظهور الأرقام الكبيرة عند الطباعة
+      state: 'normal'
     }];
 
     // رأس وتذييل الصفحة بتنسيق أفضل للطباعة
@@ -441,14 +444,25 @@ export default function Reports() {
     console.log('📅 Report date for Excel:', dailyReportDate);
     
     // إعداد رأس وتذييل بسيط وواضح للطباعة
-    worksheet.headerFooter.oddHeader = `&C&\"Arial,Bold\"&12${selectedProject?.name || 'مشروع'} - تقرير المصروفات اليومية\\n&C&\"Arial\"&10${formatDate(dailyReportDate)}`;
-    worksheet.headerFooter.oddFooter = `&C&\"Arial\"&9صفحة &P من &N - نظام إدارة مشاريع البناء`;
+    //worksheet.headerFooter.oddHeader = `&C&\"Arial,Bold\"&12${selectedProject?.name || 'مشروع'} - تقرير المصروفات اليومية\\n&C&\"Arial\"&10${formatDate(dailyReportDate)}`;
+    //worksheet.headerFooter.oddFooter = `&C&\"Arial\"&9صفحة &P من &N - نظام إدارة مشاريع البناء`;
     
-    // ضبط خصائص المصنف للعربية
+    // ضبط خصائص المصنف للعربية وإعدادات الطباعة المحسنة
     workbook.creator = 'نظام إدارة مشاريع البناء';
     workbook.lastModifiedBy = 'تصدير Excel';
     workbook.created = new Date();
     workbook.modified = new Date();
+    
+    // إعدادات إضافية للطباعة المحسنة
+    workbook.calcProperties = {
+      fullCalcOnLoad: true
+    };
+    
+    // خصائص العرض المحسنة للطباعة
+    workbook.views = [{
+      x: 0, y: 0, width: 10000, height: 20000,
+      firstSheet: 0, activeTab: 0, visibility: 'visible'
+    }];
 
     // العنوان الرئيسي المحسن للطباعة
     worksheet.mergeCells('A1:I1');
@@ -901,7 +915,16 @@ export default function Reports() {
           bottom: { style: 'thin', color: { argb: 'FF000000' } }, 
           right: { style: 'thin', color: { argb: 'FF000000' } }
         };
-        if (i === 8) cell.numFmt = '#,##0.00';
+        // تحسين تنسيق الأرقام لمنع ظهور الأرقام الكبيرة
+        if (i === 8) {
+          cell.numFmt = '#,##0.00';
+          cell.alignment = { 
+            horizontal: 'center', 
+            vertical: 'middle',
+            shrinkToFit: true, // تقليل حجم النص ليناسب الخلية
+            wrapText: false
+          };
+        }
       });
       
       worksheet.getRow(currentRow).height = item.type.includes('total') || item.type === 'balance' ? 30 : 25;
