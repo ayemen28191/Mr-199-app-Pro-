@@ -3,10 +3,9 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar, Users, Briefcase, FileText, Download, Eye, RefreshCw, Filter, Search } from "lucide-react";
+import { Calendar, Users, Briefcase, FileText, Download, RefreshCw, Filter, Search } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 
 interface Worker {
@@ -35,15 +34,11 @@ interface WorkerAttendance {
   project?: Project;
 }
 
-const getCurrentDate = () => {
-  return new Date().toISOString().split('T')[0];
-};
-
 export default function WorkersFilterReport() {
   const { toast } = useToast();
   
   // States
-  const [selectedWorkerId, setSelectedWorkerId] = useState("");
+  const [selectedWorkerIds, setSelectedWorkerIds] = useState<string[]>([]);
   const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([]);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -61,10 +56,10 @@ export default function WorkersFilterReport() {
   });
 
   const generateReport = async () => {
-    if (!selectedWorkerId || !dateFrom || !dateTo) {
+    if (selectedWorkerIds.length === 0 || !dateFrom || !dateTo) {
       toast({
         title: "بيانات ناقصة",
-        description: "يرجى اختيار العامل والتواريخ",
+        description: "يرجى اختيار العمال والتواريخ",
         variant: "destructive",
       });
       return;
@@ -72,20 +67,30 @@ export default function WorkersFilterReport() {
 
     setIsGenerating(true);
     try {
-      // إنشاء URL مع فلترة المشاريع
-      let url = `/api/workers/${selectedWorkerId}/account-statement?dateFrom=${dateFrom}&dateTo=${dateTo}`;
+      // جمع البيانات من جميع العمال المحددين
+      const allAttendanceData: WorkerAttendance[] = [];
       
-      // إضافة فلترة المشاريع إذا تم تحديدها
-      if (selectedProjectIds.length > 0) {
-        const projectsQuery = selectedProjectIds.map(id => `projectIds=${id}`).join('&');
-        url += `&${projectsQuery}`;
+      for (const workerId of selectedWorkerIds) {
+        // إنشاء URL مع فلترة المشاريع
+        let url = `/api/workers/${workerId}/account-statement?dateFrom=${dateFrom}&dateTo=${dateTo}`;
+        
+        // إضافة فلترة المشاريع إذا تم تحديدها
+        if (selectedProjectIds.length > 0) {
+          const projectsQuery = selectedProjectIds.map(id => `projectIds=${id}`).join('&');
+          url += `&${projectsQuery}`;
+        }
+        
+        const data = await apiRequest("GET", url);
+        
+        // إضافة بيانات هذا العامل إلى المجموعة الكاملة
+        if (data.attendance && data.attendance.length > 0) {
+          allAttendanceData.push(...data.attendance);
+        }
       }
-      
-      const data = await apiRequest("GET", url);
       
       // إضافة معلومات العمال والمشاريع للحضور
       const attendanceWithDetails = await Promise.all(
-        (data.attendance || []).map(async (attendance: WorkerAttendance) => {
+        allAttendanceData.map(async (attendance: WorkerAttendance) => {
           const worker = workers.find(w => w.id === attendance.workerId);
           const project = projects.find(p => p.id === attendance.projectId);
           return {
@@ -96,12 +101,17 @@ export default function WorkersFilterReport() {
         })
       );
       
-      setReportData(attendanceWithDetails);
+      // ترتيب البيانات حسب التاريخ
+      const sortedData = attendanceWithDetails.sort((a, b) => 
+        new Date(b.date).getTime() - new Date(a.date).getTime()
+      );
+      
+      setReportData(sortedData);
       setShowResults(true);
       
       toast({
         title: "تم إنشاء التقرير",
-        description: `تم العثور على ${attendanceWithDetails.length} سجل حضور`,
+        description: `تم العثور على ${sortedData.length} سجل حضور للعمال المحددين`,
       });
     } catch (error) {
       console.error("Error generating report:", error);
@@ -146,12 +156,14 @@ export default function WorkersFilterReport() {
     const url = URL.createObjectURL(blob);
     link.href = url;
     
-    const selectedWorker = workers.find(w => w.id === selectedWorkerId);
+    const selectedWorkers = selectedWorkerIds.length > 0 
+      ? workers.filter(w => selectedWorkerIds.includes(w.id)).map(w => w.name).join('-')
+      : 'جميع-العمال';
     const projectNames = selectedProjectIds.length > 0 
       ? projects.filter(p => selectedProjectIds.includes(p.id)).map(p => p.name).join('-')
       : 'جميع-المشاريع';
     
-    link.download = `تقرير-العامل-${selectedWorker?.name || 'غير-محدد'}-${projectNames}-${dateFrom}-إلى-${dateTo}.csv`;
+    link.download = `تقرير-العمال-${selectedWorkers}-${projectNames}-${dateFrom}-إلى-${dateTo}.csv`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -164,7 +176,7 @@ export default function WorkersFilterReport() {
   };
 
   const resetForm = () => {
-    setSelectedWorkerId("");
+    setSelectedWorkerIds([]);
     setSelectedProjectIds([]);
     setDateFrom("");
     setDateTo("");
@@ -185,7 +197,7 @@ export default function WorkersFilterReport() {
             تصفية العمال حسب المشاريع
           </h1>
           <p className="text-slate-600 text-lg">
-            تقرير مفصل لحضور العمال في مشاريع محددة
+            تقرير مفصل لحضور عمال متعددين في مشاريع محددة
           </p>
         </div>
 
@@ -198,56 +210,84 @@ export default function WorkersFilterReport() {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-6 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Worker Selection */}
+            {/* Workers Selection */}
+            <div className="space-y-3">
+              <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                العمال المطلوبين
+                <span className="text-red-500">*</span>
+              </label>
+              <div className="max-h-40 overflow-y-auto border-2 border-blue-200 rounded-xl p-4 space-y-3 bg-gray-50">
+                <div className="flex items-center space-x-2 mb-3">
+                  <input
+                    type="checkbox"
+                    id="all-workers"
+                    checked={selectedWorkerIds.length === workers.length && workers.length > 0}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedWorkerIds(workers.map(w => w.id));
+                      } else {
+                        setSelectedWorkerIds([]);
+                      }
+                    }}
+                    className="rounded border-gray-300 w-4 h-4"
+                  />
+                  <label htmlFor="all-workers" className="text-sm font-medium text-gray-700 mr-2">
+                    جميع العمال
+                  </label>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {workers.map((worker) => (
+                    <div key={worker.id} className="flex items-center space-x-2 p-2 hover:bg-white rounded-lg transition-colors">
+                      <input
+                        type="checkbox"
+                        id={`worker-${worker.id}`}
+                        checked={selectedWorkerIds.includes(worker.id)}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setSelectedWorkerIds(prev => [...prev, worker.id]);
+                          } else {
+                            setSelectedWorkerIds(prev => prev.filter(id => id !== worker.id));
+                          }
+                        }}
+                        className="rounded border-gray-300 w-4 h-4"
+                      />
+                      <label htmlFor={`worker-${worker.id}`} className="text-sm text-gray-600 mr-2">
+                        {worker.name} - {worker.type}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Date Range */}
+            <div className="grid grid-cols-2 gap-6">
               <div className="space-y-3">
                 <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  اختيار العامل
+                  <Calendar className="h-4 w-4" />
+                  من تاريخ
                   <span className="text-red-500">*</span>
                 </label>
-                <Select value={selectedWorkerId} onValueChange={setSelectedWorkerId}>
-                  <SelectTrigger className="h-12 text-lg border-2 border-blue-200 focus:border-blue-500 rounded-xl">
-                    <SelectValue placeholder="اختر العامل..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {workers.map((worker) => (
-                      <SelectItem key={worker.id} value={worker.id}>
-                        {worker.name} - {worker.type}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="h-12 border-2 border-blue-200 focus:border-blue-500 rounded-xl"
+                />
               </div>
-
-              {/* Date Range */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-3">
-                  <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                    <Calendar className="h-4 w-4" />
-                    من تاريخ
-                    <span className="text-red-500">*</span>
-                  </label>
-                  <Input
-                    type="date"
-                    value={dateFrom}
-                    onChange={(e) => setDateFrom(e.target.value)}
-                    className="h-12 border-2 border-blue-200 focus:border-blue-500 rounded-xl"
-                  />
-                </div>
-                <div className="space-y-3">
-                  <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                    <Calendar className="h-4 w-4" />
-                    إلى تاريخ
-                    <span className="text-red-500">*</span>
-                  </label>
-                  <Input
-                    type="date"
-                    value={dateTo}
-                    onChange={(e) => setDateTo(e.target.value)}
-                    className="h-12 border-2 border-blue-200 focus:border-blue-500 rounded-xl"
-                  />
-                </div>
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  إلى تاريخ
+                  <span className="text-red-500">*</span>
+                </label>
+                <Input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="h-12 border-2 border-blue-200 focus:border-blue-500 rounded-xl"
+                />
               </div>
             </div>
 
