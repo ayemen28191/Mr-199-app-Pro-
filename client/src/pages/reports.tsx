@@ -702,10 +702,52 @@ export default function Reports() {
         });
       }
 
+      // التحويلات الصادرة لمشاريع أخرى المحسنة
+      if (data.outgoingProjectTransfers && data.outgoingProjectTransfers.length > 0) {
+        // قسم فرعي للتحويلات الصادرة
+        worksheet.mergeCells(`A${currentRow}:I${currentRow}`);
+        const outgoingTransferSectionCell = worksheet.getCell(`A${currentRow}`);
+        outgoingTransferSectionCell.value = '🔄 تحويلات صادرة لمشاريع أخرى';
+        outgoingTransferSectionCell.font = { name: 'Arial', size: 12, bold: true };
+        outgoingTransferSectionCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        outgoingTransferSectionCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFdc2626' } };
+        worksheet.getRow(currentRow).height = 30;
+        currentRow++;
+
+        data.outgoingProjectTransfers.forEach((transfer: any) => {
+          const row = worksheet.getRow(currentRow);
+          
+          row.getCell(1).value = expenseNumber++;
+          row.getCell(2).value = Number(transfer.amount) || 0;
+          row.getCell(3).value = transfer.projectName || 'مشروع غير محدد';
+          row.getCell(4).value = 'تحويل مشروع';
+          row.getCell(5).value = `تحويل أموال إلى مشروع: ${transfer.projectName || 'مشروع غير محدد'}${transfer.description ? ' | ' + transfer.description : ''}`;
+          row.getCell(6).value = transfer.transferredBy || 'إدارة المشروع';
+          row.getCell(7).value = '1 تحويل';
+          row.getCell(8).value = formatDate(transfer.transferDate || transfer.date || dailyReportDate);
+          row.getCell(9).value = `${transfer.notes || 'تحويل لمشروع'} | رقم التحويل: ${transfer.transferNumber || 'غير محدد'}`;
+          
+          // تنسيق خلايا التحويلات الصادرة
+          for (let i = 1; i <= 9; i++) {
+            const cell = row.getCell(i);
+            cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            cell.border = {
+              top: { style: 'thin' }, left: { style: 'thin' },
+              bottom: { style: 'thin' }, right: { style: 'thin' }
+            };
+            if (i === 2) cell.numFmt = '#,##0.00';
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFfce7e7' } };
+          }
+          worksheet.getRow(currentRow).height = 35; // زيادة ارتفاع الصف
+          currentRow++;
+        });
+      }
+
       // إجمالي المصروفات المحسن
       const totalExpenses = (data.workerAttendance?.reduce((sum: number, a: any) => sum + (Number(a.paidAmount) || 0), 0) || 0) +
                            (data.materialPurchases?.reduce((sum: number, p: any) => sum + (Number(p.totalAmount) || 0), 0) || 0) +
-                           (data.transportationExpenses?.reduce((sum: number, e: any) => sum + (Number(e.amount) || 0), 0) || 0);
+                           (data.transportationExpenses?.reduce((sum: number, e: any) => sum + (Number(e.amount) || 0), 0) || 0) +
+                           (data.outgoingProjectTransfers?.reduce((sum: number, t: any) => sum + (Number(t.amount) || 0), 0) || 0);
       
       const totalExpensesRow = worksheet.getRow(currentRow);
       worksheet.mergeCells(`A${currentRow}:A${currentRow}`);
