@@ -134,6 +134,27 @@ export default function DailyExpensesReport() {
       return;
     }
 
+    // حساب الإجماليات داخل الدالة لضمان الحصول على القيم الصحيحة
+    const totalsData = reportData.reduce((totals, day) => ({
+      totalIncome: totals.totalIncome + day.summary.totalIncome,
+      totalExpenses: totals.totalExpenses + day.summary.totalExpenses,
+      totalFundTransfers: totals.totalFundTransfers + day.summary.totalFundTransfers,
+      totalWorkerWages: totals.totalWorkerWages + day.summary.totalWorkerWages,
+      totalMaterialCosts: totals.totalMaterialCosts + day.summary.totalMaterialCosts,
+      totalTransportationCosts: totals.totalTransportationCosts + day.summary.totalTransportationCosts,
+      totalWorkerTransfers: totals.totalWorkerTransfers + day.summary.totalWorkerTransfers,
+    }), {
+      totalIncome: 0,
+      totalExpenses: 0,
+      totalFundTransfers: 0,
+      totalWorkerWages: 0,
+      totalMaterialCosts: 0,
+      totalTransportationCosts: 0,
+      totalWorkerTransfers: 0,
+    });
+
+    const finalBalanceData = reportData.length > 0 ? reportData[reportData.length - 1].summary.remainingBalance : 0;
+
     try {
       const workbook = new ExcelJS.Workbook();
       
@@ -257,14 +278,14 @@ export default function DailyExpensesReport() {
       const totalsRow = summarySheet.addRow([
         'الإجمالي',
         '-',
-        totals?.totalFundTransfers || 0,
-        totals?.totalWorkerWages || 0,
-        totals?.totalMaterialCosts || 0,
-        totals?.totalTransportationCosts || 0,
-        totals?.totalWorkerTransfers || 0,
-        totals?.totalIncome || 0,
-        totals?.totalExpenses || 0,
-        finalBalance
+        totalsData.totalFundTransfers,
+        totalsData.totalWorkerWages,
+        totalsData.totalMaterialCosts,
+        totalsData.totalTransportationCosts,
+        totalsData.totalWorkerTransfers,
+        totalsData.totalIncome,
+        totalsData.totalExpenses,
+        finalBalanceData
       ]);
       
       totalsRow.eachCell((cell, colNumber) => {
@@ -518,29 +539,76 @@ export default function DailyExpensesReport() {
   }, [reportData, showDetails, selectedProject, dateFrom, dateTo, toast]);
 
   const printReport = useCallback(() => {
-    // التأكد من تحميل ملف CSS للطباعة
-    const printStylesheet = document.querySelector('link[href*="daily-expenses-print.css"]');
-    if (!printStylesheet) {
-      const link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = '/src/styles/daily-expenses-print.css';
-      document.head.appendChild(link);
+    // التأكد من وجود البيانات
+    if (!reportData.length) {
+      toast({
+        title: "تنبيه",
+        description: "لا توجد بيانات للطباعة",
+        variant: "destructive",
+      });
+      return;
     }
-    
-    // إضافة عنوان للنافذة
-    const originalTitle = document.title;
-    document.title = `كشف المصروفات اليومية - ${selectedProject?.name} - ${formatDate(dateFrom)} إلى ${formatDate(dateTo)}`;
-    
-    // تنفيذ الطباعة
-    setTimeout(() => {
-      window.print();
+
+    try {
+      // التقاط HTML للتقرير
+      const reportElement = document.querySelector('.print-preview');
+      if (reportElement) {
+        const htmlContent = reportElement.innerHTML;
+        
+        // حفظ HTML في localStorage لنقله لصفحة إعدادات الطباعة
+        const reportContext = {
+          type: 'daily_expenses',
+          title: `كشف المصروفات اليومية - ${formatDate(dateFrom)}`,
+          html: htmlContent,
+          data: {
+            projectName: selectedProject?.name,
+            dateFrom,
+            dateTo,
+            reportData: reportData.length,
+            totalIncome: reportData.reduce((sum, day) => sum + day.summary.totalIncome, 0),
+            totalExpenses: reportData.reduce((sum, day) => sum + day.summary.totalExpenses, 0)
+          }
+        };
+        
+        localStorage.setItem('reportContext', JSON.stringify(reportContext));
+        console.log('✅ تم التقاط HTML من:', 'print-preview');
+        console.log('💾 تم حفظ سياق التقرير مع HTML:', {
+          title: reportContext.title,
+          htmlLength: htmlContent.length
+        });
+      }
       
-      // استعادة العنوان الأصلي
+      // التأكد من تحميل ملف CSS للطباعة
+      const printStylesheet = document.querySelector('link[href*="daily-expenses-print.css"]');
+      if (!printStylesheet) {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = '/src/styles/daily-expenses-print.css';
+        document.head.appendChild(link);
+      }
+      
+      // إضافة عنوان للنافذة
+      const originalTitle = document.title;
+      document.title = `كشف المصروفات اليومية - ${selectedProject?.name} - ${formatDate(dateFrom)} إلى ${formatDate(dateTo)}`;
+      
+      // تنفيذ الطباعة
       setTimeout(() => {
-        document.title = originalTitle;
-      }, 1000);
-    }, 100);
-  }, [selectedProject, dateFrom, dateTo]);
+        window.print();
+        
+        // استعادة العنوان الأصلي
+        setTimeout(() => {
+          document.title = originalTitle;
+        }, 1000);
+      }, 500); // زيادة الوقت لضمان تحميل CSS
+    } catch (error) {
+      console.error("Error preparing print:", error);
+      toast({
+        title: "خطأ في الطباعة",
+        description: "حدث خطأ أثناء تحضير التقرير للطباعة",
+        variant: "destructive",
+      });
+    }
+  }, [selectedProject, dateFrom, dateTo, reportData, toast]);
 
   const calculateTotals = () => {
     if (!reportData.length) return null;
