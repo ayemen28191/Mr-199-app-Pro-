@@ -466,10 +466,19 @@ export default function DailyExpenses() {
       todayMiscExpenses.reduce((sum, expense) => sum + parseFloat(expense.amount || "0"), 0) : 0;
     const totalFundTransfers = Array.isArray(todayFundTransfers) ? 
       todayFundTransfers.reduce((sum, transfer) => sum + parseFloat(transfer.amount || "0"), 0) : 0;
+    
+    // حساب الأموال الواردة والصادرة من ترحيل المشاريع
+    const incomingProjectTransfers = Array.isArray(projectTransfers) ? 
+      projectTransfers.filter(transfer => transfer.toProjectId === selectedProjectId)
+        .reduce((sum, transfer) => sum + parseFloat(transfer.amount || "0"), 0) : 0;
+    const outgoingProjectTransfers = Array.isArray(projectTransfers) ? 
+      projectTransfers.filter(transfer => transfer.fromProjectId === selectedProjectId)
+        .reduce((sum, transfer) => sum + parseFloat(transfer.amount || "0"), 0) : 0;
+    
     const carriedAmount = parseFloat(carriedForward) || 0;
     
-    const totalIncome = carriedAmount + totalFundTransfers;
-    const totalExpenses = totalWorkerWages + totalTransportation + totalMaterialCosts + totalWorkerTransfers + totalMiscExpenses;
+    const totalIncome = carriedAmount + totalFundTransfers + incomingProjectTransfers;
+    const totalExpenses = totalWorkerWages + totalTransportation + totalMaterialCosts + totalWorkerTransfers + totalMiscExpenses + outgoingProjectTransfers;
     const remainingBalance = totalIncome - totalExpenses;
 
     return {
@@ -479,6 +488,8 @@ export default function DailyExpenses() {
       totalWorkerTransfers,
       totalMiscExpenses,
       totalFundTransfers,
+      incomingProjectTransfers,
+      outgoingProjectTransfers,
       totalIncome,
       totalExpenses,
       remainingBalance,
@@ -505,6 +516,10 @@ export default function DailyExpenses() {
       totalWorkerWages: totals.totalWorkerWages.toString(),
       totalMaterialCosts: totals.totalMaterialCosts.toString(),
       totalTransportationCosts: totals.totalTransportation.toString(),
+      totalWorkerTransfers: totals.totalWorkerTransfers.toString(),
+      totalMiscExpenses: totals.totalMiscExpenses.toString(),
+      incomingProjectTransfers: totals.incomingProjectTransfers.toString(),
+      outgoingProjectTransfers: totals.outgoingProjectTransfers.toString(),
       totalIncome: totals.totalIncome.toString(),
       totalExpenses: totals.totalExpenses.toString(),
       remainingBalance: totals.remainingBalance.toString(),
