@@ -410,16 +410,15 @@ export default function Reports() {
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('التقرير اليومي');
 
-    // إعداد طباعة A4 محسن مع رأس وتذييل
+    // إعداد طباعة A4 محسن مع رأس وتذييل - بدون تكبير
     worksheet.pageSetup = {
       paperSize: 9, // A4
       orientation: 'portrait',
-      fitToPage: true,
-      fitToWidth: 1,
-      fitToHeight: 0,
+      fitToPage: false, // إلغاء التكبير التلقائي
+      scale: 100, // مقياس طبيعي 100%
       margins: {
-        left: 0.5, right: 0.5, top: 1.0, bottom: 1.0,
-        header: 0.5, footer: 0.5
+        left: 0.5, right: 0.5, top: 0.8, bottom: 0.8,
+        header: 0.3, footer: 0.3
       },
       showGridLines: true,
       horizontalCentered: true,
@@ -427,12 +426,12 @@ export default function Reports() {
       printTitlesRow: '5:5' // تكرار رأس الجدول في كل صفحة
     };
 
-    // إعداد اتجاه الكتابة من اليمين لليسار وتحسين العرض
+    // إعداد اتجاه الكتابة من اليمين لليسار بدون تكبير
     worksheet.views = [{ 
       rightToLeft: true,
       showGridLines: true,
-      showRowColHeaders: true,
-      zoomScale: 85 // تقليل حجم العرض لاستغلال أفضل للمساحة
+      showRowColHeaders: false,
+      zoomScale: 100 // حجم عرض طبيعي
     }];
 
     // رأس وتذييل الصفحة بتنسيق أفضل للطباعة
@@ -440,9 +439,9 @@ export default function Reports() {
     console.log('📊 Selected project for Excel:', selectedProject);
     console.log('📅 Report date for Excel:', dailyReportDate);
     
-    // إعداد رأس وتذييل بسيط وواضح للطباعة
-    worksheet.headerFooter.oddHeader = `&C&\"Arial,Bold\"&12${selectedProject?.name || 'مشروع'} - تقرير المصروفات اليومية\\n&C&\"Arial\"&10${formatDate(dailyReportDate)}`;
-    worksheet.headerFooter.oddFooter = `&C&\"Arial\"&9صفحة &P من &N - نظام إدارة مشاريع البناء`;
+    // إعداد رأس وتذييل مبسط لتجنب التشويش
+    worksheet.headerFooter.oddHeader = `&C&\"Arial\"&10${selectedProject?.name || 'مشروع'} - تقرير المصروفات اليومية`;
+    worksheet.headerFooter.oddFooter = `&C&\"Arial\"&8صفحة &P - ${formatDate(dailyReportDate)}`;
     
     // ضبط خصائص المصنف للعربية
     workbook.creator = 'نظام إدارة مشاريع البناء';
@@ -450,13 +449,13 @@ export default function Reports() {
     workbook.created = new Date();
     workbook.modified = new Date();
 
-    // العنوان الرئيسي المحسن للطباعة
+    // العنوان الرئيسي بحجم مناسب للطباعة
     worksheet.mergeCells('A1:I1');
     const titleCell = worksheet.getCell('A1');
     titleCell.value = 'كشف المصروفات اليومية التفصيلي والشامل';
     titleCell.font = { 
       name: 'Arial', 
-      size: 16, 
+      size: 12, // تقليل حجم الخط
       bold: true, 
       color: { argb: 'FF000000' }
     };
@@ -468,21 +467,21 @@ export default function Reports() {
     titleCell.fill = { 
       type: 'pattern', 
       pattern: 'solid', 
-      fgColor: { argb: 'FFE8F4FD' }
+      fgColor: { argb: 'FFF0F0F0' }
     };
     titleCell.border = {
-      top: { style: 'thick', color: { argb: 'FF1e40af' } },
-      left: { style: 'thick', color: { argb: 'FF1e40af' } },
-      bottom: { style: 'thick', color: { argb: 'FF1e40af' } },
-      right: { style: 'thick', color: { argb: 'FF1e40af' } }
+      top: { style: 'medium', color: { argb: 'FF000000' } },
+      left: { style: 'medium', color: { argb: 'FF000000' } },
+      bottom: { style: 'medium', color: { argb: 'FF000000' } },
+      right: { style: 'medium', color: { argb: 'FF000000' } }
     };
-    worksheet.getRow(1).height = 30;
+    worksheet.getRow(1).height = 25; // تقليل ارتفاع الصف
 
-    // معلومات المشروع والتاريخ محسنة للطباعة
+    // معلومات المشروع والتاريخ بحجم مناسب للطباعة
     worksheet.mergeCells('A3:E3');
     const projectInfoCell = worksheet.getCell('A3');
     projectInfoCell.value = `المشروع: ${selectedProject?.name || 'غير محدد'}`;
-    projectInfoCell.font = { name: 'Arial', size: 12, bold: true, color: { argb: 'FF000000' } };
+    projectInfoCell.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FF000000' } };
     projectInfoCell.alignment = { horizontal: 'right', vertical: 'middle' };
     projectInfoCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF5F5F5' } };
     projectInfoCell.border = {
@@ -495,7 +494,7 @@ export default function Reports() {
     worksheet.mergeCells('F3:I3');
     const dateInfoCell = worksheet.getCell('F3');
     dateInfoCell.value = `التاريخ: ${formatDate(dailyReportDate)} | رقم الكشف: ${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
-    dateInfoCell.font = { name: 'Arial', size: 12, bold: true, color: { argb: 'FF000000' } };
+    dateInfoCell.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FF000000' } };
     dateInfoCell.alignment = { horizontal: 'left', vertical: 'middle' };
     dateInfoCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF5F5F5' } };
     dateInfoCell.border = {
@@ -504,7 +503,7 @@ export default function Reports() {
       bottom: { style: 'thin', color: { argb: 'FF666666' } },
       right: { style: 'thin', color: { argb: 'FF666666' } }
     };
-    worksheet.getRow(3).height = 22;
+    worksheet.getRow(3).height = 18;
 
     let currentRow = 5;
 
@@ -917,19 +916,25 @@ export default function Reports() {
     footerCell.alignment = { horizontal: 'center', vertical: 'middle' };
     footerCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFf1f5f9' } };
 
-    // ضبط عرض الأعمدة المحسن لاستغلال مساحة A4 بشكل أمثل
+    // ضبط عرض الأعمدة بطريقة متوازنة لطباعة A4 مثالية
     worksheet.columns = [
-      { width: 6 },   // رقم - مضغوط
-      { width: 12 },  // المبلغ - مناسب للأرقام
-      { width: 18 },  // الاسم - مناسب للأسماء العربية
-      { width: 12 },  // المهنة/النوع - مضغوط
-      { width: 30 },  // الوصف - موسع للنصوص الطويلة
-      { width: 16 },  // المورد - مناسب
-      { width: 10 },  // الكمية - مضغوط
-      { width: 11 },  // التاريخ - مناسب للتواريخ
-      { width: 25 }   // ملاحظات - موسع للملاحظات الطويلة
+      { width: 5 },   // رقم - مضغوط جداً
+      { width: 10 },  // المبلغ - مناسب للأرقام
+      { width: 15 },  // الاسم - مناسب للأسماء العربية
+      { width: 10 },  // المهنة/النوع - مضغوط
+      { width: 20 },  // الوصف - معقول
+      { width: 12 },  // المورد/المرسل - مناسب
+      { width: 8 },   // الكمية/الساعات - مضغوط
+      { width: 10 },  // التاريخ - مناسب للتواريخ
+      { width: 18 }   // ملاحظات - متوسط
     ];
 
+    // إعدادات إضافية لضمان الطباعة الصحيحة
+    worksheet.pageSetup.blackAndWhite = false;
+    worksheet.pageSetup.draft = false;
+    worksheet.pageSetup.cellComments = 'None';
+    worksheet.pageSetup.errors = 'displayed';
+    
     // تطبيق التفاف النص على جميع الخلايا
     worksheet.eachRow((row) => {
       row.eachCell((cell) => {
