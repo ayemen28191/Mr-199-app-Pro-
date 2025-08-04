@@ -156,11 +156,16 @@ export default function DailyExpensesReport() {
     const finalBalanceData = reportData.length > 0 ? reportData[reportData.length - 1].summary.remainingBalance : 0;
 
     try {
-      const workbook = new ExcelJS.Workbook();
+      console.log('🚀 بدء تصدير Excel للبيانات:', reportData.length, 'أيام');
       
-      // ورقة الملخص المحسنة
+      const workbook = new ExcelJS.Workbook();
+      workbook.creator = 'نظام إدارة مشاريع البناء';
+      workbook.created = new Date();
+      
+      // ورقة الملخص الأساسية
       const summarySheet = workbook.addWorksheet('ملخص المصروفات', {
-        properties: { tabColor: { argb: 'FF3B82F6' } }
+        properties: { tabColor: { argb: 'FF3B82F6' } },
+        views: [{ rightToLeft: true }]
       });
       
       // إضافة العنوان الرئيسي
@@ -223,19 +228,26 @@ export default function DailyExpensesReport() {
       });
       
       // إضافة البيانات مع التنسيق
+      console.log('📊 إضافة البيانات إلى Excel:', reportData.length, 'صف');
+      
       reportData.forEach((day, index) => {
-        const dataRow = summarySheet.addRow([
+        console.log(`📅 اليوم ${index + 1}:`, day.date, '- إيرادات:', day.summary.totalIncome, '- مصروفات:', day.summary.totalExpenses);
+        
+        const rowData = [
           formatDate(day.date),
-          day.summary.carriedForward,
-          day.summary.totalFundTransfers,
-          day.summary.totalWorkerWages,
-          day.summary.totalMaterialCosts,
-          day.summary.totalTransportationCosts,
-          day.summary.totalWorkerTransfers,
-          day.summary.totalIncome,
-          day.summary.totalExpenses,
-          day.summary.remainingBalance
-        ]);
+          Number(day.summary.carriedForward) || 0,
+          Number(day.summary.totalFundTransfers) || 0,
+          Number(day.summary.totalWorkerWages) || 0,
+          Number(day.summary.totalMaterialCosts) || 0,
+          Number(day.summary.totalTransportationCosts) || 0,
+          Number(day.summary.totalWorkerTransfers) || 0,
+          Number(day.summary.totalIncome) || 0,
+          Number(day.summary.totalExpenses) || 0,
+          Number(day.summary.remainingBalance) || 0
+        ];
+        
+        console.log('📋 بيانات الصف:', rowData);
+        const dataRow = summarySheet.addRow(rowData);
         
         dataRow.eachCell((cell, colNumber) => {
           cell.alignment = { 
