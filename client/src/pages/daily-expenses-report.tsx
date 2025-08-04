@@ -42,8 +42,9 @@ export default function DailyExpensesReport() {
   const { selectedProjectId, selectProject } = useSelectedProject();
   const { toast } = useToast();
   
-  const [dateFrom, setDateFrom] = useState(getCurrentDate());
-  const [dateTo, setDateTo] = useState(getCurrentDate());
+  // تحديد فترة افتراضية تحتوي على بيانات فعلية
+  const [dateFrom, setDateFrom] = useState('2025-07-26');
+  const [dateTo, setDateTo] = useState('2025-08-03');
   const [reportData, setReportData] = useState<DailyExpenseData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
@@ -53,6 +54,19 @@ export default function DailyExpensesReport() {
   });
 
   const selectedProject = projects.find(p => p.id === selectedProjectId);
+  
+  // تحديد مشروع افتراضي إذا لم يكن هناك مشروع محدد وتوجد مشاريع
+  useEffect(() => {
+    if (!selectedProjectId && projects.length > 0) {
+      // البحث عن المشروع الذي يحتوي على بيانات
+      const projectWithData = projects.find(p => p.id === '4dd91471-231d-40da-ac05-7999556c5a72');
+      if (projectWithData) {
+        selectProject(projectWithData.id);
+      } else {
+        selectProject(projects[0].id);
+      }
+    }
+  }, [projects, selectedProjectId, selectProject]);
 
   const generateReport = useCallback(async () => {
     if (!selectedProjectId) {
@@ -102,6 +116,13 @@ export default function DailyExpensesReport() {
       setIsLoading(false);
     }
   }, [selectedProjectId, dateFrom, dateTo, toast]);
+
+  // تحميل التقرير تلقائياً عند اختيار مشروع
+  useEffect(() => {
+    if (selectedProjectId && dateFrom && dateTo && projects.length > 0) {
+      generateReport();
+    }
+  }, [selectedProjectId, projects.length, generateReport]);
 
   const exportToExcel = useCallback(async () => {
     if (!reportData.length) {
