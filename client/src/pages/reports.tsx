@@ -462,15 +462,15 @@ export default function Reports() {
       firstSheet: 0, activeTab: 0, visibility: 'visible'
     }];
 
-    // العنوان الرئيسي المحسن للطباعة
-    worksheet.mergeCells('A1:I1');
+    // العنوان الرئيسي المحسن والاحترافي
+    worksheet.mergeCells('A1:J2');
     const titleCell = worksheet.getCell('A1');
-    titleCell.value = 'كشف المصروفات اليومية التفصيلي والشامل';
+    titleCell.value = `شركة الحاج عبدالرحمن علي الجهني وأولاده\nكشف المصروفات اليومية التفصيلي - ${selectedProject?.name || 'مشروع غير محدد'}`;
     titleCell.font = { 
       name: 'Arial', 
-      size: 16, 
+      size: 18, 
       bold: true, 
-      color: { argb: 'FF000000' }
+      color: { argb: 'FF1F2937' }
     };
     titleCell.alignment = { 
       horizontal: 'center', 
@@ -480,15 +480,16 @@ export default function Reports() {
     titleCell.fill = { 
       type: 'pattern', 
       pattern: 'solid', 
-      fgColor: { argb: 'FFE8F4FD' }
+      fgColor: { argb: 'FFF3F4F6' }
     };
     titleCell.border = {
-      top: { style: 'thick', color: { argb: 'FF1e40af' } },
-      left: { style: 'thick', color: { argb: 'FF1e40af' } },
-      bottom: { style: 'thick', color: { argb: 'FF1e40af' } },
-      right: { style: 'thick', color: { argb: 'FF1e40af' } }
+      top: { style: 'thick', color: { argb: 'FF2563EB' } },
+      left: { style: 'thick', color: { argb: 'FF2563EB' } },
+      bottom: { style: 'thick', color: { argb: 'FF2563EB' } },
+      right: { style: 'thick', color: { argb: 'FF2563EB' } }
     };
-    worksheet.getRow(1).height = 30;
+    worksheet.getRow(1).height = 35;
+    worksheet.getRow(2).height = 35;
 
     // معلومات المشروع والتاريخ محسنة للطباعة
     worksheet.mergeCells('A3:E3');
