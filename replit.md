@@ -4,6 +4,14 @@
 This is a comprehensive web application for managing construction projects in Arabic. It provides robust tools for expense tracking, worker management, supplier administration, and detailed reporting, emphasizing an accurate Arabic interface and responsive design. The system aims to streamline construction project oversight, financial management, and workforce administration.
 
 ### Recent Changes (أغسطس 2025)
+- **إصلاح نهائي لحقل carried_forward_amount في جدول daily_expense_summaries (4 أغسطس 2025):**
+  - **حل المشكلة الجذرية:** تم تنفيذ استعلام SQL شامل لإضافة الحقل المفقود في قاعدة بيانات Supabase
+  - **مواصفات الحقل:** decimal(10,2) مع قيمة افتراضية 0.00 وخاصية NOT NULL
+  - **تحديث السجلات الموجودة:** تم تحديث جميع السجلات الموجودة بالقيمة الافتراضية
+  - **إنشاء فهارس محسنة:** تم إضافة فهارس للبحث والفرز السريع
+  - **التحقق من السلامة:** تم التأكد من صحة هيكل الجدول وسلامة البيانات
+  - **إزالة الكود المؤقت:** تم إزالة كود الإصلاح المؤقت بعد حل المشكلة نهائياً
+  - **مكتمل:** النظام يعمل الآن بشكل مثالي مع جميع الحقول المطلوبة
 - **إصلاح جذري لمشكلة تصدير Excel للتقارير اليومية (4 أغسطس 2025):**
   - **حل مشكلة الملفات الفارغة:** كان الزر "تصدير Excel" يستدعي دالة CSV بدلاً من Excel حقيقي
   - **إنشاء دالة exportToExcel شاملة:** دالة جديدة تستخدم مكتبة ExcelJS لإنشاء ملفات Excel حقيقية
