@@ -81,7 +81,7 @@ export default function Reports() {
   const selectedProjectWithStats = projectsWithStats.find((p: any) => p.id === selectedProjectId);
   const selectedProjectStats = selectedProjectWithStats?.stats || {};
   
-  const totalFundTransfers = selectedProjectStats.totalFundTransfers || 0;
+  const totalFundTransfers = selectedProjectStats.totalIncome || 0;
   const totalExpenses = selectedProjectStats.totalExpenses || 0;
   const totalReportsGenerated = selectedProjectStats.daysWithData || 0;
   const currentBalance = selectedProjectStats.currentBalance || 0;
