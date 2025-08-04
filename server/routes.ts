@@ -817,14 +817,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         materialPurchases, 
         transportationExpenses,
         workerTransfers,
-        dailySummary
+        dailySummary,
+        incomingProjectTransfers,
+        outgoingProjectTransfers
       ] = await Promise.all([
         storage.getFundTransfers(projectId, date),
         storage.getWorkerAttendance(projectId, date),
         storage.getMaterialPurchases(projectId, date, date),
         storage.getTransportationExpenses(projectId, date),
         storage.getFilteredWorkerTransfers(projectId, date),
-        storage.getDailyExpenseSummary(projectId, date)
+        storage.getDailyExpenseSummary(projectId, date),
+        storage.getProjectFundTransfers(undefined, projectId, date), // الأموال الواردة
+        storage.getProjectFundTransfers(projectId, undefined, date) // الأموال الصادرة
       ]);
 
       console.log(`📊 Data found for ${date}:`);
@@ -833,6 +837,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`  - Material purchases: ${materialPurchases.length}`);
       console.log(`  - Transportation expenses: ${transportationExpenses.length}`);
       console.log(`  - Worker transfers: ${workerTransfers.length}`);
+      console.log(`  - Incoming project transfers: ${incomingProjectTransfers.length}`);
+      console.log(`  - Outgoing project transfers: ${outgoingProjectTransfers.length}`);
 
       // حساب الرصيد المرحل (من اليوم السابق)
       const prevDate = new Date(date);
@@ -847,8 +853,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const totalMaterialCosts = materialPurchases.reduce((sum, p) => sum + parseFloat(p.totalAmount), 0);
       const totalTransportCosts = transportationExpenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
       const totalTransferCosts = workerTransfers.reduce((sum, t) => sum + parseFloat(t.amount.toString()), 0);
-      const totalExpenses = totalWorkerCosts + totalMaterialCosts + totalTransportCosts + totalTransferCosts;
-      const totalIncome = totalFundTransfers;
+      
+      // حساب إجماليات ترحيل الأموال بين المشاريع
+      const totalIncomingTransfers = incomingProjectTransfers.reduce((sum, t) => sum + parseFloat(t.amount), 0);
+      const totalOutgoingTransfers = outgoingProjectTransfers.reduce((sum, t) => sum + parseFloat(t.amount), 0);
+      
+      const totalExpenses = totalWorkerCosts + totalMaterialCosts + totalTransportCosts + totalTransferCosts + totalOutgoingTransfers;
+      const totalIncome = totalFundTransfers + totalIncomingTransfers;
       const remainingBalance = parseFloat(carriedForward.toString()) + totalIncome - totalExpenses;
 
       // إضافة معلومات العمال للحضور
@@ -904,6 +915,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         materialPurchases: materialPurchasesWithMaterials,
         transportationExpenses: transportationExpensesWithWorkers,
         workerTransfers: workerTransfersWithWorkers,
+        incomingProjectTransfers,
+        outgoingProjectTransfers,
+        totalIncomingTransfers,
+        totalOutgoingTransfers,
         dailySummary,
         summary: {
           carriedForward,

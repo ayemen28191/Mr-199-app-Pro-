@@ -536,6 +536,26 @@ export default function Reports() {
                 <td className="px-1 py-1 text-center border">{fundTransfers.length}</td>
                 <td className="px-1 py-1 text-center font-bold border">{formatCurrency(totalIncome)}</td>
               </tr>
+              {/* إضافة صف ترحيل الأموال الواردة */}
+              {data.incomingProjectTransfers && data.incomingProjectTransfers.length > 0 && (
+                <tr className="odd:bg-gray-50 even:bg-white">
+                  <td className="px-1 py-1 text-center font-medium border">02أ</td>
+                  <td className="px-2 py-1 text-right border">ترحيل أموال واردة من مشاريع أخرى</td>
+                  <td className="px-1 py-1 text-center font-bold border">{formatCurrency(data.totalIncomingTransfers || 0)}</td>
+                  <td className="px-1 py-1 text-center border">{data.incomingProjectTransfers.length}</td>
+                  <td className="px-1 py-1 text-center font-bold border">{formatCurrency(data.totalIncomingTransfers || 0)}</td>
+                </tr>
+              )}
+              {/* إضافة صف ترحيل الأموال الصادرة */}
+              {data.outgoingProjectTransfers && data.outgoingProjectTransfers.length > 0 && (
+                <tr className="odd:bg-gray-50 even:bg-white" style={{color: 'red'}}>
+                  <td className="px-1 py-1 text-center font-medium border">02ب</td>
+                  <td className="px-2 py-1 text-right border">ترحيل أموال صادرة إلى مشاريع أخرى</td>
+                  <td className="px-1 py-1 text-center font-bold border">{formatCurrency(data.totalOutgoingTransfers || 0)}</td>
+                  <td className="px-1 py-1 text-center border">{data.outgoingProjectTransfers.length}</td>
+                  <td className="px-1 py-1 text-center font-bold border">{formatCurrency(data.totalOutgoingTransfers || 0)}</td>
+                </tr>
+              )}
               <tr className="odd:bg-gray-50 even:bg-white">
                 <td className="px-1 py-1 text-center font-medium border">03</td>
                 <td className="px-2 py-1 text-right border">أجور العمال</td>
