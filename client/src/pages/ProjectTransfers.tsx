@@ -367,7 +367,7 @@ export default function ProjectTransfers() {
                         {/* المعلومات */}
                         <div className="flex-1 min-w-0">
                           <div className="mb-1">
-                            <h3 className="font-bold text-gray-800 text-sm truncate">
+                            <h3 className="font-bold text-gray-800 text-xs break-words">
                               {getProjectName(transfer.fromProjectId)} → {getProjectName(transfer.toProjectId)}
                             </h3>
                           </div>
@@ -401,35 +401,37 @@ export default function ProjectTransfers() {
                             </div>
                           )}
                           
-                          <div className="mt-1 text-xs text-gray-500">
-                            ID: {transfer.id.slice(0, 8)}
-                          </div>
-                          
-                          {/* أزرار العمليات */}
-                          <div className="flex gap-2 mt-3 justify-start">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => startEdit(transfer)}
-                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 w-8 h-8 p-0 border"
-                              data-testid={`button-edit-${transfer.id}`}
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleDelete(
-                                transfer.id, 
-                                getProjectName(transfer.fromProjectId), 
-                                getProjectName(transfer.toProjectId)
-                              )}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50 w-8 h-8 p-0 border"
-                              disabled={deleteTransferMutation.isPending}
-                              data-testid={`button-delete-${transfer.id}`}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
+                          <div className="flex items-center justify-between mt-1">
+                            <span className="text-xs text-gray-500">
+                              ID: {transfer.id.slice(0, 8)}
+                            </span>
+                            
+                            {/* أزرار العمليات */}
+                            <div className="flex gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => startEdit(transfer)}
+                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 w-7 h-7 p-0 border"
+                                data-testid={`button-edit-${transfer.id}`}
+                              >
+                                <Edit className="w-3 h-3" />
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDelete(
+                                  transfer.id, 
+                                  getProjectName(transfer.fromProjectId), 
+                                  getProjectName(transfer.toProjectId)
+                                )}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50 w-7 h-7 p-0 border"
+                                disabled={deleteTransferMutation.isPending}
+                                data-testid={`button-delete-${transfer.id}`}
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            </div>
                           </div>
                         </div>
                       </div>
