@@ -352,66 +352,70 @@ export default function ProjectTransfers() {
               <p className="text-gray-500">لا توجد عمليات ترحيل مسجلة</p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {transfers.map((transfer: ProjectFundTransfer) => (
-                <Card key={transfer.id} className="border border-gray-200 hover:shadow-md transition-shadow duration-200" data-testid={`card-transfer-${transfer.id}`}>
+                <Card key={transfer.id} className="relative overflow-hidden bg-gradient-to-r from-green-50 to-green-100 border-r-4 border-green-500 hover:shadow-lg transition-all duration-200" data-testid={`card-transfer-${transfer.id}`}>
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
-                      {/* المعلومات الأساسية */}
-                      <div className="flex-1 space-y-2">
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-2">
-                            <Building className="w-4 h-4 text-blue-600" />
-                            <span className="font-medium text-gray-700">{getProjectName(transfer.fromProjectId)}</span>
-                          </div>
-                          <ArrowRight className="w-4 h-4 text-gray-400" />
-                          <div className="flex items-center gap-2">
-                            <Building className="w-4 h-4 text-green-600" />
-                            <span className="font-medium text-gray-700">{getProjectName(transfer.toProjectId)}</span>
-                          </div>
+                      {/* أيقونة دائرية ملونة */}
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                          ت
                         </div>
-
-                        <div className="flex items-center gap-4">
-                          <div className="flex items-center gap-2">
-                            <Banknote className="w-4 h-4 text-green-600" />
-                            <span className="text-lg font-bold text-green-600">
-                              {parseFloat(transfer.amount).toLocaleString()} ر.ي
+                        
+                        {/* المعلومات الأساسية */}
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between mb-2">
+                            <h3 className="font-bold text-gray-800 text-lg">
+                              {getProjectName(transfer.fromProjectId)} → {getProjectName(transfer.toProjectId)}
+                            </h3>
+                            <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              نشيط
                             </span>
                           </div>
                           
-                          <div className="flex items-center gap-2">
-                            <Calendar className="w-4 h-4 text-gray-500" />
-                            <span className="text-sm text-gray-600">
+                          <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="w-4 h-4 text-gray-500" />
+                              <span className="text-gray-600">تاريخ التحويل</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Banknote className="w-4 h-4 text-green-600" />
+                              <span className="text-gray-600">المبلغ المحول</span>
+                            </div>
+                            
+                            <div className="font-medium text-gray-800">
                               {new Date(transfer.transferDate).toLocaleDateString('ar-SA')}
-                            </span>
+                            </div>
+                            <div className="font-bold text-green-600 text-lg">
+                              {parseFloat(transfer.amount).toLocaleString()} ر.ي
+                            </div>
+                          </div>
+                          
+                          {(transfer.transferReason || transfer.description) && (
+                            <div className="mt-3 text-xs text-gray-600">
+                              {transfer.transferReason && (
+                                <div>السبب: {transfer.transferReason}</div>
+                              )}
+                              {transfer.description && (
+                                <div>ملاحظات: {transfer.description}</div>
+                              )}
+                            </div>
+                          )}
+                          
+                          <div className="mt-2 text-xs text-gray-500">
+                            ID: {transfer.id.slice(0, 8)}
                           </div>
                         </div>
-
-                        {(transfer.transferReason || transfer.description) && (
-                          <div className="space-y-1">
-                            {transfer.transferReason && (
-                              <div className="flex items-center gap-2">
-                                <FileText className="w-3 h-3 text-gray-400" />
-                                <span className="text-sm text-gray-600">السبب: {transfer.transferReason}</span>
-                              </div>
-                            )}
-                            {transfer.description && (
-                              <div className="flex items-start gap-2">
-                                <User className="w-3 h-3 text-gray-400 mt-0.5" />
-                                <span className="text-sm text-gray-600">{transfer.description}</span>
-                              </div>
-                            )}
-                          </div>
-                        )}
                       </div>
 
                       {/* أزرار العمليات */}
-                      <div className="flex gap-2 ml-4">
+                      <div className="flex flex-col gap-2">
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => startEdit(transfer)}
-                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 w-8 h-8 p-0"
                           data-testid={`button-edit-${transfer.id}`}
                         >
                           <Edit className="w-4 h-4" />
@@ -424,11 +428,19 @@ export default function ProjectTransfers() {
                             getProjectName(transfer.fromProjectId), 
                             getProjectName(transfer.toProjectId)
                           )}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50 w-8 h-8 p-0"
                           disabled={deleteTransferMutation.isPending}
                           data-testid={`button-delete-${transfer.id}`}
                         >
                           <Trash2 className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          className="bg-red-500 hover:bg-red-600 text-white text-xs px-2 py-1 h-auto"
+                          onClick={() => alert('عرض تفاصيل العملية')}
+                        >
+                          إيقاف
                         </Button>
                       </div>
                     </div>
