@@ -405,6 +405,7 @@ export default function Reports() {
 
   const exportDailyReportToExcel = async (data: any, filename: string) => {
     try {
+      console.log('🔍 Starting Excel export with data:', data);
       const ExcelJS = await import('exceljs');
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('التقرير اليومي');
@@ -429,10 +430,12 @@ export default function Reports() {
     worksheet.views = [{ rightToLeft: true }];
 
     // رأس وتذييل الصفحة
+    const selectedProject = projects.find(p => p.id === selectedProjectId);
+    console.log('📊 Selected project for Excel:', selectedProject);
+    console.log('📅 Report date for Excel:', dailyReportDate);
+    
     worksheet.headerFooter.oddHeader = `&C&\"Arial,Bold\"&14${selectedProject?.name || 'مشروع'} - تقرير المصروفات اليومية\\n&C&\"Arial\"&10${formatDate(dailyReportDate)}`;
     worksheet.headerFooter.oddFooter = `&L&\"Arial\"&9تم إنشاؤه بواسطة نظام إدارة مشاريع البناء&C&\"Arial\"&9صفحة &P من &N&R&\"Arial\"&9${new Date().toLocaleDateString('ar-YE')}`;
-
-    const selectedProject = projects.find(p => p.id === selectedProjectId);
 
     // العنوان الرئيسي المحسن
     worksheet.mergeCells('A1:I1');
