@@ -744,7 +744,7 @@ export default function Reports() {
           row.getCell(2).value = Number(expense.amount) || 0;
           row.getCell(3).value = expense.description || expense.vehicleType || 'نقل ومواصلات';
           row.getCell(4).value = 'مواصلات';
-          row.getCell(5).value = `${expense.details || 'نقل مواد أو عمال'} | مسافة: ${expense.distance || 'غير محدد'} كم`;
+          row.getCell(5).value = `${expense.details || expense.description || 'نقل مواد أو عمال'} | مسافة: ${expense.distance || 'غير محدد'} كم`;
           row.getCell(6).value = expense.supplier || expense.driverName || 'شركة نقل';
           row.getCell(7).value = expense.trips ? `${expense.trips} رحلة` : (expense.distance ? `${expense.distance} كم` : '-');
           row.getCell(8).value = formatDate(expense.date || dailyReportDate);
