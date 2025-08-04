@@ -602,7 +602,7 @@ export default function Reports() {
           row.getCell(6).value = 'إدارة المشروع';
           row.getCell(7).value = `${attendance.workHours || 8} ساعة / ${attendance.workDays || 1} يوم`;
           row.getCell(8).value = formatDate(attendance.date || dailyReportDate);
-          row.getCell(9).value = `أجر يومي: ${formatCurrency(attendance.dailyWage || 0)} | ${attendance.notes || 'تم الدفع'}`;
+          row.getCell(9).value = attendance.notes || '';
           
           // تنسيق خلايا العمال
           for (let i = 1; i <= 9; i++) {
