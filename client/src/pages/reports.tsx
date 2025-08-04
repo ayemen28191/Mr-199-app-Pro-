@@ -418,49 +418,93 @@ export default function Reports() {
       fitToWidth: 1,
       fitToHeight: 0,
       margins: {
-        left: 0.4, right: 0.4, top: 0.8, bottom: 0.8,
-        header: 0.4, footer: 0.4
+        left: 0.5, right: 0.5, top: 1.0, bottom: 1.0,
+        header: 0.5, footer: 0.5
       },
-      showGridLines: false,
+      showGridLines: true,
       horizontalCentered: true,
-      verticalCentered: false
+      verticalCentered: false,
+      printTitlesRow: '5:5' // تكرار رأس الجدول في كل صفحة
     };
 
-    // إعداد اتجاه الكتابة من اليمين لليسار
-    worksheet.views = [{ rightToLeft: true }];
+    // إعداد اتجاه الكتابة من اليمين لليسار وتحسين العرض
+    worksheet.views = [{ 
+      rightToLeft: true,
+      showGridLines: true,
+      showRowColHeaders: true,
+      zoomScale: 85 // تقليل حجم العرض لاستغلال أفضل للمساحة
+    }];
 
-    // رأس وتذييل الصفحة
+    // رأس وتذييل الصفحة بتنسيق أفضل للطباعة
     const selectedProject = projects.find(p => p.id === selectedProjectId);
     console.log('📊 Selected project for Excel:', selectedProject);
     console.log('📅 Report date for Excel:', dailyReportDate);
     
-    worksheet.headerFooter.oddHeader = `&C&\"Arial,Bold\"&14${selectedProject?.name || 'مشروع'} - تقرير المصروفات اليومية\\n&C&\"Arial\"&10${formatDate(dailyReportDate)}`;
-    worksheet.headerFooter.oddFooter = `&L&\"Arial\"&9تم إنشاؤه بواسطة نظام إدارة مشاريع البناء&C&\"Arial\"&9صفحة &P من &N&R&\"Arial\"&9${new Date().toLocaleDateString('ar-YE')}`;
+    // إعداد رأس وتذييل بسيط وواضح للطباعة
+    worksheet.headerFooter.oddHeader = `&C&\"Arial,Bold\"&12${selectedProject?.name || 'مشروع'} - تقرير المصروفات اليومية\\n&C&\"Arial\"&10${formatDate(dailyReportDate)}`;
+    worksheet.headerFooter.oddFooter = `&C&\"Arial\"&9صفحة &P من &N - نظام إدارة مشاريع البناء`;
+    
+    // ضبط خصائص المصنف للعربية
+    workbook.creator = 'نظام إدارة مشاريع البناء';
+    workbook.lastModifiedBy = 'تصدير Excel';
+    workbook.created = new Date();
+    workbook.modified = new Date();
 
-    // العنوان الرئيسي المحسن
+    // العنوان الرئيسي المحسن للطباعة
     worksheet.mergeCells('A1:I1');
     const titleCell = worksheet.getCell('A1');
-    titleCell.value = '🏗️ كشف المصروفات اليومية التفصيلي والشامل';
-    titleCell.font = { name: 'Arial', size: 18, bold: true, color: { argb: 'FFFFFFFF' } };
-    titleCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-    titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1e40af' } };
-    worksheet.getRow(1).height = 35;
+    titleCell.value = 'كشف المصروفات اليومية التفصيلي والشامل';
+    titleCell.font = { 
+      name: 'Arial', 
+      size: 16, 
+      bold: true, 
+      color: { argb: 'FF000000' }
+    };
+    titleCell.alignment = { 
+      horizontal: 'center', 
+      vertical: 'middle', 
+      wrapText: true
+    };
+    titleCell.fill = { 
+      type: 'pattern', 
+      pattern: 'solid', 
+      fgColor: { argb: 'FFE8F4FD' }
+    };
+    titleCell.border = {
+      top: { style: 'thick', color: { argb: 'FF1e40af' } },
+      left: { style: 'thick', color: { argb: 'FF1e40af' } },
+      bottom: { style: 'thick', color: { argb: 'FF1e40af' } },
+      right: { style: 'thick', color: { argb: 'FF1e40af' } }
+    };
+    worksheet.getRow(1).height = 30;
 
-    // معلومات المشروع والتاريخ - صف واحد محسن
+    // معلومات المشروع والتاريخ محسنة للطباعة
     worksheet.mergeCells('A3:E3');
     const projectInfoCell = worksheet.getCell('A3');
-    projectInfoCell.value = `📋 المشروع: ${selectedProject?.name || 'غير محدد'}`;
-    projectInfoCell.font = { name: 'Arial', size: 14, bold: true };
+    projectInfoCell.value = `المشروع: ${selectedProject?.name || 'غير محدد'}`;
+    projectInfoCell.font = { name: 'Arial', size: 12, bold: true, color: { argb: 'FF000000' } };
     projectInfoCell.alignment = { horizontal: 'right', vertical: 'middle' };
-    projectInfoCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFe3f2fd' } };
+    projectInfoCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF5F5F5' } };
+    projectInfoCell.border = {
+      top: { style: 'thin', color: { argb: 'FF666666' } },
+      left: { style: 'thin', color: { argb: 'FF666666' } },
+      bottom: { style: 'thin', color: { argb: 'FF666666' } },
+      right: { style: 'thin', color: { argb: 'FF666666' } }
+    };
 
     worksheet.mergeCells('F3:I3');
     const dateInfoCell = worksheet.getCell('F3');
-    dateInfoCell.value = `📅 التاريخ: ${formatDate(dailyReportDate)} | رقم الكشف: ${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
-    dateInfoCell.font = { name: 'Arial', size: 14, bold: true };
+    dateInfoCell.value = `التاريخ: ${formatDate(dailyReportDate)} | رقم الكشف: ${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
+    dateInfoCell.font = { name: 'Arial', size: 12, bold: true, color: { argb: 'FF000000' } };
     dateInfoCell.alignment = { horizontal: 'left', vertical: 'middle' };
-    dateInfoCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFe3f2fd' } };
-    worksheet.getRow(3).height = 25;
+    dateInfoCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF5F5F5' } };
+    dateInfoCell.border = {
+      top: { style: 'thin', color: { argb: 'FF666666' } },
+      left: { style: 'thin', color: { argb: 'FF666666' } },
+      bottom: { style: 'thin', color: { argb: 'FF666666' } },
+      right: { style: 'thin', color: { argb: 'FF666666' } }
+    };
+    worksheet.getRow(3).height = 22;
 
     let currentRow = 5;
 
@@ -469,10 +513,16 @@ export default function Reports() {
       // عنوان جدول العهدة
       worksheet.mergeCells(`A${currentRow}:I${currentRow}`);
       const custodyHeader = worksheet.getCell(`A${currentRow}`);
-      custodyHeader.value = '💰 جدول العهدة والواردات';
-      custodyHeader.font = { name: 'Arial', size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
+      custodyHeader.value = 'جدول العهدة والواردات';
+      custodyHeader.font = { name: 'Arial', size: 12, bold: true, color: { argb: 'FF000000' } };
       custodyHeader.alignment = { horizontal: 'center', vertical: 'middle' };
-      custodyHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF10b981' } };
+      custodyHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0E0E0' } };
+      custodyHeader.border = {
+        top: { style: 'medium', color: { argb: 'FF000000' } },
+        left: { style: 'medium', color: { argb: 'FF000000' } },
+        bottom: { style: 'medium', color: { argb: 'FF000000' } },
+        right: { style: 'medium', color: { argb: 'FF000000' } }
+      };
       worksheet.getRow(currentRow).height = 30;
       currentRow++;
 
@@ -481,12 +531,14 @@ export default function Reports() {
       custodyHeaders.forEach((header, index) => {
         const cell = worksheet.getCell(currentRow, index + 1);
         cell.value = header;
-        cell.font = { name: 'Arial', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+        cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FF000000' } };
         cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF16a34a' } };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0F0F0' } };
         cell.border = {
-          top: { style: 'medium' }, left: { style: 'medium' },
-          bottom: { style: 'medium' }, right: { style: 'medium' }
+          top: { style: 'thin', color: { argb: 'FF000000' } }, 
+          left: { style: 'thin', color: { argb: 'FF000000' } },
+          bottom: { style: 'thin', color: { argb: 'FF000000' } }, 
+          right: { style: 'thin', color: { argb: 'FF000000' } }
         };
       });
       worksheet.getRow(currentRow).height = 25;
@@ -775,10 +827,16 @@ export default function Reports() {
     const summaryStartRow = currentRow;
     worksheet.mergeCells(`A${summaryStartRow}:I${summaryStartRow}`);
     const summaryHeader = worksheet.getCell(`A${summaryStartRow}`);
-    summaryHeader.value = '📊 الملخص المالي الشامل والنهائي';
-    summaryHeader.font = { name: 'Arial', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
+    summaryHeader.value = 'الملخص المالي الشامل والنهائي';
+    summaryHeader.font = { name: 'Arial', size: 14, bold: true, color: { argb: 'FF000000' } };
     summaryHeader.alignment = { horizontal: 'center', vertical: 'middle' };
-    summaryHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF059669' } };
+    summaryHeader.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0E0E0' } };
+    summaryHeader.border = {
+      top: { style: 'medium', color: { argb: 'FF000000' } },
+      left: { style: 'medium', color: { argb: 'FF000000' } },
+      bottom: { style: 'medium', color: { argb: 'FF000000' } },
+      right: { style: 'medium', color: { argb: 'FF000000' } }
+    };
     worksheet.getRow(summaryStartRow).height = 35;
     currentRow++;
 
@@ -796,18 +854,18 @@ export default function Reports() {
     
     const remainingBalance = totalIncome - totalExpensesFinal;
 
-    // عرض تفاصيل الملخص
+    // عرض تفاصيل الملخص بتنسيق مناسب للطباعة
     const summaryItems = [
-      { label: '💼 الرصيد المرحل من اليوم السابق', value: carriedForward, type: 'income' },
-      { label: '💰 تحويلات العهدة', value: totalFundTransfers, type: 'income' },
-      { label: '🔄 تحويلات واردة من مشاريع أخرى', value: totalIncomingTransfers, type: 'income' },
-      { label: '📈 إجمالي الواردات', value: totalIncome, type: 'total-income' },
-      { label: '👷‍♂️ أجور العمال والموظفين', value: totalWorkerCosts, type: 'expense' },
-      { label: '🧱 مشتريات المواد والأدوات', value: totalMaterialCosts, type: 'expense' },
-      { label: '🚛 مصاريف النقل والمواصلات', value: totalTransportCosts, type: 'expense' },
-      { label: '🔄 تحويلات صادرة لمشاريع أخرى', value: totalOutgoingTransfers, type: 'expense' },
-      { label: '📉 إجمالي المصروفات', value: totalExpensesFinal, type: 'total-expense' },
-      { label: '🏦 الرصيد المتبقي النهائي', value: remainingBalance, type: 'balance' }
+      { label: 'الرصيد المرحل من اليوم السابق', value: carriedForward, type: 'income' },
+      { label: 'تحويلات العهدة', value: totalFundTransfers, type: 'income' },
+      { label: 'تحويلات واردة من مشاريع أخرى', value: totalIncomingTransfers, type: 'income' },
+      { label: 'إجمالي الواردات', value: totalIncome, type: 'total-income' },
+      { label: 'أجور العمال والموظفين', value: totalWorkerCosts, type: 'expense' },
+      { label: 'مشتريات المواد والأدوات', value: totalMaterialCosts, type: 'expense' },
+      { label: 'مصاريف النقل والمواصلات', value: totalTransportCosts, type: 'expense' },
+      { label: 'تحويلات صادرة لمشاريع أخرى', value: totalOutgoingTransfers, type: 'expense' },
+      { label: 'إجمالي المصروفات', value: totalExpensesFinal, type: 'total-expense' },
+      { label: 'الرصيد المتبقي النهائي', value: remainingBalance, type: 'balance' }
     ];
 
     summaryItems.forEach((item, index) => {
@@ -818,14 +876,14 @@ export default function Reports() {
       worksheet.mergeCells(`H${currentRow}:I${currentRow}`);
       row.getCell(8).value = item.value;
       
-      // تنسيق حسب نوع البيان
-      let bgColor = 'FFf8fafc';
-      if (item.type === 'income') bgColor = 'FFecfdf5';
-      else if (item.type === 'total-income') bgColor = 'FFbef263';
-      else if (item.type === 'expense') bgColor = 'FFfef2f2';
-      else if (item.type === 'total-expense') bgColor = 'FFfca5a5';
+      // تنسيق حسب نوع البيان - ألوان مناسبة للطباعة
+      let bgColor = 'FFFFFFFF'; // أبيض
+      if (item.type === 'income') bgColor = 'FFF5F5F5'; // رمادي فاتح
+      else if (item.type === 'total-income') bgColor = 'FFE8E8E8'; // رمادي متوسط
+      else if (item.type === 'expense') bgColor = 'FFF5F5F5'; // رمادي فاتح
+      else if (item.type === 'total-expense') bgColor = 'FFE8E8E8'; // رمادي متوسط
       else if (item.type === 'balance') {
-        bgColor = item.value >= 0 ? 'FFd1fae5' : 'FFfee2e2';
+        bgColor = 'FFD8D8D8'; // رمادي أغمق للرصيد
       }
       
       [1, 8].forEach(i => {
@@ -838,8 +896,10 @@ export default function Reports() {
         cell.alignment = { horizontal: i === 1 ? 'right' : 'center', vertical: 'middle' };
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgColor } };
         cell.border = {
-          top: { style: 'thin' }, left: { style: 'thin' },
-          bottom: { style: 'thin' }, right: { style: 'thin' }
+          top: { style: 'thin', color: { argb: 'FF000000' } }, 
+          left: { style: 'thin', color: { argb: 'FF000000' } },
+          bottom: { style: 'thin', color: { argb: 'FF000000' } }, 
+          right: { style: 'thin', color: { argb: 'FF000000' } }
         };
         if (i === 8) cell.numFmt = '#,##0.00';
       });
