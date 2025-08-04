@@ -70,6 +70,11 @@ export default function DailyExpenses() {
     queryKey: ["/api/workers"],
   });
 
+  // جلب قائمة المشاريع لعرض أسماء المشاريع في ترحيل الأموال
+  const { data: projects = [] } = useQuery<Project[]>({
+    queryKey: ["/api/projects"],
+  });
+
   const { data: todayAttendance = [] } = useQuery<WorkerAttendance[]>({
     queryKey: ["/api/projects", selectedProjectId, "attendance", selectedDate],
     queryFn: async () => {
