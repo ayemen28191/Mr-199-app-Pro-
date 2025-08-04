@@ -269,6 +269,20 @@ export const printSettings = pgTable('print_settings', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
+// Project fund transfers table (ترحيل الأموال بين المشاريع)
+export const projectFundTransfers = pgTable("project_fund_transfers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  fromProjectId: varchar("from_project_id").notNull().references(() => projects.id),
+  toProjectId: varchar("to_project_id").notNull().references(() => projects.id),
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  transferReason: text("transfer_reason").notNull(), // سبب الترحيل
+  transferDate: text("transfer_date").notNull(), // YYYY-MM-DD format
+  approvedBy: text("approved_by").notNull(), // اسم المعتمد
+  notes: text("notes"),
+  status: text("status").notNull().default("completed"), // completed, pending, cancelled
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 // Schema definitions for forms
 export const insertProjectSchema = createInsertSchema(projects).omit({ id: true, createdAt: true });
 export const insertWorkerSchema = createInsertSchema(workers).omit({ id: true, createdAt: true });
@@ -283,6 +297,7 @@ export const insertMaterialPurchaseSchema = createInsertSchema(materialPurchases
 export const insertTransportationExpenseSchema = createInsertSchema(transportationExpenses).omit({ id: true, createdAt: true });
 export const insertWorkerTransferSchema = createInsertSchema(workerTransfers).omit({ id: true, createdAt: true });
 export const insertWorkerBalanceSchema = createInsertSchema(workerBalances).omit({ id: true, createdAt: true, lastUpdated: true });
+export const insertProjectFundTransferSchema = createInsertSchema(projectFundTransfers).omit({ id: true, createdAt: true });
 export const insertDailyExpenseSummarySchema = createInsertSchema(dailyExpenseSummaries).omit({ id: true, createdAt: true });
 export const insertWorkerTypeSchema = createInsertSchema(workerTypes).omit({ id: true, createdAt: true, lastUsed: true });
 export const insertAutocompleteDataSchema = createInsertSchema(autocompleteData).omit({ id: true, createdAt: true, lastUsed: true });
@@ -310,6 +325,7 @@ export type User = typeof users.$inferSelect;
 export type Supplier = typeof suppliers.$inferSelect;
 export type SupplierPayment = typeof supplierPayments.$inferSelect;
 export type PrintSettings = typeof printSettings.$inferSelect;
+export type ProjectFundTransfer = typeof projectFundTransfers.$inferSelect;
 
 export type InsertProject = z.infer<typeof insertProjectSchema>;
 export type InsertWorker = z.infer<typeof insertWorkerSchema>;
@@ -328,3 +344,4 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 export type InsertSupplier = z.infer<typeof insertSupplierSchema>;
 export type InsertSupplierPayment = z.infer<typeof insertSupplierPaymentSchema>;
 export type InsertPrintSettings = z.infer<typeof insertPrintSettingsSchema>;
+export type InsertProjectFundTransfer = z.infer<typeof insertProjectFundTransferSchema>;

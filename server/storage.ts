@@ -2,13 +2,13 @@ import {
   type Project, type Worker, type FundTransfer, type WorkerAttendance, 
   type Material, type MaterialPurchase, type TransportationExpense, type DailyExpenseSummary,
   type WorkerTransfer, type WorkerBalance, type AutocompleteData, type WorkerType, type WorkerMiscExpense, type User,
-  type Supplier, type SupplierPayment, type PrintSettings,
+  type Supplier, type SupplierPayment, type PrintSettings, type ProjectFundTransfer,
   type InsertProject, type InsertWorker, type InsertFundTransfer, type InsertWorkerAttendance,
   type InsertMaterial, type InsertMaterialPurchase, type InsertTransportationExpense, type InsertDailyExpenseSummary,
   type InsertWorkerTransfer, type InsertWorkerBalance, type InsertAutocompleteData, type InsertWorkerType, type InsertWorkerMiscExpense, type InsertUser,
-  type InsertSupplier, type InsertSupplierPayment, type InsertPrintSettings,
+  type InsertSupplier, type InsertSupplierPayment, type InsertPrintSettings, type InsertProjectFundTransfer,
   projects, workers, fundTransfers, workerAttendance, materials, materialPurchases, transportationExpenses, dailyExpenseSummaries,
-  workerTransfers, workerBalances, autocompleteData, workerTypes, workerMiscExpenses, users, suppliers, supplierPayments, printSettings
+  workerTransfers, workerBalances, autocompleteData, workerTypes, workerMiscExpenses, users, suppliers, supplierPayments, printSettings, projectFundTransfers
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, gte, lte, sql, inArray, or } from "drizzle-orm";
@@ -39,6 +39,13 @@ export interface IStorage {
   createFundTransfer(transfer: InsertFundTransfer): Promise<FundTransfer>;
   updateFundTransfer(id: string, transfer: Partial<InsertFundTransfer>): Promise<FundTransfer | undefined>;
   deleteFundTransfer(id: string): Promise<void>;
+  
+  // Project Fund Transfers (ترحيل الأموال بين المشاريع)
+  getProjectFundTransfers(fromProjectId?: string, toProjectId?: string, date?: string): Promise<ProjectFundTransfer[]>;
+  getProjectFundTransfer(id: string): Promise<ProjectFundTransfer | undefined>;
+  createProjectFundTransfer(transfer: InsertProjectFundTransfer): Promise<ProjectFundTransfer>;
+  updateProjectFundTransfer(id: string, transfer: Partial<InsertProjectFundTransfer>): Promise<ProjectFundTransfer | undefined>;
+  deleteProjectFundTransfer(id: string): Promise<void>;
   
   // Worker Attendance
   getWorkerAttendance(projectId: string, date?: string): Promise<WorkerAttendance[]>;
@@ -427,6 +434,105 @@ export class DatabaseStorage implements IStorage {
     if (transfer) {
       const transferDate = new Date(transfer.transferDate).toISOString().split('T')[0];
       await this.updateDailySummaryForDate(transfer.projectId, transferDate);
+    }
+  }
+
+  // Project Fund Transfers (ترحيل الأموال بين المشاريع)
+  async getProjectFundTransfers(fromProjectId?: string, toProjectId?: string, date?: string): Promise<ProjectFundTransfer[]> {
+    const conditions = [];
+    if (fromProjectId) {
+      conditions.push(eq(projectFundTransfers.fromProjectId, fromProjectId));
+    }
+    if (toProjectId) {
+      conditions.push(eq(projectFundTransfers.toProjectId, toProjectId));
+    }
+    if (date) {
+      conditions.push(eq(projectFundTransfers.transferDate, date));
+    }
+    
+    if (conditions.length > 0) {
+      return await db.select().from(projectFundTransfers).where(and(...conditions));
+    }
+    
+    return await db.select().from(projectFundTransfers);
+  }
+
+  async getProjectFundTransfer(id: string): Promise<ProjectFundTransfer | undefined> {
+    const [transfer] = await db.select().from(projectFundTransfers).where(eq(projectFundTransfers.id, id));
+    return transfer || undefined;
+  }
+
+  async createProjectFundTransfer(transfer: InsertProjectFundTransfer): Promise<ProjectFundTransfer> {
+    try {
+      // التحقق من أن المشروعين مختلفين
+      if (transfer.fromProjectId === transfer.toProjectId) {
+        throw new Error('لا يمكن ترحيل الأموال إلى نفس المشروع');
+      }
+
+      // التحقق من وجود المشروعين
+      const fromProject = await this.getProject(transfer.fromProjectId);
+      const toProject = await this.getProject(transfer.toProjectId);
+      
+      if (!fromProject) {
+        throw new Error('المشروع المرسل غير موجود');
+      }
+      if (!toProject) {
+        throw new Error('المشروع المستلم غير موجود');
+      }
+
+      // إنشاء عملية الترحيل
+      const [newTransfer] = await db
+        .insert(projectFundTransfers)
+        .values(transfer)
+        .returning();
+      
+      if (!newTransfer) {
+        throw new Error('فشل في إنشاء عملية الترحيل');
+      }
+      
+      // تحديث الملخصات اليومية للمشروعين
+      await this.updateDailySummaryForDate(transfer.fromProjectId, transfer.transferDate);
+      await this.updateDailySummaryForDate(transfer.toProjectId, transfer.transferDate);
+      
+      return newTransfer;
+    } catch (error) {
+      console.error('Error creating project fund transfer:', error);
+      throw error;
+    }
+  }
+
+  async updateProjectFundTransfer(id: string, transfer: Partial<InsertProjectFundTransfer>): Promise<ProjectFundTransfer | undefined> {
+    const [oldTransfer] = await db.select().from(projectFundTransfers).where(eq(projectFundTransfers.id, id));
+    
+    const [updated] = await db
+      .update(projectFundTransfers)
+      .set(transfer)
+      .where(eq(projectFundTransfers.id, id))
+      .returning();
+    
+    if (updated && oldTransfer) {
+      // تحديث الملخصات اليومية للمشاريع المتأثرة
+      await this.updateDailySummaryForDate(oldTransfer.fromProjectId, oldTransfer.transferDate);
+      await this.updateDailySummaryForDate(oldTransfer.toProjectId, oldTransfer.transferDate);
+      
+      if (transfer.transferDate) {
+        await this.updateDailySummaryForDate(updated.fromProjectId, updated.transferDate);
+        await this.updateDailySummaryForDate(updated.toProjectId, updated.transferDate);
+      }
+    }
+    
+    return updated || undefined;
+  }
+
+  async deleteProjectFundTransfer(id: string): Promise<void> {
+    const [transfer] = await db.select().from(projectFundTransfers).where(eq(projectFundTransfers.id, id));
+    
+    await db.delete(projectFundTransfers).where(eq(projectFundTransfers.id, id));
+    
+    if (transfer) {
+      // تحديث الملخصات اليومية للمشروعين
+      await this.updateDailySummaryForDate(transfer.fromProjectId, transfer.transferDate);
+      await this.updateDailySummaryForDate(transfer.toProjectId, transfer.transferDate);
     }
   }
 

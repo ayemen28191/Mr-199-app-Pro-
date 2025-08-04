@@ -7,7 +7,7 @@ import {
   insertTransportationExpenseSchema, insertDailyExpenseSummarySchema, insertWorkerTransferSchema,
   insertWorkerBalanceSchema, insertAutocompleteDataSchema, insertWorkerTypeSchema,
   insertWorkerMiscExpenseSchema, insertUserSchema, insertSupplierSchema, insertSupplierPaymentSchema,
-  insertPrintSettingsSchema
+  insertPrintSettingsSchema, insertProjectFundTransferSchema
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -285,6 +285,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(200).json({ message: "تم حذف العهدة بنجاح" });
     } catch (error) {
       res.status(500).json({ message: "Error deleting fund transfer" });
+    }
+  });
+
+  // Project Fund Transfers (ترحيل الأموال بين المشاريع)
+  app.get("/api/project-fund-transfers", async (req, res) => {
+    try {
+      const fromProjectId = req.query.fromProjectId as string;
+      const toProjectId = req.query.toProjectId as string;
+      const date = req.query.date as string;
+      
+      const transfers = await storage.getProjectFundTransfers(fromProjectId, toProjectId, date);
+      res.json(transfers);
+    } catch (error) {
+      console.error("Error fetching project fund transfers:", error);
+      res.status(500).json({ message: "خطأ في جلب عمليات ترحيل الأموال" });
+    }
+  });
+
+  app.get("/api/project-fund-transfers/:id", async (req, res) => {
+    try {
+      const transfer = await storage.getProjectFundTransfer(req.params.id);
+      if (!transfer) {
+        return res.status(404).json({ message: "عملية الترحيل غير موجودة" });
+      }
+      res.json(transfer);
+    } catch (error) {
+      console.error("Error fetching project fund transfer:", error);
+      res.status(500).json({ message: "خطأ في جلب عملية الترحيل" });
+    }
+  });
+
+  app.post("/api/project-fund-transfers", async (req, res) => {
+    try {
+      const result = insertProjectFundTransferSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "بيانات عملية الترحيل غير صحيحة", 
+          errors: result.error.issues 
+        });
+      }
+
+      const transfer = await storage.createProjectFundTransfer(result.data);
+      res.status(201).json(transfer);
+    } catch (error: any) {
+      console.error("Error creating project fund transfer:", error);
+      res.status(500).json({ 
+        message: error.message || "خطأ في إنشاء عملية الترحيل" 
+      });
+    }
+  });
+
+  app.put("/api/project-fund-transfers/:id", async (req, res) => {
+    try {
+      const result = insertProjectFundTransferSchema.partial().safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "بيانات عملية الترحيل غير صحيحة", 
+          errors: result.error.issues 
+        });
+      }
+
+      const transfer = await storage.updateProjectFundTransfer(req.params.id, result.data);
+      if (!transfer) {
+        return res.status(404).json({ message: "عملية الترحيل غير موجودة" });
+      }
+      
+      res.json(transfer);
+    } catch (error: any) {
+      console.error("Error updating project fund transfer:", error);
+      res.status(500).json({ 
+        message: error.message || "خطأ في تحديث عملية الترحيل" 
+      });
+    }
+  });
+
+  app.delete("/api/project-fund-transfers/:id", async (req, res) => {
+    try {
+      await storage.deleteProjectFundTransfer(req.params.id);
+      res.status(200).json({ message: "تم حذف عملية الترحيل بنجاح" });
+    } catch (error) {
+      console.error("Error deleting project fund transfer:", error);
+      res.status(500).json({ message: "خطأ في حذف عملية الترحيل" });
     }
   });
 
