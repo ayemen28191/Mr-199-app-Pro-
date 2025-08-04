@@ -53,6 +53,7 @@ This is a comprehensive web application for managing construction projects in Ar
 - التركيز على البساطة والوضوح في الواجهة
 - التحسين المستمر للأداء
 - التواصل: جميع الردود والملاحظات يجب أن تكون باللغة العربية
+- التواصل: جميع الردود والملاحظات يجب أن تكون باللغة العربية
 
 ## System Architecture
 The system is built as a comprehensive web application with distinct frontend and backend components.
