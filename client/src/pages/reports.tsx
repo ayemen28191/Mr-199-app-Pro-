@@ -719,13 +719,13 @@ export default function Reports() {
           
           row.getCell(1).value = expenseNumber++;
           row.getCell(2).value = Number(transfer.amount) || 0;
-          row.getCell(3).value = transfer.projectName || 'مشروع غير محدد';
+          row.getCell(3).value = transfer.toProjectName || transfer.projectName || 'مشروع غير محدد';
           row.getCell(4).value = 'تحويل مشروع';
-          row.getCell(5).value = `تحويل أموال إلى مشروع: ${transfer.projectName || 'مشروع غير محدد'}${transfer.description ? ' | ' + transfer.description : ''}`;
+          row.getCell(5).value = `تحويل أموال إلى مشروع: ${transfer.toProjectName || transfer.projectName || 'مشروع غير محدد'}${transfer.description ? ' | ' + transfer.description : ''}`;
           row.getCell(6).value = transfer.transferredBy || 'إدارة المشروع';
           row.getCell(7).value = '1 تحويل';
           row.getCell(8).value = formatDate(transfer.transferDate || transfer.date || dailyReportDate);
-          row.getCell(9).value = `${transfer.notes || 'تحويل لمشروع'} | رقم التحويل: ${transfer.transferNumber || 'غير محدد'}`;
+          row.getCell(9).value = `${transfer.transferNotes || transfer.notes || 'تحويل لمشروع'} | رقم المرجع: ${transfer.transferReference || transfer.transferNumber || 'غير محدد'}`;
           
           // تنسيق خلايا التحويلات الصادرة
           for (let i = 1; i <= 9; i++) {
