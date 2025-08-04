@@ -1673,7 +1673,8 @@ export class DatabaseStorage implements IStorage {
             workerAttendance,
             materialPurchases,
             transportationExpenses,
-            workerTransfers
+            workerTransfers,
+            workerMiscExpenses
           ] = await Promise.all([
             this.getFundTransfers(projectId, currentDate),
             this.getWorkerAttendance(projectId, currentDate),
@@ -1681,8 +1682,12 @@ export class DatabaseStorage implements IStorage {
             this.getTransportationExpenses(projectId, currentDate),
             this.getWorkerTransfers("", projectId).then(transfers => 
               transfers.filter(t => t.transferDate === currentDate)
-            )
+            ),
+            this.getWorkerMiscExpenses(projectId, currentDate)
           ]);
+
+          // حساب إجمالي نثريات العمال
+          const totalWorkerMiscExpenses = workerMiscExpenses?.reduce((sum, expense) => sum + parseFloat(expense.amount), 0) || 0;
 
           results.push({
             date: currentDate,
@@ -1695,13 +1700,15 @@ export class DatabaseStorage implements IStorage {
               totalWorkerWages: parseFloat(dailySummary.totalWorkerWages),
               totalMaterialCosts: parseFloat(dailySummary.totalMaterialCosts),
               totalTransportationCosts: parseFloat(dailySummary.totalTransportationCosts),
-              totalWorkerTransfers: workerTransfers?.reduce((sum, t) => sum + parseFloat(t.amount), 0) || 0
+              totalWorkerTransfers: workerTransfers?.reduce((sum, t) => sum + parseFloat(t.amount), 0) || 0,
+              totalWorkerMiscExpenses: totalWorkerMiscExpenses
             },
             fundTransfers,
             workerAttendance,
             materialPurchases,
             transportationExpenses,
-            workerTransfers
+            workerTransfers,
+            workerMiscExpenses
           });
         }
       }

@@ -30,12 +30,14 @@ interface DailyExpenseData {
     totalMaterialCosts: number;
     totalTransportationCosts: number;
     totalWorkerTransfers: number;
+    totalWorkerMiscExpenses: number;
   };
   fundTransfers: any[];
   workerAttendance: any[];
   materialPurchases: any[];
   transportationExpenses: any[];
   workerTransfers: any[];
+  workerMiscExpenses: any[];
 }
 
 export default function DailyExpensesReport() {
@@ -139,7 +141,7 @@ export default function DailyExpensesReport() {
     
     // حساب الإجماليات مع تسجيل مفصل
     let totalIncome = 0, totalExpenses = 0, totalFundTransfers = 0;
-    let totalWorkerWages = 0, totalMaterialCosts = 0, totalTransportationCosts = 0, totalWorkerTransfers = 0;
+    let totalWorkerWages = 0, totalMaterialCosts = 0, totalTransportationCosts = 0, totalWorkerTransfers = 0, totalWorkerMiscExpenses = 0;
     
     reportData.forEach((day, index) => {
       console.log(`📅 اليوم ${index + 1}: ${day.date}`);
@@ -152,6 +154,7 @@ export default function DailyExpensesReport() {
       totalMaterialCosts += Number(day.summary.totalMaterialCosts) || 0;
       totalTransportationCosts += Number(day.summary.totalTransportationCosts) || 0;
       totalWorkerTransfers += Number(day.summary.totalWorkerTransfers) || 0;
+      totalWorkerMiscExpenses += Number(day.summary.totalWorkerMiscExpenses) || 0;
     });
     
     const finalBalance = reportData.length > 0 ? Number(reportData[reportData.length - 1].summary.remainingBalance) || 0 : 0;
@@ -186,7 +189,7 @@ export default function DailyExpensesReport() {
       // إضافة رؤوس الأعمدة مع تنسيق
       const headers = [
         'التاريخ', 'الرصيد المرحل', 'الحوالات المالية', 'أجور العمال', 'شراء المواد', 
-        'أجور المواصلات', 'حوالات العمال', 'إجمالي الإيرادات', 'إجمالي المصروفات', 'الرصيد المتبقي'
+        'أجور المواصلات', 'حوالات العمال', 'نثريات العمال', 'إجمالي الإيرادات', 'إجمالي المصروفات', 'الرصيد المتبقي'
       ];
       
       const headerRow = worksheet.addRow(headers);
@@ -205,6 +208,7 @@ export default function DailyExpensesReport() {
           Number(day.summary.totalMaterialCosts) || 0,
           Number(day.summary.totalTransportationCosts) || 0,
           Number(day.summary.totalWorkerTransfers) || 0,
+          Number(day.summary.totalWorkerMiscExpenses) || 0,
           Number(day.summary.totalIncome) || 0,
           Number(day.summary.totalExpenses) || 0,
           Number(day.summary.remainingBalance) || 0
@@ -214,7 +218,7 @@ export default function DailyExpensesReport() {
         const dataRow = worksheet.addRow(rowData);
         
         // تنسيق الأرقام
-        for (let i = 2; i <= 10; i++) {
+        for (let i = 2; i <= 11; i++) {
           dataRow.getCell(i).numFmt = '#,##0.00';
         }
         
@@ -247,9 +251,9 @@ export default function DailyExpensesReport() {
           }
           
           // تلوين الخلايا حسب النوع
-          if (colNumber === 3 || colNumber === 8) { // الحوالات والإيرادات
+          if (colNumber === 3 || colNumber === 9) { // الحوالات والإيرادات
             cell.font = { ...cell.font, color: { argb: 'FF166534' } };
-          } else if (colNumber >= 4 && colNumber <= 7 || colNumber === 9) { // المصروفات
+          } else if (colNumber >= 4 && colNumber <= 8 || colNumber === 10) { // المصروفات
             cell.font = { ...cell.font, color: { argb: 'FF92400E' } };
           }
         });
@@ -265,6 +269,7 @@ export default function DailyExpensesReport() {
         totalMaterialCosts,
         totalTransportationCosts,
         totalWorkerTransfers,
+        totalWorkerMiscExpenses,
         totalIncome,
         totalExpenses,
         finalBalance
@@ -278,7 +283,7 @@ export default function DailyExpensesReport() {
       totalsRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFDE68A' } };
       
       // تنسيق أرقام الإجماليات
-      for (let i = 2; i <= 10; i++) {
+      for (let i = 2; i <= 11; i++) {
         totalsRow.getCell(i).numFmt = '#,##0.00';
       }
       
@@ -291,6 +296,7 @@ export default function DailyExpensesReport() {
         { width: 15 }, // شراء المواد
         { width: 15 }, // أجور المواصلات
         { width: 15 }, // حوالات العمال
+        { width: 15 }, // نثريات العمال
         { width: 15 }, // إجمالي الإيرادات
         { width: 15 }, // إجمالي المصروفات
         { width: 15 }  // الرصيد المتبقي
@@ -405,6 +411,7 @@ export default function DailyExpensesReport() {
       totalMaterialCosts: totals.totalMaterialCosts + day.summary.totalMaterialCosts,
       totalTransportationCosts: totals.totalTransportationCosts + day.summary.totalTransportationCosts,
       totalWorkerTransfers: totals.totalWorkerTransfers + day.summary.totalWorkerTransfers,
+      totalWorkerMiscExpenses: totals.totalWorkerMiscExpenses + (day.summary.totalWorkerMiscExpenses || 0),
     }), {
       totalIncome: 0,
       totalExpenses: 0,
@@ -413,6 +420,7 @@ export default function DailyExpensesReport() {
       totalMaterialCosts: 0,
       totalTransportationCosts: 0,
       totalWorkerTransfers: 0,
+      totalWorkerMiscExpenses: 0,
     });
   };
 
@@ -642,6 +650,7 @@ export default function DailyExpensesReport() {
                   <th className="px-4 py-3 text-center font-semibold text-orange-100">شراء المواد</th>
                   <th className="px-4 py-3 text-center font-semibold text-orange-100">أجور المواصلات</th>
                   <th className="px-4 py-3 text-center font-semibold text-orange-100">حوالات العمال</th>
+                  <th className="px-4 py-3 text-center font-semibold text-purple-100">نثريات العمال</th>
                   <th className="px-4 py-3 text-center font-semibold text-green-100">إجمالي الإيرادات</th>
                   <th className="px-4 py-3 text-center font-semibold text-red-100">إجمالي المصروفات</th>
                   <th className="px-4 py-3 text-center font-semibold text-blue-100">الرصيد المتبقي</th>
@@ -676,6 +685,9 @@ export default function DailyExpensesReport() {
                     </td>
                     <td className="px-4 py-3 currency text-orange-700 dark:text-orange-400 font-medium text-center border-b border-gray-200 dark:border-gray-700 bg-orange-50 dark:bg-orange-900/20">
                       {formatCurrency(day.summary.totalWorkerTransfers)}
+                    </td>
+                    <td className="px-4 py-3 currency text-purple-700 dark:text-purple-400 font-medium text-center border-b border-gray-200 dark:border-gray-700 bg-purple-50 dark:bg-purple-900/20">
+                      {formatCurrency(day.summary.totalWorkerMiscExpenses || 0)}
                     </td>
                     <td className="px-4 py-3 currency font-bold text-green-800 dark:text-green-300 text-center border-b border-gray-200 dark:border-gray-700 bg-green-100 dark:bg-green-900/30">
                       {formatCurrency(day.summary.totalIncome)}
@@ -713,6 +725,9 @@ export default function DailyExpensesReport() {
                   </td>
                   <td className="px-4 py-4 currency text-center border-t-2 border-blue-500 text-orange-200">
                     {formatCurrency(totals?.totalWorkerTransfers || 0)}
+                  </td>
+                  <td className="px-4 py-4 currency text-center border-t-2 border-blue-500 text-purple-200">
+                    {formatCurrency(totals?.totalWorkerMiscExpenses || 0)}
                   </td>
                   <td className="px-4 py-4 currency text-center border-t-2 border-blue-500 text-green-200 font-extrabold">
                     {formatCurrency(totals?.totalIncome || 0)}
