@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { insertProjectFundTransferSchema } from "@shared/schema";
 import type { InsertProjectFundTransfer, ProjectFundTransfer, Project } from "@shared/schema";
-import { Plus, ArrowRight, Calendar, User, FileText } from "lucide-react";
+import { Plus, ArrowRight, Calendar, User, FileText, Edit, Banknote, Building, Trash2 } from "lucide-react";
 import { z } from "zod";
 
 type TransferFormData = z.infer<typeof insertProjectFundTransferSchema>;
@@ -23,6 +23,7 @@ export default function ProjectTransfers() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
+  const [editingTransfer, setEditingTransfer] = useState<ProjectFundTransfer | null>(null);
 
   // جلب قائمة المشاريع
   const { data: projects = [], isLoading: projectsLoading } = useQuery<Project[]>({
@@ -34,24 +35,50 @@ export default function ProjectTransfers() {
     queryKey: ["/api/project-fund-transfers"],
   });
 
-  // إنشاء عملية ترحيل جديدة
+  // إنشاء أو تحديث عملية ترحيل
   const createTransferMutation = useMutation({
-    mutationFn: (data: InsertProjectFundTransfer) =>
-      apiRequest("POST", "/api/project-fund-transfers", data),
+    mutationFn: (data: InsertProjectFundTransfer) => {
+      if (editingTransfer) {
+        return apiRequest("PUT", `/api/project-fund-transfers/${editingTransfer.id}`, data);
+      }
+      return apiRequest("POST", "/api/project-fund-transfers", data);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/project-fund-transfers"] });
       queryClient.invalidateQueries({ queryKey: ["/api/projects/with-stats"] });
       toast({
         title: "تم بنجاح",
-        description: "تم إنشاء عملية ترحيل الأموال بنجاح",
+        description: editingTransfer ? "تم تحديث عملية ترحيل الأموال بنجاح" : "تم إنشاء عملية ترحيل الأموال بنجاح",
       });
       setShowForm(false);
+      setEditingTransfer(null);
       form.reset();
     },
     onError: (error: any) => {
       toast({
         title: "خطأ",
-        description: error.message || "فشل في إنشاء عملية الترحيل",
+        description: error.message || "فشل في حفظ عملية الترحيل",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // حذف عملية ترحيل
+  const deleteTransferMutation = useMutation({
+    mutationFn: (transferId: string) =>
+      apiRequest("DELETE", `/api/project-fund-transfers/${transferId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/project-fund-transfers"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/projects/with-stats"] });
+      toast({
+        title: "تم الحذف",
+        description: "تم حذف عملية ترحيل الأموال بنجاح",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "خطأ",
+        description: error.message || "فشل في حذف عملية الترحيل",
         variant: "destructive",
       });
     },
@@ -72,6 +99,34 @@ export default function ProjectTransfers() {
 
   const onSubmit = (data: TransferFormData) => {
     createTransferMutation.mutate(data);
+  };
+
+  // بدء تعديل عملية ترحيل
+  const startEdit = (transfer: ProjectFundTransfer) => {
+    setEditingTransfer(transfer);
+    form.reset({
+      fromProjectId: transfer.fromProjectId,
+      toProjectId: transfer.toProjectId,
+      amount: transfer.amount,
+      transferReason: transfer.transferReason || "",
+      transferDate: transfer.transferDate,
+      description: transfer.description || "",
+    });
+    setShowForm(true);
+  };
+
+  // إلغاء التعديل
+  const cancelEdit = () => {
+    setEditingTransfer(null);
+    setShowForm(false);
+    form.reset();
+  };
+
+  // حذف عملية ترحيل مع تأكيد
+  const handleDelete = (transferId: string, fromProject: string, toProject: string) => {
+    if (confirm(`هل أنت متأكد من حذف عملية الترحيل من ${fromProject} إلى ${toProject}؟`)) {
+      deleteTransferMutation.mutate(transferId);
+    }
   };
 
   // دالة لجلب اسم المشروع
@@ -262,12 +317,12 @@ export default function ProjectTransfers() {
                     className="bg-green-600 hover:bg-green-700"
                     data-testid="button-submit-transfer"
                   >
-                    {createTransferMutation.isPending ? "جاري الحفظ..." : "حفظ عملية الترحيل"}
+                    {createTransferMutation.isPending ? "جاري الحفظ..." : (editingTransfer ? "تحديث عملية الترحيل" : "حفظ عملية الترحيل")}
                   </Button>
                   <Button
                     type="button"
                     variant="outline"
-                    onClick={() => setShowForm(false)}
+                    onClick={cancelEdit}
                     data-testid="button-cancel"
                   >
                     إلغاء
@@ -297,38 +352,89 @@ export default function ProjectTransfers() {
               <p className="text-gray-500">لا توجد عمليات ترحيل مسجلة</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="text-right">التاريخ</TableHead>
-                    <TableHead className="text-right">من مشروع</TableHead>
-                    <TableHead className="text-right">إلى مشروع</TableHead>
-                    <TableHead className="text-right">المبلغ</TableHead>
-                    <TableHead className="text-right">السبب</TableHead>
-                    <TableHead className="text-right">الوصف</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {transfers.map((transfer: ProjectFundTransfer) => (
-                    <TableRow key={transfer.id} data-testid={`row-transfer-${transfer.id}`}>
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-gray-500" />
-                          {new Date(transfer.transferDate).toLocaleDateString('ar-SA')}
+            <div className="space-y-3">
+              {transfers.map((transfer: ProjectFundTransfer) => (
+                <Card key={transfer.id} className="border border-gray-200 hover:shadow-md transition-shadow duration-200" data-testid={`card-transfer-${transfer.id}`}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      {/* المعلومات الأساسية */}
+                      <div className="flex-1 space-y-2">
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2">
+                            <Building className="w-4 h-4 text-blue-600" />
+                            <span className="font-medium text-gray-700">{getProjectName(transfer.fromProjectId)}</span>
+                          </div>
+                          <ArrowRight className="w-4 h-4 text-gray-400" />
+                          <div className="flex items-center gap-2">
+                            <Building className="w-4 h-4 text-green-600" />
+                            <span className="font-medium text-gray-700">{getProjectName(transfer.toProjectId)}</span>
+                          </div>
                         </div>
-                      </TableCell>
-                      <TableCell>{getProjectName(transfer.fromProjectId)}</TableCell>
-                      <TableCell>{getProjectName(transfer.toProjectId)}</TableCell>
-                      <TableCell className="font-bold text-green-600">
-                        {parseFloat(transfer.amount).toLocaleString()} ر.ي
-                      </TableCell>
-                      <TableCell>{transfer.transferReason || '-'}</TableCell>
-                      <TableCell>{transfer.description || '-'}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+
+                        <div className="flex items-center gap-4">
+                          <div className="flex items-center gap-2">
+                            <Banknote className="w-4 h-4 text-green-600" />
+                            <span className="text-lg font-bold text-green-600">
+                              {parseFloat(transfer.amount).toLocaleString()} ر.ي
+                            </span>
+                          </div>
+                          
+                          <div className="flex items-center gap-2">
+                            <Calendar className="w-4 h-4 text-gray-500" />
+                            <span className="text-sm text-gray-600">
+                              {new Date(transfer.transferDate).toLocaleDateString('ar-SA')}
+                            </span>
+                          </div>
+                        </div>
+
+                        {(transfer.transferReason || transfer.description) && (
+                          <div className="space-y-1">
+                            {transfer.transferReason && (
+                              <div className="flex items-center gap-2">
+                                <FileText className="w-3 h-3 text-gray-400" />
+                                <span className="text-sm text-gray-600">السبب: {transfer.transferReason}</span>
+                              </div>
+                            )}
+                            {transfer.description && (
+                              <div className="flex items-start gap-2">
+                                <User className="w-3 h-3 text-gray-400 mt-0.5" />
+                                <span className="text-sm text-gray-600">{transfer.description}</span>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* أزرار العمليات */}
+                      <div className="flex gap-2 ml-4">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => startEdit(transfer)}
+                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          data-testid={`button-edit-${transfer.id}`}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDelete(
+                            transfer.id, 
+                            getProjectName(transfer.fromProjectId), 
+                            getProjectName(transfer.toProjectId)
+                          )}
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          disabled={deleteTransferMutation.isPending}
+                          data-testid={`button-delete-${transfer.id}`}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           )}
         </CardContent>
