@@ -1071,15 +1071,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/workers/:workerId/account-statement", async (req, res) => {
     try {
-      const { projectId, dateFrom, dateTo } = req.query;
-      const statement = await storage.getWorkerAccountStatement(
-        req.params.workerId,
-        projectId as string,
-        dateFrom as string,
-        dateTo as string
-      );
-      res.json(statement);
+      const { projectId, projectIds, dateFrom, dateTo } = req.query;
+      
+      // إذا تم تمرير مشاريع متعددة، استخدمها، وإلا استخدم المشروع الواحد
+      if (projectIds) {
+        // التعامل مع مشاريع متعددة
+        const projectIdsArray = Array.isArray(projectIds) ? projectIds : [projectIds];
+        const statement = await storage.getWorkerAccountStatementMultipleProjects(
+          req.params.workerId,
+          projectIdsArray as string[],
+          dateFrom as string,
+          dateTo as string
+        );
+        res.json(statement);
+      } else {
+        // التعامل مع مشروع واحد (الطريقة القديمة)
+        const statement = await storage.getWorkerAccountStatement(
+          req.params.workerId,
+          projectId as string,
+          dateFrom as string,
+          dateTo as string
+        );
+        res.json(statement);
+      }
     } catch (error) {
+      console.error("Error fetching worker account statement:", error);
       res.status(500).json({ message: "Error fetching worker account statement" });
     }
   });

@@ -1232,6 +1232,99 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  // دالة جديدة لجلب كشف حساب العامل من مشاريع متعددة
+  async getWorkerAccountStatementMultipleProjects(workerId: string, projectIds: string[], dateFrom?: string, dateTo?: string): Promise<{
+    attendance: WorkerAttendance[];
+    transfers: WorkerTransfer[];
+    balance: WorkerBalance | null;
+    projectsInfo: { projectId: string; projectName: string }[];
+  }> {
+    try {
+      // جلب معلومات المشاريع
+      const projectsInfo = await Promise.all(
+        projectIds.map(async (projectId) => {
+          const project = await this.getProject(projectId);
+          return {
+            projectId,
+            projectName: project?.name || `مشروع ${projectId}`
+          };
+        })
+      );
+
+      // جلب الحضور من المشاريع المحددة
+      let attendanceConditions = [
+        eq(workerAttendance.workerId, workerId),
+        inArray(workerAttendance.projectId, projectIds)
+      ];
+      
+      if (dateFrom) {
+        attendanceConditions.push(gte(workerAttendance.date, dateFrom));
+      }
+      
+      if (dateTo) {
+        attendanceConditions.push(lte(workerAttendance.date, dateTo));
+      }
+      
+      const attendance = await db.select().from(workerAttendance)
+        .where(and(...attendanceConditions))
+        .orderBy(workerAttendance.date);
+      
+      // جلب التحويلات من المشاريع المحددة
+      let transfersConditions = [
+        eq(workerTransfers.workerId, workerId),
+        inArray(workerTransfers.projectId, projectIds)
+      ];
+      
+      if (dateFrom) {
+        transfersConditions.push(gte(workerTransfers.transferDate, dateFrom));
+      }
+      
+      if (dateTo) {
+        transfersConditions.push(lte(workerTransfers.transferDate, dateTo));
+      }
+      
+      const transfers = await db.select().from(workerTransfers)
+        .where(and(...transfersConditions))
+        .orderBy(workerTransfers.transferDate);
+      
+      // حساب الرصيد الإجمالي من جميع المشاريع
+      let totalBalance = 0;
+      for (const projectId of projectIds) {
+        const workerBalance = await this.getWorkerBalance(workerId, projectId);
+        if (workerBalance) {
+          totalBalance += parseFloat(workerBalance.currentBalance);
+        }
+      }
+      
+      const balance: WorkerBalance = {
+        id: `multi-${workerId}`,
+        createdAt: new Date(),
+        workerId,
+        projectId: projectIds[0], // المشروع الأول كمرجع
+        totalEarned: "0",
+        totalPaid: "0", 
+        totalTransferred: "0",
+        currentBalance: totalBalance.toString(),
+        lastUpdated: new Date()
+      };
+      
+      return {
+        attendance,
+        transfers,
+        balance,
+        projectsInfo
+      };
+    } catch (error) {
+      console.error('Error getting worker account statement for multiple projects:', error);
+      return {
+        attendance: [],
+        transfers: [],
+        balance: null,
+        projectsInfo: []
+      };
+    }
+  }
+
   // Multi-project worker management
   async getWorkersWithMultipleProjects(): Promise<{worker: Worker, projects: Project[], totalBalance: string}[]> {
     return [];

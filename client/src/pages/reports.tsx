@@ -50,6 +50,7 @@ export default function Reports() {
   const [workerAccountDate1, setWorkerAccountDate1] = useState("");
   const [workerAccountDate2, setWorkerAccountDate2] = useState("");
   const [selectedWorkerId, setSelectedWorkerId] = useState("");
+  const [selectedWorkerProjectIds, setSelectedWorkerProjectIds] = useState<string[]>([]);
   const [materialReportDate1, setMaterialReportDate1] = useState("");
   const [materialReportDate2, setMaterialReportDate2] = useState("");
   const [projectSummaryDate1, setProjectSummaryDate1] = useState("");
@@ -173,8 +174,29 @@ export default function Reports() {
 
     setIsGenerating(true);
     try {
-      const data = await apiRequest("GET", `/api/workers/${selectedWorkerId}/account-statement?projectId=${selectedProjectId}&dateFrom=${workerAccountDate1}&dateTo=${workerAccountDate2}`);
-      const reportDataExtended = { ...data, workerId: selectedWorkerId, dateFrom: workerAccountDate1, dateTo: workerAccountDate2 };
+      // إنشاء URL مع فلترة المشاريع
+      let url = `/api/workers/${selectedWorkerId}/account-statement?dateFrom=${workerAccountDate1}&dateTo=${workerAccountDate2}`;
+      
+      // إضافة فلترة المشاريع إذا تم تحديدها، وإلا استخدام المشروع المحدد حالياً
+      if (selectedWorkerProjectIds.length > 0) {
+        // إضافة المشاريع المحددة
+        const projectsQuery = selectedWorkerProjectIds.map(id => `projectIds=${id}`).join('&');
+        url += `&${projectsQuery}`;
+      } else if (selectedProjectId) {
+        // إذا لم يتم تحديد مشاريع، استخدم المشروع المحدد حالياً
+        url += `&projectId=${selectedProjectId}`;
+      }
+      
+      const data = await apiRequest("GET", url);
+      const reportDataExtended = { 
+        ...data, 
+        workerId: selectedWorkerId, 
+        dateFrom: workerAccountDate1, 
+        dateTo: workerAccountDate2,
+        filteredProjects: selectedWorkerProjectIds.length > 0 ? 
+          projects.filter(p => selectedWorkerProjectIds.includes(p.id)).map(p => p.name).join(', ') :
+          'جميع المشاريع'
+      };
       setReportData(reportDataExtended);
       setActiveReportType("worker");
 
@@ -1633,11 +1655,56 @@ export default function Reports() {
                       <SelectContent>
                         {workers.map((worker) => (
                           <SelectItem key={worker.id} value={worker.id}>
-                            {worker.name}
+                            {worker.name} - {worker.type}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                      <Briefcase className="h-4 w-4" />
+                      المشاريع المطلوبة (اختياري - إذا لم تحدد سيتم عرض جميع المشاريع)
+                    </label>
+                    <div className="max-h-32 overflow-y-auto border-2 border-green-200 rounded-xl p-3 space-y-2">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <input
+                          type="checkbox"
+                          id="all-projects"
+                          checked={selectedWorkerProjectIds.length === 0}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedWorkerProjectIds([]);
+                            }
+                          }}
+                          className="rounded border-gray-300"
+                        />
+                        <label htmlFor="all-projects" className="text-sm font-medium text-gray-700 mr-2">
+                          جميع المشاريع
+                        </label>
+                      </div>
+                      {projects.map((project) => (
+                        <div key={project.id} className="flex items-center space-x-2">
+                          <input
+                            type="checkbox"
+                            id={`project-${project.id}`}
+                            checked={selectedWorkerProjectIds.includes(project.id)}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedWorkerProjectIds(prev => [...prev, project.id]);
+                              } else {
+                                setSelectedWorkerProjectIds(prev => prev.filter(id => id !== project.id));
+                              }
+                            }}
+                            className="rounded border-gray-300"
+                          />
+                          <label htmlFor={`project-${project.id}`} className="text-sm text-gray-600 mr-2">
+                            {project.name}
+                          </label>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-2">
