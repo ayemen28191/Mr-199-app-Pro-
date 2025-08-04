@@ -366,13 +366,10 @@ export default function ProjectTransfers() {
                         
                         {/* المعلومات */}
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between mb-1">
+                          <div className="mb-1">
                             <h3 className="font-bold text-gray-800 text-sm truncate">
                               {getProjectName(transfer.fromProjectId)} → {getProjectName(transfer.toProjectId)}
                             </h3>
-                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 shrink-0 ml-2">
-                              نشيط
-                            </span>
                           </div>
                           
                           <div className="grid grid-cols-2 gap-3 text-xs">
@@ -407,42 +404,34 @@ export default function ProjectTransfers() {
                           <div className="mt-1 text-xs text-gray-500">
                             ID: {transfer.id.slice(0, 8)}
                           </div>
+                          
+                          {/* أزرار العمليات */}
+                          <div className="flex gap-2 mt-3 justify-start">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => startEdit(transfer)}
+                              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 w-8 h-8 p-0 border"
+                              data-testid={`button-edit-${transfer.id}`}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDelete(
+                                transfer.id, 
+                                getProjectName(transfer.fromProjectId), 
+                                getProjectName(transfer.toProjectId)
+                              )}
+                              className="text-red-600 hover:text-red-700 hover:bg-red-50 w-8 h-8 p-0 border"
+                              disabled={deleteTransferMutation.isPending}
+                              data-testid={`button-delete-${transfer.id}`}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
                         </div>
-                      </div>
-
-                      {/* أزرار العمليات */}
-                      <div className="flex flex-col gap-1 shrink-0">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => startEdit(transfer)}
-                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 w-8 h-8 p-0 border"
-                          data-testid={`button-edit-${transfer.id}`}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDelete(
-                            transfer.id, 
-                            getProjectName(transfer.fromProjectId), 
-                            getProjectName(transfer.toProjectId)
-                          )}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50 w-8 h-8 p-0 border"
-                          disabled={deleteTransferMutation.isPending}
-                          data-testid={`button-delete-${transfer.id}`}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="default"
-                          size="sm"
-                          className="bg-red-500 hover:bg-red-600 text-white text-xs px-2 py-1 h-7 w-8"
-                          onClick={() => alert('عرض تفاصيل العملية')}
-                        >
-                          إيقاف
-                        </Button>
                       </div>
                     </div>
                   </CardContent>
