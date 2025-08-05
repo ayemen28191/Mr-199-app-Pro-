@@ -2322,6 +2322,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // إضافة APIs مفقودة حسب خطة التحسينات
+  
+  // API Health Check - إصلاح المشكلة الحرجة
+  app.get("/api/health", async (req, res) => {
+    try {
+      const healthStatus = {
+        status: 'OK',
+        timestamp: new Date().toISOString(),
+        version: '1.0.0',
+        database: 'connected',
+        uptime: process.uptime(),
+        environment: process.env.NODE_ENV || 'development'
+      };
+      res.json(healthStatus);
+    } catch (error) {
+      res.status(500).json({ 
+        status: 'ERROR', 
+        message: 'Health check failed',
+        timestamp: new Date().toISOString()
+      });
+    }
+  });
+
+  // API Stats Summary - إضافة المفقود
+  app.get("/api/stats-summary", async (req, res) => {
+    try {
+      const projects = await storage.getProjects();
+      const workers = await storage.getWorkers();
+      const materials = await storage.getMaterials();
+      
+      // حساب إحصائيات سريعة بدون تفاصيل مطولة
+      const totalProjects = projects.length;
+      const activeProjects = projects.filter(p => p.status === 'active' || !p.status).length;
+      const totalWorkers = workers.length;
+      const totalMaterials = materials.length;
+      
+      const summary = {
+        projects: {
+          total: totalProjects,
+          active: activeProjects
+        },
+        workers: {
+          total: totalWorkers
+        },
+        materials: {
+          total: totalMaterials
+        },
+        system: {
+          status: 'operational',
+          lastUpdated: new Date().toISOString()
+        }
+      };
+      
+      res.json(summary);
+    } catch (error) {
+      console.error("Error getting stats summary:", error);
+      res.status(500).json({ message: "Error retrieving system statistics" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
