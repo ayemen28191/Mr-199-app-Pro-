@@ -171,7 +171,7 @@ export interface IStorage {
   }>;
   
   // Purchase filtering for supplier reports
-  getPurchasesBySupplier(supplierId: string, paymentType?: string, dateFrom?: string, dateTo?: string): Promise<MaterialPurchase[]>;
+  getPurchasesBySupplier(supplierId: string, purchaseType?: string, dateFrom?: string, dateTo?: string): Promise<MaterialPurchase[]>;
   
   // Print Settings
   getPrintSettings(reportType?: string, userId?: string): Promise<PrintSettings[]>;
@@ -715,7 +715,7 @@ export class DatabaseStorage implements IStorage {
         quantity: materialPurchases.quantity,
         unitPrice: materialPurchases.unitPrice,
         totalAmount: materialPurchases.totalAmount,
-        paymentType: materialPurchases.paymentType,
+        purchaseType: materialPurchases.purchaseType,
         supplierName: materialPurchases.supplierName,
         invoiceNumber: materialPurchases.invoiceNumber,
         invoiceDate: materialPurchases.invoiceDate,
@@ -749,7 +749,7 @@ export class DatabaseStorage implements IStorage {
       quantity: purchase.quantity,
       unitPrice: purchase.unitPrice,
       totalAmount: purchase.totalAmount,
-      paymentType: purchase.paymentType,
+      purchaseType: purchase.purchaseType,
       supplierName: purchase.supplierName,
       invoiceNumber: purchase.invoiceNumber,
       invoiceDate: purchase.invoiceDate,
@@ -2333,12 +2333,12 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getPurchasesBySupplier(supplierId: string, paymentType?: string, dateFrom?: string, dateTo?: string): Promise<MaterialPurchase[]> {
+  async getPurchasesBySupplier(supplierId: string, purchaseType?: string, dateFrom?: string, dateTo?: string): Promise<MaterialPurchase[]> {
     try {
       const conditions = [eq(materialPurchases.supplierId, supplierId)];
       
-      if (paymentType) {
-        conditions.push(eq(materialPurchases.paymentType, paymentType));
+      if (purchaseType) {
+        conditions.push(eq(materialPurchases.purchaseType, purchaseType));
       }
       
       if (dateFrom && dateTo) {

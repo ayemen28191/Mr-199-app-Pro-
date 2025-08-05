@@ -313,7 +313,7 @@ export default function MaterialPurchase() {
       quantity: parseFloat(quantity),
       unitPrice: parseFloat(unitPrice),
       totalAmount: totalAmount,
-      paymentType: paymentType.trim(), // تنظيف وتنسيق نوع الدفع
+      purchaseType: paymentType.trim(), // تنظيف وتنسيق نوع الدفع - استخدام purchaseType
       supplierName: supplierName?.trim() || '',
       invoiceNumber: invoiceNumber?.trim() || '',
       invoiceDate: invoiceDate || new Date().toISOString().split('T')[0],

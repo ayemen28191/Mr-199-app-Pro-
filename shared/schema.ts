@@ -102,7 +102,7 @@ export const materialPurchases = pgTable("material_purchases", {
   quantity: decimal("quantity", { precision: 10, scale: 3 }).notNull(),
   unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
   totalAmount: decimal("total_amount", { precision: 10, scale: 2 }).notNull(),
-  paymentType: text("payment_type").notNull().default("نقد"), // نقد، أجل
+  purchaseType: text("purchase_type").notNull().default("نقد"), // نقد، أجل
   paidAmount: decimal("paid_amount", { precision: 10, scale: 2 }).default('0').notNull(), // المبلغ المدفوع
   remainingAmount: decimal("remaining_amount", { precision: 10, scale: 2 }).default('0').notNull(), // المتبقي
   supplierName: text("supplier_name"), // اسم المورد (للتوافق العكسي)
