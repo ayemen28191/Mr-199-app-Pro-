@@ -296,6 +296,9 @@ export const insertMaterialPurchaseSchema = createInsertSchema(materialPurchases
   quantity: z.coerce.number().positive(), // تحويل تلقائي للرقم
   unitPrice: z.coerce.number().positive(), // تحويل تلقائي للرقم
   totalAmount: z.coerce.number().positive(), // تحويل تلقائي للرقم
+  purchaseType: z.string().default("نقد"), // قيمة افتراضية للنوع
+  paidAmount: z.coerce.number().default(0), // المبلغ المدفوع
+  remainingAmount: z.coerce.number().default(0), // المتبقي
 });
 export const insertTransportationExpenseSchema = createInsertSchema(transportationExpenses).omit({ id: true, createdAt: true });
 export const insertWorkerTransferSchema = createInsertSchema(workerTransfers).omit({ id: true, createdAt: true });

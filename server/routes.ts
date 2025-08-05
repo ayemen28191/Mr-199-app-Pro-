@@ -569,10 +569,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Now create the purchase with the material ID
+      // إعداد البيانات مع القيم الافتراضية المحسنة
       const purchaseDataWithMaterialId = {
         ...purchaseData,
-        materialId: material.id
+        materialId: material.id,
+        purchaseType: purchaseData.purchaseType || "نقد", // ضمان وجود قيمة
+        paidAmount: purchaseData.purchaseType === "نقد" ? purchaseData.totalAmount : 0,
+        remainingAmount: purchaseData.purchaseType === "آجل" ? purchaseData.totalAmount : 0,
       };
       
       console.log("Schema validation for data:", JSON.stringify(purchaseDataWithMaterialId, null, 2));
