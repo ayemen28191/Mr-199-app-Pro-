@@ -1459,69 +1459,103 @@ export class DatabaseStorage implements IStorage {
     lastActivity: string;
   }> {
     try {
-      // استعلام SQL محسن لجلب الإحصائيات الكلية (وليس اليومية)
-      const result = await db.execute(sql`
-        WITH project_stats AS (
+      // حساب الإحصائيات الكلية الحقيقية من جميع المعاملات
+      const [
+        workers,
+        fundTransfers,
+        projectTransfersIn,
+        projectTransfersOut,
+        attendance,
+        materials,
+        transport,
+        miscExpenses
+      ] = await Promise.all([
+        // عدد العمال المميزين
+        db.execute(sql`
+          SELECT COUNT(DISTINCT worker_id) as count
+          FROM worker_attendance 
+          WHERE project_id = ${projectId}
+        `),
+        
+        // إجمالي تحويلات العهدة
+        db.execute(sql`
+          SELECT COALESCE(SUM(CAST(amount AS DECIMAL)), 0) as total
+          FROM fund_transfers 
+          WHERE project_id = ${projectId}
+        `),
+        
+        // التحويلات الواردة للمشروع
+        db.execute(sql`
+          SELECT COALESCE(SUM(CAST(amount AS DECIMAL)), 0) as total
+          FROM project_fund_transfers 
+          WHERE to_project_id = ${projectId}
+        `),
+        
+        // التحويلات الصادرة من المشروع
+        db.execute(sql`
+          SELECT COALESCE(SUM(CAST(amount AS DECIMAL)), 0) as total
+          FROM project_fund_transfers 
+          WHERE from_project_id = ${projectId}
+        `),
+        
+        // إجمالي الأجور الفعلية والأيام
+        db.execute(sql`
           SELECT 
-            COALESCE(COUNT(DISTINCT wa.worker_id), 0) as total_workers,
-            COALESCE(COUNT(DISTINCT wa.date), 0) as completed_days,
-            COALESCE(COUNT(DISTINCT mp.id), 0) as material_purchases
-          FROM worker_attendance wa
-          FULL OUTER JOIN material_purchases mp ON wa.project_id = mp.project_id
-          WHERE COALESCE(wa.project_id, mp.project_id) = ${projectId}
-        ),
-        total_income_stats AS (
+            COALESCE(SUM(CAST(actual_wage AS DECIMAL)), 0) as total_wages,
+            COUNT(DISTINCT date) as completed_days
+          FROM worker_attendance 
+          WHERE project_id = ${projectId}
+        `),
+        
+        // إجمالي مشتريات المواد
+        db.execute(sql`
           SELECT 
-            -- إجمالي الدخل من تحويلات العهدة
-            COALESCE(SUM(CAST(ft.amount AS DECIMAL)), 0) as fund_transfers_income,
-            -- إجمالي الدخل من التحويلات بين المشاريع (المشروع كمستقبل)
-            COALESCE(SUM(CAST(pft_in.amount AS DECIMAL)), 0) as project_transfers_in
-          FROM (SELECT 1) dummy
-          LEFT JOIN fund_transfers ft ON ft.project_id = ${projectId}
-          LEFT JOIN project_fund_transfers pft_in ON pft_in.to_project_id = ${projectId}
-        ),
-        total_expense_stats AS (
-          SELECT 
-            -- إجمالي الأجور
-            COALESCE(SUM(CAST(wa.actual_wage AS DECIMAL)), 0) as total_wages,
-            -- إجمالي المواد
-            COALESCE(SUM(CAST(mp.total_amount AS DECIMAL)), 0) as total_materials,
-            -- إجمالي النقل
-            COALESCE(SUM(CAST(te.amount AS DECIMAL)), 0) as total_transport,
-            -- إجمالي مصاريف العمال المتنوعة
-            COALESCE(SUM(CAST(wme.amount AS DECIMAL)), 0) as total_misc,
-            -- إجمالي التحويلات من المشروع
-            COALESCE(SUM(CAST(pft_out.amount AS DECIMAL)), 0) as project_transfers_out
-          FROM (SELECT 1) dummy
-          LEFT JOIN worker_attendance wa ON wa.project_id = ${projectId}
-          LEFT JOIN material_purchases mp ON mp.project_id = ${projectId}
-          LEFT JOIN transportation_expenses te ON te.project_id = ${projectId}
-          LEFT JOIN worker_misc_expenses wme ON wme.project_id = ${projectId}
-          LEFT JOIN project_fund_transfers pft_out ON pft_out.from_project_id = ${projectId}
-        )
-        SELECT 
-          ps.total_workers,
-          ps.completed_days,
-          ps.material_purchases,
-          (ti.fund_transfers_income + ti.project_transfers_in) as total_income,
-          (te.total_wages + te.total_materials + te.total_transport + te.total_misc + te.project_transfers_out) as total_expenses,
-          (ti.fund_transfers_income + ti.project_transfers_in) - 
-          (te.total_wages + te.total_materials + te.total_transport + te.total_misc + te.project_transfers_out) as current_balance
-        FROM project_stats ps
-        CROSS JOIN total_income_stats ti
-        CROSS JOIN total_expense_stats te
-      `);
+            COALESCE(SUM(CAST(total_amount AS DECIMAL)), 0) as total,
+            COUNT(DISTINCT id) as count
+          FROM material_purchases 
+          WHERE project_id = ${projectId}
+        `),
+        
+        // إجمالي النقل
+        db.execute(sql`
+          SELECT COALESCE(SUM(CAST(amount AS DECIMAL)), 0) as total
+          FROM transportation_expenses 
+          WHERE project_id = ${projectId}
+        `),
+        
+        // مصاريف العمال المتنوعة
+        db.execute(sql`
+          SELECT COALESCE(SUM(CAST(amount AS DECIMAL)), 0) as total
+          FROM worker_misc_expenses 
+          WHERE project_id = ${projectId}
+        `)
+      ]);
 
-      const row = result.rows[0] as any;
+      // حساب الإجماليات
+      const totalWorkers = parseInt((workers.rows[0] as any)?.count || '0');
+      const totalFundTransfers = parseFloat((fundTransfers.rows[0] as any)?.total || '0');
+      const totalProjectIn = parseFloat((projectTransfersIn.rows[0] as any)?.total || '0');
+      const totalProjectOut = parseFloat((projectTransfersOut.rows[0] as any)?.total || '0');
+      const totalWages = parseFloat((attendance.rows[0] as any)?.total_wages || '0');
+      const completedDays = parseInt((attendance.rows[0] as any)?.completed_days || '0');
+      const totalMaterials = parseFloat((materials.rows[0] as any)?.total || '0');
+      const materialCount = parseInt((materials.rows[0] as any)?.count || '0');
+      const totalTransport = parseFloat((transport.rows[0] as any)?.total || '0');
+      const totalMisc = parseFloat((miscExpenses.rows[0] as any)?.total || '0');
+
+      // الإجمالي الكلي للدخل والمصروفات
+      const totalIncome = totalFundTransfers + totalProjectIn;
+      const totalExpenses = totalWages + totalMaterials + totalTransport + totalMisc + totalProjectOut;
+      const currentBalance = totalIncome - totalExpenses;
       
       return {
-        totalWorkers: parseInt(row?.total_workers || '0'),
-        totalExpenses: parseFloat(row?.total_expenses || '0'),
-        totalIncome: parseFloat(row?.total_income || '0'),
-        currentBalance: parseFloat(row?.current_balance || '0'),
-        activeWorkers: parseInt(row?.total_workers || '0'), // نفترض أن جميع العمال نشطين
-        completedDays: parseInt(row?.completed_days || '0'),
-        materialPurchases: parseInt(row?.material_purchases || '0'),
+        totalWorkers: totalWorkers,
+        totalExpenses: totalExpenses,
+        totalIncome: totalIncome,
+        currentBalance: currentBalance,
+        activeWorkers: totalWorkers, // نفترض أن جميع العمال نشطين
+        completedDays: completedDays,
+        materialPurchases: materialCount,
         lastActivity: new Date().toISOString().split('T')[0]
       };
     } catch (error) {
