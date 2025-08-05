@@ -1101,31 +1101,18 @@ export default function Reports() {
       const actualWorker = workers.find(w => w.id === data.workerId) || worker;
       const selectedProject = projects.find(p => p.id === selectedProjectId);
 
-      // حساب الإحصائيات مع تحسين حساب الأجر المستحق
+      // حساب الإحصائيات مع استخدام البيانات الحقيقية من قاعدة البيانات
       const calculateEarnedWage = (record: any) => {
-        const dailyWage = Number(actualWorker.dailyWage) || Number(record.dailyWage) || 0;
-        const workingDays = Number(record.workingDays) || 1;
-        
-        // حساب الأجر بناءً على عدد الأيام
-        if (workingDays >= 1) {
-          return dailyWage * Math.floor(workingDays); // أجر كامل للأيام الكاملة
-        } else if (workingDays >= 0.75) {
-          return dailyWage * 0.75; // ثلاثة أرباع الأجر
-        } else if (workingDays >= 0.5) {
-          return dailyWage * 0.5; // نصف الأجر
-        } else if (workingDays >= 0.25) {
-          return dailyWage * 0.25; // ربع الأجر
-        } else {
-          return 0; // لا يوجد أجر للأيام الأقل من ربع يوم
-        }
+        // استخدام الأجر الفعلي المحسوب من قاعدة البيانات
+        return Number(record.actualWage) || Number(record.dailyWage) || 0;
       };
 
+      const totalWorkingDays = attendance.reduce((sum: number, record: any) => sum + (Number(record.workDays) || 0), 0);
       const totalEarned = attendance.reduce((sum: number, record: any) => sum + calculateEarnedWage(record), 0);
       const totalPaid = attendance.reduce((sum: number, record: any) => sum + (Number(record.paidAmount) || 0), 0);
       const totalTransferred = transfers.reduce((sum: number, transfer: any) => sum + (Number(transfer.amount) || 0), 0);
       const currentBalance = totalPaid - totalTransferred;
       const remainingDue = totalEarned - totalPaid;
-      const totalWorkingDays = attendance.reduce((sum: number, record: any) => sum + (Number(record.workingDays) || 1), 0);
 
       // دالة تنسيق التاريخ بالإنجليزية
       const formatDateEN = (dateStr: string) => {
@@ -1313,11 +1300,12 @@ export default function Reports() {
       });
       worksheet.getRow(8).height = 32;
 
-      // بيانات الحضور الاحترافية المحسنة مع المزيد من التفاصيل
+      // بيانات الحضور الاحترافية المحسنة مع البيانات الحقيقية من قاعدة البيانات
       attendance.forEach((record: any, index: number) => {
         const row = worksheet.getRow(9 + index);
-        const workingDays = Number(record.workingDays) || 1;
-        const earnedWage = calculateEarnedWage(record);
+        // استخدام البيانات الحقيقية من قاعدة البيانات
+        const workingDays = Number(record.workDays) || 1;
+        const earnedWage = Number(record.actualWage) || 0;
         const paidAmount = Number(record.paidAmount) || 0;
         const remaining = earnedWage - paidAmount;
         
