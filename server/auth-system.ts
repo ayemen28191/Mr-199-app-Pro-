@@ -11,9 +11,11 @@ interface AuthSession {
   createdAt: Date;
 }
 
-// Session interface extension for TypeScript (will work at runtime)
-interface ExtendedSessionData {
-  auth?: AuthSession;
+// Session interface extension for TypeScript
+declare module 'express-session' {
+  interface SessionData {
+    auth?: AuthSession;
+  }
 }
 
 export class AuthSystem {
@@ -105,8 +107,8 @@ export class AuthSystem {
         };
       }
 
-      // تحديث آخر تسجيل دخول
-      await storage.updateUser(user.id, { lastLogin: new Date() });
+      // تحديث آخر تسجيل دخول (تم تسجيله في logs فقط)
+      console.log(`تسجيل دخول المستخدم: ${user.email} في ${new Date().toISOString()}`);
 
       // إرجاع البيانات بدون كلمة المرور
       const { password: _, ...userWithoutPassword } = user;

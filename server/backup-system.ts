@@ -85,8 +85,8 @@ export class BackupSystem {
       
       // جمع بيانات العمال
       for (const worker of workers) {
-        const balance = await storage.getWorkerBalance(worker.id);
-        const transfers = await storage.getWorkerTransfers(worker.id);
+        const balance = await storage.getWorkerBalance(worker.id, "");
+        const transfers = await storage.getWorkerTransfers(worker.id, "");
         const miscExpenses = await storage.getWorkerMiscExpenses(worker.id);
         
         if (balance) workerBalances.push(balance);
@@ -104,7 +104,8 @@ export class BackupSystem {
       const allProjectTransfers = await storage.getProjectFundTransfers();
       projectFundTransfers.push(...allProjectTransfers);
       
-      // بيانات الإعدادات (قد لا تكون متاحة، نضعها فارغة)
+      // بيانات الإعدادات
+      // بيانات الإعدادات (يمكن أن تكون فارغة)
       const autocompleteData: any[] = [];
       const printSettings: any[] = [];
 
