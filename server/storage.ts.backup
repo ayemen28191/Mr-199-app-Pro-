@@ -1,16 +1,17 @@
 import { 
   type Project, type Worker, type FundTransfer, type WorkerAttendance, 
   type Material, type MaterialPurchase, type TransportationExpense, type DailyExpenseSummary,
-  type WorkerTransfer, type WorkerBalance,
+  type WorkerTransfer, type WorkerBalance, type AutocompleteData, type WorkerType, type WorkerMiscExpense, type User,
+  type Supplier, type SupplierPayment, type PrintSettings, type ProjectFundTransfer,
   type InsertProject, type InsertWorker, type InsertFundTransfer, type InsertWorkerAttendance,
   type InsertMaterial, type InsertMaterialPurchase, type InsertTransportationExpense, type InsertDailyExpenseSummary,
-  type InsertWorkerTransfer, type InsertWorkerBalance,
+  type InsertWorkerTransfer, type InsertWorkerBalance, type InsertAutocompleteData, type InsertWorkerType, type InsertWorkerMiscExpense, type InsertUser,
+  type InsertSupplier, type InsertSupplierPayment, type InsertPrintSettings, type InsertProjectFundTransfer,
   projects, workers, fundTransfers, workerAttendance, materials, materialPurchases, transportationExpenses, dailyExpenseSummaries,
-  workerTransfers, workerBalances
+  workerTransfers, workerBalances, autocompleteData, workerTypes, workerMiscExpenses, users, suppliers, supplierPayments, printSettings, projectFundTransfers
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, gte, lte, sql } from "drizzle-orm";
-import { randomUUID } from "crypto";
+import { eq, and, gte, lte, sql, inArray, or } from "drizzle-orm";
 
 export interface IStorage {
   // Projects
@@ -28,6 +29,10 @@ export interface IStorage {
   createWorker(worker: InsertWorker): Promise<Worker>;
   updateWorker(id: string, worker: Partial<InsertWorker>): Promise<Worker | undefined>;
   
+  // Worker Types
+  getWorkerTypes(): Promise<WorkerType[]>;
+  createWorkerType(workerType: InsertWorkerType): Promise<WorkerType>;
+  
   // Fund Transfers
   getFundTransfers(projectId: string, date?: string): Promise<FundTransfer[]>;
   getFundTransferByNumber(transferNumber: string): Promise<FundTransfer | undefined>;
@@ -35,8 +40,16 @@ export interface IStorage {
   updateFundTransfer(id: string, transfer: Partial<InsertFundTransfer>): Promise<FundTransfer | undefined>;
   deleteFundTransfer(id: string): Promise<void>;
   
+  // Project Fund Transfers (ترحيل الأموال بين المشاريع)
+  getProjectFundTransfers(fromProjectId?: string, toProjectId?: string, date?: string): Promise<ProjectFundTransfer[]>;
+  getProjectFundTransfer(id: string): Promise<ProjectFundTransfer | undefined>;
+  createProjectFundTransfer(transfer: InsertProjectFundTransfer): Promise<ProjectFundTransfer>;
+  updateProjectFundTransfer(id: string, transfer: Partial<InsertProjectFundTransfer>): Promise<ProjectFundTransfer | undefined>;
+  deleteProjectFundTransfer(id: string): Promise<void>;
+  
   // Worker Attendance
   getWorkerAttendance(projectId: string, date?: string): Promise<WorkerAttendance[]>;
+  getWorkerAttendanceById(id: string): Promise<WorkerAttendance | null>;
   createWorkerAttendance(attendance: InsertWorkerAttendance): Promise<WorkerAttendance>;
   updateWorkerAttendance(id: string, attendance: Partial<InsertWorkerAttendance>): Promise<WorkerAttendance | undefined>;
   deleteWorkerAttendance(id: string): Promise<void>;
@@ -48,6 +61,7 @@ export interface IStorage {
   
   // Material Purchases
   getMaterialPurchases(projectId: string, dateFrom?: string, dateTo?: string): Promise<MaterialPurchase[]>;
+  getMaterialPurchaseById(id: string): Promise<MaterialPurchase | null>;
   createMaterialPurchase(purchase: InsertMaterialPurchase): Promise<MaterialPurchase>;
   updateMaterialPurchase(id: string, purchase: Partial<InsertMaterialPurchase>): Promise<MaterialPurchase | undefined>;
   deleteMaterialPurchase(id: string): Promise<void>;
@@ -69,7 +83,10 @@ export interface IStorage {
   
   // Worker Transfers
   getWorkerTransfers(workerId: string, projectId?: string): Promise<WorkerTransfer[]>;
+  getWorkerTransfer(id: string): Promise<WorkerTransfer | null>;
   createWorkerTransfer(transfer: InsertWorkerTransfer): Promise<WorkerTransfer>;
+  updateWorkerTransfer(id: string, transfer: Partial<InsertWorkerTransfer>): Promise<WorkerTransfer | undefined>;
+  deleteWorkerTransfer(id: string): Promise<void>;
   getAllWorkerTransfers(): Promise<WorkerTransfer[]>;
   getFilteredWorkerTransfers(projectId?: string, date?: string): Promise<WorkerTransfer[]>;
   
@@ -77,18 +94,10 @@ export interface IStorage {
   getProjectStatistics(projectId: string): Promise<any>;
   
   // Reports
-  getWorkerAccountStatement(workerId: string, projectId?: string, dateFrom?: string, dateTo?: string): Promise<WorkerAttendance[]>;
-  
-  // Project Statistics
-  getProjectStatistics(projectId: string): Promise<{
-    totalWorkers: number;
-    totalExpenses: number;
-    totalIncome: number;
-    currentBalance: number;
-    activeWorkers: number;
-    completedDays: number;
-    materialPurchases: number;
-    lastActivity: string;
+  getWorkerAccountStatement(workerId: string, projectId?: string, dateFrom?: string, dateTo?: string): Promise<{
+    attendance: WorkerAttendance[];
+    transfers: WorkerTransfer[];
+    balance: WorkerBalance | null;
   }>;
   
   // Multi-project worker management
@@ -109,345 +118,74 @@ export interface IStorage {
     };
   }>;
   getWorkerProjects(workerId: string): Promise<Project[]>;
+  updateDailySummaryForDate(projectId: string, date: string): Promise<void>;
+  getDailyExpensesRange(projectId: string, dateFrom: string, dateTo: string): Promise<any[]>;
+  
+  // Autocomplete data
+  getAutocompleteData(category: string): Promise<AutocompleteData[]>;
+  saveAutocompleteData(data: InsertAutocompleteData): Promise<AutocompleteData>;
+  removeAutocompleteData(category: string, value: string): Promise<void>;
+  
+  // Worker miscellaneous expenses
+  getWorkerMiscExpenses(projectId: string, date?: string): Promise<WorkerMiscExpense[]>;
+  getWorkerMiscExpense(id: string): Promise<WorkerMiscExpense | null>;
+  createWorkerMiscExpense(expense: InsertWorkerMiscExpense): Promise<WorkerMiscExpense>;
+  updateWorkerMiscExpense(id: string, expense: Partial<InsertWorkerMiscExpense>): Promise<WorkerMiscExpense | undefined>;
+  deleteWorkerMiscExpense(id: string): Promise<void>;
+  
+  // Advanced Reports
+  getExpensesForReport(projectId: string, dateFrom: string, dateTo: string): Promise<any[]>;
+  getIncomeForReport(projectId: string, dateFrom: string, dateTo: string): Promise<any[]>;
+  
+  // Users
+  getUsers(): Promise<User[]>;
+  getUser(id: string): Promise<User | undefined>;
+  getUserByEmail(email: string): Promise<User | undefined>;
+  createUser(user: InsertUser): Promise<User>;
+  updateUser(id: string, user: Partial<InsertUser>): Promise<User | undefined>;
+  deleteUser(id: string): Promise<void>;
+  
+  // Suppliers
+  getSuppliers(): Promise<Supplier[]>;
+  getSupplier(id: string): Promise<Supplier | undefined>;
+  getSupplierByName(name: string): Promise<Supplier | undefined>;
+  createSupplier(supplier: InsertSupplier): Promise<Supplier>;
+  updateSupplier(id: string, supplier: Partial<InsertSupplier>): Promise<Supplier | undefined>;
+  deleteSupplier(id: string): Promise<void>;
+  
+  // Supplier Payments
+  getSupplierPayments(supplierId: string, projectId?: string): Promise<SupplierPayment[]>;
+  getSupplierPayment(id: string): Promise<SupplierPayment | undefined>;
+  createSupplierPayment(payment: InsertSupplierPayment): Promise<SupplierPayment>;
+  updateSupplierPayment(id: string, payment: Partial<InsertSupplierPayment>): Promise<SupplierPayment | undefined>;
+  deleteSupplierPayment(id: string): Promise<void>;
+  
+  // Supplier Reports
+  getSupplierAccountStatement(supplierId: string, projectId?: string, dateFrom?: string, dateTo?: string): Promise<{
+    supplier: Supplier;
+    purchases: MaterialPurchase[];
+    payments: SupplierPayment[];
+    totalDebt: string;
+    totalPaid: string;
+    remainingDebt: string;
+  }>;
+  
+  // Purchase filtering for supplier reports
+  getPurchasesBySupplier(supplierId: string, purchaseType?: string, dateFrom?: string, dateTo?: string): Promise<MaterialPurchase[]>;
+  
+  // Print Settings
+  getPrintSettings(reportType?: string, userId?: string): Promise<PrintSettings[]>;
+  getPrintSettingsById(id: string): Promise<PrintSettings | undefined>;
+  createPrintSettings(settings: InsertPrintSettings): Promise<PrintSettings>;
+  updatePrintSettings(id: string, settings: Partial<InsertPrintSettings>): Promise<PrintSettings | undefined>;
+  deletePrintSettings(id: string): Promise<void>;
+  getDefaultPrintSettings(reportType: string): Promise<PrintSettings | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
-    const id = randomUUID();
-    const newPurchase: MaterialPurchase = { 
-      ...purchase, 
-      id, 
-      createdAt: new Date(),
-      notes: purchase.notes || null,
-      supplierName: purchase.supplierName || null,
-      invoiceNumber: purchase.invoiceNumber || null,
-      invoiceDate: purchase.invoiceDate || null,
-      invoicePhoto: purchase.invoicePhoto || null
-    };
-    this.materialPurchases.set(id, newPurchase);
-    return newPurchase;
-  }
-
-  async updateMaterialPurchase(id: string, purchase: Partial<InsertMaterialPurchase>): Promise<MaterialPurchase | undefined> {
-    const existing = this.materialPurchases.get(id);
-    if (!existing) return undefined;
-    
-    const updated: MaterialPurchase = { ...existing, ...purchase };
-    this.materialPurchases.set(id, updated);
-    return updated;
-  }
-
-  async deleteMaterialPurchase(id: string): Promise<void> {
-    this.materialPurchases.delete(id);
-  }
-
-  // Transportation Expenses
-  async getTransportationExpenses(projectId: string, date?: string): Promise<TransportationExpense[]> {
-    return Array.from(this.transportationExpenses.values()).filter(
-      expense => expense.projectId === projectId && (!date || expense.date === date)
-    );
-  }
-
-  async createTransportationExpense(expense: InsertTransportationExpense): Promise<TransportationExpense> {
-    const id = randomUUID();
-    const newExpense: TransportationExpense = { 
-      ...expense, 
-      id, 
-      createdAt: new Date(),
-      notes: expense.notes || null,
-      workerId: expense.workerId || null
-    };
-    this.transportationExpenses.set(id, newExpense);
-    return newExpense;
-  }
-
-  async updateTransportationExpense(id: string, expense: Partial<InsertTransportationExpense>): Promise<TransportationExpense | undefined> {
-    const existing = this.transportationExpenses.get(id);
-    if (!existing) return undefined;
-    
-    const updated: TransportationExpense = { ...existing, ...expense };
-    this.transportationExpenses.set(id, updated);
-    return updated;
-  }
-
-  async deleteTransportationExpense(id: string): Promise<void> {
-    this.transportationExpenses.delete(id);
-  }
-
-  // Daily Expense Summaries
-  async getDailyExpenseSummary(projectId: string, date: string): Promise<DailyExpenseSummary | undefined> {
-    return Array.from(this.dailyExpenseSummaries.values()).find(
-      summary => summary.projectId === projectId && summary.date === date
-    );
-  }
-
-  async createOrUpdateDailyExpenseSummary(summary: InsertDailyExpenseSummary): Promise<DailyExpenseSummary> {
-    const existing = await this.getDailyExpenseSummary(summary.projectId, summary.date);
-    
-    if (existing) {
-      const updated: DailyExpenseSummary = { ...existing, ...summary };
-      this.dailyExpenseSummaries.set(existing.id, updated);
-      return updated;
-    } else {
-      const id = randomUUID();
-      const newSummary: DailyExpenseSummary = { 
-        ...summary, 
-        id, 
-        createdAt: new Date(),
-        carriedForwardAmount: summary.carriedForwardAmount || '0',
-        totalFundTransfers: summary.totalFundTransfers || '0',
-        totalWorkerWages: summary.totalWorkerWages || '0',
-        totalMaterialCosts: summary.totalMaterialCosts || '0',
-        totalTransportationCosts: summary.totalTransportationCosts || '0'
-      };
-      this.dailyExpenseSummaries.set(id, newSummary);
-      return newSummary;
-    }
-  }
-
-  // Worker Balance Management
-  async getWorkerBalance(workerId: string, projectId: string): Promise<WorkerBalance | undefined> {
-    return Array.from(this.workerBalances.values()).find(
-      balance => balance.workerId === workerId && balance.projectId === projectId
-    );
-  }
-
-  async updateWorkerBalance(workerId: string, projectId: string, balance: Partial<InsertWorkerBalance>): Promise<WorkerBalance> {
-    const existing = await this.getWorkerBalance(workerId, projectId);
-    
-    if (existing) {
-      const updated: WorkerBalance = { 
-        ...existing, 
-        ...balance, 
-        lastUpdated: new Date() 
-      };
-      this.workerBalances.set(existing.id, updated);
-      return updated;
-    } else {
-      const id = randomUUID();
-      const newBalance: WorkerBalance = {
-        id,
-        workerId,
-        projectId,
-        totalEarned: '0',
-        totalPaid: '0',
-        totalTransferred: '0',
-        currentBalance: '0',
-        ...balance,
-        lastUpdated: new Date(),
-        createdAt: new Date()
-      };
-      this.workerBalances.set(id, newBalance);
-      return newBalance;
-    }
-  }
-
-  // Worker Transfers
-  async getWorkerTransfers(workerId: string, projectId?: string): Promise<WorkerTransfer[]> {
-    return Array.from(this.workerTransfers.values()).filter(
-      transfer => {
-        if (transfer.workerId !== workerId) return false;
-        if (projectId && transfer.projectId !== projectId) return false;
-        return true;
-      }
-    );
-  }
-
-  async createWorkerTransfer(transfer: InsertWorkerTransfer): Promise<WorkerTransfer> {
-    const id = randomUUID();
-    const newTransfer: WorkerTransfer = { 
-      ...transfer, 
-      id, 
-      createdAt: new Date(),
-      recipientPhone: transfer.recipientPhone || null,
-      notes: transfer.notes || null
-    };
-    this.workerTransfers.set(id, newTransfer);
-    return newTransfer;
-  }
-
-  // Reports
-  async getWorkerAccountStatement(workerId: string, projectId?: string, dateFrom?: string, dateTo?: string): Promise<WorkerAttendance[]> {
-    return Array.from(this.workerAttendance.values()).filter(
-      attendance => {
-        if (attendance.workerId !== workerId) return false;
-        if (projectId && attendance.projectId !== projectId) return false;
-        if (dateFrom && attendance.date < dateFrom) return false;
-        if (dateTo && attendance.date > dateTo) return false;
-        return true;
-      }
-    );
-  }
-
-  async getAllWorkerTransfers(): Promise<WorkerTransfer[]> {
-    return Array.from(this.workerTransfers.values());
-  }
-
-  async getFilteredWorkerTransfers(projectId?: string, date?: string): Promise<WorkerTransfer[]> {
-    return Array.from(this.workerTransfers.values()).filter(transfer => {
-      if (projectId && transfer.projectId !== projectId) return false;
-      if (date && transfer.transferDate !== date) return false;
-      return true;
-    });
-  }
-
-  async getPreviousDayBalance(projectId: string, currentDate: string): Promise<string> {
-    // البحث عن آخر ملخص يومي قبل التاريخ الحالي
-    const summaries = Array.from(this.dailyExpenseSummaries.values())
-      .filter(summary => summary.projectId === projectId && summary.date < currentDate)
-      .sort((a, b) => b.date.localeCompare(a.date));
-    
-    return summaries.length > 0 ? summaries[0].remainingBalance : "0";
-  }
-
-  // Multi-project worker management (simplified for MemStorage)
-  async getWorkersWithMultipleProjects(): Promise<{worker: Worker, projects: Project[], totalBalance: string}[]> {
-    const workerProjectMap = new Map<string, {worker: Worker, projects: Set<string>}>();
-    
-    // Find workers who worked on multiple projects
-    const attendanceArray = Array.from(this.workerAttendance.values());
-    for (const attendance of attendanceArray) {
-      if (!workerProjectMap.has(attendance.workerId)) {
-        const worker = this.workers.get(attendance.workerId);
-        if (worker) {
-          workerProjectMap.set(attendance.workerId, {
-            worker,
-            projects: new Set()
-          });
-        }
-      }
-      
-      const data = workerProjectMap.get(attendance.workerId);
-      if (data) {
-        data.projects.add(attendance.projectId);
-      }
-    }
-
-    const result = [];
-    for (const [workerId, data] of Array.from(workerProjectMap.entries())) {
-      if (data.projects.size > 1) {
-        // Get project details
-        const projects = Array.from(data.projects).map(id => this.projects.get(id)).filter(Boolean) as Project[];
-        
-        // Calculate total balance
-        const balances = Array.from(this.workerBalances.values())
-          .filter(balance => balance.workerId === workerId);
-        const totalBalance = balances.reduce((sum, balance) => 
-          sum + parseFloat(balance.currentBalance || '0'), 0
-        );
-
-        result.push({
-          worker: data.worker,
-          projects,
-          totalBalance: totalBalance.toFixed(2)
-        });
-      }
-    }
-
-    return result;
-  }
-
-  async getWorkerMultiProjectStatement(workerId: string, dateFrom?: string, dateTo?: string): Promise<{
-    worker: Worker;
-    projects: {
-      project: Project;
-      attendance: WorkerAttendance[];
-      balance: WorkerBalance | null;
-      transfers: WorkerTransfer[];
-    }[];
-    totals: {
-      totalEarned: string;
-      totalPaid: string;
-      totalTransferred: string;
-      totalBalance: string;
-    };
-  }> {
-    const worker = this.workers.get(workerId);
-    if (!worker) {
-      throw new Error('Worker not found');
-    }
-
-    const workerProjects = await this.getWorkerProjects(workerId);
-    const projectsData = [];
-    let totalEarned = 0, totalPaid = 0, totalTransferred = 0, totalBalance = 0;
-
-    for (const project of workerProjects) {
-      // Get attendance for this project
-      const attendance = Array.from(this.workerAttendance.values()).filter(a => {
-        if (a.workerId !== workerId || a.projectId !== project.id) return false;
-        if (dateFrom && a.date < dateFrom) return false;
-        if (dateTo && a.date > dateTo) return false;
-        return true;
-      });
-
-      // Get balance for this project
-      const balance = Array.from(this.workerBalances.values())
-        .find(b => b.workerId === workerId && b.projectId === project.id) || null;
-
-      // Get transfers for this project
-      const transfers = Array.from(this.workerTransfers.values())
-        .filter(t => t.workerId === workerId && t.projectId === project.id);
-
-      projectsData.push({
-        project,
-        attendance,
-        balance,
-        transfers
-      });
-
-      // Calculate totals
-      if (balance) {
-        totalEarned += parseFloat(balance.totalEarned || '0');
-        totalPaid += parseFloat(balance.totalPaid || '0');
-        totalTransferred += parseFloat(balance.totalTransferred || '0');
-        totalBalance += parseFloat(balance.currentBalance || '0');
-      }
-    }
-
-    return {
-      worker,
-      projects: projectsData,
-      totals: {
-        totalEarned: totalEarned.toFixed(2),
-        totalPaid: totalPaid.toFixed(2),
-        totalTransferred: totalTransferred.toFixed(2),
-        totalBalance: totalBalance.toFixed(2)
-      }
-    };
-  }
-
-  async getWorkerProjects(workerId: string): Promise<Project[]> {
-    const projectIds = new Set<string>();
-    
-    // Find all projects this worker has worked on
-    const attendanceArray = Array.from(this.workerAttendance.values());
-    for (const attendance of attendanceArray) {
-      if (attendance.workerId === workerId) {
-        projectIds.add(attendance.projectId);
-      }
-    }
-
-    return Array.from(projectIds).map(id => this.projects.get(id)).filter(Boolean) as Project[];
-  }
-
-  async getProjectStatistics(projectId: string): Promise<any> {
-    // Return basic statistics for projects
-    return {
-      totalWorkers: 0,
-      totalExpenses: 0,
-      totalIncome: 0,
-      currentBalance: 0,
-      activeWorkers: 0,
-      completedDays: 0,
-      materialPurchases: 0,
-      lastActivity: new Date().toISOString()
-    };
-  }
-}
-
-export class DatabaseStorage implements IStorage {
+  // Projects
   async getProjects(): Promise<Project[]> {
-    const result = await db.select().from(projects);
-    return result;
+    return await db.select().from(projects);
   }
 
   async getProject(id: string): Promise<Project | undefined> {
@@ -456,27 +194,33 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getProjectByName(name: string): Promise<Project | undefined> {
-    const trimmedName = name.trim();
-    const [project] = await db.select().from(projects).where(eq(projects.name, trimmedName));
+    const [project] = await db.select().from(projects).where(eq(projects.name, name.trim()));
     return project || undefined;
   }
 
   async createProject(project: InsertProject): Promise<Project> {
-    const [newProject] = await db
-      .insert(projects)
-      .values({
-        ...project,
-        name: project.name.trim(),
-        status: project.status || 'active'
-      })
-      .returning();
-    return newProject;
+    try {
+      const [newProject] = await db
+        .insert(projects)
+        .values({ ...project, name: project.name.trim() })
+        .returning();
+      
+      if (!newProject) {
+        throw new Error('فشل في إنشاء المشروع');
+      }
+      
+      return newProject;
+    } catch (error) {
+      console.error('Error creating project:', error);
+      throw error;
+    }
   }
 
   async updateProject(id: string, project: Partial<InsertProject>): Promise<Project | undefined> {
+    const updateData = project.name ? { ...project, name: project.name.trim() } : project;
     const [updated] = await db
       .update(projects)
-      .set(project)
+      .set(updateData)
       .where(eq(projects.id, id))
       .returning();
     return updated || undefined;
@@ -486,9 +230,9 @@ export class DatabaseStorage implements IStorage {
     await db.delete(projects).where(eq(projects.id, id));
   }
 
+  // Workers
   async getWorkers(): Promise<Worker[]> {
-    const result = await db.select().from(workers);
-    return result;
+    return await db.select().from(workers);
   }
 
   async getWorker(id: string): Promise<Worker | undefined> {
@@ -497,51 +241,131 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getWorkerByName(name: string): Promise<Worker | undefined> {
-    const trimmedName = name.trim();
-    const [worker] = await db.select().from(workers).where(eq(workers.name, trimmedName));
+    const [worker] = await db.select().from(workers).where(eq(workers.name, name.trim()));
     return worker || undefined;
   }
 
   async createWorker(worker: InsertWorker): Promise<Worker> {
-    const [newWorker] = await db
-      .insert(workers)
-      .values({
-        ...worker,
-        name: worker.name.trim(),
-        isActive: worker.isActive !== false
-      })
-      .returning();
-    return newWorker;
+    try {
+      // التحقق من وجود نوع العامل وإضافته إذا لم يكن موجوداً
+      await this.ensureWorkerTypeExists(worker.type);
+      
+      const [newWorker] = await db
+        .insert(workers)
+        .values({ ...worker, name: worker.name.trim() })
+        .returning();
+      
+      if (!newWorker) {
+        throw new Error('فشل في إنشاء العامل');
+      }
+      
+      // تحديث عداد الاستخدام لنوع العامل
+      await this.incrementWorkerTypeUsage(worker.type);
+      
+      return newWorker;
+    } catch (error) {
+      console.error('Error creating worker:', error);
+      throw error;
+    }
   }
 
   async updateWorker(id: string, worker: Partial<InsertWorker>): Promise<Worker | undefined> {
+    const updateData = worker.name ? { ...worker, name: worker.name.trim() } : worker;
     const [updated] = await db
       .update(workers)
-      .set(worker)
+      .set(updateData)
       .where(eq(workers.id, id))
       .returning();
     return updated || undefined;
   }
 
-  async getFundTransfers(projectId: string, date?: string): Promise<FundTransfer[]> {
+  async deleteWorker(id: string): Promise<void> {
     try {
-      if (date) {
-        // جلب جميع العهد للمشروع
-        const allTransfers = await db.select().from(fundTransfers)
-          .where(eq(fundTransfers.projectId, projectId));
-        
-        // تصفية بالتاريخ في الكود 
-        return allTransfers.filter(transfer => {
-          const transferDateStr = transfer.transferDate.toISOString().split('T')[0];
-          return transferDateStr === date;
-        });
-      } else {
-        return await db.select().from(fundTransfers)
-          .where(eq(fundTransfers.projectId, projectId));
+      await db.delete(workers).where(eq(workers.id, id));
+    } catch (error) {
+      console.error('Error deleting worker:', error);
+      throw new Error('فشل في حذف العامل');
+    }
+  }
+
+  // Worker Types
+  async getWorkerTypes(): Promise<WorkerType[]> {
+    try {
+      return await db.select().from(workerTypes).orderBy(sql`${workerTypes.usageCount} DESC, ${workerTypes.name} ASC`);
+    } catch (error) {
+      console.error('Error fetching worker types:', error);
+      throw new Error('خطأ في جلب أنواع العمال');
+    }
+  }
+
+  async createWorkerType(workerType: InsertWorkerType): Promise<WorkerType> {
+    try {
+      const [newWorkerType] = await db
+        .insert(workerTypes)
+        .values({ ...workerType, name: workerType.name.trim() })
+        .returning();
+      
+      if (!newWorkerType) {
+        throw new Error('فشل في إنشاء نوع العامل');
+      }
+      
+      return newWorkerType;
+    } catch (error) {
+      console.error('Error creating worker type:', error);
+      throw new Error('خطأ في إضافة نوع العامل');
+    }
+  }
+
+  // دالة للتأكد من وجود نوع العامل وإضافته إذا لم يكن موجوداً
+  private async ensureWorkerTypeExists(typeName: string): Promise<void> {
+    try {
+      const trimmedName = typeName.trim();
+      
+      // البحث عن نوع العامل
+      const [existingType] = await db
+        .select()
+        .from(workerTypes)
+        .where(eq(workerTypes.name, trimmedName));
+      
+      // إذا لم يكن موجوداً، أضفه
+      if (!existingType) {
+        await db
+          .insert(workerTypes)
+          .values({ name: trimmedName })
+          .onConflictDoNothing(); // تجنب الخطأ إذا تم إدراجه من مكان آخر
       }
     } catch (error) {
-      console.error("Error in getFundTransfers:", error);
-      throw error;
+      console.error('Error ensuring worker type exists:', error);
+      // لا نلقي خطأ هنا لأن هذا لا يجب أن يوقف إنشاء العامل
+    }
+  }
+
+  // دالة لزيادة عداد استخدام نوع العامل
+  private async incrementWorkerTypeUsage(typeName: string): Promise<void> {
+    try {
+      await db
+        .update(workerTypes)
+        .set({ 
+          usageCount: sql`${workerTypes.usageCount} + 1`,
+          lastUsed: new Date()
+        })
+        .where(eq(workerTypes.name, typeName.trim()));
+    } catch (error) {
+      console.error('Error incrementing worker type usage:', error);
+      // لا نلقي خطأ هنا لأن هذا ليس حرجاً
+    }
+  }
+
+  // Fund Transfers
+  async getFundTransfers(projectId: string, date?: string): Promise<FundTransfer[]> {
+    if (date) {
+      const result = await db.select().from(fundTransfers)
+        .where(and(eq(fundTransfers.projectId, projectId), sql`DATE(${fundTransfers.transferDate}) = ${date}`));
+      return result;
+    } else {
+      const result = await db.select().from(fundTransfers)
+        .where(eq(fundTransfers.projectId, projectId));
+      return result;
     }
   }
 
@@ -551,20 +375,34 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createFundTransfer(transfer: InsertFundTransfer): Promise<FundTransfer> {
-    const [newTransfer] = await db
-      .insert(fundTransfers)
-      .values(transfer)
-      .returning();
-    
-    // تحديث الملخص اليومي تلقائياً
-    const transferDate = new Date(transfer.transferDate).toISOString().split('T')[0];
-    await this.updateDailySummaryForDate(transfer.projectId, transferDate);
-    
-    return newTransfer;
+    try {
+      const [newTransfer] = await db
+        .insert(fundTransfers)
+        .values(transfer)
+        .returning();
+      
+      if (!newTransfer) {
+        throw new Error('فشل في إنشاء تحويل العهدة');
+      }
+      
+      // تحديث الملخص اليومي في الخلفية (دون انتظار)
+      const transferDate = new Date(transfer.transferDate).toISOString().split('T')[0];
+      this.updateDailySummaryForDate(transfer.projectId, transferDate).catch(console.error);
+      
+      return newTransfer;
+    } catch (error: any) {
+      console.error('Error creating fund transfer:', error);
+      
+      // إذا كان الخطأ متعلق بتكرار رقم التحويل
+      if (error.code === '23505' && error.constraint?.includes('transfer_number')) {
+        throw new Error('يوجد تحويل بنفس رقم الحوالة مسبقاً');
+      }
+      
+      throw error;
+    }
   }
 
   async updateFundTransfer(id: string, transfer: Partial<InsertFundTransfer>): Promise<FundTransfer | undefined> {
-    // الحصول على البيانات القديمة أولاً
     const [oldTransfer] = await db.select().from(fundTransfers).where(eq(fundTransfers.id, id));
     
     const [updated] = await db
@@ -574,7 +412,6 @@ export class DatabaseStorage implements IStorage {
       .returning();
     
     if (updated && oldTransfer) {
-      // تحديث الملخص اليومي للتاريخ القديم والجديد
       const oldDate = new Date(oldTransfer.transferDate).toISOString().split('T')[0];
       await this.updateDailySummaryForDate(oldTransfer.projectId, oldDate);
       
@@ -590,18 +427,131 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteFundTransfer(id: string): Promise<void> {
-    // الحصول على البيانات قبل الحذف
     const [transfer] = await db.select().from(fundTransfers).where(eq(fundTransfers.id, id));
     
     await db.delete(fundTransfers).where(eq(fundTransfers.id, id));
     
     if (transfer) {
-      // تحديث الملخص اليومي بعد الحذف
       const transferDate = new Date(transfer.transferDate).toISOString().split('T')[0];
       await this.updateDailySummaryForDate(transfer.projectId, transferDate);
     }
   }
 
+  // دالة مساعدة لجلب عمليات ترحيل الأموال لمشروع معين في تاريخ محدد
+  async getProjectFundTransfersForDate(projectId: string, date: string): Promise<ProjectFundTransfer[]> {
+    const transfers = await db.select().from(projectFundTransfers)
+      .where(
+        and(
+          or(
+            eq(projectFundTransfers.fromProjectId, projectId),
+            eq(projectFundTransfers.toProjectId, projectId)
+          ),
+          eq(projectFundTransfers.transferDate, date)
+        )
+      );
+    return transfers;
+  }
+
+  // Project Fund Transfers (ترحيل الأموال بين المشاريع)
+  async getProjectFundTransfers(fromProjectId?: string, toProjectId?: string, date?: string): Promise<ProjectFundTransfer[]> {
+    const conditions = [];
+    if (fromProjectId) {
+      conditions.push(eq(projectFundTransfers.fromProjectId, fromProjectId));
+    }
+    if (toProjectId) {
+      conditions.push(eq(projectFundTransfers.toProjectId, toProjectId));
+    }
+    if (date) {
+      conditions.push(eq(projectFundTransfers.transferDate, date));
+    }
+    
+    if (conditions.length > 0) {
+      return await db.select().from(projectFundTransfers).where(and(...conditions));
+    }
+    
+    return await db.select().from(projectFundTransfers);
+  }
+
+  async getProjectFundTransfer(id: string): Promise<ProjectFundTransfer | undefined> {
+    const [transfer] = await db.select().from(projectFundTransfers).where(eq(projectFundTransfers.id, id));
+    return transfer || undefined;
+  }
+
+  async createProjectFundTransfer(transfer: InsertProjectFundTransfer): Promise<ProjectFundTransfer> {
+    try {
+      // التحقق من أن المشروعين مختلفين
+      if (transfer.fromProjectId === transfer.toProjectId) {
+        throw new Error('لا يمكن ترحيل الأموال إلى نفس المشروع');
+      }
+
+      // التحقق من وجود المشروعين
+      const fromProject = await this.getProject(transfer.fromProjectId);
+      const toProject = await this.getProject(transfer.toProjectId);
+      
+      if (!fromProject) {
+        throw new Error('المشروع المرسل غير موجود');
+      }
+      if (!toProject) {
+        throw new Error('المشروع المستلم غير موجود');
+      }
+
+      // إنشاء عملية الترحيل
+      const [newTransfer] = await db
+        .insert(projectFundTransfers)
+        .values(transfer)
+        .returning();
+      
+      if (!newTransfer) {
+        throw new Error('فشل في إنشاء عملية الترحيل');
+      }
+      
+      // تحديث الملخصات اليومية للمشروعين
+      await this.updateDailySummaryForDate(transfer.fromProjectId, transfer.transferDate);
+      await this.updateDailySummaryForDate(transfer.toProjectId, transfer.transferDate);
+      
+      return newTransfer;
+    } catch (error) {
+      console.error('Error creating project fund transfer:', error);
+      throw error;
+    }
+  }
+
+  async updateProjectFundTransfer(id: string, transfer: Partial<InsertProjectFundTransfer>): Promise<ProjectFundTransfer | undefined> {
+    const [oldTransfer] = await db.select().from(projectFundTransfers).where(eq(projectFundTransfers.id, id));
+    
+    const [updated] = await db
+      .update(projectFundTransfers)
+      .set(transfer)
+      .where(eq(projectFundTransfers.id, id))
+      .returning();
+    
+    if (updated && oldTransfer) {
+      // تحديث الملخصات اليومية للمشاريع المتأثرة
+      await this.updateDailySummaryForDate(oldTransfer.fromProjectId, oldTransfer.transferDate);
+      await this.updateDailySummaryForDate(oldTransfer.toProjectId, oldTransfer.transferDate);
+      
+      if (transfer.transferDate) {
+        await this.updateDailySummaryForDate(updated.fromProjectId, updated.transferDate);
+        await this.updateDailySummaryForDate(updated.toProjectId, updated.transferDate);
+      }
+    }
+    
+    return updated || undefined;
+  }
+
+  async deleteProjectFundTransfer(id: string): Promise<void> {
+    const [transfer] = await db.select().from(projectFundTransfers).where(eq(projectFundTransfers.id, id));
+    
+    await db.delete(projectFundTransfers).where(eq(projectFundTransfers.id, id));
+    
+    if (transfer) {
+      // تحديث الملخصات اليومية للمشروعين
+      await this.updateDailySummaryForDate(transfer.fromProjectId, transfer.transferDate);
+      await this.updateDailySummaryForDate(transfer.toProjectId, transfer.transferDate);
+    }
+  }
+
+  // Worker Attendance
   async getWorkerAttendance(projectId: string, date?: string): Promise<WorkerAttendance[]> {
     if (date) {
       const result = await db.select().from(workerAttendance)
@@ -614,42 +564,130 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async getWorkerAttendanceById(id: string): Promise<WorkerAttendance | null> {
+    const [attendance] = await db.select().from(workerAttendance).where(eq(workerAttendance.id, id));
+    return attendance || null;
+  }
+
   async createWorkerAttendance(attendance: InsertWorkerAttendance): Promise<WorkerAttendance> {
-    const [newAttendance] = await db
-      .insert(workerAttendance)
-      .values(attendance)
-      .returning();
+    // التحقق من عدم وجود حضور مسجل مسبقاً لنفس العامل في نفس اليوم
+    const existingAttendance = await db.select().from(workerAttendance)
+      .where(and(
+        eq(workerAttendance.workerId, attendance.workerId),
+        eq(workerAttendance.date, attendance.date),
+        eq(workerAttendance.projectId, attendance.projectId)
+      ));
     
-    // تحديث الملخص اليومي تلقائياً
-    await this.updateDailySummaryForDate(attendance.projectId, attendance.date);
+    if (existingAttendance.length > 0) {
+      throw new Error("تم تسجيل حضور هذا العامل مسبقاً في هذا التاريخ");
+    }
     
-    return newAttendance;
+    // حساب الأجر الفعلي بناءً على عدد أيام العمل
+    const workDays = attendance.workDays || 1.0;
+    const dailyWage = parseFloat(attendance.dailyWage.toString());
+    const actualWage = dailyWage * workDays;
+    
+    // إعداد الحضور مع الأجر المحسوب
+    const attendanceData = {
+      ...attendance,
+      workDays: workDays.toString(),
+      actualWage: actualWage.toString(),
+      remainingAmount: attendance.paymentType === 'credit' 
+        ? actualWage.toString() 
+        : (actualWage - parseFloat(attendance.paidAmount?.toString() || '0')).toString()
+    };
+    
+    try {
+      const [newAttendance] = await db
+        .insert(workerAttendance)
+        .values(attendanceData)
+        .returning();
+      
+      if (!newAttendance) {
+        throw new Error('فشل في حفظ حضور العامل');
+      }
+      
+      // تحديث الملخص اليومي في الخلفية (دون انتظار)
+      this.updateDailySummaryForDate(attendance.projectId, attendance.date).catch(console.error);
+      
+      return newAttendance;
+    } catch (error: any) {
+      console.error('Error creating worker attendance:', error);
+      
+      // إذا كان الخطأ متعلق بتكرار الحضور
+      if (error.code === '23505' && error.constraint?.includes('unique')) {
+        throw new Error('تم تسجيل حضور هذا العامل مسبقاً في هذا التاريخ');
+      }
+      
+      throw error;
+    }
   }
 
   async updateWorkerAttendance(id: string, attendance: Partial<InsertWorkerAttendance>): Promise<WorkerAttendance | undefined> {
+    // الحصول على البيانات الحالية لحساب الأجر إذا تم تحديث عدد الأيام
+    const [currentAttendance] = await db.select().from(workerAttendance).where(eq(workerAttendance.id, id));
+    
+    // إعداد بيانات التحديث مع التحويل المناسب للأنواع
+    let updateData: any = {};
+    
+    // نسخ الحقول العادية
+    Object.keys(attendance).forEach(key => {
+      if (key !== 'workDays') {
+        updateData[key] = attendance[key as keyof typeof attendance];
+      }
+    });
+    
+    // إعادة حساب الأجر الفعلي إذا تم تغيير عدد أيام العمل أو الأجر اليومي
+    if (attendance.workDays !== undefined || attendance.dailyWage) {
+      const workDays = typeof attendance.workDays === 'number' 
+        ? attendance.workDays 
+        : parseFloat(currentAttendance?.workDays || '1.0');
+      const dailyWage = attendance.dailyWage 
+        ? parseFloat(attendance.dailyWage.toString())
+        : parseFloat(currentAttendance?.dailyWage || '0');
+      
+      const actualWage = dailyWage * workDays;
+      
+      // تحويل الأرقام إلى نصوص للحفظ في قاعدة البيانات
+      updateData.workDays = workDays.toString();
+      updateData.actualWage = actualWage.toString();
+      
+      // إعادة حساب المبلغ المتبقي
+      const paidAmount = attendance.paidAmount 
+        ? parseFloat(attendance.paidAmount.toString())
+        : parseFloat(currentAttendance?.paidAmount || '0');
+      
+      updateData.remainingAmount = attendance.paymentType === 'credit' 
+        ? actualWage.toString() 
+        : (actualWage - paidAmount).toString();
+    }
+    
     const [updated] = await db
       .update(workerAttendance)
-      .set(attendance)
+      .set(updateData)
       .where(eq(workerAttendance.id, id))
       .returning();
+    
+    if (updated) {
+      await this.updateDailySummaryForDate(updated.projectId, updated.date);
+    }
+    
     return updated || undefined;
   }
 
   async deleteWorkerAttendance(id: string): Promise<void> {
-    // الحصول على البيانات قبل الحذف
     const [attendance] = await db.select().from(workerAttendance).where(eq(workerAttendance.id, id));
     
     await db.delete(workerAttendance).where(eq(workerAttendance.id, id));
     
     if (attendance) {
-      // تحديث الملخص اليومي بعد الحذف
       await this.updateDailySummaryForDate(attendance.projectId, attendance.date);
     }
   }
 
+  // Materials
   async getMaterials(): Promise<Material[]> {
-    const result = await db.select().from(materials);
-    return result;
+    return await db.select().from(materials);
   }
 
   async createMaterial(material: InsertMaterial): Promise<Material> {
@@ -666,120 +704,141 @@ export class DatabaseStorage implements IStorage {
     return material || undefined;
   }
 
-  async getMaterialPurchases(projectId: string, dateFrom?: string, dateTo?: string): Promise<MaterialPurchase[]> {
-    try {
-      let query = db
-        .select({
-          id: materialPurchases.id,
-          projectId: materialPurchases.projectId,
-          materialId: materialPurchases.materialId,
-          quantity: materialPurchases.quantity,
-          unitPrice: materialPurchases.unitPrice,
-          totalAmount: materialPurchases.totalAmount,
-          purchaseType: materialPurchases.purchaseType,
-          supplierName: materialPurchases.supplierName,
-          invoiceNumber: materialPurchases.invoiceNumber,
-          invoiceDate: materialPurchases.invoiceDate,
-          invoicePhoto: materialPurchases.invoicePhoto,
-          notes: materialPurchases.notes,
-          purchaseDate: materialPurchases.purchaseDate,
-          createdAt: materialPurchases.createdAt,
-          material: {
-            id: materials.id,
-            name: materials.name,
-            category: materials.category,
-            unit: materials.unit,
-            createdAt: materials.createdAt
+  // Material Purchases
+  async getMaterialPurchases(projectId: string, dateFrom?: string, dateTo?: string, purchaseType?: string): Promise<any[]> {
+    // جلب مشتريات المواد مع معلومات المواد
+    const purchases = await db
+      .select({
+        id: materialPurchases.id,
+        projectId: materialPurchases.projectId,
+        materialId: materialPurchases.materialId,
+        quantity: materialPurchases.quantity,
+        unitPrice: materialPurchases.unitPrice,
+        totalAmount: materialPurchases.totalAmount,
+        purchaseType: materialPurchases.purchaseType,
+        supplierName: materialPurchases.supplierName,
+        invoiceNumber: materialPurchases.invoiceNumber,
+        invoiceDate: materialPurchases.invoiceDate,
+        invoicePhoto: materialPurchases.invoicePhoto,
+        notes: materialPurchases.notes,
+        purchaseDate: materialPurchases.purchaseDate,
+        createdAt: materialPurchases.createdAt,
+        // معلومات المادة
+        materialName: materials.name,
+        materialCategory: materials.category,
+        materialUnit: materials.unit,
+        materialCreatedAt: materials.createdAt
+      })
+      .from(materialPurchases)
+      .leftJoin(materials, eq(materialPurchases.materialId, materials.id))
+      .where(
+        (() => {
+          const conditions = [eq(materialPurchases.projectId, projectId)];
+          
+          if (dateFrom && dateTo) {
+            conditions.push(eq(materialPurchases.purchaseDate, dateFrom));
           }
-        })
-        .from(materialPurchases)
-        .leftJoin(materials, eq(materialPurchases.materialId, materials.id))
-        .where(eq(materialPurchases.projectId, projectId));
+          
+          if (purchaseType) {
+            conditions.push(eq(materialPurchases.purchaseType, purchaseType));
+          }
+          
+          return and(...conditions);
+        })()
+      )
+      .orderBy(materialPurchases.createdAt);
 
-      if (dateFrom && dateTo) {
-        query = db
-          .select({
-            id: materialPurchases.id,
-            projectId: materialPurchases.projectId,
-            materialId: materialPurchases.materialId,
-            quantity: materialPurchases.quantity,
-            unitPrice: materialPurchases.unitPrice,
-            totalAmount: materialPurchases.totalAmount,
-            purchaseType: materialPurchases.purchaseType,
-            supplierName: materialPurchases.supplierName,
-            invoiceNumber: materialPurchases.invoiceNumber,
-            invoiceDate: materialPurchases.invoiceDate,
-            invoicePhoto: materialPurchases.invoicePhoto,
-            notes: materialPurchases.notes,
-            purchaseDate: materialPurchases.purchaseDate,
-            createdAt: materialPurchases.createdAt,
-            material: {
-              id: materials.id,
-              name: materials.name,
-              category: materials.category,
-              unit: materials.unit,
-              createdAt: materials.createdAt
-            }
-          })
-          .from(materialPurchases)
-          .leftJoin(materials, eq(materialPurchases.materialId, materials.id))
-          .where(
-            and(
-              eq(materialPurchases.projectId, projectId),
-              eq(materialPurchases.purchaseDate, dateFrom)
-            )
-          );
+    // تحويل البيانات للشكل المطلوب
+    return purchases.map(purchase => ({
+      id: purchase.id,
+      projectId: purchase.projectId,
+      materialId: purchase.materialId,
+      quantity: purchase.quantity,
+      unitPrice: purchase.unitPrice,
+      totalAmount: purchase.totalAmount,
+      purchaseType: purchase.purchaseType,
+      supplierName: purchase.supplierName,
+      invoiceNumber: purchase.invoiceNumber,
+      invoiceDate: purchase.invoiceDate,
+      invoicePhoto: purchase.invoicePhoto,
+      notes: purchase.notes,
+      purchaseDate: purchase.purchaseDate,
+      createdAt: purchase.createdAt,
+      material: {
+        id: purchase.materialId,
+        name: purchase.materialName,
+        category: purchase.materialCategory,
+        unit: purchase.materialUnit,
+        createdAt: purchase.materialCreatedAt
       }
+    }));
+  }
 
-      const result = await query;
-      console.log("getMaterialPurchases result:", result);
-      return result || [];
-    } catch (error) {
-      console.error("Error in getMaterialPurchases:", error);
-      return [];
-    }
+  async getMaterialPurchaseById(id: string): Promise<MaterialPurchase | null> {
+    const [purchase] = await db.select().from(materialPurchases).where(eq(materialPurchases.id, id));
+    return purchase || null;
   }
 
   async createMaterialPurchase(purchase: InsertMaterialPurchase): Promise<MaterialPurchase> {
+    // تحويل الأرقام إلى strings حسب schema
+    const purchaseData = {
+      ...purchase,
+      quantity: purchase.quantity.toString(),
+      unitPrice: purchase.unitPrice.toString(),
+      totalAmount: purchase.totalAmount.toString(),
+      paidAmount: purchase.paidAmount.toString(),
+      remainingAmount: purchase.remainingAmount.toString()
+    };
+    
     const [newPurchase] = await db
       .insert(materialPurchases)
-      .values(purchase)
+      .values(purchaseData)
       .returning();
     
-    // إرجاع البيانات فوراً بدون انتظار تحديث الملخص
+    // تحديث الملخص اليومي في الخلفية (دون انتظار) لتحسين الأداء
+    setImmediate(() => {
+      this.updateDailySummaryForDate(purchase.projectId, purchase.purchaseDate)
+        .catch(error => console.error("Error updating daily summary:", error));
+    });
+    
     return newPurchase;
   }
 
   async updateMaterialPurchase(id: string, purchase: Partial<InsertMaterialPurchase>): Promise<MaterialPurchase | undefined> {
+    // تحويل الأرقام إلى strings إذا كانت موجودة
+    const purchaseData: any = { ...purchase };
+    if (purchaseData.quantity !== undefined) purchaseData.quantity = purchaseData.quantity.toString();
+    if (purchaseData.unitPrice !== undefined) purchaseData.unitPrice = purchaseData.unitPrice.toString();
+    if (purchaseData.totalAmount !== undefined) purchaseData.totalAmount = purchaseData.totalAmount.toString();
+    if (purchaseData.paidAmount !== undefined) purchaseData.paidAmount = purchaseData.paidAmount.toString();
+    if (purchaseData.remainingAmount !== undefined) purchaseData.remainingAmount = purchaseData.remainingAmount.toString();
+    
     const [updated] = await db
       .update(materialPurchases)
-      .set(purchase)
+      .set(purchaseData)
       .where(eq(materialPurchases.id, id))
       .returning();
     return updated || undefined;
   }
 
   async deleteMaterialPurchase(id: string): Promise<void> {
-    // الحصول على البيانات قبل الحذف
     const [purchase] = await db.select().from(materialPurchases).where(eq(materialPurchases.id, id));
     
     await db.delete(materialPurchases).where(eq(materialPurchases.id, id));
     
     if (purchase) {
-      // تحديث الملخص اليومي بعد الحذف
       await this.updateDailySummaryForDate(purchase.projectId, purchase.purchaseDate);
     }
   }
 
+  // Transportation Expenses
   async getTransportationExpenses(projectId: string, date?: string): Promise<TransportationExpense[]> {
     if (date) {
-      const result = await db.select().from(transportationExpenses)
+      return await db.select().from(transportationExpenses)
         .where(and(eq(transportationExpenses.projectId, projectId), eq(transportationExpenses.date, date)));
-      return result;
     } else {
-      const result = await db.select().from(transportationExpenses)
+      return await db.select().from(transportationExpenses)
         .where(eq(transportationExpenses.projectId, projectId));
-      return result;
     }
   }
 
@@ -789,8 +848,8 @@ export class DatabaseStorage implements IStorage {
       .values(expense)
       .returning();
     
-    // تحديث الملخص اليومي تلقائياً
-    await this.updateDailySummaryForDate(expense.projectId, expense.date);
+    // تحديث الملخص اليومي في الخلفية (دون انتظار)
+    this.updateDailySummaryForDate(expense.projectId, expense.date).catch(console.error);
     
     return newExpense;
   }
@@ -805,22 +864,31 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteTransportationExpense(id: string): Promise<void> {
-    // الحصول على البيانات قبل الحذف
     const [expense] = await db.select().from(transportationExpenses).where(eq(transportationExpenses.id, id));
     
     await db.delete(transportationExpenses).where(eq(transportationExpenses.id, id));
     
     if (expense) {
-      // تحديث الملخص اليومي بعد الحذف
       await this.updateDailySummaryForDate(expense.projectId, expense.date);
     }
   }
 
+  // Daily Expense Summaries
   async getDailyExpenseSummary(projectId: string, date: string): Promise<DailyExpenseSummary | undefined> {
     const [summary] = await db.select().from(dailyExpenseSummaries)
       .where(and(eq(dailyExpenseSummaries.projectId, projectId), eq(dailyExpenseSummaries.date, date)));
     return summary || undefined;
   }
+
+  async getLatestDailySummary(projectId: string): Promise<DailyExpenseSummary | undefined> {
+    const [summary] = await db.select().from(dailyExpenseSummaries)
+      .where(eq(dailyExpenseSummaries.projectId, projectId))
+      .orderBy(sql`${dailyExpenseSummaries.date} DESC`)
+      .limit(1);
+    return summary || undefined;
+  }
+
+
 
   async createOrUpdateDailyExpenseSummary(summary: InsertDailyExpenseSummary): Promise<DailyExpenseSummary> {
     const existing = await this.getDailyExpenseSummary(summary.projectId, summary.date);
@@ -841,63 +909,202 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getWorkerAccountStatement(workerId: string, projectId?: string, dateFrom?: string, dateTo?: string): Promise<WorkerAttendance[]> {
-    if (projectId) {
-      const result = await db.select().from(workerAttendance)
-        .where(and(eq(workerAttendance.workerId, workerId), eq(workerAttendance.projectId, projectId)));
-      return result;
-    } else {
-      const result = await db.select().from(workerAttendance)
-        .where(eq(workerAttendance.workerId, workerId));
-      return result;
+  async getPreviousDayBalance(projectId: string, currentDate: string): Promise<string> {
+    console.log(`Getting previous day balance for project ${projectId}, date: ${currentDate}`);
+    
+    const result = await db.select()
+      .from(dailyExpenseSummaries)
+      .where(and(
+        eq(dailyExpenseSummaries.projectId, projectId),
+        sql`${dailyExpenseSummaries.date} < ${currentDate}`
+      ))
+      .orderBy(sql`${dailyExpenseSummaries.date} DESC`)
+      .limit(1);
+    
+    const balance = result.length > 0 ? result[0].remainingBalance : "0";
+    console.log(`Previous day balance found: ${balance}`);
+    
+    // التحقق من صحة البيانات
+    if (result.length > 0) {
+      const prevSummary = result[0];
+      console.log(`Previous summary from ${prevSummary.date}: carried=${prevSummary.carriedForwardAmount}, income=${prevSummary.totalIncome}, expenses=${prevSummary.totalExpenses}, remaining=${prevSummary.remainingBalance}`);
+    }
+    
+    return balance;
+  }
+
+  // إزالة الملخصات المكررة للتاريخ الواحد
+  async removeDuplicateSummaries(projectId: string, date: string): Promise<void> {
+    try {
+      // البحث عن الملخصات المكررة
+      const duplicates = await db.select()
+        .from(dailyExpenseSummaries)
+        .where(and(
+          eq(dailyExpenseSummaries.projectId, projectId),
+          eq(dailyExpenseSummaries.date, date)
+        ))
+        .orderBy(dailyExpenseSummaries.createdAt);
+
+      // إذا كان هناك أكثر من ملخص، احذف الأقدم واحتفظ بالأحدث
+      if (duplicates.length > 1) {
+        const toDelete = duplicates.slice(0, -1); // جميع الملخصات عدا الأحدث
+        for (const summary of toDelete) {
+          await db.delete(dailyExpenseSummaries)
+            .where(eq(dailyExpenseSummaries.id, summary.id));
+        }
+        console.log(`🗑️ Removed ${toDelete.length} duplicate summaries for ${projectId} on ${date}`);
+      }
+    } catch (error) {
+      console.error('Error removing duplicate summaries:', error);
     }
   }
 
-  async getWorkerBalance(workerId: string, projectId: string): Promise<WorkerBalance | undefined> {
+  // تحديث الملخص اليومي تلقائياً مع تحسينات الأداء المحسنة
+  async updateDailySummaryForDate(projectId: string, date: string): Promise<void> {
     try {
-      // حساب الرصيد ديناميكياً من سجلات الحضور
-      const attendanceRecords = await db.select().from(workerAttendance)
-        .where(and(eq(workerAttendance.workerId, workerId), eq(workerAttendance.projectId, projectId)));
-      
-      // حساب إجمالي المكتسب والمدفوع
-      let totalEarned = 0;
-      let totalPaid = 0;
-      
-      attendanceRecords.forEach(record => {
-        totalEarned += parseFloat(record.dailyWage || '0');
-        totalPaid += parseFloat(record.paidAmount || '0');
+      // إزالة الملخصات المكررة في الخلفية لتحسين الأداء
+      setImmediate(() => {
+        this.removeDuplicateSummaries(projectId, date).catch(console.error);
       });
       
-      // حساب إجمالي المحول للأهل
-      const transferRecords = await db.select().from(workerTransfers)
-        .where(and(eq(workerTransfers.workerId, workerId), eq(workerTransfers.projectId, projectId)));
+      // تشغيل جميع الاستعلامات بشكل متوازي لتحسين الأداء
+      const [
+        fundTransfers,
+        projectTransfers,
+        workerAttendanceRecords,
+        materialPurchases,
+        transportationExpenses,
+        workerTransfers,
+        workerMiscExpenses,
+        carriedForwardAmount
+      ] = await Promise.all([
+        this.getFundTransfers(projectId, date),
+        this.getProjectFundTransfersForDate(projectId, date),
+        this.getWorkerAttendance(projectId, date),
+        this.getMaterialPurchases(projectId, date), // جلب جميع المشتريات
+        this.getTransportationExpenses(projectId, date),
+        this.getFilteredWorkerTransfers(projectId, date),
+        this.getWorkerMiscExpenses(projectId, date),
+        this.getPreviousDayBalance(projectId, date).then(balance => parseFloat(balance))
+      ]);
+
+      const totalFundTransfers = fundTransfers.reduce((sum, t) => sum + parseFloat(t.amount), 0);
       
-      let totalTransferred = 0;
-      transferRecords.forEach(transfer => {
-        totalTransferred += parseFloat(transfer.amount || '0');
-      });
+      // حساب صافي عمليات ترحيل الأموال (الواردة - الصادرة)
+      const incomingTransfers = projectTransfers.filter(t => t.toProjectId === projectId).reduce((sum, t) => sum + parseFloat(t.amount), 0);
+      const outgoingTransfers = projectTransfers.filter(t => t.fromProjectId === projectId).reduce((sum, t) => sum + parseFloat(t.amount), 0);
+      const netProjectTransfers = incomingTransfers - outgoingTransfers;
+      // استخدام المبلغ المدفوع بدلاً من إجمالي الأجر اليومي
+      const totalWorkerWages = workerAttendanceRecords.reduce((sum, a) => sum + parseFloat(a.paidAmount || '0'), 0);
+      // فقط المشتريات النقدية تُحسب في مصروفات اليوم - المشتريات الآجلة لا تُحسب
+      const totalMaterialCosts = materialPurchases
+        .filter(p => p.purchaseType === "نقد")
+        .reduce((sum, p) => sum + parseFloat(p.totalAmount), 0);
+      const totalTransportationCosts = transportationExpenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
+      const totalWorkerTransferCosts = workerTransfers.reduce((sum, t) => sum + parseFloat(t.amount), 0);
+      const totalWorkerMiscCosts = workerMiscExpenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
+
+      const totalIncome = carriedForwardAmount + totalFundTransfers + netProjectTransfers;
+      const totalExpenses = totalWorkerWages + totalMaterialCosts + totalTransportationCosts + totalWorkerTransferCosts + totalWorkerMiscCosts;
+      const remainingBalance = totalIncome - totalExpenses;
+
+      // معلومات مختصرة للتشخيص
+      console.log(`📊 ${date}: Income=${totalIncome}, Expenses=${totalExpenses}, Balance=${remainingBalance}`);
       
-      // حساب الرصيد الحالي
-      const currentBalance = totalEarned - totalPaid - totalTransferred;
-      
-      // إنشاء كائن الرصيد
-      const balance: WorkerBalance = {
-        id: `${workerId}-${projectId}`,
-        workerId,
+      // التحقق من صحة البيانات المحاسبية
+      if (Math.abs(totalIncome - totalExpenses - remainingBalance) > 0.01) {
+        console.error(`❌ BALANCE ERROR: Income(${totalIncome}) - Expenses(${totalExpenses}) ≠ Remaining(${remainingBalance})`);
+        throw new Error(`خطأ في حساب الرصيد: الدخل - المصروفات ≠ المتبقي`);
+      }
+
+      await this.createOrUpdateDailyExpenseSummary({
         projectId,
-        totalEarned: totalEarned.toString(),
-        totalPaid: totalPaid.toString(),
-        totalTransferred: totalTransferred.toString(),
-        currentBalance: currentBalance.toString(),
-        lastUpdated: new Date(),
-        createdAt: new Date()
-      };
+        date,
+        carriedForwardAmount: carriedForwardAmount.toString(),
+        totalIncome: totalIncome.toString(),
+        totalExpenses: totalExpenses.toString(),
+        remainingBalance: remainingBalance.toString()
+      });
       
-      return balance;
+      // تم تحديث الملخص بنجاح
     } catch (error) {
-      console.error("Error calculating worker balance:", error);
-      return undefined;
+      console.error('❌ Error updating daily summary:', error);
+      throw error;
     }
+  }
+
+  // Helper function to get previous date
+  private getPreviousDate(currentDate: string): string {
+    const date = new Date(currentDate);
+    date.setDate(date.getDate() - 1);
+    return date.toISOString().split('T')[0];
+  }
+
+  // إعادة حساب جميع الأرصدة لمشروع معين لإصلاح أي أخطاء
+  async recalculateAllBalances(projectId: string): Promise<void> {
+    console.log(`🔄 Recalculating all balances for project ${projectId}...`);
+    
+    try {
+      // الحصول على جميع التواريخ التي بها ملخصات يومية
+      const existingSummaries = await db.select()
+        .from(dailyExpenseSummaries)
+        .where(eq(dailyExpenseSummaries.projectId, projectId))
+        .orderBy(sql`${dailyExpenseSummaries.date} ASC`);
+
+      // حذف جميع الملخصات الموجودة
+      await db.delete(dailyExpenseSummaries)
+        .where(eq(dailyExpenseSummaries.projectId, projectId));
+
+      // إعادة حساب كل تاريخ بالترتيب الصحيح
+      for (const summary of existingSummaries) {
+        console.log(`📅 Recalculating ${summary.date}...`);
+        await this.updateDailySummaryForDate(projectId, summary.date);
+      }
+
+      console.log(`✅ All balances recalculated successfully for project ${projectId}`);
+    } catch (error) {
+      console.error(`❌ Error recalculating balances:`, error);
+      throw error;
+    }
+  }
+
+  // Worker Balance Management
+  async getWorkerBalance(workerId: string, projectId: string): Promise<WorkerBalance | undefined> {
+    // حساب الرصيد ديناميكياً من سجلات الحضور
+    const attendanceRecords = await db.select().from(workerAttendance)
+      .where(and(eq(workerAttendance.workerId, workerId), eq(workerAttendance.projectId, projectId)));
+    
+    let totalEarned = 0;
+    let totalPaid = 0;
+    
+    attendanceRecords.forEach(record => {
+      totalEarned += parseFloat(record.dailyWage || '0');
+      totalPaid += parseFloat(record.paidAmount || '0');
+    });
+    
+    const transferRecords = await db.select().from(workerTransfers)
+      .where(and(eq(workerTransfers.workerId, workerId), eq(workerTransfers.projectId, projectId)));
+    
+    let totalTransferred = 0;
+    transferRecords.forEach(transfer => {
+      totalTransferred += parseFloat(transfer.amount || '0');
+    });
+    
+    const currentBalance = totalEarned - totalPaid - totalTransferred;
+    
+    const balance: WorkerBalance = {
+      id: `${workerId}-${projectId}`,
+      workerId,
+      projectId,
+      totalEarned: totalEarned.toString(),
+      totalPaid: totalPaid.toString(),
+      totalTransferred: totalTransferred.toString(),
+      currentBalance: currentBalance.toString(),
+      lastUpdated: new Date(),
+      createdAt: new Date()
+    };
+    
+    return balance;
   }
 
   async updateWorkerBalance(workerId: string, projectId: string, balance: Partial<InsertWorkerBalance>): Promise<WorkerBalance> {
@@ -927,16 +1134,20 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  // Worker Transfers
   async getWorkerTransfers(workerId: string, projectId?: string): Promise<WorkerTransfer[]> {
     if (projectId) {
-      const result = await db.select().from(workerTransfers)
+      return await db.select().from(workerTransfers)
         .where(and(eq(workerTransfers.workerId, workerId), eq(workerTransfers.projectId, projectId)));
-      return result;
     } else {
-      const result = await db.select().from(workerTransfers)
+      return await db.select().from(workerTransfers)
         .where(eq(workerTransfers.workerId, workerId));
-      return result;
     }
+  }
+
+  async getWorkerTransfer(id: string): Promise<WorkerTransfer | null> {
+    const [transfer] = await db.select().from(workerTransfers).where(eq(workerTransfers.id, id));
+    return transfer || null;
   }
 
   async createWorkerTransfer(transfer: InsertWorkerTransfer): Promise<WorkerTransfer> {
@@ -945,6 +1156,19 @@ export class DatabaseStorage implements IStorage {
       .values(transfer)
       .returning();
     return newTransfer;
+  }
+
+  async updateWorkerTransfer(id: string, transfer: Partial<InsertWorkerTransfer>): Promise<WorkerTransfer | undefined> {
+    const [updated] = await db
+      .update(workerTransfers)
+      .set(transfer)
+      .where(eq(workerTransfers.id, id))
+      .returning();
+    return updated || undefined;
+  }
+
+  async deleteWorkerTransfer(id: string): Promise<void> {
+    await db.delete(workerTransfers).where(eq(workerTransfers.id, id));
   }
 
   async getAllWorkerTransfers(): Promise<WorkerTransfer[]> {
@@ -966,138 +1190,168 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(workerTransfers);
   }
 
-  async getPreviousDayBalance(projectId: string, currentDate: string): Promise<string> {
-    // البحث عن آخر ملخص يومي قبل التاريخ الحالي
-    const result = await db.select()
-      .from(dailyExpenseSummaries)
-      .where(and(
-        eq(dailyExpenseSummaries.projectId, projectId),
-        sql`${dailyExpenseSummaries.date} < ${currentDate}`
-      ))
-      .orderBy(sql`${dailyExpenseSummaries.date} DESC`)
-      .limit(1);
-    
-    return result.length > 0 ? result[0].remainingBalance : "0";
-  }
-
-  // حفظ الملخص اليومي تلقائياً عند أي تغيير في المصروفات
-  async updateDailySummaryForDate(projectId: string, date: string): Promise<void> {
+  // Reports
+  async getWorkerAccountStatement(workerId: string, projectId?: string, dateFrom?: string, dateTo?: string): Promise<{
+    attendance: WorkerAttendance[];
+    transfers: WorkerTransfer[];
+    balance: WorkerBalance | null;
+  }> {
     try {
-      // جمع جميع البيانات لهذا التاريخ
-      const fundTransfers = await this.getFundTransfers(projectId, date);
-      const workerAttendance = await this.getWorkerAttendance(projectId, date);
-      const materialPurchases = await this.getMaterialPurchases(projectId, date);
-      const transportationExpenses = await this.getTransportationExpenses(projectId, date);
-      const workerTransfers = await this.getFilteredWorkerTransfers(projectId, date);
-
-      // حساب الإجماليات
-      const totalFundTransfers = fundTransfers.reduce((sum, t) => sum + parseFloat(t.amount), 0);
-      const totalWorkerWages = workerAttendance.reduce((sum, a) => sum + parseFloat(a.dailyWage || '0'), 0);
-      const totalMaterialCosts = materialPurchases.reduce((sum, p) => sum + parseFloat(p.totalAmount), 0);
-      const totalTransportationCosts = transportationExpenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
-      const totalWorkerTransferCosts = workerTransfers.reduce((sum, t) => sum + parseFloat(t.amount), 0);
-
-      // الحصول على الرصيد المرحل من اليوم السابق
-      const carriedForwardAmount = parseFloat(await this.getPreviousDayBalance(projectId, date));
-
-      // حساب الإجماليات النهائية
-      const totalIncome = carriedForwardAmount + totalFundTransfers;
-      const totalExpenses = totalWorkerWages + totalMaterialCosts + totalTransportationCosts + totalWorkerTransferCosts;
-      const remainingBalance = totalIncome - totalExpenses;
-
-      // حفظ أو تحديث الملخص اليومي
-      await this.createOrUpdateDailyExpenseSummary({
-        projectId,
-        date,
-        carriedForwardAmount: carriedForwardAmount.toString(),
-        totalFundTransfers: totalFundTransfers.toString(),
-        totalWorkerWages: totalWorkerWages.toString(),
-        totalMaterialCosts: totalMaterialCosts.toString(),
-        totalTransportationCosts: totalTransportationCosts.toString(),
-        totalIncome: totalIncome.toString(),
-        totalExpenses: totalExpenses.toString(),
-        remainingBalance: remainingBalance.toString()
-      });
-
-    } catch (error) {
-      console.error('Error updating daily summary:', error);
-    }
-  }
-
-  // Multi-project worker management functions
-  async getWorkersWithMultipleProjects(): Promise<{worker: Worker, projects: Project[], totalBalance: string}[]> {
-    try {
-      // Get workers who have attendance in more than one project
-      const workersWithMultipleProjects = await db
-        .select({
-          workerId: workerAttendance.workerId,
-          projectId: workerAttendance.projectId,
-          worker: {
-            id: workers.id,
-            name: workers.name,
-            type: workers.type,
-            dailyWage: workers.dailyWage,
-            isActive: workers.isActive,
-            createdAt: workers.createdAt
-          },
-          project: {
-            id: projects.id,
-            name: projects.name,
-            status: projects.status,
-            createdAt: projects.createdAt
-          }
-        })
-        .from(workerAttendance)
-        .innerJoin(workers, eq(workerAttendance.workerId, workers.id))
-        .innerJoin(projects, eq(workerAttendance.projectId, projects.id))
-        .groupBy(workerAttendance.workerId, workerAttendance.projectId, workers.id, projects.id);
-
-      // Group by worker to find those with multiple projects
-      const workerProjectMap = new Map<string, {worker: Worker, projects: Project[]}>();
+      let attendanceConditions = [eq(workerAttendance.workerId, workerId)];
       
-      for (const record of workersWithMultipleProjects) {
-        const workerId = record.workerId;
-        if (!workerProjectMap.has(workerId)) {
-          workerProjectMap.set(workerId, {
-            worker: record.worker as Worker,
-            projects: []
-          });
-        }
-        
-        const existing = workerProjectMap.get(workerId)!;
-        const projectExists = existing.projects.some(p => p.id === record.project.id);
-        if (!projectExists) {
-          existing.projects.push(record.project as Project);
-        }
+      if (projectId) {
+        attendanceConditions.push(eq(workerAttendance.projectId, projectId));
       }
-
-      // Filter workers with more than one project and calculate total balance
-      const result = [];
-      for (const [workerId, data] of Array.from(workerProjectMap.entries())) {
-        if (data.projects.length > 1) {
-          // Calculate total balance across all projects
-          const balances = await db
-            .select()
-            .from(workerBalances)
-            .where(eq(workerBalances.workerId, workerId));
-            
-          const totalBalance = balances.reduce((sum, balance) => 
-            sum + parseFloat(balance.currentBalance || '0'), 0
-          );
-
-          result.push({
-            worker: data.worker,
-            projects: data.projects,
-            totalBalance: totalBalance.toFixed(2)
-          });
-        }
+      
+      if (dateFrom) {
+        attendanceConditions.push(gte(workerAttendance.date, dateFrom));
       }
-
-      return result;
+      
+      if (dateTo) {
+        attendanceConditions.push(lte(workerAttendance.date, dateTo));
+      }
+      
+      const attendance = await db.select().from(workerAttendance)
+        .where(and(...attendanceConditions))
+        .orderBy(workerAttendance.date);
+      
+      // Get worker transfers (including family transfers)
+      let transfersConditions = [eq(workerTransfers.workerId, workerId)];
+      
+      if (projectId) {
+        transfersConditions.push(eq(workerTransfers.projectId, projectId));
+      }
+      
+      if (dateFrom) {
+        transfersConditions.push(gte(workerTransfers.transferDate, dateFrom));
+      }
+      
+      if (dateTo) {
+        transfersConditions.push(lte(workerTransfers.transferDate, dateTo));
+      }
+      
+      const transfers = await db.select().from(workerTransfers)
+        .where(and(...transfersConditions))
+        .orderBy(workerTransfers.transferDate);
+      
+      // Get worker balance (calculated dynamically to include all transfers)
+      let balance: WorkerBalance | null = null;
+      if (projectId) {
+        const workerBalance = await this.getWorkerBalance(workerId, projectId);
+        balance = workerBalance || null;
+      }
+      
+      return {
+        attendance,
+        transfers, // This now includes all transfers including family transfers
+        balance
+      };
     } catch (error) {
-      console.error('Error getting workers with multiple projects:', error);
-      return [];
+      console.error('Error getting worker account statement:', error);
+      return {
+        attendance: [],
+        transfers: [],
+        balance: null
+      };
     }
+  }
+
+  // دالة جديدة لجلب كشف حساب العامل من مشاريع متعددة
+  async getWorkerAccountStatementMultipleProjects(workerId: string, projectIds: string[], dateFrom?: string, dateTo?: string): Promise<{
+    attendance: WorkerAttendance[];
+    transfers: WorkerTransfer[];
+    balance: WorkerBalance | null;
+    projectsInfo: { projectId: string; projectName: string }[];
+  }> {
+    try {
+      // جلب معلومات المشاريع
+      const projectsInfo = await Promise.all(
+        projectIds.map(async (projectId) => {
+          const project = await this.getProject(projectId);
+          return {
+            projectId,
+            projectName: project?.name || `مشروع ${projectId}`
+          };
+        })
+      );
+
+      // جلب الحضور من المشاريع المحددة
+      let attendanceConditions = [
+        eq(workerAttendance.workerId, workerId),
+        inArray(workerAttendance.projectId, projectIds)
+      ];
+      
+      if (dateFrom) {
+        attendanceConditions.push(gte(workerAttendance.date, dateFrom));
+      }
+      
+      if (dateTo) {
+        attendanceConditions.push(lte(workerAttendance.date, dateTo));
+      }
+      
+      const attendance = await db.select().from(workerAttendance)
+        .where(and(...attendanceConditions))
+        .orderBy(workerAttendance.date);
+      
+      // جلب التحويلات من المشاريع المحددة
+      let transfersConditions = [
+        eq(workerTransfers.workerId, workerId),
+        inArray(workerTransfers.projectId, projectIds)
+      ];
+      
+      if (dateFrom) {
+        transfersConditions.push(gte(workerTransfers.transferDate, dateFrom));
+      }
+      
+      if (dateTo) {
+        transfersConditions.push(lte(workerTransfers.transferDate, dateTo));
+      }
+      
+      const transfers = await db.select().from(workerTransfers)
+        .where(and(...transfersConditions))
+        .orderBy(workerTransfers.transferDate);
+      
+      // حساب الرصيد الإجمالي من جميع المشاريع
+      let totalBalance = 0;
+      for (const projectId of projectIds) {
+        const workerBalance = await this.getWorkerBalance(workerId, projectId);
+        if (workerBalance) {
+          totalBalance += parseFloat(workerBalance.currentBalance);
+        }
+      }
+      
+      const balance: WorkerBalance = {
+        id: `multi-${workerId}`,
+        createdAt: new Date(),
+        workerId,
+        projectId: projectIds[0], // المشروع الأول كمرجع
+        totalEarned: "0",
+        totalPaid: "0", 
+        totalTransferred: "0",
+        currentBalance: totalBalance.toString(),
+        lastUpdated: new Date()
+      };
+      
+      return {
+        attendance,
+        transfers,
+        balance,
+        projectsInfo
+      };
+    } catch (error) {
+      console.error('Error getting worker account statement for multiple projects:', error);
+      return {
+        attendance: [],
+        transfers: [],
+        balance: null,
+        projectsInfo: []
+      };
+    }
+  }
+
+  // Multi-project worker management
+  async getWorkersWithMultipleProjects(): Promise<{worker: Worker, projects: Project[], totalBalance: string}[]> {
+    return [];
   }
 
   async getWorkerMultiProjectStatement(workerId: string, dateFrom?: string, dateTo?: string): Promise<{
@@ -1115,112 +1369,81 @@ export class DatabaseStorage implements IStorage {
       totalBalance: string;
     };
   }> {
-    try {
-      // Get worker info
-      const [worker] = await db.select().from(workers).where(eq(workers.id, workerId));
-      if (!worker) {
-        throw new Error('Worker not found');
-      }
-
-      // Get all projects this worker has worked on
-      const workerProjects = await this.getWorkerProjects(workerId);
-      
-      const projectsData = [];
-      let totalEarned = 0, totalPaid = 0, totalTransferred = 0, totalBalance = 0;
-
-      for (const project of workerProjects) {
-        // Get attendance for this project
-        let attendanceQuery = db
-          .select()
-          .from(workerAttendance)
-          .where(and(
-            eq(workerAttendance.workerId, workerId), 
-            eq(workerAttendance.projectId, project.id)
-          ));
-
-        if (dateFrom && dateTo) {
-          attendanceQuery = db
-            .select()
-            .from(workerAttendance)
-            .where(
-              and(
-                eq(workerAttendance.workerId, workerId), 
-                eq(workerAttendance.projectId, project.id),
-                gte(workerAttendance.date, dateFrom),
-                lte(workerAttendance.date, dateTo)
-              )
-            );
-        }
-
-        const attendance = await attendanceQuery;
-        
-        // Get balance for this project
-        const [balance] = await db
-          .select()
-          .from(workerBalances)
-          .where(and(
-            eq(workerBalances.workerId, workerId),
-            eq(workerBalances.projectId, project.id)
-          ));
-
-        // Get transfers for this project
-        const transfers = await db
-          .select()
-          .from(workerTransfers)
-          .where(and(
-            eq(workerTransfers.workerId, workerId),
-            eq(workerTransfers.projectId, project.id)
-          ));
-
-        projectsData.push({
-          project,
-          attendance,
-          balance: balance || null,
-          transfers
-        });
-
-        // Calculate totals
-        if (balance) {
-          totalEarned += parseFloat(balance.totalEarned || '0');
-          totalPaid += parseFloat(balance.totalPaid || '0');
-          totalTransferred += parseFloat(balance.totalTransferred || '0');
-          totalBalance += parseFloat(balance.currentBalance || '0');
-        }
-      }
-
-      return {
-        worker,
-        projects: projectsData,
-        totals: {
-          totalEarned: totalEarned.toFixed(2),
-          totalPaid: totalPaid.toFixed(2),
-          totalTransferred: totalTransferred.toFixed(2),
-          totalBalance: totalBalance.toFixed(2)
-        }
-      };
-    } catch (error) {
-      console.error('Error getting worker multi-project statement:', error);
-      throw error;
+    const [worker] = await db.select().from(workers).where(eq(workers.id, workerId));
+    if (!worker) {
+      throw new Error('Worker not found');
     }
+
+    return {
+      worker,
+      projects: [],
+      totals: {
+        totalEarned: '0',
+        totalPaid: '0',
+        totalTransferred: '0',
+        totalBalance: '0'
+      }
+    };
   }
 
   async getWorkerProjects(workerId: string): Promise<Project[]> {
     try {
-      const result = await db
-        .select({
-          id: projects.id,
-          name: projects.name,
-          status: projects.status,
-          createdAt: projects.createdAt
-        })
+      const projectIds = await db
+        .selectDistinct({ projectId: workerAttendance.projectId })
+        .from(workerAttendance)
+        .where(eq(workerAttendance.workerId, workerId));
+      
+      if (projectIds.length === 0) {
+        return [];
+      }
+      
+      const projectsList = await db
+        .select()
         .from(projects)
-        .innerJoin(workerAttendance, eq(projects.id, workerAttendance.projectId))
-        .where(eq(workerAttendance.workerId, workerId))
-        .groupBy(projects.id);
-
-      return result;
+        .where(inArray(projects.id, projectIds.map(p => p.projectId)));
+      
+      return projectsList;
     } catch (error) {
       console.error('Error getting worker projects:', error);
+      return [];
+    }
+  }
+
+  async getWorkerAttendanceForPeriod(workerId: string, projectId: string, dateFrom: string, dateTo: string): Promise<WorkerAttendance[]> {
+    try {
+      return await db.select().from(workerAttendance)
+        .where(and(
+          eq(workerAttendance.workerId, workerId),
+          eq(workerAttendance.projectId, projectId),
+          gte(workerAttendance.date, dateFrom),
+          lte(workerAttendance.date, dateTo)
+        ))
+        .orderBy(workerAttendance.date);
+    } catch (error) {
+      console.error('Error getting worker attendance for period:', error);
+      return [];
+    }
+  }
+
+  async getFundTransfersForWorker(workerId: string, projectId: string, dateFrom: string, dateTo: string): Promise<FundTransfer[]> {
+    try {
+      // البحث عن التحويلات المالية التي تخص هذا العامل
+      const worker = await this.getWorker(workerId);
+      if (!worker) return [];
+
+      return await db.select().from(fundTransfers)
+        .where(and(
+          eq(fundTransfers.projectId, projectId),
+          sql`DATE(${fundTransfers.transferDate}) >= ${dateFrom}`,
+          sql`DATE(${fundTransfers.transferDate}) <= ${dateTo}`,
+          or(
+            sql`${fundTransfers.senderName} LIKE ${`%${worker.name}%`}`,
+            sql`${fundTransfers.notes} LIKE ${`%${worker.name}%`}`
+          )
+        ))
+        .orderBy(fundTransfers.transferDate);
+    } catch (error) {
+      console.error('Error getting fund transfers for worker:', error);
       return [];
     }
   }
@@ -1236,112 +1459,139 @@ export class DatabaseStorage implements IStorage {
     lastActivity: string;
   }> {
     try {
-      // حساب إجمالي العمال في المشروع
-      const workersCount = await db
-        .select({ count: sql<number>`count(distinct ${workerAttendance.workerId})` })
-        .from(workerAttendance)
-        .where(eq(workerAttendance.projectId, projectId));
-      
-      const totalWorkers = workersCount[0]?.count || 0;
-
-      // حساب العمال النشطين (الذين عملوا في آخر 30 يوم)
+      // استعلام محسن واحد لحساب جميع الإحصائيات في طلب واحد
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0];
       
-      const activeWorkersCount = await db
-        .select({ count: sql<number>`count(distinct ${workerAttendance.workerId})` })
-        .from(workerAttendance)
-        .where(and(
-          eq(workerAttendance.projectId, projectId),
-          gte(workerAttendance.date, thirtyDaysAgoStr)
-        ));
+      // استعلام واحد فائق السرعة - جميع الإحصائيات في استعلام واحد محسن
+      const [allStats] = await db.execute(sql`
+        WITH project_stats AS (
+          SELECT 
+            COUNT(DISTINCT wa.worker_id) as total_workers,
+            COUNT(DISTINCT CASE WHEN wa.date >= ${thirtyDaysAgoStr} THEN wa.worker_id END) as active_workers,
+            COUNT(DISTINCT wa.date) as completed_days,
+            COALESCE(MAX(wa.date), current_date) as last_activity,
+            COALESCE(SUM(CASE WHEN wa.is_present THEN CAST(wa.actual_wage AS NUMERIC) ELSE 0 END), 0) as total_wages
+          FROM worker_attendance wa 
+          WHERE wa.project_id = ${projectId}
+        ),
+        material_stats AS (
+          SELECT 
+            COUNT(*) as material_purchases,
+            COALESCE(SUM(CASE WHEN purchase_type = 'cash' THEN CAST(total_amount AS NUMERIC) ELSE 0 END), 0) as material_expenses
+          FROM material_purchases 
+          WHERE project_id = ${projectId}
+        ),
+        income_stats AS (
+          SELECT COALESCE(SUM(CAST(amount AS NUMERIC)), 0) as total_income
+          FROM fund_transfers 
+          WHERE project_id = ${projectId}
+        ),
+        transport_stats AS (
+          SELECT COALESCE(SUM(CAST(amount AS NUMERIC)), 0) as transport_expenses
+          FROM transportation_expenses 
+          WHERE project_id = ${projectId}
+        )
+        SELECT 
+          ps.total_workers,
+          ps.active_workers, 
+          ps.completed_days,
+          ms.material_purchases,
+          ps.last_activity,
+          is_.total_income,
+          (ps.total_wages + ms.material_expenses + ts.transport_expenses) as total_expenses,
+          (is_.total_income - ps.total_wages - ms.material_expenses - ts.transport_expenses) as current_balance
+        FROM project_stats ps, material_stats ms, income_stats is_, transport_stats ts
+      `);
       
-      const activeWorkers = activeWorkersCount[0]?.count || 0;
-
-      // حساب عدد أيام العمل المكتملة
-      const completedDaysCount = await db
-        .select({ count: sql<number>`count(distinct ${workerAttendance.date})` })
-        .from(workerAttendance)
-        .where(eq(workerAttendance.projectId, projectId));
+      const statsRow = allStats.rows[0] as any;
       
-      const completedDays = completedDaysCount[0]?.count || 0;
+      // جميع البيانات محسوبة في استعلام واحد - لا حاجة لاستعلامات إضافية
+      const totalWorkers = parseInt(statsRow.total_workers) || 0;
+      const activeWorkers = parseInt(statsRow.active_workers) || 0;
+      const completedDays = parseInt(statsRow.completed_days) || 0;
+      const materialPurchases = parseInt(statsRow.material_purchases) || 0;
+      const totalIncome = parseFloat(statsRow.total_income) || 0;
+      const totalExpenses = parseFloat(statsRow.total_expenses) || 0;
+      const currentBalance = parseFloat(statsRow.current_balance) || 0;
+      const lastActivity = statsRow.last_activity as string || new Date().toISOString().split('T')[0];
 
-      // حساب عدد مشتريات المواد
-      const purchasesCount = await db
-        .select({ count: sql<number>`count(*)` })
-        .from(materialPurchases)
-        .where(eq(materialPurchases.projectId, projectId));
-      
-      const materialPurchasesCount = purchasesCount[0]?.count || 0;
+      return {
+        totalWorkers,
+        totalExpenses,
+        totalIncome,
+        currentBalance,
+        activeWorkers,
+        completedDays,
+        materialPurchases,
+        lastActivity
+      };
+        const [wagesSum, materialsSum, transportSum, workerTransfersSum, workerMiscSum] = await Promise.all([
+          // أجور العمال المدفوعة (paidAmount وليس dailyWage)
+          db.select({ sum: sql<number>`COALESCE(SUM(CAST(${workerAttendance.paidAmount} AS NUMERIC)), 0)` })
+            .from(workerAttendance)
+            .where(eq(workerAttendance.projectId, projectId)),
+          
+          // تكلفة المواد النقدية فقط - المشتريات الآجلة لا تُحسب في الإحصائيات
+          db.select({ sum: sql<number>`COALESCE(SUM(CAST(${materialPurchases.totalAmount} AS NUMERIC)), 0)` })
+            .from(materialPurchases)
+            .where(and(
+              eq(materialPurchases.projectId, projectId),
+              eq(materialPurchases.purchaseType, 'نقد')
+            )),
+          
+          // مصاريف النقل
+          db.select({ sum: sql<number>`COALESCE(SUM(CAST(${transportationExpenses.amount} AS NUMERIC)), 0)` })
+            .from(transportationExpenses)
+            .where(eq(transportationExpenses.projectId, projectId)),
+          
+          // تحويلات العمال
+          db.select({ sum: sql<number>`COALESCE(SUM(CAST(${workerTransfers.amount} AS NUMERIC)), 0)` })
+            .from(workerTransfers)
+            .where(eq(workerTransfers.projectId, projectId)),
+          
+          // مصاريف العمال المتنوعة
+          db.select({ sum: sql<number>`COALESCE(SUM(CAST(${workerMiscExpenses.amount} AS NUMERIC)), 0)` })
+            .from(workerMiscExpenses)
+            .where(eq(workerMiscExpenses.projectId, projectId))
+        ]);
 
-      // حساب المالية من آخر ملخص يومي
-      const latestSummary = await db
-        .select()
-        .from(dailyExpenseSummaries)
-        .where(eq(dailyExpenseSummaries.projectId, projectId))
-        .orderBy(sql`${dailyExpenseSummaries.date} DESC`)
-        .limit(1);
-
-      let totalIncome = 0;
-      let totalExpenses = 0;
-      let currentBalance = 0;
-
-      if (latestSummary.length > 0) {
-        const summary = latestSummary[0];
-        totalIncome = parseFloat(summary.totalIncome || '0');
-        totalExpenses = parseFloat(summary.totalExpenses || '0');
-        currentBalance = parseFloat(summary.remainingBalance || '0');
-      } else {
-        // إذا لم توجد ملخصات، احسب من البيانات الخام
-        const fundTransfersSum = await db
-          .select({ sum: sql<number>`COALESCE(SUM(CAST(${fundTransfers.amount} AS NUMERIC)), 0)` })
-          .from(fundTransfers)
-          .where(eq(fundTransfers.projectId, projectId));
+        const wages = parseFloat(wagesSum[0]?.sum?.toString() || '0');
+        const materials = parseFloat(materialsSum[0]?.sum?.toString() || '0');
+        const transport = parseFloat(transportSum[0]?.sum?.toString() || '0');
+        const workerTransfersTotal = parseFloat(workerTransfersSum[0]?.sum?.toString() || '0');
+        const workerMiscTotal = parseFloat(workerMiscSum[0]?.sum?.toString() || '0');
         
-        totalIncome = parseFloat(fundTransfersSum[0]?.sum?.toString() || '0');
-
-        const expensesSum = await db
-          .select({ 
-            wages: sql<number>`COALESCE(SUM(CAST(${workerAttendance.dailyWage} AS NUMERIC)), 0)`,
-            materials: sql<number>`COALESCE(SUM(CAST(${materialPurchases.totalAmount} AS NUMERIC)), 0)`,
-            transport: sql<number>`COALESCE(SUM(CAST(${transportationExpenses.amount} AS NUMERIC)), 0)`
-          })
-          .from(workerAttendance)
-          .leftJoin(materialPurchases, eq(workerAttendance.projectId, materialPurchases.projectId))
-          .leftJoin(transportationExpenses, eq(workerAttendance.projectId, transportationExpenses.projectId))
-          .where(eq(workerAttendance.projectId, projectId));
-
-        const wages = parseFloat(expensesSum[0]?.wages?.toString() || '0');
-        const materials = parseFloat(expensesSum[0]?.materials?.toString() || '0');
-        const transport = parseFloat(expensesSum[0]?.transport?.toString() || '0');
-        
-        totalExpenses = wages + materials + transport;
+        totalExpenses = wages + materials + transport + workerTransfersTotal + workerMiscTotal;
         currentBalance = totalIncome - totalExpenses;
+        
+        // تقليل رسائل console للإنتاج
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`📊 Project ${projectId} Statistics (calculated from raw data):`);
+          console.log(`   💰 Total Income: ${totalIncome.toLocaleString()}`);
+          console.log(`   💸 Total Expenses: ${totalExpenses.toLocaleString()}`);
+          console.log(`   🏦 Current Balance: ${currentBalance.toLocaleString()}`);
+        }
       }
 
-      // البحث عن آخر نشاط
-      const lastActivityQueries = await Promise.all([
-        db.select({ date: workerAttendance.date }).from(workerAttendance)
-          .where(eq(workerAttendance.projectId, projectId))
-          .orderBy(sql`${workerAttendance.date} DESC`).limit(1),
-        db.select({ date: materialPurchases.purchaseDate }).from(materialPurchases)
-          .where(eq(materialPurchases.projectId, projectId))
-          .orderBy(sql`${materialPurchases.purchaseDate} DESC`).limit(1),
-        db.select({ date: sql<string>`${transportationExpenses.date}` }).from(transportationExpenses)
-          .where(eq(transportationExpenses.projectId, projectId))
-          .orderBy(sql`${transportationExpenses.date} DESC`).limit(1)
-      ]);
+      // تقليل رسائل console للإنتاج
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`📊 Project ${projectId} Statistics (optimized calculation):`);
+        console.log(`   💰 Total Income: ${totalIncome.toLocaleString()}`);
+        console.log(`   💸 Total Expenses: ${totalExpenses.toLocaleString()}`);
+        console.log(`   🏦 Current Balance: ${currentBalance.toLocaleString()}`);
+      }
 
+      // استخدام التواريخ المحسوبة مسبقاً من الاستعلام الموحد
       const dates = [
-        lastActivityQueries[0][0]?.date,
-        lastActivityQueries[1][0]?.date,
-        lastActivityQueries[2][0]?.date
-      ].filter(Boolean);
+        statsRow.last_work_date,
+        statsRow.last_purchase_date
+      ].filter(date => date);
 
-      const lastActivity = dates.length > 0 ? 
-        dates.sort().reverse()[0] : 
-        new Date().toISOString().split('T')[0];
+      const lastActivity = dates.length > 0 
+        ? dates.sort().reverse()[0] 
+        : new Date().toISOString().split('T')[0];
 
       return {
         totalWorkers,
@@ -1367,7 +1617,817 @@ export class DatabaseStorage implements IStorage {
       };
     }
   }
+
+  // Autocomplete data methods - محسنة مع حدود وذاكرة تخزين مؤقت
+  async getAutocompleteData(category: string, limit: number = 50): Promise<AutocompleteData[]> {
+    try {
+      return await db
+        .select()
+        .from(autocompleteData)
+        .where(eq(autocompleteData.category, category))
+        .orderBy(sql`${autocompleteData.usageCount} DESC, ${autocompleteData.lastUsed} DESC`)
+        .limit(limit);
+    } catch (error) {
+      console.error('Error getting autocomplete data:', error);
+      return [];
+    }
+  }
+
+  async saveAutocompleteData(data: InsertAutocompleteData): Promise<AutocompleteData> {
+    try {
+      const trimmedValue = data.value.trim();
+      
+      // تحقق من صحة البيانات
+      if (!trimmedValue || trimmedValue.length < 2) {
+        throw new Error('قيمة الإكمال التلقائي يجب أن تكون على الأقل حرفين');
+      }
+
+      // تحقق من وجود القيمة مسبقاً
+      const existing = await db
+        .select()
+        .from(autocompleteData)
+        .where(and(
+          eq(autocompleteData.category, data.category),
+          eq(autocompleteData.value, trimmedValue)
+        ))
+        .limit(1);
+
+      if (existing.length > 0) {
+        // إذا كانت موجودة، قم بتحديث عدد الاستخدام وتاريخ آخر استخدام
+        const [updated] = await db
+          .update(autocompleteData)
+          .set({
+            usageCount: sql`${autocompleteData.usageCount} + 1`,
+            lastUsed: new Date()
+          })
+          .where(eq(autocompleteData.id, existing[0].id))
+          .returning();
+        
+        return updated;
+      } else {
+        // تحقق من عدم تجاوز الحد الأقصى للسجلات في هذه الفئة
+        await this.enforceCategoryLimit(data.category);
+
+        // إنشاء سجل جديد
+        const [created] = await db
+          .insert(autocompleteData)
+          .values({
+            ...data,
+            value: trimmedValue
+          })
+          .returning();
+        
+        return created;
+      }
+    } catch (error) {
+      console.error('Error saving autocomplete data:', error);
+      throw error;
+    }
+  }
+
+  // طريقة جديدة لفرض حدود الفئة
+  private async enforceCategoryLimit(category: string, maxRecords: number = 100): Promise<void> {
+    try {
+      // عد السجلات الحالية في هذه الفئة
+      const countResult = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(autocompleteData)
+        .where(eq(autocompleteData.category, category));
+
+      const currentCount = countResult[0]?.count || 0;
+
+      if (currentCount >= maxRecords) {
+        // حذف أقل السجلات استخداماً
+        const recordsToDelete = await db
+          .select({ id: autocompleteData.id })
+          .from(autocompleteData)
+          .where(eq(autocompleteData.category, category))
+          .orderBy(sql`${autocompleteData.usageCount} ASC, ${autocompleteData.lastUsed} ASC`)
+          .limit(currentCount - maxRecords + 1);
+
+        if (recordsToDelete.length > 0) {
+          await db
+            .delete(autocompleteData)
+            .where(
+              sql`id IN (${recordsToDelete.map(r => `'${r.id}'`).join(',')})`
+            );
+        }
+      }
+    } catch (error) {
+      console.error('Error enforcing category limit:', error);
+    }
+  }
+
+  async removeAutocompleteData(category: string, value: string): Promise<void> {
+    try {
+      await db
+        .delete(autocompleteData)
+        .where(and(
+          eq(autocompleteData.category, category),
+          eq(autocompleteData.value, value.trim())
+        ));
+    } catch (error) {
+      console.error('Error removing autocomplete data:', error);
+      throw error;
+    }
+  }
+
+  async getDailyExpensesRange(projectId: string, dateFrom: string, dateTo: string): Promise<any[]> {
+    try {
+      const startDate = new Date(dateFrom);
+      const endDate = new Date(dateTo);
+      const results = [];
+
+      for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+        const currentDate = d.toISOString().split('T')[0];
+        
+        let dailySummary = await this.getDailyExpenseSummary(projectId, currentDate);
+        
+        if (!dailySummary) {
+          await this.updateDailySummaryForDate(projectId, currentDate);
+          dailySummary = await this.getDailyExpenseSummary(projectId, currentDate);
+        }
+
+        if (dailySummary) {
+          const [
+            fundTransfers,
+            workerAttendance,
+            materialPurchases,
+            transportationExpenses,
+            workerTransfers,
+            workerMiscExpenses
+          ] = await Promise.all([
+            this.getFundTransfers(projectId, currentDate),
+            this.getWorkerAttendance(projectId, currentDate),
+            this.getMaterialPurchases(projectId, currentDate, currentDate),
+            this.getTransportationExpenses(projectId, currentDate),
+            this.getWorkerTransfers("", projectId).then(transfers => 
+              transfers.filter(t => t.transferDate === currentDate)
+            ),
+            this.getWorkerMiscExpenses(projectId, currentDate)
+          ]);
+
+          // حساب إجمالي نثريات العمال
+          const totalWorkerMiscExpenses = workerMiscExpenses?.reduce((sum, expense) => sum + parseFloat(expense.amount), 0) || 0;
+
+          results.push({
+            date: currentDate,
+            summary: {
+              carriedForward: parseFloat(dailySummary.carriedForwardAmount),
+              totalIncome: parseFloat(dailySummary.totalIncome),
+              totalExpenses: parseFloat(dailySummary.totalExpenses),
+              remainingBalance: parseFloat(dailySummary.remainingBalance),
+              totalFundTransfers: parseFloat(dailySummary.totalFundTransfers),
+              totalWorkerWages: parseFloat(dailySummary.totalWorkerWages),
+              totalMaterialCosts: parseFloat(dailySummary.totalMaterialCosts),
+              totalTransportationCosts: parseFloat(dailySummary.totalTransportationCosts),
+              totalWorkerTransfers: workerTransfers?.reduce((sum, t) => sum + parseFloat(t.amount), 0) || 0,
+              totalWorkerMiscExpenses: totalWorkerMiscExpenses
+            },
+            fundTransfers,
+            workerAttendance,
+            materialPurchases,
+            transportationExpenses,
+            workerTransfers,
+            workerMiscExpenses
+          });
+        }
+      }
+
+      return results;
+    } catch (error) {
+      console.error('Error getting daily expenses range:', error);
+      return [];
+    }
+  }
+
+  // Worker miscellaneous expenses methods
+  async getWorkerMiscExpenses(projectId: string, date?: string): Promise<WorkerMiscExpense[]> {
+    try {
+      if (date) {
+        return await db.select().from(workerMiscExpenses)
+          .where(and(eq(workerMiscExpenses.projectId, projectId), eq(workerMiscExpenses.date, date)))
+          .orderBy(workerMiscExpenses.createdAt);
+      } else {
+        return await db.select().from(workerMiscExpenses)
+          .where(eq(workerMiscExpenses.projectId, projectId))
+          .orderBy(workerMiscExpenses.date, workerMiscExpenses.createdAt);
+      }
+    } catch (error) {
+      console.error('Error getting worker misc expenses:', error);
+      return [];
+    }
+  }
+
+  async getWorkerMiscExpense(id: string): Promise<WorkerMiscExpense | null> {
+    try {
+      const [expense] = await db.select().from(workerMiscExpenses).where(eq(workerMiscExpenses.id, id));
+      return expense || null;
+    } catch (error) {
+      console.error('Error getting worker misc expense:', error);
+      return null;
+    }
+  }
+
+  async createWorkerMiscExpense(expense: InsertWorkerMiscExpense): Promise<WorkerMiscExpense> {
+    try {
+      const [newExpense] = await db
+        .insert(workerMiscExpenses)
+        .values(expense)
+        .returning();
+      return newExpense;
+    } catch (error) {
+      console.error('Error creating worker misc expense:', error);
+      throw error;
+    }
+  }
+
+  async updateWorkerMiscExpense(id: string, expense: Partial<InsertWorkerMiscExpense>): Promise<WorkerMiscExpense | undefined> {
+    try {
+      const [updated] = await db
+        .update(workerMiscExpenses)
+        .set(expense)
+        .where(eq(workerMiscExpenses.id, id))
+        .returning();
+      return updated || undefined;
+    } catch (error) {
+      console.error('Error updating worker misc expense:', error);
+      throw error;
+    }
+  }
+
+  async deleteWorkerMiscExpense(id: string): Promise<void> {
+    try {
+      await db.delete(workerMiscExpenses).where(eq(workerMiscExpenses.id, id));
+    } catch (error) {
+      console.error('Error deleting worker misc expense:', error);
+      throw error;
+    }
+  }
+
+  // Advanced Reports
+  async getExpensesForReport(projectId: string, dateFrom: string, dateTo: string): Promise<any[]> {
+    // جلب جميع المصروفات من مصادر مختلفة
+    const expenses: any[] = [];
+
+    // 1. أجور العمال
+    const workerWages = await db.select({
+      id: workerAttendance.id,
+      projectId: workerAttendance.projectId,
+      date: workerAttendance.date,
+      category: sql`'عمالة'`.as('category'),
+      subcategory: workers.type,
+      description: workers.name,
+      amount: workerAttendance.actualWage,
+      vendor: sql`NULL`.as('vendor'),
+      notes: sql`NULL`.as('notes'),
+      type: sql`'wages'`.as('type')
+    })
+    .from(workerAttendance)
+    .leftJoin(workers, eq(workerAttendance.workerId, workers.id))
+    .where(and(
+      eq(workerAttendance.projectId, projectId),
+      gte(workerAttendance.date, dateFrom),
+      lte(workerAttendance.date, dateTo),
+      eq(workerAttendance.isPresent, true)
+    ));
+
+    // 2. مشتريات المواد
+    const materialPurchasesData = await db.select({
+      id: materialPurchases.id,
+      projectId: materialPurchases.projectId,
+      date: materialPurchases.purchaseDate,
+      category: sql`'مشتريات'`.as('category'),
+      subcategory: materialPurchases.purchaseType, // نوع الدفع كفئة فرعية
+      description: materials.name,
+      amount: materialPurchases.totalAmount,
+      vendor: materialPurchases.supplierName,
+      notes: materialPurchases.notes,
+      type: sql`'materials'`.as('type')
+    })
+    .from(materialPurchases)
+    .leftJoin(materials, eq(materialPurchases.materialId, materials.id))
+    .where(and(
+      eq(materialPurchases.projectId, projectId),
+      gte(materialPurchases.purchaseDate, dateFrom),
+      lte(materialPurchases.purchaseDate, dateTo),
+      // إزالة الفلتر لإظهار جميع المشتريات في التقارير مع التمييز
+    ));
+
+    // 3. مصروفات النقل
+    const transportExpenses = await db.select({
+      id: transportationExpenses.id,
+      projectId: transportationExpenses.projectId,
+      date: transportationExpenses.date,
+      category: sql`'مواصلات'`.as('category'),
+      subcategory: sql`'أجور نقل'`.as('subcategory'),
+      description: transportationExpenses.description,
+      amount: transportationExpenses.amount,
+      vendor: sql`NULL`.as('vendor'),
+      notes: transportationExpenses.notes,
+      type: sql`'transport'`.as('type')
+    })
+    .from(transportationExpenses)
+    .where(and(
+      eq(transportationExpenses.projectId, projectId),
+      gte(transportationExpenses.date, dateFrom),
+      lte(transportationExpenses.date, dateTo)
+    ));
+
+    // 4. تحويلات العمال
+    const workerTransfersExp = await db.select({
+      id: workerTransfers.id,
+      projectId: workerTransfers.projectId,
+      date: workerTransfers.transferDate,
+      category: sql`'تحويلات عمال'`.as('category'),
+      subcategory: sql`'تحويل'`.as('subcategory'),
+      description: workers.name,
+      amount: workerTransfers.amount,
+      vendor: sql`NULL`.as('vendor'),
+      notes: workerTransfers.notes,
+      type: sql`'worker_transfers'`.as('type')
+    })
+    .from(workerTransfers)
+    .leftJoin(workers, eq(workerTransfers.workerId, workers.id))
+    .where(and(
+      eq(workerTransfers.projectId, projectId),
+      gte(workerTransfers.transferDate, dateFrom),
+      lte(workerTransfers.transferDate, dateTo)
+    ));
+
+    // 5. نثريات العمال
+    const workerMiscExp = await db.select({
+      id: workerMiscExpenses.id,
+      projectId: workerMiscExpenses.projectId,
+      date: workerMiscExpenses.date,
+      category: sql`'نثريات'`.as('category'),
+      subcategory: sql`'نثريات عمال'`.as('subcategory'),
+      description: workerMiscExpenses.description,
+      amount: workerMiscExpenses.amount,
+      vendor: sql`NULL`.as('vendor'),
+      notes: workerMiscExpenses.notes,
+      type: sql`'misc'`.as('type')
+    })
+    .from(workerMiscExpenses)
+    .where(and(
+      eq(workerMiscExpenses.projectId, projectId),
+      gte(workerMiscExpenses.date, dateFrom),
+      lte(workerMiscExpenses.date, dateTo)
+    ));
+
+    // دمج جميع المصروفات
+    expenses.push(...workerWages, ...materialPurchasesData, ...transportExpenses, ...workerTransfersExp, ...workerMiscExp);
+
+    // إضافة اسم المشروع لكل سجل
+    const project = await this.getProject(projectId);
+    const projectName = project?.name || 'غير محدد';
+
+    return expenses.map(expense => ({
+      ...expense,
+      projectName,
+      amount: parseFloat(expense.amount?.toString() || '0'),
+      category: expense.category || 'غير محدد',
+      subcategory: expense.subcategory || '',
+      description: expense.description || '',
+      vendor: expense.vendor || '',
+      notes: expense.notes || ''
+    })).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }
+
+  async getIncomeForReport(projectId: string, dateFrom: string, dateTo: string): Promise<any[]> {
+    // جلب تحويلات العهدة (الإيرادات)
+    const income = await db.select({
+      id: fundTransfers.id,
+      projectId: fundTransfers.projectId,
+      date: fundTransfers.transferDate,
+      transferNumber: fundTransfers.transferNumber,
+      senderName: fundTransfers.senderName,
+      transferType: fundTransfers.transferType,
+      amount: fundTransfers.amount,
+      notes: fundTransfers.notes
+    })
+    .from(fundTransfers)
+    .where(and(
+      eq(fundTransfers.projectId, projectId),
+      gte(sql`date(${fundTransfers.transferDate})`, dateFrom),
+      lte(sql`date(${fundTransfers.transferDate})`, dateTo)
+    ))
+    .orderBy(fundTransfers.transferDate);
+
+    // إضافة اسم المشروع
+    const project = await this.getProject(projectId);
+    const projectName = project?.name || 'غير محدد';
+
+    return income.map(inc => ({
+      ...inc,
+      projectName,
+      amount: parseFloat(inc.amount?.toString() || '0'),
+      transferNumber: inc.transferNumber || 'غير محدد',
+      senderName: inc.senderName || 'غير محدد',
+      transferType: inc.transferType || 'حوالة عادية',
+      notes: inc.notes || ''
+    }));
+  }
+
+  // Users methods
+  async getUsers(): Promise<User[]> {
+    try {
+      return await db.select().from(users).orderBy(users.createdAt);
+    } catch (error) {
+      console.error('Error getting users:', error);
+      return [];
+    }
+  }
+
+  async getUser(id: string): Promise<User | undefined> {
+    try {
+      const [user] = await db.select().from(users).where(eq(users.id, id));
+      return user || undefined;
+    } catch (error) {
+      console.error('Error getting user:', error);
+      return undefined;
+    }
+  }
+
+  async getUserByEmail(email: string): Promise<User | undefined> {
+    try {
+      const [user] = await db.select().from(users).where(eq(users.email, email));
+      return user || undefined;
+    } catch (error) {
+      console.error('Error getting user by email:', error);
+      return undefined;
+    }
+  }
+
+  async createUser(user: InsertUser): Promise<User> {
+    try {
+      const [newUser] = await db
+        .insert(users)
+        .values({
+          ...user,
+          updatedAt: new Date()
+        })
+        .returning();
+      return newUser;
+    } catch (error) {
+      console.error('Error creating user:', error);
+      throw error;
+    }
+  }
+
+  async updateUser(id: string, user: Partial<InsertUser>): Promise<User | undefined> {
+    try {
+      const [updated] = await db
+        .update(users)
+        .set({
+          ...user,
+          updatedAt: new Date()
+        })
+        .where(eq(users.id, id))
+        .returning();
+      return updated || undefined;
+    } catch (error) {
+      console.error('Error updating user:', error);
+      throw error;
+    }
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    try {
+      await db.delete(users).where(eq(users.id, id));
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      throw error;
+    }
+  }
+
+  // Suppliers methods
+  async getSuppliers(): Promise<Supplier[]> {
+    try {
+      return await db.select({
+        id: suppliers.id,
+        name: suppliers.name,
+        contactPerson: suppliers.contactPerson,
+        phone: suppliers.phone,
+        address: suppliers.address,
+        paymentTerms: suppliers.paymentTerms,
+        totalDebt: suppliers.totalDebt,
+        notes: suppliers.notes,
+        isActive: suppliers.isActive,
+        createdAt: suppliers.createdAt,
+      }).from(suppliers).orderBy(suppliers.name);
+    } catch (error) {
+      console.error('Error getting suppliers:', error);
+      return [];
+    }
+  }
+
+  async getSupplier(id: string): Promise<Supplier | undefined> {
+    try {
+      const [supplier] = await db.select().from(suppliers).where(eq(suppliers.id, id));
+      return supplier || undefined;
+    } catch (error) {
+      console.error('Error getting supplier:', error);
+      return undefined;
+    }
+  }
+
+  async getSupplierByName(name: string): Promise<Supplier | undefined> {
+    try {
+      const [supplier] = await db.select().from(suppliers).where(eq(suppliers.name, name));
+      return supplier || undefined;
+    } catch (error) {
+      console.error('Error getting supplier by name:', error);
+      return undefined;
+    }
+  }
+
+  async createSupplier(supplier: InsertSupplier): Promise<Supplier> {
+    try {
+      // إنشاء كائن البيانات مع تحديد صريح للحقول
+      const supplierData = {
+        name: supplier.name,
+        contactPerson: supplier.contactPerson || null,
+        phone: supplier.phone || null,
+        address: supplier.address || null,
+        paymentTerms: supplier.paymentTerms || "نقد",
+        totalDebt: supplier.totalDebt || '0',
+        isActive: supplier.isActive !== undefined ? supplier.isActive : true,
+        notes: supplier.notes || null
+      };
+      
+      console.log('Creating supplier with data:', supplierData);
+      
+      const [newSupplier] = await db
+        .insert(suppliers)
+        .values(supplierData)
+        .returning();
+      return newSupplier;
+    } catch (error) {
+      console.error('Error creating supplier:', error);
+      throw error;
+    }
+  }
+
+  async updateSupplier(id: string, supplier: Partial<InsertSupplier>): Promise<Supplier | undefined> {
+    try {
+      const [updated] = await db
+        .update(suppliers)
+        .set(supplier)
+        .where(eq(suppliers.id, id))
+        .returning();
+      return updated || undefined;
+    } catch (error) {
+      console.error('Error updating supplier:', error);
+      throw error;
+    }
+  }
+
+  async deleteSupplier(id: string): Promise<void> {
+    try {
+      await db.delete(suppliers).where(eq(suppliers.id, id));
+    } catch (error) {
+      console.error('Error deleting supplier:', error);
+      throw error;
+    }
+  }
+
+  // Supplier Payments methods
+  async getSupplierPayments(supplierId: string, projectId?: string): Promise<SupplierPayment[]> {
+    try {
+      const conditions = [eq(supplierPayments.supplierId, supplierId)];
+      if (projectId) {
+        conditions.push(eq(supplierPayments.projectId, projectId));
+      }
+      
+      return await db.select().from(supplierPayments)
+        .where(and(...conditions))
+        .orderBy(supplierPayments.paymentDate);
+    } catch (error) {
+      console.error('Error getting supplier payments:', error);
+      return [];
+    }
+  }
+
+  async getSupplierPayment(id: string): Promise<SupplierPayment | undefined> {
+    try {
+      const [payment] = await db.select().from(supplierPayments).where(eq(supplierPayments.id, id));
+      return payment || undefined;
+    } catch (error) {
+      console.error('Error getting supplier payment:', error);
+      return undefined;
+    }
+  }
+
+  async createSupplierPayment(payment: InsertSupplierPayment): Promise<SupplierPayment> {
+    try {
+      const [newPayment] = await db
+        .insert(supplierPayments)
+        .values(payment)
+        .returning();
+      return newPayment;
+    } catch (error) {
+      console.error('Error creating supplier payment:', error);
+      throw error;
+    }
+  }
+
+  async updateSupplierPayment(id: string, payment: Partial<InsertSupplierPayment>): Promise<SupplierPayment | undefined> {
+    try {
+      const [updated] = await db
+        .update(supplierPayments)
+        .set(payment)
+        .where(eq(supplierPayments.id, id))
+        .returning();
+      return updated || undefined;
+    } catch (error) {
+      console.error('Error updating supplier payment:', error);
+      throw error;
+    }
+  }
+
+  async deleteSupplierPayment(id: string): Promise<void> {
+    try {
+      await db.delete(supplierPayments).where(eq(supplierPayments.id, id));
+    } catch (error) {
+      console.error('Error deleting supplier payment:', error);
+      throw error;
+    }
+  }
+
+  // Supplier Reports methods
+  async getSupplierAccountStatement(supplierId: string, projectId?: string, dateFrom?: string, dateTo?: string): Promise<{
+    supplier: Supplier;
+    purchases: MaterialPurchase[];
+    payments: SupplierPayment[];
+    totalDebt: string;
+    totalPaid: string;
+    remainingDebt: string;
+  }> {
+    try {
+      // جلب بيانات المورد
+      const supplier = await this.getSupplier(supplierId);
+      if (!supplier) {
+        throw new Error('المورد غير موجود');
+      }
+
+      // شروط التصفية
+      const purchaseConditions = [eq(materialPurchases.supplierId, supplierId)];
+      const paymentConditions = [eq(supplierPayments.supplierId, supplierId)];
+      
+      if (projectId) {
+        purchaseConditions.push(eq(materialPurchases.projectId, projectId));
+        paymentConditions.push(eq(supplierPayments.projectId, projectId));
+      }
+      
+      if (dateFrom && dateTo) {
+        purchaseConditions.push(
+          gte(materialPurchases.invoiceDate, dateFrom),
+          lte(materialPurchases.invoiceDate, dateTo)
+        );
+        paymentConditions.push(
+          gte(supplierPayments.paymentDate, dateFrom),
+          lte(supplierPayments.paymentDate, dateTo)
+        );
+      }
+
+      // جلب المشتريات
+      const purchases = await db.select().from(materialPurchases)
+        .where(and(...purchaseConditions))
+        .orderBy(materialPurchases.invoiceDate);
+
+      // جلب المدفوعات
+      const payments = await db.select().from(supplierPayments)
+        .where(and(...paymentConditions))
+        .orderBy(supplierPayments.paymentDate);
+
+      // حساب الإجماليات
+      const totalDebt = purchases.reduce((sum, purchase) => 
+        sum + parseFloat(purchase.totalAmount || '0'), 0);
+      const totalPaid = payments.reduce((sum, payment) => 
+        sum + parseFloat(payment.amount || '0'), 0);
+      const remainingDebt = totalDebt - totalPaid;
+
+      return {
+        supplier,
+        purchases,
+        payments,
+        totalDebt: totalDebt.toString(),
+        totalPaid: totalPaid.toString(),
+        remainingDebt: remainingDebt.toString()
+      };
+    } catch (error) {
+      console.error('Error getting supplier account statement:', error);
+      throw error;
+    }
+  }
+
+  async getPurchasesBySupplier(supplierId: string, purchaseType?: string, dateFrom?: string, dateTo?: string): Promise<MaterialPurchase[]> {
+    try {
+      const conditions = [eq(materialPurchases.supplierId, supplierId)];
+      
+      if (purchaseType) {
+        conditions.push(eq(materialPurchases.purchaseType, purchaseType));
+      }
+      
+      if (dateFrom && dateTo) {
+        conditions.push(
+          gte(materialPurchases.invoiceDate, dateFrom),
+          lte(materialPurchases.invoiceDate, dateTo)
+        );
+      }
+
+      return await db.select().from(materialPurchases)
+        .where(and(...conditions))
+        .orderBy(materialPurchases.invoiceDate);
+    } catch (error) {
+      console.error('Error getting purchases by supplier:', error);
+      return [];
+    }
+  }
+
+  // Print Settings Methods
+  async getPrintSettings(reportType?: string, userId?: string): Promise<PrintSettings[]> {
+    try {
+      const conditions = [];
+      
+      if (reportType) {
+        conditions.push(eq(printSettings.reportType, reportType));
+      }
+      
+      if (userId) {
+        conditions.push(eq(printSettings.userId, userId));
+      }
+      
+      return await db.select().from(printSettings)
+        .where(conditions.length > 0 ? and(...conditions) : undefined)
+        .orderBy(printSettings.createdAt);
+    } catch (error) {
+      console.error('Error getting print settings:', error);
+      return [];
+    }
+  }
+
+  async getPrintSettingsById(id: string): Promise<PrintSettings | undefined> {
+    try {
+      const [settings] = await db.select().from(printSettings).where(eq(printSettings.id, id));
+      return settings || undefined;
+    } catch (error) {
+      console.error('Error getting print settings by id:', error);
+      return undefined;
+    }
+  }
+
+  async createPrintSettings(settings: InsertPrintSettings): Promise<PrintSettings> {
+    try {
+      const [newSettings] = await db
+        .insert(printSettings)
+        .values(settings)
+        .returning();
+      return newSettings;
+    } catch (error) {
+      console.error('Error creating print settings:', error);
+      throw error;
+    }
+  }
+
+  async updatePrintSettings(id: string, settings: Partial<InsertPrintSettings>): Promise<PrintSettings | undefined> {
+    try {
+      const [updated] = await db
+        .update(printSettings)
+        .set(settings)
+        .where(eq(printSettings.id, id))
+        .returning();
+      return updated || undefined;
+    } catch (error) {
+      console.error('Error updating print settings:', error);
+      throw error;
+    }
+  }
+
+  async deletePrintSettings(id: string): Promise<void> {
+    try {
+      await db.delete(printSettings).where(eq(printSettings.id, id));
+    } catch (error) {
+      console.error('Error deleting print settings:', error);
+      throw error;
+    }
+  }
+
+  async getDefaultPrintSettings(reportType: string): Promise<PrintSettings | undefined> {
+    try {
+      const [settings] = await db.select().from(printSettings)
+        .where(and(
+          eq(printSettings.reportType, reportType),
+          eq(printSettings.isDefault, true)
+        ))
+        .limit(1);
+      return settings || undefined;
+    } catch (error) {
+      console.error('Error getting default print settings:', error);
+      return undefined;
+    }
+  }
 }
 
-// Always use DatabaseStorage now that we have PostgreSQL
 export const storage = new DatabaseStorage();
