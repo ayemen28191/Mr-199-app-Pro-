@@ -784,6 +784,13 @@ export class DatabaseStorage implements IStorage {
       .insert(materialPurchases)
       .values(purchase)
       .returning();
+    
+    // تحديث الملخص اليومي في الخلفية (دون انتظار) لتحسين الأداء
+    setImmediate(() => {
+      this.updateDailySummaryForDate(purchase.projectId, purchase.purchaseDate)
+        .catch(error => console.error("Error updating daily summary:", error));
+    });
+    
     return newPurchase;
   }
 
@@ -934,13 +941,13 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  // تحديث الملخص اليومي تلقائياً مع تحسينات الأداء وقيود الحماية
+  // تحديث الملخص اليومي تلقائياً مع تحسينات الأداء المحسنة
   async updateDailySummaryForDate(projectId: string, date: string): Promise<void> {
     try {
-      console.log(`🔄 Updating daily summary for ${projectId} on ${date}...`);
-      
-      // التحقق من وجود ملخصات مكررة وحذفها
-      await this.removeDuplicateSummaries(projectId, date);
+      // إزالة الملخصات المكررة في الخلفية لتحسين الأداء
+      setImmediate(() => {
+        this.removeDuplicateSummaries(projectId, date).catch(console.error);
+      });
       
       // تشغيل جميع الاستعلامات بشكل متوازي لتحسين الأداء
       const [
@@ -983,19 +990,8 @@ export class DatabaseStorage implements IStorage {
       const totalExpenses = totalWorkerWages + totalMaterialCosts + totalTransportationCosts + totalWorkerTransferCosts + totalWorkerMiscCosts;
       const remainingBalance = totalIncome - totalExpenses;
 
-      // معلومات تفصيلية للتشخيص
-      console.log(`📊 Balance calculation for ${date}:`);
-      console.log(`   Carried Forward: ${carriedForwardAmount}`);
-      console.log(`   Fund Transfers: ${totalFundTransfers}`);
-      console.log(`   Project Transfers (Net): ${netProjectTransfers} (In: ${incomingTransfers}, Out: ${outgoingTransfers})`);
-      console.log(`   Worker Wages: ${totalWorkerWages}`);
-      console.log(`   Material Costs: ${totalMaterialCosts}`);
-      console.log(`   Transportation: ${totalTransportationCosts}`);
-      console.log(`   Worker Transfers: ${totalWorkerTransferCosts}`);
-      console.log(`   Worker Misc Expenses: ${totalWorkerMiscCosts}`);
-      console.log(`   Total Income: ${totalIncome}`);
-      console.log(`   Total Expenses: ${totalExpenses}`);
-      console.log(`   Remaining Balance: ${remainingBalance}`);
+      // معلومات مختصرة للتشخيص
+      console.log(`📊 ${date}: Income=${totalIncome}, Expenses=${totalExpenses}, Balance=${remainingBalance}`);
       
       // التحقق من صحة البيانات المحاسبية
       if (Math.abs(totalIncome - totalExpenses - remainingBalance) > 0.01) {
@@ -1012,7 +1008,7 @@ export class DatabaseStorage implements IStorage {
         remainingBalance: remainingBalance.toString()
       });
       
-      console.log(`✅ Daily summary updated successfully for ${projectId} on ${date}`);
+      // تم تحديث الملخص بنجاح
     } catch (error) {
       console.error('❌ Error updating daily summary:', error);
       throw error;
