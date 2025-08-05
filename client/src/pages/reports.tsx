@@ -1053,7 +1053,7 @@ export default function Reports() {
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('كشف حساب العامل');
 
-      // إعداد طباعة A4 احترافي محسن للغاية
+      // إعداد طباعة A4 احترافي محسن للغاية مع تحديد دقيق لمنطقة الطباعة
       worksheet.pageSetup = {
         paperSize: 9, // A4
         orientation: 'portrait',
@@ -1068,8 +1068,8 @@ export default function Reports() {
         showGridLines: true,
         horizontalCentered: true,
         verticalCentered: false,
-        printTitlesRow: '8:8', // تكرار رأس الجدول في كل صفحة
-        printArea: 'A1:L200' // تحديد منطقة الطباعة
+        printTitlesRow: '8:8' // تكرار رأس الجدول في كل صفحة
+        // سنحدد منطقة الطباعة لاحقاً بناءً على البيانات الفعلية
       };
 
       // إعداد اتجاه الكتابة من اليمين لليسار مع تحسينات العرض
@@ -1647,11 +1647,11 @@ export default function Reports() {
       worksheet.getRow(currentRow).height = 8;
       currentRow++;
 
-      // تذييل معلومات النظام
+      // تذييل معلومات النظام المدمج
       worksheet.mergeCells(`A${currentRow}:L${currentRow}`);
       const footerCell = worksheet.getCell(`A${currentRow}`);
-      footerCell.value = `🏗️ تم إنشاء هذا التقرير بواسطة نظام إدارة مشاريع البناء المتطور | 📅 ${formatDateEN(new Date().toISOString().split('T')[0])} | ⏰ ${new Date().toLocaleTimeString('en-US')} | 🌐 تقرير احترافي جاهز للطباعة A4`;
-      footerCell.font = { name: 'Arial', size: 9, italic: true, color: { argb: 'FF6b7280' } };
+      footerCell.value = `🏗️ نظام إدارة مشاريع البناء المتطور | ${formatDateEN(new Date().toISOString().split('T')[0])} ${new Date().toLocaleTimeString('en-US')} | تقرير احترافي A4`;
+      footerCell.font = { name: 'Arial', size: 8, italic: true, color: { argb: 'FF6b7280' } };
       footerCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
       footerCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFf8fafc' } };
       footerCell.border = {
@@ -1660,17 +1660,7 @@ export default function Reports() {
         bottom: { style: 'thin', color: { argb: 'FFe5e7eb' } },
         right: { style: 'thin', color: { argb: 'FFe5e7eb' } }
       };
-      worksheet.getRow(currentRow).height = 25;
-      currentRow++;
-
-      // إضافة معلومات إضافية للشركة (إذا كان متاحاً)
-      worksheet.mergeCells(`A${currentRow}:L${currentRow}`);
-      const companyInfoCell = worksheet.getCell(`A${currentRow}`);
-      companyInfoCell.value = '📱 للاستفسارات والدعم الفني - نظام إدارة مشاريع البناء | 📊 تقرير مولد آلياً بأعلى معايير الدقة والشمولية';
-      companyInfoCell.font = { name: 'Arial', size: 8, italic: true, color: { argb: 'FF9ca3af' } };
-      companyInfoCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-      companyInfoCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFfafafa' } };
-      worksheet.getRow(currentRow).height = 18;
+      worksheet.getRow(currentRow).height = 20;
 
       // ضبط عرض الأعمدة الاحترافي المحسن لاستغلال A4 بكامل طاقته
       worksheet.columns = [
@@ -1695,6 +1685,18 @@ export default function Reports() {
           cell.alignment.wrapText = true;
         });
       });
+
+      // تحديد منطقة الطباعة بناءً على البيانات الفعلية لمنع الصفحات الفارغة
+      const lastDataRow = currentRow - 1; // آخر صف يحتوي على بيانات
+      worksheet.pageSetup.printArea = `A1:L${lastDataRow}`;
+      
+      // تنظيف أي صفوف فارغة قد تسبب صفحات إضافية
+      const maxRows = Math.max(1, lastDataRow);
+      
+      // ضبط خصائص الطباعة لمنع الصفحات الإضافية
+      worksheet.pageSetup.printArea = `A1:L${maxRows}`;
+      worksheet.pageSetup.horizontalCentered = true;
+      worksheet.pageSetup.verticalCentered = false;
 
       // حفظ الملف
       const buffer = await workbook.xlsx.writeBuffer();
