@@ -304,21 +304,21 @@ export default function MaterialPurchase() {
       return;
     }
 
-    const totalAmount = calculateTotal();
+    const totalAmount = parseFloat(calculateTotal());
     const purchaseData = {
       projectId: selectedProjectId,
-      materialName,
-      materialCategory,
-      materialUnit,
-      quantity,
-      unitPrice,
-      totalAmount,
-      paymentType,
-      supplierName,
-      invoiceNumber,
-      invoiceDate,
-      invoicePhoto,
-      notes,
+      materialName: materialName.trim(),
+      materialCategory: materialCategory.trim(),
+      materialUnit: materialUnit.trim(),
+      quantity: parseFloat(quantity),
+      unitPrice: parseFloat(unitPrice),
+      totalAmount: totalAmount,
+      paymentType: paymentType.trim(), // تنظيف وتنسيق نوع الدفع
+      supplierName: supplierName?.trim() || '',
+      invoiceNumber: invoiceNumber?.trim() || '',
+      invoiceDate: invoiceDate || new Date().toISOString().split('T')[0],
+      invoicePhoto: invoicePhoto || '',
+      notes: notes?.trim() || '',
       purchaseDate: purchaseDate,
     };
 
