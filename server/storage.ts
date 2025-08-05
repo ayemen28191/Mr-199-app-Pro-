@@ -1464,54 +1464,69 @@ export class DatabaseStorage implements IStorage {
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0];
       
-      // استعلام فائق التحسين - جميع الإحصائيات والبيانات المالية في استعلام واحد
-      const [allStats] = await Promise.all([
-        db.execute(sql`
+      // استعلام واحد فائق السرعة - جميع الإحصائيات في استعلام واحد محسن
+      const [allStats] = await db.execute(sql`
+        WITH project_stats AS (
           SELECT 
-            COALESCE(COUNT(DISTINCT wa.worker_id), 0) as total_workers,
-            COALESCE(COUNT(DISTINCT CASE WHEN wa.date >= ${thirtyDaysAgoStr} THEN wa.worker_id END), 0) as active_workers,
-            COALESCE(COUNT(DISTINCT wa.date), 0) as completed_days,
-            COALESCE(COUNT(DISTINCT mp.id), 0) as material_purchases,
-            COALESCE(MAX(wa.date), '') as last_work_date,
-            COALESCE(MAX(mp.purchase_date), '') as last_purchase_date,
-            COALESCE(
-              (SELECT CAST(remaining_balance AS NUMERIC) 
-               FROM daily_expense_summaries 
-               WHERE project_id = ${projectId} 
-               ORDER BY date DESC 
-               LIMIT 1), 0
-            ) as current_balance,
-            COALESCE(SUM(CAST(des.total_income AS NUMERIC)), 0) as total_income,
-            COALESCE(SUM(CAST(des.total_expenses AS NUMERIC)), 0) as total_expenses
-          FROM (SELECT ${projectId} as pid) p
-          LEFT JOIN worker_attendance wa ON wa.project_id = p.pid
-          LEFT JOIN material_purchases mp ON mp.project_id = p.pid  
-          LEFT JOIN daily_expense_summaries des ON des.project_id = p.pid
-        `)
-      ]);
+            COUNT(DISTINCT wa.worker_id) as total_workers,
+            COUNT(DISTINCT CASE WHEN wa.date >= ${thirtyDaysAgoStr} THEN wa.worker_id END) as active_workers,
+            COUNT(DISTINCT wa.date) as completed_days,
+            COALESCE(MAX(wa.date), current_date) as last_activity,
+            COALESCE(SUM(CASE WHEN wa.is_present THEN CAST(wa.actual_wage AS NUMERIC) ELSE 0 END), 0) as total_wages
+          FROM worker_attendance wa 
+          WHERE wa.project_id = ${projectId}
+        ),
+        material_stats AS (
+          SELECT 
+            COUNT(*) as material_purchases,
+            COALESCE(SUM(CASE WHEN purchase_type = 'cash' THEN CAST(total_amount AS NUMERIC) ELSE 0 END), 0) as material_expenses
+          FROM material_purchases 
+          WHERE project_id = ${projectId}
+        ),
+        income_stats AS (
+          SELECT COALESCE(SUM(CAST(amount AS NUMERIC)), 0) as total_income
+          FROM fund_transfers 
+          WHERE project_id = ${projectId}
+        ),
+        transport_stats AS (
+          SELECT COALESCE(SUM(CAST(amount AS NUMERIC)), 0) as transport_expenses
+          FROM transportation_expenses 
+          WHERE project_id = ${projectId}
+        )
+        SELECT 
+          ps.total_workers,
+          ps.active_workers, 
+          ps.completed_days,
+          ms.material_purchases,
+          ps.last_activity,
+          is_.total_income,
+          (ps.total_wages + ms.material_expenses + ts.transport_expenses) as total_expenses,
+          (is_.total_income - ps.total_wages - ms.material_expenses - ts.transport_expenses) as current_balance
+        FROM project_stats ps, material_stats ms, income_stats is_, transport_stats ts
+      `);
       
       const statsRow = allStats.rows[0] as any;
+      
+      // جميع البيانات محسوبة في استعلام واحد - لا حاجة لاستعلامات إضافية
       const totalWorkers = parseInt(statsRow.total_workers) || 0;
       const activeWorkers = parseInt(statsRow.active_workers) || 0;
       const completedDays = parseInt(statsRow.completed_days) || 0;
-      const materialPurchasesCount = parseInt(statsRow.material_purchases) || 0;
+      const materialPurchases = parseInt(statsRow.material_purchases) || 0;
+      const totalIncome = parseFloat(statsRow.total_income) || 0;
+      const totalExpenses = parseFloat(statsRow.total_expenses) || 0;
+      const currentBalance = parseFloat(statsRow.current_balance) || 0;
+      const lastActivity = statsRow.last_activity as string || new Date().toISOString().split('T')[0];
 
-      // استخدام البيانات المحسوبة مسبقاً من الاستعلام الموحد
-      let totalIncome = parseFloat(statsRow.total_income) || 0;
-      let totalExpenses = parseFloat(statsRow.total_expenses) || 0;
-      let currentBalance = parseFloat(statsRow.current_balance) || 0;
-
-      // إذا لم توجد ملخصات يومية، احسب من البيانات الخام
-      if (totalIncome === 0 && totalExpenses === 0) {
-        // في حالة عدم وجود ملخص يومي، احسب من البيانات الخام (بدون مبلغ مرحل)
-        const fundTransfersSum = await db
-          .select({ sum: sql<number>`COALESCE(SUM(CAST(${fundTransfers.amount} AS NUMERIC)), 0)` })
-          .from(fundTransfers)
-          .where(eq(fundTransfers.projectId, projectId));
-        
-        totalIncome = parseFloat(fundTransfersSum[0]?.sum?.toString() || '0');
-
-        // حساب إجمالي المصروفات من جميع المصادر
+      return {
+        totalWorkers,
+        totalExpenses,
+        totalIncome,
+        currentBalance,
+        activeWorkers,
+        completedDays,
+        materialPurchases,
+        lastActivity
+      };
         const [wagesSum, materialsSum, transportSum, workerTransfersSum, workerMiscSum] = await Promise.all([
           // أجور العمال المدفوعة (paidAmount وليس dailyWage)
           db.select({ sum: sql<number>`COALESCE(SUM(CAST(${workerAttendance.paidAmount} AS NUMERIC)), 0)` })

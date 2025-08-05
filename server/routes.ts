@@ -2469,7 +2469,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lastName,
         role,
         isActive: true
-      }, password);
+      } as any, password);
 
       res.json(result);
     } catch (error) {
