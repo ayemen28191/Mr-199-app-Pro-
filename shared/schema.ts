@@ -292,7 +292,11 @@ export const insertWorkerAttendanceSchema = createInsertSchema(workerAttendance)
   workDays: z.number().min(0.1).max(2.0).default(1.0), // عدد أيام العمل من 0.1 إلى 2.0
 });
 export const insertMaterialSchema = createInsertSchema(materials).omit({ id: true, createdAt: true });
-export const insertMaterialPurchaseSchema = createInsertSchema(materialPurchases).omit({ id: true, createdAt: true });
+export const insertMaterialPurchaseSchema = createInsertSchema(materialPurchases).omit({ id: true, createdAt: true }).extend({
+  quantity: z.coerce.number().positive(), // تحويل تلقائي للرقم
+  unitPrice: z.coerce.number().positive(), // تحويل تلقائي للرقم
+  totalAmount: z.coerce.number().positive(), // تحويل تلقائي للرقم
+});
 export const insertTransportationExpenseSchema = createInsertSchema(transportationExpenses).omit({ id: true, createdAt: true });
 export const insertWorkerTransferSchema = createInsertSchema(workerTransfers).omit({ id: true, createdAt: true });
 export const insertWorkerBalanceSchema = createInsertSchema(workerBalances).omit({ id: true, createdAt: true, lastUpdated: true });

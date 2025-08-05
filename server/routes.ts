@@ -578,6 +578,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Schema validation for data:", JSON.stringify(purchaseDataWithMaterialId, null, 2));
       const result = insertMaterialPurchaseSchema.safeParse(purchaseDataWithMaterialId);
       if (!result.success) {
+        console.log("Validation errors:", result.error.issues);
         const errorMessages = result.error.issues.map(issue => 
           `${issue.path.join('.')}: ${issue.message}`
         ).join(', ');
