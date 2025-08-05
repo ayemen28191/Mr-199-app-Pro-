@@ -208,6 +208,9 @@ export default function DailyExpenses() {
       if (senderName) await saveAutocompleteValue('senderNames', senderName);
       if (transferNumber) await saveAutocompleteValue('transferNumbers', transferNumber);
       
+      // تحديث كاش autocomplete للتأكد من ظهور البيانات الجديدة
+      queryClient.invalidateQueries({ queryKey: ["/api/autocomplete"] });
+      
       // تنظيف النموذج
       setFundAmount("");
       setSenderName("");
@@ -233,6 +236,9 @@ export default function DailyExpenses() {
       // حفظ قيم الإكمال التلقائي
       if (transportDescription) await saveAutocompleteValue('transportDescriptions', transportDescription);
       if (transportNotes) await saveAutocompleteValue('notes', transportNotes);
+      
+      // تحديث كاش autocomplete للتأكد من ظهور البيانات الجديدة
+      queryClient.invalidateQueries({ queryKey: ["/api/autocomplete"] });
       
       // تنظيف النموذج
       setTransportDescription("");
@@ -332,6 +338,9 @@ export default function DailyExpenses() {
       // حفظ قيم الإكمال التلقائي
       if (senderName) await saveAutocompleteValue('senderNames', senderName);
       if (transferNumber) await saveAutocompleteValue('transferNumbers', transferNumber);
+      
+      // تحديث كاش autocomplete للتأكد من ظهور البيانات الجديدة
+      queryClient.invalidateQueries({ queryKey: ["/api/autocomplete"] });
       
       resetFundTransferForm();
       toast({

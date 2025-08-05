@@ -25,6 +25,20 @@ export default function ProjectTransfers() {
   const [showForm, setShowForm] = useState(false);
   const [editingTransfer, setEditingTransfer] = useState<ProjectFundTransfer | null>(null);
 
+  // دالة مساعدة لحفظ القيم في autocomplete_data
+  const saveAutocompleteValue = async (category: string, value: string | null | undefined) => {
+    if (!value || typeof value !== 'string' || !value.trim()) return;
+    try {
+      await apiRequest("POST", "/api/autocomplete", { 
+        category, 
+        value: value.trim() 
+      });
+    } catch (error) {
+      // تجاهل الأخطاء لأن هذه عملية مساعدة
+      console.log(`Failed to save autocomplete value for ${category}:`, error);
+    }
+  };
+
   // جلب قائمة المشاريع
   const { data: projects = [], isLoading: projectsLoading } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
@@ -43,7 +57,16 @@ export default function ProjectTransfers() {
       }
       return apiRequest("POST", "/api/project-fund-transfers", data);
     },
-    onSuccess: (newTransfer) => {
+    onSuccess: async (newTransfer, variables) => {
+      // حفظ القيم في autocomplete_data
+      await Promise.all([
+        saveAutocompleteValue('transferReasons', variables.transferReason),
+        saveAutocompleteValue('projectTransferDescriptions', variables.description)
+      ]);
+      
+      // تحديث كاش autocomplete للتأكد من ظهور البيانات الجديدة
+      queryClient.invalidateQueries({ queryKey: ["/api/autocomplete"] });
+      
       // تحديث فوري للقائمة بدلاً من إعادة التحميل
       queryClient.setQueryData(["/api/project-fund-transfers"], (oldData: any[]) => {
         if (!oldData) return [newTransfer];

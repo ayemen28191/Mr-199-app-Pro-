@@ -43,6 +43,20 @@ export default function AddWorkerForm({ worker, onSuccess, onCancel, submitLabel
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // دالة مساعدة لحفظ القيم في autocomplete_data
+  const saveAutocompleteValue = async (category: string, value: string | null | undefined) => {
+    if (!value || typeof value !== 'string' || !value.trim()) return;
+    try {
+      await apiRequest("POST", "/api/autocomplete", { 
+        category, 
+        value: value.trim() 
+      });
+    } catch (error) {
+      // تجاهل الأخطاء لأن هذه عملية مساعدة
+      console.log(`Failed to save autocomplete value for ${category}:`, error);
+    }
+  };
+
   // جلب أنواع العمال من قاعدة البيانات
   const { data: workerTypes = [] } = useQuery<WorkerType[]>({
     queryKey: ["/api/worker-types"],
@@ -56,7 +70,16 @@ export default function AddWorkerForm({ worker, onSuccess, onCancel, submitLabel
         return apiRequest("POST", "/api/workers", data);
       }
     },
-    onSuccess: () => {
+    onSuccess: async (newWorker, variables) => {
+      // حفظ القيم في autocomplete_data
+      await Promise.all([
+        saveAutocompleteValue('workerNames', variables.name),
+        saveAutocompleteValue('workerTypes', variables.type)
+      ]);
+      
+      // تحديث كاش autocomplete للتأكد من ظهور البيانات الجديدة
+      queryClient.invalidateQueries({ queryKey: ["/api/autocomplete"] });
+      
       toast({
         title: "تم الحفظ",
         description: worker ? "تم تعديل العامل بنجاح" : "تم إضافة العامل بنجاح",
@@ -83,7 +106,13 @@ export default function AddWorkerForm({ worker, onSuccess, onCancel, submitLabel
   // إضافة نوع عامل جديد
   const addWorkerTypeMutation = useMutation({
     mutationFn: (data: { name: string }) => apiRequest("POST", "/api/worker-types", data),
-    onSuccess: (newType) => {
+    onSuccess: async (newType, variables) => {
+      // حفظ قيمة نوع العامل الجديد في autocomplete
+      await saveAutocompleteValue('workerTypes', variables.name);
+      
+      // تحديث كاش autocomplete
+      queryClient.invalidateQueries({ queryKey: ["/api/autocomplete"] });
+      
       toast({
         title: "تم الحفظ",
         description: "تم إضافة نوع العامل بنجاح",
