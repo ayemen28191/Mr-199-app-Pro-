@@ -705,7 +705,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Material Purchases
-  async getMaterialPurchases(projectId: string, dateFrom?: string, dateTo?: string): Promise<any[]> {
+  async getMaterialPurchases(projectId: string, dateFrom?: string, dateTo?: string, purchaseType?: string): Promise<any[]> {
     // جلب مشتريات المواد مع معلومات المواد
     const purchases = await db
       .select({
@@ -732,12 +732,19 @@ export class DatabaseStorage implements IStorage {
       .from(materialPurchases)
       .leftJoin(materials, eq(materialPurchases.materialId, materials.id))
       .where(
-        dateFrom && dateTo 
-          ? and(
-              eq(materialPurchases.projectId, projectId),
-              eq(materialPurchases.purchaseDate, dateFrom)
-            )
-          : eq(materialPurchases.projectId, projectId)
+        (() => {
+          const conditions = [eq(materialPurchases.projectId, projectId)];
+          
+          if (dateFrom && dateTo) {
+            conditions.push(eq(materialPurchases.purchaseDate, dateFrom));
+          }
+          
+          if (purchaseType) {
+            conditions.push(eq(materialPurchases.purchaseType, purchaseType));
+          }
+          
+          return and(...conditions);
+        })()
       )
       .orderBy(materialPurchases.createdAt);
 
@@ -949,7 +956,7 @@ export class DatabaseStorage implements IStorage {
         this.getFundTransfers(projectId, date),
         this.getProjectFundTransfersForDate(projectId, date),
         this.getWorkerAttendance(projectId, date),
-        this.getMaterialPurchases(projectId, date),
+        this.getMaterialPurchases(projectId, date), // جلب جميع المشتريات
         this.getTransportationExpenses(projectId, date),
         this.getFilteredWorkerTransfers(projectId, date),
         this.getWorkerMiscExpenses(projectId, date),
@@ -964,7 +971,10 @@ export class DatabaseStorage implements IStorage {
       const netProjectTransfers = incomingTransfers - outgoingTransfers;
       // استخدام المبلغ المدفوع بدلاً من إجمالي الأجر اليومي
       const totalWorkerWages = workerAttendanceRecords.reduce((sum, a) => sum + parseFloat(a.paidAmount || '0'), 0);
-      const totalMaterialCosts = materialPurchases.reduce((sum, p) => sum + parseFloat(p.totalAmount), 0);
+      // فقط المشتريات النقدية تُحسب في مصروفات اليوم - المشتريات الآجلة لا تُحسب
+      const totalMaterialCosts = materialPurchases
+        .filter(p => p.purchaseType === "نقد")
+        .reduce((sum, p) => sum + parseFloat(p.totalAmount), 0);
       const totalTransportationCosts = transportationExpenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
       const totalWorkerTransferCosts = workerTransfers.reduce((sum, t) => sum + parseFloat(t.amount), 0);
       const totalWorkerMiscCosts = workerMiscExpenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
@@ -1910,7 +1920,7 @@ export class DatabaseStorage implements IStorage {
       projectId: materialPurchases.projectId,
       date: materialPurchases.purchaseDate,
       category: sql`'مشتريات'`.as('category'),
-      subcategory: sql`'مواد'`.as('subcategory'),
+      subcategory: materialPurchases.purchaseType, // نوع الدفع كفئة فرعية
       description: materials.name,
       amount: materialPurchases.totalAmount,
       vendor: materialPurchases.supplierName,
@@ -1922,7 +1932,8 @@ export class DatabaseStorage implements IStorage {
     .where(and(
       eq(materialPurchases.projectId, projectId),
       gte(materialPurchases.purchaseDate, dateFrom),
-      lte(materialPurchases.purchaseDate, dateTo)
+      lte(materialPurchases.purchaseDate, dateTo),
+      // إزالة الفلتر لإظهار جميع المشتريات في التقارير مع التمييز
     ));
 
     // 3. مصروفات النقل

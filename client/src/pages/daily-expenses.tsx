@@ -903,12 +903,19 @@ export default function DailyExpenses() {
                     {purchase.supplierName && (
                       <div className="text-xs text-muted-foreground">المورد: {purchase.supplierName}</div>
                     )}
+                    {purchase.purchaseType && (
+                      <div className={`text-xs font-medium ${purchase.purchaseType === 'آجل' ? 'text-orange-600' : 'text-green-600'}`}>
+                        {purchase.purchaseType === 'آجل' ? '⏰ آجل' : '💵 نقد'}
+                      </div>
+                    )}
                     {material?.category && (
                       <div className="text-xs text-muted-foreground">الفئة: {material.category}</div>
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="font-medium arabic-numbers">{formatCurrency(purchase.totalAmount)}</span>
+                    <span className={`font-medium arabic-numbers ${purchase.purchaseType === 'آجل' ? 'text-orange-600' : 'text-green-600'}`}>
+                      {formatCurrency(purchase.totalAmount)}
+                    </span>
                     <div className="flex gap-1">
                       <Button 
                         size="sm" 
