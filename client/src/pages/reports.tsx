@@ -999,7 +999,7 @@ export default function Reports() {
     currentRow += 2;
     worksheet.mergeCells(`A${currentRow}:I${currentRow}`);
     const footerCell = worksheet.getCell(`A${currentRow}`);
-    footerCell.value = `تم إنشاء هذا التقرير بواسطة نظام إدارة مشاريع البناء | ${formatDate(new Date().toISOString().split('T')[0])} | ${new Date().toLocaleTimeString('ar-SA')}`;
+    footerCell.value = `تم إنشاء هذا التقرير بواسطة نظام إدارة مشاريع البناء | ${formatDate(new Date().toISOString().split('T')[0])} | ${new Date().toLocaleTimeString('en-GB', { hour12: false })}`;
     footerCell.font = { name: 'Arial', size: 10, italic: true };
     footerCell.alignment = { horizontal: 'center', vertical: 'middle' };
     footerCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFf1f5f9' } };
@@ -1116,11 +1116,11 @@ export default function Reports() {
 
       // دالة تنسيق التاريخ بالإنجليزية
       const formatDateEN = (dateStr: string) => {
-        return new Date(dateStr).toLocaleDateString('en-US', {
-          year: 'numeric',
-          month: '2-digit',
-          day: '2-digit',
-        });
+        const date = new Date(dateStr);
+        const day = date.getDate().toString().padStart(2, '0');
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}/${month}/${year}`;
       };
 
       // دالة تنسيق العملة بالأرقام الإنجليزية
@@ -1360,7 +1360,7 @@ export default function Reports() {
         // إعداد البيانات المفصلة
         row.getCell(1).value = index + 1;
         row.getCell(2).value = formatDateEN(record.date);
-        row.getCell(3).value = new Date(record.date).toLocaleDateString('en-US', { weekday: 'short' });
+        row.getCell(3).value = new Date(record.date).toLocaleDateString('en-GB', { weekday: 'short' });
         row.getCell(4).value = record.workDescription || 'عمل يومي حسب متطلبات المشروع';
         row.getCell(5).value = `${daysIcon} ${daysDescription}`;
         row.getCell(6).value = record.startTime && record.endTime ? 
@@ -1650,7 +1650,7 @@ export default function Reports() {
       // تذييل معلومات النظام المدمج
       worksheet.mergeCells(`A${currentRow}:L${currentRow}`);
       const footerCell = worksheet.getCell(`A${currentRow}`);
-      footerCell.value = `🏗️ نظام إدارة مشاريع البناء المتطور | ${formatDateEN(new Date().toISOString().split('T')[0])} ${new Date().toLocaleTimeString('en-US')} | تقرير احترافي A4`;
+      footerCell.value = `🏗️ نظام إدارة مشاريع البناء المتطور | ${formatDateEN(new Date().toISOString().split('T')[0])} ${new Date().toLocaleTimeString('en-GB', { hour12: false })} | تقرير احترافي A4`;
       footerCell.font = { name: 'Arial', size: 8, italic: true, color: { argb: 'FF6b7280' } };
       footerCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
       footerCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFf8fafc' } };
