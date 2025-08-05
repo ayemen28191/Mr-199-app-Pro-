@@ -1,6 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { authSystem } from "./auth-system";
+import { backupSystem } from "./backup-system";
 import { 
   insertProjectSchema, insertWorkerSchema, insertFundTransferSchema, 
   insertWorkerAttendanceSchema, insertMaterialSchema, insertMaterialPurchaseSchema,
@@ -2446,6 +2448,114 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error getting stats summary:", error);
       res.status(500).json({ message: "Error retrieving system statistics" });
+    }
+  });
+
+  // مسارات المصادقة والمستخدمين  
+  app.post("/api/auth/register", async (req, res) => {
+    try {
+      const { email, password, firstName, lastName, role = 'admin' } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'الإيميل وكلمة المرور مطلوبان' 
+        });
+      }
+
+      const result = await authSystem.register({
+        email,
+        firstName,
+        lastName,
+        role,
+        isActive: true
+      }, password);
+
+      res.json(result);
+    } catch (error) {
+      console.error('خطأ في التسجيل:', error);  
+      res.status(500).json({ 
+        success: false, 
+        message: 'خطأ في إنشاء الحساب' 
+      });
+    }
+  });
+
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      
+      if (!email || !password) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'الإيميل وكلمة المرور مطلوبان' 
+        });
+      }
+
+      const result = await authSystem.login(email, password);
+      
+      if (result.success && result.user) {
+        // إنشاء session
+        (req.session as any).auth = authSystem.createSession(result.user);
+      }
+
+      res.json(result);
+    } catch (error) {
+      console.error('خطأ في تسجيل الدخول:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'خطأ في تسجيل الدخول' 
+      });
+    }
+  });
+
+  app.post("/api/auth/logout", (req, res) => {
+    req.session.destroy((err) => {
+      if (err) {
+        return res.status(500).json({ 
+          success: false, 
+          message: 'خطأ في تسجيل الخروج' 
+        });
+      }
+      res.json({ success: true, message: 'تم تسجيل الخروج بنجاح' });
+    });
+  });
+
+  app.get("/api/auth/me", (req, res) => {
+    const user = authSystem.getCurrentUser(req);
+    if (user) {
+      res.json({ success: true, user });
+    } else {
+      res.status(401).json({ 
+        success: false, 
+        message: 'غير مسجل دخول' 
+      });
+    }
+  });
+
+  // مسارات النسخ الاحتياطي
+  app.post("/api/backup/create", async (req, res) => {
+    try {
+      const result = await backupSystem.createFullBackup();
+      res.json(result);
+    } catch (error) {
+      console.error('خطأ في إنشاء النسخة الاحتياطية:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'خطأ في إنشاء النسخة الاحتياطية' 
+      });
+    }
+  });
+
+  app.get("/api/backup/list", async (req, res) => {
+    try {
+      const backups = await backupSystem.getBackupsList();
+      res.json({ success: true, backups });
+    } catch (error) {
+      res.status(500).json({ 
+        success: false, 
+        message: 'خطأ في جلب قائمة النسخ الاحتياطية' 
+      });
     }
   });
 

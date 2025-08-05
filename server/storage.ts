@@ -780,9 +780,19 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createMaterialPurchase(purchase: InsertMaterialPurchase): Promise<MaterialPurchase> {
+    // تحويل الأرقام إلى strings حسب schema
+    const purchaseData = {
+      ...purchase,
+      quantity: purchase.quantity.toString(),
+      unitPrice: purchase.unitPrice.toString(),
+      totalAmount: purchase.totalAmount.toString(),
+      paidAmount: purchase.paidAmount.toString(),
+      remainingAmount: purchase.remainingAmount.toString()
+    };
+    
     const [newPurchase] = await db
       .insert(materialPurchases)
-      .values(purchase)
+      .values(purchaseData)
       .returning();
     
     // تحديث الملخص اليومي في الخلفية (دون انتظار) لتحسين الأداء
@@ -795,9 +805,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateMaterialPurchase(id: string, purchase: Partial<InsertMaterialPurchase>): Promise<MaterialPurchase | undefined> {
+    // تحويل الأرقام إلى strings إذا كانت موجودة
+    const purchaseData: any = { ...purchase };
+    if (purchaseData.quantity !== undefined) purchaseData.quantity = purchaseData.quantity.toString();
+    if (purchaseData.unitPrice !== undefined) purchaseData.unitPrice = purchaseData.unitPrice.toString();
+    if (purchaseData.totalAmount !== undefined) purchaseData.totalAmount = purchaseData.totalAmount.toString();
+    if (purchaseData.paidAmount !== undefined) purchaseData.paidAmount = purchaseData.paidAmount.toString();
+    if (purchaseData.remainingAmount !== undefined) purchaseData.remainingAmount = purchaseData.remainingAmount.toString();
+    
     const [updated] = await db
       .update(materialPurchases)
-      .set(purchase)
+      .set(purchaseData)
       .where(eq(materialPurchases.id, id))
       .returning();
     return updated || undefined;

@@ -1,8 +1,10 @@
 import express, { type Request, Response, NextFunction } from "express";
+import session from "express-session";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { databaseManager } from "./database-manager";
 import { databaseTester } from "./database-tester";
+import { backupSystem } from "./backup-system";
 import { exec } from "child_process";
 import { promisify } from "util";
 
@@ -11,6 +13,21 @@ const execAsync = promisify(exec);
 const app = express();
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: false, limit: '50mb' }));
+
+// إعداد session للمصادقة
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'construction-management-secret-key-2025',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production' && process.env.HTTPS === 'true',
+    httpOnly: true,
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
+
+// نظام تسجيل محسن للإنتاج
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -27,12 +44,18 @@ app.use((req, res, next) => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+      
+      // في الإنتاج: لا نعرض response body إلا للأخطاء
+      if (!IS_PRODUCTION || res.statusCode >= 400) {
+        if (capturedJsonResponse) {
+          const responseStr = JSON.stringify(capturedJsonResponse);
+          logLine += ` :: ${responseStr.length > 100 ? responseStr.slice(0, 97) + "..." : responseStr}`;
+        }
       }
 
-      if (logLine.length > 80) {
-        logLine = logLine.slice(0, 79) + "…";
+      // تقصير الرسائل الطويلة
+      if (logLine.length > 120) {
+        logLine = logLine.slice(0, 117) + "…";
       }
 
       log(logLine);
@@ -86,6 +109,10 @@ app.use((req, res, next) => {
         const { ComprehensiveTestReporter } = await import('./comprehensive-test-report');
         const report = ComprehensiveTestReporter.generateFullReport();
         ComprehensiveTestReporter.printFormattedReport(report);
+        
+        // تفعيل النسخ الاحتياطي التلقائي
+        log("📁 تفعيل نظام النسخ الاحتياطي التلقائي...");
+        backupSystem.scheduleAutoBackup(24); // كل 24 ساعة
       } else {
         log("⚠️ مشكلة في العمليات الأساسية على Supabase: " + testResult.message);
       }
