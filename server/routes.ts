@@ -46,28 +46,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get projects with statistics - محسن وبسيط
+  // Get projects with statistics - مع إحصائيات حقيقية
   app.get("/api/projects/with-stats", async (req, res) => {
     try {
       const projects = await storage.getProjects();
       
-      // إضافة إحصائيات أساسية لكل مشروع باستخدام دوال storage الموجودة
+      // إضافة إحصائيات حقيقية لكل مشروع
       const projectsWithStats = await Promise.all(
         projects.map(async (project) => {
-          // نعيد المشروع مع إحصائيات افتراضية - لا نستدعي دالة getProjectStatistics المعطلة حالياً
-          return {
-            ...project,
-            stats: {
-              totalWorkers: 0,
-              totalExpenses: 0,
-              totalIncome: 0,
-              currentBalance: 0,
-              activeWorkers: 0,
-              completedDays: 0,
-              materialPurchases: 0,
-              lastActivity: new Date().toISOString().split('T')[0]
-            }
-          };
+          try {
+            // استدعاء دالة getProjectStatistics لجلب الإحصائيات الحقيقية
+            const stats = await storage.getProjectStatistics(project.id);
+            return {
+              ...project,
+              stats
+            };
+          } catch (error) {
+            console.error(`Error getting stats for project ${project.id}:`, error);
+            // في حالة الخطأ، نعيد إحصائيات افتراضية
+            return {
+              ...project,
+              stats: {
+                totalWorkers: 0,
+                totalExpenses: 0,
+                totalIncome: 0,
+                currentBalance: 0,
+                activeWorkers: 0,
+                completedDays: 0,
+                materialPurchases: 0,
+                lastActivity: new Date().toISOString().split('T')[0]
+              }
+            };
+          }
         })
       );
       
@@ -2478,11 +2488,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const result = await authSystem.register({
         email,
+        password,
         firstName,
         lastName,
         role,
         isActive: true
-      }, password);
+      });
 
       res.json(result);
     } catch (error) {
