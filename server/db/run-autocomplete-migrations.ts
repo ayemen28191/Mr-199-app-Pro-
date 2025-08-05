@@ -40,20 +40,40 @@ export async function runAutocompleteIndexMigration(): Promise<void> {
       ON autocomplete_data (created_at, category)
     `);
 
-    // محاولة إضافة قيد فريد لمنع التكرار (قد يفشل إذا كان هناك بيانات مكررة)
+    // محاولة إضافة قيد فريد لمنع التكرار (مع معالجة أفضل للأخطاء)
     try {
-      await db.execute(sql`
-        ALTER TABLE autocomplete_data 
-        ADD CONSTRAINT uk_autocomplete_category_value 
-        UNIQUE (category, value)
+      // أولاً: التحقق من وجود القيد
+      const constraintCheck = await db.execute(sql`
+        SELECT constraint_name 
+        FROM information_schema.table_constraints 
+        WHERE table_name = 'autocomplete_data' 
+        AND constraint_type = 'UNIQUE' 
+        AND constraint_name = 'uk_autocomplete_category_value'
       `);
-      console.log('✅ تم إضافة القيد الفريد بنجاح');
-    } catch (error: any) {
-      if (error.message?.includes('already exists') || error.message?.includes('duplicate')) {
-        console.log('⚠️ القيد الفريد موجود مسبقاً أو يوجد بيانات مكررة');
+      
+      if (constraintCheck.rowCount === 0) {
+        // حذف البيانات المكررة أولاً
+        await db.execute(sql`
+          DELETE FROM autocomplete_data 
+          WHERE id NOT IN (
+            SELECT MIN(id) 
+            FROM autocomplete_data 
+            GROUP BY category, value
+          )
+        `);
+        
+        // ثم إضافة القيد الفريد
+        await db.execute(sql`
+          ALTER TABLE autocomplete_data 
+          ADD CONSTRAINT uk_autocomplete_category_value 
+          UNIQUE (category, value)
+        `);
+        console.log('✅ تم إضافة القيد الفريد بنجاح بعد حذف البيانات المكررة');
       } else {
-        console.log('⚠️ لم يتم إضافة القيد الفريد:', error.message);
+        console.log('✅ القيد الفريد موجود مسبقاً');
       }
+    } catch (error: any) {
+      console.log('⚠️ تم تخطي إضافة القيد الفريد:', error.message?.slice(0, 100));
     }
 
     // إضافة تعليقات للجدول والأعمدة

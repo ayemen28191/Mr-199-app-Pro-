@@ -70,12 +70,16 @@ app.use((req, res, next) => {
           const { runAutocompleteIndexMigration } = await import("./db/run-autocomplete-migrations");
           await runAutocompleteIndexMigration();
           
+          // بدء جدولة صيانة النظام
+          log("🕒 بدء جدولة صيانة نظام الإكمال التلقائي...");
           const { autocompleteScheduler } = await import("./autocomplete-scheduler");
           autocompleteScheduler.startScheduledMaintenance();
+          log("✅ تم تفعيل جدولة الصيانة الدورية");
           
           log("✅ تم تحسين نظام الإكمال التلقائي بنجاح");
         } catch (error) {
           log("⚠️ تحذير: فشل في تحسين نظام الإكمال التلقائي - سيعمل النظام بالوضع العادي");
+          console.log("🔍 تفاصيل الخطأ:", error);
         }
         
         // استيراد وطباعة التقرير الشامل
