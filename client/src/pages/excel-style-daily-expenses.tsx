@@ -598,13 +598,25 @@ export default function ExcelStyleDailyExpenses() {
 
                   // المشتريات
                   reportData.materialPurchases?.forEach((purchase, index) => {
-                    runningBalance -= parseFloat(purchase.totalAmount);
+                    // خصم المشتريات النقدية فقط من الرصيد - المشتريات الآجلة تظهر بدون خصم
+                    if (purchase.purchaseType === "نقد") {
+                      runningBalance -= parseFloat(purchase.totalAmount);
+                    }
+                    
+                    const isCashPurchase = purchase.purchaseType === "نقد";
+                    const rowClass = isCashPurchase ? "modern-expense-row" : "modern-deferred-row";
+                    const paymentTypeIcon = isCashPurchase ? "💵" : "⏰";
+                    const paymentTypeText = isCashPurchase ? "نقد" : "آجل";
+                    
                     rows.push(
-                      <tr key={`material-${index}`} className="modern-expense-row">
+                      <tr key={`material-${index}`} className={rowClass}>
                         <td className="amount-cell">{formatCurrency(parseFloat(purchase.totalAmount))}</td>
-                        <td>مشتريات</td>
+                        <td>مشتريات {paymentTypeIcon} {paymentTypeText}</td>
                         <td className="balance-cell">{formatCurrency(runningBalance)}</td>
-                        <td className="notes-cell">شراء {purchase.material?.name} من {purchase.supplierName}</td>
+                        <td className="notes-cell">
+                          شراء {purchase.material?.name} من {purchase.supplierName}
+                          {!isCashPurchase && " (آجل - لا يؤثر على الرصيد)"}
+                        </td>
                       </tr>
                     );
                   });

@@ -944,3 +944,32 @@
     display: none !important;
   }
 }
+
+/* تنسيق المشتريات الآجلة في التقارير */
+.modern-deferred-row {
+  background: linear-gradient(135deg, #fff4e6 0%, #fed7aa 50%, #fb923c 100%) !important;
+  border-bottom: 1px solid #fb923c !important;
+  color: #c2410c !important;
+}
+
+.modern-deferred-row td {
+  border-color: #fb923c !important;
+  color: #c2410c !important;
+}
+
+.modern-deferred-row .amount-cell {
+  background: linear-gradient(135deg, #fed7aa 0%, #fdba74 100%) !important;
+  font-weight: bold !important;
+  color: #ea580c !important;
+}
+
+.modern-deferred-row .balance-cell {
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%) !important;
+  color: #374151 !important;
+  font-style: italic !important;
+}
+
+.modern-deferred-row .notes-cell {
+  color: #92400e !important;
+  font-style: italic !important;
+}
