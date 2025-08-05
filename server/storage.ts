@@ -1441,85 +1441,50 @@ export class DatabaseStorage implements IStorage {
     lastActivity: string;
   }> {
     try {
-      // استعلام محسن واحد لحساب جميع الإحصائيات من workerAttendance
+      // استعلام محسن واحد لحساب جميع الإحصائيات في طلب واحد
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0];
       
-      const [workerStats, materialStats] = await Promise.all([
-        // استعلام واحد للعمال والأيام
-        db
-          .select({
-            totalWorkers: sql<number>`count(distinct ${workerAttendance.workerId})`,
-            activeWorkers: sql<number>`count(distinct case when ${workerAttendance.date} >= ${thirtyDaysAgoStr} then ${workerAttendance.workerId} end)`,
-            completedDays: sql<number>`count(distinct ${workerAttendance.date})`,
-            lastWorkDate: sql<string>`max(${workerAttendance.date})`
-          })
-          .from(workerAttendance)
-          .where(eq(workerAttendance.projectId, projectId)),
-        
-        // استعلام واحد للمواد
-        db
-          .select({
-            materialPurchases: sql<number>`count(*)`,
-            lastPurchaseDate: sql<string>`max(${materialPurchases.purchaseDate})`
-          })
-          .from(materialPurchases)
-          .where(eq(materialPurchases.projectId, projectId))
+      // استعلام فائق التحسين - جميع الإحصائيات والبيانات المالية في استعلام واحد
+      const [allStats] = await Promise.all([
+        db.execute(sql`
+          SELECT 
+            COALESCE(COUNT(DISTINCT wa.worker_id), 0) as total_workers,
+            COALESCE(COUNT(DISTINCT CASE WHEN wa.date >= ${thirtyDaysAgoStr} THEN wa.worker_id END), 0) as active_workers,
+            COALESCE(COUNT(DISTINCT wa.date), 0) as completed_days,
+            COALESCE(COUNT(DISTINCT mp.id), 0) as material_purchases,
+            COALESCE(MAX(wa.date), '') as last_work_date,
+            COALESCE(MAX(mp.purchase_date), '') as last_purchase_date,
+            COALESCE(
+              (SELECT CAST(remaining_balance AS NUMERIC) 
+               FROM daily_expense_summaries 
+               WHERE project_id = ${projectId} 
+               ORDER BY date DESC 
+               LIMIT 1), 0
+            ) as current_balance,
+            COALESCE(SUM(CAST(des.total_income AS NUMERIC)), 0) as total_income,
+            COALESCE(SUM(CAST(des.total_expenses AS NUMERIC)), 0) as total_expenses
+          FROM (SELECT ${projectId} as pid) p
+          LEFT JOIN worker_attendance wa ON wa.project_id = p.pid
+          LEFT JOIN material_purchases mp ON mp.project_id = p.pid  
+          LEFT JOIN daily_expense_summaries des ON des.project_id = p.pid
+        `)
       ]);
       
-      const totalWorkers = workerStats[0]?.totalWorkers || 0;
-      const activeWorkers = workerStats[0]?.activeWorkers || 0;
-      const completedDays = workerStats[0]?.completedDays || 0;
-      const materialPurchasesCount = materialStats[0]?.materialPurchases || 0;
+      const statsRow = allStats.rows[0] as any;
+      const totalWorkers = parseInt(statsRow.total_workers) || 0;
+      const activeWorkers = parseInt(statsRow.active_workers) || 0;
+      const completedDays = parseInt(statsRow.completed_days) || 0;
+      const materialPurchasesCount = parseInt(statsRow.material_purchases) || 0;
 
-      // استخدام آخر ملخص يومي للحصول على الإحصائيات الصحيحة
-      // لأن الملخص اليومي يحتوي على المبلغ المرحل والحسابات الصحيحة
-      const latestSummary = await db
-        .select()
-        .from(dailyExpenseSummaries)
-        .where(eq(dailyExpenseSummaries.projectId, projectId))
-        .orderBy(sql`${dailyExpenseSummaries.date} DESC`)
-        .limit(1);
+      // استخدام البيانات المحسوبة مسبقاً من الاستعلام الموحد
+      let totalIncome = parseFloat(statsRow.total_income) || 0;
+      let totalExpenses = parseFloat(statsRow.total_expenses) || 0;
+      let currentBalance = parseFloat(statsRow.current_balance) || 0;
 
-      let totalIncome = 0;
-      let totalExpenses = 0;
-      let currentBalance = 0;
-
-      if (latestSummary.length > 0) {
-        // حساب سريع باستخدام استعلام محسن واحد بدلاً من استعلامات متعددة
-        const summaryStats = await db
-          .select({
-            totalIncome: sql<number>`COALESCE(SUM(CAST(${dailyExpenseSummaries.totalIncome} AS NUMERIC)), 0)`,
-            totalExpenses: sql<number>`COALESCE(SUM(CAST(${dailyExpenseSummaries.totalExpenses} AS NUMERIC)), 0)`,
-            totalCarried: sql<number>`COALESCE(SUM(CAST(${dailyExpenseSummaries.carriedForwardAmount} AS NUMERIC)), 0)`,
-            lastBalance: sql<number>`(
-              SELECT COALESCE(CAST(remaining_balance AS NUMERIC), 0) 
-              FROM daily_expense_summaries 
-              WHERE project_id = ${projectId} 
-              ORDER BY date DESC 
-              LIMIT 1
-            )`
-          })
-          .from(dailyExpenseSummaries)
-          .where(eq(dailyExpenseSummaries.projectId, projectId));
-
-        const stats = summaryStats[0];
-        totalIncome = stats?.totalIncome || 0;
-        totalExpenses = stats?.totalExpenses || 0;
-        currentBalance = stats?.lastBalance || 0;
-        
-        // تقليل رسائل console للإنتاج - إزالة التفاصيل المطولة
-        if (process.env.NODE_ENV === 'development') {
-          console.log(`📊 Project ${projectId} Statistics (cumulative from all summaries):`);
-          console.log(`   🏦 Initial Carried Amount: ${totalCarriedForward.toLocaleString()}`);
-          console.log(`   💰 Total Fund Transfers: ${totalFundTransfersAccumulated.toLocaleString()}`);
-          console.log(`   💰 Total Income (Carried + Transfers): ${totalIncome.toLocaleString()}`);
-          console.log(`   💸 Total Expenses: ${totalExpenses.toLocaleString()}`);
-          console.log(`   🏦 Current Balance: ${currentBalance.toLocaleString()}`);
-          console.log(`   📅 From ${allSummaries[0]?.date} to ${allSummaries[allSummaries.length - 1]?.date}`);
-        }
-      } else {
+      // إذا لم توجد ملخصات يومية، احسب من البيانات الخام
+      if (totalIncome === 0 && totalExpenses === 0) {
         // في حالة عدم وجود ملخص يومي، احسب من البيانات الخام (بدون مبلغ مرحل)
         const fundTransfersSum = await db
           .select({ sum: sql<number>`COALESCE(SUM(CAST(${fundTransfers.amount} AS NUMERIC)), 0)` })
@@ -1577,10 +1542,18 @@ export class DatabaseStorage implements IStorage {
         }
       }
 
-      // استخدام التواريخ المحسوبة مسبقاً من الاستعلامات المحسنة
+      // تقليل رسائل console للإنتاج
+      if (process.env.NODE_ENV === 'development') {
+        console.log(`📊 Project ${projectId} Statistics (optimized calculation):`);
+        console.log(`   💰 Total Income: ${totalIncome.toLocaleString()}`);
+        console.log(`   💸 Total Expenses: ${totalExpenses.toLocaleString()}`);
+        console.log(`   🏦 Current Balance: ${currentBalance.toLocaleString()}`);
+      }
+
+      // استخدام التواريخ المحسوبة مسبقاً من الاستعلام الموحد
       const dates = [
-        workerStats[0]?.lastWorkDate,
-        materialStats[0]?.lastPurchaseDate
+        statsRow.last_work_date,
+        statsRow.last_purchase_date
       ].filter(date => date);
 
       const lastActivity = dates.length > 0 
