@@ -87,7 +87,7 @@ export class BackupSystem {
       for (const worker of workers) {
         const balance = await storage.getWorkerBalance(worker.id, "");
         const transfers = await storage.getWorkerTransfers(worker.id, "");
-        const miscExpenses = await storage.getWorkerMiscExpenses(worker.id);
+        const miscExpenses = await storage.getWorkerMiscExpenses(worker.id, "");
         
         if (balance) workerBalances.push(balance);
         workerTransfers.push(...transfers);
