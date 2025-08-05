@@ -1556,10 +1556,13 @@ export class DatabaseStorage implements IStorage {
             .from(workerAttendance)
             .where(eq(workerAttendance.projectId, projectId)),
           
-          // تكلفة المواد
+          // تكلفة المواد النقدية فقط - المشتريات الآجلة لا تُحسب في الإحصائيات
           db.select({ sum: sql<number>`COALESCE(SUM(CAST(${materialPurchases.totalAmount} AS NUMERIC)), 0)` })
             .from(materialPurchases)
-            .where(eq(materialPurchases.projectId, projectId)),
+            .where(and(
+              eq(materialPurchases.projectId, projectId),
+              eq(materialPurchases.purchaseType, 'نقد')
+            )),
           
           // مصاريف النقل
           db.select({ sum: sql<number>`COALESCE(SUM(CAST(${transportationExpenses.amount} AS NUMERIC)), 0)` })
