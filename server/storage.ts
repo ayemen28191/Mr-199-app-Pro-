@@ -1459,56 +1459,52 @@ export class DatabaseStorage implements IStorage {
     lastActivity: string;
   }> {
     try {
-      // تنفيذ مباشر وسريع للإحصائيات الأساسية
-      const [latestSummary, workerCount, dayCount, materialCount] = await Promise.all([
-        // آخر ملخص مالي
-        db.select()
-          .from(dailyExpenseSummaries)
-          .where(eq(dailyExpenseSummaries.projectId, projectId))
-          .orderBy(sql`${dailyExpenseSummaries.date} DESC`)
-          .limit(1),
-        
-        // عدد العمال المختلفين
-        db.execute(sql`
-          SELECT COUNT(DISTINCT worker_id) as count
-          FROM worker_attendance 
+      // استعلام SQL محسن واحد لجلب جميع الإحصائيات
+      const result = await db.execute(sql`
+        WITH project_stats AS (
+          SELECT 
+            -- إحصائيات العمال والحضور
+            COALESCE(COUNT(DISTINCT wa.worker_id), 0) as total_workers,
+            COALESCE(COUNT(DISTINCT wa.date), 0) as completed_days,
+            -- إحصائيات المواد
+            COALESCE(COUNT(DISTINCT mp.id), 0) as material_purchases
+          FROM worker_attendance wa
+          FULL OUTER JOIN material_purchases mp ON wa.project_id = mp.project_id
+          WHERE COALESCE(wa.project_id, mp.project_id) = ${projectId}
+        ),
+        financial_stats AS (
+          SELECT 
+            COALESCE(total_income, '0') as total_income,
+            COALESCE(total_expenses, '0') as total_expenses,
+            COALESCE(remaining_balance, '0') as current_balance
+          FROM daily_expense_summaries 
           WHERE project_id = ${projectId}
-        `),
-        
-        // عدد أيام العمل
-        db.execute(sql`
-          SELECT COUNT(DISTINCT date) as count
-          FROM worker_attendance 
-          WHERE project_id = ${projectId}
-        `),
-        
-        // عدد المواد المختلفة
-        db.execute(sql`
-          SELECT COUNT(DISTINCT material_id) as count
-          FROM material_purchases 
-          WHERE project_id = ${projectId}
-        `)
-      ]);
+          ORDER BY date DESC 
+          LIMIT 1
+        )
+        SELECT 
+          ps.total_workers,
+          ps.completed_days,
+          ps.material_purchases,
+          COALESCE(fs.total_income, '0') as total_income,
+          COALESCE(fs.total_expenses, '0') as total_expenses,
+          COALESCE(fs.current_balance, '0') as current_balance
+        FROM project_stats ps
+        CROSS JOIN (SELECT 1) dummy
+        LEFT JOIN financial_stats fs ON true
+      `);
 
-      const result = {
-        total_workers: (workerCount.rows[0] as any)?.count || 0,
-        completed_days: (dayCount.rows[0] as any)?.count || 0,
-        material_purchases: (materialCount.rows[0] as any)?.count || 0,
-        total_expenses: parseFloat(latestSummary[0]?.totalExpenses || '0'),
-        total_income: parseFloat(latestSummary[0]?.totalIncome || '0'),
-        current_balance: parseFloat(latestSummary[0]?.remainingBalance || '0'),
-        last_activity: new Date().toISOString().split('T')[0]
-      };
+      const row = result.rows[0] as any;
       
       return {
-        totalWorkers: parseInt(result.total_workers || '0'),
-        totalExpenses: parseFloat(result.total_expenses || '0'),
-        totalIncome: parseFloat(result.total_income || '0'),
-        currentBalance: parseFloat(result.current_balance || '0'),
-        activeWorkers: parseInt(result.total_workers || '0'), // افتراض أن جميع العمال نشطين
-        completedDays: parseInt(result.completed_days || '0'),
-        materialPurchases: parseInt(result.material_purchases || '0'),
-        lastActivity: result.last_activity || new Date().toISOString().split('T')[0]
+        totalWorkers: parseInt(row?.total_workers || '0'),
+        totalExpenses: parseFloat(row?.total_expenses || '0'),
+        totalIncome: parseFloat(row?.total_income || '0'),
+        currentBalance: parseFloat(row?.current_balance || '0'),
+        activeWorkers: parseInt(row?.total_workers || '0'), // نفترض أن جميع العمال نشطين
+        completedDays: parseInt(row?.completed_days || '0'),
+        materialPurchases: parseInt(row?.material_purchases || '0'),
+        lastActivity: new Date().toISOString().split('T')[0]
       };
     } catch (error) {
       console.error('Error getting project statistics:', error);
