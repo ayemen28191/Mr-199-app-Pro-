@@ -1459,39 +1459,57 @@ export class DatabaseStorage implements IStorage {
     lastActivity: string;
   }> {
     try {
-      // استعلام SQL محسن واحد لجلب جميع الإحصائيات
+      // استعلام SQL محسن لجلب الإحصائيات الكلية (وليس اليومية)
       const result = await db.execute(sql`
         WITH project_stats AS (
           SELECT 
-            -- إحصائيات العمال والحضور
             COALESCE(COUNT(DISTINCT wa.worker_id), 0) as total_workers,
             COALESCE(COUNT(DISTINCT wa.date), 0) as completed_days,
-            -- إحصائيات المواد
             COALESCE(COUNT(DISTINCT mp.id), 0) as material_purchases
           FROM worker_attendance wa
           FULL OUTER JOIN material_purchases mp ON wa.project_id = mp.project_id
           WHERE COALESCE(wa.project_id, mp.project_id) = ${projectId}
         ),
-        financial_stats AS (
+        total_income_stats AS (
           SELECT 
-            COALESCE(total_income, '0') as total_income,
-            COALESCE(total_expenses, '0') as total_expenses,
-            COALESCE(remaining_balance, '0') as current_balance
-          FROM daily_expense_summaries 
-          WHERE project_id = ${projectId}
-          ORDER BY date DESC 
-          LIMIT 1
+            -- إجمالي الدخل من تحويلات العهدة
+            COALESCE(SUM(CAST(ft.amount AS DECIMAL)), 0) as fund_transfers_income,
+            -- إجمالي الدخل من التحويلات بين المشاريع (المشروع كمستقبل)
+            COALESCE(SUM(CAST(pft_in.amount AS DECIMAL)), 0) as project_transfers_in
+          FROM (SELECT 1) dummy
+          LEFT JOIN fund_transfers ft ON ft.project_id = ${projectId}
+          LEFT JOIN project_fund_transfers pft_in ON pft_in.to_project_id = ${projectId}
+        ),
+        total_expense_stats AS (
+          SELECT 
+            -- إجمالي الأجور
+            COALESCE(SUM(CAST(wa.actual_wage AS DECIMAL)), 0) as total_wages,
+            -- إجمالي المواد
+            COALESCE(SUM(CAST(mp.total_amount AS DECIMAL)), 0) as total_materials,
+            -- إجمالي النقل
+            COALESCE(SUM(CAST(te.amount AS DECIMAL)), 0) as total_transport,
+            -- إجمالي مصاريف العمال المتنوعة
+            COALESCE(SUM(CAST(wme.amount AS DECIMAL)), 0) as total_misc,
+            -- إجمالي التحويلات من المشروع
+            COALESCE(SUM(CAST(pft_out.amount AS DECIMAL)), 0) as project_transfers_out
+          FROM (SELECT 1) dummy
+          LEFT JOIN worker_attendance wa ON wa.project_id = ${projectId}
+          LEFT JOIN material_purchases mp ON mp.project_id = ${projectId}
+          LEFT JOIN transportation_expenses te ON te.project_id = ${projectId}
+          LEFT JOIN worker_misc_expenses wme ON wme.project_id = ${projectId}
+          LEFT JOIN project_fund_transfers pft_out ON pft_out.from_project_id = ${projectId}
         )
         SELECT 
           ps.total_workers,
           ps.completed_days,
           ps.material_purchases,
-          COALESCE(fs.total_income, '0') as total_income,
-          COALESCE(fs.total_expenses, '0') as total_expenses,
-          COALESCE(fs.current_balance, '0') as current_balance
+          (ti.fund_transfers_income + ti.project_transfers_in) as total_income,
+          (te.total_wages + te.total_materials + te.total_transport + te.total_misc + te.project_transfers_out) as total_expenses,
+          (ti.fund_transfers_income + ti.project_transfers_in) - 
+          (te.total_wages + te.total_materials + te.total_transport + te.total_misc + te.project_transfers_out) as current_balance
         FROM project_stats ps
-        CROSS JOIN (SELECT 1) dummy
-        LEFT JOIN financial_stats fs ON true
+        CROSS JOIN total_income_stats ti
+        CROSS JOIN total_expense_stats te
       `);
 
       const row = result.rows[0] as any;
