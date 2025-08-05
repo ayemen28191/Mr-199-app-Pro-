@@ -45,19 +45,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get projects with statistics
+  // Get projects with statistics - محسن للأداء العالي
   app.get("/api/projects/with-stats", async (req, res) => {
     try {
       const projects = await storage.getProjects();
-      const projectsWithStats = await Promise.all(
-        projects.map(async (project) => {
-          const stats = await storage.getProjectStatistics(project.id);
-          return {
-            ...project,
-            stats
-          };
-        })
-      );
+      
+      // استعلام واحد محسن لجميع الإحصائيات
+      const statsQuery = await db.execute(sql`
+        SELECT 
+          p.id as project_id,
+          COALESCE(worker_stats.worker_count, 0) as total_workers,
+          COALESCE(day_stats.day_count, 0) as completed_days,
+          COALESCE(material_stats.material_count, 0) as material_purchases,
+          COALESCE(summary.total_expenses::numeric, 0) as total_expenses,
+          COALESCE(summary.total_income::numeric, 0) as total_income,
+          COALESCE(summary.remaining_balance::numeric, 0) as current_balance
+        FROM projects p
+        LEFT JOIN (
+          SELECT project_id, COUNT(DISTINCT worker_id) as worker_count
+          FROM worker_attendance 
+          GROUP BY project_id
+        ) worker_stats ON p.id = worker_stats.project_id
+        LEFT JOIN (
+          SELECT project_id, COUNT(DISTINCT date) as day_count
+          FROM worker_attendance 
+          GROUP BY project_id
+        ) day_stats ON p.id = day_stats.project_id
+        LEFT JOIN (
+          SELECT project_id, COUNT(DISTINCT material_id) as material_count
+          FROM material_purchases 
+          GROUP BY project_id
+        ) material_stats ON p.id = material_stats.project_id
+        LEFT JOIN (
+          SELECT DISTINCT ON (project_id) 
+            project_id, total_expenses, total_income, remaining_balance
+          FROM daily_expense_summaries
+          ORDER BY project_id, date DESC
+        ) summary ON p.id = summary.project_id
+      `);
+      
+      // ربط الإحصائيات بالمشاريع
+      const statsMap = new Map();
+      (statsQuery.rows as any[]).forEach(row => {
+        statsMap.set(row.project_id, {
+          totalWorkers: parseInt(row.total_workers) || 0,
+          totalExpenses: parseFloat(row.total_expenses) || 0,
+          totalIncome: parseFloat(row.total_income) || 0,
+          currentBalance: parseFloat(row.current_balance) || 0,
+          activeWorkers: parseInt(row.total_workers) || 0,
+          completedDays: parseInt(row.completed_days) || 0,
+          materialPurchases: parseInt(row.material_purchases) || 0,
+          lastActivity: new Date().toISOString().split('T')[0]
+        });
+      });
+
+      const projectsWithStats = projects.map(project => ({
+        ...project,
+        stats: statsMap.get(project.id) || {
+          totalWorkers: 0,
+          totalExpenses: 0,
+          totalIncome: 0,
+          currentBalance: 0,
+          activeWorkers: 0,
+          completedDays: 0,
+          materialPurchases: 0,
+          lastActivity: new Date().toISOString().split('T')[0]
+        }
+      }));
+      
       res.json(projectsWithStats);
     } catch (error) {
       console.error("Error fetching projects with stats:", error);
@@ -2469,7 +2524,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         lastName,
         role,
         isActive: true
-      } as any, password);
+      }, password);
 
       res.json(result);
     } catch (error) {

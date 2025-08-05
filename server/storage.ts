@@ -1459,16 +1459,56 @@ export class DatabaseStorage implements IStorage {
     lastActivity: string;
   }> {
     try {
-      // إحصائيات ثابتة موثوقة لتجنب أخطاء SQL المعقدة
+      // تنفيذ مباشر وسريع للإحصائيات الأساسية
+      const [latestSummary, workerCount, dayCount, materialCount] = await Promise.all([
+        // آخر ملخص مالي
+        db.select()
+          .from(dailyExpenseSummaries)
+          .where(eq(dailyExpenseSummaries.projectId, projectId))
+          .orderBy(sql`${dailyExpenseSummaries.date} DESC`)
+          .limit(1),
+        
+        // عدد العمال المختلفين
+        db.execute(sql`
+          SELECT COUNT(DISTINCT worker_id) as count
+          FROM worker_attendance 
+          WHERE project_id = ${projectId}
+        `),
+        
+        // عدد أيام العمل
+        db.execute(sql`
+          SELECT COUNT(DISTINCT date) as count
+          FROM worker_attendance 
+          WHERE project_id = ${projectId}
+        `),
+        
+        // عدد المواد المختلفة
+        db.execute(sql`
+          SELECT COUNT(DISTINCT material_id) as count
+          FROM material_purchases 
+          WHERE project_id = ${projectId}
+        `)
+      ]);
+
+      const result = {
+        total_workers: (workerCount.rows[0] as any)?.count || 0,
+        completed_days: (dayCount.rows[0] as any)?.count || 0,
+        material_purchases: (materialCount.rows[0] as any)?.count || 0,
+        total_expenses: parseFloat(latestSummary[0]?.totalExpenses || '0'),
+        total_income: parseFloat(latestSummary[0]?.totalIncome || '0'),
+        current_balance: parseFloat(latestSummary[0]?.remainingBalance || '0'),
+        last_activity: new Date().toISOString().split('T')[0]
+      };
+      
       return {
-        totalWorkers: 0,
-        totalExpenses: 0,
-        totalIncome: 0,
-        currentBalance: 0,
-        activeWorkers: 0,
-        completedDays: 0,
-        materialPurchases: 0,
-        lastActivity: new Date().toISOString().split('T')[0]
+        totalWorkers: parseInt(result.total_workers || '0'),
+        totalExpenses: parseFloat(result.total_expenses || '0'),
+        totalIncome: parseFloat(result.total_income || '0'),
+        currentBalance: parseFloat(result.current_balance || '0'),
+        activeWorkers: parseInt(result.total_workers || '0'), // افتراض أن جميع العمال نشطين
+        completedDays: parseInt(result.completed_days || '0'),
+        materialPurchases: parseInt(result.material_purchases || '0'),
+        lastActivity: result.last_activity || new Date().toISOString().split('T')[0]
       };
     } catch (error) {
       console.error('Error getting project statistics:', error);
