@@ -544,19 +544,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/material-purchases", async (req, res) => {
     try {
-      // التحقق من البيانات المطلوبة
+      // التحقق من البيانات المطلوبة مع رسائل تفصيلية
       const { materialName, materialCategory, materialUnit, ...purchaseData } = req.body;
       
-      if (!materialName || !materialUnit) {
-        return res.status(400).json({ message: "اسم المادة ووحدة القياس مطلوبان" });
+      // التحقق من البيانات الأساسية بشكل تفصيلي
+      const validationErrors = [];
+      
+      if (!materialName || materialName.trim() === '') {
+        validationErrors.push("اسم المادة مطلوب");
       }
       
-      if (!purchaseData.quantity || !purchaseData.unitPrice) {
-        return res.status(400).json({ message: "الكمية وسعر الوحدة مطلوبان" });
+      if (!materialUnit || materialUnit.trim() === '') {
+        validationErrors.push("وحدة القياس مطلوبة");
       }
       
-      if (!purchaseData.projectId) {
-        return res.status(400).json({ message: "يجب اختيار مشروع" });
+      if (!purchaseData.quantity || isNaN(Number(purchaseData.quantity)) || Number(purchaseData.quantity) <= 0) {
+        validationErrors.push("يجب إدخال كمية صحيحة أكبر من صفر");
+      }
+      
+      if (!purchaseData.unitPrice || isNaN(Number(purchaseData.unitPrice)) || Number(purchaseData.unitPrice) <= 0) {
+        validationErrors.push("يجب إدخال سعر وحدة صحيح أكبر من صفر");
+      }
+      
+      if (!purchaseData.projectId || purchaseData.projectId.trim() === '') {
+        validationErrors.push("يجب اختيار مشروع");
+      }
+      
+      if (!purchaseData.purchaseDate) {
+        validationErrors.push("تاريخ الشراء مطلوب");
+      }
+      
+      if (validationErrors.length > 0) {
+        return res.status(400).json({ 
+          message: "يرجى إصلاح الأخطاء التالية:",
+          details: validationErrors,
+          validationErrors: validationErrors
+        });
       }
       
       // Create or find the material first
@@ -578,16 +601,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         remainingAmount: purchaseData.purchaseType === "آجل" ? purchaseData.totalAmount : 0,
       };
       
-      console.log("Schema validation for data:", JSON.stringify(purchaseDataWithMaterialId, null, 2));
       const result = insertMaterialPurchaseSchema.safeParse(purchaseDataWithMaterialId);
       if (!result.success) {
-        console.log("Validation errors:", result.error.issues);
-        const errorMessages = result.error.issues.map(issue => 
-          `${issue.path.join('.')}: ${issue.message}`
-        ).join(', ');
+        console.log("Schema validation errors:", result.error.issues);
+        const userFriendlyErrors = result.error.issues.map(issue => {
+          const field = issue.path.join('.');
+          switch(field) {
+            case 'quantity': return 'الكمية يجب أن تكون رقم موجب';
+            case 'unitPrice': return 'سعر الوحدة يجب أن يكون رقم موجب';
+            case 'totalAmount': return 'المبلغ الإجمالي غير صحيح';
+            case 'paidAmount': return 'المبلغ المدفوع غير صحيح';
+            case 'remainingAmount': return 'المبلغ المتبقي غير صحيح';
+            case 'projectId': return 'يجب اختيار مشروع صحيح';
+            case 'materialId': return 'معرف المادة غير صحيح';
+            case 'purchaseDate': return 'تاريخ الشراء غير صحيح';
+            case 'purchaseType': return 'نوع الشراء يجب أن يكون "نقد" أو "آجل"';
+            default: return `خطأ في الحقل ${field}: ${issue.message}`;
+          }
+        });
+        
         return res.status(400).json({ 
-          message: `بيانات غير صحيحة: ${errorMessages}`,
-          errors: result.error.issues 
+          message: "يرجى إصلاح الأخطاء التالية:",
+          details: userFriendlyErrors,
+          validationErrors: userFriendlyErrors
         });
       }
       
@@ -596,16 +632,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error creating material purchase:", error);
       
-      // التحقق من نوع الخطأ وإرجاع رسالة مناسبة
+      // التحقق من نوع الخطأ وإرجاع رسالة مناسبة ومفصلة
       if (error.code === '23505') {
-        return res.status(400).json({ message: "يوجد مشترى مكرر بنفس البيانات" });
+        const constraintName = error.constraint || '';
+        if (constraintName.includes('invoice')) {
+          return res.status(400).json({ 
+            message: "رقم الفاتورة مستخدم مسبقاً",
+            details: ["يرجى استخدام رقم فاتورة مختلف أو تركه فارغاً"]
+          });
+        }
+        return res.status(400).json({ 
+          message: "يوجد مشترى مكرر بنفس البيانات",
+          details: ["يرجى التحقق من البيانات المدخلة"]
+        });
       }
       
       if (error.code === '23503') {
-        return res.status(400).json({ message: "المشروع المحدد غير موجود" });
+        return res.status(400).json({ 
+          message: "المشروع المحدد غير موجود",
+          details: ["يرجى اختيار مشروع صحيح من القائمة"]
+        });
       }
       
-      res.status(500).json({ message: "حدث خطأ أثناء حفظ شراء المواد" });
+      if (error.code === '23514') {
+        return res.status(400).json({ 
+          message: "قيم البيانات غير صحيحة",
+          details: ["يرجى التحقق من أن جميع الأرقام موجبة والتواريخ صحيحة"]
+        });
+      }
+      
+      // خطأ في الاتصال بقاعدة البيانات
+      if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
+        return res.status(503).json({ 
+          message: "مشكلة في الاتصال بقاعدة البيانات",
+          details: ["يرجى المحاولة مرة أخرى، إذا استمرت المشكلة تواصل مع الدعم الفني"]
+        });
+      }
+      
+      res.status(500).json({ 
+        message: "حدث خطأ غير متوقع أثناء حفظ شراء المواد",
+        details: ["يرجى المحاولة مرة أخرى، إذا استمرت المشكلة تواصل مع الدعم الفني"]
+      });
     }
   });
 

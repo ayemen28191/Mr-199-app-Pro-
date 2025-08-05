@@ -164,15 +164,34 @@ export default function MaterialPurchase() {
       
       console.error("Material purchase error:", error);
       let errorMessage = "حدث خطأ أثناء حفظ شراء المواد";
+      let errorDetails: string[] = [];
       
-      if (error?.response?.data?.message) {
-        errorMessage = error.response.data.message;
+      if (error?.response?.data) {
+        const errorData = error.response.data;
+        
+        // استخدام الرسالة والتفاصيل من الخادم
+        if (errorData.message) {
+          errorMessage = errorData.message;
+        }
+        
+        // إضافة التفاصيل إذا كانت متوفرة
+        if (errorData.details && Array.isArray(errorData.details)) {
+          errorDetails = errorData.details;
+        } else if (errorData.validationErrors && Array.isArray(errorData.validationErrors)) {
+          errorDetails = errorData.validationErrors;
+        }
       }
       
+      // تحسين عرض الرسالة مع التفاصيل
+      const fullMessage = errorDetails.length > 0 
+        ? `${errorMessage}\n\n${errorDetails.map(detail => `• ${detail}`).join('\n')}`
+        : errorMessage;
+      
       toast({
-        title: "خطأ",
-        description: errorMessage,
+        title: "خطأ في حفظ شراء المواد",
+        description: fullMessage,
         variant: "destructive",
+        duration: 8000, // وقت أطول لقراءة التفاصيل
       });
       // لا تقم بإعادة تعيين النموذج عند حدوث خطأ
     },
@@ -236,15 +255,31 @@ export default function MaterialPurchase() {
       
       console.error("Material purchase update error:", error);
       let errorMessage = "حدث خطأ أثناء تحديث شراء المواد";
+      let errorDetails: string[] = [];
       
-      if (error?.response?.data?.message) {
-        errorMessage = error.response.data.message;
+      if (error?.response?.data) {
+        const errorData = error.response.data;
+        
+        if (errorData.message) {
+          errorMessage = errorData.message;
+        }
+        
+        if (errorData.details && Array.isArray(errorData.details)) {
+          errorDetails = errorData.details;
+        } else if (errorData.validationErrors && Array.isArray(errorData.validationErrors)) {
+          errorDetails = errorData.validationErrors;
+        }
       }
       
+      const fullMessage = errorDetails.length > 0 
+        ? `${errorMessage}\n\n${errorDetails.map(detail => `• ${detail}`).join('\n')}`
+        : errorMessage;
+      
       toast({
-        title: "خطأ",
-        description: errorMessage,
+        title: "خطأ في تحديث شراء المواد",
+        description: fullMessage,
         variant: "destructive",
+        duration: 8000,
       });
       // لا تقم بإعادة تعيين النموذج عند حدوث خطأ
     }
@@ -263,15 +298,29 @@ export default function MaterialPurchase() {
     onError: (error: any) => {
       console.error("Material purchase delete error:", error);
       let errorMessage = "حدث خطأ أثناء حذف شراء المواد";
+      let errorDetails: string[] = [];
       
-      if (error?.response?.data?.message) {
-        errorMessage = error.response.data.message;
+      if (error?.response?.data) {
+        const errorData = error.response.data;
+        
+        if (errorData.message) {
+          errorMessage = errorData.message;
+        }
+        
+        if (errorData.details && Array.isArray(errorData.details)) {
+          errorDetails = errorData.details;
+        }
       }
       
+      const fullMessage = errorDetails.length > 0 
+        ? `${errorMessage}\n\n${errorDetails.map(detail => `• ${detail}`).join('\n')}`
+        : errorMessage;
+      
       toast({
-        title: "خطأ",
-        description: errorMessage,
+        title: "خطأ في حذف شراء المواد",
+        description: fullMessage,
         variant: "destructive",
+        duration: 6000,
       });
     }
   });
