@@ -9,13 +9,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Combobox } from "@/components/ui/combobox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { useSelectedProject } from "@/hooks/use-selected-project";
 import ProjectSelector from "@/components/project-selector";
 import { getCurrentDate, formatCurrency } from "@/lib/utils";
 import { AutocompleteInput } from "@/components/ui/autocomplete-input-database";
 import { apiRequest } from "@/lib/queryClient";
-import type { Material, InsertMaterialPurchase, InsertMaterial } from "@shared/schema";
+import type { Material, InsertMaterialPurchase, InsertMaterial, Supplier } from "@shared/schema";
 
 export default function MaterialPurchase() {
   const [, setLocation] = useLocation();
@@ -59,6 +60,11 @@ export default function MaterialPurchase() {
 
   const { data: materials = [] } = useQuery<Material[]>({
     queryKey: ["/api/materials"],
+  });
+
+  // جلب بيانات الموردين من قاعدة البيانات
+  const { data: suppliers = [] } = useQuery<Supplier[]>({
+    queryKey: ["/api/suppliers"],
   });
 
   // Fetch purchase data for editing
@@ -112,7 +118,9 @@ export default function MaterialPurchase() {
   const materialNames = materials.map(m => m.name);
   const materialCategories = Array.from(new Set(materials.map(m => m.category)));
   const materialUnits = Array.from(new Set(materials.map(m => m.unit)));
-  const existingSuppliers = ["متجر الإعمار", "مؤسسة البناء", "شركة المواد"]; // Will be dynamic later
+  
+  // الموردين النشطين من قاعدة البيانات
+  const activeSuppliers = suppliers.filter(supplier => supplier.isActive);
 
   const addMaterialPurchaseMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -455,12 +463,35 @@ export default function MaterialPurchase() {
             {/* Supplier/Store */}
             <div>
               <Label className="block text-sm font-medium text-foreground mb-2">اسم المورد/المحل</Label>
-              <AutocompleteInput
-                value={supplierName}
-                onChange={setSupplierName}
-                category="supplierNames"
-                placeholder="اختر أو أدخل اسم المورد..."
-              />
+              <Select value={supplierName} onValueChange={setSupplierName}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="اختر المورد..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {activeSuppliers.map((supplier) => (
+                    <SelectItem key={supplier.id} value={supplier.name}>
+                      <div className="flex flex-col items-start">
+                        <span className="font-medium">{supplier.name}</span>
+                        {supplier.contactPerson && (
+                          <span className="text-xs text-muted-foreground">
+                            جهة الاتصال: {supplier.contactPerson}
+                          </span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
+                  {activeSuppliers.length === 0 && (
+                    <SelectItem value="no-suppliers" disabled>
+                      <span className="text-muted-foreground">لا توجد موردين مسجلين</span>
+                    </SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+              {activeSuppliers.length === 0 && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  يرجى إضافة موردين أولاً من صفحة الموردين
+                </p>
+              )}
             </div>
 
             {/* Purchase Date */}
