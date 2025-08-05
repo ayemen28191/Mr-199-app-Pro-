@@ -524,8 +524,11 @@ export default function DailyExpenses() {
       (sum, expense) => sum + parseFloat(expense.amount || "0"), 
       0
     );
+    // حساب المشتريات النقدية فقط - المشتريات الآجلة لا تُخصم من الرصيد
     const totalMaterialCosts = Array.isArray(todayMaterialPurchases) ? 
-      todayMaterialPurchases.reduce((sum, purchase) => sum + parseFloat(purchase.totalAmount || "0"), 0) : 0;
+      todayMaterialPurchases
+        .filter(purchase => purchase.purchaseType === "نقد") // فلترة المشتريات النقدية فقط
+        .reduce((sum, purchase) => sum + parseFloat(purchase.totalAmount || "0"), 0) : 0;
     const totalWorkerTransfers = Array.isArray(todayWorkerTransfers) ? 
       todayWorkerTransfers.reduce((sum, transfer) => sum + parseFloat(transfer.amount || "0"), 0) : 0;
     const totalMiscExpenses = Array.isArray(todayMiscExpenses) ? 
@@ -942,11 +945,27 @@ export default function DailyExpenses() {
                 </div>
                 );
               })}
-              <div className="text-left mt-2 pt-2 border-t">
-                <span className="text-sm text-muted-foreground">إجمالي المشتريات: </span>
-                <span className="font-bold text-success arabic-numbers">
-                  {formatCurrency(totals.totalMaterialCosts)}
-                </span>
+              <div className="text-left mt-2 pt-2 border-t space-y-1">
+                <div>
+                  <span className="text-sm text-muted-foreground">المشتريات النقدية (تؤثر على الرصيد): </span>
+                  <span className="font-bold text-success arabic-numbers">
+                    {formatCurrency(totals.totalMaterialCosts)}
+                  </span>
+                </div>
+                {(() => {
+                  const deferredAmount = Array.isArray(todayMaterialPurchases) ? 
+                    todayMaterialPurchases
+                      .filter(purchase => purchase.purchaseType === "آجل")
+                      .reduce((sum, purchase) => sum + parseFloat(purchase.totalAmount || "0"), 0) : 0;
+                  return deferredAmount > 0 ? (
+                    <div>
+                      <span className="text-sm text-muted-foreground">المشتريات الآجلة (لا تؤثر على الرصيد): </span>
+                      <span className="font-bold text-orange-600 arabic-numbers">
+                        {formatCurrency(deferredAmount)}
+                      </span>
+                    </div>
+                  ) : null;
+                })()}
               </div>
             </div>
           )}
