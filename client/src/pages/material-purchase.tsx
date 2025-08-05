@@ -124,21 +124,20 @@ export default function MaterialPurchase() {
 
   const addMaterialPurchaseMutation = useMutation({
     mutationFn: async (data: any) => {
-      // Send the purchase data with material info directly to the server
-      // The server will handle creating the material if needed
-      return apiRequest("POST", "/api/material-purchases", data);
-    },
-    onSuccess: async () => {
-      // حفظ القيم في autocomplete_data
+      // حفظ القيم في autocomplete_data قبل العملية الأساسية
       await Promise.all([
         saveAutocompleteValue('materialNames', materialName),
         saveAutocompleteValue('materialCategories', materialCategory),
         saveAutocompleteValue('materialUnits', materialUnit),
-        saveAutocompleteValue('supplierNames', supplierName), // حفظ اسم المورد حتى لو كان من Select
+        saveAutocompleteValue('supplierNames', supplierName),
         saveAutocompleteValue('invoiceNumbers', invoiceNumber),
         saveAutocompleteValue('notes', notes)
       ]);
       
+      // تنفيذ العملية الأساسية
+      return apiRequest("POST", "/api/material-purchases", data);
+    },
+    onSuccess: async () => {
       // تحديث كاش autocomplete للتأكد من ظهور البيانات الجديدة
       queryClient.invalidateQueries({ queryKey: ["/api/autocomplete"] });
       
@@ -149,7 +148,20 @@ export default function MaterialPurchase() {
       resetForm();
       queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProjectId, "material-purchases"] });
     },
-    onError: (error: any) => {
+    onError: async (error: any) => {
+      // حفظ القيم في autocomplete_data حتى في حالة الخطأ
+      await Promise.all([
+        saveAutocompleteValue('materialNames', materialName),
+        saveAutocompleteValue('materialCategories', materialCategory),
+        saveAutocompleteValue('materialUnits', materialUnit),
+        saveAutocompleteValue('supplierNames', supplierName),
+        saveAutocompleteValue('invoiceNumbers', invoiceNumber),
+        saveAutocompleteValue('notes', notes)
+      ]);
+      
+      // تحديث كاش autocomplete
+      queryClient.invalidateQueries({ queryKey: ["/api/autocomplete"] });
+      
       console.error("Material purchase error:", error);
       let errorMessage = "حدث خطأ أثناء حفظ شراء المواد";
       
@@ -184,10 +196,8 @@ export default function MaterialPurchase() {
 
   // Update Material Purchase Mutation
   const updateMaterialPurchaseMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) => 
-      apiRequest("PUT", `/api/material-purchases/${id}`, data),
-    onSuccess: async () => {
-      // حفظ القيم في autocomplete_data
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      // حفظ القيم في autocomplete_data قبل العملية الأساسية
       await Promise.all([
         saveAutocompleteValue('materialNames', materialName),
         saveAutocompleteValue('materialCategories', materialCategory),
@@ -197,17 +207,33 @@ export default function MaterialPurchase() {
         saveAutocompleteValue('notes', notes)
       ]);
       
+      return apiRequest("PUT", `/api/material-purchases/${id}`, data);
+    },
+    onSuccess: async () => {
       // تحديث كاش autocomplete للتأكد من ظهور البيانات الجديدة
       queryClient.invalidateQueries({ queryKey: ["/api/autocomplete"] });
       
       toast({
-        title: "تم التحديث",
-        description: "تم تحديث شراء المواد بنجاح",
+        title: "تم التعديل",
+        description: "تم تعديل شراء المواد بنجاح",
       });
       resetForm();
       queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProjectId, "material-purchases"] });
     },
-    onError: (error: any) => {
+    onError: async (error: any) => {
+      // حفظ القيم في autocomplete_data حتى في حالة الخطأ
+      await Promise.all([
+        saveAutocompleteValue('materialNames', materialName),
+        saveAutocompleteValue('materialCategories', materialCategory),
+        saveAutocompleteValue('materialUnits', materialUnit),
+        saveAutocompleteValue('supplierNames', supplierName),
+        saveAutocompleteValue('invoiceNumbers', invoiceNumber),
+        saveAutocompleteValue('notes', notes)
+      ]);
+      
+      // تحديث كاش autocomplete
+      queryClient.invalidateQueries({ queryKey: ["/api/autocomplete"] });
+      
       console.error("Material purchase update error:", error);
       let errorMessage = "حدث خطأ أثناء تحديث شراء المواد";
       

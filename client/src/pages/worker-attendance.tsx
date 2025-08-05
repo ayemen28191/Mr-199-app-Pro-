@@ -52,6 +52,20 @@ export default function WorkerAttendance() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // دالة مساعدة لحفظ قيم الإكمال التلقائي
+  const saveAutocompleteValue = async (category: string, value: string | null | undefined) => {
+    if (!value || typeof value !== 'string' || !value.trim()) return;
+    try {
+      await apiRequest("POST", "/api/autocomplete", { 
+        category, 
+        value: value.trim() 
+      });
+    } catch (error) {
+      // تجاهل الأخطاء لأن هذه عملية مساعدة
+      console.log(`Failed to save autocomplete value for ${category}:`, error);
+    }
+  };
+
   // Get today's attendance records
   const { data: todayAttendance = [] } = useQuery({
     queryKey: ["/api/projects", selectedProjectId, "attendance", selectedDate],
@@ -127,12 +141,28 @@ export default function WorkerAttendance() {
   const saveAttendanceMutation = useMutation({
     mutationFn: async (attendanceRecords: InsertWorkerAttendance[]) => {
       console.log("Saving attendance records:", attendanceRecords);
+      
+      // حفظ قيم الإكمال التلقائي قبل العملية الأساسية
+      const autocompletePromises = attendanceRecords.flatMap(record => [
+        saveAutocompleteValue('workDescriptions', record.workDescription),
+        saveAutocompleteValue('paymentTypes', record.paymentType)
+      ]).filter(Boolean);
+      
+      if (autocompletePromises.length > 0) {
+        await Promise.all(autocompletePromises);
+      }
+      
+      // تنفيذ العملية الأساسية
       const promises = attendanceRecords.map(record =>
         apiRequest("POST", "/api/worker-attendance", record)
       );
       await Promise.all(promises);
+      return attendanceRecords;
     },
-    onSuccess: () => {
+    onSuccess: async (attendanceRecords) => {
+      // تحديث كاش autocomplete للتأكد من ظهور البيانات الجديدة
+      queryClient.invalidateQueries({ queryKey: ["/api/autocomplete"] });
+
       toast({
         title: "تم الحفظ",
         description: "تم حفظ حضور العمال بنجاح",
@@ -141,7 +171,19 @@ export default function WorkerAttendance() {
       // مسح البيانات بعد الحفظ
       setAttendanceData({});
     },
-    onError: (error: any) => {
+    onError: async (error: any, attendanceRecords) => {
+      // حفظ قيم الإكمال التلقائي حتى في حالة الخطأ
+      const autocompletePromises = attendanceRecords.flatMap(record => [
+        saveAutocompleteValue('workDescriptions', record.workDescription),
+        saveAutocompleteValue('paymentTypes', record.paymentType)
+      ]).filter(Boolean);
+      
+      if (autocompletePromises.length > 0) {
+        await Promise.all(autocompletePromises);
+        // تحديث كاش autocomplete
+        queryClient.invalidateQueries({ queryKey: ["/api/autocomplete"] });
+      }
+
       console.error("Error saving attendance:", error);
       let errorMessage = "حدث خطأ أثناء حفظ الحضور";
       

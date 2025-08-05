@@ -61,20 +61,8 @@ export default function AddSupplierForm({
   };
 
   const addSupplierMutation = useMutation({
-    mutationFn: (data: InsertSupplier) => {
-      if (supplier) {
-        return apiRequest("PUT", `/api/suppliers/${supplier.id}`, data);
-      } else {
-        return apiRequest("POST", "/api/suppliers", data);
-      }
-    },
-    onSuccess: async (data) => {
-      toast({
-        title: "تم الحفظ",
-        description: supplier ? "تم تعديل المورد بنجاح" : "تم إضافة المورد بنجاح",
-      });
-
-      // حفظ القيم في autocomplete_data
+    mutationFn: async (data: InsertSupplier) => {
+      // حفظ القيم في autocomplete_data قبل العملية الأساسية
       await Promise.all([
         saveAutocompleteValue('supplier_name', name),
         saveAutocompleteValue('supplier_contact_person', contactPerson),
@@ -83,13 +71,40 @@ export default function AddSupplierForm({
         saveAutocompleteValue('supplier_payment_terms', paymentTerms)
       ]);
 
+      if (supplier) {
+        return apiRequest("PUT", `/api/suppliers/${supplier.id}`, data);
+      } else {
+        return apiRequest("POST", "/api/suppliers", data);
+      }
+    },
+    onSuccess: async (data) => {
+      // تحديث كاش autocomplete للتأكد من ظهور البيانات الجديدة
+      queryClient.invalidateQueries({ queryKey: ["/api/autocomplete"] });
+
+      toast({
+        title: "تم الحفظ",
+        description: supplier ? "تم تعديل المورد بنجاح" : "تم إضافة المورد بنجاح",
+      });
+
       if (!supplier) {
         resetForm();
       }
       queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
       onSuccess?.();
     },
-    onError: (error: any) => {
+    onError: async (error: any) => {
+      // حفظ القيم في autocomplete_data حتى في حالة الخطأ
+      await Promise.all([
+        saveAutocompleteValue('supplier_name', name),
+        saveAutocompleteValue('supplier_contact_person', contactPerson),
+        saveAutocompleteValue('supplier_phone', phone),
+        saveAutocompleteValue('supplier_address', address),
+        saveAutocompleteValue('supplier_payment_terms', paymentTerms)
+      ]);
+
+      // تحديث كاش autocomplete
+      queryClient.invalidateQueries({ queryKey: ["/api/autocomplete"] });
+
       const errorMessage = error?.message || (supplier ? "حدث خطأ أثناء تعديل المورد" : "حدث خطأ أثناء إضافة المورد");
       toast({
         title: supplier ? "فشل في تعديل المورد" : "فشل في إضافة المورد",

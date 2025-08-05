@@ -51,19 +51,19 @@ export default function ProjectTransfers() {
 
   // إنشاء أو تحديث عملية ترحيل
   const createTransferMutation = useMutation({
-    mutationFn: (data: InsertProjectFundTransfer) => {
+    mutationFn: async (data: InsertProjectFundTransfer) => {
+      // حفظ القيم في autocomplete_data قبل العملية الأساسية
+      await Promise.all([
+        saveAutocompleteValue('transferReasons', data.transferReason),
+        saveAutocompleteValue('projectTransferDescriptions', data.description)
+      ]);
+      
       if (editingTransfer) {
         return apiRequest("PUT", `/api/project-fund-transfers/${editingTransfer.id}`, data);
       }
       return apiRequest("POST", "/api/project-fund-transfers", data);
     },
     onSuccess: async (newTransfer, variables) => {
-      // حفظ القيم في autocomplete_data
-      await Promise.all([
-        saveAutocompleteValue('transferReasons', variables.transferReason),
-        saveAutocompleteValue('projectTransferDescriptions', variables.description)
-      ]);
-      
       // تحديث كاش autocomplete للتأكد من ظهور البيانات الجديدة
       queryClient.invalidateQueries({ queryKey: ["/api/autocomplete"] });
       
@@ -93,7 +93,16 @@ export default function ProjectTransfers() {
       setEditingTransfer(null);
       form.reset();
     },
-    onError: (error: any) => {
+    onError: async (error: any, variables) => {
+      // حفظ القيم في autocomplete_data حتى في حالة الخطأ
+      await Promise.all([
+        saveAutocompleteValue('transferReasons', variables.transferReason),
+        saveAutocompleteValue('projectTransferDescriptions', variables.description)
+      ]);
+      
+      // تحديث كاش autocomplete
+      queryClient.invalidateQueries({ queryKey: ["/api/autocomplete"] });
+      
       toast({
         title: "خطأ",
         description: error.message || "فشل في حفظ عملية الترحيل",

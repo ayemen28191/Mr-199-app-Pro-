@@ -191,7 +191,16 @@ export default function DailyExpenses() {
   }, [previousBalance]);
 
   const addFundTransferMutation = useMutation({
-    mutationFn: (data: InsertFundTransfer) => apiRequest("POST", "/api/fund-transfers", data),
+    mutationFn: async (data: InsertFundTransfer) => {
+      // حفظ قيم الإكمال التلقائي قبل العملية الأساسية
+      await Promise.all([
+        saveAutocompleteValue('senderNames', senderName),
+        saveAutocompleteValue('transferNumbers', transferNumber)
+      ]);
+      
+      // تنفيذ العملية الأساسية
+      return apiRequest("POST", "/api/fund-transfers", data);
+    },
     onSuccess: async (newTransfer) => {
       // تحديث فوري للقائمة
       queryClient.setQueryData(["/api/projects", selectedProjectId, "fund-transfers", selectedDate], (oldData: any[]) => {
@@ -204,10 +213,6 @@ export default function DailyExpenses() {
         description: "تم إضافة تحويل العهدة بنجاح",
       });
       
-      // حفظ قيم الإكمال التلقائي
-      if (senderName) await saveAutocompleteValue('senderNames', senderName);
-      if (transferNumber) await saveAutocompleteValue('transferNumbers', transferNumber);
-      
       // تحديث كاش autocomplete للتأكد من ظهور البيانات الجديدة
       queryClient.invalidateQueries({ queryKey: ["/api/autocomplete"] });
       
@@ -217,10 +222,35 @@ export default function DailyExpenses() {
       setTransferNumber("");
       setTransferType("");
     },
+    onError: async (error) => {
+      // حفظ قيم الإكمال التلقائي حتى في حالة الخطأ
+      await Promise.all([
+        saveAutocompleteValue('senderNames', senderName),
+        saveAutocompleteValue('transferNumbers', transferNumber)
+      ]);
+      
+      // تحديث كاش autocomplete
+      queryClient.invalidateQueries({ queryKey: ["/api/autocomplete"] });
+      
+      toast({
+        title: "خطأ في إضافة العهدة",
+        description: error?.message || "حدث خطأ أثناء إضافة تحويل العهدة",
+        variant: "destructive",
+      });
+    },
   });
 
   const addTransportationMutation = useMutation({
-    mutationFn: (data: InsertTransportationExpense) => apiRequest("POST", "/api/transportation-expenses", data),
+    mutationFn: async (data: InsertTransportationExpense) => {
+      // حفظ قيم الإكمال التلقائي قبل العملية الأساسية
+      await Promise.all([
+        saveAutocompleteValue('transportDescriptions', transportDescription),
+        saveAutocompleteValue('notes', transportNotes)
+      ]);
+      
+      // تنفيذ العملية الأساسية
+      return apiRequest("POST", "/api/transportation-expenses", data);
+    },
     onSuccess: async (newExpense) => {
       // تحديث فوري للقائمة
       queryClient.setQueryData(["/api/projects", selectedProjectId, "transportation-expenses", selectedDate], (oldData: any[]) => {
@@ -233,10 +263,6 @@ export default function DailyExpenses() {
         description: "تم إضافة مصروف المواصلات بنجاح",
       });
       
-      // حفظ قيم الإكمال التلقائي
-      if (transportDescription) await saveAutocompleteValue('transportDescriptions', transportDescription);
-      if (transportNotes) await saveAutocompleteValue('notes', transportNotes);
-      
       // تحديث كاش autocomplete للتأكد من ظهور البيانات الجديدة
       queryClient.invalidateQueries({ queryKey: ["/api/autocomplete"] });
       
@@ -244,8 +270,22 @@ export default function DailyExpenses() {
       setTransportDescription("");
       setTransportAmount("");
       setTransportNotes("");
+    },
+    onError: async (error) => {
+      // حفظ قيم الإكمال التلقائي حتى في حالة الخطأ
+      await Promise.all([
+        saveAutocompleteValue('transportDescriptions', transportDescription),
+        saveAutocompleteValue('notes', transportNotes)
+      ]);
       
-
+      // تحديث كاش autocomplete
+      queryClient.invalidateQueries({ queryKey: ["/api/autocomplete"] });
+      
+      toast({
+        title: "خطأ في إضافة المواصلات",
+        description: error?.message || "حدث خطأ أثناء إضافة مصروف المواصلات",
+        variant: "destructive",
+      });
     },
   });
 

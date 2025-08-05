@@ -63,7 +63,13 @@ export default function AddWorkerForm({ worker, onSuccess, onCancel, submitLabel
   });
 
   const addWorkerMutation = useMutation({
-    mutationFn: (data: InsertWorker) => {
+    mutationFn: async (data: InsertWorker) => {
+      // حفظ القيم في autocomplete_data قبل العملية الأساسية
+      await Promise.all([
+        saveAutocompleteValue('workerNames', data.name),
+        saveAutocompleteValue('workerTypes', data.type)
+      ]);
+      
       if (worker) {
         return apiRequest("PUT", `/api/workers/${worker.id}`, data);
       } else {
@@ -71,12 +77,6 @@ export default function AddWorkerForm({ worker, onSuccess, onCancel, submitLabel
       }
     },
     onSuccess: async (newWorker, variables) => {
-      // حفظ القيم في autocomplete_data
-      await Promise.all([
-        saveAutocompleteValue('workerNames', variables.name),
-        saveAutocompleteValue('workerTypes', variables.type)
-      ]);
-      
       // تحديث كاش autocomplete للتأكد من ظهور البيانات الجديدة
       queryClient.invalidateQueries({ queryKey: ["/api/autocomplete"] });
       
@@ -93,7 +93,16 @@ export default function AddWorkerForm({ worker, onSuccess, onCancel, submitLabel
       queryClient.invalidateQueries({ queryKey: ["/api/worker-types"] });
       onSuccess?.();
     },
-    onError: (error: any) => {
+    onError: async (error: any, variables) => {
+      // حفظ القيم في autocomplete_data حتى في حالة الخطأ
+      await Promise.all([
+        saveAutocompleteValue('workerNames', variables.name),
+        saveAutocompleteValue('workerTypes', variables.type)
+      ]);
+      
+      // تحديث كاش autocomplete
+      queryClient.invalidateQueries({ queryKey: ["/api/autocomplete"] });
+      
       const errorMessage = error?.message || (worker ? "حدث خطأ أثناء تعديل العامل" : "حدث خطأ أثناء إضافة العامل");
       toast({
         title: worker ? "فشل في تعديل العامل" : "فشل في إضافة العامل",
@@ -105,11 +114,13 @@ export default function AddWorkerForm({ worker, onSuccess, onCancel, submitLabel
 
   // إضافة نوع عامل جديد
   const addWorkerTypeMutation = useMutation({
-    mutationFn: (data: { name: string }) => apiRequest("POST", "/api/worker-types", data),
-    onSuccess: async (newType, variables) => {
-      // حفظ قيمة نوع العامل الجديد في autocomplete
-      await saveAutocompleteValue('workerTypes', variables.name);
+    mutationFn: async (data: { name: string }) => {
+      // حفظ قيمة نوع العامل الجديد في autocomplete قبل العملية الأساسية
+      await saveAutocompleteValue('workerTypes', data.name);
       
+      return apiRequest("POST", "/api/worker-types", data);
+    },
+    onSuccess: async (newType, variables) => {
       // تحديث كاش autocomplete
       queryClient.invalidateQueries({ queryKey: ["/api/autocomplete"] });
       
@@ -122,7 +133,13 @@ export default function AddWorkerForm({ worker, onSuccess, onCancel, submitLabel
       setShowAddTypeDialog(false);
       queryClient.invalidateQueries({ queryKey: ["/api/worker-types"] });
     },
-    onError: (error: any) => {
+    onError: async (error: any, variables) => {
+      // حفظ قيمة نوع العامل حتى في حالة الخطأ
+      await saveAutocompleteValue('workerTypes', variables.name);
+      
+      // تحديث كاش autocomplete
+      queryClient.invalidateQueries({ queryKey: ["/api/autocomplete"] });
+      
       const errorMessage = error?.message || "حدث خطأ أثناء إضافة نوع العامل";
       toast({
         title: "فشل في إضافة نوع العامل",

@@ -18,9 +18,31 @@ export default function AddProjectForm({ onSuccess }: AddProjectFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // دالة مساعدة لحفظ القيم في autocomplete_data
+  const saveAutocompleteValue = async (category: string, value: string | null | undefined) => {
+    if (!value || typeof value !== 'string' || !value.trim()) return;
+    try {
+      await apiRequest("POST", "/api/autocomplete", { 
+        category, 
+        value: value.trim() 
+      });
+    } catch (error) {
+      // تجاهل الأخطاء لأن هذه عملية مساعدة
+      console.log(`Failed to save autocomplete value for ${category}:`, error);
+    }
+  };
+
   const addProjectMutation = useMutation({
-    mutationFn: (data: InsertProject) => apiRequest("POST", "/api/projects", data),
-    onSuccess: () => {
+    mutationFn: async (data: InsertProject) => {
+      // حفظ اسم المشروع في autocomplete_data قبل العملية الأساسية
+      await saveAutocompleteValue('projectNames', data.name);
+      
+      return apiRequest("POST", "/api/projects", data);
+    },
+    onSuccess: async () => {
+      // تحديث كاش autocomplete للتأكد من ظهور البيانات الجديدة
+      queryClient.invalidateQueries({ queryKey: ["/api/autocomplete"] });
+      
       toast({
         title: "تم الحفظ",
         description: "تم إضافة المشروع بنجاح",
@@ -31,7 +53,13 @@ export default function AddProjectForm({ onSuccess }: AddProjectFormProps) {
       queryClient.invalidateQueries({ queryKey: ["/api/projects/with-stats"] });
       onSuccess?.();
     },
-    onError: (error: any) => {
+    onError: async (error: any, variables) => {
+      // حفظ اسم المشروع في autocomplete_data حتى في حالة الخطأ
+      await saveAutocompleteValue('projectNames', variables.name);
+      
+      // تحديث كاش autocomplete
+      queryClient.invalidateQueries({ queryKey: ["/api/autocomplete"] });
+      
       const errorMessage = error?.message || "حدث خطأ أثناء إضافة المشروع";
       toast({
         title: "فشل في إضافة المشروع",
