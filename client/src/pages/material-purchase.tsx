@@ -134,10 +134,13 @@ export default function MaterialPurchase() {
         saveAutocompleteValue('materialNames', materialName),
         saveAutocompleteValue('materialCategories', materialCategory),
         saveAutocompleteValue('materialUnits', materialUnit),
-        saveAutocompleteValue('supplierNames', supplierName),
+        saveAutocompleteValue('supplierNames', supplierName), // حفظ اسم المورد حتى لو كان من Select
         saveAutocompleteValue('invoiceNumbers', invoiceNumber),
         saveAutocompleteValue('notes', notes)
       ]);
+      
+      // تحديث كاش autocomplete للتأكد من ظهور البيانات الجديدة
+      queryClient.invalidateQueries({ queryKey: ["/api/autocomplete"] });
       
       toast({
         title: "تم الحفظ",
@@ -193,6 +196,9 @@ export default function MaterialPurchase() {
         saveAutocompleteValue('invoiceNumbers', invoiceNumber),
         saveAutocompleteValue('notes', notes)
       ]);
+      
+      // تحديث كاش autocomplete للتأكد من ظهور البيانات الجديدة
+      queryClient.invalidateQueries({ queryKey: ["/api/autocomplete"] });
       
       toast({
         title: "تم التحديث",
@@ -463,33 +469,44 @@ export default function MaterialPurchase() {
             {/* Supplier/Store */}
             <div>
               <Label className="block text-sm font-medium text-foreground mb-2">اسم المورد/المحل</Label>
-              <Select value={supplierName} onValueChange={setSupplierName}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="اختر المورد..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {activeSuppliers.map((supplier) => (
-                    <SelectItem key={supplier.id} value={supplier.name}>
-                      <div className="flex flex-col items-start">
-                        <span className="font-medium">{supplier.name}</span>
-                        {supplier.contactPerson && (
-                          <span className="text-xs text-muted-foreground">
-                            جهة الاتصال: {supplier.contactPerson}
-                          </span>
-                        )}
-                      </div>
-                    </SelectItem>
-                  ))}
-                  {activeSuppliers.length === 0 && (
-                    <SelectItem value="no-suppliers" disabled>
-                      <span className="text-muted-foreground">لا توجد موردين مسجلين</span>
-                    </SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
+              <div className="flex gap-2">
+                <Select value={supplierName} onValueChange={setSupplierName}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="اختر المورد..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {activeSuppliers.map((supplier) => (
+                      <SelectItem key={supplier.id} value={supplier.name}>
+                        <div className="flex flex-col items-start">
+                          <span className="font-medium">{supplier.name}</span>
+                          {supplier.contactPerson && (
+                            <span className="text-xs text-muted-foreground">
+                              جهة الاتصال: {supplier.contactPerson}
+                            </span>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))}
+                    {activeSuppliers.length === 0 && (
+                      <SelectItem value="no-suppliers" disabled>
+                        <span className="text-muted-foreground">لا توجد موردين مسجلين</span>
+                      </SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setLocation("/suppliers")}
+                  title="إضافة مورد جديد"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
               {activeSuppliers.length === 0 && (
                 <p className="text-sm text-muted-foreground mt-1">
-                  يرجى إضافة موردين أولاً من صفحة الموردين
+                  لا توجد موردين مسجلين. اضغط + لإضافة مورد جديد
                 </p>
               )}
             </div>
