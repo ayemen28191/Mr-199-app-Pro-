@@ -32,7 +32,7 @@ export default function MaterialPurchase() {
   const [materialUnit, setMaterialUnit] = useState<string>("");
   const [quantity, setQuantity] = useState<string>("");
   const [unitPrice, setUnitPrice] = useState<string>("");
-  const [purchaseType, setPurchaseType] = useState<string>("نقد");
+  const [paymentType, setPaymentType] = useState<string>("نقد");
   const [supplierName, setSupplierName] = useState<string>("");
   const [invoiceNumber, setInvoiceNumber] = useState<string>("");
   const [invoiceDate, setInvoiceDate] = useState<string>(getCurrentDate());
@@ -82,7 +82,7 @@ export default function MaterialPurchase() {
       setMaterialUnit(purchaseToEdit.material?.unit || "");
       setQuantity(purchaseToEdit.quantity?.toString() || "");
       setUnitPrice(purchaseToEdit.unitPrice?.toString() || "");
-      setPurchaseType(purchaseToEdit.purchaseType || "نقد");
+      setPaymentType(purchaseToEdit.paymentType || "نقد");
       setSupplierName(purchaseToEdit.supplierName || "");
       setInvoiceNumber(purchaseToEdit.invoiceNumber || "");
       setInvoiceDate(purchaseToEdit.invoiceDate || getCurrentDate());
@@ -169,7 +169,7 @@ export default function MaterialPurchase() {
     setMaterialUnit("");
     setQuantity("");
     setUnitPrice("");
-    setPurchaseType("نقد");
+    setPaymentType("نقد");
     setSupplierName("");
     setInvoiceNumber("");
     setInvoiceDate(getCurrentDate());
@@ -281,7 +281,7 @@ export default function MaterialPurchase() {
       quantity,
       unitPrice,
       totalAmount,
-      purchaseType,
+      paymentType,
       supplierName,
       invoiceNumber,
       invoiceDate,
@@ -335,7 +335,7 @@ export default function MaterialPurchase() {
     setMaterialUnit(purchase.material?.unit || "");
     setQuantity(purchase.quantity);
     setUnitPrice(purchase.unitPrice);
-    setPurchaseType(purchase.purchaseType || "نقد");
+    setPaymentType(purchase.paymentType || "نقد");
     setSupplierName(purchase.supplierName || "");
     setInvoiceNumber(purchase.invoiceNumber || "");
     setInvoiceDate(purchase.invoiceDate || getCurrentDate());
@@ -441,10 +441,10 @@ export default function MaterialPurchase() {
               </div>
             </div>
 
-            {/* Purchase Type */}
+            {/* Payment Type */}
             <div>
-              <Label className="block text-sm font-medium text-foreground mb-2">نوع الشراء</Label>
-              <RadioGroup value={purchaseType} onValueChange={setPurchaseType} className="flex gap-4">
+              <Label className="block text-sm font-medium text-foreground mb-2">نوع الدفع</Label>
+              <RadioGroup value={paymentType} onValueChange={setPaymentType} className="flex gap-4">
                 <div className="flex items-center space-x-reverse space-x-2">
                   <RadioGroupItem value="نقد" id="cash" />
                   <Label htmlFor="cash" className="text-sm">نقد</Label>
