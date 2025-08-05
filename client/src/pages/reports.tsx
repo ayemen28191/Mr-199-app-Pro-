@@ -1361,7 +1361,15 @@ export default function Reports() {
         row.getCell(1).value = index + 1;
         row.getCell(2).value = formatDateEN(record.date);
         row.getCell(3).value = new Date(record.date).toLocaleDateString('en-GB', { weekday: 'short' });
-        row.getCell(4).value = record.workDescription || 'عمل يومي حسب متطلبات المشروع';
+        // تحسين عرض وصف العمل مع التفاف النص
+        const workDescCell = row.getCell(4);
+        workDescCell.value = record.workDescription || 'عمل يومي حسب متطلبات المشروع';
+        workDescCell.alignment = { 
+          horizontal: 'right', 
+          vertical: 'top', 
+          wrapText: true,
+          shrinkToFit: false
+        };
         row.getCell(5).value = `${daysIcon} ${daysDescription}`;
         row.getCell(6).value = record.startTime && record.endTime ? 
           `${record.startTime}-${record.endTime}` : '8:00-16:00 (8ساعات)';
@@ -1419,7 +1427,19 @@ export default function Reports() {
           
           cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgColor } };
         }
-        worksheet.getRow(9 + index).height = 22;
+        
+        // تحديد ارتفاع الصف بناءً على طول وصف العمل
+        const workDescription = record.workDescription || 'عمل يومي حسب متطلبات المشروع';
+        let rowHeight = 30; // ارتفاع أساسي
+        if (workDescription.length > 80) {
+          rowHeight = 45; // للنصوص الطويلة جداً
+        } else if (workDescription.length > 50) {
+          rowHeight = 38; // للنصوص الطويلة
+        } else if (workDescription.length > 30) {
+          rowHeight = 32; // للنصوص المتوسطة
+        }
+        
+        worksheet.getRow(9 + index).height = rowHeight;
       });
 
       let currentRow = 9 + attendance.length + 1;
@@ -1665,17 +1685,17 @@ export default function Reports() {
       // ضبط عرض الأعمدة الاحترافي المحسن لاستغلال A4 بكامل طاقته
       worksheet.columns = [
         { width: 4 },   // # - مضغوط جداً
-        { width: 10 },  // التاريخ - مناسب للتواريخ
-        { width: 8 },   // اليوم - مضغوط
-        { width: 22 },  // وصف العمل - موسع للنصوص
-        { width: 12 },  // عدد الأيام - مناسب للأرقام والوصف
-        { width: 12 },  // ساعات العمل - مناسب
-        { width: 10 },  // الأجر المستحق - مضغوط للأرقام
-        { width: 10 },  // المدفوع - مضغوط للأرقام
-        { width: 10 },  // المتبقي - مضغوط للأرقام
-        { width: 12 },  // الحالة - مناسب للحالات
-        { width: 10 },  // الكفاءة - مضغوط
-        { width: 18 }   // ملاحظات - موسع للملاحظات
+        { width: 9 },   // التاريخ - مضغوط للتواريخ
+        { width: 6 },   // اليوم - مضغوط جداً
+        { width: 32 },  // وصف العمل - موسع جداً للنصوص الطويلة
+        { width: 10 },  // عدد الأيام - مناسب للأرقام والوصف
+        { width: 11 },  // ساعات العمل - مناسب
+        { width: 9 },   // الأجر المستحق - مضغوط للأرقام
+        { width: 9 },   // المدفوع - مضغوط للأرقام
+        { width: 9 },   // المتبقي - مضغوط للأرقام
+        { width: 10 },  // الحالة - مناسب للحالات
+        { width: 8 },   // الكفاءة - مضغوط
+        { width: 16 }   // ملاحظات - متوسط للملاحظات
       ];
 
       // تطبيق التفاف النص على جميع الخلايا
