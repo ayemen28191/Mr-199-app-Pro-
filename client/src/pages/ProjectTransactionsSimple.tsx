@@ -74,6 +74,14 @@ export default function ProjectTransactionsSimple() {
     const transportExpensesArray = Array.isArray(transportExpenses) ? transportExpenses : [];
     const miscExpensesArray = Array.isArray(miscExpenses) ? miscExpenses : [];
     
+    // تشخيص البيانات المؤقت
+    console.log('🔍 بيانات المشروع:', selectedProject);
+    console.log('💰 تحويلات العهدة:', fundTransfersArray);
+    console.log('👷 حضور العمال:', workerAttendanceArray);
+    console.log('🏗️ مشتريات المواد:', materialPurchasesArray);
+    console.log('🚚 النقل:', transportExpensesArray);
+    console.log('📋 متنوعة:', miscExpensesArray);
+    
     // حساب إجمالي العمليات المتاحة
     const totalOperations = fundTransfersArray.length + workerAttendanceArray.length + 
                            materialPurchasesArray.length + transportExpensesArray.length + 
@@ -82,9 +90,9 @@ export default function ProjectTransactionsSimple() {
     // إضافة تحويلات العهدة (دخل)
     fundTransfersArray.forEach((transfer: any) => {
       const date = transfer.transferDate || transfer.date;
-      const amount = parseFloat(transfer.amount) || 0;
-
-      if (date && !isNaN(amount)) {
+      const amount = parseFloat(transfer.amount);
+      
+      if (date && !isNaN(amount) && amount > 0) {
         allTransactions.push({
           id: `fund-${transfer.id}`,
           date: date,
@@ -100,15 +108,19 @@ export default function ProjectTransactionsSimple() {
     workerAttendanceArray.forEach((attendance: any) => {
       const date = attendance.date;
       // البحث عن المبلغ في الحقول المختلفة
-      const amount = parseFloat(
-        attendance.paidAmount || 
-        attendance.actualWage || 
-        attendance.totalWage || 
-        (attendance.dailyWage * attendance.workDays) ||
-        0
-      );
+      let amount = 0;
+      
+      if (attendance.paidAmount && !isNaN(parseFloat(attendance.paidAmount))) {
+        amount = parseFloat(attendance.paidAmount);
+      } else if (attendance.actualWage && !isNaN(parseFloat(attendance.actualWage))) {
+        amount = parseFloat(attendance.actualWage);
+      } else if (attendance.totalWage && !isNaN(parseFloat(attendance.totalWage))) {
+        amount = parseFloat(attendance.totalWage);
+      } else if (attendance.dailyWage && attendance.workDays) {
+        amount = parseFloat(attendance.dailyWage) * parseFloat(attendance.workDays);
+      }
 
-      if (date && !isNaN(amount) && amount !== 0) {
+      if (date && amount > 0) {
         allTransactions.push({
           id: `wage-${attendance.id}`,
           date: date,
@@ -123,9 +135,17 @@ export default function ProjectTransactionsSimple() {
     // إضافة مشتريات المواد (مصروف)
     materialPurchasesArray.forEach((purchase: any) => {
       const date = purchase.purchaseDate || purchase.date;
-      const amount = parseFloat(purchase.totalAmount || purchase.amount || purchase.cost) || 0;
+      let amount = 0;
+      
+      if (purchase.totalAmount && !isNaN(parseFloat(purchase.totalAmount))) {
+        amount = parseFloat(purchase.totalAmount);
+      } else if (purchase.amount && !isNaN(parseFloat(purchase.amount))) {
+        amount = parseFloat(purchase.amount);
+      } else if (purchase.cost && !isNaN(parseFloat(purchase.cost))) {
+        amount = parseFloat(purchase.cost);
+      }
 
-      if (date && !isNaN(amount) && amount !== 0) {
+      if (date && amount > 0) {
         allTransactions.push({
           id: `material-${purchase.id}`,
           date: date,
@@ -140,9 +160,9 @@ export default function ProjectTransactionsSimple() {
     // إضافة مصروفات النقل (مصروف)
     transportExpensesArray.forEach((expense: any) => {
       const date = expense.date;
-      const amount = parseFloat(expense.amount) || 0;
+      const amount = parseFloat(expense.amount);
 
-      if (date && !isNaN(amount) && amount !== 0) {
+      if (date && !isNaN(amount) && amount > 0) {
         allTransactions.push({
           id: `transport-${expense.id}`,
           date: date,
@@ -157,9 +177,9 @@ export default function ProjectTransactionsSimple() {
     // إضافة المصروفات المتنوعة (مصروف)
     miscExpensesArray.forEach((expense: any) => {
       const date = expense.date;
-      const amount = parseFloat(expense.amount) || 0;
+      const amount = parseFloat(expense.amount);
 
-      if (date && !isNaN(amount) && amount !== 0) {
+      if (date && !isNaN(amount) && amount > 0) {
         allTransactions.push({
           id: `misc-${expense.id}`,
           date: date,
