@@ -10,6 +10,7 @@ This is a comprehensive web application designed for managing construction proje
 - التحسين المستمر للأداء
 - التواصل: جميع الردود والملاحظات والتوجيهات يجب أن تكون باللغة العربية حصرياً
 - أسلوب التفاعل: استخدام اللغة العربية الواضحة والمباشرة في جميع الاستجابات
+- تحديث: 6 أغسطس 2025 - تأكيد المستخدم على التواصل باللغة العربية فقط
 
 ## System Architecture
 The system is built as a comprehensive web application with distinct frontend and backend components, prioritizing an Arabic-first, Right-to-Left (RTL) design.
