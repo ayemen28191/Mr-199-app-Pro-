@@ -17,7 +17,7 @@ interface Project {
 interface Transaction {
   id: string;
   date: string;
-  type: 'income' | 'expense' | 'deferred';
+  type: 'income' | 'expense' | 'deferred' | 'transfer_from_project';
   category: string;
   amount: number;
   description: string;
@@ -81,17 +81,22 @@ export default function ProjectTransactionsSimple() {
                            materialPurchasesArray.length + transportExpensesArray.length + 
                            miscExpensesArray.length;
 
-    // إضافة تحويلات العهدة (دخل)
+    // إضافة تحويلات العهدة (دخل أو تحويل من مشروع آخر)
     fundTransfersArray.forEach((transfer: any) => {
       const date = transfer.transferDate || transfer.date;
       const amount = parseFloat(transfer.amount);
       
       if (date && !isNaN(amount) && amount > 0) {
+        // تحديد إذا كان التحويل من مشروع آخر
+        const isFromProject = transfer.fromProject || 
+                             transfer.transferType === 'from_project' ||
+                             (transfer.senderName && transfer.senderName.includes('مشروع'));
+        
         allTransactions.push({
           id: `fund-${transfer.id}`,
           date: date,
-          type: 'income',
-          category: 'تحويل عهدة',
+          type: isFromProject ? 'transfer_from_project' : 'income',
+          category: isFromProject ? 'تحويل من مشروع آخر' : 'تحويل عهدة',
           amount: amount,
           description: `من: ${transfer.senderName || 'غير محدد'}`
         });
@@ -215,13 +220,19 @@ export default function ProjectTransactionsSimple() {
   // حساب الإجماليات
   const totals = useMemo(() => {
     const income = filteredTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + (t.amount || 0), 0);
+    const transferFromProject = filteredTransactions.filter(t => t.type === 'transfer_from_project').reduce((sum, t) => sum + (t.amount || 0), 0);
     const expenses = filteredTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + (t.amount || 0), 0);
     const deferred = filteredTransactions.filter(t => t.type === 'deferred').reduce((sum, t) => sum + (t.amount || 0), 0);
+    
+    const totalIncome = income + transferFromProject; // التحويلات من المشاريع تحسب ضمن الدخل
+    
     return { 
-      income: income, 
+      income: income,
+      transferFromProject: transferFromProject,
+      totalIncome: totalIncome,
       expenses: expenses,
       deferred: deferred,
-      balance: income - expenses // المشتريات الآجلة لا تؤثر على الرصيد
+      balance: totalIncome - expenses // المشتريات الآجلة لا تؤثر على الرصيد
     };
   }, [filteredTransactions]);
 
@@ -280,6 +291,7 @@ export default function ProjectTransactionsSimple() {
                   <SelectContent>
                     <SelectItem value="all">جميع العمليات</SelectItem>
                     <SelectItem value="income">الدخل فقط</SelectItem>
+                    <SelectItem value="transfer_from_project">التحويلات من المشاريع</SelectItem>
                     <SelectItem value="expense">المصاريف فقط</SelectItem>
                     <SelectItem value="deferred">المشتريات الآجلة</SelectItem>
                   </SelectContent>
@@ -306,19 +318,35 @@ export default function ProjectTransactionsSimple() {
         {selectedProject && (
           <>
             {/* الإجماليات */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
               <Card className="bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-sm font-medium text-green-600 dark:text-green-400">
-                        إجمالي الدخل
+                        الدخل المباشر
                       </p>
                       <p className="text-2xl font-bold text-green-700 dark:text-green-300">
                         {formatCurrency(totals.income || 0)}
                       </p>
                     </div>
                     <TrendingUp className="h-8 w-8 text-green-500" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-cyan-50 dark:bg-cyan-900/20 border-cyan-200 dark:border-cyan-800">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-cyan-600 dark:text-cyan-400">
+                        من مشاريع أخرى
+                      </p>
+                      <p className="text-2xl font-bold text-cyan-700 dark:text-cyan-300">
+                        {formatCurrency(totals.transferFromProject || 0)}
+                      </p>
+                    </div>
+                    <Building2 className="h-8 w-8 text-cyan-500" />
                   </div>
                 </CardContent>
               </Card>
@@ -365,8 +393,11 @@ export default function ProjectTransactionsSimple() {
                       <p className={`text-2xl font-bold ${totals.balance >= 0 ? 'text-blue-700 dark:text-blue-300' : 'text-orange-700 dark:text-orange-300'}`}>
                         {formatCurrency(totals.balance || 0)}
                       </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        الدخل: {formatCurrency(totals.totalIncome || 0)}
+                      </p>
                     </div>
-                    <Building2 className={`h-8 w-8 ${totals.balance >= 0 ? 'text-blue-500' : 'text-orange-500'}`} />
+                    <TrendingUp className={`h-8 w-8 ${totals.balance >= 0 ? 'text-blue-500' : 'text-orange-500'}`} />
                   </div>
                 </CardContent>
               </Card>
@@ -429,9 +460,14 @@ export default function ProjectTransactionsSimple() {
                             <td className="py-3 px-4">
                               <Badge variant={
                                 transaction.type === 'income' ? 'default' : 
+                                transaction.type === 'transfer_from_project' ? 'secondary' : 
                                 transaction.type === 'deferred' ? 'outline' : 'destructive'
-                              } className={transaction.type === 'deferred' ? 'border-yellow-500 text-yellow-700 dark:text-yellow-400' : ''}>
+                              } className={
+                                transaction.type === 'deferred' ? 'border-yellow-500 text-yellow-700 dark:text-yellow-400 bg-yellow-50 dark:bg-yellow-900/20' : 
+                                transaction.type === 'transfer_from_project' ? 'border-cyan-500 text-cyan-700 dark:text-cyan-400 bg-cyan-50 dark:bg-cyan-900/20' : ''
+                              }>
                                 {transaction.type === 'income' ? 'دخل' : 
+                                 transaction.type === 'transfer_from_project' ? 'تحويل مشروع' :
                                  transaction.type === 'deferred' ? 'آجل' : 'مصروف'}
                               </Badge>
                             </td>
@@ -440,9 +476,10 @@ export default function ProjectTransactionsSimple() {
                             </td>
                             <td className={`py-3 px-4 text-sm font-bold ${
                               transaction.type === 'income' ? 'text-green-600' : 
+                              transaction.type === 'transfer_from_project' ? 'text-cyan-600' :
                               transaction.type === 'deferred' ? 'text-yellow-600' : 'text-red-600'
                             }`}>
-                              {transaction.type === 'income' ? '+' : 
+                              {transaction.type === 'income' || transaction.type === 'transfer_from_project' ? '+' : 
                                transaction.type === 'deferred' ? '' : '-'}{formatCurrency(transaction.amount || 0).replace(' ر.ي', '')} ر.ي
                             </td>
                             <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">
