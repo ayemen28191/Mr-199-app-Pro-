@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Search, Filter, TrendingUp, TrendingDown, Building2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { formatCurrency } from '@/lib/utils';
 
 interface Project {
   id: string;
@@ -56,41 +57,56 @@ export default function ProjectTransactionsSimple() {
 
     // إضافة تحويلات العهدة (دخل)
     (fundTransfers as any[]).forEach((transfer: any) => {
-      allTransactions.push({
-        id: `fund-${transfer.id}`,
-        date: transfer.transferDate || transfer.date,
-        type: 'income',
-        category: 'تحويل عهدة',
-        amount: transfer.amount || 0,
-        description: `من: ${transfer.senderName || 'غير محدد'}`
-      });
+      const date = transfer.transferDate || transfer.date || new Date().toISOString().split('T')[0];
+      const amount = parseFloat(transfer.amount) || 0;
+      if (date && amount > 0) {
+        allTransactions.push({
+          id: `fund-${transfer.id}`,
+          date: date,
+          type: 'income',
+          category: 'تحويل عهدة',
+          amount: amount,
+          description: `من: ${transfer.senderName || 'غير محدد'}`
+        });
+      }
     });
 
     // إضافة أجور العمال (مصروف)
     (workerAttendance as any[]).forEach((attendance: any) => {
-      allTransactions.push({
-        id: `wage-${attendance.id}`,
-        date: attendance.date,
-        type: 'expense',
-        category: 'أجور العمال',
-        amount: attendance.actualWage || 0,
-        description: `عامل: ${attendance.workerName || 'غير محدد'}`
-      });
+      const date = attendance.date || new Date().toISOString().split('T')[0];
+      const amount = parseFloat(attendance.actualWage || attendance.paidAmount || attendance.totalWage) || 0;
+      if (date && amount > 0) {
+        allTransactions.push({
+          id: `wage-${attendance.id}`,
+          date: date,
+          type: 'expense',
+          category: 'أجور العمال',
+          amount: amount,
+          description: `عامل: ${attendance.workerName || 'غير محدد'}`
+        });
+      }
     });
 
     // إضافة مشتريات المواد (مصروف)
     (materialPurchases as any[]).forEach((purchase: any) => {
-      allTransactions.push({
-        id: `material-${purchase.id}`,
-        date: purchase.purchaseDate || purchase.date,
-        type: 'expense',
-        category: 'مشتريات المواد',
-        amount: purchase.totalAmount || 0,
-        description: `مادة: ${purchase.materialName || 'غير محدد'}`
-      });
+      const date = purchase.purchaseDate || purchase.date || new Date().toISOString().split('T')[0];
+      const amount = parseFloat(purchase.totalAmount || purchase.amount) || 0;
+      if (date && amount > 0) {
+        allTransactions.push({
+          id: `material-${purchase.id}`,
+          date: date,
+          type: 'expense',
+          category: 'مشتريات المواد',
+          amount: amount,
+          description: `مادة: ${purchase.materialName || purchase.name || 'غير محدد'}`
+        });
+      }
     });
 
-    return allTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    // ترتيب حسب التاريخ (الأحدث أولاً) مع التأكد من صحة التواريخ
+    return allTransactions
+      .filter(t => t.date && !isNaN(new Date(t.date).getTime()))
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
   }, [fundTransfers, workerAttendance, materialPurchases]);
 
   // تطبيق الفلاتر
@@ -113,9 +129,13 @@ export default function ProjectTransactionsSimple() {
 
   // حساب الإجماليات
   const totals = useMemo(() => {
-    const income = filteredTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + t.amount, 0);
-    const expenses = filteredTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + t.amount, 0);
-    return { income, expenses, balance: income - expenses };
+    const income = filteredTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + (t.amount || 0), 0);
+    const expenses = filteredTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + (t.amount || 0), 0);
+    return { 
+      income: income, 
+      expenses: expenses, 
+      balance: income - expenses 
+    };
   }, [filteredTransactions]);
 
   const selectedProjectName = projects.find(p => p.id === selectedProject)?.name || '';
@@ -207,7 +227,7 @@ export default function ProjectTransactionsSimple() {
                         إجمالي الدخل
                       </p>
                       <p className="text-2xl font-bold text-green-700 dark:text-green-300">
-                        {totals.income.toLocaleString()} ر.ي
+                        {formatCurrency(totals.income || 0)}
                       </p>
                     </div>
                     <TrendingUp className="h-8 w-8 text-green-500" />
@@ -223,7 +243,7 @@ export default function ProjectTransactionsSimple() {
                         إجمالي المصاريف
                       </p>
                       <p className="text-2xl font-bold text-red-700 dark:text-red-300">
-                        {totals.expenses.toLocaleString()} ر.ي
+                        {formatCurrency(totals.expenses || 0)}
                       </p>
                     </div>
                     <TrendingDown className="h-8 w-8 text-red-500" />
@@ -239,7 +259,7 @@ export default function ProjectTransactionsSimple() {
                         الرصيد النهائي
                       </p>
                       <p className={`text-2xl font-bold ${totals.balance >= 0 ? 'text-blue-700 dark:text-blue-300' : 'text-orange-700 dark:text-orange-300'}`}>
-                        {totals.balance.toLocaleString()} ر.ي
+                        {formatCurrency(totals.balance || 0)}
                       </p>
                     </div>
                     <Building2 className={`h-8 w-8 ${totals.balance >= 0 ? 'text-blue-500' : 'text-orange-500'}`} />
@@ -290,7 +310,7 @@ export default function ProjectTransactionsSimple() {
                               {transaction.category}
                             </td>
                             <td className={`py-3 px-4 text-sm font-bold ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                              {transaction.type === 'income' ? '+' : '-'}{transaction.amount.toLocaleString()} ر.ي
+                              {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount || 0).replace(' ر.ي', '')} ر.ي
                             </td>
                             <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">
                               {transaction.description}
