@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { authSystem } from "./auth-system";
 import { backupSystem } from "./backup-system";
 import { sql } from "drizzle-orm";
+import { db } from "./db";
 import { 
   insertProjectSchema, insertWorkerSchema, insertFundTransferSchema, 
   insertWorkerAttendanceSchema, insertMaterialSchema, insertMaterialPurchaseSchema,
@@ -108,6 +109,170 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching project stats:", error);
       res.status(500).json({ message: "Error fetching project statistics" });
+    }
+  });
+
+  // تحليل مفصل للرصيد السالب للمشروع
+  app.get("/api/projects/:projectId/financial-analysis", async (req, res) => {
+    try {
+      const { projectId } = req.params;
+      
+      // جلب جميع البيانات المالية التفصيلية
+      const [
+        project,
+        fundTransfers,
+        projectTransfersIn,
+        projectTransfersOut,
+        workerWages,
+        materialPurchases,
+        transportExpenses,
+        miscExpenses
+      ] = await Promise.all([
+        storage.getProject(projectId),
+        
+        db.execute(sql`
+          SELECT transfer_date, amount, sender_name, notes, created_at
+          FROM fund_transfers 
+          WHERE project_id = ${projectId}
+          ORDER BY transfer_date DESC
+        `),
+        
+        db.execute(sql`
+          SELECT transfer_date, amount, notes, from_project_id, created_at
+          FROM project_fund_transfers 
+          WHERE to_project_id = ${projectId}
+          ORDER BY transfer_date DESC
+        `),
+        
+        db.execute(sql`
+          SELECT transfer_date, amount, notes, to_project_id, created_at
+          FROM project_fund_transfers 
+          WHERE from_project_id = ${projectId}
+          ORDER BY transfer_date DESC
+        `),
+        
+        db.execute(sql`
+          SELECT wa.date, w.name as worker_name, wa.actual_wage, wa.created_at
+          FROM worker_attendance wa
+          JOIN workers w ON wa.worker_id = w.id
+          WHERE wa.project_id = ${projectId}
+          ORDER BY wa.date DESC
+        `),
+        
+        db.execute(sql`
+          SELECT mp.purchase_date, m.name as material_name, mp.total_amount, mp.created_at
+          FROM material_purchases mp
+          JOIN materials m ON mp.material_id = m.id
+          WHERE mp.project_id = ${projectId}
+          ORDER BY mp.purchase_date DESC
+        `),
+        
+        db.execute(sql`
+          SELECT expense_date, amount, description, created_at
+          FROM transportation_expenses 
+          WHERE project_id = ${projectId}
+          ORDER BY expense_date DESC
+        `),
+        
+        db.execute(sql`
+          SELECT wme.expense_date, w.name as worker_name, wme.amount, wme.description, wme.created_at
+          FROM worker_misc_expenses wme
+          JOIN workers w ON wme.worker_id = w.id
+          WHERE wme.project_id = ${projectId}
+          ORDER BY wme.expense_date DESC
+        `)
+      ]);
+
+      if (!project) {
+        return res.status(404).json({ message: "المشروع غير موجود" });
+      }
+
+      // تحويل البيانات لتنسيق سهل القراءة
+      const analysis = {
+        project: {
+          name: project.name,
+          id: projectId,
+          status: project.status,
+          createdAt: project.createdAt
+        },
+        income: {
+          fundTransfers: fundTransfers.rows.map((row: any) => ({
+            date: row.transfer_date,
+            amount: parseFloat(row.amount),
+            sender: row.sender_name,
+            notes: row.notes,
+            createdAt: row.created_at
+          })),
+          projectTransfersIn: projectTransfersIn.rows.map((row: any) => ({
+            date: row.transfer_date,
+            amount: parseFloat(row.amount),
+            notes: row.notes,
+            fromProject: row.from_project_id,
+            createdAt: row.created_at
+          }))
+        },
+        expenses: {
+          workerWages: workerWages.rows.map((row: any) => ({
+            date: row.date,
+            workerName: row.worker_name,
+            amount: parseFloat(row.actual_wage),
+            createdAt: row.created_at
+          })),
+          materialPurchases: materialPurchases.rows.map((row: any) => ({
+            date: row.purchase_date,
+            materialName: row.material_name,
+            amount: parseFloat(row.total_amount),
+            createdAt: row.created_at
+          })),
+          transportExpenses: transportExpenses.rows.map((row: any) => ({
+            date: row.expense_date,
+            amount: parseFloat(row.amount),
+            description: row.description,
+            createdAt: row.created_at
+          })),
+          projectTransfersOut: projectTransfersOut.rows.map((row: any) => ({
+            date: row.transfer_date,
+            amount: parseFloat(row.amount),
+            notes: row.notes,
+            toProject: row.to_project_id,
+            createdAt: row.created_at
+          })),
+          miscExpenses: miscExpenses.rows.map((row: any) => ({
+            date: row.expense_date,
+            workerName: row.worker_name,
+            amount: parseFloat(row.amount),
+            description: row.description,
+            createdAt: row.created_at
+          }))
+        }
+      };
+
+      // حساب الإجماليات
+      const totalIncome = [
+        ...analysis.income.fundTransfers,
+        ...analysis.income.projectTransfersIn
+      ].reduce((sum, item) => sum + item.amount, 0);
+
+      const totalExpenses = [
+        ...analysis.expenses.workerWages,
+        ...analysis.expenses.materialPurchases,
+        ...analysis.expenses.transportExpenses,
+        ...analysis.expenses.projectTransfersOut,
+        ...analysis.expenses.miscExpenses
+      ].reduce((sum, item) => sum + item.amount, 0);
+
+      const currentBalance = totalIncome - totalExpenses;
+
+      (analysis as any).totals = {
+        totalIncome,
+        totalExpenses,
+        currentBalance
+      };
+
+      res.json(analysis);
+    } catch (error) {
+      console.error('خطأ في تحليل البيانات المالية:', error);
+      res.status(500).json({ message: "خطأ في تحليل البيانات المالية" });
     }
   });
 
