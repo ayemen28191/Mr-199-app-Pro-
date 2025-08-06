@@ -63,6 +63,16 @@ export default function ProjectTransactionsSimple() {
     enabled: !!selectedProject,
   });
 
+  // جلب حوالات العمال للمشروع
+  const { data: workerTransfers = [] } = useQuery({
+    queryKey: ['/api/worker-transfers', selectedProject],
+    queryFn: async () => {
+      const response = await fetch(`/api/worker-transfers?projectId=${selectedProject}`);
+      return response.json();
+    },
+    enabled: !!selectedProject,
+  });
+
   // جلب بيانات العمال لعرض أسمائهم
   const { data: workers = [] } = useQuery({
     queryKey: ['/api/workers'],
@@ -78,6 +88,7 @@ export default function ProjectTransactionsSimple() {
     const materialPurchasesArray = Array.isArray(materialPurchases) ? materialPurchases : [];
     const transportExpensesArray = Array.isArray(transportExpenses) ? transportExpenses : [];
     const miscExpensesArray = Array.isArray(miscExpenses) ? miscExpenses : [];
+    const workerTransfersArray = Array.isArray(workerTransfers) ? workerTransfers : [];
     const workersArray = Array.isArray(workers) ? workers : [];
     
     console.log(`🎯 بدء معالجة البيانات للمشروع ${selectedProject}`);
@@ -258,6 +269,30 @@ export default function ProjectTransactionsSimple() {
       }
     });
 
+    // إضافة حوالات العمال (مصروف)
+    workerTransfersArray.forEach((transfer: any) => {
+      const date = transfer.date || transfer.transferDate;
+      const amount = parseFloat(transfer.amount);
+
+      if (date && !isNaN(amount) && amount > 0) {
+        // البحث عن العامل باستخدام workerId
+        const worker = workersArray.find((w: any) => w.id === transfer.workerId);
+        const workerName = worker?.name || transfer.workerName || 'عامل غير معروف';
+        const recipientName = transfer.recipientName ? ` - المستلم: ${transfer.recipientName}` : '';
+        const transferMethod = transfer.transferMethod === 'hawaleh' ? 'حولة' : 
+                              transfer.transferMethod === 'bank' ? 'تحويل بنكي' : 'نقداً';
+
+        allTransactions.push({
+          id: `worker-transfer-${transfer.id}`,
+          date: date,
+          type: 'expense',
+          category: 'حوالات العمال',
+          amount: amount,
+          description: `${workerName}${recipientName} - ${transferMethod}`
+        });
+      }
+    });
+
     // ترتيب حسب التاريخ (الأحدث أولاً) مع التأكد من صحة التواريخ
     const finalTransactions = allTransactions
       .filter(t => t.date && !isNaN(new Date(t.date).getTime()))
@@ -273,7 +308,7 @@ export default function ProjectTransactionsSimple() {
     });
     
     return finalTransactions;
-  }, [fundTransfers, workerAttendance, materialPurchases, transportExpenses, miscExpenses, workers]);
+  }, [fundTransfers, workerAttendance, materialPurchases, transportExpenses, miscExpenses, workerTransfers, workers]);
 
   // تطبيق الفلاتر
   const filteredTransactions = useMemo(() => {
