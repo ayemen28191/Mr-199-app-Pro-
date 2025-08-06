@@ -41,7 +41,7 @@ export default function ProjectTransactionsSimple() {
 
   // جلب حضور العمال للمشروع
   const { data: workerAttendance = [] } = useQuery({
-    queryKey: ['/api/projects', selectedProject, 'worker-attendance'],
+    queryKey: ['/api/projects', selectedProject, 'attendance'],
     enabled: !!selectedProject,
   });
 
@@ -74,8 +74,16 @@ export default function ProjectTransactionsSimple() {
     const transportExpensesArray = Array.isArray(transportExpenses) ? transportExpenses : [];
     const miscExpensesArray = Array.isArray(miscExpenses) ? miscExpenses : [];
     
+    console.log(`🎯 بدء معالجة البيانات للمشروع ${selectedProject}`);
+    console.log('📊 البيانات المتاحة:', {
+      fundTransfers: fundTransfersArray?.length || 0,
+      workerAttendance: workerAttendanceArray?.length || 0,
+      materialPurchases: materialPurchasesArray?.length || 0,
+      transportExpenses: transportExpensesArray?.length || 0,
+      miscExpenses: miscExpensesArray?.length || 0
+    });
+    console.log('🔍 عينة من بيانات أجور العمال الأولى:', workerAttendanceArray?.[0]);
 
-    
     // حساب إجمالي العمليات المتاحة
     const totalOperations = fundTransfersArray.length + workerAttendanceArray.length + 
                            materialPurchasesArray.length + transportExpensesArray.length + 
@@ -104,29 +112,79 @@ export default function ProjectTransactionsSimple() {
     });
 
     // إضافة أجور العمال (مصروف)
-    workerAttendanceArray.forEach((attendance: any) => {
-      const date = attendance.date;
-      // البحث عن المبلغ في الحقول المختلفة
-      let amount = 0;
+    console.log('🔍 معالجة أجور العمال - العدد:', workerAttendanceArray.length);
+    if (workerAttendanceArray.length > 0) {
+      console.log('🔍 أول عنصر من بيانات أجور العمال:', JSON.stringify(workerAttendanceArray[0], null, 2));
+    }
+    
+    workerAttendanceArray.forEach((attendance: any, index: number) => {
+      console.log(`🔍 معالجة العامل رقم ${index + 1}:`, attendance);
       
-      if (attendance.paidAmount && !isNaN(parseFloat(attendance.paidAmount))) {
-        amount = parseFloat(attendance.paidAmount);
-      } else if (attendance.actualWage && !isNaN(parseFloat(attendance.actualWage))) {
-        amount = parseFloat(attendance.actualWage);
-      } else if (attendance.totalWage && !isNaN(parseFloat(attendance.totalWage))) {
-        amount = parseFloat(attendance.totalWage);
-      } else if (attendance.dailyWage && attendance.workDays) {
-        amount = parseFloat(attendance.dailyWage) * parseFloat(attendance.workDays);
+      const date = attendance.date || attendance.attendanceDate || attendance.created_at;
+      console.log('📅 التاريخ المستخرج:', date);
+      
+      // فحص جميع الحقول الموجودة في الكائن
+      console.log('🔍 جميع الحقول المتاحة:', Object.keys(attendance));
+      
+      // البحث عن المبلغ في جميع الحقول المحتملة
+      let amount = 0;
+      const possibleAmountFields = [
+        'paidAmount', 'actualWage', 'totalWage', 'wage', 'amount', 
+        'dailyWage', 'salary', 'payment', 'cost', 'totalAmount'
+      ];
+      
+      for (const field of possibleAmountFields) {
+        const value = attendance[field];
+        if (value !== undefined && value !== null && value !== '') {
+          const numValue = parseFloat(value);
+          if (!isNaN(numValue) && numValue > 0) {
+            amount = numValue;
+            console.log(`💰 عثر على مبلغ في الحقل ${field}:`, amount);
+            break;
+          }
+        }
+      }
+      
+      // حساب الأجر من الأجر اليومي وأيام العمل
+      if (amount === 0 && attendance.dailyWage && attendance.workDays) {
+        const dailyWage = parseFloat(attendance.dailyWage);
+        const workDays = parseFloat(attendance.workDays);
+        if (!isNaN(dailyWage) && !isNaN(workDays)) {
+          amount = dailyWage * workDays;
+          console.log(`💰 حساب الأجر من الأجر اليومي: ${dailyWage} × ${workDays} = ${amount}`);
+        }
       }
 
+      console.log('✅ النتيجة النهائية:', { 
+        date, 
+        amount, 
+        hasDate: !!date, 
+        hasAmount: amount > 0, 
+        willAdd: !!date && amount > 0 
+      });
+      
       if (date && amount > 0) {
-        allTransactions.push({
+        // تحسين وصف العامل ليشمل المعلومات المفيدة
+        const workerName = attendance.workerName || attendance.worker?.name || attendance.name || 'غير محدد';
+        const workDays = attendance.workDays ? ` (${attendance.workDays} يوم)` : '';
+        const dailyWage = attendance.dailyWage ? ` - أجر يومي: ${formatCurrency(parseFloat(attendance.dailyWage))}` : '';
+        
+        const newTransaction = {
           id: `wage-${attendance.id}`,
           date: date,
-          type: 'expense',
+          type: 'expense' as const,
           category: 'أجور العمال',
           amount: amount,
-          description: `عامل: ${attendance.workerName || attendance.worker?.name || 'غير محدد'}`
+          description: `${workerName}${workDays}${dailyWage}`
+        };
+        
+        console.log('✅ إضافة معاملة أجور العمال:', newTransaction);
+        allTransactions.push(newTransaction);
+      } else {
+        console.log(`❌ تم تخطي العامل ${attendance.workerName || attendance.name || 'غير معروف'} - السبب:`, {
+          missingDate: !date,
+          missingAmount: amount === 0,
+          originalData: attendance
         });
       }
     });
@@ -194,9 +252,20 @@ export default function ProjectTransactionsSimple() {
     });
 
     // ترتيب حسب التاريخ (الأحدث أولاً) مع التأكد من صحة التواريخ
-    return allTransactions
+    const finalTransactions = allTransactions
       .filter(t => t.date && !isNaN(new Date(t.date).getTime()))
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    
+    console.log(`✅ معاملات نهائية: ${finalTransactions.length} من أصل ${allTransactions.length}`);
+    console.log('🔍 تفاصيل المعاملات النهائية:', {
+      income: finalTransactions.filter(t => t.type === 'income').length,
+      transfer_from_project: finalTransactions.filter(t => t.type === 'transfer_from_project').length,
+      expense: finalTransactions.filter(t => t.type === 'expense').length,
+      deferred: finalTransactions.filter(t => t.type === 'deferred').length,
+      workerWages: finalTransactions.filter(t => t.category === 'أجور العمال').length
+    });
+    
+    return finalTransactions;
   }, [fundTransfers, workerAttendance, materialPurchases, transportExpenses, miscExpenses]);
 
   // تطبيق الفلاتر
@@ -483,7 +552,21 @@ export default function ProjectTransactionsSimple() {
                                transaction.type === 'deferred' ? '' : '-'}{formatCurrency(transaction.amount || 0).replace(' ر.ي', '')} ر.ي
                             </td>
                             <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">
-                              {transaction.description}
+                              {transaction.category === 'أجور العمال' ? (
+                                <div className="flex flex-col gap-1">
+                                  <span className="font-medium text-gray-900 dark:text-gray-100">
+                                    {transaction.description.split(' - أجر يومي:')[0]}
+                                  </span>
+                                  {transaction.description.includes(' - أجر يومي:') && (
+                                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                                      {transaction.description.split(' - أجر يومي:')[1] ? 
+                                        `أجر يومي: ${transaction.description.split(' - أجر يومي:')[1]}` : ''}
+                                    </span>
+                                  )}
+                                </div>
+                              ) : (
+                                transaction.description
+                              )}
                             </td>
                           </tr>
                         ))}
