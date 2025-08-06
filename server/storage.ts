@@ -1459,6 +1459,8 @@ export class DatabaseStorage implements IStorage {
     lastActivity: string;
   }> {
     try {
+      console.log(`🔍 حساب إحصائيات المشروع: ${projectId}`);
+      
       // حساب الإحصائيات الكلية الحقيقية من جميع المعاملات
       const [
         workers,
@@ -1543,23 +1545,47 @@ export class DatabaseStorage implements IStorage {
       const totalTransport = parseFloat((transport.rows[0] as any)?.total || '0');
       const totalMisc = parseFloat((miscExpenses.rows[0] as any)?.total || '0');
 
-      // الإجمالي الكلي للدخل والمصروفات
+      // تسجيل القيم للتأكد من صحة البيانات
+      console.log(`📊 تفاصيل الحسابات للمشروع ${projectId}:`);
+      console.log(`   💰 تحويلات العهدة: ${totalFundTransfers}`);
+      console.log(`   📈 تحويلات واردة: ${totalProjectIn}`);
+      console.log(`   📉 تحويلات صادرة: ${totalProjectOut}`);
+      console.log(`   👷 أجور العمال: ${totalWages}`);
+      console.log(`   🏗️  مشتريات المواد: ${totalMaterials}`);
+      console.log(`   🚚 النقل: ${totalTransport}`);
+      console.log(`   📋 مصاريف متنوعة: ${totalMisc}`);
+
+      // الإجمالي الكلي للدخل والمصروفات - بمنطق صحيح
       const totalIncome = totalFundTransfers + totalProjectIn;
       const totalExpenses = totalWages + totalMaterials + totalTransport + totalMisc + totalProjectOut;
       const currentBalance = totalIncome - totalExpenses;
+
+      console.log(`   📊 إجمالي الدخل: ${totalIncome}`);
+      console.log(`   📊 إجمالي المصاريف: ${totalExpenses}`);
+      console.log(`   📊 الرصيد النهائي: ${currentBalance}`);
       
-      return {
+      // التحقق من أن البيانات منطقية
+      if (isNaN(currentBalance) || !isFinite(currentBalance)) {
+        console.error('⚠️  خطأ في حساب الرصيد - قيمة غير منطقية');
+        throw new Error('خطأ في حساب الرصيد المالي');
+      }
+
+      const result = {
         totalWorkers: totalWorkers,
-        totalExpenses: totalExpenses,
-        totalIncome: totalIncome,
-        currentBalance: currentBalance,
+        totalExpenses: Math.round(totalExpenses * 100) / 100, // تقريب لرقمين عشريين
+        totalIncome: Math.round(totalIncome * 100) / 100,
+        currentBalance: Math.round(currentBalance * 100) / 100,
         activeWorkers: totalWorkers, // نفترض أن جميع العمال نشطين
         completedDays: completedDays,
         materialPurchases: materialCount,
         lastActivity: new Date().toISOString().split('T')[0]
       };
+
+      console.log(`✅ تم حساب الإحصائيات بنجاح - الرصيد النهائي: ${result.currentBalance}`);
+      return result;
+
     } catch (error) {
-      console.error('Error getting project statistics:', error);
+      console.error('❌ خطأ في حساب إحصائيات المشروع:', error);
       return {
         totalWorkers: 0,
         totalExpenses: 0,
