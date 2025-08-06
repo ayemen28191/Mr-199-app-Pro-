@@ -63,6 +63,11 @@ export default function ProjectTransactionsSimple() {
     enabled: !!selectedProject,
   });
 
+  // جلب بيانات العمال لعرض أسمائهم
+  const { data: workers = [] } = useQuery({
+    queryKey: ['/api/workers'],
+  });
+
   // تحويل البيانات إلى قائمة معاملات موحدة
   const transactions = useMemo(() => {
     const allTransactions: Transaction[] = [];
@@ -73,6 +78,7 @@ export default function ProjectTransactionsSimple() {
     const materialPurchasesArray = Array.isArray(materialPurchases) ? materialPurchases : [];
     const transportExpensesArray = Array.isArray(transportExpenses) ? transportExpenses : [];
     const miscExpensesArray = Array.isArray(miscExpenses) ? miscExpenses : [];
+    const workersArray = Array.isArray(workers) ? workers : [];
     
     console.log(`🎯 بدء معالجة البيانات للمشروع ${selectedProject}`);
     console.log('📊 البيانات المتاحة:', {
@@ -164,8 +170,9 @@ export default function ProjectTransactionsSimple() {
       });
       
       if (date && amount > 0) {
-        // تحسين وصف العامل ليشمل المعلومات المفيدة
-        const workerName = attendance.workerName || attendance.worker?.name || attendance.name || 'غير محدد';
+        // البحث عن العامل باستخدام workerId
+        const worker = workersArray.find((w: any) => w.id === attendance.workerId);
+        const workerName = worker?.name || attendance.workerName || attendance.worker?.name || attendance.name || 'غير محدد';
         const workDays = attendance.workDays ? ` (${attendance.workDays} يوم)` : '';
         const dailyWage = attendance.dailyWage ? ` - أجر يومي: ${formatCurrency(parseFloat(attendance.dailyWage))}` : '';
         
@@ -266,7 +273,7 @@ export default function ProjectTransactionsSimple() {
     });
     
     return finalTransactions;
-  }, [fundTransfers, workerAttendance, materialPurchases, transportExpenses, miscExpenses]);
+  }, [fundTransfers, workerAttendance, materialPurchases, transportExpenses, miscExpenses, workers]);
 
   // تطبيق الفلاتر
   const filteredTransactions = useMemo(() => {

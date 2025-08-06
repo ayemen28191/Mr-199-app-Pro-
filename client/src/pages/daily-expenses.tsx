@@ -594,29 +594,7 @@ export default function DailyExpenses() {
 
   const totals = calculateTotals();
 
-  // Debug logging في المكون
-  console.log("=== COMPONENT STATE DEBUG ===");
-  console.log("selectedProjectId:", selectedProjectId, "!! =", !!selectedProjectId);
-  console.log("selectedDate:", selectedDate, "!! =", !!selectedDate);
-  console.log("Query enabled:", !!selectedProjectId && !!selectedDate);
-  console.log("todayFundTransfers:", todayFundTransfers);
-  console.log("todayFundTransfers type:", typeof todayFundTransfers);
-  console.log("todayFundTransfers isArray:", Array.isArray(todayFundTransfers));
-  console.log("todayFundTransfers length:", todayFundTransfers?.length);
-  console.log("fundTransfersLoading:", fundTransfersLoading);
-  console.log("=== WORKERS DEBUG ===");
-  console.log("workers:", workers);
-  console.log("workers length:", workers?.length);
-  console.log("todayAttendance:", todayAttendance);
-  console.log("todayAttendance length:", todayAttendance?.length);
-  // فحص تطابق معرفات العمال
-  if (Array.isArray(todayAttendance) && Array.isArray(workers)) {
-    todayAttendance.forEach((attendance, index) => {
-      const worker = workers.find(w => w.id === attendance.workerId);
-      console.log(`Attendance ${index}: workerId=${attendance.workerId}, found worker:`, worker);
-    });
-  }
-  console.log("================================");
+
 
   return (
     <div className="p-4 slide-in">
