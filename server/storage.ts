@@ -1555,14 +1555,16 @@ export class DatabaseStorage implements IStorage {
       console.log(`   🚚 النقل: ${totalTransport}`);
       console.log(`   📋 مصاريف متنوعة: ${totalMisc}`);
 
-      // الإجمالي الكلي للدخل والمصروفات - بمنطق صحيح
+      // الإجمالي الكلي للدخل والمصروفات - بمنطق صحيح (بدون حساب التحويلات الصادرة كمصروف)
       const totalIncome = totalFundTransfers + totalProjectIn;
-      const totalExpenses = totalWages + totalMaterials + totalTransport + totalMisc + totalProjectOut;
-      const currentBalance = totalIncome - totalExpenses;
+      const totalExpenses = totalWages + totalMaterials + totalTransport + totalMisc;
+      // ملاحظة: التحويلات الصادرة لا تُحسب كمصروف لأنها مجرد نقل أموال من مشروع لآخر
+      const currentBalance = totalIncome - totalExpenses - totalProjectOut;
 
       console.log(`   📊 إجمالي الدخل: ${totalIncome}`);
-      console.log(`   📊 إجمالي المصاريف: ${totalExpenses}`);
-      console.log(`   📊 الرصيد النهائي: ${currentBalance}`);
+      console.log(`   📊 إجمالي المصاريف الحقيقية: ${totalExpenses}`);
+      console.log(`   📤 تحويلات صادرة: ${totalProjectOut}`);
+      console.log(`   📊 الرصيد النهائي: ${currentBalance} (بعد خصم التحويلات)`);
       
       // التحقق من أن البيانات منطقية
       if (isNaN(currentBalance) || !isFinite(currentBalance)) {
@@ -1572,7 +1574,7 @@ export class DatabaseStorage implements IStorage {
 
       const result = {
         totalWorkers: totalWorkers,
-        totalExpenses: Math.round(totalExpenses * 100) / 100, // تقريب لرقمين عشريين
+        totalExpenses: Math.round(totalExpenses * 100) / 100, // المصاريف الحقيقية فقط (بدون التحويلات)
         totalIncome: Math.round(totalIncome * 100) / 100,
         currentBalance: Math.round(currentBalance * 100) / 100,
         activeWorkers: totalWorkers, // نفترض أن جميع العمال نشطين
