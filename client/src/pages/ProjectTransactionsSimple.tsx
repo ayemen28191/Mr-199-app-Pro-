@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Search, Filter, TrendingUp, TrendingDown, Building2 } from 'lucide-react';
+import { Search, Filter, TrendingUp, TrendingDown, Building2, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { formatCurrency } from '@/lib/utils';
@@ -17,7 +17,7 @@ interface Project {
 interface Transaction {
   id: string;
   date: string;
-  type: 'income' | 'expense';
+  type: 'income' | 'expense' | 'deferred';
   category: string;
   amount: number;
   description: string;
@@ -74,13 +74,7 @@ export default function ProjectTransactionsSimple() {
     const transportExpensesArray = Array.isArray(transportExpenses) ? transportExpenses : [];
     const miscExpensesArray = Array.isArray(miscExpenses) ? miscExpenses : [];
     
-    // تشخيص البيانات المؤقت
-    console.log('🔍 بيانات المشروع:', selectedProject);
-    console.log('💰 تحويلات العهدة:', fundTransfersArray);
-    console.log('👷 حضور العمال:', workerAttendanceArray);
-    console.log('🏗️ مشتريات المواد:', materialPurchasesArray);
-    console.log('🚚 النقل:', transportExpensesArray);
-    console.log('📋 متنوعة:', miscExpensesArray);
+
     
     // حساب إجمالي العمليات المتاحة
     const totalOperations = fundTransfersArray.length + workerAttendanceArray.length + 
@@ -132,7 +126,7 @@ export default function ProjectTransactionsSimple() {
       }
     });
 
-    // إضافة مشتريات المواد (مصروف)
+    // إضافة مشتريات المواد (مصروف أو آجل)
     materialPurchasesArray.forEach((purchase: any) => {
       const date = purchase.purchaseDate || purchase.date;
       let amount = 0;
@@ -146,13 +140,16 @@ export default function ProjectTransactionsSimple() {
       }
 
       if (date && amount > 0) {
+        // تحديد نوع المشترية (آجل أم مدفوع)
+        const isDeferred = purchase.paymentType === 'deferred' || purchase.isDeferred || purchase.deferred;
+        
         allTransactions.push({
           id: `material-${purchase.id}`,
           date: date,
-          type: 'expense',
-          category: 'مشتريات المواد',
+          type: isDeferred ? 'deferred' : 'expense',
+          category: isDeferred ? 'مشتريات آجلة' : 'مشتريات المواد',
           amount: amount,
-          description: `مادة: ${purchase.materialName || purchase.material?.name || purchase.name || 'غير محدد'}`
+          description: `مادة: ${purchase.materialName || purchase.material?.name || purchase.name || 'غير محدد'}${isDeferred ? ' (آجل)' : ''}`
         });
       }
     });
@@ -219,10 +216,12 @@ export default function ProjectTransactionsSimple() {
   const totals = useMemo(() => {
     const income = filteredTransactions.filter(t => t.type === 'income').reduce((sum, t) => sum + (t.amount || 0), 0);
     const expenses = filteredTransactions.filter(t => t.type === 'expense').reduce((sum, t) => sum + (t.amount || 0), 0);
+    const deferred = filteredTransactions.filter(t => t.type === 'deferred').reduce((sum, t) => sum + (t.amount || 0), 0);
     return { 
       income: income, 
-      expenses: expenses, 
-      balance: income - expenses 
+      expenses: expenses,
+      deferred: deferred,
+      balance: income - expenses // المشتريات الآجلة لا تؤثر على الرصيد
     };
   }, [filteredTransactions]);
 
@@ -282,6 +281,7 @@ export default function ProjectTransactionsSimple() {
                     <SelectItem value="all">جميع العمليات</SelectItem>
                     <SelectItem value="income">الدخل فقط</SelectItem>
                     <SelectItem value="expense">المصاريف فقط</SelectItem>
+                    <SelectItem value="deferred">المشتريات الآجلة</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -306,7 +306,7 @@ export default function ProjectTransactionsSimple() {
         {selectedProject && (
           <>
             {/* الإجماليات */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <Card className="bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
@@ -335,6 +335,22 @@ export default function ProjectTransactionsSimple() {
                       </p>
                     </div>
                     <TrendingDown className="h-8 w-8 text-red-500" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800">
+                <CardContent className="pt-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-yellow-600 dark:text-yellow-400">
+                        المشتريات الآجلة
+                      </p>
+                      <p className="text-2xl font-bold text-yellow-700 dark:text-yellow-300">
+                        {formatCurrency(totals.deferred || 0)}
+                      </p>
+                    </div>
+                    <Clock className="h-8 w-8 text-yellow-500" />
                   </div>
                 </CardContent>
               </Card>
@@ -411,15 +427,23 @@ export default function ProjectTransactionsSimple() {
                               {format(new Date(transaction.date), 'dd/MM/yyyy', { locale: ar })}
                             </td>
                             <td className="py-3 px-4">
-                              <Badge variant={transaction.type === 'income' ? 'default' : 'destructive'}>
-                                {transaction.type === 'income' ? 'دخل' : 'مصروف'}
+                              <Badge variant={
+                                transaction.type === 'income' ? 'default' : 
+                                transaction.type === 'deferred' ? 'outline' : 'destructive'
+                              } className={transaction.type === 'deferred' ? 'border-yellow-500 text-yellow-700 dark:text-yellow-400' : ''}>
+                                {transaction.type === 'income' ? 'دخل' : 
+                                 transaction.type === 'deferred' ? 'آجل' : 'مصروف'}
                               </Badge>
                             </td>
                             <td className="py-3 px-4 text-sm font-medium">
                               {transaction.category}
                             </td>
-                            <td className={`py-3 px-4 text-sm font-bold ${transaction.type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                              {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount || 0).replace(' ر.ي', '')} ر.ي
+                            <td className={`py-3 px-4 text-sm font-bold ${
+                              transaction.type === 'income' ? 'text-green-600' : 
+                              transaction.type === 'deferred' ? 'text-yellow-600' : 'text-red-600'
+                            }`}>
+                              {transaction.type === 'income' ? '+' : 
+                               transaction.type === 'deferred' ? '' : '-'}{formatCurrency(transaction.amount || 0).replace(' ر.ي', '')} ر.ي
                             </td>
                             <td className="py-3 px-4 text-sm text-gray-600 dark:text-gray-400">
                               {transaction.description}
