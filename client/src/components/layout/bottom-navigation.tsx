@@ -1,5 +1,5 @@
 import { useLocation } from "wouter";
-import { Home, Users, Receipt, BarChart, CreditCard, Building2, Truck, Filter } from "lucide-react";
+import { Home, Users, Receipt, BarChart, CreditCard, Building2, Truck, Filter, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const navigationItems = [
@@ -7,7 +7,7 @@ const navigationItems = [
   { path: "/projects", icon: Building2, label: "المشاريع", key: "projects" },
   { path: "/workers", icon: Users, label: "العمال", key: "workers" },
   { path: "/suppliers-pro", icon: Truck, label: "الموردين", key: "suppliers" },
-  { path: "/workers-filter-report", icon: Filter, label: "تصفية العمال", key: "workers-filter" },
+  { path: "/project-transactions", icon: FileText, label: "سجل العمليات", key: "transactions" },
 ];
 
 export default function BottomNavigation() {
