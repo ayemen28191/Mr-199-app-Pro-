@@ -51,15 +51,40 @@ export default function ProjectTransactionsSimple() {
     enabled: !!selectedProject,
   });
 
+  // جلب مصروفات النقل للمشروع
+  const { data: transportExpenses = [] } = useQuery({
+    queryKey: ['/api/projects', selectedProject, 'transportation-expenses'],
+    enabled: !!selectedProject,
+  });
+
+  // جلب المصروفات المتنوعة للمشروع
+  const { data: miscExpenses = [] } = useQuery({
+    queryKey: ['/api/projects', selectedProject, 'worker-misc-expenses'],
+    enabled: !!selectedProject,
+  });
+
   // تحويل البيانات إلى قائمة معاملات موحدة
   const transactions = useMemo(() => {
     const allTransactions: Transaction[] = [];
+    
+    // تشخيص البيانات للمساعدة في حل المشكلة
+    const fundTransfersArray = Array.isArray(fundTransfers) ? fundTransfers : [];
+    const workerAttendanceArray = Array.isArray(workerAttendance) ? workerAttendance : [];
+    const materialPurchasesArray = Array.isArray(materialPurchases) ? materialPurchases : [];
+    const transportExpensesArray = Array.isArray(transportExpenses) ? transportExpenses : [];
+    const miscExpensesArray = Array.isArray(miscExpenses) ? miscExpenses : [];
+    
+    // حساب إجمالي العمليات المتاحة
+    const totalOperations = fundTransfersArray.length + workerAttendanceArray.length + 
+                           materialPurchasesArray.length + transportExpensesArray.length + 
+                           miscExpensesArray.length;
 
     // إضافة تحويلات العهدة (دخل)
-    (fundTransfers as any[]).forEach((transfer: any) => {
-      const date = transfer.transferDate || transfer.date || new Date().toISOString().split('T')[0];
+    fundTransfersArray.forEach((transfer: any) => {
+      const date = transfer.transferDate || transfer.date;
       const amount = parseFloat(transfer.amount) || 0;
-      if (date && amount > 0) {
+
+      if (date && !isNaN(amount)) {
         allTransactions.push({
           id: `fund-${transfer.id}`,
           date: date,
@@ -72,33 +97,76 @@ export default function ProjectTransactionsSimple() {
     });
 
     // إضافة أجور العمال (مصروف)
-    (workerAttendance as any[]).forEach((attendance: any) => {
-      const date = attendance.date || new Date().toISOString().split('T')[0];
-      const amount = parseFloat(attendance.actualWage || attendance.paidAmount || attendance.totalWage) || 0;
-      if (date && amount > 0) {
+    workerAttendanceArray.forEach((attendance: any) => {
+      const date = attendance.date;
+      // البحث عن المبلغ في الحقول المختلفة
+      const amount = parseFloat(
+        attendance.paidAmount || 
+        attendance.actualWage || 
+        attendance.totalWage || 
+        (attendance.dailyWage * attendance.workDays) ||
+        0
+      );
+
+      if (date && !isNaN(amount) && amount !== 0) {
         allTransactions.push({
           id: `wage-${attendance.id}`,
           date: date,
           type: 'expense',
           category: 'أجور العمال',
           amount: amount,
-          description: `عامل: ${attendance.workerName || 'غير محدد'}`
+          description: `عامل: ${attendance.workerName || attendance.worker?.name || 'غير محدد'}`
         });
       }
     });
 
     // إضافة مشتريات المواد (مصروف)
-    (materialPurchases as any[]).forEach((purchase: any) => {
-      const date = purchase.purchaseDate || purchase.date || new Date().toISOString().split('T')[0];
-      const amount = parseFloat(purchase.totalAmount || purchase.amount) || 0;
-      if (date && amount > 0) {
+    materialPurchasesArray.forEach((purchase: any) => {
+      const date = purchase.purchaseDate || purchase.date;
+      const amount = parseFloat(purchase.totalAmount || purchase.amount || purchase.cost) || 0;
+
+      if (date && !isNaN(amount) && amount !== 0) {
         allTransactions.push({
           id: `material-${purchase.id}`,
           date: date,
           type: 'expense',
           category: 'مشتريات المواد',
           amount: amount,
-          description: `مادة: ${purchase.materialName || purchase.name || 'غير محدد'}`
+          description: `مادة: ${purchase.materialName || purchase.material?.name || purchase.name || 'غير محدد'}`
+        });
+      }
+    });
+
+    // إضافة مصروفات النقل (مصروف)
+    transportExpensesArray.forEach((expense: any) => {
+      const date = expense.date;
+      const amount = parseFloat(expense.amount) || 0;
+
+      if (date && !isNaN(amount) && amount !== 0) {
+        allTransactions.push({
+          id: `transport-${expense.id}`,
+          date: date,
+          type: 'expense',
+          category: 'مصروفات النقل',
+          amount: amount,
+          description: `نقل: ${expense.description || 'غير محدد'}`
+        });
+      }
+    });
+
+    // إضافة المصروفات المتنوعة (مصروف)
+    miscExpensesArray.forEach((expense: any) => {
+      const date = expense.date;
+      const amount = parseFloat(expense.amount) || 0;
+
+      if (date && !isNaN(amount) && amount !== 0) {
+        allTransactions.push({
+          id: `misc-${expense.id}`,
+          date: date,
+          type: 'expense',
+          category: 'مصروفات متنوعة',
+          amount: amount,
+          description: `متنوع: ${expense.description || expense.workerName || 'غير محدد'}`
         });
       }
     });
@@ -107,7 +175,7 @@ export default function ProjectTransactionsSimple() {
     return allTransactions
       .filter(t => t.date && !isNaN(new Date(t.date).getTime()))
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [fundTransfers, workerAttendance, materialPurchases]);
+  }, [fundTransfers, workerAttendance, materialPurchases, transportExpenses, miscExpenses]);
 
   // تطبيق الفلاتر
   const filteredTransactions = useMemo(() => {
@@ -280,8 +348,29 @@ export default function ProjectTransactionsSimple() {
               </CardHeader>
               <CardContent>
                 {filteredTransactions.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    لا توجد عمليات لعرضها
+                  <div className="text-center py-8">
+                    <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-6 border border-blue-200 dark:border-blue-800">
+                      <Building2 className="h-12 w-12 text-blue-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-300 mb-2">
+                        لا توجد عمليات مالية
+                      </h3>
+                      <p className="text-blue-600 dark:text-blue-400 mb-4">
+                        {selectedProject ? 
+                          'هذا المشروع لا يحتوي على عمليات مالية مسجلة بعد' : 
+                          'يرجى اختيار مشروع لعرض العمليات المالية الخاصة به'
+                        }
+                      </p>
+                      <div className="text-sm text-blue-500 dark:text-blue-400">
+                        💡 نصيحة: تأكد من إدخال البيانات التالية للمشروع:
+                        <ul className="list-disc list-inside mt-2 space-y-1">
+                          <li>تحويلات العهدة</li>
+                          <li>أجور العمال</li>
+                          <li>مشتريات المواد</li>
+                          <li>مصروفات النقل</li>
+                          <li>المصروفات المتنوعة</li>
+                        </ul>
+                      </div>
+                    </div>
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
