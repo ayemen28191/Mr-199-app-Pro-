@@ -1,0 +1,178 @@
+/* Workers Settlement Report Print Styles */
+
+/* إعدادات الطباعة العامة */
+@media print {
+  /* إخفاء كل شيء أولاً */
+  * {
+    visibility: hidden !important;
+  }
+
+  /* إظهار تقرير تصفية العمال فقط */
+  #workers-settlement-report, 
+  #workers-settlement-report * {
+    visibility: visible !important;
+  }
+
+  /* إعدادات الصفحة */
+  @page {
+    size: A4 portrait;
+    margin: 0.5cm;
+  }
+
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    font-family: 'Arial', sans-serif !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* تقرير تصفية العمال */
+  #workers-settlement-report {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 20px !important;
+    background: white !important;
+    font-size: 12px !important;
+    line-height: 1.3 !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* إخفاء أزرار التصدير */
+  .no-print {
+    display: none !important;
+  }
+
+  /* الحفاظ على الألوان */
+  .preserve-color {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* رأس التقرير */
+  #workers-settlement-report .bg-gradient-to-r {
+    background: linear-gradient(135deg, #14b8a6 0%, #0891b2 100%) !important;
+    color: white !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* الجدول */
+  #workers-settlement-report table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+    margin: 10px 0 !important;
+    font-size: 11px !important;
+  }
+
+  #workers-settlement-report th, 
+  #workers-settlement-report td {
+    border: 1px solid #000 !important;
+    padding: 6px 4px !important;
+    text-align: center !important;
+    vertical-align: middle !important;
+    page-break-inside: avoid !important;
+    font-size: 10px !important;
+    line-height: 1.2 !important;
+  }
+
+  #workers-settlement-report th {
+    background-color: #f3f4f6 !important;
+    font-weight: bold !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* صفوف الجدول */
+  #workers-settlement-report tbody tr:nth-child(even) {
+    background-color: #f9fafb !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  #workers-settlement-report tbody tr:nth-child(odd) {
+    background-color: white !important;
+  }
+
+  /* التذييل */
+  #workers-settlement-report tfoot tr {
+    background-color: #e5e7eb !important;
+    font-weight: bold !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* الرصيد الموجب والسالب */
+  #workers-settlement-report .text-green-600,
+  #workers-settlement-report .text-green-700 {
+    color: #059669 !important;
+  }
+
+  #workers-settlement-report .text-red-600,
+  #workers-settlement-report .text-red-700 {
+    color: #dc2626 !important;
+  }
+
+  /* العناوين */
+  #workers-settlement-report h1 {
+    font-size: 16px !important;
+    margin: 0 0 5px 0 !important;
+    text-align: center !important;
+  }
+
+  #workers-settlement-report h2 {
+    font-size: 14px !important;
+    margin: 0 !important;
+    text-align: center !important;
+  }
+
+  /* الملخص الإحصائي */
+  #workers-settlement-report .grid {
+    display: block !important;
+  }
+
+  #workers-settlement-report .grid > div {
+    display: inline-block !important;
+    width: 48% !important;
+    margin: 1% !important;
+    vertical-align: top !important;
+  }
+
+  /* إخفاء العناصر غير الضرورية للطباعة */
+  #workers-settlement-report .rounded-xl,
+  #workers-settlement-report .shadow-lg,
+  #workers-settlement-report .hover\:bg-teal-50 {
+    box-shadow: none !important;
+    border-radius: 0 !important;
+  }
+
+  /* إعدادات خاصة للاتجاه العربي */
+  #workers-settlement-report[dir="rtl"] {
+    direction: rtl !important;
+    text-align: right !important;
+  }
+
+  #workers-settlement-report[dir="rtl"] th[style*="textAlign: center"],
+  #workers-settlement-report[dir="rtl"] td[style*="textAlign: center"] {
+    text-align: center !important;
+  }
+
+  #workers-settlement-report[dir="rtl"] th[style*="textAlign: right"],
+  #workers-settlement-report[dir="rtl"] td[style*="textAlign: right"] {
+    text-align: right !important;
+  }
+}
+
+/* إعدادات عرض عادية - لا تؤثر على الطباعة */
+#workers-settlement-report {
+  font-family: 'Arial', sans-serif;
+}
+
+#workers-settlement-report .no-print {
+  display: block;
+}

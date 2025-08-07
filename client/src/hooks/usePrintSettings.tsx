@@ -249,14 +249,21 @@ export function applyPrintSettings(reportType: string, customSettings?: PrintSet
 export function printWithSettings(reportType: string, delay: number = 500, customSettings?: any) {
   // إضافة فئات CSS للطباعة إلى العناصر المناسبة
   const prepareElementsForPrint = () => {
-    // البحث عن المحتوى الأساسي للتقرير
+    // البحث عن المحتوى الأساسي للتقرير بما في ذلك تقرير تصفية العمال
     const reportElements = document.querySelectorAll(
-      '.worker-statement-preview, .enhanced-worker-account-report, .report-preview, .print-content'
+      '.worker-statement-preview, .enhanced-worker-account-report, .report-preview, .print-content, #workers-settlement-report, [data-report-content="workers-settlement"]'
     );
     
     reportElements.forEach(element => {
       element.classList.add('print-show', 'content-visibility-fix');
     });
+
+    // معالجة خاصة لتقرير تصفية العمال
+    const settlementReport = document.getElementById('workers-settlement-report');
+    if (settlementReport) {
+      settlementReport.classList.add('print-show', 'workers-settlement-report');
+      console.log('🔧 تم إعداد تقرير تصفية العمال للطباعة');
+    }
 
     // إضافة فئات للجداول
     const tables = document.querySelectorAll('table');
@@ -265,7 +272,7 @@ export function printWithSettings(reportType: string, delay: number = 500, custo
     });
 
     // إضافة فئات للرؤوس
-    const headers = document.querySelectorAll('.print-header, .report-header, .enhanced-header');
+    const headers = document.querySelectorAll('.print-header, .report-header, .enhanced-header, .preserve-color');
     headers.forEach(header => {
       header.classList.add('print-show', 'page-break-avoid');
     });

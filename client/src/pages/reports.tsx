@@ -37,6 +37,7 @@ import "@/components/invoice-print-styles.css";
 import "@/components/professional-report-print.css";
 import "@/components/enhanced-worker-statement-print.css";
 import "@/components/print-fix-large-numbers.css";
+import "@/components/workers-settlement-print.css";
 
 export default function Reports() {
   const [, setLocation] = useLocation();
@@ -3195,67 +3196,80 @@ export default function Reports() {
                       
                       {/* Settlement Report Display */}
                       {settlementReportData && (
-                        <div className="bg-white rounded-xl border border-teal-200 overflow-hidden">
-                          <div className="bg-gradient-to-r from-teal-500 to-teal-600 p-4 text-white">
-                            <h4 className="text-lg font-bold">
-                              تقرير تصفية العمال - 
-                              {settlementReportData.projects?.length > 1 
-                                ? `${settlementReportData.projects.length} مشاريع` 
-                                : settlementReportData.projects?.[0]?.name || 'غير محدد'
-                              }
-                            </h4>
-                            <p className="text-teal-100 text-sm">
-                              تم إنشاؤه في: {formatDate(settlementReportData.generated_at)}
-                              {settlementReportData.filters?.dateFrom && settlementReportData.filters?.dateTo && 
-                                ` | الفترة: ${formatDate(settlementReportData.filters.dateFrom)} - ${formatDate(settlementReportData.filters.dateTo)}`
-                              }
-                            </p>
-                            {settlementReportData.projects?.length > 1 && (
-                              <p className="text-teal-100 text-xs mt-1">
-                                المشاريع: {settlementReportData.projects.map((p: any) => p.name).join(', ')}
-                              </p>
-                            )}
+                        <div 
+                          id="workers-settlement-report" 
+                          className="print-content bg-white rounded-xl border border-teal-200 overflow-hidden"
+                          data-report-content="workers-settlement"
+                          dir="rtl"
+                          style={{
+                            fontFamily: 'Arial, sans-serif',
+                            fontSize: '14px',
+                            lineHeight: '1.4'
+                          }}
+                        >
+                          {/* رأس التقرير للطباعة */}
+                          <div className="bg-gradient-to-r from-teal-500 to-teal-600 p-4 text-white preserve-color">
+                            <div className="text-center">
+                              <h1 className="text-xl font-bold mb-2">تقرير تصفية العمال الشامل</h1>
+                              <h2 className="text-lg font-semibold">
+                                {settlementReportData.projects?.length > 1 
+                                  ? `${settlementReportData.projects.length} مشاريع` 
+                                  : settlementReportData.projects?.[0]?.name || 'غير محدد'
+                                }
+                              </h2>
+                              <div className="mt-2 text-sm">
+                                <p>تاريخ الإنشاء: {formatDate(settlementReportData.generated_at)}</p>
+                                {settlementReportData.filters?.dateFrom && settlementReportData.filters?.dateTo && (
+                                  <p>الفترة: {formatDate(settlementReportData.filters.dateFrom)} - {formatDate(settlementReportData.filters.dateTo)}</p>
+                                )}
+                              </div>
+                              {settlementReportData.projects?.length > 1 && (
+                                <p className="text-xs mt-2">
+                                  المشاريع: {settlementReportData.projects.map((p: any) => p.name).join(', ')}
+                                </p>
+                              )}
+                            </div>
                           </div>
                           
                           <div className="p-6">
                             <div className="overflow-x-auto">
-                              <table className="w-full border-collapse border border-teal-200">
+                              <table className="w-full border-collapse border border-black" style={{ borderCollapse: 'collapse' }}>
                                 <thead>
-                                  <tr className="bg-teal-50">
-                                    <th className="border border-teal-200 p-3 text-right text-sm font-semibold text-teal-800">#</th>
-                                    <th className="border border-teal-200 p-3 text-right text-sm font-semibold text-teal-800">اسم العامل</th>
-                                    <th className="border border-teal-200 p-3 text-right text-sm font-semibold text-teal-800">نوع العامل</th>
-                                    <th className="border border-teal-200 p-3 text-right text-sm font-semibold text-teal-800">إجمالي الأيام</th>
-                                    <th className="border border-teal-200 p-3 text-right text-sm font-semibold text-teal-800">الاستحقاقات</th>
-                                    <th className="border border-teal-200 p-3 text-right text-sm font-semibold text-teal-800">المدفوعات</th>
-                                    <th className="border border-teal-200 p-3 text-right text-sm font-semibold text-teal-800">التحويلات</th>
-                                    <th className="border border-teal-200 p-3 text-right text-sm font-semibold text-teal-800">الرصيد النهائي</th>
+                                  <tr className="bg-gray-100">
+                                    <th className="border border-black p-2 text-right text-sm font-bold" style={{ border: '1px solid black', padding: '8px', textAlign: 'center' }}>#</th>
+                                    <th className="border border-black p-2 text-right text-sm font-bold" style={{ border: '1px solid black', padding: '8px', textAlign: 'right' }}>اسم العامل</th>
+                                    <th className="border border-black p-2 text-right text-sm font-bold" style={{ border: '1px solid black', padding: '8px', textAlign: 'center' }}>نوع العامل</th>
+                                    <th className="border border-black p-2 text-right text-sm font-bold" style={{ border: '1px solid black', padding: '8px', textAlign: 'center' }}>إجمالي الأيام</th>
+                                    <th className="border border-black p-2 text-right text-sm font-bold" style={{ border: '1px solid black', padding: '8px', textAlign: 'center' }}>الاستحقاقات</th>
+                                    <th className="border border-black p-2 text-right text-sm font-bold" style={{ border: '1px solid black', padding: '8px', textAlign: 'center' }}>المدفوعات</th>
+                                    <th className="border border-black p-2 text-right text-sm font-bold" style={{ border: '1px solid black', padding: '8px', textAlign: 'center' }}>التحويلات</th>
+                                    <th className="border border-black p-2 text-right text-sm font-bold" style={{ border: '1px solid black', padding: '8px', textAlign: 'center' }}>الرصيد النهائي</th>
                                   </tr>
                                 </thead>
                                 <tbody>
                                   {settlementReportData.workers.map((worker: any, index: number) => (
-                                    <tr key={worker.worker_id} className={`${worker.final_balance < 0 ? 'bg-red-50' : 'hover:bg-teal-50'} transition-colors`}>
-                                      <td className="border border-teal-200 p-3 text-sm text-center">{index + 1}</td>
-                                      <td className="border border-teal-200 p-3 text-sm font-medium">{worker.worker_name}</td>
-                                      <td className="border border-teal-200 p-3 text-sm">{worker.worker_type}</td>
-                                      <td className="border border-teal-200 p-3 text-sm text-center">{worker.total_work_days.toFixed(1)}</td>
-                                      <td className="border border-teal-200 p-3 text-sm text-center font-medium text-green-600">{formatCurrency(worker.total_earned)}</td>
-                                      <td className="border border-teal-200 p-3 text-sm text-center text-blue-600">{formatCurrency(worker.total_paid)}</td>
-                                      <td className="border border-teal-200 p-3 text-sm text-center text-orange-600">{formatCurrency(worker.total_transfers)}</td>
-                                      <td className={`border border-teal-200 p-3 text-sm text-center font-bold ${worker.final_balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                    <tr key={worker.worker_id} className={`${worker.final_balance < 0 ? 'bg-red-50' : index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}`}>
+                                      <td className="border border-black p-2 text-sm text-center" style={{ border: '1px solid black', padding: '8px', textAlign: 'center' }}>{index + 1}</td>
+                                      <td className="border border-black p-2 text-sm font-medium" style={{ border: '1px solid black', padding: '8px', textAlign: 'right' }}>{worker.worker_name}</td>
+                                      <td className="border border-black p-2 text-sm" style={{ border: '1px solid black', padding: '8px', textAlign: 'center' }}>{worker.worker_type}</td>
+                                      <td className="border border-black p-2 text-sm text-center" style={{ border: '1px solid black', padding: '8px', textAlign: 'center' }}>{worker.total_work_days.toFixed(1)}</td>
+                                      <td className="border border-black p-2 text-sm text-center font-medium" style={{ border: '1px solid black', padding: '8px', textAlign: 'center' }}>{formatCurrency(worker.total_earned)}</td>
+                                      <td className="border border-black p-2 text-sm text-center" style={{ border: '1px solid black', padding: '8px', textAlign: 'center' }}>{formatCurrency(worker.total_paid)}</td>
+                                      <td className="border border-black p-2 text-sm text-center" style={{ border: '1px solid black', padding: '8px', textAlign: 'center' }}>{formatCurrency(worker.total_transfers)}</td>
+                                      <td className={`border border-black p-2 text-sm text-center font-bold`} style={{ border: '1px solid black', padding: '8px', textAlign: 'center', color: worker.final_balance >= 0 ? '#059669' : '#dc2626' }}>
                                         {formatCurrency(worker.final_balance)}
                                       </td>
                                     </tr>
                                   ))}
                                 </tbody>
                                 <tfoot>
-                                  <tr className="bg-teal-100 font-bold">
-                                    <td colSpan={3} className="border border-teal-200 p-3 text-sm text-center">الإجمالي ({settlementReportData.totals.total_workers} عامل)</td>
-                                    <td className="border border-teal-200 p-3 text-sm text-center">{settlementReportData.totals.total_work_days.toFixed(1)}</td>
-                                    <td className="border border-teal-200 p-3 text-sm text-center text-green-700">{formatCurrency(settlementReportData.totals.total_earned)}</td>
-                                    <td className="border border-teal-200 p-3 text-sm text-center text-blue-700">{formatCurrency(settlementReportData.totals.total_paid)}</td>
-                                    <td className="border border-teal-200 p-3 text-sm text-center text-orange-700">{formatCurrency(settlementReportData.totals.total_transfers)}</td>
-                                    <td className={`border border-teal-200 p-3 text-sm text-center font-bold ${settlementReportData.totals.final_balance >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                                  <tr className="bg-gray-200 font-bold">
+                                    <td colSpan={3} className="border border-black p-2 text-sm text-center font-bold" style={{ border: '1px solid black', padding: '8px', textAlign: 'center' }}>الإجمالي ({settlementReportData.totals.total_workers} عامل)</td>
+                                    <td className="border border-black p-2 text-sm text-center font-bold" style={{ border: '1px solid black', padding: '8px', textAlign: 'center' }}>{settlementReportData.totals.total_work_days.toFixed(1)}</td>
+                                    <td className="border border-black p-2 text-sm text-center font-bold" style={{ border: '1px solid black', padding: '8px', textAlign: 'center' }}>{formatCurrency(settlementReportData.totals.total_earned)}</td>
+                                    <td className="border border-black p-2 text-sm text-center font-bold" style={{ border: '1px solid black', padding: '8px', textAlign: 'center' }}>{formatCurrency(settlementReportData.totals.total_paid)}</td>
+                                    <td className="border border-black p-2 text-sm text-center font-bold" style={{ border: '1px solid black', padding: '8px', textAlign: 'center' }}>{formatCurrency(settlementReportData.totals.total_transfers)}</td>
+                                    <td className={`border border-black p-2 text-sm text-center font-bold`} style={{ border: '1px solid black', padding: '8px', textAlign: 'center', color: settlementReportData.totals.final_balance >= 0 ? '#059669' : '#dc2626' }}>
                                       {formatCurrency(settlementReportData.totals.final_balance)}
                                     </td>
                                   </tr>
@@ -3263,8 +3277,32 @@ export default function Reports() {
                               </table>
                             </div>
                             
-                            {/* Export Buttons */}
-                            <div className="flex gap-3 mt-6 pt-4 border-t border-teal-200">
+                            {/* ملخص إحصائي للطباعة */}
+                            <div className="mt-6 border-t-2 border-gray-300 pt-4">
+                              <div className="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                  <strong>إجمالي العمال:</strong> {settlementReportData.totals.total_workers}
+                                </div>
+                                <div>
+                                  <strong>إجمالي أيام العمل:</strong> {settlementReportData.totals.total_work_days.toFixed(1)}
+                                </div>
+                                <div>
+                                  <strong>متوسط أيام العمل للعامل:</strong> {(settlementReportData.totals.total_work_days / settlementReportData.totals.total_workers).toFixed(1)}
+                                </div>
+                                <div>
+                                  <strong>متوسط الأجر للعامل:</strong> {formatCurrency(settlementReportData.totals.total_earned / settlementReportData.totals.total_workers)}
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* تذييل التقرير */}
+                            <div className="mt-6 text-center text-xs border-t border-gray-200 pt-2">
+                              <p>تم إنشاء هذا التقرير بواسطة نظام إدارة مشاريع البناء</p>
+                              <p>تاريخ الطباعة: {new Date().toLocaleDateString('ar')} - {new Date().toLocaleTimeString('ar')}</p>
+                            </div>
+                            
+                            {/* Export Buttons - مخفية في الطباعة */}
+                            <div className="flex gap-3 mt-6 pt-4 border-t border-teal-200 no-print">
                               <Button
                                 onClick={() => {
                                   const projectNames = settlementReportData.projects?.map((p: any) => p.name).join('-') || 'مشاريع-متعددة';
