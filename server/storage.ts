@@ -1500,10 +1500,10 @@ export class DatabaseStorage implements IStorage {
           WHERE from_project_id = ${projectId}
         `),
         
-        // إجمالي الأجور الفعلية والأيام
+        // إجمالي المبالغ المدفوعة فعلياً (وليس الأجور الكاملة) والأيام
         db.execute(sql`
           SELECT 
-            COALESCE(SUM(CAST(actual_wage AS DECIMAL)), 0) as total_wages,
+            COALESCE(SUM(CAST(paid_amount AS DECIMAL)), 0) as total_wages,
             COUNT(DISTINCT date) as completed_days
           FROM worker_attendance 
           WHERE project_id = ${projectId}
