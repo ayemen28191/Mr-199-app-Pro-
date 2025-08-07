@@ -2805,7 +2805,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         try {
           const [attendances, transfers] = await Promise.all([
             storage.getWorkerAttendance(projectId),
-            storage.getWorkerTransfers(projectId)
+            storage.getFilteredWorkerTransfers(projectId)
           ]);
           
           // فلترة بالتاريخ إذا تم تحديده
@@ -2874,14 +2874,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             sum + parseFloat(record.paidAmount.toString()), 0
           );
 
-          const accountBalance = workerAttendanceRecords.reduce((sum, record) => 
-            sum + parseFloat(record.remainingAmount.toString()), 0
-          );
-
           const totalTransfers = workerTransferRecords.reduce((sum, record) => 
             sum + parseFloat(record.amount.toString()), 0
           );
 
+          // الرصيد النهائي = المكتسب - المستلم - المحول للأهل
           const finalBalance = totalEarned - totalPaid - totalTransfers;
 
           return {
@@ -2892,7 +2889,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             total_work_days: totalWorkDays,
             total_earned: totalEarned,
             total_paid: totalPaid,
-            account_balance: accountBalance,
             total_transfers: totalTransfers,
             final_balance: finalBalance
           };
@@ -2908,7 +2904,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         total_work_days: workersReport.reduce((sum, w) => sum + w.total_work_days, 0),
         total_earned: workersReport.reduce((sum, w) => sum + w.total_earned, 0),
         total_paid: workersReport.reduce((sum, w) => sum + w.total_paid, 0),
-        account_balance: workersReport.reduce((sum, w) => sum + w.account_balance, 0),
         total_transfers: workersReport.reduce((sum, w) => sum + w.total_transfers, 0),
         final_balance: workersReport.reduce((sum, w) => sum + w.final_balance, 0)
       };
