@@ -6,7 +6,8 @@ import {
   FileSpreadsheet, Printer, Calendar, TrendingUp, Filter, RefreshCw,
   BarChart3, Database, Clock, Settings, Users, DollarSign, FileText,
   Activity, Target, Briefcase, ChevronRight, Grid3X3, List, Search,
-  ExternalLink, AlertCircle, CheckCircle2, Zap, Globe, Award, ChevronUp, ChevronDown
+  ExternalLink, AlertCircle, CheckCircle2, Zap, Globe, Award, ChevronUp, ChevronDown,
+  Lightbulb, Info
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -75,35 +76,42 @@ export default function Reports() {
   // Header collapsible state
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
   
-  // Progress steps للمؤشر المتقدم
+  // Progress steps للمؤشر المتقدم المحسن
   const initialProgressSteps: ProgressStep[] = [
     {
       id: 'validate',
-      title: 'التحقق من البيانات',
-      description: 'فحص صحة المشاريع والتواريخ والعمال المحددة',
+      title: 'التحقق من صحة البيانات',
+      description: 'فحص المشاريع المحددة، التواريخ، والعمال المختارين للتأكد من صحة البيانات',
       status: 'pending',
-      estimatedTime: 2
+      estimatedTime: 3
     },
     {
       id: 'fetch-data',
-      title: 'جلب بيانات المشاريع',
-      description: 'استخراج بيانات الحضور والتحويلات من قاعدة البيانات',
+      title: 'استخراج البيانات من قاعدة البيانات',
+      description: 'جلب سجلات الحضور، الأجور، التحويلات، والمدفوعات للعمال المحددين',
+      status: 'pending',
+      estimatedTime: 12
+    },
+    {
+      id: 'calculate',
+      title: 'معالجة وحساب المبالغ المالية',
+      description: 'حساب الأجور المستحقة، المبالغ المدفوعة، الأرصدة المتبقية، وحوالات العمال',
       status: 'pending',
       estimatedTime: 8
     },
     {
-      id: 'calculate',
-      title: 'حساب الأرصدة',
-      description: 'معالجة البيانات وحساب الاستحقاقات والأرصدة النهائية',
+      id: 'generate-report',
+      title: 'إنشاء التقرير وتنسيقه',
+      description: 'تجميع البيانات وإنشاء التقرير النهائي مع الجداول والإحصائيات',
       status: 'pending',
       estimatedTime: 5
     },
     {
-      id: 'generate-report',
-      title: 'إنشاء التقرير',
-      description: 'تنسيق البيانات وإنشاء التقرير النهائي للعرض',
-      status: 'pending',
-      estimatedTime: 3
+      id: 'finalize',
+      title: 'إنهاء المعالجة وعرض النتائج',
+      description: 'حفظ التقرير وإعداده للعرض والطباعة والتصدير',
+      status: 'pending', 
+      estimatedTime: 2
     }
   ];
   
@@ -540,10 +548,15 @@ export default function Reports() {
       
       // الخطوة 4: إنشاء التقرير
       startStep('generate-report');
+      await new Promise(resolve => setTimeout(resolve, 1200));
       
       setSettlementReportData(data);
       setActiveReportType("workers_settlement");
+      completeStep('generate-report');
 
+      // الخطوة 5: إنهاء المعالجة
+      startStep('finalize');
+      
       // حفظ بيانات التقرير في localStorage للاستخدام في إعدادات الطباعة
       setTimeout(() => {
         const projectNames = data.projects?.map((p: any) => p.name).join(', ') || 'مشاريع غير محددة';
@@ -565,7 +578,8 @@ export default function Reports() {
         });
       }, 300);
       
-      completeStep('generate-report');
+      await new Promise(resolve => setTimeout(resolve, 800));
+      completeStep('finalize');
 
       // مسح الأخطاء عند النجاح
       setSettlementErrors([]);
@@ -3248,14 +3262,31 @@ export default function Reports() {
                         />
                       )}
 
-                      {/* مؤشر التقدم */}
+                      {/* مؤشر التقدم المحسن مع معلومات إضافية */}
                       {isGenerating && (
                         <div className="mb-6">
-                          <AdvancedProgressIndicator
-                            steps={progressSteps}
-                            currentStepId={currentStepId}
-                            showTimeEstimate={true}
-                          />
+                          <div className="bg-gradient-to-r from-blue-50 to-teal-50 p-4 rounded-xl border border-blue-200 mb-4">
+                            <div className="flex items-center gap-3 mb-3">
+                              <div className="p-2 bg-blue-500 rounded-full">
+                                <Zap className="h-5 w-5 text-white animate-pulse" />
+                              </div>
+                              <div>
+                                <h4 className="font-bold text-blue-900">جاري إنشاء تقرير تصفية العمال</h4>
+                                <p className="text-sm text-blue-700">يتم معالجة البيانات وحساب الأرصدة للعمال المحددين</p>
+                              </div>
+                            </div>
+                            <AdvancedProgressIndicator
+                              steps={progressSteps}
+                              currentStepId={currentStepId}
+                              showTimeEstimate={true}
+                            />
+                            <div className="mt-3 p-2 bg-white/70 rounded-lg">
+                              <div className="flex items-center justify-between text-xs text-blue-600">
+                                <span>💡 نصيحة: التقرير يشمل جميع البيانات المالية والأرصدة</span>
+                                <span>🕐 الوقت المتبقي تقريبي</span>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       )}
 
@@ -3306,32 +3337,59 @@ export default function Reports() {
                               {selectedProjectId && !selectedSettlementProjectIds.length && ` (المشروع الحالي: ${selectedProject?.name})`}
                             </p>
                             {selectedSettlementProjectIds.length > 5 && (
-                              <div className="p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-700">
-                                ⚠️ اختيار أكثر من 5 مشاريع قد يجعل التقرير بطيء. فكر في تقسيم التقرير إلى مجموعات أصغر.
+                              <div className="p-3 bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <AlertCircle className="h-4 w-4 text-yellow-600" />
+                                  <span className="text-sm font-medium text-yellow-800">تحذير من الأداء</span>
+                                </div>
+                                <p className="text-xs text-yellow-700">
+                                  اختيار أكثر من 5 مشاريع قد يجعل التقرير أبطأ. الوقت المتوقع: {Math.ceil(selectedSettlementProjectIds.length * 2)} ثانية إضافية.
+                                </p>
+                                <p className="text-xs text-yellow-600 mt-1">
+                                  💡 اقتراح: قسّم التقرير إلى مجموعات أصغر (3-4 مشاريع) للحصول على أداء أفضل.
+                                </p>
                               </div>
                             )}
                           </div>
                         </div>
                         
-                        <div className="space-y-4 mb-4">
+                        {/* اختيار التواريخ مع نصائح ذكية */}
+                        <div className="space-y-3 mb-4">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-teal-600" />
+                            <label className="text-sm font-medium text-teal-700">فترة التقرير</label>
+                          </div>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                              <label className="text-sm font-medium text-teal-700">من تاريخ (اختياري)</label>
+                              <label className="text-xs font-medium text-teal-600">من تاريخ (اختياري)</label>
                               <Input
                                 type="date"
                                 value={settlementDateFrom}
                                 onChange={(e) => setSettlementDateFrom(e.target.value)}
-                                className="border-teal-200 focus:border-teal-500"
+                                className="h-12 border-2 border-teal-200 focus:border-teal-500 rounded-xl"
                               />
                             </div>
                             <div className="space-y-2">
-                              <label className="text-sm font-medium text-teal-700">إلى تاريخ (اختياري)</label>
+                              <label className="text-xs font-medium text-teal-600">إلى تاريخ (اختياري)</label>
                               <Input
                                 type="date"
                                 value={settlementDateTo}
                                 onChange={(e) => setSettlementDateTo(e.target.value)}
-                                className="border-teal-200 focus:border-teal-500"
+                                className="h-12 border-2 border-teal-200 focus:border-teal-500 rounded-xl"
                               />
+                            </div>
+                          </div>
+                          <div className="p-2 bg-teal-50 rounded-lg border border-teal-100">
+                            <div className="flex items-start gap-2">
+                              <Lightbulb className="h-4 w-4 text-teal-500 mt-0.5 flex-shrink-0" />
+                              <div className="text-xs text-teal-700">
+                                <p className="font-medium mb-1">نصائح لاختيار الفترة:</p>
+                                <ul className="space-y-1 text-xs">
+                                  <li>• اتركهما فارغين لشمول جميع السجلات</li>
+                                  <li>• اختر فترة محددة لتقرير مفصل</li>
+                                  <li>• الفترات الطويلة تحتاج وقت أكثر للمعالجة</li>
+                                </ul>
+                              </div>
                             </div>
                           </div>
                           
@@ -3386,11 +3444,37 @@ export default function Reports() {
                           </div>
                         </div>
                         
-                        <div className="space-y-2 mb-4">
-                          <label className="text-sm font-medium text-teal-700">اختيار عمال محددين (اختياري)</label>
-                          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-32 overflow-y-auto border border-teal-200 rounded-md p-2">
+                        {/* اختيار العمال مع تحسينات */}
+                        <div className="space-y-3 mb-4">
+                          <div className="flex items-center gap-2 justify-between">
+                            <div className="flex items-center gap-2">
+                              <Users className="h-4 w-4 text-teal-600" />
+                              <label className="text-sm font-medium text-teal-700">اختيار العمال</label>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setSelectedWorkerIds(workers.map(w => w.id))}
+                                className="text-xs border-teal-200 text-teal-700 hover:bg-teal-50"
+                              >
+                                تحديد الكل
+                              </Button>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setSelectedWorkerIds([])}
+                                className="text-xs border-teal-200 text-teal-700 hover:bg-teal-50"
+                              >
+                                إلغاء التحديد
+                              </Button>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-40 overflow-y-auto border-2 border-teal-200 rounded-xl p-3 bg-teal-50/30">
                             {workers.map((worker) => (
-                              <label key={worker.id} className="flex items-center space-x-2 space-x-reverse text-sm">
+                              <label key={worker.id} className="flex items-center space-x-2 space-x-reverse text-sm hover:bg-white/70 p-2 rounded-lg transition-colors cursor-pointer">
                                 <input
                                   type="checkbox"
                                   checked={selectedWorkerIds.includes(worker.id)}
@@ -3401,22 +3485,38 @@ export default function Reports() {
                                       setSelectedWorkerIds(selectedWorkerIds.filter(id => id !== worker.id));
                                     }
                                   }}
-                                  className="text-teal-600"
+                                  className="text-teal-600 focus:ring-teal-500 rounded"
                                 />
-                                <span className="text-teal-700">{worker.name}</span>
+                                <span className="text-teal-700 text-xs font-medium">{worker.name}</span>
                               </label>
                             ))}
                           </div>
-                          <div className="mt-2 space-y-1">
-                            <p className="text-xs text-teal-600">إذا لم تختر عمالاً محددين، سيتم عرض جميع العمال الذين لديهم نشاط في المشروع</p>
-                            {selectedWorkerIds.length > 20 && (
-                              <div className="p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-700">
-                                ⚠️ اختيار أكثر من 20 عامل قد يجعل التقرير معقد. يمكنك ترك الحقل فارغ لعرض جميع العمال النشطين.
+                          <div className="space-y-2">
+                            <div className="p-2 bg-teal-50 rounded-lg border border-teal-100">
+                              <div className="flex items-start gap-2">
+                                <Info className="h-4 w-4 text-teal-500 mt-0.5 flex-shrink-0" />
+                                <div className="text-xs text-teal-700">
+                                  <p className="font-medium mb-1">معلومات الاختيار:</p>
+                                  <ul className="space-y-1 text-xs">
+                                    <li>• محدد حالياً: {selectedWorkerIds.length} من {workers.length} عامل</li>
+                                    <li>• اتركه فارغاً لشمول جميع العمال في المشاريع</li>
+                                    <li>• العمال المحددون سيظهرون في التقرير فقط</li>
+                                  </ul>
+                                </div>
                               </div>
-                            )}
-                            {selectedWorkerIds.length > 0 && (
-                              <div className="p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-700">
-                                ℹ️ تم اختيار {selectedWorkerIds.length} عامل للتقرير.
+                            </div>
+                            {selectedWorkerIds.length > 20 && (
+                              <div className="p-3 bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <AlertCircle className="h-4 w-4 text-yellow-600" />
+                                  <span className="text-sm font-medium text-yellow-800">تحذير من التعقيد</span>
+                                </div>
+                                <p className="text-xs text-yellow-700">
+                                  اختيار أكثر من 20 عامل قد يجعل التقرير معقد ويستغرق وقت أطول. الوقت المتوقع: {Math.ceil(selectedWorkerIds.length * 0.5)} ثانية إضافية.
+                                </p>
+                                <p className="text-xs text-yellow-600 mt-1">
+                                  💡 اقتراح: اتركه فارغاً لعرض جميع العمال، أو قلل العدد لأقل من 20 عامل.
+                                </p>
                               </div>
                             )}
                           </div>
