@@ -60,6 +60,7 @@ export default function Reports() {
   const [settlementDateFrom, setSettlementDateFrom] = useState("");
   const [settlementDateTo, setSettlementDateTo] = useState("");
   const [selectedWorkerIds, setSelectedWorkerIds] = useState<string[]>([]);
+  const [selectedSettlementProjectIds, setSelectedSettlementProjectIds] = useState<string[]>([]);
   const [settlementReportData, setSettlementReportData] = useState<any>(null);
   const [showSettlementForm, setShowSettlementForm] = useState(false);
   
@@ -398,10 +399,15 @@ export default function Reports() {
   };
 
   const generateWorkersSettlementReport = async () => {
-    if (!selectedProjectId) {
+    // تحديد المشاريع: إما المحددة يدوياً أو المشروع الحالي كافتراضي
+    const projectIdsToUse = selectedSettlementProjectIds.length > 0 
+      ? selectedSettlementProjectIds 
+      : (selectedProjectId ? [selectedProjectId] : []);
+    
+    if (projectIdsToUse.length === 0) {
       toast({
         title: "خطأ",
-        description: "يرجى اختيار مشروع",
+        description: "يرجى اختيار مشروع واحد على الأقل",
         variant: "destructive",
       });
       return;
@@ -410,8 +416,11 @@ export default function Reports() {
     setIsGenerating(true);
     try {
       // بناء URL مع المعاملات
-      let url = `/api/reports/workers-settlement/${selectedProjectId}`;
+      let url = `/api/reports/workers-settlement`;
       const params = new URLSearchParams();
+      
+      // إضافة معرفات المشاريع
+      params.append('projectIds', projectIdsToUse.join(','));
       
       if (settlementDateFrom) {
         params.append('dateFrom', settlementDateFrom);
@@ -423,9 +432,7 @@ export default function Reports() {
         params.append('workerIds', selectedWorkerIds.join(','));
       }
       
-      if (params.toString()) {
-        url += `?${params.toString()}`;
-      }
+      url += `?${params.toString()}`;
 
       console.log('📈 طلب تقرير تصفية العمال:', url);
 
@@ -435,14 +442,15 @@ export default function Reports() {
 
       // حفظ بيانات التقرير في localStorage للاستخدام في إعدادات الطباعة
       setTimeout(() => {
+        const projectNames = data.projects?.map((p: any) => p.name).join(', ') || 'مشاريع غير محددة';
         const reportContext = {
           type: 'workers_settlement',
           data: data,
           html: '', // سيتم إضافته عند الحاجة
-          title: `تقرير تصفية العمال - ${selectedProject?.name || 'غير محدد'}`,
+          title: `تقرير تصفية العمال - ${projectNames}`,
           timestamp: Date.now(),
           hasRealData: true,
-          projectName: selectedProject?.name || 'مشروع غير محدد',
+          projectName: projectNames,
           reportDate: settlementDateFrom && settlementDateTo ? 
             `${settlementDateFrom} إلى ${settlementDateTo}` : 'جميع الفترات'
         };
@@ -1866,10 +1874,13 @@ export default function Reports() {
       };
       worksheet.getRow(1).height = 30;
 
-      // معلومات المشروع والتاريخ
+      // معلومات المشاريع والتاريخ
       worksheet.mergeCells('A3:D3');
       const projectCell = worksheet.getCell('A3');
-      projectCell.value = `المشروع: ${data.project?.name || 'غير محدد'}`;
+      const projectNames = data.projects?.length > 1 
+        ? `المشاريع (${data.projects.length}): ${data.projects.map((p: any) => p.name).join(', ')}`
+        : `المشروع: ${data.projects?.[0]?.name || 'غير محدد'}`;
+      projectCell.value = projectNames;
       projectCell.font = { name: 'Arial', size: 12, bold: true };
       projectCell.alignment = { horizontal: 'right' };
       projectCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF5F5F5' } };
@@ -2843,6 +2854,34 @@ export default function Reports() {
                           </Button>
                         </div>
                         
+                        {/* اختيار المشاريع */}
+                        <div className="space-y-2 mb-4">
+                          <label className="text-sm font-medium text-teal-700">اختيار المشاريع (مطلوب)</label>
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-32 overflow-y-auto border border-teal-200 rounded-md p-2">
+                            {projects.map((project) => (
+                              <label key={project.id} className="flex items-center space-x-2 space-x-reverse text-sm">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedSettlementProjectIds.includes(project.id)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedSettlementProjectIds([...selectedSettlementProjectIds, project.id]);
+                                    } else {
+                                      setSelectedSettlementProjectIds(selectedSettlementProjectIds.filter(id => id !== project.id));
+                                    }
+                                  }}
+                                  className="text-teal-600"
+                                />
+                                <span className="text-teal-700 text-xs">{project.name}</span>
+                              </label>
+                            ))}
+                          </div>
+                          <p className="text-xs text-teal-600">
+                            إذا لم تختر مشاريع محددة، سيتم استخدام المشروع المحدد حالياً في الأعلى
+                            {selectedProjectId && !selectedSettlementProjectIds.length && ` (المشروع الحالي: ${selectedProject?.name})`}
+                          </p>
+                        </div>
+                        
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                           <div className="space-y-2">
                             <label className="text-sm font-medium text-teal-700">من تاريخ (اختياري)</label>
@@ -2891,7 +2930,7 @@ export default function Reports() {
                         <div className="flex gap-3">
                           <Button
                             onClick={generateWorkersSettlementReport}
-                            disabled={!selectedProjectId || isGenerating}
+                            disabled={isGenerating}
                             className="flex-1 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white"
                           >
                             {isGenerating ? (
@@ -2908,13 +2947,24 @@ export default function Reports() {
                       {settlementReportData && (
                         <div className="bg-white rounded-xl border border-teal-200 overflow-hidden">
                           <div className="bg-gradient-to-r from-teal-500 to-teal-600 p-4 text-white">
-                            <h4 className="text-lg font-bold">تقرير تصفية العمال - {settlementReportData.project?.name}</h4>
+                            <h4 className="text-lg font-bold">
+                              تقرير تصفية العمال - 
+                              {settlementReportData.projects?.length > 1 
+                                ? `${settlementReportData.projects.length} مشاريع` 
+                                : settlementReportData.projects?.[0]?.name || 'غير محدد'
+                              }
+                            </h4>
                             <p className="text-teal-100 text-sm">
                               تم إنشاؤه في: {formatDate(settlementReportData.generated_at)}
                               {settlementReportData.filters?.dateFrom && settlementReportData.filters?.dateTo && 
                                 ` | الفترة: ${formatDate(settlementReportData.filters.dateFrom)} - ${formatDate(settlementReportData.filters.dateTo)}`
                               }
                             </p>
+                            {settlementReportData.projects?.length > 1 && (
+                              <p className="text-teal-100 text-xs mt-1">
+                                المشاريع: {settlementReportData.projects.map((p: any) => p.name).join(', ')}
+                              </p>
+                            )}
                           </div>
                           
                           <div className="p-6">
@@ -2966,7 +3016,10 @@ export default function Reports() {
                             {/* Export Buttons */}
                             <div className="flex gap-3 mt-6 pt-4 border-t border-teal-200">
                               <Button
-                                onClick={() => exportToExcel(settlementReportData, `تقرير-تصفية-العمال-${settlementReportData.project?.name}-${getCurrentDate()}.xlsx`)}
+                                onClick={() => {
+                                  const projectNames = settlementReportData.projects?.map((p: any) => p.name).join('-') || 'مشاريع-متعددة';
+                                  exportToExcel(settlementReportData, `تقرير-تصفية-العمال-${projectNames}-${getCurrentDate()}.xlsx`);
+                                }}
                                 className="bg-green-600 hover:bg-green-700 text-white"
                               >
                                 <FileSpreadsheet className="h-4 w-4 mr-2" />

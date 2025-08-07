@@ -2754,35 +2754,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Workers Settlement Report - تقرير تصفية العمال الجماعي
-  app.get("/api/reports/workers-settlement/:projectId", async (req, res) => {
+  // Workers Settlement Report - تقرير تصفية العمال الجماعي (مشاريع متعددة)
+  app.get("/api/reports/workers-settlement", async (req, res) => {
     try {
-      const { projectId } = req.params;
-      const { dateFrom, dateTo, workerIds } = req.query;
+      const { projectIds, dateFrom, dateTo, workerIds } = req.query;
 
-      console.log('📊 طلب تقرير تصفية العمال:', { projectId, dateFrom, dateTo, workerIds });
+      console.log('📊 طلب تقرير تصفية العمال:', { projectIds, dateFrom, dateTo, workerIds });
 
       // التحقق من المعاملات المطلوبة
-      if (!projectId) {
-        return res.status(400).json({ message: "معرف المشروع مطلوب" });
+      if (!projectIds) {
+        return res.status(400).json({ message: "معرفات المشاريع مطلوبة" });
       }
 
-      // جلب البيانات الأساسية باستخدام storage methods
-      const [project, allWorkers, workerAttendances, workerTransfers] = await Promise.all([
-        storage.getProject(projectId),
-        storage.getWorkers(),
-        storage.getWorkerAttendance(projectId),
-        storage.getWorkerTransfers(projectId)
+      // تحويل projectIds إلى مصفوفة
+      let selectedProjectIds: string[] = [];
+      if (typeof projectIds === 'string') {
+        selectedProjectIds = projectIds.split(',').filter(id => id.trim());
+      }
+
+      if (selectedProjectIds.length === 0) {
+        return res.status(400).json({ message: "يجب تحديد مشروع واحد على الأقل" });
+      }
+
+      // جلب البيانات الأساسية
+      const [allProjects, allWorkers] = await Promise.all([
+        storage.getProjects(),
+        storage.getWorkers()
       ]);
 
-      if (!project) {
-        return res.status(404).json({ message: "المشروع غير موجود" });
+      // فلترة المشاريع المحددة
+      const selectedProjects = allProjects.filter(project => 
+        selectedProjectIds.includes(project.id)
+      );
+
+      if (selectedProjects.length === 0) {
+        return res.status(404).json({ message: "لا توجد مشاريع صالحة" });
       }
 
       // فلترة العمال إذا تم تحديدهم
       let selectedWorkerIds: string[] = [];
       if (workerIds && typeof workerIds === 'string') {
         selectedWorkerIds = workerIds.split(',').filter(id => id.trim());
+      }
+
+      // جلب بيانات الحضور والتحويلات لجميع المشاريع المحددة
+      const allAttendances: any[] = [];
+      const allTransfers: any[] = [];
+
+      for (const projectId of selectedProjectIds) {
+        try {
+          const [attendances, transfers] = await Promise.all([
+            storage.getWorkerAttendance(projectId),
+            storage.getWorkerTransfers(projectId)
+          ]);
+          
+          // فلترة بالتاريخ إذا تم تحديده
+          let filteredAttendances = attendances;
+          if (dateFrom && dateTo) {
+            filteredAttendances = attendances.filter(att => 
+              att.date >= dateFrom && att.date <= dateTo
+            );
+          } else if (dateFrom) {
+            filteredAttendances = attendances.filter(att => att.date >= dateFrom);
+          } else if (dateTo) {
+            filteredAttendances = attendances.filter(att => att.date <= dateTo);
+          }
+
+          // فلترة التحويلات بالتاريخ إذا تم تحديده
+          let filteredTransfers = transfers;
+          if (dateFrom && dateTo) {
+            filteredTransfers = transfers.filter(trans => 
+              trans.transferDate >= dateFrom && trans.transferDate <= dateTo
+            );
+          } else if (dateFrom) {
+            filteredTransfers = transfers.filter(trans => trans.transferDate >= dateFrom);
+          } else if (dateTo) {
+            filteredTransfers = transfers.filter(trans => trans.transferDate <= dateTo);
+          }
+
+          allAttendances.push(...filteredAttendances);
+          allTransfers.push(...filteredTransfers);
+        } catch (error) {
+          console.error(`خطأ في جلب بيانات المشروع ${projectId}:`, error);
+        }
       }
 
       // بناء تقرير العمال
@@ -2793,17 +2847,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (selectedWorkerIds.length > 0) {
             return selectedWorkerIds.includes(worker.id);
           }
-          // إذا لم يتم تحديد عمال، أظهر العمال الذين لديهم حضور في المشروع
-          return workerAttendances.some(attendance => attendance.workerId === worker.id);
+          // إذا لم يتم تحديد عمال، أظهر العمال الذين لديهم نشاط في المشاريع المحددة
+          return allAttendances.some(attendance => attendance.workerId === worker.id) ||
+                 allTransfers.some(transfer => transfer.workerId === worker.id);
         })
         .map(worker => {
-          // حساب الحضور والأجور للعامل
-          const workerAttendanceRecords = workerAttendances.filter(attendance => 
+          // حساب الحضور والأجور للعامل من جميع المشاريع
+          const workerAttendanceRecords = allAttendances.filter(attendance => 
             attendance.workerId === worker.id
           );
 
-          // حساب التحويلات للعامل
-          const workerTransferRecords = workerTransfers.filter(transfer => 
+          // حساب التحويلات للعامل من جميع المشاريع
+          const workerTransferRecords = allTransfers.filter(transfer => 
             transfer.workerId === worker.id
           );
 
@@ -2859,10 +2914,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       const response = {
-        project: project,
+        projects: selectedProjects,
         workers: workersReport,
         totals: totals,
         filters: {
+          projectIds: selectedProjectIds,
           dateFrom: dateFrom || null,
           dateTo: dateTo || null,
           workerIds: selectedWorkerIds.length > 0 ? selectedWorkerIds : null
@@ -2871,6 +2927,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       console.log('✅ تم إنشاء تقرير تصفية العمال بنجاح:', {
+        projectsCount: selectedProjects.length,
         workersCount: workersReport.length,
         totalEarned: totals.total_earned,
         finalBalance: totals.final_balance
