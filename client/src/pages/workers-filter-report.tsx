@@ -109,10 +109,18 @@ export default function WorkersFilterReport() {
       setReportData(sortedData);
       setShowResults(true);
       
-      toast({
-        title: "تم إنشاء التقرير",
-        description: `تم العثور على ${sortedData.length} سجل حضور للعمال المحددين`,
-      });
+      if (sortedData.length === 0) {
+        toast({
+          title: "لا توجد بيانات",
+          description: "لم يتم العثور على سجلات حضور للعمال المحددين في النطاق الزمني المحدد. تأكد من إدخال حضور العمال أولاً.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "تم إنشاء التقرير",
+          description: `تم العثور على ${sortedData.length} سجل حضور للعمال المحددين`,
+        });
+      }
     } catch (error) {
       console.error("Error generating report:", error);
       toast({
@@ -128,8 +136,8 @@ export default function WorkersFilterReport() {
   const exportToExcel = () => {
     if (reportData.length === 0) {
       toast({
-        title: "تنبيه",
-        description: "لا توجد بيانات للتصدير",
+        title: "لا توجد بيانات للتصدير",
+        description: "قم بإنشاء التقرير أولاً وتأكد من وجود سجلات حضور للعمال المحددين",
         variant: "destructive",
       });
       return;
@@ -398,8 +406,16 @@ export default function WorkersFilterReport() {
                   <div className="text-gray-400 mb-4">
                     <FileText className="h-16 w-16 mx-auto" />
                   </div>
-                  <h3 className="text-xl font-medium text-gray-600 mb-2">لا توجد بيانات</h3>
-                  <p className="text-gray-500">لم يتم العثور على سجلات حضور للفلترة المحددة</p>
+                  <h3 className="text-xl font-medium text-gray-600 mb-2">لا توجد بيانات للتصدير</h3>
+                  <p className="text-gray-500 mb-4">لم يتم العثور على سجلات حضور للعمال والمشاريع المحددة في النطاق الزمني المحدد</p>
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 max-w-md mx-auto">
+                    <h4 className="font-medium text-yellow-800 mb-2">للحصول على البيانات:</h4>
+                    <ul className="text-sm text-yellow-700 text-right space-y-1">
+                      <li>• تأكد من إدخال حضور العمال في المشاريع المحددة</li>
+                      <li>• راجع التواريخ المحددة للبحث</li>
+                      <li>• تحقق من أن العمال لديهم سجلات حضور في هذه الفترة</li>
+                    </ul>
+                  </div>
                 </div>
               ) : (
                 <>
