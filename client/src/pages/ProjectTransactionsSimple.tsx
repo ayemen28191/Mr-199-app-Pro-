@@ -33,9 +33,29 @@ export default function ProjectTransactionsSimple() {
     queryKey: ['/api/projects'],
   });
 
-  // جلب تحويلات العهدة للمشروع
+  // جلب تحويلات العهدة العادية للمشروع
   const { data: fundTransfers = [] } = useQuery({
     queryKey: ['/api/projects', selectedProject, 'fund-transfers'],
+    enabled: !!selectedProject,
+  });
+
+  // جلب التحويلات بين المشاريع (الواردة)
+  const { data: incomingProjectTransfers = [] } = useQuery({
+    queryKey: ['/api/project-fund-transfers', selectedProject, 'incoming'],
+    queryFn: async () => {
+      const response = await fetch(`/api/project-fund-transfers?toProjectId=${selectedProject}`);
+      return response.json();
+    },
+    enabled: !!selectedProject,
+  });
+
+  // جلب التحويلات بين المشاريع (الصادرة)
+  const { data: outgoingProjectTransfers = [] } = useQuery({
+    queryKey: ['/api/project-fund-transfers', selectedProject, 'outgoing'],
+    queryFn: async () => {
+      const response = await fetch(`/api/project-fund-transfers?fromProjectId=${selectedProject}`);
+      return response.json();
+    },
     enabled: !!selectedProject,
   });
 
@@ -84,6 +104,8 @@ export default function ProjectTransactionsSimple() {
     
     // تشخيص البيانات للمساعدة في حل المشكلة
     const fundTransfersArray = Array.isArray(fundTransfers) ? fundTransfers : [];
+    const incomingProjectTransfersArray = Array.isArray(incomingProjectTransfers) ? incomingProjectTransfers : [];
+    const outgoingProjectTransfersArray = Array.isArray(outgoingProjectTransfers) ? outgoingProjectTransfers : [];
     const workerAttendanceArray = Array.isArray(workerAttendance) ? workerAttendance : [];
     const materialPurchasesArray = Array.isArray(materialPurchases) ? materialPurchases : [];
     const transportExpensesArray = Array.isArray(transportExpenses) ? transportExpenses : [];
@@ -94,57 +116,68 @@ export default function ProjectTransactionsSimple() {
     console.log(`🎯 بدء معالجة البيانات للمشروع ${selectedProject}`);
     console.log('📊 البيانات المتاحة:', {
       fundTransfers: fundTransfersArray?.length || 0,
+      incomingProjectTransfers: incomingProjectTransfersArray?.length || 0,
+      outgoingProjectTransfers: outgoingProjectTransfersArray?.length || 0,
       workerAttendance: workerAttendanceArray?.length || 0,
       materialPurchases: materialPurchasesArray?.length || 0,
       transportExpenses: transportExpensesArray?.length || 0,
       miscExpenses: miscExpensesArray?.length || 0
     });
-    console.log('🔍 عينة من بيانات أجور العمال الأولى:', workerAttendanceArray?.[0]);
 
     // حساب إجمالي العمليات المتاحة
-    const totalOperations = fundTransfersArray.length + workerAttendanceArray.length + 
+    const totalOperations = fundTransfersArray.length + incomingProjectTransfersArray.length + 
+                           outgoingProjectTransfersArray.length + workerAttendanceArray.length + 
                            materialPurchasesArray.length + transportExpensesArray.length + 
                            miscExpensesArray.length;
 
-    // إضافة تحويلات العهدة (دخل أو مصروف حسب اتجاه التحويل)
+    // إضافة تحويلات العهدة العادية (دخل)
     fundTransfersArray.forEach((transfer: any) => {
       const date = transfer.transferDate || transfer.date;
       const amount = parseFloat(transfer.amount);
       
       if (date && !isNaN(amount) && amount > 0) {
-        // تحديد نوع التحويل
-        const isOutgoingTransfer = transfer.fromProjectId === selectedProject || 
-                                  transfer.transferType === 'to_project' ||
-                                  transfer.direction === 'outgoing';
-        const isIncomingTransfer = transfer.projectId === selectedProject || 
-                                  transfer.transferType === 'from_project' ||
-                                  transfer.direction === 'incoming';
-        
-        if (isOutgoingTransfer) {
-          // المشروع المرسل - يحسب كمصروف
-          allTransactions.push({
-            id: `fund-out-${transfer.id}`,
-            date: date,
-            type: 'expense',
-            category: 'تحويل إلى مشروع آخر',
-            amount: amount,
-            description: `إلى: ${transfer.recipientProject || transfer.toProjectName || 'مشروع آخر'}`
-          });
-        } else {
-          // المشروع المستقبل - يحسب كدخل
-          const isFromProject = transfer.fromProject || 
-                               transfer.fromProjectId ||
-                               (transfer.senderName && transfer.senderName.includes('مشروع'));
-          
-          allTransactions.push({
-            id: `fund-in-${transfer.id}`,
-            date: date,
-            type: isFromProject ? 'transfer_from_project' : 'income',
-            category: isFromProject ? 'تحويل من مشروع آخر' : 'تحويل عهدة',
-            amount: amount,
-            description: `من: ${transfer.senderName || transfer.fromProjectName || 'غير محدد'}`
-          });
-        }
+        allTransactions.push({
+          id: `fund-${transfer.id}`,
+          date: date,
+          type: 'income',
+          category: 'تحويل عهدة',
+          amount: amount,
+          description: `من: ${transfer.senderName || 'غير محدد'}`
+        });
+      }
+    });
+
+    // إضافة التحويلات الواردة من مشاريع أخرى (دخل)
+    incomingProjectTransfersArray.forEach((transfer: any) => {
+      const date = transfer.transferDate || transfer.date;
+      const amount = parseFloat(transfer.amount);
+      
+      if (date && !isNaN(amount) && amount > 0) {
+        allTransactions.push({
+          id: `project-in-${transfer.id}`,
+          date: date,
+          type: 'transfer_from_project',
+          category: 'تحويل من مشروع آخر',
+          amount: amount,
+          description: `من: ${transfer.fromProjectName || 'مشروع آخر'}`
+        });
+      }
+    });
+
+    // إضافة التحويلات الصادرة إلى مشاريع أخرى (مصروف)
+    outgoingProjectTransfersArray.forEach((transfer: any) => {
+      const date = transfer.transferDate || transfer.date;
+      const amount = parseFloat(transfer.amount);
+      
+      if (date && !isNaN(amount) && amount > 0) {
+        allTransactions.push({
+          id: `project-out-${transfer.id}`,
+          date: date,
+          type: 'expense',
+          category: 'تحويل إلى مشروع آخر',
+          amount: amount,
+          description: `إلى: ${transfer.toProjectName || 'مشروع آخر'}`
+        });
       }
     });
 
@@ -330,7 +363,7 @@ export default function ProjectTransactionsSimple() {
     });
     
     return finalTransactions;
-  }, [fundTransfers, workerAttendance, materialPurchases, transportExpenses, miscExpenses, workerTransfers, workers]);
+  }, [fundTransfers, incomingProjectTransfers, outgoingProjectTransfers, workerAttendance, materialPurchases, transportExpenses, miscExpenses, workerTransfers, workers]);
 
   // تطبيق الفلاتر
   const filteredTransactions = useMemo(() => {
