@@ -396,7 +396,7 @@ export default function Reports() {
     try {
       const data = await apiRequest("GET", `/api/reports/project-summary/${selectedProjectId}?dateFrom=${projectSummaryDate1}&dateTo=${projectSummaryDate2}`);
       setReportData(data);
-      setActiveReportType("summary");
+      setActiveReportType("project");
 
       // حفظ بيانات التقرير في localStorage للاستخدام في إعدادات الطباعة
       setTimeout(() => {
@@ -2465,11 +2465,255 @@ export default function Reports() {
     </div>
   );
 
-  const renderProjectSummaryReport = (data: any) => (
-    <div className="text-center py-8">
-      <p className="text-gray-600">تقرير ملخص المشروع - قيد التطوير</p>
-    </div>
-  );
+  const renderProjectSummaryReport = (data: any) => {
+    if (!data || !data.project) {
+      return (
+        <div className="text-center py-8">
+          <p className="text-red-600">لا توجد بيانات لعرض التقرير</p>
+        </div>
+      );
+    }
+
+    const { project, summary, details, dateFrom, dateTo } = data;
+    
+    return (
+      <div className="project-summary-report print-preview" data-report-content="project-summary">
+        {/* رأس التقرير */}
+        <div className="bg-gradient-to-r from-purple-600 to-purple-700 text-white p-6 rounded-t-2xl mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-white/20 rounded-xl">
+                <PieChart className="h-8 w-8" />
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold">ملخص المشروع المالي</h2>
+                <p className="text-purple-100">{project.name}</p>
+              </div>
+            </div>
+            <div className="text-left">
+              <p className="text-purple-100 text-sm">الفترة المالية</p>
+              <p className="font-bold">{formatDate(dateFrom)} - {formatDate(dateTo)}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* الإحصائيات الرئيسية */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          {/* إجمالي الإيرادات */}
+          <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-green-600 text-sm font-medium mb-1">إجمالي الإيرادات</p>
+                  <p className="text-3xl font-bold text-green-900">{formatCurrency(summary.totalIncome)}</p>
+                  <div className="flex items-center gap-1 mt-2">
+                    <TrendingUp className="h-4 w-4 text-green-500" />
+                    <span className="text-green-600 text-sm">تحويلات العهدة</span>
+                  </div>
+                </div>
+                <div className="p-4 bg-green-500/10 rounded-2xl">
+                  <DollarSign className="h-8 w-8 text-green-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* إجمالي المصروفات */}
+          <Card className="bg-gradient-to-br from-red-50 to-red-100 border-red-200">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-red-600 text-sm font-medium mb-1">إجمالي المصروفات</p>
+                  <p className="text-3xl font-bold text-red-900">{formatCurrency(summary.totalExpenses)}</p>
+                  <div className="flex items-center gap-1 mt-2">
+                    <Target className="h-4 w-4 text-red-500" />
+                    <span className="text-red-600 text-sm">جميع التكاليف</span>
+                  </div>
+                </div>
+                <div className="p-4 bg-red-500/10 rounded-2xl">
+                  <Receipt className="h-8 w-8 text-red-600" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* الرصيد الصافي */}
+          <Card className={`bg-gradient-to-br ${summary.netBalance >= 0 ? 'from-blue-50 to-blue-100 border-blue-200' : 'from-orange-50 to-orange-100 border-orange-200'}`}>
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className={`${summary.netBalance >= 0 ? 'text-blue-600' : 'text-orange-600'} text-sm font-medium mb-1`}>الرصيد الصافي</p>
+                  <p className={`text-3xl font-bold ${summary.netBalance >= 0 ? 'text-blue-900' : 'text-orange-900'}`}>{formatCurrency(summary.netBalance)}</p>
+                  <div className="flex items-center gap-1 mt-2">
+                    {summary.netBalance >= 0 ? (
+                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <AlertCircle className="h-4 w-4 text-orange-500" />
+                    )}
+                    <span className={`${summary.netBalance >= 0 ? 'text-green-600' : 'text-orange-600'} text-sm`}>
+                      {summary.netBalance >= 0 ? 'ربح' : 'عجز'}
+                    </span>
+                  </div>
+                </div>
+                <div className={`p-4 ${summary.netBalance >= 0 ? 'bg-blue-500/10' : 'bg-orange-500/10'} rounded-2xl`}>
+                  <BarChart3 className={`h-8 w-8 ${summary.netBalance >= 0 ? 'text-blue-600' : 'text-orange-600'}`} />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* تفصيل المصروفات */}
+        <Card className="mb-8">
+          <CardHeader className="bg-gray-50 border-b">
+            <CardTitle className="text-xl font-bold text-gray-800 flex items-center gap-2">
+              <Grid3X3 className="h-6 w-6" />
+              تفصيل المصروفات حسب الفئة
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {/* تكاليف العمال */}
+              <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 p-4 rounded-xl border border-indigo-200">
+                <div className="flex items-center justify-between mb-2">
+                  <Users className="h-6 w-6 text-indigo-600" />
+                  <span className="text-2xl font-bold text-indigo-900">{formatCurrency(summary.totalWorkerCosts)}</span>
+                </div>
+                <p className="text-indigo-700 text-sm font-medium">أجور العمال</p>
+                <p className="text-indigo-500 text-xs mt-1">{details.workerAttendance?.length || 0} سجل حضور</p>
+              </div>
+
+              {/* تكاليف المواد */}
+              <div className="bg-gradient-to-br from-amber-50 to-amber-100 p-4 rounded-xl border border-amber-200">
+                <div className="flex items-center justify-between mb-2">
+                  <Package className="h-6 w-6 text-amber-600" />
+                  <span className="text-2xl font-bold text-amber-900">{formatCurrency(summary.totalMaterialCosts)}</span>
+                </div>
+                <p className="text-amber-700 text-sm font-medium">مشتريات المواد</p>
+                <p className="text-amber-500 text-xs mt-1">{details.materialPurchases?.filter((p: any) => p.purchaseType === "نقد").length || 0} مشترى نقدي</p>
+              </div>
+
+              {/* مصاريف النقل */}
+              <div className="bg-gradient-to-br from-teal-50 to-teal-100 p-4 rounded-xl border border-teal-200">
+                <div className="flex items-center justify-between mb-2">
+                  <ExternalLink className="h-6 w-6 text-teal-600" />
+                  <span className="text-2xl font-bold text-teal-900">{formatCurrency(summary.totalTransportCosts)}</span>
+                </div>
+                <p className="text-teal-700 text-sm font-medium">النقل والتشغيل</p>
+                <p className="text-teal-500 text-xs mt-1">{details.transportationExpenses?.length || 0} مصروف نقل</p>
+              </div>
+
+              {/* تحويلات العمال */}
+              <div className="bg-gradient-to-br from-rose-50 to-rose-100 p-4 rounded-xl border border-rose-200">
+                <div className="flex items-center justify-between mb-2">
+                  <Share2 className="h-6 w-6 text-rose-600" />
+                  <span className="text-2xl font-bold text-rose-900">{formatCurrency(summary.totalTransferCosts)}</span>
+                </div>
+                <p className="text-rose-700 text-sm font-medium">حوالات العمال</p>
+                <p className="text-rose-500 text-xs mt-1">{details.workerTransfers?.length || 0} حوالة</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* تفاصيل إضافية */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* تحويلات العهدة */}
+          <Card>
+            <CardHeader className="bg-green-50 border-b">
+              <CardTitle className="text-lg font-bold text-green-800 flex items-center gap-2">
+                <DollarSign className="h-5 w-5" />
+                تحويلات العهدة ({details.fundTransfers?.length || 0})
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4">
+              {details.fundTransfers?.length > 0 ? (
+                <div className="space-y-2 max-h-40 overflow-y-auto">
+                  {details.fundTransfers.slice(0, 5).map((transfer: any, index: number) => (
+                    <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                      <div>
+                        <p className="font-medium text-sm">{transfer.senderName || 'غير محدد'}</p>
+                        <p className="text-xs text-gray-500">{formatDate(transfer.transferDate)}</p>
+                      </div>
+                      <span className="font-bold text-green-600">{formatCurrency(transfer.amount)}</span>
+                    </div>
+                  ))}
+                  {details.fundTransfers.length > 5 && (
+                    <p className="text-center text-gray-500 text-sm">...و {details.fundTransfers.length - 5} تحويل آخر</p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-center text-gray-500 py-4">لا توجد تحويلات في هذه الفترة</p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* ملخص الأداء */}
+          <Card>
+            <CardHeader className="bg-blue-50 border-b">
+              <CardTitle className="text-lg font-bold text-blue-800 flex items-center gap-2">
+                <Target className="h-5 w-5" />
+                مؤشرات الأداء
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-4">
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">نسبة المصروفات للإيرادات</span>
+                  <span className="font-bold">{summary.totalIncome > 0 ? ((summary.totalExpenses / summary.totalIncome) * 100).toFixed(1) : '0'}%</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">متوسط التكلفة اليومية</span>
+                  <span className="font-bold">{formatCurrency(summary.totalExpenses / Math.max(1, Math.ceil((new Date(dateTo).getTime() - new Date(dateFrom).getTime()) / (1000 * 60 * 60 * 24))))}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">نسبة أجور العمال</span>
+                  <span className="font-bold">{summary.totalExpenses > 0 ? ((summary.totalWorkerCosts / summary.totalExpenses) * 100).toFixed(1) : '0'}%</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">نسبة تكاليف المواد</span>
+                  <span className="font-bold">{summary.totalExpenses > 0 ? ((summary.totalMaterialCosts / summary.totalExpenses) * 100).toFixed(1) : '0'}%</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* أزرار التصدير والطباعة */}
+        <div className="flex gap-3 mt-6 pt-4 border-t border-gray-200 no-print">
+          <Button
+            onClick={() => {
+              // إنشاء ملف Excel
+              const excelData = {
+                project: project.name,
+                dateFrom,
+                dateTo,
+                summary,
+                details
+              };
+              // استدعاء دالة التصدير (سيتم تطويرها لاحقاً)
+              console.log('تصدير إلى Excel:', excelData);
+              toast({
+                title: "تصدير Excel",
+                description: "سيتم تطوير ميزة التصدير قريباً",
+              });
+            }}
+            className="bg-green-600 hover:bg-green-700 text-white"
+          >
+            <FileSpreadsheet className="h-4 w-4 mr-2" />
+            تصدير Excel
+          </Button>
+          <PrintButton reportType="project_summary" />
+        </div>
+
+        {/* تذييل التقرير */}
+        <div className="mt-8 text-center text-xs border-t border-gray-200 pt-4">
+          <p className="text-gray-600">تم إنشاء هذا التقرير بواسطة نظام إدارة مشاريع البناء</p>
+          <p className="text-gray-500">تاريخ الإنشاء: {new Date().toLocaleDateString('ar')} - {new Date().toLocaleTimeString('ar')}</p>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="mobile-reports-container mobile-smooth-scroll">
@@ -3420,11 +3664,13 @@ export default function Reports() {
                         type: activeReportType === 'daily' ? 'daily_expenses' : 
                               activeReportType === 'professional' ? 'daily_expenses' :
                               activeReportType === 'worker' ? 'worker_statement' :
-                              activeReportType === 'material' ? 'material_purchases' : 'daily_expenses',
+                              activeReportType === 'material' ? 'material_purchases' :
+                              activeReportType === 'project' ? 'project_summary' : 'daily_expenses',
                         title: `تقرير ${activeReportType === 'daily' ? 'المصاريف اليومية' :
                                         activeReportType === 'professional' ? 'المصاريف المهنية' :
                                         activeReportType === 'worker' ? 'حساب العامل' :
-                                        activeReportType === 'material' ? 'المواد والمشتريات' : 'التقرير'}`,
+                                        activeReportType === 'material' ? 'المواد والمشتريات' :
+                                        activeReportType === 'project' ? 'ملخص المشروع' : 'التقرير'}`,
                         data: reportData,
                         projectInfo: selectedProject
                       };
@@ -3441,14 +3687,16 @@ export default function Reports() {
                     reportType={activeReportType === 'daily' ? 'daily_expenses' : 
                                activeReportType === 'professional' ? 'daily_expenses' :
                                activeReportType === 'worker' ? 'worker_statement' :
-                               activeReportType === 'material' ? 'material_purchases' : 'daily_expenses'}
+                               activeReportType === 'material' ? 'material_purchases' :
+                               activeReportType === 'project' ? 'project_summary' : 'daily_expenses'}
                     className="px-6 py-2 rounded-xl"
                     variant="outline"
                     reportData={reportData}
                     reportTitle={`تقرير ${activeReportType === 'daily' ? 'المصاريف اليومية' :
                                         activeReportType === 'professional' ? 'المصاريف المهنية' :
                                         activeReportType === 'worker' ? 'حساب العامل' :
-                                        activeReportType === 'material' ? 'المواد والمشتريات' : 'التقرير'}`}
+                                        activeReportType === 'material' ? 'المواد والمشتريات' :
+                                        activeReportType === 'project' ? 'ملخص المشروع' : 'التقرير'}`}
                   />
                   <Button
                     onClick={printReport}
@@ -3477,7 +3725,11 @@ export default function Reports() {
               )}
               {activeReportType === 'worker' && renderWorkerAccountReport(reportData)}
               {activeReportType === 'material' && renderMaterialPurchasesReport(reportData)}
-              {activeReportType === 'project' && renderProjectSummaryReport(reportData)}
+              {activeReportType === 'project' && (
+                <div id="project-summary-content" data-report-content="project_summary">
+                  {renderProjectSummaryReport(reportData)}
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
