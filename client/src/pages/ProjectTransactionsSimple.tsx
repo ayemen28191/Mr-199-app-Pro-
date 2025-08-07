@@ -106,25 +106,45 @@ export default function ProjectTransactionsSimple() {
                            materialPurchasesArray.length + transportExpensesArray.length + 
                            miscExpensesArray.length;
 
-    // إضافة تحويلات العهدة (دخل أو تحويل من مشروع آخر)
+    // إضافة تحويلات العهدة (دخل أو مصروف حسب اتجاه التحويل)
     fundTransfersArray.forEach((transfer: any) => {
       const date = transfer.transferDate || transfer.date;
       const amount = parseFloat(transfer.amount);
       
       if (date && !isNaN(amount) && amount > 0) {
-        // تحديد إذا كان التحويل من مشروع آخر
-        const isFromProject = transfer.fromProject || 
-                             transfer.transferType === 'from_project' ||
-                             (transfer.senderName && transfer.senderName.includes('مشروع'));
+        // تحديد نوع التحويل
+        const isOutgoingTransfer = transfer.fromProjectId === selectedProject || 
+                                  transfer.transferType === 'to_project' ||
+                                  transfer.direction === 'outgoing';
+        const isIncomingTransfer = transfer.projectId === selectedProject || 
+                                  transfer.transferType === 'from_project' ||
+                                  transfer.direction === 'incoming';
         
-        allTransactions.push({
-          id: `fund-${transfer.id}`,
-          date: date,
-          type: isFromProject ? 'transfer_from_project' : 'income',
-          category: isFromProject ? 'تحويل من مشروع آخر' : 'تحويل عهدة',
-          amount: amount,
-          description: `من: ${transfer.senderName || 'غير محدد'}`
-        });
+        if (isOutgoingTransfer) {
+          // المشروع المرسل - يحسب كمصروف
+          allTransactions.push({
+            id: `fund-out-${transfer.id}`,
+            date: date,
+            type: 'expense',
+            category: 'تحويل إلى مشروع آخر',
+            amount: amount,
+            description: `إلى: ${transfer.recipientProject || transfer.toProjectName || 'مشروع آخر'}`
+          });
+        } else {
+          // المشروع المستقبل - يحسب كدخل
+          const isFromProject = transfer.fromProject || 
+                               transfer.fromProjectId ||
+                               (transfer.senderName && transfer.senderName.includes('مشروع'));
+          
+          allTransactions.push({
+            id: `fund-in-${transfer.id}`,
+            date: date,
+            type: isFromProject ? 'transfer_from_project' : 'income',
+            category: isFromProject ? 'تحويل من مشروع آخر' : 'تحويل عهدة',
+            amount: amount,
+            description: `من: ${transfer.senderName || transfer.fromProjectName || 'غير محدد'}`
+          });
+        }
       }
     });
 
@@ -304,7 +324,9 @@ export default function ProjectTransactionsSimple() {
       transfer_from_project: finalTransactions.filter(t => t.type === 'transfer_from_project').length,
       expense: finalTransactions.filter(t => t.type === 'expense').length,
       deferred: finalTransactions.filter(t => t.type === 'deferred').length,
-      workerWages: finalTransactions.filter(t => t.category === 'أجور العمال').length
+      workerWages: finalTransactions.filter(t => t.category === 'أجور العمال').length,
+      workerTransfers: finalTransactions.filter(t => t.category === 'حوالات العمال').length,
+      outgoingTransfers: finalTransactions.filter(t => t.category === 'تحويل إلى مشروع آخر').length
     });
     
     return finalTransactions;
