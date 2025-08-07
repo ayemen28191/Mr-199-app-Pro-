@@ -29,6 +29,9 @@ import { EnhancedWorkerAccountStatement } from "@/components/EnhancedWorkerAccou
 import { PrintButton } from "@/components/PrintButton";
 import { PrintSettingsButton } from "@/components/PrintSettingsButton";
 import { printWithSettings, usePrintSettings } from "@/hooks/usePrintSettings";
+import { AdvancedProgressIndicator, useProgressSteps, type ProgressStep } from "@/components/AdvancedProgressIndicator";
+import { EnhancedErrorDisplay, FieldValidationDisplay, transformValidationErrors } from "@/components/EnhancedErrorDisplay";
+import { useWorkersSettlementValidation } from "@/hooks/useWorkersSettlementValidation";
 import "@/components/print-styles.css";
 import "@/components/invoice-print-styles.css";
 import "@/components/professional-report-print.css";
@@ -63,6 +66,51 @@ export default function Reports() {
   const [selectedSettlementProjectIds, setSelectedSettlementProjectIds] = useState<string[]>([]);
   const [settlementReportData, setSettlementReportData] = useState<any>(null);
   const [showSettlementForm, setShowSettlementForm] = useState(false);
+  
+  // Enhanced validation and progress tracking
+  const { validateForm, validationResult } = useWorkersSettlementValidation();
+  const [settlementErrors, setSettlementErrors] = useState<any[]>([]);
+  
+  // Progress steps للمؤشر المتقدم
+  const initialProgressSteps: ProgressStep[] = [
+    {
+      id: 'validate',
+      title: 'التحقق من البيانات',
+      description: 'فحص صحة المشاريع والتواريخ والعمال المحددة',
+      status: 'pending',
+      estimatedTime: 2
+    },
+    {
+      id: 'fetch-data',
+      title: 'جلب بيانات المشاريع',
+      description: 'استخراج بيانات الحضور والتحويلات من قاعدة البيانات',
+      status: 'pending',
+      estimatedTime: 8
+    },
+    {
+      id: 'calculate',
+      title: 'حساب الأرصدة',
+      description: 'معالجة البيانات وحساب الاستحقاقات والأرصدة النهائية',
+      status: 'pending',
+      estimatedTime: 5
+    },
+    {
+      id: 'generate-report',
+      title: 'إنشاء التقرير',
+      description: 'تنسيق البيانات وإنشاء التقرير النهائي للعرض',
+      status: 'pending',
+      estimatedTime: 3
+    }
+  ];
+  
+  const {
+    steps: progressSteps,
+    currentStepId,
+    startStep,
+    completeStep,
+    errorStep,
+    resetSteps
+  } = useProgressSteps(initialProgressSteps);
   
   // Report display states
   const [activeReportType, setActiveReportType] = useState<string | null>(null);
@@ -399,22 +447,61 @@ export default function Reports() {
   };
 
   const generateWorkersSettlementReport = async () => {
+    // إعادة تعيين الأخطاء والمؤشرات
+    setSettlementErrors([]);
+    resetSteps();
+    
+    // الخطوة 1: التحقق من البيانات
+    startStep('validate');
+    
     // تحديد المشاريع: إما المحددة يدوياً أو المشروع الحالي كافتراضي
     const projectIdsToUse = selectedSettlementProjectIds.length > 0 
       ? selectedSettlementProjectIds 
       : (selectedProjectId ? [selectedProjectId] : []);
     
-    if (projectIdsToUse.length === 0) {
+    // إنشاء كائن البيانات للتحقق
+    const formData = {
+      projectIds: projectIdsToUse,
+      dateFrom: settlementDateFrom || undefined,
+      dateTo: settlementDateTo || undefined,
+      workerIds: selectedWorkerIds
+    };
+    
+    // تنفيذ التحقق الشامل
+    const validation = validateForm(formData);
+    
+    // عرض الأخطاء إن وجدت
+    if (!validation.isValid) {
+      errorStep('validate');
+      const enhancedErrors = transformValidationErrors([
+        ...validation.errors,
+        ...validation.warnings
+      ]);
+      setSettlementErrors(enhancedErrors);
+      
       toast({
-        title: "خطأ",
-        description: "يرجى اختيار مشروع واحد على الأقل",
+        title: "خطأ في البيانات المدخلة",
+        description: `تم العثور على ${validation.errors.length} خطأ. يرجى تصحيحها والمحاولة مرة أخرى.`,
         variant: "destructive",
       });
       return;
     }
+    
+    // إكمال خطوة التحقق
+    completeStep('validate');
+    
+    // عرض التحذيرات إن وجدت
+    if (validation.warnings.length > 0) {
+      const warningErrors = transformValidationErrors(validation.warnings);
+      setSettlementErrors(warningErrors);
+    }
 
     setIsGenerating(true);
+    
     try {
+      // الخطوة 2: جلب البيانات
+      startStep('fetch-data');
+      
       // بناء URL مع المعاملات
       let url = `/api/reports/workers-settlement`;
       const params = new URLSearchParams();
@@ -436,7 +523,20 @@ export default function Reports() {
 
       console.log('📈 طلب تقرير تصفية العمال:', url);
 
+      // تأخير طفيف لمحاكاة وقت الجلب
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       const data = await apiRequest("GET", url);
+      completeStep('fetch-data');
+      
+      // الخطوة 3: حساب الأرصدة
+      startStep('calculate');
+      await new Promise(resolve => setTimeout(resolve, 800));
+      completeStep('calculate');
+      
+      // الخطوة 4: إنشاء التقرير
+      startStep('generate-report');
+      
       setSettlementReportData(data);
       setActiveReportType("workers_settlement");
 
@@ -459,17 +559,49 @@ export default function Reports() {
           title: reportContext.title,
           workersCount: data.workers?.length || 0
         });
-      }, 500);
+      }, 300);
+      
+      completeStep('generate-report');
+
+      // مسح الأخطاء عند النجاح
+      setSettlementErrors([]);
 
       toast({
-        title: "تم إنشاء التقرير",
-        description: "تم إنشاء تقرير تصفية العمال بنجاح",
+        title: "تم إنشاء التقرير بنجاح! 🎉",
+        description: `تم إنشاء تقرير لـ ${data.workers?.length || 0} عامل عبر ${data.projects?.length || 0} مشروع`,
       });
     } catch (error) {
+      // تحديد الخطوة التي فشلت
+      if (currentStepId) {
+        errorStep(currentStepId);
+      }
+      
       console.error('❌ خطأ في إنشاء تقرير تصفية العمال:', error);
+      
+      // إنشاء رسالة خطأ مفصلة
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'حدث خطأ غير متوقع';
+        
+      const enhancedError = [{
+        id: 'api-error',
+        title: 'خطأ في الاتصال مع الخادم',
+        message: errorMessage,
+        type: 'error' as const,
+        suggestion: 'تحقق من اتصال الإنترنت وحاول مرة أخرى. إذا استمر الخطأ، تواصل مع الدعم التقني.',
+        action: {
+          label: 'إعادة المحاولة',
+          onClick: () => generateWorkersSettlementReport()
+        },
+        code: 'API_ERROR',
+        timestamp: Date.now()
+      }];
+      
+      setSettlementErrors(enhancedError);
+      
       toast({
-        title: "خطأ",
-        description: "حدث خطأ أثناء إنشاء التقرير",
+        title: "خطأ في إنشاء التقرير",
+        description: "حدث خطأ أثناء إنشاء التقرير. راجع التفاصيل أدناه.",
         variant: "destructive",
       });
     } finally {
@@ -2837,6 +2969,28 @@ export default function Reports() {
                     </div>
                   ) : (
                     <div className="space-y-4">
+                      {/* عرض الأخطاء والتحذيرات */}
+                      {settlementErrors.length > 0 && (
+                        <EnhancedErrorDisplay
+                          errors={settlementErrors}
+                          className="mb-4"
+                          onDismiss={(errorId) => {
+                            setSettlementErrors(prev => prev.filter(e => e.id !== errorId));
+                          }}
+                        />
+                      )}
+
+                      {/* مؤشر التقدم */}
+                      {isGenerating && (
+                        <div className="mb-6">
+                          <AdvancedProgressIndicator
+                            steps={progressSteps}
+                            currentStepId={currentStepId}
+                            showTimeEstimate={true}
+                          />
+                        </div>
+                      )}
+
                       {/* Workers Settlement Report Form */}
                       <div className="bg-teal-50 p-4 rounded-xl border border-teal-200">
                         <div className="flex items-center justify-between mb-4">
@@ -2847,6 +3001,8 @@ export default function Reports() {
                             onClick={() => {
                               setShowSettlementForm(false);
                               setSettlementReportData(null);
+                              setSettlementErrors([]);
+                              resetSteps();
                             }}
                             className="text-teal-600 hover:text-teal-800"
                           >
@@ -2876,30 +3032,89 @@ export default function Reports() {
                               </label>
                             ))}
                           </div>
-                          <p className="text-xs text-teal-600">
-                            إذا لم تختر مشاريع محددة، سيتم استخدام المشروع المحدد حالياً في الأعلى
-                            {selectedProjectId && !selectedSettlementProjectIds.length && ` (المشروع الحالي: ${selectedProject?.name})`}
-                          </p>
+                          <div className="mt-2 space-y-1">
+                            <p className="text-xs text-teal-600">
+                              إذا لم تختر مشاريع محددة، سيتم استخدام المشروع المحدد حالياً في الأعلى
+                              {selectedProjectId && !selectedSettlementProjectIds.length && ` (المشروع الحالي: ${selectedProject?.name})`}
+                            </p>
+                            {selectedSettlementProjectIds.length > 5 && (
+                              <div className="p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-700">
+                                ⚠️ اختيار أكثر من 5 مشاريع قد يجعل التقرير بطيء. فكر في تقسيم التقرير إلى مجموعات أصغر.
+                              </div>
+                            )}
+                          </div>
                         </div>
                         
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium text-teal-700">من تاريخ (اختياري)</label>
-                            <Input
-                              type="date"
-                              value={settlementDateFrom}
-                              onChange={(e) => setSettlementDateFrom(e.target.value)}
-                              className="border-teal-200 focus:border-teal-500"
-                            />
+                        <div className="space-y-4 mb-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium text-teal-700">من تاريخ (اختياري)</label>
+                              <Input
+                                type="date"
+                                value={settlementDateFrom}
+                                onChange={(e) => setSettlementDateFrom(e.target.value)}
+                                className="border-teal-200 focus:border-teal-500"
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium text-teal-700">إلى تاريخ (اختياري)</label>
+                              <Input
+                                type="date"
+                                value={settlementDateTo}
+                                onChange={(e) => setSettlementDateTo(e.target.value)}
+                                className="border-teal-200 focus:border-teal-500"
+                              />
+                            </div>
                           </div>
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium text-teal-700">إلى تاريخ (اختياري)</label>
-                            <Input
-                              type="date"
-                              value={settlementDateTo}
-                              onChange={(e) => setSettlementDateTo(e.target.value)}
-                              className="border-teal-200 focus:border-teal-500"
-                            />
+                          
+                          {/* معلومات التواريخ والتحذيرات */}
+                          <div className="space-y-1">
+                            {!settlementDateFrom && !settlementDateTo && (
+                              <div className="p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-700">
+                                ℹ️ سيتم إنشاء التقرير لجميع الفترات المتاحة. يمكنك تحديد فترة معينة لتقرير أكثر تركيز.
+                              </div>
+                            )}
+                            
+                            {settlementDateFrom && settlementDateTo && (() => {
+                              const fromDate = new Date(settlementDateFrom);
+                              const toDate = new Date(settlementDateTo);
+                              const today = new Date();
+                              const daysDiff = Math.ceil((toDate.getTime() - fromDate.getTime()) / (1000 * 60 * 60 * 24));
+                              
+                              if (fromDate > toDate) {
+                                return (
+                                  <div className="p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+                                    ❌ تاريخ البداية يجب أن يكون أقل من تاريخ النهاية.
+                                  </div>
+                                );
+                              }
+                              
+                              if (fromDate > today || toDate > today) {
+                                return (
+                                  <div className="p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+                                    ❌ لا يمكن اختيار تواريخ في المستقبل.
+                                  </div>
+                                );
+                              }
+                              
+                              if (daysDiff > 365) {
+                                return (
+                                  <div className="p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-700">
+                                    ⚠️ الفترة المحددة طويلة ({daysDiff} يوم). التقارير الطويلة قد تستغرق وقت أطول في الإنشاء.
+                                  </div>
+                                );
+                              }
+                              
+                              if (daysDiff > 30) {
+                                return (
+                                  <div className="p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-700">
+                                    ℹ️ سيتم إنشاء تقرير لفترة {daysDiff} يوم.
+                                  </div>
+                                );
+                              }
+                              
+                              return null;
+                            })()}
                           </div>
                         </div>
                         
@@ -2924,7 +3139,19 @@ export default function Reports() {
                               </label>
                             ))}
                           </div>
-                          <p className="text-xs text-teal-600">إذا لم تختر عمالاً محددين، سيتم عرض جميع العمال الذين لديهم نشاط في المشروع</p>
+                          <div className="mt-2 space-y-1">
+                            <p className="text-xs text-teal-600">إذا لم تختر عمالاً محددين، سيتم عرض جميع العمال الذين لديهم نشاط في المشروع</p>
+                            {selectedWorkerIds.length > 20 && (
+                              <div className="p-2 bg-yellow-50 border border-yellow-200 rounded text-xs text-yellow-700">
+                                ⚠️ اختيار أكثر من 20 عامل قد يجعل التقرير معقد. يمكنك ترك الحقل فارغ لعرض جميع العمال النشطين.
+                              </div>
+                            )}
+                            {selectedWorkerIds.length > 0 && (
+                              <div className="p-2 bg-blue-50 border border-blue-200 rounded text-xs text-blue-700">
+                                ℹ️ تم اختيار {selectedWorkerIds.length} عامل للتقرير.
+                              </div>
+                            )}
+                          </div>
                         </div>
                         
                         <div className="flex gap-3">
