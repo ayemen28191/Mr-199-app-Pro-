@@ -75,7 +75,8 @@ export const EnhancedWorkerAccountStatement: React.FC<EnhancedWorkerAccountState
   const totalAmountReceived = attendance.reduce((sum, record) => sum + (record.paidAmount || 0), 0);
   const totalTransferred = transfers.reduce((sum, transfer) => sum + transfer.amount, 0);
   const remainingAmount = totalAmountDue - totalAmountReceived;
-  const companyBalance = totalAmountReceived - totalTransferred;
+  // الرصيد الصحيح للعامل = المستحق - المدفوع - المحول للأهل
+  const workerCurrentBalance = totalAmountDue - totalAmountReceived - totalTransferred;
 
   return (
     <div id="enhanced-worker-account-statement" className="enhanced-worker-statement">
@@ -149,8 +150,8 @@ export const EnhancedWorkerAccountStatement: React.FC<EnhancedWorkerAccountState
             <span className="summary-value">{formatCurrency(remainingAmount)}</span>
           </div>
           <div className="summary-item balance">
-            <span className="summary-label">الرصيد لدى الشركة</span>
-            <span className="summary-value">{formatCurrency(companyBalance)}</span>
+            <span className="summary-label">الرصيد الحالي للعامل</span>
+            <span className="summary-value">{formatCurrency(workerCurrentBalance)}</span>
           </div>
           <div className="summary-item days">
             <span className="summary-label">إجمالي أيام العمل</span>

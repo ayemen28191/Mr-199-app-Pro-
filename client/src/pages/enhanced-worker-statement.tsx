@@ -245,7 +245,8 @@ export default function EnhancedWorkerStatement() {
         sum + (Number(record.paidAmount) || 0), 0);
       const totalTransferred = statementData.transfers.reduce((sum, transfer) => sum + Number(transfer.amount), 0);
       const remainingAmount = totalAmountDue - totalAmountReceived;
-      const companyBalance = totalAmountReceived - totalTransferred;
+      // الرصيد الصحيح للعامل = المستحق - المدفوع - المحول للأهل
+      const workerCurrentBalance = totalAmountDue - totalAmountReceived - totalTransferred;
 
       // Financial Summary
       currentRow += 2;
@@ -259,7 +260,7 @@ export default function EnhancedWorkerStatement() {
       const summaryData = [
         ['إجمالي المستحق', formatCurrency(totalAmountDue), 'إجمالي المستلم', formatCurrency(totalAmountReceived)],
         ['إجمالي المحول', formatCurrency(totalTransferred), 'المتبقي في الذمة', formatCurrency(remainingAmount)],
-        ['الرصيد لدى الشركة', formatCurrency(companyBalance), 'إجمالي أيام العمل', `${totalWorkDays.toFixed(1)} يوم`]
+        ['الرصيد الحالي للعامل', formatCurrency(workerCurrentBalance), 'إجمالي أيام العمل', `${totalWorkDays.toFixed(1)} يوم`]
       ];
 
       summaryData.forEach(row => {
