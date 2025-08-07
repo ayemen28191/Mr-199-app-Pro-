@@ -1078,7 +1078,8 @@ export class DatabaseStorage implements IStorage {
     let totalPaid = 0;
     
     attendanceRecords.forEach(record => {
-      totalEarned += parseFloat(record.dailyWage || '0');
+      // استخدام actualWage بدلاً من dailyWage لضمان الدقة في الأجور الجزئية
+      totalEarned += parseFloat(record.actualWage || '0');
       totalPaid += parseFloat(record.paidAmount || '0');
     });
     

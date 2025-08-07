@@ -239,8 +239,9 @@ export default function EnhancedWorkerStatement() {
 
       // Summary calculations
       const totalWorkDays = statementData.attendance.reduce((sum, record) => sum + (Number(record.workDays) || 0), 0);
+      // استخدام actualWage بدلاً من dailyWage * workDays لضمان الدقة في الأجور الجزئية
       const totalAmountDue = statementData.attendance.reduce((sum, record) => 
-        sum + (Number(record.dailyWage) * Number(record.workDays)), 0);
+        sum + (Number(record.actualWage) || 0), 0);
       const totalAmountReceived = statementData.attendance.reduce((sum, record) => 
         sum + (Number(record.paidAmount) || 0), 0);
       const totalTransferred = statementData.transfers.reduce((sum, transfer) => sum + Number(transfer.amount), 0);
