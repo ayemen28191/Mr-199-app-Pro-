@@ -274,10 +274,8 @@ export default function ProjectTransactionsSimple() {
       }
 
       if (date && amount > 0) {
-        // تحديد نوع المشترية (آجل أم مدفوع)
-        const isDeferred = purchase.purchaseType === 'أجل' || purchase.paymentType === 'deferred' || purchase.isDeferred || purchase.deferred;
-        
-
+        // تحديد نوع المشترية - المشتريات النقدية فقط تُحسب كمصروفات
+        const isDeferred = purchase.purchaseType === 'آجل' || purchase.paymentType === 'deferred' || purchase.isDeferred || purchase.deferred;
         
         allTransactions.push({
           id: `material-${purchase.id}`,

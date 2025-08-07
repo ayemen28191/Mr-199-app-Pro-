@@ -17,7 +17,7 @@ interface Project {
 interface Transaction {
   id: string;
   date: string;
-  type: 'income' | 'expense';
+  type: 'income' | 'expense' | 'deferred';
   category: string;
   amount: number;
   description: string;
@@ -72,7 +72,7 @@ export default function ProjectTransactionsPage() {
     const allTransactions: Transaction[] = [];
 
     // إضافة تحويلات العهدة (دخل)
-    if (fundTransfers && fundTransfers.length > 0) {
+    if (fundTransfers && Array.isArray(fundTransfers) && fundTransfers.length > 0) {
       fundTransfers.forEach((transfer: any) => {
         allTransactions.push({
           id: `fund-${transfer.id || Math.random()}`,
@@ -87,7 +87,7 @@ export default function ProjectTransactionsPage() {
     }
 
     // إضافة أجور العمال (مصروف)
-    if (workerAttendance && workerAttendance.length > 0) {
+    if (workerAttendance && Array.isArray(workerAttendance) && workerAttendance.length > 0) {
       workerAttendance.forEach((attendance: any) => {
         allTransactions.push({
           id: `wage-${attendance.id || Math.random()}`,
@@ -101,23 +101,37 @@ export default function ProjectTransactionsPage() {
       });
     }
 
-    // إضافة مشتريات المواد (مصروف)
-    if (materialPurchases && materialPurchases.length > 0) {
+    // إضافة مشتريات المواد (مصروف) - المشتريات النقدية فقط
+    if (materialPurchases && Array.isArray(materialPurchases) && materialPurchases.length > 0) {
       materialPurchases.forEach((purchase: any) => {
-        allTransactions.push({
-          id: `material-${purchase.id || Math.random()}`,
-          date: purchase.purchaseDate || purchase.date,
-          type: 'expense',
-          category: 'مشتريات المواد',
-          amount: purchase.totalAmount || purchase.amount || 0,
-          description: `مادة: ${purchase.materialName || purchase.material?.name || 'غير محدد'}`,
-          details: purchase
-        });
+        // فقط المشتريات النقدية تُحسب كمصروفات - المشتريات الآجلة لا تُحسب
+        if (purchase.purchaseType === "نقد") {
+          allTransactions.push({
+            id: `material-${purchase.id || Math.random()}`,
+            date: purchase.purchaseDate || purchase.date,
+            type: 'expense',
+            category: 'مشتريات المواد',
+            amount: purchase.totalAmount || purchase.amount || 0,
+            description: `مادة: ${purchase.materialName || purchase.material?.name || 'غير محدد'} (${purchase.purchaseType})`,
+            details: purchase
+          });
+        } else if (purchase.purchaseType === "آجل") {
+          // إضافة المشتريات الآجلة كعنصر منفصل للعرض فقط (ليس مصروف)
+          allTransactions.push({
+            id: `material-deferred-${purchase.id || Math.random()}`,
+            date: purchase.purchaseDate || purchase.date,
+            type: 'deferred',
+            category: 'مشتريات آجلة',
+            amount: purchase.totalAmount || purchase.amount || 0,
+            description: `مادة: ${purchase.materialName || purchase.material?.name || 'غير محدد'} (${purchase.purchaseType})`,
+            details: purchase
+          });
+        }
       });
     }
 
     // إضافة مصاريف النقل (مصروف)
-    if (transportExpenses && transportExpenses.length > 0) {
+    if (transportExpenses && Array.isArray(transportExpenses) && transportExpenses.length > 0) {
       transportExpenses.forEach((transport: any) => {
         allTransactions.push({
           id: `transport-${transport.id || Math.random()}`,
