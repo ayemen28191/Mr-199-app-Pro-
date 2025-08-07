@@ -1119,7 +1119,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // حساب الإجماليات
       const totalFundTransfers = fundTransfers.reduce((sum, t) => sum + parseFloat(t.amount), 0);
       const totalWorkerCosts = workerAttendance.reduce((sum, a) => sum + parseFloat(a.paidAmount), 0);
-      const totalMaterialCosts = materialPurchases.reduce((sum, p) => sum + parseFloat(p.totalAmount), 0);
+      // فقط المشتريات النقدية تُحسب في مصروفات اليوم - المشتريات الآجلة لا تُحسب
+      const totalMaterialCosts = materialPurchases
+        .filter(p => p.purchaseType === "نقد")
+        .reduce((sum, p) => sum + parseFloat(p.totalAmount), 0);
       const totalTransportCosts = transportationExpenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
       const totalTransferCosts = workerTransfers.reduce((sum, t) => sum + parseFloat(t.amount.toString()), 0);
       const totalWorkerMiscCosts = workerMiscExpenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
@@ -1292,7 +1295,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // حساب الإجماليات
       const totalIncome = totalFundTransfers.reduce((sum, t) => sum + parseFloat(t.amount), 0);
       const totalWorkerCosts = totalWorkerAttendance.reduce((sum, a) => sum + parseFloat(a.paidAmount), 0);
-      const totalMaterialCosts = totalMaterialPurchases.reduce((sum, p) => sum + parseFloat(p.totalAmount), 0);
+      // فقط المشتريات النقدية تُحسب في مصروفات التقرير - المشتريات الآجلة لا تُحسب
+      const totalMaterialCosts = totalMaterialPurchases
+        .filter(p => p.purchaseType === "نقد")
+        .reduce((sum, p) => sum + parseFloat(p.totalAmount), 0);
       const totalTransportCosts = totalTransportationExpenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
       const totalTransferCosts = totalWorkerTransfers.reduce((sum, t) => sum + parseFloat(t.amount), 0);
       const totalExpenses = totalWorkerCosts + totalMaterialCosts + totalTransportCosts + totalTransferCosts;
