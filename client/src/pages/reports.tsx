@@ -6,7 +6,7 @@ import {
   FileSpreadsheet, Printer, Calendar, TrendingUp, Filter, RefreshCw,
   BarChart3, Database, Clock, Settings, Users, DollarSign, FileText,
   Activity, Target, Briefcase, ChevronRight, Grid3X3, List, Search,
-  ExternalLink, AlertCircle, CheckCircle2, Zap, Globe, Award
+  ExternalLink, AlertCircle, CheckCircle2, Zap, Globe, Award, ChevronUp, ChevronDown
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -70,6 +70,9 @@ export default function Reports() {
   // Enhanced validation and progress tracking
   const { validateForm, validationResult } = useWorkersSettlementValidation();
   const [settlementErrors, setSettlementErrors] = useState<any[]>([]);
+  
+  // Header collapsible state
+  const [isHeaderCollapsed, setIsHeaderCollapsed] = useState(false);
   
   // Progress steps للمؤشر المتقدم
   const initialProgressSteps: ProgressStep[] = [
@@ -2469,63 +2472,83 @@ export default function Reports() {
 
   return (
     <div className="mobile-reports-container mobile-smooth-scroll">
-      {/* Mobile-optimized Premium Header */}
-      <div className="sticky top-0 z-50 mobile-sticky-header bg-gradient-to-r from-purple-900 via-blue-900 to-indigo-900 text-white shadow-2xl">
-        <div className="container mx-auto px-4 py-4 sm:px-6 sm:py-8">
-          <div className="flex items-center justify-center flex-col sm:flex-row gap-4">
-            <div className="flex items-center gap-4 flex-col sm:flex-row text-center sm:text-right">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-white/10 rounded-full backdrop-blur-sm">
-                  <BarChart3 className="h-6 w-6 sm:h-8 sm:w-8" />
+      {/* Collapsible Compact Header */}
+      <div className="bg-gradient-to-r from-purple-900 via-blue-900 to-indigo-900 text-white shadow-2xl transition-all duration-300">
+        <div className="container mx-auto px-4">
+          {!isHeaderCollapsed ? (
+            // Full Header
+            <div className="py-4 sm:py-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-white/10 rounded-full">
+                    <BarChart3 className="h-5 w-5 sm:h-6 sm:w-6" />
+                  </div>
+                  <div>
+                    <h1 className="text-lg sm:text-xl font-bold">مركز التقارير التنفيذية</h1>
+                    <p className="text-blue-200 text-xs sm:text-sm">التقارير المتقدمة وتحليل البيانات المالية</p>
+                  </div>
                 </div>
-                <div>
-                  <h1 className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-white to-gray-200 bg-clip-text text-transparent mobile-fade-in">
-                    مركز التقارير التنفيذية
-                  </h1>
-                  <p className="text-blue-200 text-sm sm:text-lg">
-                    التقارير المتقدمة وتحليل البيانات المالية
-                  </p>
-                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsHeaderCollapsed(true)}
+                  className="text-white hover:bg-white/10 p-2"
+                >
+                  <ChevronUp className="h-4 w-4" />
+                </Button>
               </div>
               
-              <div className="flex items-center gap-2 sm:gap-3 flex-wrap justify-center sm:justify-start">
-                <Badge className="mobile-badge bg-green-500/20 text-green-300 border-green-400/30">
-                  <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                  نظام نشط
-                </Badge>
-                <Badge className="mobile-badge bg-orange-500/20 text-orange-300 border-orange-400/30">
-                  <Zap className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                  محدث اليوم
-                </Badge>
-              </div>
-            </div>
-          </div>
-          
-          {/* Project Selector تحت مربع العرض */}
-          <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-white/10 rounded-xl backdrop-blur-sm border border-white/20">
-            <div className="flex items-center gap-3 sm:gap-4 flex-col sm:flex-row">
-              <div className="flex items-center gap-2 text-center sm:text-right">
-                <Globe className="h-4 w-4 sm:h-5 sm:w-5 text-blue-300" />
-                <span className="text-blue-200 font-medium text-sm sm:text-base">المشروع النشط:</span>
-              </div>
-              <div className="flex-1 w-full sm:w-auto">
-                <ProjectSelector 
-                  selectedProjectId={selectedProjectId}
-                  onProjectChange={selectProject} 
-                  variant="compact"
-                  showHeader={false}
-                />
-              </div>
-              {selectedProject && (
-                <div className="flex items-center gap-2">
-                  <Award className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-300" />
-                  <span className="text-yellow-300 font-medium text-sm sm:text-base">
-                    {selectedProject.name}
-                  </span>
+              {/* Project Selector */}
+              <div className="mt-3 p-3 bg-white/10 rounded-xl backdrop-blur-sm border border-white/20">
+                <div className="flex items-center gap-3 flex-col sm:flex-row">
+                  <div className="flex items-center gap-2">
+                    <Globe className="h-4 w-4 text-blue-300" />
+                    <span className="text-blue-200 font-medium text-sm">المشروع النشط:</span>
+                  </div>
+                  <div className="flex-1 w-full sm:w-auto">
+                    <ProjectSelector 
+                      selectedProjectId={selectedProjectId}
+                      onProjectChange={selectProject} 
+                      variant="compact"
+                      showHeader={false}
+                    />
+                  </div>
+                  {selectedProject && (
+                    <div className="flex items-center gap-2">
+                      <Award className="h-4 w-4 text-yellow-300" />
+                      <span className="text-yellow-300 font-medium text-sm">
+                        {selectedProject.name}
+                      </span>
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
-          </div>
+          ) : (
+            // Collapsed Header
+            <div className="py-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4" />
+                  <span className="text-sm font-medium">التقارير</span>
+                  {selectedProject && (
+                    <>
+                      <span className="text-blue-200">•</span>
+                      <span className="text-blue-200 text-sm">{selectedProject.name}</span>
+                    </>
+                  )}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsHeaderCollapsed(false)}
+                  className="text-white hover:bg-white/10 p-1"
+                >
+                  <ChevronDown className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
