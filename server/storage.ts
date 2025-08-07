@@ -1875,7 +1875,7 @@ export class DatabaseStorage implements IStorage {
       eq(workerAttendance.isPresent, true)
     ));
 
-    // 2. مشتريات المواد
+    // 2. مشتريات المواد (النقدية فقط - المشتريات الآجلة لا تُحسب كمصروفات)
     const materialPurchasesData = await db.select({
       id: materialPurchases.id,
       projectId: materialPurchases.projectId,
@@ -1894,7 +1894,7 @@ export class DatabaseStorage implements IStorage {
       eq(materialPurchases.projectId, projectId),
       gte(materialPurchases.purchaseDate, dateFrom),
       lte(materialPurchases.purchaseDate, dateTo),
-      // إزالة الفلتر لإظهار جميع المشتريات في التقارير مع التمييز
+      eq(materialPurchases.purchaseType, 'نقد') // فقط المشتريات النقدية تُحسب كمصروفات
     ));
 
     // 3. مصروفات النقل

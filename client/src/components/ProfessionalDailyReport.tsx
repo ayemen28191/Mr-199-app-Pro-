@@ -54,9 +54,14 @@ export const ProfessionalDailyReport = ({ data, selectedProject, selectedDate }:
     return sum + amount;
   }, 0);
 
+  // حساب مشتريات المواد النقدية فقط - المشتريات الآجلة لا تُحسب كمصروفات
   const totalMaterialCosts = materialPurchases.reduce((sum: number, purchase: any) => {
-    const amount = Number(purchase.totalAmount) || 0;
-    return sum + amount;
+    // فقط المشتريات النقدية تُحسب في إجمالي المصروفات
+    if (purchase.purchaseType === "نقد") {
+      const amount = Number(purchase.totalAmount) || 0;
+      return sum + amount;
+    }
+    return sum;
   }, 0);
 
   const totalTransportCosts = transportationExpenses.reduce((sum: number, expense: any) => {
