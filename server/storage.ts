@@ -1090,7 +1090,9 @@ export class DatabaseStorage implements IStorage {
       totalTransferred += parseFloat(transfer.amount || '0');
     });
     
-    const currentBalance = totalEarned - totalPaid - totalTransferred;
+    // الرصيد = المكتسب + التحويلات الواردة - المدفوع
+    // التحويلات في هذا الجدول هي تحويلات إلى العامل (واردة) وليس منه
+    const currentBalance = totalEarned + totalTransferred - totalPaid;
     
     const balance: WorkerBalance = {
       id: `${workerId}-${projectId}`,
