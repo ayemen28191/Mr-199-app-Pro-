@@ -11,6 +11,7 @@ This is a comprehensive web application designed for managing construction proje
 - التواصل: جميع الردود والملاحظات والتوجيهات يجب أن تكون باللغة العربية حصرياً
 - أسلوب التفاعل: استخدام اللغة العربية الواضحة والمباشرة في جميع الاستجابات
 - تحديث: 7 أغسطس 2025 - تأكيد المستخدم على التواصل باللغة العربية فقط في جلسة جديدة
+- إصلاح مهم: 7 أغسطس 2025 - تم إصلاح حساب الإحصائيات المالية ليحسب المبالغ المدفوعة فعلياً (paid_amount) بدلاً من الأجور الكاملة (actual_wage) + فصل المشتريات النقدية عن الآجلة في جميع الحسابات
 
 ## System Architecture
 The system is built as a comprehensive web application with distinct frontend and backend components, prioritizing an Arabic-first, Right-to-Left (RTL) design.
