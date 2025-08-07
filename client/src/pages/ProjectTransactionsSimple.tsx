@@ -543,6 +543,9 @@ export default function ProjectTransactionsSimple() {
                       <p className="text-2xl font-bold text-yellow-700 dark:text-yellow-300">
                         {formatCurrency(totals.deferred || 0)}
                       </p>
+                      <p className="text-xs text-yellow-500 dark:text-yellow-400 mt-1">
+                        (لا تُحسب في الرصيد)
+                      </p>
                     </div>
                     <Clock className="h-8 w-8 text-yellow-500" />
                   </div>
@@ -560,7 +563,7 @@ export default function ProjectTransactionsSimple() {
                         {formatCurrency(totals.balance || 0)}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                        الدخل: {formatCurrency(totals.totalIncome || 0)}
+                        (بدون المشتريات الآجلة)
                       </p>
                     </div>
                     <TrendingUp className={`h-8 w-8 ${totals.balance >= 0 ? 'text-blue-500' : 'text-orange-500'}`} />
