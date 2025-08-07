@@ -2754,6 +2754,139 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Workers Settlement Report - تقرير تصفية العمال الجماعي
+  app.get("/api/reports/workers-settlement/:projectId", async (req, res) => {
+    try {
+      const { projectId } = req.params;
+      const { dateFrom, dateTo, workerIds } = req.query;
+
+      console.log('📊 طلب تقرير تصفية العمال:', { projectId, dateFrom, dateTo, workerIds });
+
+      // التحقق من المعاملات المطلوبة
+      if (!projectId) {
+        return res.status(400).json({ message: "معرف المشروع مطلوب" });
+      }
+
+      // جلب البيانات الأساسية باستخدام storage methods
+      const [project, allWorkers, workerAttendances, workerTransfers] = await Promise.all([
+        storage.getProject(projectId),
+        storage.getWorkers(),
+        storage.getWorkerAttendance(projectId),
+        storage.getWorkerTransfers(projectId)
+      ]);
+
+      if (!project) {
+        return res.status(404).json({ message: "المشروع غير موجود" });
+      }
+
+      // فلترة العمال إذا تم تحديدهم
+      let selectedWorkerIds: string[] = [];
+      if (workerIds && typeof workerIds === 'string') {
+        selectedWorkerIds = workerIds.split(',').filter(id => id.trim());
+      }
+
+      // بناء تقرير العمال
+      const workersReport = allWorkers
+        .filter(worker => worker.isActive)
+        .filter(worker => {
+          // إذا تم تحديد عمال معينين
+          if (selectedWorkerIds.length > 0) {
+            return selectedWorkerIds.includes(worker.id);
+          }
+          // إذا لم يتم تحديد عمال، أظهر العمال الذين لديهم حضور في المشروع
+          return workerAttendances.some(attendance => attendance.workerId === worker.id);
+        })
+        .map(worker => {
+          // حساب الحضور والأجور للعامل
+          const workerAttendanceRecords = workerAttendances.filter(attendance => 
+            attendance.workerId === worker.id
+          );
+
+          // حساب التحويلات للعامل
+          const workerTransferRecords = workerTransfers.filter(transfer => 
+            transfer.workerId === worker.id
+          );
+
+          const totalWorkDays = workerAttendanceRecords.reduce((sum, record) => 
+            sum + parseFloat(record.workDays.toString()), 0
+          );
+
+          const totalEarned = workerAttendanceRecords.reduce((sum, record) => 
+            sum + parseFloat(record.actualWage.toString()), 0
+          );
+
+          const totalPaid = workerAttendanceRecords.reduce((sum, record) => 
+            sum + parseFloat(record.paidAmount.toString()), 0
+          );
+
+          const accountBalance = workerAttendanceRecords.reduce((sum, record) => 
+            sum + parseFloat(record.remainingAmount.toString()), 0
+          );
+
+          const totalTransfers = workerTransferRecords.reduce((sum, record) => 
+            sum + parseFloat(record.amount.toString()), 0
+          );
+
+          const finalBalance = totalEarned - totalPaid - totalTransfers;
+
+          return {
+            worker_id: worker.id,
+            worker_name: worker.name,
+            worker_type: worker.type,
+            daily_wage: parseFloat(worker.dailyWage.toString()),
+            total_work_days: totalWorkDays,
+            total_earned: totalEarned,
+            total_paid: totalPaid,
+            account_balance: accountBalance,
+            total_transfers: totalTransfers,
+            final_balance: finalBalance
+          };
+        })
+        .filter(workerData => 
+          // إظهار العمال الذين لديهم نشاط (حضور أو تحويلات)
+          workerData.total_work_days > 0 || workerData.total_transfers > 0
+        );
+
+      // حساب الإجماليات
+      const totals = {
+        total_workers: workersReport.length,
+        total_work_days: workersReport.reduce((sum, w) => sum + w.total_work_days, 0),
+        total_earned: workersReport.reduce((sum, w) => sum + w.total_earned, 0),
+        total_paid: workersReport.reduce((sum, w) => sum + w.total_paid, 0),
+        account_balance: workersReport.reduce((sum, w) => sum + w.account_balance, 0),
+        total_transfers: workersReport.reduce((sum, w) => sum + w.total_transfers, 0),
+        final_balance: workersReport.reduce((sum, w) => sum + w.final_balance, 0)
+      };
+
+      const response = {
+        project: project,
+        workers: workersReport,
+        totals: totals,
+        filters: {
+          dateFrom: dateFrom || null,
+          dateTo: dateTo || null,
+          workerIds: selectedWorkerIds.length > 0 ? selectedWorkerIds : null
+        },
+        generated_at: new Date().toISOString()
+      };
+
+      console.log('✅ تم إنشاء تقرير تصفية العمال بنجاح:', {
+        workersCount: workersReport.length,
+        totalEarned: totals.total_earned,
+        finalBalance: totals.final_balance
+      });
+
+      res.json(response);
+
+    } catch (error) {
+      console.error('❌ خطأ في إنشاء تقرير تصفية العمال:', error);
+      res.status(500).json({ 
+        message: "خطأ في إنشاء تقرير تصفية العمال",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

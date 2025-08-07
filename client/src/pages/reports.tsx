@@ -56,6 +56,13 @@ export default function Reports() {
   const [projectSummaryDate1, setProjectSummaryDate1] = useState("");
   const [projectSummaryDate2, setProjectSummaryDate2] = useState("");
   
+  // Workers Settlement Report states
+  const [settlementDateFrom, setSettlementDateFrom] = useState("");
+  const [settlementDateTo, setSettlementDateTo] = useState("");
+  const [selectedWorkerIds, setSelectedWorkerIds] = useState<string[]>([]);
+  const [settlementReportData, setSettlementReportData] = useState<any>(null);
+  const [showSettlementForm, setShowSettlementForm] = useState(false);
+  
   // Report display states
   const [activeReportType, setActiveReportType] = useState<string | null>(null);
   const [reportData, setReportData] = useState<any>(null);
@@ -390,6 +397,78 @@ export default function Reports() {
     }
   };
 
+  const generateWorkersSettlementReport = async () => {
+    if (!selectedProjectId) {
+      toast({
+        title: "خطأ",
+        description: "يرجى اختيار مشروع",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      // بناء URL مع المعاملات
+      let url = `/api/reports/workers-settlement/${selectedProjectId}`;
+      const params = new URLSearchParams();
+      
+      if (settlementDateFrom) {
+        params.append('dateFrom', settlementDateFrom);
+      }
+      if (settlementDateTo) {
+        params.append('dateTo', settlementDateTo);
+      }
+      if (selectedWorkerIds.length > 0) {
+        params.append('workerIds', selectedWorkerIds.join(','));
+      }
+      
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+
+      console.log('📈 طلب تقرير تصفية العمال:', url);
+
+      const data = await apiRequest("GET", url);
+      setSettlementReportData(data);
+      setActiveReportType("workers_settlement");
+
+      // حفظ بيانات التقرير في localStorage للاستخدام في إعدادات الطباعة
+      setTimeout(() => {
+        const reportContext = {
+          type: 'workers_settlement',
+          data: data,
+          html: '', // سيتم إضافته عند الحاجة
+          title: `تقرير تصفية العمال - ${selectedProject?.name || 'غير محدد'}`,
+          timestamp: Date.now(),
+          hasRealData: true,
+          projectName: selectedProject?.name || 'مشروع غير محدد',
+          reportDate: settlementDateFrom && settlementDateTo ? 
+            `${settlementDateFrom} إلى ${settlementDateTo}` : 'جميع الفترات'
+        };
+        localStorage.setItem('printReportContext', JSON.stringify(reportContext));
+        console.log('💾 تم حفظ سياق تقرير تصفية العمال:', {
+          title: reportContext.title,
+          workersCount: data.workers?.length || 0
+        });
+      }, 500);
+
+      toast({
+        title: "تم إنشاء التقرير",
+        description: "تم إنشاء تقرير تصفية العمال بنجاح",
+      });
+    } catch (error) {
+      console.error('❌ خطأ في إنشاء تقرير تصفية العمال:', error);
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء إنشاء التقرير",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   // Export Functions
   const exportToExcel = async (data: any, filename: string) => {
     if (!data) {
@@ -407,6 +486,8 @@ export default function Reports() {
         await exportDailyReportToExcel(data, filename);
       } else if (activeReportType === 'worker') {
         await exportWorkerReportToExcel(data, filename);
+      } else if (activeReportType === 'workers_settlement') {
+        await exportWorkersSettlementToExcel(data, filename);
       } else {
         // تصدير عام للبيانات الأخرى
         await exportGenericDataToExcel(data, filename);
@@ -1742,6 +1823,223 @@ export default function Reports() {
     }
   };
 
+  const exportWorkersSettlementToExcel = async (data: any, filename: string) => {
+    try {
+      console.log('🔍 بدء تصدير تقرير تصفية العمال إلى Excel:', data);
+      const ExcelJS = await import('exceljs');
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('تقرير تصفية العمال');
+
+      // إعداد الصفحة والخصائص
+      worksheet.pageSetup = {
+        paperSize: 9, // A4
+        orientation: 'landscape', // أفقي لتناسب الجدول العريض
+        fitToPage: true,
+        fitToWidth: 1,
+        fitToHeight: 0,
+        scale: 100,
+        margins: { left: 0.5, right: 0.5, top: 1.0, bottom: 1.0, header: 0.5, footer: 0.5 },
+        showGridLines: true,
+        horizontalCentered: true,
+        verticalCentered: false
+      };
+
+      worksheet.views = [{ 
+        rightToLeft: true,
+        showGridLines: true,
+        zoomScale: 100,
+        state: 'normal'
+      }];
+
+      // العنوان الرئيسي
+      worksheet.mergeCells('A1:H1');
+      const titleCell = worksheet.getCell('A1');
+      titleCell.value = 'تقرير تصفية العمال الشامل';
+      titleCell.font = { name: 'Arial', size: 16, bold: true, color: { argb: 'FF000000' } };
+      titleCell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+      titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE8F4FD' } };
+      titleCell.border = {
+        top: { style: 'thick', color: { argb: 'FF0891b2' } },
+        left: { style: 'thick', color: { argb: 'FF0891b2' } },
+        bottom: { style: 'thick', color: { argb: 'FF0891b2' } },
+        right: { style: 'thick', color: { argb: 'FF0891b2' } }
+      };
+      worksheet.getRow(1).height = 30;
+
+      // معلومات المشروع والتاريخ
+      worksheet.mergeCells('A3:D3');
+      const projectCell = worksheet.getCell('A3');
+      projectCell.value = `المشروع: ${data.project?.name || 'غير محدد'}`;
+      projectCell.font = { name: 'Arial', size: 12, bold: true };
+      projectCell.alignment = { horizontal: 'right' };
+      projectCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF5F5F5' } };
+
+      worksheet.mergeCells('E3:H3');
+      const dateCell = worksheet.getCell('E3');
+      const dateInfo = data.filters?.dateFrom && data.filters?.dateTo 
+        ? `الفترة: ${formatDate(data.filters.dateFrom)} - ${formatDate(data.filters.dateTo)}`
+        : `تاريخ الإنشاء: ${formatDate(data.generated_at)}`;
+      dateCell.value = dateInfo;
+      dateCell.font = { name: 'Arial', size: 12, bold: true };
+      dateCell.alignment = { horizontal: 'left' };
+      dateCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF5F5F5' } };
+      worksheet.getRow(3).height = 22;
+
+      let currentRow = 5;
+
+      // رأس الجدول
+      const headers = [
+        { text: '#', width: 5 },
+        { text: 'اسم العامل', width: 20 },
+        { text: 'نوع العامل', width: 15 },
+        { text: 'إجمالي الأيام', width: 12 },
+        { text: 'الاستحقاقات', width: 15 },
+        { text: 'المدفوعات', width: 15 },
+        { text: 'التحويلات', width: 15 },
+        { text: 'الرصيد النهائي', width: 18 }
+      ];
+
+      headers.forEach((header, index) => {
+        const cell = worksheet.getCell(currentRow, index + 1);
+        cell.value = header.text;
+        cell.font = { name: 'Arial', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0891b2' } };
+        cell.border = {
+          top: { style: 'medium', color: { argb: 'FF000000' } },
+          left: { style: 'medium', color: { argb: 'FF000000' } },
+          bottom: { style: 'medium', color: { argb: 'FF000000' } },
+          right: { style: 'medium', color: { argb: 'FF000000' } }
+        };
+        worksheet.getColumn(index + 1).width = header.width;
+      });
+      worksheet.getRow(currentRow).height = 25;
+      currentRow++;
+
+      // بيانات العمال
+      if (data.workers && data.workers.length > 0) {
+        data.workers.forEach((worker: any, index: number) => {
+          const isNegativeBalance = worker.final_balance < 0;
+          const rowColor = isNegativeBalance ? 'FFFEF2F2' : (index % 2 === 0 ? 'FFFFFFFF' : 'FFF8FAFC');
+
+          const rowData = [
+            index + 1,
+            worker.worker_name,
+            worker.worker_type,
+            parseFloat(worker.total_work_days).toFixed(1),
+            parseFloat(worker.total_earned).toFixed(2),
+            parseFloat(worker.total_paid).toFixed(2),
+            parseFloat(worker.total_transfers).toFixed(2),
+            parseFloat(worker.final_balance).toFixed(2)
+          ];
+
+          rowData.forEach((value, colIndex) => {
+            const cell = worksheet.getCell(currentRow, colIndex + 1);
+            cell.value = value;
+            cell.font = { 
+              name: 'Arial', 
+              size: 10, 
+              bold: colIndex === 0 || colIndex === 1, // رقم التسلسل واسم العامل بخط عريض
+              color: { argb: isNegativeBalance && colIndex === 7 ? 'FFDC2626' : 'FF000000' }
+            };
+            cell.alignment = { 
+              horizontal: colIndex === 1 || colIndex === 2 ? 'right' : 'center',
+              vertical: 'middle' 
+            };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: rowColor } };
+            cell.border = {
+              top: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+              left: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+              bottom: { style: 'thin', color: { argb: 'FFD1D5DB' } },
+              right: { style: 'thin', color: { argb: 'FFD1D5DB' } }
+            };
+
+            // تنسيق خاص للأرقام المالية
+            if (colIndex >= 4 && colIndex <= 7) {
+              cell.numFmt = '#,##0.00"ر.ي"';
+            }
+          });
+          worksheet.getRow(currentRow).height = 20;
+          currentRow++;
+        });
+      }
+
+      // صف الإجماليات
+      const totalsRow = [
+        '',
+        `الإجمالي (${data.totals?.total_workers || 0} عامل)`,
+        '',
+        parseFloat(data.totals?.total_work_days || 0).toFixed(1),
+        parseFloat(data.totals?.total_earned || 0).toFixed(2),
+        parseFloat(data.totals?.total_paid || 0).toFixed(2),
+        parseFloat(data.totals?.total_transfers || 0).toFixed(2),
+        parseFloat(data.totals?.final_balance || 0).toFixed(2)
+      ];
+
+      worksheet.mergeCells(`A${currentRow}:C${currentRow}`);
+      totalsRow.forEach((value, colIndex) => {
+        if (colIndex === 0) {
+          const cell = worksheet.getCell(currentRow, 2); // الخلية المدموجة
+          cell.value = totalsRow[1];
+          cell.font = { name: 'Arial', size: 12, bold: true, color: { argb: 'FFFFFFFF' } };
+          cell.alignment = { horizontal: 'center', vertical: 'middle' };
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0f766e' } };
+        } else if (colIndex >= 3) {
+          const cell = worksheet.getCell(currentRow, colIndex + 1);
+          cell.value = value;
+          cell.font = { name: 'Arial', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+          cell.alignment = { horizontal: 'center', vertical: 'middle' };
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0f766e' } };
+          
+          if (colIndex >= 4) {
+            cell.numFmt = '#,##0.00"ر.ي"';
+          }
+        }
+        
+        // إضافة حدود لجميع الخلايا
+        for (let i = 1; i <= 8; i++) {
+          const cell = worksheet.getCell(currentRow, i);
+          cell.border = {
+            top: { style: 'thick', color: { argb: 'FF000000' } },
+            left: { style: 'thick', color: { argb: 'FF000000' } },
+            bottom: { style: 'thick', color: { argb: 'FF000000' } },
+            right: { style: 'thick', color: { argb: 'FF000000' } }
+          };
+        }
+      });
+      worksheet.getRow(currentRow).height = 25;
+
+      // ملاحظات أسفل الجدول
+      currentRow += 2;
+      worksheet.mergeCells(`A${currentRow}:H${currentRow}`);
+      const notesCell = worksheet.getCell(`A${currentRow}`);
+      notesCell.value = '📋 ملاحظة: الأرقام الحمراء تشير إلى وجود رصيد سلبي (مديونية) للعامل';
+      notesCell.font = { name: 'Arial', size: 10, italic: true, color: { argb: 'FF6B7280' } };
+      notesCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      
+      // حفظ الملف
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { 
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+      });
+      
+      // تحميل الملف
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      
+      console.log('✅ تم تصدير تقرير تصفية العمال إلى Excel بنجاح');
+    } catch (error) {
+      console.error('❌ خطأ في تصدير تقرير تصفية العمال:', error);
+      throw error;
+    }
+  };
+
   const exportGenericDataToExcel = async (data: any, filename: string) => {
     // دالة تصدير عامة للبيانات الأخرى
     console.log('تصدير البيانات العامة قيد التطوير');
@@ -2514,17 +2812,173 @@ export default function Reports() {
                   </div>
                 </div>
                 <CardContent className="p-6 space-y-4">
-                  <div className="text-center p-4 bg-teal-50 rounded-xl border-2 border-teal-200">
-                    <p className="text-teal-700 font-medium mb-3">تقرير متقدم لتصفية العمال</p>
-                    <p className="text-sm text-teal-600 mb-4">يتيح لك اختيار العمال وفترة زمنية لإنشاء تقرير شامل يحتوي على الأجور اليومية، عدد الأيام، المبالغ المستحقة والمستلمة، والمتبقي لكل عامل</p>
-                    <Button 
-                      onClick={() => setLocation('/workers-filter-report')}
-                      className="w-full h-12 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white font-medium text-lg rounded-xl transform hover:scale-105 transition-all duration-300"
-                    >
-                      <Users className="h-5 w-5 mr-2" />
-                      إنشاء تقرير تصفية العمال
-                    </Button>
-                  </div>
+                  {!showSettlementForm ? (
+                    <div className="text-center p-4 bg-teal-50 rounded-xl border-2 border-teal-200">
+                      <p className="text-teal-700 font-medium mb-3">تقرير متقدم لتصفية العمال</p>
+                      <p className="text-sm text-teal-600 mb-4">يتيح لك اختيار العمال وفترة زمنية لإنشاء تقرير شامل يحتوي على الأجور اليومية، عدد الأيام، المبالغ المستحقة والمستلمة، والمتبقي لكل عامل</p>
+                      <Button 
+                        onClick={() => setShowSettlementForm(true)}
+                        className="w-full h-12 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white font-medium text-lg rounded-xl transform hover:scale-105 transition-all duration-300"
+                      >
+                        <Users className="h-5 w-5 mr-2" />
+                        إنشاء تقرير تصفية العمال
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {/* Workers Settlement Report Form */}
+                      <div className="bg-teal-50 p-4 rounded-xl border border-teal-200">
+                        <div className="flex items-center justify-between mb-4">
+                          <h4 className="text-lg font-semibold text-teal-800">إعداد تقرير تصفية العمال</h4>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setShowSettlementForm(false);
+                              setSettlementReportData(null);
+                            }}
+                            className="text-teal-600 hover:text-teal-800"
+                          >
+                            إغلاق
+                          </Button>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-teal-700">من تاريخ (اختياري)</label>
+                            <Input
+                              type="date"
+                              value={settlementDateFrom}
+                              onChange={(e) => setSettlementDateFrom(e.target.value)}
+                              className="border-teal-200 focus:border-teal-500"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-teal-700">إلى تاريخ (اختياري)</label>
+                            <Input
+                              type="date"
+                              value={settlementDateTo}
+                              onChange={(e) => setSettlementDateTo(e.target.value)}
+                              className="border-teal-200 focus:border-teal-500"
+                            />
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2 mb-4">
+                          <label className="text-sm font-medium text-teal-700">اختيار عمال محددين (اختياري)</label>
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-32 overflow-y-auto border border-teal-200 rounded-md p-2">
+                            {workers.map((worker) => (
+                              <label key={worker.id} className="flex items-center space-x-2 space-x-reverse text-sm">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedWorkerIds.includes(worker.id)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedWorkerIds([...selectedWorkerIds, worker.id]);
+                                    } else {
+                                      setSelectedWorkerIds(selectedWorkerIds.filter(id => id !== worker.id));
+                                    }
+                                  }}
+                                  className="text-teal-600"
+                                />
+                                <span className="text-teal-700">{worker.name}</span>
+                              </label>
+                            ))}
+                          </div>
+                          <p className="text-xs text-teal-600">إذا لم تختر عمالاً محددين، سيتم عرض جميع العمال الذين لديهم نشاط في المشروع</p>
+                        </div>
+                        
+                        <div className="flex gap-3">
+                          <Button
+                            onClick={generateWorkersSettlementReport}
+                            disabled={!selectedProjectId || isGenerating}
+                            className="flex-1 bg-gradient-to-r from-teal-500 to-teal-600 hover:from-teal-600 hover:to-teal-700 text-white"
+                          >
+                            {isGenerating ? (
+                              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                            ) : (
+                              <Receipt className="h-4 w-4 mr-2" />
+                            )}
+                            إنشاء التقرير
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      {/* Settlement Report Display */}
+                      {settlementReportData && (
+                        <div className="bg-white rounded-xl border border-teal-200 overflow-hidden">
+                          <div className="bg-gradient-to-r from-teal-500 to-teal-600 p-4 text-white">
+                            <h4 className="text-lg font-bold">تقرير تصفية العمال - {settlementReportData.project?.name}</h4>
+                            <p className="text-teal-100 text-sm">
+                              تم إنشاؤه في: {formatDate(settlementReportData.generated_at)}
+                              {settlementReportData.filters?.dateFrom && settlementReportData.filters?.dateTo && 
+                                ` | الفترة: ${formatDate(settlementReportData.filters.dateFrom)} - ${formatDate(settlementReportData.filters.dateTo)}`
+                              }
+                            </p>
+                          </div>
+                          
+                          <div className="p-6">
+                            <div className="overflow-x-auto">
+                              <table className="w-full border-collapse border border-teal-200">
+                                <thead>
+                                  <tr className="bg-teal-50">
+                                    <th className="border border-teal-200 p-3 text-right text-sm font-semibold text-teal-800">#</th>
+                                    <th className="border border-teal-200 p-3 text-right text-sm font-semibold text-teal-800">اسم العامل</th>
+                                    <th className="border border-teal-200 p-3 text-right text-sm font-semibold text-teal-800">نوع العامل</th>
+                                    <th className="border border-teal-200 p-3 text-right text-sm font-semibold text-teal-800">إجمالي الأيام</th>
+                                    <th className="border border-teal-200 p-3 text-right text-sm font-semibold text-teal-800">الاستحقاقات</th>
+                                    <th className="border border-teal-200 p-3 text-right text-sm font-semibold text-teal-800">المدفوعات</th>
+                                    <th className="border border-teal-200 p-3 text-right text-sm font-semibold text-teal-800">التحويلات</th>
+                                    <th className="border border-teal-200 p-3 text-right text-sm font-semibold text-teal-800">الرصيد النهائي</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {settlementReportData.workers.map((worker: any, index: number) => (
+                                    <tr key={worker.worker_id} className={`${worker.final_balance < 0 ? 'bg-red-50' : 'hover:bg-teal-50'} transition-colors`}>
+                                      <td className="border border-teal-200 p-3 text-sm text-center">{index + 1}</td>
+                                      <td className="border border-teal-200 p-3 text-sm font-medium">{worker.worker_name}</td>
+                                      <td className="border border-teal-200 p-3 text-sm">{worker.worker_type}</td>
+                                      <td className="border border-teal-200 p-3 text-sm text-center">{worker.total_work_days.toFixed(1)}</td>
+                                      <td className="border border-teal-200 p-3 text-sm text-center font-medium text-green-600">{formatCurrency(worker.total_earned)}</td>
+                                      <td className="border border-teal-200 p-3 text-sm text-center text-blue-600">{formatCurrency(worker.total_paid)}</td>
+                                      <td className="border border-teal-200 p-3 text-sm text-center text-orange-600">{formatCurrency(worker.total_transfers)}</td>
+                                      <td className={`border border-teal-200 p-3 text-sm text-center font-bold ${worker.final_balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                        {formatCurrency(worker.final_balance)}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                                <tfoot>
+                                  <tr className="bg-teal-100 font-bold">
+                                    <td colSpan={3} className="border border-teal-200 p-3 text-sm text-center">الإجمالي ({settlementReportData.totals.total_workers} عامل)</td>
+                                    <td className="border border-teal-200 p-3 text-sm text-center">{settlementReportData.totals.total_work_days.toFixed(1)}</td>
+                                    <td className="border border-teal-200 p-3 text-sm text-center text-green-700">{formatCurrency(settlementReportData.totals.total_earned)}</td>
+                                    <td className="border border-teal-200 p-3 text-sm text-center text-blue-700">{formatCurrency(settlementReportData.totals.total_paid)}</td>
+                                    <td className="border border-teal-200 p-3 text-sm text-center text-orange-700">{formatCurrency(settlementReportData.totals.total_transfers)}</td>
+                                    <td className={`border border-teal-200 p-3 text-sm text-center font-bold ${settlementReportData.totals.final_balance >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                                      {formatCurrency(settlementReportData.totals.final_balance)}
+                                    </td>
+                                  </tr>
+                                </tfoot>
+                              </table>
+                            </div>
+                            
+                            {/* Export Buttons */}
+                            <div className="flex gap-3 mt-6 pt-4 border-t border-teal-200">
+                              <Button
+                                onClick={() => exportToExcel(settlementReportData, `تقرير-تصفية-العمال-${settlementReportData.project?.name}-${getCurrentDate()}.xlsx`)}
+                                className="bg-green-600 hover:bg-green-700 text-white"
+                              >
+                                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                                تصدير Excel
+                              </Button>
+                              <PrintButton reportType="workers_settlement" />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
 
