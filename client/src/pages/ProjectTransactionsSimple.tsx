@@ -277,16 +277,7 @@ export default function ProjectTransactionsSimple() {
         // تحديد نوع المشترية (آجل أم مدفوع)
         const isDeferred = purchase.purchaseType === 'أجل' || purchase.paymentType === 'deferred' || purchase.isDeferred || purchase.deferred;
         
-        console.log('🔍 معالجة مشترية:', {
-          id: purchase.id,
-          materialName: purchase.materialName || purchase.material?.name || purchase.name,
-          amount: amount,
-          purchaseType: purchase.purchaseType,
-          paymentType: purchase.paymentType,
-          isDeferred: purchase.isDeferred,
-          deferred: purchase.deferred,
-          calculatedIsDeferred: isDeferred
-        });
+
         
         allTransactions.push({
           id: `material-${purchase.id}`,

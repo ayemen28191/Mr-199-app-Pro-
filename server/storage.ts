@@ -1509,10 +1509,10 @@ export class DatabaseStorage implements IStorage {
           WHERE project_id = ${projectId}
         `),
         
-        // إجمالي مشتريات المواد
+        // إجمالي مشتريات المواد النقدية فقط (المشتريات الآجلة لا تُحسب)
         db.execute(sql`
           SELECT 
-            COALESCE(SUM(CAST(total_amount AS DECIMAL)), 0) as total,
+            COALESCE(SUM(CASE WHEN purchase_type = 'نقد' THEN CAST(total_amount AS DECIMAL) ELSE 0 END), 0) as total,
             COUNT(DISTINCT id) as count
           FROM material_purchases 
           WHERE project_id = ${projectId}
@@ -1551,7 +1551,7 @@ export class DatabaseStorage implements IStorage {
       console.log(`   📈 تحويلات واردة: ${totalProjectIn}`);
       console.log(`   📉 تحويلات صادرة: ${totalProjectOut}`);
       console.log(`   👷 أجور العمال: ${totalWages}`);
-      console.log(`   🏗️  مشتريات المواد: ${totalMaterials}`);
+      console.log(`   🏗️  مشتريات المواد (نقدية فقط): ${totalMaterials}`);
       console.log(`   🚚 النقل: ${totalTransport}`);
       console.log(`   📋 مصاريف متنوعة: ${totalMisc}`);
 
