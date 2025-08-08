@@ -11,7 +11,7 @@ import {
   workerTransfers, workerBalances, autocompleteData, workerTypes, workerMiscExpenses, users, suppliers, supplierPayments, printSettings, projectFundTransfers
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, gte, lte, sql, inArray, or } from "drizzle-orm";
+import { eq, and, gte, lte, gt, sql, inArray, or } from "drizzle-orm";
 
 export interface IStorage {
   // Projects
@@ -1501,10 +1501,10 @@ export class DatabaseStorage implements IStorage {
           WHERE from_project_id = ${projectId}
         `),
         
-        // إجمالي المبالغ المدفوعة فعلياً (وليس الأجور الكاملة) والأيام
+        // إجمالي المبالغ المدفوعة فعلياً فقط (المبالغ التي تم صرفها فعلاً) والأيام
         db.execute(sql`
           SELECT 
-            COALESCE(SUM(CAST(paid_amount AS DECIMAL)), 0) as total_wages,
+            COALESCE(SUM(CASE WHEN paid_amount > 0 THEN CAST(paid_amount AS DECIMAL) ELSE 0 END), 0) as total_wages,
             COUNT(DISTINCT date) as completed_days
           FROM worker_attendance 
           WHERE project_id = ${projectId}
@@ -1551,7 +1551,7 @@ export class DatabaseStorage implements IStorage {
       console.log(`   💰 تحويلات العهدة: ${totalFundTransfers}`);
       console.log(`   📈 تحويلات واردة: ${totalProjectIn}`);
       console.log(`   📉 تحويلات صادرة: ${totalProjectOut}`);
-      console.log(`   👷 أجور العمال: ${totalWages}`);
+      console.log(`   👷 أجور العمال المدفوعة فعلياً: ${totalWages}`);
       console.log(`   🏗️  مشتريات المواد (نقدية فقط): ${totalMaterials}`);
       console.log(`   🚚 النقل: ${totalTransport}`);
       console.log(`   📋 مصاريف متنوعة: ${totalMisc}`);
@@ -1854,7 +1854,7 @@ export class DatabaseStorage implements IStorage {
     // جلب جميع المصروفات من مصادر مختلفة
     const expenses: any[] = [];
 
-    // 1. أجور العمال
+    // 1. أجور العمال المدفوعة فعلياً فقط
     const workerWages = await db.select({
       id: workerAttendance.id,
       projectId: workerAttendance.projectId,
@@ -1862,7 +1862,7 @@ export class DatabaseStorage implements IStorage {
       category: sql`'عمالة'`.as('category'),
       subcategory: workers.type,
       description: workers.name,
-      amount: workerAttendance.actualWage,
+      amount: workerAttendance.paidAmount,
       vendor: sql`NULL`.as('vendor'),
       notes: sql`NULL`.as('notes'),
       type: sql`'wages'`.as('type')
@@ -1873,7 +1873,8 @@ export class DatabaseStorage implements IStorage {
       eq(workerAttendance.projectId, projectId),
       gte(workerAttendance.date, dateFrom),
       lte(workerAttendance.date, dateTo),
-      eq(workerAttendance.isPresent, true)
+      eq(workerAttendance.isPresent, true),
+      gt(workerAttendance.paidAmount, "0") // فقط الأجور المدفوعة
     ));
 
     // 2. مشتريات المواد (النقدية فقط - المشتريات الآجلة لا تُحسب كمصروفات)
