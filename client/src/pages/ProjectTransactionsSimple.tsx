@@ -199,11 +199,11 @@ export default function ProjectTransactionsSimple() {
       // حساب المبلغ المدفوع فعلياً فقط (وليس الأجر الكامل)
       let amount = 0;
       
-      // استخدام المبلغ المدفوع فعلياً فقط
+      // استخدام المبلغ المدفوع فعلياً (يشمل 0 إذا لم يُدفع شيء)
       if (attendance.paidAmount !== undefined && attendance.paidAmount !== null && attendance.paidAmount !== '') {
         const paidAmount = parseFloat(attendance.paidAmount);
-        if (!isNaN(paidAmount) && paidAmount >= 0) {
-          amount = paidAmount;
+        if (!isNaN(paidAmount)) {
+          amount = Math.max(0, paidAmount); // تأكد من عدم وجود قيم سالبة
           console.log(`💰 المبلغ المدفوع فعلياً:`, amount);
         }
       }
@@ -213,16 +213,20 @@ export default function ProjectTransactionsSimple() {
         date, 
         amount, 
         hasDate: !!date, 
-        hasAmount: amount > 0, 
-        willAdd: !!date && amount > 0 
+        hasAmount: amount >= 0, 
+        willAdd: !!date 
       });
       
-      if (date && amount > 0) {
+      // إظهار جميع سجلات الحضور حتى لو كان المبلغ المدفوع 0
+      if (date) {
         // البحث عن العامل باستخدام workerId
         const worker = workersArray.find((w: any) => w.id === attendance.workerId);
         const workerName = worker?.name || attendance.workerName || attendance.worker?.name || attendance.name || 'غير محدد';
         const workDays = attendance.workDays ? ` (${attendance.workDays} يوم)` : '';
         const dailyWage = attendance.dailyWage ? ` - أجر يومي: ${formatCurrency(parseFloat(attendance.dailyWage))}` : '';
+        
+        // إضافة توضيح إذا كان المبلغ المدفوع 0
+        const paymentStatus = amount === 0 ? ' (لم يُدفع)' : '';
         
         const newTransaction = {
           id: `wage-${attendance.id}`,
@@ -230,15 +234,14 @@ export default function ProjectTransactionsSimple() {
           type: 'expense' as const,
           category: 'أجور العمال',
           amount: amount,
-          description: `${workerName}${workDays}${dailyWage}`
+          description: `${workerName}${workDays}${dailyWage}${paymentStatus}`
         };
         
         console.log('✅ إضافة معاملة أجور العمال:', newTransaction);
         allTransactions.push(newTransaction);
       } else {
-        console.log(`❌ تم تخطي العامل ${attendance.workerName || attendance.name || 'غير معروف'} - السبب:`, {
+        console.log(`❌ تم تخطي العامل ${attendance.workerName || attendance.name || 'غير معروف'} - السبب: التاريخ مفقود`, {
           missingDate: !date,
-          missingAmount: amount === 0,
           originalData: attendance
         });
       }
