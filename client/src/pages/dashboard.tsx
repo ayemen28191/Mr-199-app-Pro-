@@ -58,6 +58,17 @@ export default function Dashboard() {
   };
 
   const selectedProject = projects.find(p => p.id === selectedProjectId);
+  
+  // إضافة تسجيل للتحقق من البيانات في Frontend
+  if (selectedProject) {
+    console.log('🔍 بيانات المشروع المحدد في Frontend:', {
+      projectId: selectedProject.id,
+      projectName: selectedProject.name,
+      totalIncome: selectedProject.stats?.totalIncome,
+      totalExpenses: selectedProject.stats?.totalExpenses,
+      currentBalance: selectedProject.stats?.currentBalance
+    });
+  }
 
   const quickActions = [
     {
