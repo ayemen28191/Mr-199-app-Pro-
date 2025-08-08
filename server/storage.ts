@@ -990,10 +990,10 @@ export class DatabaseStorage implements IStorage {
 
       const totalFundTransfers = fundTransfers.reduce((sum, t) => sum + parseFloat(t.amount), 0);
       
-      // حساب صافي عمليات ترحيل الأموال (الواردة - الصادرة)
+      // حساب عمليات ترحيل الأموال منفصلة (الواردة والصادرة)
       const incomingTransfers = projectTransfers.filter(t => t.toProjectId === projectId).reduce((sum, t) => sum + parseFloat(t.amount), 0);
       const outgoingTransfers = projectTransfers.filter(t => t.fromProjectId === projectId).reduce((sum, t) => sum + parseFloat(t.amount), 0);
-      const netProjectTransfers = incomingTransfers - outgoingTransfers;
+      
       // استخدام المبلغ المدفوع بدلاً من إجمالي الأجر اليومي
       const totalWorkerWages = workerAttendanceRecords.reduce((sum, a) => sum + parseFloat(a.paidAmount || '0'), 0);
       // فقط المشتريات النقدية تُحسب في مصروفات اليوم - المشتريات الآجلة لا تُحسب
@@ -1004,8 +1004,8 @@ export class DatabaseStorage implements IStorage {
       const totalWorkerTransferCosts = workerTransfers.reduce((sum, t) => sum + parseFloat(t.amount), 0);
       const totalWorkerMiscCosts = workerMiscExpenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
 
-      const totalIncome = carriedForwardAmount + totalFundTransfers + netProjectTransfers;
-      const totalExpenses = totalWorkerWages + totalMaterialCosts + totalTransportationCosts + totalWorkerTransferCosts + totalWorkerMiscCosts;
+      const totalIncome = carriedForwardAmount + totalFundTransfers + incomingTransfers;
+      const totalExpenses = totalWorkerWages + totalMaterialCosts + totalTransportationCosts + totalWorkerTransferCosts + totalWorkerMiscCosts + outgoingTransfers;
       const remainingBalance = totalIncome - totalExpenses;
 
       // معلومات مختصرة للتشخيص
@@ -1565,18 +1565,18 @@ export class DatabaseStorage implements IStorage {
       console.log(`   🚚 النقل: ${totalTransport}`);
       console.log(`   📋 مصاريف متنوعة: ${totalMisc}`);
       console.log(`   💸 حوالات الأهل: ${totalWorkerTransfers}`);
+      console.log(`   📤 تحويلات صادرة: ${totalProjectOut}`);
 
-      // الإجمالي الكلي للدخل والمصروفات - بمنطق صحيح (مع إضافة حوالات الأهل)
+      // الإجمالي الكلي للدخل والمصروفات - مع تصحيح منطق التحويلات الصادرة
       const totalIncome = totalFundTransfers + totalProjectIn;
-      const totalExpenses = totalWages + totalMaterials + totalTransport + totalMisc + totalWorkerTransfers;
-      // ملاحظة: التحويلات الصادرة لا تُحسب كمصروف لأنها مجرد نقل أموال من مشروع لآخر
-      // ولكن حوالات الأهل تُحسب كمصروف لأنها أموال تخرج من المشروع نهائياً
-      const currentBalance = totalIncome - totalExpenses - totalProjectOut;
+      const totalExpenses = totalWages + totalMaterials + totalTransport + totalMisc + totalWorkerTransfers + totalProjectOut;
+      // ملاحظة: التحويلات الصادرة تُحسب كمصروف لأنها أموال تخرج من المشروع
+      // حوالات الأهل أيضاً تُحسب كمصروف لأنها أموال تخرج من المشروع نهائياً
+      const currentBalance = totalIncome - totalExpenses;
 
       console.log(`   📊 إجمالي الدخل: ${totalIncome}`);
-      console.log(`   📊 إجمالي المصاريف الحقيقية: ${totalExpenses}`);
-      console.log(`   📤 تحويلات صادرة: ${totalProjectOut}`);
-      console.log(`   📊 الرصيد النهائي: ${currentBalance} (بعد خصم التحويلات)`);
+      console.log(`   📊 إجمالي المصاريف (شاملة التحويلات): ${totalExpenses}`);
+      console.log(`   📊 الرصيد النهائي: ${currentBalance}`);
       
       // التحقق من أن البيانات منطقية
       if (isNaN(currentBalance) || !isFinite(currentBalance)) {
