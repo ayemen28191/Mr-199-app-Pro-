@@ -43,6 +43,16 @@ export default function Dashboard() {
     refetchInterval: 1000 * 60, // إعادة التحديث كل دقيقة
   });
 
+  // تسجيل البيانات عند تحميلها
+  if (projects && projects.length > 0) {
+    console.log('📋 جميع المشاريع المحملة:', projects.map((p: ProjectWithStats) => ({
+      name: p.name,
+      totalIncome: p.stats?.totalIncome,
+      totalExpenses: p.stats?.totalExpenses,
+      isEqual: p.stats?.totalIncome === p.stats?.totalExpenses
+    })));
+  }
+
   const { data: todaySummary } = useQuery<DailyExpenseSummary>({
     queryKey: ["/api/projects", selectedProjectId, "daily-summary", new Date().toISOString().split('T')[0]],
     enabled: !!selectedProjectId,
@@ -57,7 +67,7 @@ export default function Dashboard() {
     }
   };
 
-  const selectedProject = projects.find(p => p.id === selectedProjectId);
+  const selectedProject = projects.find((p: ProjectWithStats) => p.id === selectedProjectId);
   
   // إضافة تسجيل للتحقق من البيانات في Frontend
   if (selectedProject) {
