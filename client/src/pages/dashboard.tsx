@@ -68,6 +68,17 @@ export default function Dashboard() {
       totalExpenses: selectedProject.stats?.totalExpenses,
       currentBalance: selectedProject.stats?.currentBalance
     });
+    
+    // فحص خاص لمشروع الحبشي
+    if (selectedProject.name.includes('الحبشي')) {
+      console.warn('🚨 مشروع الحبشي - تحقق من البيانات:', {
+        مشروع: selectedProject.name,
+        الدخل: selectedProject.stats?.totalIncome,
+        المصاريف: selectedProject.stats?.totalExpenses,
+        هل_متساوية: selectedProject.stats?.totalIncome === selectedProject.stats?.totalExpenses,
+        fullStats: selectedProject.stats
+      });
+    }
   }
 
   const quickActions = [
