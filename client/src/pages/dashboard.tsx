@@ -1,11 +1,11 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Clock, Receipt, ShoppingCart, BarChart, Plus, Users, UserCheck, ArrowRight } from "lucide-react";
+import { Clock, Receipt, ShoppingCart, BarChart, Plus, Users, UserCheck, ArrowRight, RefreshCw } from "lucide-react";
 import { useSelectedProject } from "@/hooks/use-selected-project";
 import ProjectSelector from "@/components/project-selector";
 import AddProjectForm from "@/components/forms/add-project-form";
@@ -34,18 +34,28 @@ export default function Dashboard() {
   const { selectedProjectId, selectProject } = useSelectedProject();
   const [showAddProject, setShowAddProject] = useState(false);
   const [showAddWorker, setShowAddWorker] = useState(false);
+  const queryClient = useQueryClient();
 
   // تحميل المشاريع مع الإحصائيات بشكل محسن
   const { data: projects = [], isLoading: projectsLoading } = useQuery<ProjectWithStats[]>({
     queryKey: ["/api/projects/with-stats"],
-    staleTime: 1000 * 60 * 10, // 10 دقائق للإحصائيات
+    staleTime: 1000 * 30, // 30 ثانية فقط للإحصائيات لضمان الحصول على البيانات المحدثة
+    refetchInterval: 1000 * 60, // إعادة التحديث كل دقيقة
   });
 
   const { data: todaySummary } = useQuery<DailyExpenseSummary>({
     queryKey: ["/api/projects", selectedProjectId, "daily-summary", new Date().toISOString().split('T')[0]],
     enabled: !!selectedProjectId,
-    staleTime: 1000 * 60 * 5, // 5 دقائق للملخص اليومي
+    staleTime: 1000 * 30, // 30 ثانية للملخص اليومي
   });
+
+  // دالة إعادة تحميل البيانات
+  const handleRefreshData = () => {
+    queryClient.invalidateQueries({ queryKey: ["/api/projects/with-stats"] });
+    if (selectedProjectId) {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProjectId, "daily-summary"] });
+    }
+  };
 
   const selectedProject = projects.find(p => p.id === selectedProjectId);
 
@@ -99,6 +109,19 @@ export default function Dashboard() {
 
   return (
     <div className="p-4 fade-in">
+      {/* Refresh Button */}
+      <div className="flex justify-end mb-3">
+        <Button 
+          variant="outline" 
+          size="sm"
+          onClick={handleRefreshData}
+          className="h-8 px-3 text-xs"
+        >
+          <RefreshCw className="ml-1 h-3 w-3" />
+          تحديث البيانات
+        </Button>
+      </div>
+
       {/* Management Buttons */}
       <div className="grid grid-cols-2 gap-3 mb-4">
         <Dialog open={showAddProject} onOpenChange={setShowAddProject}>
