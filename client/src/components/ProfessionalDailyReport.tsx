@@ -30,6 +30,7 @@ export const ProfessionalDailyReport = ({ data, selectedProject, selectedDate }:
     workerAttendance = [],
     materialPurchases = [],
     transportationExpenses = [],
+    workerTransfers = [],
     incomingProjectTransfers = [],
     outgoingProjectTransfers = [],
     totalIncomingTransfers = 0,
@@ -69,7 +70,13 @@ export const ProfessionalDailyReport = ({ data, selectedProject, selectedDate }:
     return sum + amount;
   }, 0);
 
-  const totalExpenses = totalWorkerCosts + totalMaterialCosts + totalTransportCosts + totalOutgoingTransfers;
+  // حساب إجمالي حوالات الأهل
+  const totalWorkerTransfers = workerTransfers.reduce((sum: number, transfer: any) => {
+    const amount = Number(transfer.amount) || 0;
+    return sum + amount;
+  }, 0);
+
+  const totalExpenses = totalWorkerCosts + totalMaterialCosts + totalTransportCosts + totalWorkerTransfers + totalOutgoingTransfers;
   const remainingBalance = (carriedForward + totalIncome) - totalExpenses;
 
   return (

@@ -1471,7 +1471,8 @@ export class DatabaseStorage implements IStorage {
         attendance,
         materials,
         transport,
-        miscExpenses
+        miscExpenses,
+        workerTransfers
       ] = await Promise.all([
         // عدد العمال المميزين
         db.execute(sql`
@@ -1531,6 +1532,13 @@ export class DatabaseStorage implements IStorage {
           SELECT COALESCE(SUM(CAST(amount AS DECIMAL)), 0) as total
           FROM worker_misc_expenses 
           WHERE project_id = ${projectId}
+        `),
+        
+        // حوالات الأهل (من العامل للأهل)
+        db.execute(sql`
+          SELECT COALESCE(SUM(CAST(amount AS DECIMAL)), 0) as total
+          FROM worker_transfers 
+          WHERE project_id = ${projectId}
         `)
       ]);
 
@@ -1545,6 +1553,7 @@ export class DatabaseStorage implements IStorage {
       const materialCount = parseInt((materials.rows[0] as any)?.count || '0');
       const totalTransport = parseFloat((transport.rows[0] as any)?.total || '0');
       const totalMisc = parseFloat((miscExpenses.rows[0] as any)?.total || '0');
+      const totalWorkerTransfers = parseFloat((workerTransfers.rows[0] as any)?.total || '0');
 
       // تسجيل القيم للتأكد من صحة البيانات
       console.log(`📊 تفاصيل الحسابات للمشروع ${projectId}:`);
@@ -1555,11 +1564,13 @@ export class DatabaseStorage implements IStorage {
       console.log(`   🏗️  مشتريات المواد (نقدية فقط): ${totalMaterials}`);
       console.log(`   🚚 النقل: ${totalTransport}`);
       console.log(`   📋 مصاريف متنوعة: ${totalMisc}`);
+      console.log(`   💸 حوالات الأهل: ${totalWorkerTransfers}`);
 
-      // الإجمالي الكلي للدخل والمصروفات - بمنطق صحيح (بدون حساب التحويلات الصادرة كمصروف)
+      // الإجمالي الكلي للدخل والمصروفات - بمنطق صحيح (مع إضافة حوالات الأهل)
       const totalIncome = totalFundTransfers + totalProjectIn;
-      const totalExpenses = totalWages + totalMaterials + totalTransport + totalMisc;
+      const totalExpenses = totalWages + totalMaterials + totalTransport + totalMisc + totalWorkerTransfers;
       // ملاحظة: التحويلات الصادرة لا تُحسب كمصروف لأنها مجرد نقل أموال من مشروع لآخر
+      // ولكن حوالات الأهل تُحسب كمصروف لأنها أموال تخرج من المشروع نهائياً
       const currentBalance = totalIncome - totalExpenses - totalProjectOut;
 
       console.log(`   📊 إجمالي الدخل: ${totalIncome}`);
