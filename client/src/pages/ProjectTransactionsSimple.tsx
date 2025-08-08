@@ -196,34 +196,18 @@ export default function ProjectTransactionsSimple() {
       // فحص جميع الحقول الموجودة في الكائن
       console.log('🔍 جميع الحقول المتاحة:', Object.keys(attendance));
       
-      // البحث عن المبلغ في جميع الحقول المحتملة
+      // حساب المبلغ المدفوع فعلياً فقط (وليس الأجر الكامل)
       let amount = 0;
-      const possibleAmountFields = [
-        'paidAmount', 'actualWage', 'totalWage', 'wage', 'amount', 
-        'dailyWage', 'salary', 'payment', 'cost', 'totalAmount'
-      ];
       
-      for (const field of possibleAmountFields) {
-        const value = attendance[field];
-        if (value !== undefined && value !== null && value !== '') {
-          const numValue = parseFloat(value);
-          if (!isNaN(numValue) && numValue > 0) {
-            amount = numValue;
-            console.log(`💰 عثر على مبلغ في الحقل ${field}:`, amount);
-            break;
-          }
+      // استخدام المبلغ المدفوع فعلياً فقط
+      if (attendance.paidAmount !== undefined && attendance.paidAmount !== null && attendance.paidAmount !== '') {
+        const paidAmount = parseFloat(attendance.paidAmount);
+        if (!isNaN(paidAmount) && paidAmount >= 0) {
+          amount = paidAmount;
+          console.log(`💰 المبلغ المدفوع فعلياً:`, amount);
         }
       }
-      
-      // حساب الأجر من الأجر اليومي وأيام العمل
-      if (amount === 0 && attendance.dailyWage && attendance.workDays) {
-        const dailyWage = parseFloat(attendance.dailyWage);
-        const workDays = parseFloat(attendance.workDays);
-        if (!isNaN(dailyWage) && !isNaN(workDays)) {
-          amount = dailyWage * workDays;
-          console.log(`💰 حساب الأجر من الأجر اليومي: ${dailyWage} × ${workDays} = ${amount}`);
-        }
-      }
+
 
       console.log('✅ النتيجة النهائية:', { 
         date, 
