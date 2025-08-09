@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Clock, Receipt, ShoppingCart, BarChart, Plus, Users, UserCheck, ArrowRight, RefreshCw } from "lucide-react";
+import { Clock, Receipt, ShoppingCart, BarChart, Plus, Users, UserCheck, ArrowRight, RefreshCw, Settings } from "lucide-react";
 import { useSelectedProject } from "@/hooks/use-selected-project";
 import ProjectSelector from "@/components/project-selector";
 import AddProjectForm from "@/components/forms/add-project-form";
@@ -131,6 +131,14 @@ export default function Dashboard() {
       hoverColor: "hover:bg-orange-700",
       textColor: "text-white",
       action: () => setLocation("/project-transfers"),
+    },
+    {
+      icon: Settings,
+      label: "إعدادات القوالب",
+      bgColor: "bg-indigo-600",
+      hoverColor: "hover:bg-indigo-700",
+      textColor: "text-white",
+      action: () => setLocation("/report-template-settings-enhanced"),
     },
   ];
 
