@@ -29,6 +29,7 @@ import MobileReports from "@/pages/mobile-reports";
 import PrintControlPage from "@/pages/print-control";
 import AdvancedPrintControl from "@/pages/advanced-print-control";
 import PrintIntegrationDemo from "@/pages/print-integration-demo";
+import ReportTemplateSettings from "@/pages/report-template-settings";
 import Header from "@/components/layout/header";
 import BottomNavigation from "@/components/layout/bottom-navigation";
 
@@ -60,6 +61,7 @@ function Router() {
       <Route path="/print-control" component={PrintControlPage} />
       <Route path="/advanced-print-control" component={AdvancedPrintControl} />
       <Route path="/print-integration-demo" component={PrintIntegrationDemo} />
+      <Route path="/report-template-settings" component={ReportTemplateSettings} />
       <Route component={NotFound} />
     </Switch>
   );

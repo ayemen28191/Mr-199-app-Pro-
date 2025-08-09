@@ -351,3 +351,58 @@ export type InsertSupplier = z.infer<typeof insertSupplierSchema>;
 export type InsertSupplierPayment = z.infer<typeof insertSupplierPaymentSchema>;
 export type InsertPrintSettings = z.infer<typeof insertPrintSettingsSchema>;
 export type InsertProjectFundTransfer = z.infer<typeof insertProjectFundTransferSchema>;
+
+// Report Templates Schema - إعدادات تصميم التقارير
+export const reportTemplates = pgTable('report_templates', {
+  id: text('id').primaryKey().default(sql`gen_random_uuid()`),
+  templateName: text('template_name').notNull().default('default'),
+  
+  // إعدادات الرأس
+  headerTitle: text('header_title').notNull().default('نظام إدارة مشاريع البناء'),
+  headerSubtitle: text('header_subtitle').default('تقرير مالي'),
+  companyName: text('company_name').notNull().default('شركة البناء والتطوير'),
+  companyAddress: text('company_address').default('صنعاء - اليمن'),
+  companyPhone: text('company_phone').default('+967 1 234567'),
+  companyEmail: text('company_email').default('info@company.com'),
+  
+  // إعدادات الذيل
+  footerText: text('footer_text').default('تم إنشاء هذا التقرير بواسطة نظام إدارة المشاريع'),
+  footerContact: text('footer_contact').default('للاستفسار: info@company.com | +967 1 234567'),
+  
+  // إعدادات الألوان
+  primaryColor: text('primary_color').notNull().default('#1f2937'), // رمادي داكن
+  secondaryColor: text('secondary_color').notNull().default('#3b82f6'), // أزرق
+  accentColor: text('accent_color').notNull().default('#10b981'), // أخضر
+  textColor: text('text_color').notNull().default('#1f2937'),
+  backgroundColor: text('background_color').notNull().default('#ffffff'),
+  
+  // إعدادات التصميم
+  fontSize: integer('font_size').notNull().default(11),
+  fontFamily: text('font_family').notNull().default('Arial'),
+  logoUrl: text('logo_url'), // رابط الشعار
+  
+  // إعدادات الطباعة
+  pageOrientation: text('page_orientation').notNull().default('portrait'), // portrait أو landscape
+  pageSize: text('page_size').notNull().default('A4'),
+  margins: jsonb('margins').default({ top: 1, bottom: 1, left: 0.75, right: 0.75 }),
+  
+  // تفعيل/إلغاء العناصر
+  showHeader: boolean('show_header').notNull().default(true),
+  showFooter: boolean('show_footer').notNull().default(true),
+  showLogo: boolean('show_logo').notNull().default(true),
+  showDate: boolean('show_date').notNull().default(true),
+  showPageNumbers: boolean('show_page_numbers').notNull().default(true),
+  
+  isActive: boolean('is_active').notNull().default(true),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+export const insertReportTemplateSchema = createInsertSchema(reportTemplates).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertReportTemplate = z.infer<typeof insertReportTemplateSchema>;
+export type ReportTemplate = typeof reportTemplates.$inferSelect;

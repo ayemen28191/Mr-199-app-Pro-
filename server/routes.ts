@@ -11,7 +11,7 @@ import {
   insertTransportationExpenseSchema, insertDailyExpenseSummarySchema, insertWorkerTransferSchema,
   insertWorkerBalanceSchema, insertAutocompleteDataSchema, insertWorkerTypeSchema,
   insertWorkerMiscExpenseSchema, insertUserSchema, insertSupplierSchema, insertSupplierPaymentSchema,
-  insertPrintSettingsSchema, insertProjectFundTransferSchema
+  insertPrintSettingsSchema, insertProjectFundTransferSchema, insertReportTemplateSchema
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -2964,6 +2964,125 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: "خطأ في إنشاء تقرير تصفية العمال",
         error: error instanceof Error ? error.message : 'Unknown error'
       });
+    }
+  });
+
+  // Report Templates Routes - إعدادات قوالب التقارير
+  app.get("/api/report-templates", async (req, res) => {
+    try {
+      const templates = await storage.getReportTemplates();
+      res.json(templates);
+    } catch (error) {
+      console.error("Error fetching report templates:", error);
+      res.status(500).json({ message: "خطأ في جلب قوالب التقارير" });
+    }
+  });
+
+  app.get("/api/report-templates/active", async (req, res) => {
+    try {
+      const template = await storage.getActiveReportTemplate();
+      if (!template) {
+        // إنشاء قالب افتراضي إذا لم يوجد
+        const defaultTemplate = {
+          templateName: 'default',
+          headerTitle: 'نظام إدارة مشاريع البناء',
+          companyName: 'شركة البناء والتطوير',
+          companyAddress: 'صنعاء - اليمن',
+          companyPhone: '+967 1 234567',
+          companyEmail: 'info@company.com',
+          footerText: 'تم إنشاء هذا التقرير بواسطة نظام إدارة المشاريع',
+          footerContact: 'للاستفسار: info@company.com | +967 1 234567',
+          primaryColor: '#1f2937',
+          secondaryColor: '#3b82f6',
+          accentColor: '#10b981',
+          textColor: '#1f2937',
+          backgroundColor: '#ffffff',
+          fontSize: 11,
+          fontFamily: 'Arial',
+          pageOrientation: 'portrait',
+          pageSize: 'A4',
+          margins: { top: 1, bottom: 1, left: 0.75, right: 0.75 },
+          showHeader: true,
+          showFooter: true,
+          showLogo: true,
+          showDate: true,
+          showPageNumbers: true,
+          isActive: true,
+        };
+        const newTemplate = await storage.createReportTemplate(defaultTemplate);
+        return res.json(newTemplate);
+      }
+      res.json(template);
+    } catch (error) {
+      console.error("Error fetching active report template:", error);
+      res.status(500).json({ message: "خطأ في جلب القالب النشط" });
+    }
+  });
+
+  app.get("/api/report-templates/:id", async (req, res) => {
+    try {
+      const template = await storage.getReportTemplate(req.params.id);
+      if (!template) {
+        return res.status(404).json({ message: "قالب التقرير غير موجود" });
+      }
+      res.json(template);
+    } catch (error) {
+      console.error("Error fetching report template:", error);
+      res.status(500).json({ message: "خطأ في جلب قالب التقرير" });
+    }
+  });
+
+  app.post("/api/report-templates", async (req, res) => {
+    try {
+      const result = insertReportTemplateSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "بيانات قالب التقرير غير صحيحة", 
+          errors: result.error.issues 
+        });
+      }
+      
+      const template = await storage.createReportTemplate(result.data);
+      res.status(201).json(template);
+    } catch (error) {
+      console.error("Error creating report template:", error);
+      res.status(500).json({ message: "خطأ في إنشاء قالب التقرير" });
+    }
+  });
+
+  app.put("/api/report-templates/:id", async (req, res) => {
+    try {
+      const result = insertReportTemplateSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "بيانات قالب التقرير غير صحيحة", 
+          errors: result.error.issues 
+        });
+      }
+      
+      const template = await storage.updateReportTemplate(req.params.id, result.data);
+      if (!template) {
+        return res.status(404).json({ message: "قالب التقرير غير موجود" });
+      }
+      res.json(template);
+    } catch (error) {
+      console.error("Error updating report template:", error);
+      res.status(500).json({ message: "خطأ في تحديث قالب التقرير" });
+    }
+  });
+
+  app.delete("/api/report-templates/:id", async (req, res) => {
+    try {
+      const template = await storage.getReportTemplate(req.params.id);
+      if (!template) {
+        return res.status(404).json({ message: "قالب التقرير غير موجود" });
+      }
+      
+      await storage.deleteReportTemplate(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting report template:", error);
+      res.status(500).json({ message: "خطأ في حذف قالب التقرير" });
     }
   });
 

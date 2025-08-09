@@ -2,13 +2,13 @@ import {
   type Project, type Worker, type FundTransfer, type WorkerAttendance, 
   type Material, type MaterialPurchase, type TransportationExpense, type DailyExpenseSummary,
   type WorkerTransfer, type WorkerBalance, type AutocompleteData, type WorkerType, type WorkerMiscExpense, type User,
-  type Supplier, type SupplierPayment, type PrintSettings, type ProjectFundTransfer,
+  type Supplier, type SupplierPayment, type PrintSettings, type ProjectFundTransfer, type ReportTemplate,
   type InsertProject, type InsertWorker, type InsertFundTransfer, type InsertWorkerAttendance,
   type InsertMaterial, type InsertMaterialPurchase, type InsertTransportationExpense, type InsertDailyExpenseSummary,
   type InsertWorkerTransfer, type InsertWorkerBalance, type InsertAutocompleteData, type InsertWorkerType, type InsertWorkerMiscExpense, type InsertUser,
-  type InsertSupplier, type InsertSupplierPayment, type InsertPrintSettings, type InsertProjectFundTransfer,
+  type InsertSupplier, type InsertSupplierPayment, type InsertPrintSettings, type InsertProjectFundTransfer, type InsertReportTemplate,
   projects, workers, fundTransfers, workerAttendance, materials, materialPurchases, transportationExpenses, dailyExpenseSummaries,
-  workerTransfers, workerBalances, autocompleteData, workerTypes, workerMiscExpenses, users, suppliers, supplierPayments, printSettings, projectFundTransfers
+  workerTransfers, workerBalances, autocompleteData, workerTypes, workerMiscExpenses, users, suppliers, supplierPayments, printSettings, projectFundTransfers, reportTemplates
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, gte, lte, gt, sql, inArray, or } from "drizzle-orm";
@@ -182,6 +182,14 @@ export interface IStorage {
   updatePrintSettings(id: string, settings: Partial<InsertPrintSettings>): Promise<PrintSettings | undefined>;
   deletePrintSettings(id: string): Promise<void>;
   getDefaultPrintSettings(reportType: string): Promise<PrintSettings | undefined>;
+  
+  // Report Templates
+  getReportTemplates(): Promise<ReportTemplate[]>;
+  getReportTemplate(id: string): Promise<ReportTemplate | undefined>;
+  getActiveReportTemplate(): Promise<ReportTemplate | undefined>;
+  createReportTemplate(template: InsertReportTemplate): Promise<ReportTemplate>;
+  updateReportTemplate(id: string, template: Partial<InsertReportTemplate>): Promise<ReportTemplate | undefined>;
+  deleteReportTemplate(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2455,6 +2463,94 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error getting daily summary:', error);
       return null;
+    }
+  }
+
+  // Report Templates
+  async getReportTemplates(): Promise<ReportTemplate[]> {
+    try {
+      return await db.select().from(reportTemplates).orderBy(sql`created_at DESC`);
+    } catch (error) {
+      console.error('Error getting report templates:', error);
+      return [];
+    }
+  }
+
+  async getReportTemplate(id: string): Promise<ReportTemplate | undefined> {
+    try {
+      const [template] = await db.select().from(reportTemplates).where(eq(reportTemplates.id, id));
+      return template || undefined;
+    } catch (error) {
+      console.error('Error getting report template:', error);
+      return undefined;
+    }
+  }
+
+  async getActiveReportTemplate(): Promise<ReportTemplate | undefined> {
+    try {
+      const [template] = await db.select().from(reportTemplates)
+        .where(eq(reportTemplates.isActive, true))
+        .orderBy(sql`updated_at DESC`)
+        .limit(1);
+      return template || undefined;
+    } catch (error) {
+      console.error('Error getting active report template:', error);
+      return undefined;
+    }
+  }
+
+  async createReportTemplate(template: InsertReportTemplate): Promise<ReportTemplate> {
+    try {
+      // إذا كان هذا القالب سيكون نشطاً، إلغاء تفعيل القوالب الأخرى
+      if (template.isActive) {
+        await db.update(reportTemplates)
+          .set({ isActive: false })
+          .where(eq(reportTemplates.isActive, true));
+      }
+
+      const [newTemplate] = await db
+        .insert(reportTemplates)
+        .values(template)
+        .returning();
+      
+      if (!newTemplate) {
+        throw new Error('فشل في إنشاء قالب التقرير');
+      }
+      
+      return newTemplate;
+    } catch (error) {
+      console.error('Error creating report template:', error);
+      throw error;
+    }
+  }
+
+  async updateReportTemplate(id: string, template: Partial<InsertReportTemplate>): Promise<ReportTemplate | undefined> {
+    try {
+      // إذا كان سيتم تفعيل هذا القالب، إلغاء تفعيل القوالب الأخرى
+      if (template.isActive) {
+        await db.update(reportTemplates)
+          .set({ isActive: false })
+          .where(eq(reportTemplates.isActive, true));
+      }
+
+      const [updated] = await db
+        .update(reportTemplates)
+        .set({ ...template, updatedAt: sql`CURRENT_TIMESTAMP` })
+        .where(eq(reportTemplates.id, id))
+        .returning();
+      return updated || undefined;
+    } catch (error) {
+      console.error('Error updating report template:', error);
+      throw error;
+    }
+  }
+
+  async deleteReportTemplate(id: string): Promise<void> {
+    try {
+      await db.delete(reportTemplates).where(eq(reportTemplates.id, id));
+    } catch (error) {
+      console.error('Error deleting report template:', error);
+      throw error;
     }
   }
 }
