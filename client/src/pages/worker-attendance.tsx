@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AutocompleteInput } from "@/components/ui/autocomplete-input-database";
 import { useToast } from "@/hooks/use-toast";
 import { useSelectedProject } from "@/hooks/use-selected-project";
 import ProjectSelector from "@/components/project-selector";
@@ -465,11 +466,11 @@ export default function WorkerAttendance() {
               )}
               <div>
                 <Label className="text-xs text-muted-foreground">وصف العمل</Label>
-                <Input
-                  type="text"
-                  placeholder="اكتب وصف العمل..."
+                <AutocompleteInput
                   value={bulkSettings.workDescription}
-                  onChange={(e) => setBulkSettings(prev => ({ ...prev, workDescription: e.target.value }))}
+                  onChange={(value) => setBulkSettings(prev => ({ ...prev, workDescription: value }))}
+                  placeholder="اكتب وصف العمل..."
+                  category="workDescriptions"
                   className="mt-1"
                 />
               </div>

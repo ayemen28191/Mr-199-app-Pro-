@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { AutocompleteInput } from "@/components/ui/autocomplete-input-database";
 import { User } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import type { Worker } from "@shared/schema";
@@ -113,11 +114,12 @@ export default function WorkerCard({ worker, date, onAttendanceChange }: WorkerC
             
             <div className="mb-3">
               <Label className="text-sm text-muted-foreground mb-1">ملاحظات العمل</Label>
-              <Input
-                type="text"
+              <AutocompleteInput
                 value={workDescription}
-                onChange={(e) => handleDescriptionChange(e.target.value)}
+                onChange={handleDescriptionChange}
                 placeholder="وصف العمل المنجز..."
+                category="workDescriptions"
+                className="w-full"
               />
             </div>
           </>
