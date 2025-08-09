@@ -1004,8 +1004,10 @@ export class DatabaseStorage implements IStorage {
       const totalWorkerTransferCosts = workerTransfers.reduce((sum, t) => sum + parseFloat(t.amount), 0);
       const totalWorkerMiscCosts = workerMiscExpenses.reduce((sum, e) => sum + parseFloat(e.amount), 0);
 
-      const totalIncome = carriedForwardAmount + totalFundTransfers + incomingTransfers;
-      const totalExpenses = totalWorkerWages + totalMaterialCosts + totalTransportationCosts + totalWorkerTransferCosts + totalWorkerMiscCosts + outgoingTransfers;
+      // للملخص اليومي: التحويلات الصادرة لا تُحسب كمصروف، بل كحركة مالية منفصلة
+      const netProjectTransfers = incomingTransfers - outgoingTransfers;
+      const totalIncome = carriedForwardAmount + totalFundTransfers + netProjectTransfers;
+      const totalExpenses = totalWorkerWages + totalMaterialCosts + totalTransportationCosts + totalWorkerTransferCosts + totalWorkerMiscCosts;
       const remainingBalance = totalIncome - totalExpenses;
 
       // معلومات مختصرة للتشخيص
