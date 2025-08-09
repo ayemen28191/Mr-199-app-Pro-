@@ -316,6 +316,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // إصلاح حسابات يوم محدد - Fix specific day calculations
+  app.post("/api/projects/:projectId/fix-day/:date", async (req, res) => {
+    try {
+      const { projectId, date } = req.params;
+      console.log(`🔧 إصلاح حسابات اليوم ${date} للمشروع ${projectId}`);
+
+      // حذف البيانات القديمة الخاطئة
+      await storage.deleteDailySummary(projectId, date);
+      console.log(`✅ تم حذف الملخص الخاطئ لتاريخ ${date}`);
+
+      // إعادة إنشاء البيانات الصحيحة
+      await storage.updateDailySummaryForDate(projectId, date);
+      console.log(`✅ تم إعادة حساب الملخص الصحيح لتاريخ ${date}`);
+
+      // جلب البيانات الجديدة للتحقق
+      const newSummary = await storage.getDailySummary(projectId, date);
+      
+      res.json({ 
+        success: true, 
+        message: `تم إصلاح حسابات ${date} بنجاح`,
+        summary: newSummary 
+      });
+    } catch (error) {
+      console.error(`❌ خطأ في إصلاح اليوم ${req.params.date}:`, error);
+      res.status(500).json({ message: "خطأ في إصلاح الحسابات" });
+    }
+  });
+
   // Workers
   app.get("/api/workers", async (req, res) => {
     try {

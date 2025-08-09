@@ -76,6 +76,8 @@ export interface IStorage {
   getDailyExpenseSummary(projectId: string, date: string): Promise<DailyExpenseSummary | undefined>;
   createOrUpdateDailyExpenseSummary(summary: InsertDailyExpenseSummary): Promise<DailyExpenseSummary>;
   getPreviousDayBalance(projectId: string, currentDate: string): Promise<string>;
+  deleteDailySummary(projectId: string, date: string): Promise<void>;
+  getDailySummary(projectId: string, date: string): Promise<DailyExpenseSummary | null>;
   
   // Worker Balance Management
   getWorkerBalance(workerId: string, projectId: string): Promise<WorkerBalance | undefined>;
@@ -2424,6 +2426,35 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error getting default print settings:', error);
       return undefined;
+    }
+  }
+
+  // دالتان إضافيتان للإصلاح
+  async deleteDailySummary(projectId: string, date: string): Promise<void> {
+    try {
+      await db.delete(dailyExpenseSummaries)
+        .where(and(
+          eq(dailyExpenseSummaries.projectId, projectId),
+          eq(dailyExpenseSummaries.date, date)
+        ));
+      console.log(`✅ تم حذف ملخص ${date} للمشروع ${projectId}`);
+    } catch (error) {
+      console.error('Error deleting daily summary:', error);
+      throw error;
+    }
+  }
+
+  async getDailySummary(projectId: string, date: string): Promise<DailyExpenseSummary | null> {
+    try {
+      const [summary] = await db.select().from(dailyExpenseSummaries)
+        .where(and(
+          eq(dailyExpenseSummaries.projectId, projectId),
+          eq(dailyExpenseSummaries.date, date)
+        ));
+      return summary || null;
+    } catch (error) {
+      console.error('Error getting daily summary:', error);
+      return null;
     }
   }
 }
