@@ -3232,7 +3232,7 @@ export default function Reports() {
                       className="h-12 text-lg border-2 border-blue-200 focus:border-blue-500 rounded-xl"
                     />
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <Button 
                       onClick={() => generateDailyExpensesReport("daily")}
                       disabled={isGenerating}
@@ -3256,24 +3256,6 @@ export default function Reports() {
                         <Printer className="h-4 w-4 mr-2" />
                       )}
                       احترافي
-                    </Button>
-                    <Button 
-                      onClick={() => {
-                        if (reportData && activeReportType === 'daily') {
-                          exportToProfessionalExcel(reportData, `كشف-مصروفات-يومية-${dailyReportDate}`);
-                        } else {
-                          toast({
-                            title: "تنبيه",
-                            description: "قم بإنشاء التقرير أولاً",
-                            variant: "destructive",
-                          });
-                        }
-                      }}
-                      disabled={!(reportData && (activeReportType === 'daily' || activeReportType === 'professional'))}
-                      className="h-12 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-medium text-base rounded-xl transform hover:scale-105 transition-all duration-300"
-                    >
-                      <FileSpreadsheet className="h-4 w-4 mr-2" />
-                      Excel متقدم
                     </Button>
                   </div>
                 </CardContent>
@@ -3383,7 +3365,7 @@ export default function Reports() {
                       />
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 gap-3">
                     <Button 
                       onClick={generateWorkerAccountReport}
                       disabled={isGenerating}
@@ -3394,37 +3376,7 @@ export default function Reports() {
                       ) : (
                         <FileText className="h-4 w-4 mr-2" />
                       )}
-                      مضغوط بسيط
-                    </Button>
-                    <Button 
-                      onClick={generateWorkerAccountReport}
-                      disabled={isGenerating}
-                      className="h-12 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-medium text-base rounded-xl transform hover:scale-105 transition-all duration-300"
-                    >
-                      {isGenerating ? (
-                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      ) : (
-                        <FileSpreadsheet className="h-4 w-4 mr-2" />
-                      )}
-                      احترافي محسن
-                    </Button>
-                    <Button 
-                      onClick={() => {
-                        if (reportData && activeReportType === 'worker') {
-                          exportToProfessionalExcel(reportData, `كشف-حساب-عامل-${reportData.workerName || 'غير-محدد'}`);
-                        } else {
-                          toast({
-                            title: "تنبيه",
-                            description: "قم بإنشاء تقرير العامل أولاً",
-                            variant: "destructive",
-                          });
-                        }
-                      }}
-                      disabled={!(reportData && activeReportType === 'worker')}
-                      className="h-12 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-medium text-base rounded-xl transform hover:scale-105 transition-all duration-300"
-                    >
-                      <FileSpreadsheet className="h-4 w-4 mr-2" />
-                      Excel متقدم
+                      إنشاء التقرير
                     </Button>
                   </div>
                 </CardContent>
@@ -4016,32 +3968,6 @@ export default function Reports() {
                     <Download className="h-4 w-4 mr-2" />
                     تصدير Excel
                   </Button>
-                  <Button
-                    onClick={() => {
-                      // Save report context for advanced print control
-                      const printContext = {
-                        type: activeReportType === 'daily' ? 'daily_expenses' : 
-                              activeReportType === 'professional' ? 'daily_expenses' :
-                              activeReportType === 'worker' ? 'worker_statement' :
-                              activeReportType === 'material' ? 'material_purchases' :
-                              activeReportType === 'project' ? 'project_summary' : 'daily_expenses',
-                        title: `تقرير ${activeReportType === 'daily' ? 'المصاريف اليومية' :
-                                        activeReportType === 'professional' ? 'المصاريف المهنية' :
-                                        activeReportType === 'worker' ? 'حساب العامل' :
-                                        activeReportType === 'material' ? 'المواد والمشتريات' :
-                                        activeReportType === 'project' ? 'ملخص المشروع' : 'التقرير'}`,
-                        data: reportData,
-                        projectInfo: selectedProject
-                      };
-                      localStorage.setItem('printReportContext', JSON.stringify(printContext));
-                      window.print();
-                    }}
-                    variant="outline"
-                    className="border-purple-500 text-purple-600 hover:bg-purple-50 px-6 py-2 rounded-xl"
-                  >
-                    <Settings className="h-4 w-4 mr-2" />
-                    تحكم متقدم
-                  </Button>
                   <UnifiedPrintButton
                     data={reportData}
                     title={`تقرير ${activeReportType === 'daily' ? 'المصاريف اليومية' :
@@ -4051,13 +3977,6 @@ export default function Reports() {
                                     activeReportType === 'project' ? 'ملخص المشروع' : 'التقرير'}`}
                     className="px-6 py-2 rounded-xl"
                   />
-                  <Button
-                    onClick={printReport}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-xl"
-                  >
-                    <Printer className="h-4 w-4 mr-2" />
-                    طباعة
-                  </Button>
                 </div>
               </div>
             </CardHeader>
