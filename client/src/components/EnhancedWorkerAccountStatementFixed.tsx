@@ -1,10 +1,12 @@
 // كشف حساب العامل الاحترافي المحسن - تصميم مضغوط لصفحة A4 واحدة
 // يحتوي على جميع البيانات المطلوبة في تخطيط مدروس وأنيق
 
-import { FileSpreadsheet, Printer } from 'lucide-react';
+import { FileSpreadsheet, Printer, FileText } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 // واجهة خصائص المكون
 interface EnhancedWorkerAccountStatementProps {
@@ -329,85 +331,189 @@ export const EnhancedWorkerAccountStatement = ({
     }
   };
 
-  // دالة الطباعة المحسنة 
+  // دالة تصدير PDF الاحترافية
+  const exportToPDF = async () => {
+    try {
+      console.log('📄 بدء تصدير ملف PDF...');
+      
+      const element = document.getElementById('enhanced-worker-account-statement');
+      if (!element) {
+        alert('❌ لم يتم العثور على محتوى التقرير');
+        return;
+      }
+
+      // إخفاء أزرار التحكم مؤقتاً
+      const controlButtons = document.querySelector('.no-print');
+      if (controlButtons) {
+        (controlButtons as HTMLElement).style.display = 'none';
+      }
+
+      // التقاط لقطة للشاشة بجودة عالية
+      const canvas = await html2canvas(element, {
+        scale: 2, // جودة عالية
+        useCORS: true,
+        backgroundColor: '#ffffff',
+        width: element.scrollWidth,
+        height: element.scrollHeight
+      });
+
+      // إظهار أزرار التحكم مرة أخرى
+      if (controlButtons) {
+        (controlButtons as HTMLElement).style.display = 'flex';
+      }
+
+      // إنشاء PDF
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      const imgWidth = 210; // عرض A4 بالملليمتر
+      const pageHeight = 297; // ارتفاع A4 بالملليمتر
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+
+      let position = 0;
+
+      // إضافة الصفحة الأولى
+      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      // إضافة صفحات إضافية إذا لزم الأمر
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      // تسمية الملف
+      const workerName = (worker.name || 'Unknown').replace(/[\\/:*?"<>|]/g, '_');
+      const fromDate = dateFrom.replace(/[\\/:*?"<>|]/g, '_');
+      const toDate = dateTo.replace(/[\\/:*?"<>|]/g, '_');
+      const fileName = `Worker_Account_Statement_${workerName}_${fromDate}_to_${toDate}.pdf`;
+
+      // حفظ الملف
+      pdf.save(fileName);
+      
+      console.log('✅ تم تصدير ملف PDF بنجاح');
+      
+    } catch (error) {
+      console.error('❌ خطأ في تصدير PDF:', error);
+      alert('❌ حدث خطأ أثناء تصدير ملف PDF. يرجى المحاولة مرة أخرى.');
+    }
+  };
+
+  // دالة الطباعة المحسنة والمطورة - مع إصلاح شامل لمشاكل الطباعة
   const handlePrint = () => {
     try {
-      console.log('🖨️ Starting print process...');
+      console.log('🖨️ بدء عملية الطباعة المحسنة...');
       
-      const printWindow = window.open('', '_blank');
-      if (!printWindow) {
-        alert('Could not open print window. Please allow pop-ups for this site.');
-        return;
-      }
-
+      // التحقق من وجود المحتوى
       const printContent = document.getElementById('enhanced-worker-account-statement');
       if (!printContent) {
-        alert('Print content not found');
+        alert('❌ لم يتم العثور على محتوى الطباعة');
         return;
       }
 
-      const printHTML = `
-        <!DOCTYPE html>
-        <html dir="rtl" lang="ar">
-        <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Worker Account Statement - ${worker.name || 'Unknown'}</title>
-          <style>
-            @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
-            
-            * {
-              margin: 0;
-              padding: 0;
-              box-sizing: border-box;
+      // استخدام الطباعة المباشرة للمتصفح بدلاً من نافذة منفصلة
+      const originalContents = document.body.innerHTML;
+      const originalTitle = document.title;
+      
+      // إنشاء CSS محسن للطباعة
+      const printCSS = `
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
+          
+          * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+          }
+          
+          body {
+            font-family: 'Cairo', 'Arial', sans-serif !important;
+            direction: rtl !important;
+            background: white !important;
+            color: #1f2937 !important;
+            line-height: 1.3 !important;
+            font-size: 10px !important;
+            margin: 0 !important;
+            padding: 4mm !important;
+          }
+          
+          @page {
+            size: A4 portrait;
+            margin: 8mm 6mm;
+            -webkit-print-color-adjust: exact;
+            color-adjust: exact;
+          }
+          
+          @media print {
+            .no-print, .no-print * {
+              display: none !important;
+              visibility: hidden !important;
             }
             
             body {
-              font-family: 'Cairo', 'Arial', sans-serif;
-              direction: rtl;
-              background: white;
-              color: #1f2937;
-              line-height: 1.6;
-              font-size: 12px;
+              font-size: 10px !important;
+              -webkit-print-color-adjust: exact;
+              color-adjust: exact;
             }
             
-            @media print {
-              body { font-size: 11px; }
-              .no-print { display: none !important; }
-              .print-break { page-break-after: always; }
-              h1, h2, h3 { page-break-after: avoid; }
-              .statement-header { margin-bottom: 15px; }
-              .financial-summary { margin-top: 20px; }
-              table { page-break-inside: auto; }
-              tr { page-break-inside: avoid; page-break-after: auto; }
-              td, th { page-break-inside: avoid; }
+            table {
+              page-break-inside: auto !important;
+              border-collapse: collapse !important;
             }
             
-            @page {
-              size: A4;
-              margin: 0.8cm 0.6cm;
+            tr {
+              page-break-inside: avoid !important;
+              page-break-after: auto !important;
             }
-          </style>
-        </head>
-        <body>
-          ${printContent.innerHTML}
-          <script>
-            window.onload = function() {
-              window.print();
-              setTimeout(() => window.close(), 1000);
-            };
-          </script>
-        </body>
-        </html>
+            
+            th, td {
+              page-break-inside: avoid !important;
+              font-size: 8px !important;
+              padding: 1mm !important;
+            }
+            
+            h1, h2, h3 {
+              page-break-after: avoid !important;
+            }
+            
+            .enhanced-worker-statement-print {
+              width: 100% !important;
+              max-width: none !important;
+              margin: 0 !important;
+              padding: 0 !important;
+            }
+          }
+        </style>
       `;
-
-      printWindow.document.write(printHTML);
-      printWindow.document.close();
       
-      console.log('✅ Print prepared successfully');
+      // تحديث المحتوى للطباعة
+      document.title = `كشف حساب العامل - ${worker.name || 'غير محدد'}`;
+      document.body.innerHTML = printCSS + printContent.outerHTML;
+      
+      // تنفيذ الطباعة
+      setTimeout(() => {
+        window.print();
+        
+        // استرجاع المحتوى الأصلي بعد الطباعة
+        setTimeout(() => {
+          document.body.innerHTML = originalContents;
+          document.title = originalTitle;
+          console.log('✅ تمت عملية الطباعة بنجاح');
+        }, 1000);
+      }, 500);
+      
     } catch (error) {
-      console.error('❌ Print error:', error);
-      alert('Error occurred while printing. Please try again.');
+      console.error('❌ خطأ في الطباعة:', error);
+      alert('❌ حدث خطأ أثناء الطباعة. يرجى المحاولة مرة أخرى.');
+      
+      // استرجاع المحتوى في حالة الخطأ
+      location.reload();
     }
   };
 
@@ -433,6 +539,13 @@ export const EnhancedWorkerAccountStatement = ({
         >
           <FileSpreadsheet className="h-4 w-4 mr-2" />
           تصدير إلى Excel
+        </Button>
+        <Button
+          onClick={exportToPDF}
+          className="bg-red-600 hover:bg-red-700 text-white font-medium px-6 py-2 rounded-lg shadow-lg transform hover:scale-105 transition-all duration-300"
+        >
+          <FileText className="h-4 w-4 mr-2" />
+          تصدير إلى PDF
         </Button>
       </div>
 
