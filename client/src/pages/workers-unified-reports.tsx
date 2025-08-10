@@ -103,7 +103,7 @@ export default function WorkersUnifiedReports() {
 
       console.log('🔍 جاري جمع بيانات كشف الحساب:', url);
 
-      const response = await apiRequest(url, 'GET');
+      const response = await apiRequest('GET', url);
       
       if (response) {
         console.log('✅ تم جمع بيانات كشف الحساب:', response);
