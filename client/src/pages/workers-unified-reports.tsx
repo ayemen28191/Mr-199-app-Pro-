@@ -90,19 +90,29 @@ export default function WorkersUnifiedReports() {
       return;
     }
 
+    if (singleWorkerProjectIds.length === 0) {
+      toast({
+        title: "لم يتم تحديد مشاريع",
+        description: "يرجى تحديد مشروع واحد على الأقل لإنشاء كشف الحساب",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsGenerating(true);
     try {
       // إنشاء URL مع فلترة المشاريع للعامل الواحد
       let url = `/api/workers/${selectedWorkerId}/account-statement?dateFrom=${dateFrom}&dateTo=${dateTo}`;
       
-      // إضافة فلترة المشاريع إذا تم تحديدها
-      if (singleWorkerProjectIds.length > 0) {
-        url += `&projectIds=${singleWorkerProjectIds.join(',')}`;
-      }
+      // إضافة فلترة المشاريع - استخدام projectIds للمشاريع المتعددة
+      url += `&projectIds=${singleWorkerProjectIds.join(',')}`;
+
+      console.log('🔍 جاري جمع بيانات كشف الحساب:', url);
 
       const response = await apiRequest(url, 'GET');
       
       if (response) {
+        console.log('✅ تم جمع بيانات كشف الحساب:', response);
         setReportData([response]);
         setShowWorkerStatement(true);
         
@@ -110,13 +120,19 @@ export default function WorkersUnifiedReports() {
           title: "تم إنشاء كشف الحساب",
           description: `كشف حساب العامل ${response.worker?.name}`,
         });
+      } else {
+        toast({
+          title: "لا توجد بيانات",
+          description: "لم يتم العثور على بيانات للعامل في الفترة المحددة",
+          variant: "destructive",
+        });
       }
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('خطأ في إنشاء كشف حساب العامل:', error);
       toast({
         title: "خطأ في إنشاء كشف الحساب",
-        description: "حدث خطأ أثناء جمع بيانات العامل",
+        description: error?.message || "حدث خطأ أثناء جمع بيانات العامل",
         variant: "destructive",
       });
     }
@@ -134,19 +150,30 @@ export default function WorkersUnifiedReports() {
       return;
     }
 
+    if (selectedProjectIds.length === 0) {
+      toast({
+        title: "لم يتم تحديد مشاريع",
+        description: "يرجى تحديد مشروع واحد على الأقل لإنشاء التقرير",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsGenerating(true);
     try {
       // جمع البيانات من جميع العمال المحددين
       const allAttendanceData: any[] = [];
       
+      console.log('🔍 جاري جمع بيانات العمال المتعددين:', { selectedWorkerIds, selectedProjectIds });
+      
       for (const workerId of selectedWorkerIds) {
         // إنشاء URL مع فلترة المشاريع
         let url = `/api/workers/${workerId}/account-statement?dateFrom=${dateFrom}&dateTo=${dateTo}`;
         
-        // إضافة فلترة المشاريع إذا تم تحديدها
-        if (selectedProjectIds.length > 0) {
-          url += `&projectIds=${selectedProjectIds.join(',')}`;
-        }
+        // إضافة فلترة المشاريع - استخدام projectIds للمشاريع المتعددة
+        url += `&projectIds=${selectedProjectIds.join(',')}`;
+
+        console.log(`🔍 جمع بيانات العامل ${workerId}:`, url);
 
         const response = await apiRequest(url, 'GET');
         
@@ -161,19 +188,31 @@ export default function WorkersUnifiedReports() {
         }
       }
 
+      console.log('✅ تم جمع جميع البيانات:', { totalRecords: allAttendanceData.length });
+
+      if (allAttendanceData.length === 0) {
+        toast({
+          title: "لا توجد بيانات",
+          description: "لم يتم العثور على بيانات حضور للعمال المحددين في الفترة المحددة",
+          variant: "destructive",
+        });
+        setIsGenerating(false);
+        return;
+      }
+
       setReportData(allAttendanceData);
       setShowResults(true);
       
       toast({
         title: "تم إنشاء التقرير",
-        description: `تم جمع بيانات ${allAttendanceData.length} سجل حضور`,
+        description: `تم جمع بيانات ${allAttendanceData.length} سجل حضور من ${selectedWorkerIds.length} عامل`,
       });
       
-    } catch (error) {
+    } catch (error: any) {
       console.error('خطأ في إنشاء تقرير العمال:', error);
       toast({
         title: "خطأ في إنشاء التقرير",
-        description: "حدث خطأ أثناء جمع بيانات العمال",
+        description: error?.message || "حدث خطأ أثناء جمع بيانات العمال",
         variant: "destructive",
       });
     }

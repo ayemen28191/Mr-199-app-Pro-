@@ -56,11 +56,8 @@ const allPages = [
       { path: "/reports", icon: FileSpreadsheet, label: "التقارير الأساسية", description: "التقارير المالية الأساسية" },
       { path: "/mobile-reports", icon: Target, label: "التقارير المحمولة", description: "تقارير محسّنة للأجهزة المحمولة" },
       { path: "/advanced-reports", icon: TrendingUp, label: "التقارير المتقدمة", description: "تقارير تحليلية متقدمة" },
-      { path: "/excel-format-worker-statement", icon: FileSpreadsheet, label: "كشف حساب العمال (إكسل)", description: "كشف حساب العمال بصيغة Excel" },
       { path: "/daily-expenses-report", icon: Calendar, label: "تقرير المصاريف اليومية", description: "تقرير مفصل للمصاريف اليومية" },
       { path: "/excel-style-daily-expenses", icon: FileSpreadsheet, label: "المصاريف اليومية (إكسل)", description: "المصاريف اليومية بصيغة Excel" },
-      { path: "/workers-filter-report", icon: Filter, label: "تقرير العمال المفلتر", description: "تقارير العمال مع خيارات التصفية" },
-      { path: "/enhanced-worker-statement", icon: User, label: "كشف حساب العمال المحسن", description: "كشف حساب محسن ومفصل للعمال" },
       { path: "/workers-unified-reports", icon: Users, label: "تقارير العمال الموحدة", description: "صفحة موحدة لجميع تقارير العمال - كشف حساب واحد أو متعدد" },
     ]
   },
