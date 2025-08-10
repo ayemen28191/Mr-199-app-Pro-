@@ -1,7 +1,7 @@
 -- إنشاء جدول report_templates مع جميع الحقول المطلوبة
 CREATE TABLE IF NOT EXISTS report_templates (
   id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
-  template_name TEXT NOT NULL DEFAULT 'default',
+  template_name TEXT NOT NULL UNIQUE DEFAULT 'default',
   
   -- إعدادات الرأس
   header_title TEXT NOT NULL DEFAULT 'نظام إدارة مشاريع البناء',
@@ -79,7 +79,8 @@ INSERT INTO report_templates (
   true, 
   true
 )
-ON CONFLICT (template_name) DO NOTHING;
+ON CONFLICT (template_name) DO UPDATE SET
+  updated_at = CURRENT_TIMESTAMP;
 
 -- إنشاء فهرس للحصول على القالب النشط بسرعة
 CREATE INDEX IF NOT EXISTS idx_report_templates_active ON report_templates(is_active) WHERE is_active = true;
