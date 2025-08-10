@@ -15,6 +15,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
+import { ProfessionalExcelExporter, type EnhancedExcelData } from "@/components/professional-excel-exporter";
 import type { Project } from "@shared/schema";
 import "../styles/daily-expenses-print.css";
 
@@ -69,6 +70,99 @@ export default function DailyExpensesReport() {
       }
     }
   }, [projects, selectedProjectId, selectProject]);
+
+  // تصدير Excel باستخدام النظام الاحترافي الجديد
+  const exportToProfessionalExcel = async () => {
+    try {
+      if (!reportData || reportData.length === 0) {
+        toast({
+          title: "تنبيه",
+          description: "لا توجد بيانات للتصدير",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // جلب قالب التقرير النشط
+      const template = await apiRequest('GET', '/api/report-templates/active');
+      
+      // إعداد بيانات التقرير المحسنة
+      const headers = [
+        'التاريخ', 'الرصيد المرحل', 'الحوالات المالية', 'أجور العمال', 'شراء المواد', 
+        'أجور المواصلات', 'حوالات العمال', 'نثريات العمال', 'إجمالي الإيرادات', 'إجمالي المصروفات', 'الرصيد المتبقي'
+      ];
+
+      const rows = reportData.map(day => [
+        formatDate(day.date),
+        Number(day.summary.carriedForward) || 0,
+        Number(day.summary.totalFundTransfers) || 0,
+        Number(day.summary.totalWorkerWages) || 0,
+        Number(day.summary.totalMaterialCosts) || 0,
+        Number(day.summary.totalTransportationCosts) || 0,
+        Number(day.summary.totalWorkerTransfers) || 0,
+        Number(day.summary.totalWorkerMiscExpenses) || 0,
+        Number(day.summary.totalIncome) || 0,
+        Number(day.summary.totalExpenses) || 0,
+        Number(day.summary.remainingBalance) || 0
+      ]);
+
+      // حساب الإجماليات للملخص
+      const totals = {
+        totalFundTransfers: reportData.reduce((sum, day) => sum + Number(day.summary.totalFundTransfers || 0), 0),
+        totalWorkerWages: reportData.reduce((sum, day) => sum + Number(day.summary.totalWorkerWages || 0), 0),
+        totalMaterialCosts: reportData.reduce((sum, day) => sum + Number(day.summary.totalMaterialCosts || 0), 0),
+        totalTransportationCosts: reportData.reduce((sum, day) => sum + Number(day.summary.totalTransportationCosts || 0), 0),
+        totalWorkerTransfers: reportData.reduce((sum, day) => sum + Number(day.summary.totalWorkerTransfers || 0), 0),
+        totalWorkerMiscExpenses: reportData.reduce((sum, day) => sum + Number(day.summary.totalWorkerMiscExpenses || 0), 0),
+        totalIncome: reportData.reduce((sum, day) => sum + Number(day.summary.totalIncome || 0), 0),
+        totalExpenses: reportData.reduce((sum, day) => sum + Number(day.summary.totalExpenses || 0), 0),
+      };
+
+      const finalBalance = totals.totalIncome - totals.totalExpenses;
+
+      const enhancedData: EnhancedExcelData = {
+        title: `كشف المصروفات اليومية - ${selectedProject?.name}`,
+        subtitle: `الفترة: من ${formatDate(dateFrom)} إلى ${formatDate(dateTo)}`,
+        headers,
+        rows,
+        summary: [
+          { label: 'إجمالي الحوالات المالية', value: totals.totalFundTransfers },
+          { label: 'إجمالي أجور العمال', value: totals.totalWorkerWages },
+          { label: 'إجمالي شراء المواد', value: totals.totalMaterialCosts },
+          { label: 'إجمالي أجور المواصلات', value: totals.totalTransportationCosts },
+          { label: 'إجمالي حوالات العمال', value: totals.totalWorkerTransfers },
+          { label: 'إجمالي نثريات العمال', value: totals.totalWorkerMiscExpenses },
+          { label: 'إجمالي الإيرادات', value: totals.totalIncome },
+          { label: 'إجمالي المصروفات', value: totals.totalExpenses },
+          { label: 'الرصيد النهائي', value: finalBalance },
+        ],
+        metadata: {
+          reportType: 'كشف المصروفات اليومية',
+          dateRange: `من ${formatDate(dateFrom)} إلى ${formatDate(dateTo)}`,
+          projectName: selectedProject?.name || 'غير محدد',
+          generatedBy: 'نظام إدارة مشاريع البناء'
+        }
+      };
+
+      const exporter = new ProfessionalExcelExporter(template);
+      const fileName = `كشف-المصروفات-احترافي-${selectedProject?.name}-${formatDate(dateFrom)}-${formatDate(dateTo)}`;
+      
+      await exporter.exportToExcel(enhancedData, fileName);
+
+      toast({
+        title: "تم بنجاح",
+        description: "تم تصدير كشف المصروفات بالتصميم الاحترافي",
+      });
+
+    } catch (error) {
+      console.error('خطأ في تصدير Excel الاحترافي:', error);
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ في تصدير الملف الاحترافي",
+        variant: "destructive",
+      });
+    }
+  };
 
   const generateReport = useCallback(async () => {
     if (!selectedProjectId) {
@@ -526,13 +620,23 @@ export default function DailyExpensesReport() {
             {reportData.length > 0 && (
               <>
                 <Button 
+                  onClick={exportToProfessionalExcel} 
+                  variant="default"
+                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+                  size="lg"
+                >
+                  <Settings className="h-4 w-4" />
+                  تصدير احترافي
+                </Button>
+                
+                <Button 
                   onClick={exportToExcel} 
                   variant="outline"
                   className="flex items-center gap-2 border-green-300 text-green-700 hover:bg-green-50"
                   size="lg"
                 >
                   <FileSpreadsheet className="h-4 w-4" />
-                  تصدير Excel احترافي
+                  تصدير عادي
                 </Button>
                 
                 <Button 

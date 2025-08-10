@@ -55,17 +55,17 @@ export class UnifiedExcelExporter {
         paperSize: 9, // A4
         orientation: this.template.pageOrientation as 'portrait' | 'landscape',
         margins: {
-          left: this.template.margins?.left || 0.75,
-          right: this.template.margins?.right || 0.75,
-          top: this.template.margins?.top || 1,
-          bottom: this.template.margins?.bottom || 1,
+          left: (this.template.margins && typeof this.template.margins === 'object' && 'left' in this.template.margins) ? this.template.margins.left as number : 0.75,
+          right: (this.template.margins && typeof this.template.margins === 'object' && 'right' in this.template.margins) ? this.template.margins.right as number : 0.75,
+          top: (this.template.margins && typeof this.template.margins === 'object' && 'top' in this.template.margins) ? this.template.margins.top as number : 1,
+          bottom: (this.template.margins && typeof this.template.margins === 'object' && 'bottom' in this.template.margins) ? this.template.margins.bottom as number : 1,
           header: 0.3,
           footer: 0.3,
         },
       },
-      properties: {
+      views: [{
         rightToLeft: true,
-      },
+      }],
     });
 
     let currentRow = 1;

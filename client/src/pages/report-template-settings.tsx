@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowRight, Save, Palette, FileText, Settings, RefreshCw } from "lucide-react";
+import { ArrowRight, Save, Palette, FileText, Settings, RefreshCw, Eye, Download, Upload, Copy, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,9 +9,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
+import { UnifiedExcelExporter } from "@/components/unified-excel-exporter";
+import { ProfessionalExcelExporter, type EnhancedExcelData } from "@/components/professional-excel-exporter";
 import type { ReportTemplate, InsertReportTemplate } from "@shared/schema";
 
 export default function ReportTemplateSettings() {
@@ -23,6 +27,63 @@ export default function ReportTemplateSettings() {
     queryKey: ['/api/report-templates/active'],
     queryFn: () => apiRequest('GET', '/api/report-templates/active') as Promise<ReportTemplate>,
   });
+
+  // حالات إضافية للتحكم المتقدم
+  const [previewMode, setPreviewMode] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<'basic' | 'professional'>('professional');
+  
+  // وظيفة معاينة القالب
+  const previewTemplate = async () => {
+    try {
+      const sampleData: EnhancedExcelData = {
+        title: formData.headerSubtitle || 'تقرير تجريبي',
+        headers: ['#', 'البيان', 'المبلغ', 'التاريخ', 'الملاحظات'],
+        rows: [
+          [1, 'عهدة نقدية', 50000, '2025-08-10', 'تحويل من المكتب الرئيسي'],
+          [2, 'أجور عمال', 15000, '2025-08-10', 'أجور يوم 10/8'],
+          [3, 'مواد إنشائية', 8500, '2025-08-10', 'أسمنت وحديد'],
+        ],
+        summary: [
+          { label: 'إجمالي الدخل', value: 50000 },
+          { label: 'إجمالي المصاريف', value: 23500 },
+          { label: 'الرصيد المتبقي', value: 26500 },
+        ],
+        metadata: {
+          reportType: 'تقرير مالي يومي',
+          dateRange: '10/8/2025',
+          projectName: 'مشروع تجريبي',
+          generatedBy: 'نظام إدارة المشاريع'
+        }
+      };
+
+      const exporter = selectedTemplate === 'professional' 
+        ? new ProfessionalExcelExporter(formData as ReportTemplate)
+        : new UnifiedExcelExporter(formData as ReportTemplate);
+
+      if (selectedTemplate === 'professional') {
+        await (exporter as ProfessionalExcelExporter).exportToExcel(sampleData, 'معاينة_قالب_احترافي');
+      } else {
+        await (exporter as UnifiedExcelExporter).exportToExcel({
+          headers: sampleData.headers,
+          rows: sampleData.rows,
+          title: sampleData.title,
+          summary: sampleData.summary
+        }, 'معاينة_قالب_أساسي');
+      }
+
+      toast({
+        title: "تم تصدير المعاينة",
+        description: "تم تصدير ملف Excel تجريبي للمعاينة",
+      });
+    } catch (error) {
+      console.error('Error previewing template:', error);
+      toast({
+        title: "خطأ في المعاينة",
+        description: "حدث خطأ أثناء إنشاء المعاينة",
+        variant: "destructive",
+      });
+    }
+  };
 
   // حالة النموذج
   const [formData, setFormData] = useState<Partial<InsertReportTemplate>>({
@@ -56,7 +117,10 @@ export default function ReportTemplateSettings() {
   // تحديث النموذج عند جلب البيانات
   useEffect(() => {
     if (template) {
-      setFormData(template);
+      setFormData({
+        ...template,
+        margins: template.margins || { top: 1, bottom: 1, left: 0.75, right: 0.75 }
+      });
     }
   }, [template]);
 
@@ -93,9 +157,13 @@ export default function ReportTemplateSettings() {
   };
 
   const updateMargins = (margin: string, value: number) => {
+    const currentMargins = (formData.margins && typeof formData.margins === 'object') 
+      ? formData.margins as Record<string, number>
+      : { top: 1, bottom: 1, left: 0.75, right: 0.75 };
+    
     setFormData(prev => ({
       ...prev,
-      margins: { ...prev.margins, [margin]: value }
+      margins: { ...currentMargins, [margin]: value }
     }));
   };
 
@@ -144,42 +212,88 @@ export default function ReportTemplateSettings() {
     <div className="min-h-screen bg-background p-6">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* رأس الصفحة */}
+        {/* Header المحسن */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-reverse space-x-4">
-            <Link href="/reports">
-              <Button variant="outline" size="sm">
-                <ArrowRight className="ml-2 h-4 w-4" />
-                العودة للتقارير
-              </Button>
+          <div className="flex items-center gap-3">
+            <Link href="/reports" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
+              <ArrowRight className="h-4 w-4 rotate-180" />
+              العودة للتقارير
             </Link>
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">إعدادات قالب التقارير</h1>
-              <p className="text-muted-foreground">تخصيص تصميم وشكل تقارير الإكسل المُصدَّرة</p>
-            </div>
           </div>
-          
-          <div className="flex items-center space-x-reverse space-x-3">
-            <Button
-              onClick={resetToDefaults}
-              variant="outline"
-              className="flex items-center gap-2"
-            >
-              <RefreshCw className="h-4 w-4" />
-              إعادة تعيين
-            </Button>
-            
-            <Button
-              onClick={handleSubmit}
-              disabled={saveTemplateMutation.isPending}
-              className="bg-primary hover:bg-primary/90 text-primary-foreground flex items-center gap-2"
-            >
-              <Save className="h-4 w-4" />
-              {saveTemplateMutation.isPending ? "جاري الحفظ..." : "حفظ الإعدادات"}
-            </Button>
+          <div className="text-center">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">إعدادات قوالب التقارير</h1>
+            <p className="text-sm text-muted-foreground mt-1">تخصيص تصميم وشكل التقارير الاحترافية</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Badge variant={selectedTemplate === 'professional' ? 'default' : 'outline'}>
+              قالب {selectedTemplate === 'professional' ? 'احترافي' : 'أساسي'}
+            </Badge>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        {/* شريط التحكم العلوي */}
+        <Card className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950">
+          <CardContent className="pt-6">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="space-y-1">
+                  <Label className="text-sm font-medium">نوع القالب</Label>
+                  <Select value={selectedTemplate} onValueChange={(value: 'basic' | 'professional') => setSelectedTemplate(value)}>
+                    <SelectTrigger className="w-48">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="basic">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4" />
+                          قالب أساسي
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="professional">
+                        <div className="flex items-center gap-2">
+                          <Settings className="h-4 w-4" />
+                          قالب احترافي
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="outline"
+                  onClick={previewTemplate}
+                  className="flex items-center gap-2"
+                >
+                  <Eye className="h-4 w-4" />
+                  معاينة
+                </Button>
+                
+                <Button
+                  onClick={resetToDefaults}
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                  إعادة تعيين
+                </Button>
+                
+                <Button
+                  type="submit"
+                  disabled={saveTemplateMutation.isPending}
+                  className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700"
+                  form="template-form"
+                >
+                  <Save className="h-4 w-4" />
+                  {saveTemplateMutation.isPending ? "جاري الحفظ..." : "حفظ الإعدادات"}
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <form id="template-form" onSubmit={handleSubmit} className="space-y-6">
           <Tabs defaultValue="header" className="w-full">
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="header" className="flex items-center gap-2">
@@ -431,7 +545,7 @@ export default function ReportTemplateSettings() {
                           step="0.25"
                           min="0.25"
                           max="2"
-                          value={formData.margins?.top || 1}
+                          value={(formData.margins && typeof formData.margins === 'object' && 'top' in formData.margins) ? formData.margins.top as number : 1}
                           onChange={(e) => updateMargins('top', parseFloat(e.target.value))}
                         />
                       </div>
@@ -444,7 +558,7 @@ export default function ReportTemplateSettings() {
                           step="0.25"
                           min="0.25"
                           max="2"
-                          value={formData.margins?.bottom || 1}
+                          value={(formData.margins && typeof formData.margins === 'object' && 'bottom' in formData.margins) ? formData.margins.bottom as number : 1}
                           onChange={(e) => updateMargins('bottom', parseFloat(e.target.value))}
                         />
                       </div>
@@ -457,7 +571,7 @@ export default function ReportTemplateSettings() {
                           step="0.25"
                           min="0.25"
                           max="2"
-                          value={formData.margins?.left || 0.75}
+                          value={(formData.margins && typeof formData.margins === 'object' && 'left' in formData.margins) ? formData.margins.left as number : 0.75}
                           onChange={(e) => updateMargins('left', parseFloat(e.target.value))}
                         />
                       </div>
@@ -470,7 +584,7 @@ export default function ReportTemplateSettings() {
                           step="0.25"
                           min="0.25"
                           max="2"
-                          value={formData.margins?.right || 0.75}
+                          value={(formData.margins && typeof formData.margins === 'object' && 'right' in formData.margins) ? formData.margins.right as number : 0.75}
                           onChange={(e) => updateMargins('right', parseFloat(e.target.value))}
                         />
                       </div>
