@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useSelectedProject } from "@/hooks/use-selected-project";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency, formatDate, getCurrentDate } from "@/lib/utils";
@@ -19,9 +20,9 @@ import { saveAs } from 'file-saver';
 
 interface WorkerStatementData {
   worker: Worker;
-  project: Project;
-  attendance: WorkerAttendance[];
-  transfers: WorkerTransfer[];
+  projects: Project[];
+  attendance: (WorkerAttendance & { projectName: string })[];
+  transfers: (WorkerTransfer & { projectName: string })[];
 }
 
 export default function UnifiedWorkerStatement() {
@@ -30,6 +31,7 @@ export default function UnifiedWorkerStatement() {
   
   // Form states
   const [selectedWorkerId, setSelectedWorkerId] = useState("");
+  const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([]);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState(getCurrentDate());
   const [statementData, setStatementData] = useState<WorkerStatementData | null>(null);
@@ -44,15 +46,15 @@ export default function UnifiedWorkerStatement() {
     queryKey: ["/api/workers"],
   });
 
-  const selectedProject = projects.find(p => p.id === selectedProjectId);
   const selectedWorker = workers.find(w => w.id === selectedWorkerId);
+  const selectedProjects = projects.filter(p => selectedProjectIds.includes(p.id));
 
   // Generate statement
   const generateStatement = useCallback(async () => {
-    if (!selectedProjectId) {
+    if (selectedProjectIds.length === 0) {
       toast({
         title: "تنبيه",
-        description: "يرجى اختيار مشروع أولاً",
+        description: "يرجى اختيار مشروع واحد على الأقل",
         variant: "destructive",
       });
       return;
@@ -79,68 +81,91 @@ export default function UnifiedWorkerStatement() {
     setIsGenerating(true);
 
     try {
-      // Fetch worker attendance data for the period
+      // Fetch worker attendance data for all selected projects
       const attendanceResponse = await apiRequest(
         'GET',
         `/api/worker-attendance-filter?workerId=${selectedWorkerId}&dateFrom=${dateFrom}&dateTo=${dateTo}`
       );
 
-      // Fetch worker transfers data for the period
-      const transfersResponse = await apiRequest(
-        'GET',
-        `/api/workers/${selectedWorkerId}/transfers?projectId=${selectedProjectId}&dateFrom=${dateFrom}&dateTo=${dateTo}`
+      // Fetch worker transfers data for all selected projects
+      const allTransfers: WorkerTransfer[] = [];
+      for (const projectId of selectedProjectIds) {
+        const transfersResponse = await apiRequest(
+          'GET',
+          `/api/workers/${selectedWorkerId}/transfers?projectId=${projectId}&dateFrom=${dateFrom}&dateTo=${dateTo}`
+        );
+        if (Array.isArray(transfersResponse)) {
+          allTransfers.push(...transfersResponse);
+        }
+      }
+
+      const allAttendance: WorkerAttendance[] = attendanceResponse || [];
+      
+      // Filter attendance for selected projects only
+      const filteredAttendance = allAttendance.filter(record => 
+        selectedProjectIds.includes(record.projectId)
       );
 
-      const attendance: WorkerAttendance[] = attendanceResponse || [];
-      const transfers: WorkerTransfer[] = Array.isArray(transfersResponse) ? transfersResponse : [];
-
-      if (attendance.length === 0 && transfers.length === 0) {
+      if (filteredAttendance.length === 0 && allTransfers.length === 0) {
         toast({
           title: "تنبيه",
-          description: "لا توجد بيانات للعامل في الفترة المحددة",
+          description: "لا توجد بيانات للعامل في المشاريع والفترة المحددة",
         });
         setIsGenerating(false);
         return;
       }
 
       const worker = workers.find(w => w.id === selectedWorkerId);
-      const project = projects.find(p => p.id === selectedProjectId);
 
-      if (!worker || !project) {
+      if (!worker) {
         toast({
           title: "خطأ",
-          description: "خطأ في جلب بيانات العامل أو المشروع",
+          description: "خطأ في جلب بيانات العامل",
           variant: "destructive",
         });
         setIsGenerating(false);
         return;
       }
 
-      setStatementData({
-        worker: {
-          ...worker,
-          dailyWage: Number(worker.dailyWage)
-        },
-        project,
-        attendance: attendance.map(record => ({
+      // Add project names to attendance and transfers
+      const attendanceWithProjectNames = filteredAttendance.map(record => {
+        const project = projects.find(p => p.id === record.projectId);
+        return {
           ...record,
           workDays: Number(record.workDays),
           dailyWage: Number(record.dailyWage),
           paidAmount: Number(record.paidAmount),
           attendanceDate: record.date,
-          notes: record.workDescription || ''
-        })),
-        transfers: transfers.map(transfer => ({
+          notes: record.workDescription || '',
+          projectName: project?.name || 'مشروع غير محدد'
+        };
+      });
+
+      const transfersWithProjectNames = allTransfers.map(transfer => {
+        const project = projects.find(p => p.id === transfer.projectId);
+        return {
           ...transfer,
           date: transfer.transferDate,
           amount: Number(transfer.amount),
-          recipientAddress: transfer.recipientPhone || ''
-        }))
+          recipientAddress: transfer.recipientPhone || '',
+          projectName: project?.name || 'مشروع غير محدد'
+        };
       });
 
+      setStatementData({
+        worker: {
+          ...worker,
+          dailyWage: Number(worker.dailyWage)
+        },
+        projects: selectedProjects,
+        attendance: attendanceWithProjectNames,
+        transfers: transfersWithProjectNames
+      });
+
+      const projectNames = selectedProjects.map(p => p.name).join(', ');
       toast({
         title: "تم بنجاح",
-        description: `تم إنشاء كشف حساب العامل ${worker.name}`,
+        description: `تم إنشاء كشف حساب العامل ${worker.name} للمشاريع: ${projectNames}`,
       });
 
     } catch (error) {
@@ -153,7 +178,7 @@ export default function UnifiedWorkerStatement() {
     } finally {
       setIsGenerating(false);
     }
-  }, [selectedProjectId, selectedWorkerId, dateFrom, dateTo, toast, workers, projects]);
+  }, [selectedProjectIds, selectedWorkerId, dateFrom, dateTo, toast, workers, projects, selectedProjects]);
 
   // Print statement
   const printStatement = useCallback(() => {
@@ -201,7 +226,7 @@ export default function UnifiedWorkerStatement() {
         period: `من ${formatDate(dateFrom)} إلى ${formatDate(dateTo)}`,
         workerName: statementData.worker.name,
         workerType: statementData.worker.type,
-        projectName: statementData.project.name,
+        projectNames: statementData.projects.map(p => p.name).join(', '),
         dailyWage: formatCurrency(Number(statementData.worker.dailyWage)),
         totalWorkDays: `${totalWorkDays.toFixed(1)} يوم`,
         totalAmountDue: formatCurrency(totalAmountDue),
@@ -237,8 +262,8 @@ export default function UnifiedWorkerStatement() {
       worksheet.getCell(`B${currentRow}`).value = headerInfo.workerName;
       worksheet.getCell(`C${currentRow}`).value = 'المهنة:';
       worksheet.getCell(`D${currentRow}`).value = headerInfo.workerType;
-      worksheet.getCell(`E${currentRow}`).value = 'المشروع:';
-      worksheet.getCell(`F${currentRow}`).value = headerInfo.projectName;
+      worksheet.getCell(`E${currentRow}`).value = 'المشاريع:';
+      worksheet.getCell(`F${currentRow}`).value = headerInfo.projectNames;
       
       currentRow += 2;
       worksheet.getCell(`A${currentRow}`).value = 'الأجر اليومي:';
@@ -263,7 +288,7 @@ export default function UnifiedWorkerStatement() {
         currentRow += 2;
         
         // Headers
-        const headers = ['م', 'التاريخ', 'الساعة الساعة', 'أيام العمل', 'الأجر اليومي', 'المبلغ المستحق', 'المبلغ المدفوع', 'المتبقي', 'ملاحظات'];
+        const headers = ['م', 'التاريخ', 'المشروع', 'أوقات العمل', 'أيام العمل', 'الأجر اليومي', 'المبلغ المستحق', 'المبلغ المدفوع', 'المتبقي', 'ملاحظات'];
         headers.forEach((header, index) => {
           const cell = worksheet.getCell(currentRow, index + 1);
           cell.value = header;
@@ -285,6 +310,7 @@ export default function UnifiedWorkerStatement() {
           const rowData = [
             index + 1,
             formatDate(record.attendanceDate),
+            record.projectName,
             `${record.startTime || ''} - ${record.endTime || ''}`,
             Number(record.workDays).toFixed(1),
             formatCurrency(Number(record.dailyWage)),
@@ -324,7 +350,7 @@ export default function UnifiedWorkerStatement() {
         currentRow += 2;
         
         // Headers
-        const transferHeaders = ['م', 'التاريخ', 'المبلغ', 'اسم المستلم', 'رقم الهاتف', 'العنوان', 'ملاحظات'];
+        const transferHeaders = ['م', 'التاريخ', 'المشروع', 'المبلغ', 'اسم المستلم', 'رقم الهاتف', 'العنوان', 'ملاحظات'];
         transferHeaders.forEach((header, index) => {
           const cell = worksheet.getCell(currentRow, index + 1);
           cell.value = header;
@@ -346,6 +372,7 @@ export default function UnifiedWorkerStatement() {
           const rowData = [
             index + 1,
             formatDate(transfer.date),
+            transfer.projectName,
             formatCurrency(Number(transfer.amount)),
             transfer.recipientName || '',
             transfer.recipientPhone || '',
@@ -426,6 +453,9 @@ export default function UnifiedWorkerStatement() {
   const attendanceTableData = statementData?.attendance.map((record, index) => [
     index + 1,
     formatDate(record.attendanceDate),
+    <Badge variant="outline" className="text-blue-600">
+      {record.projectName}
+    </Badge>,
     `${record.startTime || ''} - ${record.endTime || ''}`,
     `${Number(record.workDays).toFixed(1)} يوم`,
     formatCurrency(Number(record.dailyWage)),
@@ -443,6 +473,9 @@ export default function UnifiedWorkerStatement() {
   const transfersTableData = statementData?.transfers.map((transfer, index) => [
     index + 1,
     formatDate(transfer.date),
+    <Badge variant="outline" className="text-purple-600">
+      {transfer.projectName}
+    </Badge>,
     <Badge variant="outline" className="text-red-600">
       {formatCurrency(Number(transfer.amount))}
     </Badge>,
@@ -464,13 +497,30 @@ export default function UnifiedWorkerStatement() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="space-y-2">
-              <Label>المشروع</Label>
-              <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
-                <Building2 className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm">
-                  {selectedProject?.name || "لم يتم اختيار مشروع"}
-                </span>
+            <div className="space-y-2 md:col-span-2">
+              <Label>المشاريع (يمكن اختيار أكثر من مشروع)</Label>
+              <div className="space-y-2 max-h-40 overflow-y-auto border rounded-lg p-3">
+                {projects.map((project) => (
+                  <div key={project.id} className="flex items-center space-x-2 space-x-reverse">
+                    <Checkbox
+                      id={project.id}
+                      checked={selectedProjectIds.includes(project.id)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setSelectedProjectIds([...selectedProjectIds, project.id]);
+                        } else {
+                          setSelectedProjectIds(selectedProjectIds.filter(id => id !== project.id));
+                        }
+                      }}
+                    />
+                    <Label htmlFor={project.id} className="text-sm font-normal cursor-pointer flex-1">
+                      {project.name}
+                    </Label>
+                  </div>
+                ))}
+                {selectedProjectIds.length === 0 && (
+                  <p className="text-sm text-muted-foreground">اختر مشروع واحد على الأقل</p>
+                )}
               </div>
             </div>
 
@@ -512,7 +562,7 @@ export default function UnifiedWorkerStatement() {
           <div className="flex gap-2">
             <Button 
               onClick={generateStatement} 
-              disabled={isGenerating || !selectedWorkerId || !dateFrom || !dateTo}
+              disabled={isGenerating || !selectedWorkerId || !dateFrom || !dateTo || selectedProjectIds.length === 0}
               className="flex items-center gap-2"
             >
               {isGenerating ? (
@@ -536,7 +586,7 @@ export default function UnifiedWorkerStatement() {
           headerInfo={[
             { label: "اسم العامل", value: statementData.worker.name },
             { label: "المهنة", value: statementData.worker.type },
-            { label: "المشروع", value: statementData.project.name },
+            { label: "المشاريع", value: statementData.projects.map(p => p.name).join(', ') },
             { label: "الأجر اليومي", value: formatCurrency(Number(statementData.worker.dailyWage)) },
             { label: "الفترة", value: `من ${formatDate(dateFrom)} إلى ${formatDate(dateTo)}` },
             { label: "إجمالي أيام العمل", value: `${summaryData.totalWorkDays.toFixed(1)} يوم` }
@@ -583,7 +633,7 @@ export default function UnifiedWorkerStatement() {
               </CardHeader>
               <CardContent>
                 <UnifiedTable
-                  headers={['م', 'التاريخ', 'أوقات العمل', 'أيام العمل', 'الأجر اليومي', 'المبلغ المستحق', 'المبلغ المدفوع', 'المتبقي', 'ملاحظات']}
+                  headers={['م', 'التاريخ', 'المشروع', 'أوقات العمل', 'أيام العمل', 'الأجر اليومي', 'المبلغ المستحق', 'المبلغ المدفوع', 'المتبقي', 'ملاحظات']}
                   data={attendanceTableData}
                 />
               </CardContent>
@@ -601,7 +651,7 @@ export default function UnifiedWorkerStatement() {
               </CardHeader>
               <CardContent>
                 <UnifiedTable
-                  headers={['م', 'التاريخ', 'المبلغ', 'اسم المستلم', 'رقم الهاتف', 'العنوان', 'ملاحظات']}
+                  headers={['م', 'التاريخ', 'المشروع', 'المبلغ', 'اسم المستلم', 'رقم الهاتف', 'العنوان', 'ملاحظات']}
                   data={transfersTableData}
                 />
               </CardContent>
