@@ -90,14 +90,8 @@ export default function WorkersUnifiedReports() {
       return;
     }
 
-    if (singleWorkerProjectIds.length === 0) {
-      toast({
-        title: "لم يتم تحديد مشاريع",
-        description: "يرجى تحديد مشروع واحد على الأقل لإنشاء كشف الحساب",
-        variant: "destructive",
-      });
-      return;
-    }
+    // إذا لم يتم تحديد مشاريع، استخدم جميع المشاريع
+    const projectsToUse = singleWorkerProjectIds.length > 0 ? singleWorkerProjectIds : projects.map(p => p.id);
 
     setIsGenerating(true);
     try {
@@ -105,7 +99,7 @@ export default function WorkersUnifiedReports() {
       let url = `/api/workers/${selectedWorkerId}/account-statement?dateFrom=${dateFrom}&dateTo=${dateTo}`;
       
       // إضافة فلترة المشاريع - استخدام projectIds للمشاريع المتعددة
-      url += `&projectIds=${singleWorkerProjectIds.join(',')}`;
+      url += `&projectIds=${projectsToUse.join(',')}`;
 
       console.log('🔍 جاري جمع بيانات كشف الحساب:', url);
 

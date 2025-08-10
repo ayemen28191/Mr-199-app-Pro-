@@ -1371,7 +1371,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       if (!dateFrom || !dateTo) {
-        return res.status(400).json({ message: "Missing required parameters: dateFrom, dateTo" });
+        return res.status(400).json({ 
+          message: "يجب تحديد تاريخ البداية والنهاية",
+          details: "تأكد من اختيار التاريخ من والى قبل إنشاء التقرير"
+        });
       }
       
       // التعامل مع مشاريع متعددة أو واحد
@@ -1389,7 +1392,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log("🔧 معالجة مشاريع متعددة:", projectIdsArray);
 
         if (projectIdsArray.length === 0) {
-          return res.status(400).json({ message: "No valid project IDs provided" });
+          return res.status(400).json({ 
+            message: "لم يتم تحديد أي مشروع صالح",
+            details: "يرجى اختيار مشروع واحد على الأقل لإنشاء كشف الحساب"
+          });
         }
 
         // استخدام نفس الدالة للحالتين - إما مشروع واحد أو متعدد
@@ -1424,11 +1430,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
         res.json(statement);
       } else {
-        return res.status(400).json({ message: "Either projectId or projectIds must be provided" });
+        return res.status(400).json({ 
+          message: "يجب تحديد المشاريع المراد إنشاء التقرير لها",
+          details: "قم بتحديد مشروع واحد أو أكثر من قائمة المشاريع"
+        });
       }
     } catch (error) {
       console.error("خطأ في جلب كشف حساب العامل:", error);
-      res.status(500).json({ message: "Error fetching worker account statement", error: error instanceof Error ? error.message : String(error) });
+      
+      // تحسين رسالة الخطأ حسب النوع
+      let userMessage = "حدث خطأ أثناء إنشاء كشف حساب العامل";
+      let userDetails = "يرجى المحاولة مرة أخرى. إذا استمر الخطأ، تواصل مع الدعم الفني";
+      
+      if (error instanceof Error) {
+        const errorMsg = error.message.toLowerCase();
+        
+        if (errorMsg.includes('worker not found') || errorMsg.includes('لم يتم العثور على العامل')) {
+          userMessage = "العامل المحدد غير موجود";
+          userDetails = "تأكد من اختيار عامل صحيح من القائمة";
+        } else if (errorMsg.includes('project not found') || errorMsg.includes('لم يتم العثور على المشروع')) {
+          userMessage = "أحد المشاريع المحددة غير موجود";
+          userDetails = "تأكد من اختيار مشاريع صحيحة من القائمة";
+        } else if (errorMsg.includes('database') || errorMsg.includes('connection')) {
+          userMessage = "خطأ في الاتصال بقاعدة البيانات";
+          userDetails = "يرجى المحاولة مرة أخرى خلال دقائق قليلة";
+        } else if (errorMsg.includes('timeout')) {
+          userMessage = "انتهت مهلة الطلب";
+          userDetails = "البيانات كثيرة جداً. جرب تقليل المدة الزمنية أو عدد المشاريع";
+        }
+      }
+      
+      res.status(500).json({ 
+        message: userMessage,
+        details: userDetails,
+        technicalError: process.env.NODE_ENV === 'development' ? (error instanceof Error ? error.message : String(error)) : undefined
+      });
     }
   });
 
