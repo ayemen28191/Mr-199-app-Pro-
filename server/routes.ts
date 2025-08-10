@@ -1362,10 +1362,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { projectId, projectIds, dateFrom, dateTo } = req.query;
       
+      console.log("🔍 طلب كشف حساب العامل:", { 
+        workerId: req.params.workerId, 
+        projectId, 
+        projectIds, 
+        dateFrom, 
+        dateTo 
+      });
+
+      if (!dateFrom || !dateTo) {
+        return res.status(400).json({ message: "Missing required parameters: dateFrom, dateTo" });
+      }
+      
       // إذا تم تمرير مشاريع متعددة، استخدمها، وإلا استخدم المشروع الواحد
       if (projectIds) {
-        // التعامل مع مشاريع متعددة
-        const projectIdsArray = Array.isArray(projectIds) ? projectIds : [projectIds];
+        // التعامل مع مشاريع متعددة - تحويل النص إلى مصفوفة
+        let projectIdsArray: string[] = [];
+        if (typeof projectIds === 'string') {
+          projectIdsArray = projectIds.split(',').filter(id => id.trim());
+        } else if (Array.isArray(projectIds)) {
+          projectIdsArray = projectIds.filter(id => typeof id === 'string' && id.trim()).map(id => String(id));
+        } else if (projectIds) {
+          projectIdsArray = [String(projectIds)].filter(id => id.trim());
+        }
+        
+        console.log("🔧 معالجة مشاريع متعددة:", projectIdsArray);
+
+        if (projectIdsArray.length === 0) {
+          return res.status(400).json({ message: "No valid project IDs provided" });
+        }
+
         const statement = await storage.getWorkerAccountStatementMultipleProjects(
           req.params.workerId,
           projectIdsArray as string[],
@@ -1373,8 +1399,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           dateTo as string
         );
         res.json(statement);
-      } else {
+      } else if (projectId) {
         // التعامل مع مشروع واحد (الطريقة القديمة)
+        console.log("🔧 معالجة مشروع واحد:", projectId);
+        
         const statement = await storage.getWorkerAccountStatement(
           req.params.workerId,
           projectId as string,
@@ -1382,10 +1410,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           dateTo as string
         );
         res.json(statement);
+      } else {
+        return res.status(400).json({ message: "Either projectId or projectIds must be provided" });
       }
     } catch (error) {
-      console.error("Error fetching worker account statement:", error);
-      res.status(500).json({ message: "Error fetching worker account statement" });
+      console.error("خطأ في جلب كشف حساب العامل:", error);
+      res.status(500).json({ message: "Error fetching worker account statement", error: error instanceof Error ? error.message : String(error) });
     }
   });
 
