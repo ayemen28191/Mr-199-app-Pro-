@@ -3263,8 +3263,8 @@ export default function Reports() {
                     </Button>
                     <Button 
                       onClick={() => {
-                        if (dailyReportData) {
-                          exportToProfessionalExcel(dailyReportData, `كشف-مصروفات-يومية-${dailyReportDate}`);
+                        if (reportData && activeReportType === 'daily') {
+                          exportToProfessionalExcel(reportData, `كشف-مصروفات-يومية-${dailyReportDate}`);
                         } else {
                           toast({
                             title: "تنبيه",
@@ -3273,7 +3273,7 @@ export default function Reports() {
                           });
                         }
                       }}
-                      disabled={!dailyReportData}
+                      disabled={!(reportData && (activeReportType === 'daily' || activeReportType === 'professional'))}
                       className="h-12 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-medium text-base rounded-xl transform hover:scale-105 transition-all duration-300"
                     >
                       <FileSpreadsheet className="h-4 w-4 mr-2" />
@@ -3387,7 +3387,7 @@ export default function Reports() {
                       />
                     </div>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <Button 
                       onClick={generateWorkerAccountReport}
                       disabled={isGenerating}
@@ -3411,6 +3411,24 @@ export default function Reports() {
                         <FileSpreadsheet className="h-4 w-4 mr-2" />
                       )}
                       احترافي محسن
+                    </Button>
+                    <Button 
+                      onClick={() => {
+                        if (reportData && activeReportType === 'worker') {
+                          exportToProfessionalExcel(reportData, `كشف-حساب-عامل-${reportData.workerName || 'غير-محدد'}`);
+                        } else {
+                          toast({
+                            title: "تنبيه",
+                            description: "قم بإنشاء تقرير العامل أولاً",
+                            variant: "destructive",
+                          });
+                        }
+                      }}
+                      disabled={!(reportData && activeReportType === 'worker')}
+                      className="h-12 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-medium text-base rounded-xl transform hover:scale-105 transition-all duration-300"
+                    >
+                      <FileSpreadsheet className="h-4 w-4 mr-2" />
+                      Excel متقدم
                     </Button>
                   </div>
                 </CardContent>
