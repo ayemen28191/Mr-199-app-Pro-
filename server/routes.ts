@@ -1374,7 +1374,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Missing required parameters: dateFrom, dateTo" });
       }
       
-      // إذا تم تمرير مشاريع متعددة، استخدمها، وإلا استخدم المشروع الواحد
+      // التعامل مع مشاريع متعددة أو واحد
       if (projectIds) {
         // التعامل مع مشاريع متعددة - تحويل النص إلى مصفوفة
         let projectIdsArray: string[] = [];
@@ -1392,13 +1392,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ message: "No valid project IDs provided" });
         }
 
-        const statement = await storage.getWorkerAccountStatementMultipleProjects(
-          req.params.workerId,
-          projectIdsArray as string[],
-          dateFrom as string,
-          dateTo as string
-        );
-        res.json(statement);
+        // استخدام نفس الدالة للحالتين - إما مشروع واحد أو متعدد
+        if (projectIdsArray.length === 1) {
+          // مشروع واحد
+          const statement = await storage.getWorkerAccountStatement(
+            req.params.workerId,
+            projectIdsArray[0],
+            dateFrom as string,
+            dateTo as string
+          );
+          res.json(statement);
+        } else {
+          // مشاريع متعددة
+          const statement = await storage.getWorkerAccountStatementMultipleProjects(
+            req.params.workerId,
+            projectIdsArray,
+            dateFrom as string,
+            dateTo as string
+          );
+          res.json(statement);
+        }
       } else if (projectId) {
         // التعامل مع مشروع واحد (الطريقة القديمة)
         console.log("🔧 معالجة مشروع واحد:", projectId);
