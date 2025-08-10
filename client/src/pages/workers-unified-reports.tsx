@@ -33,6 +33,7 @@ export default function WorkersUnifiedReports() {
   
   // Multiple workers states
   const [selectedWorkerIds, setSelectedWorkerIds] = useState<string[]>([]);
+  const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([]);
   const [reportData, setReportData] = useState<any[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [showResults, setShowResults] = useState(false);
@@ -49,11 +50,11 @@ export default function WorkersUnifiedReports() {
   const selectedProject = projects.find(p => p.id === selectedProjectId);
   const selectedWorker = workers.find(w => w.id === selectedWorkerId);
 
-  // Generate multiple workers report
+  // Generate multiple workers report  
   const generateMultipleWorkersReport = async () => {
     if (selectedWorkerIds.length === 0 || !dateFrom || !dateTo) {
       toast({
-        title: "بيانات ناقصة",
+        title: "بيانات ناقصة", 
         description: "يرجى اختيار العمال والتواريخ",
         variant: "destructive",
       });
@@ -66,7 +67,7 @@ export default function WorkersUnifiedReports() {
       
       for (const workerId of selectedWorkerIds) {
         const url = `/api/workers/${workerId}/account-statement?dateFrom=${dateFrom}&dateTo=${dateTo}`;
-        const response = await apiRequest(url);
+        const response = await apiRequest('GET', url);
         const attendance = response?.attendance || [];
         
         // إضافة معلومات العامل والمشروع
@@ -104,45 +105,155 @@ export default function WorkersUnifiedReports() {
     }
   };
 
-  // Export multiple workers report
-  const exportMultipleWorkersToCSV = () => {
-    if (reportData.length === 0) return;
+  // Enhanced Excel Export with Professional Formatting
+  const exportToExcel = async () => {
+    if (reportData.length === 0) {
+      toast({
+        title: "تنبيه",
+        description: "لا توجد بيانات للتصدير",
+        variant: "destructive",
+      });
+      return;
+    }
 
-    const headers = ['التاريخ', 'العامل', 'المشروع', 'ساعات العمل', 'الأجر اليومي', 'المبلغ المدفوع', 'الملاحظات'];
-    const data = reportData.map(row => [
-      formatDate(row.date),
-      row.worker?.name || 'غير محدد',
-      row.project?.name || 'غير محدد',
-      row.hoursWorked,
-      formatCurrency(parseFloat(row.dailyWage)),
-      formatCurrency(parseFloat(row.paidAmount)),
-      row.notes || ''
-    ]);
+    try {
+      const ExcelJS = await import('exceljs');
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('تقرير العمال الشامل');
 
-    const csvData = [
-      headers.join(','),
-      ...data.map(row => row.map(cell => `"${cell}"`).join(','))
-    ].join('\n');
-    
-    const blob = new Blob(['\uFEFF' + csvData], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.href = url;
-    
-    const selectedWorkersText = selectedWorkerIds.length > 0 
-      ? workers.filter(w => selectedWorkerIds.includes(w.id)).map(w => w.name).join('-')
-      : 'جميع-العمال';
-    
-    link.download = `تقرير-العمال-${selectedWorkersText}-${dateFrom}-إلى-${dateTo}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+      // إعداد العرض والارتفاع
+      worksheet.columns = [
+        { header: 'التاريخ', key: 'date', width: 15 },
+        { header: 'العامل', key: 'worker', width: 25 },
+        { header: 'نوع العامل', key: 'workerType', width: 20 },
+        { header: 'المشروع', key: 'project', width: 30 },
+        { header: 'ساعات العمل', key: 'hours', width: 15 },
+        { header: 'الأجر اليومي', key: 'dailyWage', width: 18 },
+        { header: 'المبلغ المدفوع', key: 'paidAmount', width: 18 },
+        { header: 'الرصيد المتبقي', key: 'balance', width: 18 },
+        { header: 'الملاحظات', key: 'notes', width: 25 }
+      ];
 
-    toast({
-      title: "تم التصدير",
-      description: "تم تصدير التقرير بنجاح",
-    });
+      // تنسيق رأس الجدول
+      const headerRow = worksheet.getRow(1);
+      headerRow.height = 35;
+      headerRow.eachCell((cell) => {
+        cell.font = { name: 'Arial', size: 12, bold: true, color: { argb: 'FFFFFFFF' } };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4472C4' } };
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.border = {
+          top: { style: 'thin' }, left: { style: 'thin' },
+          bottom: { style: 'thin' }, right: { style: 'thin' }
+        };
+      });
+
+      // إضافة البيانات
+      reportData.forEach((row, index) => {
+        const rowData = worksheet.addRow({
+          date: formatDate(row.date),
+          worker: row.worker?.name || 'غير محدد',
+          workerType: row.worker?.type || 'غير محدد',
+          project: row.project?.name || 'غير محدد',
+          hours: row.hoursWorked || 8,
+          dailyWage: parseFloat(row.dailyWage || '0'),
+          paidAmount: parseFloat(row.paidAmount || '0'),
+          balance: (parseFloat(row.dailyWage || '0') - parseFloat(row.paidAmount || '0')),
+          notes: row.notes || ''
+        });
+
+        // تنسيق الصفوف
+        rowData.height = 25;
+        rowData.eachCell((cell, colIndex) => {
+          cell.font = { name: 'Arial', size: 11 };
+          cell.alignment = { horizontal: 'center', vertical: 'middle' };
+          cell.border = {
+            top: { style: 'thin', color: { argb: 'FFE0E0E0' } },
+            left: { style: 'thin', color: { argb: 'FFE0E0E0' } },
+            bottom: { style: 'thin', color: { argb: 'FFE0E0E0' } },
+            right: { style: 'thin', color: { argb: 'FFE0E0E0' } }
+          };
+
+          // تنسيق الأرقام
+          if ([6, 7, 8].includes(colIndex)) {
+            cell.numFmt = '#,##0 "ر.ي"';
+            if (cell.value && parseFloat(cell.value) < 0) {
+              cell.font = { ...cell.font, color: { argb: 'FFFF0000' } };
+            }
+          }
+
+          // لون متبادل للصفوف
+          if (index % 2 === 0) {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8F9FA' } };
+          }
+        });
+      });
+
+      // إضافة صف الإجمالي
+      const totalRow = worksheet.addRow({
+        date: '',
+        worker: '',
+        workerType: '',
+        project: 'المجموع الكلي',
+        hours: reportData.reduce((sum, row) => sum + (row.hoursWorked || 8), 0),
+        dailyWage: totalEarned,
+        paidAmount: totalPaid,
+        balance: totalEarned - totalPaid,
+        notes: ''
+      });
+
+      // تنسيق صف الإجمالي
+      totalRow.height = 30;
+      totalRow.eachCell((cell, colIndex) => {
+        cell.font = { name: 'Arial', size: 12, bold: true };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF70AD47' } };
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.border = {
+          top: { style: 'thick' }, left: { style: 'thin' },
+          bottom: { style: 'thick' }, right: { style: 'thin' }
+        };
+
+        if ([6, 7, 8].includes(colIndex)) {
+          cell.numFmt = '#,##0 "ر.ي"';
+          cell.font = { ...cell.font, color: { argb: 'FFFFFFFF' } };
+        }
+      });
+
+      // إضافة معلومات إضافية
+      const infoStartRow = worksheet.rowCount + 3;
+      worksheet.mergeCells(`A${infoStartRow}:I${infoStartRow}`);
+      const infoHeaderCell = worksheet.getCell(`A${infoStartRow}`);
+      infoHeaderCell.value = `تقرير العمال الشامل - الفترة من ${formatDate(dateFrom)} إلى ${formatDate(dateTo)}`;
+      infoHeaderCell.font = { name: 'Arial', size: 14, bold: true };
+      infoHeaderCell.alignment = { horizontal: 'center' };
+      infoHeaderCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4472C4' } };
+
+      // حفظ الملف
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      
+      const selectedWorkersText = selectedWorkerIds.length > 0 
+        ? workers.filter(w => selectedWorkerIds.includes(w.id)).map(w => w.name).join('-')
+        : 'جميع-العمال';
+      
+      const selectedProjectsText = selectedProjectIds.length > 0 
+        ? projects.filter(p => selectedProjectIds.includes(p.id)).map(p => p.name).join('-')
+        : 'جميع-المشاريع';
+
+      const { saveAs } = await import('file-saver');
+      saveAs(blob, `تقرير-العمال-الاحترافي-${selectedWorkersText}-${selectedProjectsText}-${dateFrom}-إلى-${dateTo}.xlsx`);
+
+      toast({
+        title: "تم التصدير بنجاح",
+        description: "تم إنشاء ملف Excel الاحترافي بنجاح",
+      });
+    } catch (error) {
+      console.error('Excel export error:', error);
+      toast({
+        title: "خطأ في التصدير",
+        description: "حدث خطأ أثناء إنشاء ملف Excel",
+        variant: "destructive",
+      });
+    }
   };
 
   const handlePrint = () => {
@@ -289,7 +400,13 @@ export default function WorkersUnifiedReports() {
             {showWorkerStatement && selectedProjectId && selectedWorkerId && dateFrom && dateTo && (
               <div className="mt-6 border-t pt-6">
                 <EnhancedWorkerAccountStatement
-                  projectId={selectedProjectId}
+                  data={{
+                    worker: selectedWorker,
+                    attendance: [],
+                    transfers: [],
+                    summary: {}
+                  }}
+                  selectedProject={selectedProject}
                   workerId={selectedWorkerId}
                   dateFrom={dateFrom}
                   dateTo={dateTo}
@@ -309,26 +426,63 @@ export default function WorkersUnifiedReports() {
               تقرير متعدد العمال
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-6 space-y-4">
+          <CardContent className="p-4 lg:p-6 space-y-4">
+            {/* Multi-Project Selection - Enhanced */}
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg border-2 border-green-200">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="bg-green-500 p-1 rounded-full">
+                  <Users className="h-4 w-4 text-white" />
+                </div>
+                <Label className="text-green-800 font-semibold">اختيار المشاريع (إمكانية متعددة)</Label>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-32 overflow-y-auto">
+                {projects.map((project) => (
+                  <div key={project.id} className="flex items-center space-x-2 bg-white p-2 rounded border">
+                    <Checkbox
+                      id={`project-${project.id}`}
+                      checked={selectedProjectIds.includes(project.id)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setSelectedProjectIds([...selectedProjectIds, project.id]);
+                        } else {
+                          setSelectedProjectIds(selectedProjectIds.filter(id => id !== project.id));
+                        }
+                      }}
+                    />
+                    <Label htmlFor={`project-${project.id}`} className="text-xs font-medium truncate">
+                      {project.name}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-2 flex flex-wrap gap-1">
+                <Badge variant="secondary" className="text-xs">
+                  {selectedProjectIds.length > 0 
+                    ? `تم اختيار ${selectedProjectIds.length} مشروع` 
+                    : 'لم يتم اختيار مشاريع (جميع المشاريع)'}
+                </Badge>
+              </div>
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="dateFrom2">من تاريخ</Label>
+                <Label htmlFor="dateFrom2" className="text-sm font-medium">من تاريخ</Label>
                 <Input
                   id="dateFrom2"
                   type="date"
                   value={dateFrom}
                   onChange={(e) => setDateFrom(e.target.value)}
-                  className="mt-1"
+                  className="mt-1 h-12"
                 />
               </div>
               <div>
-                <Label htmlFor="dateTo2">إلى تاريخ</Label>
+                <Label htmlFor="dateTo2" className="text-sm font-medium">إلى تاريخ</Label>
                 <Input
                   id="dateTo2"
                   type="date"
                   value={dateTo}
                   onChange={(e) => setDateTo(e.target.value)}
-                  className="mt-1"
+                  className="mt-1 h-12"
                 />
               </div>
             </div>
@@ -360,11 +514,12 @@ export default function WorkersUnifiedReports() {
               </div>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-3">
               <Button
                 onClick={generateMultipleWorkersReport}
-                disabled={isGenerating}
-                className="flex items-center gap-2"
+                disabled={isGenerating || selectedWorkerIds.length === 0 || !dateFrom || !dateTo}
+                className="flex items-center justify-center gap-2 flex-1 h-12"
+                size="lg"
               >
                 {isGenerating ? (
                   <>
@@ -423,49 +578,50 @@ export default function WorkersUnifiedReports() {
                   </Card>
                 </div>
 
-                {/* Action Buttons */}
-                <div className="flex gap-2 mb-4 no-print">
-                  <Button onClick={handlePrint} variant="outline" size="sm">
+                {/* Enhanced Action Buttons */}
+                <div className="flex flex-col sm:flex-row gap-2 mb-4 no-print">
+                  <Button onClick={exportToExcel} variant="default" size="sm" className="flex-1 bg-green-600 hover:bg-green-700">
+                    <FileSpreadsheet className="h-4 w-4 mr-2" />
+                    تصدير Excel احترافي
+                  </Button>
+                  <Button onClick={handlePrint} variant="outline" size="sm" className="flex-1">
                     <Printer className="h-4 w-4 mr-2" />
                     طباعة
                   </Button>
-                  <Button onClick={exportMultipleWorkersToCSV} variant="outline" size="sm">
-                    <Download className="h-4 w-4 mr-2" />
-                    تصدير CSV
-                  </Button>
                 </div>
 
-                {/* Data Table */}
-                <div className="border rounded-lg">
+                {/* Enhanced Responsive Data Display */}
+                {/* Desktop Table View */}
+                <div className="hidden md:block border rounded-lg overflow-hidden">
                   <Table>
                     <TableHeader>
-                      <TableRow className="bg-purple-50">
-                        <TableHead className="text-right font-semibold">التاريخ</TableHead>
-                        <TableHead className="text-right font-semibold">العامل</TableHead>
-                        <TableHead className="text-right font-semibold">المشروع</TableHead>
-                        <TableHead className="text-center font-semibold">ساعات العمل</TableHead>
-                        <TableHead className="text-center font-semibold">الأجر اليومي</TableHead>
-                        <TableHead className="text-center font-semibold">المبلغ المدفوع</TableHead>
-                        <TableHead className="text-right font-semibold">ملاحظات</TableHead>
+                      <TableRow className="bg-gradient-to-r from-purple-50 to-purple-100">
+                        <TableHead className="text-right font-bold text-purple-800">التاريخ</TableHead>
+                        <TableHead className="text-right font-bold text-purple-800">العامل</TableHead>
+                        <TableHead className="text-right font-bold text-purple-800">المشروع</TableHead>
+                        <TableHead className="text-center font-bold text-purple-800">ساعات العمل</TableHead>
+                        <TableHead className="text-center font-bold text-purple-800">الأجر اليومي</TableHead>
+                        <TableHead className="text-center font-bold text-purple-800">المبلغ المدفوع</TableHead>
+                        <TableHead className="text-right font-bold text-purple-800">ملاحظات</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {reportData.map((row, index) => (
-                        <TableRow key={row.id || index}>
-                          <TableCell className="text-right">{formatDate(row.date)}</TableCell>
-                          <TableCell className="text-right font-medium">
-                            {row.worker?.name || 'غير محدد'}
+                        <TableRow key={row.id || index} className={index % 2 === 0 ? 'bg-gray-50/50' : 'bg-white'}>
+                          <TableCell className="text-right font-medium">{formatDate(row.date)}</TableCell>
+                          <TableCell className="text-right">
+                            <div className="font-semibold">{row.worker?.name || 'غير محدد'}</div>
                             <div className="text-xs text-muted-foreground">{row.worker?.type}</div>
                           </TableCell>
-                          <TableCell className="text-right">{row.project?.name || 'غير محدد'}</TableCell>
-                          <TableCell className="text-center">{row.hoursWorked || 0}</TableCell>
-                          <TableCell className="text-center font-semibold">
+                          <TableCell className="text-right text-sm">{row.project?.name || 'غير محدد'}</TableCell>
+                          <TableCell className="text-center">{row.hoursWorked || 8}</TableCell>
+                          <TableCell className="text-center font-bold text-green-700">
                             {formatCurrency(parseFloat(row.dailyWage || '0'))}
                           </TableCell>
-                          <TableCell className="text-center font-semibold text-green-600">
+                          <TableCell className="text-center font-bold text-blue-700">
                             {formatCurrency(parseFloat(row.paidAmount || '0'))}
                           </TableCell>
-                          <TableCell className="text-right">
+                          <TableCell className="text-right text-sm text-gray-600">
                             {row.notes || '-'}
                           </TableCell>
                         </TableRow>
