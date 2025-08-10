@@ -61,6 +61,7 @@ const allPages = [
       { path: "/excel-style-daily-expenses", icon: FileSpreadsheet, label: "المصاريف اليومية (إكسل)", description: "المصاريف اليومية بصيغة Excel" },
       { path: "/workers-filter-report", icon: Filter, label: "تقرير العمال المفلتر", description: "تقارير العمال مع خيارات التصفية" },
       { path: "/enhanced-worker-statement", icon: User, label: "كشف حساب العمال المحسن", description: "كشف حساب محسن ومفصل للعمال" },
+      { path: "/workers-unified-reports", icon: Users, label: "تقارير العمال الموحدة", description: "صفحة موحدة لجميع تقارير العمال - كشف حساب واحد أو متعدد" },
     ]
   },
   // الإعدادات والإدارة
