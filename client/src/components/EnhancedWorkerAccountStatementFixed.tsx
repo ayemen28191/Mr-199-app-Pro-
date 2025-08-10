@@ -44,9 +44,9 @@ export const EnhancedWorkerAccountStatement = ({
     });
   };
 
-  // دالة تنسيق اليوم - أسماء إنجليزية
+  // دالة تنسيق اليوم - أسماء عربية
   const formatDay = (dateStr: string) => {
-    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const days = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
     return days[new Date(dateStr).getDay()];
   };
 
@@ -68,12 +68,26 @@ export const EnhancedWorkerAccountStatement = ({
     dataStructure: data
   });
 
-  // حساب الإحصائيات
-  const totalEarned = attendance.reduce((sum: number, record: any) => sum + (Number(record.dailyWage) || 0), 0);
+  // حساب الإحصائيات المحدثة
+  const totalWorkDays = attendance.reduce((sum: number, record: any) => sum + (Number(record.workDays) || 1), 0);
+  const totalWorkHours = attendance.reduce((sum: number, record: any) => {
+    if (record.startTime && record.endTime) {
+      const start = new Date(`2000-01-01T${record.startTime}`);
+      const end = new Date(`2000-01-01T${record.endTime}`);
+      const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+      return sum + (hours > 0 ? hours : 8);
+    }
+    return sum + 8; // افتراض 8 ساعات
+  }, 0);
+  const totalEarned = attendance.reduce((sum: number, record: any) => {
+    const dailyWage = Number(record.dailyWage) || 0;
+    const workDays = Number(record.workDays) || 1;
+    return sum + (dailyWage * workDays);
+  }, 0);
   const totalPaid = attendance.reduce((sum: number, record: any) => sum + (Number(record.paidAmount) || 0), 0);
+  const totalRemaining = totalEarned - totalPaid;
   const totalTransferred = transfers.reduce((sum: number, transfer: any) => sum + (Number(transfer.amount) || 0), 0);
   const currentBalance = totalPaid - totalTransferred;
-  const remainingDue = totalEarned - totalPaid;
   const workingDays = attendance.length;
 
   // دالة التصدير إلى Excel المحسنة والاحترافية
@@ -229,7 +243,7 @@ export const EnhancedWorkerAccountStatement = ({
         ['Total Paid:', totalPaid],
         ['Total Transferred to Family:', totalTransferred],
         ['Current Balance:', currentBalance],
-        ['Amount Due:', remainingDue]
+        ['Amount Due:', totalRemaining]
       ];
 
       summaryItems.forEach((item, index) => {
@@ -625,10 +639,10 @@ export const EnhancedWorkerAccountStatement = ({
             <strong>اسم العامل:</strong> {worker.name || 'غير محدد'} | <strong>المهنة:</strong> {worker.type || 'عامل'} | <strong>الأجر اليومي:</strong> {formatCurrency(Number(worker.dailyWage) || 0)}
           </div>
           <div style={{ flex: 1, textAlign: 'center' }}>
-            <strong>اسم المشروع:</strong> {selectedProject?.name || 'جميع المشاريع'} | <strong>إجمالي عدد أيام العمل:</strong> {workingDays}
+            <strong>اسم المشروع:</strong> {selectedProject?.name || 'جميع المشاريع'} | <strong>إجمالي عدد أيام العمل:</strong> {totalWorkDays}
           </div>
           <div style={{ flex: 1, textAlign: 'left' }}>
-            <strong>إجمالي المستحقات:</strong> <span style={{ color: '#dc2626' }}>{formatCurrency(totalEarned)}</span> | <strong>إجمالي المتبقي في الرصيد:</strong> <span style={{ color: currentBalance >= 0 ? '#059669' : '#dc2626' }}>{formatCurrency(currentBalance)}</span>
+            <strong>إجمالي المستحقات:</strong> <span style={{ color: '#dc2626' }}>{formatCurrency(totalEarned)}</span> | <strong>إجمالي المتبقي في الرصيد:</strong> <span style={{ color: totalRemaining <= 0 ? '#059669' : '#dc2626' }}>{formatCurrency(totalRemaining)}</span>
           </div>
         </div>
 
@@ -654,24 +668,30 @@ export const EnhancedWorkerAccountStatement = ({
             border: '1px solid #d1d5db'
           }}>
             <thead>
-              <tr style={{ backgroundColor: '#f3f4f6' }}>
-                <th style={{ border: '1px solid #d1d5db', padding: '1.5mm', textAlign: 'center', fontWeight: 'bold', width: '6%' }}>م</th>
-                <th style={{ border: '1px solid #d1d5db', padding: '1.5mm', textAlign: 'center', fontWeight: 'bold', width: '12%' }}>التاريخ</th>
-                <th style={{ border: '1px solid #d1d5db', padding: '1.5mm', textAlign: 'center', fontWeight: 'bold', width: '10%' }}>اليوم</th>
-                <th style={{ border: '1px solid #d1d5db', padding: '1.5mm', textAlign: 'center', fontWeight: 'bold', width: '30%' }}>وصف العمل</th>
-                <th style={{ border: '1px solid #d1d5db', padding: '1.5mm', textAlign: 'center', fontWeight: 'bold', width: '12%' }}>الساعات</th>
-                <th style={{ border: '1px solid #d1d5db', padding: '1.5mm', textAlign: 'center', fontWeight: 'bold', width: '12%' }}>المستحق</th>
-                <th style={{ border: '1px solid #d1d5db', padding: '1.5mm', textAlign: 'center', fontWeight: 'bold', width: '12%' }}>إجمالي المبالغ المستلم</th>
-                <th style={{ border: '1px solid #d1d5db', padding: '1.5mm', textAlign: 'center', fontWeight: 'bold', width: '11%' }}>الحالة</th>
+              <tr style={{ backgroundColor: '#3b82f6', color: 'white' }}>
+                <th style={{ border: '1px solid #d1d5db', padding: '1mm', textAlign: 'center', fontWeight: 'bold', width: '3%', fontSize: '7px' }}>م</th>
+                <th style={{ border: '1px solid #d1d5db', padding: '1mm', textAlign: 'center', fontWeight: 'bold', width: '8%', fontSize: '7px' }}>التاريخ</th>
+                <th style={{ border: '1px solid #d1d5db', padding: '1mm', textAlign: 'center', fontWeight: 'bold', width: '6%', fontSize: '7px' }}>اليوم</th>
+                <th style={{ border: '1px solid #d1d5db', padding: '1mm', textAlign: 'center', fontWeight: 'bold', width: '12%', fontSize: '7px' }}>اسم المشروع</th>
+                <th style={{ border: '1px solid #d1d5db', padding: '1mm', textAlign: 'center', fontWeight: 'bold', width: '18%', fontSize: '7px' }}>وصف العمل</th>
+                <th style={{ border: '1px solid #d1d5db', padding: '1mm', textAlign: 'center', fontWeight: 'bold', width: '8%', fontSize: '7px' }}>ساعات العمل</th>
+                <th style={{ border: '1px solid #d1d5db', padding: '1mm', textAlign: 'center', fontWeight: 'bold', width: '6%', fontSize: '7px' }}>عدد أيام العمل</th>
+                <th style={{ border: '1px solid #d1d5db', padding: '1mm', textAlign: 'center', fontWeight: 'bold', width: '10%', fontSize: '7px' }}>المستحق</th>
+                <th style={{ border: '1px solid #d1d5db', padding: '1mm', textAlign: 'center', fontWeight: 'bold', width: '10%', fontSize: '7px' }}>المبلغ المستلم</th>
+                <th style={{ border: '1px solid #d1d5db', padding: '1mm', textAlign: 'center', fontWeight: 'bold', width: '10%', fontSize: '7px' }}>المتبقي</th>
+                <th style={{ border: '1px solid #d1d5db', padding: '1mm', textAlign: 'center', fontWeight: 'bold', width: '9%', fontSize: '7px' }}>الحالة</th>
               </tr>
             </thead>
             <tbody>
               {attendance.map((record: any, index: number) => {
                 const dailyWageAmount = Number(record.dailyWage) || 0;
                 const paidAmount = Number(record.paidAmount) || 0;
-                const status = paidAmount >= dailyWageAmount ? 'مدفوع كاملاً' : 
+                const workDays = Number(record.workDays) || 1;
+                const totalDue = dailyWageAmount * workDays;
+                const remaining = totalDue - paidAmount;
+                const status = paidAmount >= totalDue ? 'مدفوع كاملاً' : 
                             paidAmount > 0 ? 'مدفوع جزئياً' : 'غير مدفوع';
-                const statusColor = paidAmount >= dailyWageAmount ? '#059669' : 
+                const statusColor = paidAmount >= totalDue ? '#059669' : 
                                   paidAmount > 0 ? '#d97706' : '#dc2626';
                 
                 return (
@@ -679,17 +699,26 @@ export const EnhancedWorkerAccountStatement = ({
                     <td style={{ border: '1px solid #d1d5db', padding: '1mm', textAlign: 'center', fontSize: '7px' }}>{index + 1}</td>
                     <td style={{ border: '1px solid #d1d5db', padding: '1mm', textAlign: 'center', fontSize: '7px' }}>{formatDate(record.date)}</td>
                     <td style={{ border: '1px solid #d1d5db', padding: '1mm', textAlign: 'center', fontSize: '7px' }}>{formatDay(record.date)}</td>
+                    <td style={{ border: '1px solid #d1d5db', padding: '1mm', textAlign: 'center', fontSize: '7px' }}>
+                      {record.project?.name || selectedProject?.name || 'غير محدد'}
+                    </td>
                     <td style={{ border: '1px solid #d1d5db', padding: '1mm', textAlign: 'right', fontSize: '7px' }}>
                       {record.workDescription || 'عمل يومي حسب متطلبات المشروع'}
                     </td>
                     <td style={{ border: '1px solid #d1d5db', padding: '1mm', textAlign: 'center', fontSize: '7px' }}>
                       {record.startTime && record.endTime ? `${record.startTime}-${record.endTime}` : '8س'}
                     </td>
+                    <td style={{ border: '1px solid #d1d5db', padding: '1mm', textAlign: 'center', fontSize: '7px', fontWeight: 'bold' }}>
+                      {workDays}
+                    </td>
                     <td style={{ border: '1px solid #d1d5db', padding: '1mm', textAlign: 'center', fontWeight: 'bold', fontSize: '7px' }}>
-                      {formatCurrency(dailyWageAmount)}
+                      {formatCurrency(totalDue)}
                     </td>
                     <td style={{ border: '1px solid #d1d5db', padding: '1mm', textAlign: 'center', fontWeight: 'bold', color: '#059669', fontSize: '7px' }}>
                       {formatCurrency(paidAmount)}
+                    </td>
+                    <td style={{ border: '1px solid #d1d5db', padding: '1mm', textAlign: 'center', fontWeight: 'bold', color: remaining > 0 ? '#dc2626' : '#059669', fontSize: '7px' }}>
+                      {formatCurrency(remaining)}
                     </td>
                     <td style={{ border: '1px solid #d1d5db', padding: '1mm', textAlign: 'center', fontWeight: 'bold', color: statusColor, fontSize: '7px' }}>
                       {status}
@@ -704,10 +733,19 @@ export const EnhancedWorkerAccountStatement = ({
                   الإجماليات
                 </td>
                 <td style={{ border: '2px solid #059669', padding: '1.5mm', textAlign: 'center', fontWeight: 'bold', fontSize: '8px' }}>
+                  {Math.round(totalWorkHours)}س
+                </td>
+                <td style={{ border: '2px solid #059669', padding: '1.5mm', textAlign: 'center', fontWeight: 'bold', fontSize: '8px' }}>
+                  {totalWorkDays}
+                </td>
+                <td style={{ border: '2px solid #059669', padding: '1.5mm', textAlign: 'center', fontWeight: 'bold', fontSize: '8px' }}>
                   {formatCurrency(totalEarned)}
                 </td>
                 <td style={{ border: '2px solid #059669', padding: '1.5mm', textAlign: 'center', fontWeight: 'bold', fontSize: '8px' }}>
                   {formatCurrency(totalPaid)}
+                </td>
+                <td style={{ border: '2px solid #059669', padding: '1.5mm', textAlign: 'center', fontWeight: 'bold', fontSize: '8px' }}>
+                  {formatCurrency(totalRemaining)}
                 </td>
                 <td style={{ border: '2px solid #059669', padding: '1.5mm', textAlign: 'center', fontWeight: 'bold', fontSize: '8px' }}>
                   {totalEarned > 0 ? Math.round((totalPaid / totalEarned) * 100) + '%' : '0%'}
