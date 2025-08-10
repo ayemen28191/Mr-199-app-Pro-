@@ -10,11 +10,8 @@ import WorkerAccounts from "@/pages/worker-accounts";
 import DailyExpenses from "@/pages/daily-expenses";
 import MaterialPurchase from "@/pages/material-purchase";
 import ReportsFixed from "@/pages/reports";
-import ExcelStyleWorkerStatement from "@/pages/excel-style-worker-statement";
 import DailyExpensesReport from "@/pages/daily-expenses-report";
 import ExcelStyleDailyExpenses from "@/pages/excel-style-daily-expenses";
-import WorkersFilterReport from "@/pages/workers-filter-report";
-import UnifiedWorkerStatement from "@/pages/unified-worker-statement";
 import WorkersUnifiedReports from "@/pages/workers-unified-reports";
 import ProjectTransfers from "@/pages/ProjectTransfers";
 import ProjectTransactionsPage from "@/pages/ProjectTransactionsSimple";
@@ -44,11 +41,8 @@ function Router() {
       <Route path="/worker-accounts" component={WorkerAccounts} />
       <Route path="/daily-expenses" component={DailyExpenses} />
       <Route path="/material-purchase" component={MaterialPurchase} />
-      <Route path="/excel-format-worker-statement" component={ExcelStyleWorkerStatement} />
       <Route path="/daily-expenses-report" component={DailyExpensesReport} />
       <Route path="/excel-style-daily-expenses" component={ExcelStyleDailyExpenses} />
-      <Route path="/workers-filter-report" component={WorkersFilterReport} />
-      <Route path="/enhanced-worker-statement" component={UnifiedWorkerStatement} />
       <Route path="/workers-unified-reports" component={WorkersUnifiedReports} />
       <Route path="/project-transfers" component={ProjectTransfers} />
       <Route path="/project-transactions" component={ProjectTransactionsPage} />
