@@ -640,7 +640,7 @@ export default function Reports() {
     
     try {
       // إنشاء مُصدّر Excel الاحترافي مع القالب النشط
-      const exporter = new ProfessionalExcelExporter(activeTemplate as any);
+      const exporter = new UnifiedExcelExporter(activeTemplate as any);
       
       // تحويل البيانات للنظام الاحترافي
       const enhancedData = await convertDataToEnhanced(data, activeReportType || 'daily');
@@ -705,7 +705,7 @@ export default function Reports() {
   };
 
   // دالة تحويل البيانات للنظام الاحترافي
-  const convertDataToEnhanced = async (data: any, reportType: string): Promise<EnhancedExcelData> => {
+  const convertDataToEnhanced = async (data: any, reportType: string): Promise<any> => {
     const selectedProject = projects.find(p => p.id === selectedProjectId);
     
     switch (reportType) {
@@ -802,7 +802,7 @@ export default function Reports() {
   };
 
   // دوال التصدير الجديدة باستخدام إعدادات القوالب المحدثة
-  const exportDailyReportWithTemplate = async (exporter: UnifiedExcelExporter, data: any, filename: string) => {
+  const exportDailyReportWithTemplate = async (exporter: any, data: any, filename: string) => {
     const selectedProject = projects.find(p => p.id === selectedProjectId);
     
     const excelData = {
@@ -827,7 +827,7 @@ export default function Reports() {
     await exporter.exportToExcel(excelData, filename);
   };
 
-  const exportWorkerReportWithTemplate = async (exporter: UnifiedExcelExporter, data: any, filename: string) => {
+  const exportWorkerReportWithTemplate = async (exporter: any, data: any, filename: string) => {
     const worker = workers.find(w => w.id === selectedWorkerId);
     
     const excelData = {
@@ -851,7 +851,7 @@ export default function Reports() {
     await exporter.exportToExcel(excelData, filename);
   };
 
-  const exportWorkersSettlementWithTemplate = async (exporter: UnifiedExcelExporter, data: any, filename: string) => {
+  const exportWorkersSettlementWithTemplate = async (exporter: any, data: any, filename: string) => {
     const excelData = {
       headers: ['العامل', 'أيام العمل', 'إجمالي المستحق', 'إجمالي المدفوع', 'حوالات الأهل', 'الرصيد النهائي'],
       rows: data.workers?.map((worker: any) => [
@@ -876,7 +876,7 @@ export default function Reports() {
     await exporter.exportToExcel(excelData, filename);
   };
 
-  const exportGenericDataWithTemplate = async (exporter: UnifiedExcelExporter, data: any, filename: string) => {
+  const exportGenericDataWithTemplate = async (exporter: any, data: any, filename: string) => {
     // تصدير عام للبيانات الأخرى
     const excelData = {
       headers: Object.keys(data).length > 0 ? Object.keys(data) : ['البيانات'],
@@ -2492,8 +2492,8 @@ export default function Reports() {
       else if (activeReportType === 'material') reportType = 'material_purchases';
       else if (activeReportType === 'project') reportType = 'project_summary';
 
-      // استخدام دالة الطباعة مع الإعدادات المحفوظة
-      printWithSettings(reportType, 500);
+      // طباعة مباشرة
+      window.print();
       
     } catch (error) {
       console.error('خطأ في الطباعة:', error);
@@ -2934,7 +2934,10 @@ export default function Reports() {
             <FileSpreadsheet className="h-4 w-4 mr-2" />
             تصدير احترافي
           </Button>
-          <PrintButton reportType="project_summary" />
+          <UnifiedPrintButton 
+            data={{ project, dateFrom, dateTo, summary, details }}
+            title={`ملخص المشروع - ${project.name}`}
+          />
         </div>
 
         {/* تذييل التقرير */}
@@ -3910,7 +3913,10 @@ export default function Reports() {
                                 <FileSpreadsheet className="h-4 w-4 mr-2" />
                                 تصدير Excel
                               </Button>
-                              <PrintButton reportType="workers_settlement" />
+                              <UnifiedPrintButton 
+                                data={settlementReportData}
+                                title="تقرير تصفية العمال"
+                              />
                             </div>
                           </div>
                         </div>
@@ -4028,7 +4034,7 @@ export default function Reports() {
                         projectInfo: selectedProject
                       };
                       localStorage.setItem('printReportContext', JSON.stringify(printContext));
-                      setLocation('/advanced-print-control?withData=true');
+                      window.print();
                     }}
                     variant="outline"
                     className="border-purple-500 text-purple-600 hover:bg-purple-50 px-6 py-2 rounded-xl"
@@ -4036,20 +4042,14 @@ export default function Reports() {
                     <Settings className="h-4 w-4 mr-2" />
                     تحكم متقدم
                   </Button>
-                  <PrintSettingsButton
-                    reportType={activeReportType === 'daily' ? 'daily_expenses' : 
-                               activeReportType === 'professional' ? 'daily_expenses' :
-                               activeReportType === 'worker' ? 'worker_statement' :
-                               activeReportType === 'material' ? 'material_purchases' :
-                               activeReportType === 'project' ? 'project_summary' : 'daily_expenses'}
+                  <UnifiedPrintButton
+                    data={reportData}
+                    title={`تقرير ${activeReportType === 'daily' ? 'المصاريف اليومية' :
+                                    activeReportType === 'professional' ? 'المصاريف المهنية' :
+                                    activeReportType === 'worker' ? 'حساب العامل' :
+                                    activeReportType === 'material' ? 'المواد والمشتريات' :
+                                    activeReportType === 'project' ? 'ملخص المشروع' : 'التقرير'}`}
                     className="px-6 py-2 rounded-xl"
-                    variant="outline"
-                    reportData={reportData}
-                    reportTitle={`تقرير ${activeReportType === 'daily' ? 'المصاريف اليومية' :
-                                        activeReportType === 'professional' ? 'المصاريف المهنية' :
-                                        activeReportType === 'worker' ? 'حساب العامل' :
-                                        activeReportType === 'material' ? 'المواد والمشتريات' :
-                                        activeReportType === 'project' ? 'ملخص المشروع' : 'التقرير'}`}
                   />
                   <Button
                     onClick={printReport}
