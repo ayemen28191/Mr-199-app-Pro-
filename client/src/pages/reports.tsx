@@ -34,6 +34,7 @@ import { AdvancedProgressIndicator, useProgressSteps, type ProgressStep } from "
 import { EnhancedErrorDisplay, FieldValidationDisplay, transformValidationErrors } from "@/components/EnhancedErrorDisplay";
 import { useWorkersSettlementValidation } from "@/hooks/useWorkersSettlementValidation";
 import { UnifiedExcelExporter } from "@/components/unified-excel-exporter";
+import { ProfessionalExcelExporter, type EnhancedExcelData } from "@/components/professional-excel-exporter";
 import "@/components/print-styles.css";
 import "@/components/invoice-print-styles.css";
 import "@/components/professional-report-print.css";
@@ -633,7 +634,41 @@ export default function Reports() {
     }
   };
 
-  // Export Functions with Template Settings
+  // تصدير احترافي جديد محسن
+  const exportToProfessionalExcel = async (data: any, filename: string) => {
+    if (!data) {
+      toast({
+        title: "تنبيه",
+        description: "لا توجد بيانات للتصدير",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      // إنشاء مُصدّر Excel الاحترافي مع القالب النشط
+      const exporter = new ProfessionalExcelExporter(activeTemplate as any);
+      
+      // تحويل البيانات للنظام الاحترافي
+      const enhancedData = await convertDataToEnhanced(data, activeReportType || 'daily');
+      
+      await exporter.exportToExcel(enhancedData, `${filename}-احترافي`);
+      
+      toast({
+        title: "تم التصدير الاحترافي",
+        description: "تم تصدير التقرير بالتصميم الاحترافي المحسن",
+      });
+    } catch (error) {
+      console.error('خطأ في التصدير الاحترافي:', error);
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء التصدير الاحترافي",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // النظام القديم للتوافق
   const exportToExcel = async (data: any, filename: string) => {
     if (!data) {
       toast({
@@ -648,7 +683,7 @@ export default function Reports() {
       console.log('🎨 استخدام إعدادات القالب الحديثة للتصدير:', activeTemplate);
       
       // إنشاء مُصدّر Excel مع إعدادات القالب المحدثة
-      const exporter = new UnifiedExcelExporter(activeTemplate);
+      const exporter = new UnifiedExcelExporter(activeTemplate as any);
       
       // تحديد نوع التقرير وإنشاء Excel مناسب
       if (activeReportType === 'daily' || activeReportType === 'professional') {
@@ -673,6 +708,103 @@ export default function Reports() {
         description: "حدث خطأ أثناء تصدير التقرير",
         variant: "destructive",
       });
+    }
+  };
+
+  // دالة تحويل البيانات للنظام الاحترافي
+  const convertDataToEnhanced = async (data: any, reportType: string): Promise<EnhancedExcelData> => {
+    const selectedProject = projects.find(p => p.id === selectedProjectId);
+    
+    switch (reportType) {
+      case 'daily':
+      case 'professional':
+        return {
+          title: `التقرير اليومي - ${selectedProject?.name || 'غير محدد'}`,
+          subtitle: `تاريخ التقرير: ${formatDate(new Date())}`,
+          headers: ['البند', 'المبلغ', 'الملاحظات'],
+          rows: [
+            ['تحويلات العهدة', data.trustTransfers || 0, ''],
+            ['أجور العمال', data.totalWages || 0, ''],
+            ['المشتريات', data.totalPurchases || 0, ''],
+            ['النقل', data.transportation || 0, ''],
+            ['مصاريف متنوعة', data.miscellaneous || 0, ''],
+            ['المهندسين', data.engineers || 0, ''],
+          ],
+          summary: [
+            { label: 'إجمالي الإيرادات', value: (data.trustTransfers || 0) },
+            { label: 'إجمالي المصروفات', value: (data.totalWages || 0) + (data.totalPurchases || 0) + (data.transportation || 0) + (data.miscellaneous || 0) + (data.engineers || 0) },
+            { label: 'الرصيد النهائي', value: (data.trustTransfers || 0) - ((data.totalWages || 0) + (data.totalPurchases || 0) + (data.transportation || 0) + (data.miscellaneous || 0) + (data.engineers || 0)) }
+          ],
+          metadata: {
+            reportType: 'تقرير يومي',
+            projectName: selectedProject?.name || 'غير محدد',
+            generatedBy: 'نظام إدارة مشاريع البناء'
+          }
+        };
+        
+      case 'worker':
+        return {
+          title: `كشف حساب العامل`,
+          subtitle: `من ${formatDate(new Date())} إلى ${formatDate(new Date())}`,
+          headers: ['التاريخ', 'المشروع', 'ساعات العمل', 'الأجر اليومي', 'المبلغ المستحق', 'المبلغ المدفوع', 'الرصيد'],
+          rows: data.map((record: any) => [
+            formatDate(record.date),
+            record.project?.name || 'غير محدد',
+            record.hoursWorked || 0,
+            record.dailyWage || 0,
+            record.amountOwed || 0,
+            record.paidAmount || 0,
+            record.balance || 0
+          ]),
+          summary: [
+            { label: 'إجمالي الساعات', value: data.reduce((sum: number, record: any) => sum + (record.hoursWorked || 0), 0) },
+            { label: 'إجمالي المستحق', value: data.reduce((sum: number, record: any) => sum + (record.amountOwed || 0), 0) },
+            { label: 'إجمالي المدفوع', value: data.reduce((sum: number, record: any) => sum + (record.paidAmount || 0), 0) },
+            { label: 'الرصيد النهائي', value: data.reduce((sum: number, record: any) => sum + (record.balance || 0), 0) }
+          ],
+          metadata: {
+            reportType: 'كشف حساب عامل',
+            generatedBy: 'نظام إدارة مشاريع البناء'
+          }
+        };
+
+      case 'workers_settlement':
+        return {
+          title: `كشف تسوية العمال`,
+          subtitle: `تقرير شامل لأرصدة العمال`,
+          headers: ['اسم العامل', 'نوع العامل', 'إجمالي المستحق', 'إجمالي المدفوع', 'حوالات الأهل', 'الرصيد النهائي'],
+          rows: data.map((worker: any) => [
+            worker.name,
+            worker.type || 'عامل',
+            worker.totalOwed || 0,
+            worker.totalPaid || 0,
+            worker.totalTransfers || 0,
+            worker.finalBalance || 0
+          ]),
+          summary: [
+            { label: 'عدد العمال', value: data.length },
+            { label: 'إجمالي المستحق', value: data.reduce((sum: number, worker: any) => sum + (worker.totalOwed || 0), 0) },
+            { label: 'إجمالي المدفوع', value: data.reduce((sum: number, worker: any) => sum + (worker.totalPaid || 0), 0) },
+            { label: 'إجمالي الحوالات', value: data.reduce((sum: number, worker: any) => sum + (worker.totalTransfers || 0), 0) },
+            { label: 'إجمالي الأرصدة', value: data.reduce((sum: number, worker: any) => sum + (worker.finalBalance || 0), 0) }
+          ],
+          metadata: {
+            reportType: 'كشف تسوية العمال',
+            generatedBy: 'نظام إدارة مشاريع البناء'
+          }
+        };
+
+      default:
+        return {
+          title: 'تقرير عام',
+          subtitle: `تاريخ الإنشاء: ${formatDate(new Date())}`,
+          headers: ['البيان', 'القيمة'],
+          rows: Object.entries(data).map(([key, value]) => [key, value as string | number]),
+          metadata: {
+            reportType: 'تقرير عام',
+            generatedBy: 'نظام إدارة مشاريع البناء'
+          }
+        };
     }
   };
 
@@ -2795,7 +2927,6 @@ export default function Reports() {
         <div className="flex gap-3 mt-6 pt-4 border-t border-gray-200 no-print">
           <Button
             onClick={() => {
-              // إنشاء ملف Excel
               const excelData = {
                 project: project.name,
                 dateFrom,
@@ -2803,17 +2934,12 @@ export default function Reports() {
                 summary,
                 details
               };
-              // استدعاء دالة التصدير (سيتم تطويرها لاحقاً)
-              console.log('تصدير إلى Excel:', excelData);
-              toast({
-                title: "تصدير Excel",
-                description: "سيتم تطوير ميزة التصدير قريباً",
-              });
+              exportToProfessionalExcel(excelData, `ملخص-المشروع-${project.name}-${dateFrom}-${dateTo}`);
             }}
             className="bg-green-600 hover:bg-green-700 text-white"
           >
             <FileSpreadsheet className="h-4 w-4 mr-2" />
-            تصدير Excel
+            تصدير احترافي
           </Button>
           <PrintButton reportType="project_summary" />
         </div>
@@ -3110,7 +3236,7 @@ export default function Reports() {
                       className="h-12 text-lg border-2 border-blue-200 focus:border-blue-500 rounded-xl"
                     />
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <Button 
                       onClick={() => generateDailyExpensesReport("daily")}
                       disabled={isGenerating}
@@ -3134,6 +3260,24 @@ export default function Reports() {
                         <Printer className="h-4 w-4 mr-2" />
                       )}
                       احترافي
+                    </Button>
+                    <Button 
+                      onClick={() => {
+                        if (dailyReportData) {
+                          exportToProfessionalExcel(dailyReportData, `كشف-مصروفات-يومية-${dailyReportDate}`);
+                        } else {
+                          toast({
+                            title: "تنبيه",
+                            description: "قم بإنشاء التقرير أولاً",
+                            variant: "destructive",
+                          });
+                        }
+                      }}
+                      disabled={!dailyReportData}
+                      className="h-12 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white font-medium text-base rounded-xl transform hover:scale-105 transition-all duration-300"
+                    >
+                      <FileSpreadsheet className="h-4 w-4 mr-2" />
+                      Excel متقدم
                     </Button>
                   </div>
                 </CardContent>
