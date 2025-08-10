@@ -81,11 +81,24 @@ app.use((req, res, next) => {
       if (testResult.success) {
         log("✅ جميع أنظمة قاعدة بيانات Supabase تعمل بشكل مثالي");
         
+        // إصلاح عمود carried_forward_amount إذا كان مفقوداً
+        log("🔧 التحقق من عمود carried_forward_amount...");
+        try {
+          const { DailySummariesFix } = await import("./fix-daily-summaries");
+          const fixResult = await DailySummariesFix.fixCarriedForwardColumn();
+          if (fixResult) {
+            log("✅ عمود carried_forward_amount جاهز ويعمل بشكل مثالي");
+            await DailySummariesFix.testDailySummaryOperations();
+          } else {
+            log("⚠️ مشكلة في إصلاح عمود carried_forward_amount");
+          }
+        } catch (error) {
+          log("⚠️ خطأ في معالجة عمود carried_forward_amount: " + (error instanceof Error ? error.message : String(error)));
+        }
+        
         // تشغيل الاختبار الشامل لجميع الوظائف
         log("🧪 بدء الاختبار الشامل لجميع وظائف التطبيق...");
         const testResults = await databaseTester.runComprehensiveTests();
-        
-        // ✅ عمود carried_forward_amount تم إصلاحه بنجاح في قاعدة البيانات
 
         // تحسين نظام الإكمال التلقائي
         try {
