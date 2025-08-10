@@ -1,5 +1,5 @@
 // مكون كشف حساب العامل المضغوط - مصمم خصيصاً لصفحة واحدة
-import './compact-worker-print.css';
+import '@/styles/unified-print.css';
 
 interface CompactWorkerAccountReportProps {
   data: any;

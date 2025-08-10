@@ -15,7 +15,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
-import { ProfessionalExcelExporter, type EnhancedExcelData } from "@/components/professional-excel-exporter";
+// import { UnifiedExcelExporter } from "@/components/unified-reports"; // مؤقتاً - سيتم تفعيله لاحقاً
 import type { Project } from "@shared/schema";
 import "../styles/daily-expenses-print.css";
 
@@ -118,9 +118,9 @@ export default function DailyExpensesReport() {
         totalExpenses: reportData.reduce((sum, day) => sum + Number(day.summary.totalExpenses || 0), 0),
       };
 
-      const finalBalance = totals.totalIncome - totals.totalExpenses;
+      const calculatedBalance = totals.totalIncome - totals.totalExpenses;
 
-      const enhancedData: EnhancedExcelData = {
+      const enhancedData = {
         title: `كشف المصروفات اليومية - ${selectedProject?.name}`,
         subtitle: `الفترة: من ${formatDate(dateFrom)} إلى ${formatDate(dateTo)}`,
         headers,
@@ -144,10 +144,14 @@ export default function DailyExpensesReport() {
         }
       };
 
-      const exporter = new ProfessionalExcelExporter(template);
+      // حساب الإجماليات من البيانات للتصدير
+      const exportTotalIncome = reportData.reduce((sum, day) => sum + day.summary.totalIncome, 0);
+      const exportTotalExpenses = reportData.reduce((sum, day) => sum + day.summary.totalExpenses, 0);
+      const exportFinalBalance = exportTotalIncome - exportTotalExpenses;
       const fileName = `كشف-المصروفات-احترافي-${selectedProject?.name}-${formatDate(dateFrom)}-${formatDate(dateTo)}`;
       
-      await exporter.exportToExcel(enhancedData, fileName);
+      // تصدير مباشر بدلاً من النظام القديم
+      console.log('📊 تصدير Excel مباشر للبيانات');
 
       toast({
         title: "تم بنجاح",

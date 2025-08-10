@@ -9,7 +9,7 @@ import { CalendarIcon, FileText, Printer } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
-import { applyPrintSettings } from '@/hooks/usePrintSettings';
+// import { applyPrintSettings } from '@/hooks/usePrintSettings'; // مؤقتاً - تم حذف النظام القديم
 
 interface ReportData {
   expenses?: any[];
@@ -61,42 +61,8 @@ export default function AdvancedReports() {
   };
 
   const printReport = () => {
-    // تطبيق إعدادات الطباعة المحفوظة
-    applyPrintSettings('advanced_reports');
-    
-    // إضافة ترقيم الصفحات
-    const style = document.createElement('style');
-    style.innerHTML = `
-      @page {
-        @bottom-center {
-          content: "صفحة " counter(page) " من " counter(pages);
-          font-size: 10px;
-          color: #6b7280;
-          margin-top: 5mm;
-        }
-      }
-      @media print {
-        .page-counter {
-          display: block !important;
-          position: fixed !important;
-          bottom: 5mm !important;
-          left: 50% !important;
-          transform: translateX(-50%) !important;
-          font-size: 10px !important;
-          color: #6b7280 !important;
-          z-index: 1000 !important;
-          background: transparent !important;
-          border: none !important;
-          text-align: center !important;
-        }
-      }
-    `;
-    document.head.appendChild(style);
-    
-    setTimeout(() => {
-      window.print();
-      document.head.removeChild(style);
-    }, 500);
+    // طباعة مباشرة بدلاً من النظام القديم
+    window.print();
   };
 
   const projectName = projects.find((p: any) => p.id === projectId)?.name || '';

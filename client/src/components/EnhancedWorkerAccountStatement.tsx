@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import './enhanced-worker-account-statement.css';
+import '@/styles/unified-print.css';
 
 interface WorkerAttendanceRecord {
   id: string;

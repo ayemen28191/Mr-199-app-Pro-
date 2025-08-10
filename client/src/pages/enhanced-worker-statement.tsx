@@ -14,7 +14,7 @@ import { EnhancedWorkerAccountStatement } from "@/components/EnhancedWorkerAccou
 import type { Worker, Project, WorkerAttendance, WorkerTransfer } from "@shared/schema";
 import * as ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
-import "@/components/print-fix-large-numbers.css";
+import "@/styles/unified-print.css";
 
 interface WorkerStatementData {
   worker: Worker;

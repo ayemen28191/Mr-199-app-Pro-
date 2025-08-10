@@ -27,20 +27,13 @@ import { ProfessionalDailyReport } from "@/components/ProfessionalDailyReport";
 import { ProfessionalWorkerAccountReport } from "@/components/ProfessionalWorkerAccountReport";
 import { CompactWorkerAccountReport } from "@/components/CompactWorkerAccountReport";
 import { EnhancedWorkerAccountStatement } from "@/components/EnhancedWorkerAccountStatementFixed";
-import { PrintButton } from "@/components/PrintButton";
-import { PrintSettingsButton } from "@/components/PrintSettingsButton";
-import { printWithSettings, usePrintSettings } from "@/hooks/usePrintSettings";
+import { UnifiedPrintButton, UnifiedExcelExporter } from "@/components/unified-reports";
 import { AdvancedProgressIndicator, useProgressSteps, type ProgressStep } from "@/components/AdvancedProgressIndicator";
 import { EnhancedErrorDisplay, FieldValidationDisplay, transformValidationErrors } from "@/components/EnhancedErrorDisplay";
 import { useWorkersSettlementValidation } from "@/hooks/useWorkersSettlementValidation";
-import { UnifiedExcelExporter } from "@/components/unified-excel-exporter";
-import { ProfessionalExcelExporter, type EnhancedExcelData } from "@/components/professional-excel-exporter";
-import "@/components/print-styles.css";
-import "@/components/invoice-print-styles.css";
-import "@/components/professional-report-print.css";
-import "@/components/enhanced-worker-statement-print.css";
-import "@/components/print-fix-large-numbers.css";
-import "@/components/workers-settlement-print.css";
+
+
+import "@/styles/unified-print.css";
 
 export default function Reports() {
   const [, setLocation] = useLocation();

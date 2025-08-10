@@ -5,7 +5,7 @@ import { FileText, Building2, Calendar, User, Phone, MapPin, Banknote, Clock, Ch
 import { Button } from "@/components/ui/button";
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
-import './enhanced-worker-statement-print-fixed.css';
+import '@/styles/unified-print.css';
 
 // واجهة خصائص المكون
 interface EnhancedWorkerAccountStatementProps {

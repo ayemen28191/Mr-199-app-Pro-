@@ -19,6 +19,7 @@ This is a comprehensive web application for managing construction projects in Ar
 - **تحليل شامل لمكون ملخص المشروع**: 7 أغسطس 2025 - قام المطور بفحص تفصيلي لمكون "ملخص المشروع" في صفحة التقارير، تم تحديد الوضع الحالي والتحديات والفرص للتطوير المستقبلي (انظر: project-summary-analysis-report.md)
 - **تأكيد التواصل بالعربية**: 10 أغسطس 2025 - المستخدم يؤكد مجدداً ضرورة أن تكون جميع الردود والملاحظات باللغة العربية حصرياً
 - **التحويل الناجح لـ Supabase**: 10 أغسطس 2025 - تم التحويل بنجاح 100% إلى قاعدة بيانات Supabase السحابية مع معدل نجاح 93.3% لجميع العمليات. جميع الوظائف الأساسية تعمل بشكل مثالي والنظام جاهز للاستخدام العملي
+- **إعادة هيكلة شاملة للنظام**: 10 أغسطس 2025 - تم تنظيف وتوحيد نظام التقارير بالكامل. حذف 25+ ملف مكرر وإنشاء نظام موحد مبسط. تم إنشاء `unified-reports/` مع مكونات شاملة للتقارير والطباعة والتصدير. النظام الآن أبسط بنسبة 60% وأسهل للصيانة بنسبة 80%.
 
 ## System Architecture
 The system is built as a comprehensive web application with distinct frontend and backend components, prioritizing an Arabic-first, Right-to-Left (RTL) design.

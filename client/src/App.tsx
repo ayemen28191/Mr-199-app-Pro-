@@ -26,11 +26,7 @@ import SupplierReportPage from "@/pages/supplier-report";
 import AutocompleteAdminPage from "@/pages/autocomplete-admin";
 import AdvancedReports from "@/pages/advanced-reports";
 import MobileReports from "@/pages/mobile-reports";
-import PrintControlPage from "@/pages/print-control";
-import AdvancedPrintControl from "@/pages/advanced-print-control";
-import PrintIntegrationDemo from "@/pages/print-integration-demo";
-import ReportTemplateSettings from "@/pages/report-template-settings";
-import ReportTemplateSettingsEnhanced from "@/pages/ReportTemplateSettingsEnhanced";
+
 import Header from "@/components/layout/header";
 import BottomNavigation from "@/components/layout/bottom-navigation";
 
@@ -59,11 +55,7 @@ function Router() {
       <Route path="/reports" component={ReportsFixed} />
       <Route path="/mobile-reports" component={MobileReports} />
       <Route path="/advanced-reports" component={AdvancedReports} />
-      <Route path="/print-control" component={PrintControlPage} />
-      <Route path="/advanced-print-control" component={AdvancedPrintControl} />
-      <Route path="/print-integration-demo" component={PrintIntegrationDemo} />
-      <Route path="/report-template-settings" component={ReportTemplateSettings} />
-      <Route path="/report-template-settings-enhanced" component={ReportTemplateSettingsEnhanced} />
+
       <Route component={NotFound} />
     </Switch>
   );
