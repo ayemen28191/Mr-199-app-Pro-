@@ -107,12 +107,20 @@ export default function WorkersUnifiedReports() {
       
       if (response) {
         console.log('✅ تم جمع بيانات كشف الحساب:', response);
+        console.log('🔍 تفاصيل البيانات المستلمة:', {
+          hasWorker: !!response.worker,
+          workerName: response.worker?.name,
+          attendanceCount: response.attendance?.length || 0,
+          transfersCount: response.transfers?.length || 0,
+          summary: response.summary
+        });
+        
         setReportData([response]);
         setShowWorkerStatement(true);
         
         toast({
-          title: "تم إنشاء كشف الحساب",
-          description: `كشف حساب العامل ${response.worker?.name}`,
+          title: "تم إنشاء كشف الحساب بنجاح ✅",
+          description: `كشف حساب العامل ${response.worker?.name || 'غير محدد'}`,
         });
       } else {
         toast({
