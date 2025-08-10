@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Building2, FileText, Calendar, Download, ArrowLeft, Filter } from "lucide-react";
+import { Building2, FileText, Calendar, Download, ArrowLeft, Filter, CheckSquare, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,17 +22,26 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useLocation } from "wouter";
-// تم استيراد مكتبة التصدير مسبقاً في package.json
-import type { Supplier, MaterialPurchase } from "@shared/schema";
+import {
+  addReportHeader,
+  addReportFooter,
+  formatDataTable,
+  formatTotalsRow,
+  saveExcelFile,
+  formatCurrency,
+  formatDate
+} from "@/components/excel-export-utils";
+import type { Supplier, MaterialPurchase, Project } from "@shared/schema";
 
 export default function SupplierReportPage() {
   const [location, setLocation] = useLocation();
   const [selectedSupplierId, setSelectedSupplierId] = useState<string>("");
-  const [selectedProjectId, setSelectedProjectId] = useState<string>("");
+  const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([]);
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const [paymentTypeFilter, setPaymentTypeFilter] = useState<string>("all");
+  const [purchaseTypeFilter, setPurchaseTypeFilter] = useState<string>("all");
 
   // Extract supplier ID from URL query params
   useEffect(() => {
@@ -49,23 +58,25 @@ export default function SupplierReportPage() {
   });
 
   // Get projects list
-  const { data: projects = [] } = useQuery({
+  const { data: projects = [] } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
   });
 
   // Get purchases for the selected supplier
   const { data: purchases = [], isLoading: isLoadingPurchases } = useQuery<MaterialPurchase[]>({
     queryKey: ["/api/suppliers", selectedSupplierId, "purchases", { 
-      projectId: selectedProjectId === "all" ? undefined : selectedProjectId, 
+      projectIds: selectedProjectIds.length > 0 ? selectedProjectIds : undefined,
       dateFrom, 
       dateTo, 
-      paymentType: paymentTypeFilter === "all" ? undefined : paymentTypeFilter 
+      purchaseType: purchaseTypeFilter === "all" ? undefined : purchaseTypeFilter 
     }],
     enabled: !!selectedSupplierId,
   });
 
   const selectedSupplier = suppliers.find(s => s.id === selectedSupplierId);
-  const selectedProject = selectedProjectId === "all" ? null : projects.find((p: any) => p.id === selectedProjectId);
+  const selectedProjects = selectedProjectIds.length > 0 
+    ? projects.filter(p => selectedProjectIds.includes(p.id))
+    : [];
 
   // Calculate totals
   const totals = purchases.reduce((acc, purchase) => {
@@ -75,17 +86,24 @@ export default function SupplierReportPage() {
     return acc;
   }, { totalAmount: 0, paidAmount: 0, remainingAmount: 0 });
 
-  const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-GB');
-  };
-
-  const formatCurrency = (amount: string | number) => {
+  const formatCurrencyDisplay = (amount: string | number) => {
     const num = typeof amount === 'string' ? parseFloat(amount) : amount;
-    return num.toLocaleString('en-GB') + " ر.ي";
+    return num.toLocaleString('ar-SA') + " ر.ي";
   };
 
-  const getPaymentTypeVariant = (paymentType: string) => {
-    return paymentType === "نقد" ? "default" : paymentType === "أجل" ? "secondary" : "outline";
+  const getPurchaseTypeVariant = (purchaseType: string) => {
+    return purchaseType === "نقد" ? "default" : purchaseType === "أجل" ? "secondary" : "outline";
+  };
+
+  // Handle project selection
+  const handleProjectToggle = (projectId: string) => {
+    setSelectedProjectIds(prev => {
+      if (prev.includes(projectId)) {
+        return prev.filter(id => id !== projectId);
+      } else {
+        return [...prev, projectId];
+      }
+    });
   };
 
   const exportToExcel = async () => {
@@ -94,52 +112,72 @@ export default function SupplierReportPage() {
     try {
       const ExcelJS = await import('exceljs');
       const workbook = new ExcelJS.Workbook();
-      const worksheet = workbook.addWorksheet('كشف حساب المورد');
+      const worksheet = workbook.addWorksheet('كشف حساب المورد', {
+        views: [{ rightToLeft: true }]
+      });
 
-      // عنوان التقرير
-      worksheet.addRow(['كشف حساب المورد']);
-      worksheet.addRow([]);
+      // معلومات إضافية للتقرير
+      const projectsText = selectedProjects.length > 0 
+        ? selectedProjects.map(p => p.name).join(' - ')
+        : 'جميع المشاريع';
       
-      // معلومات المورد
-      worksheet.addRow(['اسم المورد:', selectedSupplier.name]);
-      worksheet.addRow(['رقم الهاتف:', selectedSupplier.phone || '-']);
-      worksheet.addRow(['العنوان:', selectedSupplier.address || '-']);
-      worksheet.addRow(['المشروع:', selectedProject?.name || 'جميع المشاريع']);
-      worksheet.addRow(['الفترة:', `${dateFrom || 'من البداية'} - ${dateTo || 'حتى الآن'}`]);
-      worksheet.addRow([]);
+      const additionalInfo = [
+        `اسم المورد: ${selectedSupplier.name}`,
+        `الشخص المسؤول: ${selectedSupplier.contactPerson || '-'}`,
+        `رقم الهاتف: ${selectedSupplier.phone || '-'}`,
+        `المشاريع المحددة: ${projectsText}`,
+        `الفترة الزمنية: ${dateFrom || 'من البداية'} إلى ${dateTo || 'حتى الآن'}`
+      ];
+
+      // إضافة رأس التقرير الموحد
+      const startRow = addReportHeader(
+        worksheet,
+        'كشف حساب المورد',
+        `تقرير مفصل لحساب المورد: ${selectedSupplier.name}`,
+        additionalInfo
+      );
 
       // عناوين الأعمدة
-      const headers = ['التاريخ', 'رقم الفاتورة', 'المادة', 'الكمية', 'سعر الوحدة', 'المبلغ الإجمالي', 'نوع الدفع', 'المدفوع', 'المتبقي'];
-      worksheet.addRow(headers);
+      const headers = ['التاريخ', 'رقم الفاتورة', 'المشروع', 'المادة', 'الكمية', 'سعر الوحدة', 'المبلغ الإجمالي', 'نوع الشراء', 'المدفوع', 'المتبقي'];
+      const headerRow = worksheet.addRow(headers);
+      const headerRowIndex = startRow;
 
       // بيانات المشتريات
       purchases.forEach(purchase => {
+        const projectName = projects.find(p => p.id === purchase.projectId)?.name || 'مشروع غير محدد';
         worksheet.addRow([
           formatDate(purchase.invoiceDate),
           purchase.invoiceNumber || '-',
+          projectName,
           purchase.materialId,
           purchase.quantity,
           formatCurrency(purchase.unitPrice),
           formatCurrency(purchase.totalAmount),
-          purchase.paymentType,
+          purchase.purchaseType,
           formatCurrency(purchase.paidAmount || '0'),
           formatCurrency(purchase.remainingAmount || '0')
         ]);
       });
 
-      // المجموع
+      const dataEndRow = startRow + purchases.length;
+
+      // صف المجموع
       worksheet.addRow([]);
-      worksheet.addRow(['المجموع', '', '', '', '', formatCurrency(totals.totalAmount), '', formatCurrency(totals.paidAmount), formatCurrency(totals.remainingAmount)]);
+      const totalsRowData = ['المجموع الإجمالي', '', '', '', '', '', formatCurrency(totals.totalAmount), '', formatCurrency(totals.paidAmount), formatCurrency(totals.remainingAmount)];
+      const totalsRow = worksheet.addRow(totalsRowData);
+      const totalsRowIndex = dataEndRow + 2;
+
+      // تنسيق الجدول
+      formatDataTable(worksheet, headerRowIndex, startRow + 1, dataEndRow, headers.length);
+      formatTotalsRow(worksheet, totalsRowIndex);
+
+      // إضافة الذيل
+      addReportFooter(worksheet, totalsRowIndex + 3);
 
       // حفظ الملف
-      const buffer = await workbook.xlsx.writeBuffer();
-      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      const fileName = `كشف-حساب-${selectedSupplier.name}-${new Date().toISOString().split('T')[0]}.xlsx`;
-      
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = fileName;
-      link.click();
+      const fileName = `كشف-حساب-${selectedSupplier.name.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.xlsx`;
+      saveExcelFile(workbook, fileName);
+
     } catch (error) {
       console.error('Error exporting to Excel:', error);
       alert('حدث خطأ في تصدير الملف');
@@ -205,21 +243,34 @@ export default function SupplierReportPage() {
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label>المشروع</Label>
-              <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="جميع المشاريع" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">جميع المشاريع</SelectItem>
-                  {projects.map((project: any) => (
-                    <SelectItem key={project.id} value={project.id}>
-                      {project.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="space-y-2 md:col-span-2">
+              <Label>المشاريع (اختيار متعدد)</Label>
+              <Card className="p-3">
+                <ScrollArea className="h-32">
+                  <div className="space-y-2">
+                    {projects.map((project) => (
+                      <div 
+                        key={project.id} 
+                        className="flex items-center gap-2 hover:bg-accent hover:text-accent-foreground p-2 rounded cursor-pointer"
+                        onClick={() => handleProjectToggle(project.id)}
+                      >
+                        {selectedProjectIds.includes(project.id) ? (
+                          <CheckSquare className="h-4 w-4 text-primary" />
+                        ) : (
+                          <Square className="h-4 w-4" />
+                        )}
+                        <span className="text-sm">{project.name}</span>
+                      </div>
+                    ))}
+                    {projects.length === 0 && (
+                      <p className="text-center text-muted-foreground text-sm">لا توجد مشاريع متاحة</p>
+                    )}
+                  </div>
+                </ScrollArea>
+                <div className="mt-2 text-xs text-muted-foreground">
+                  {selectedProjectIds.length === 0 ? 'جميع المشاريع' : `${selectedProjectIds.length} مشروع محدد`}
+                </div>
+              </Card>
             </div>
 
             <div className="space-y-2">
@@ -241,10 +292,10 @@ export default function SupplierReportPage() {
             </div>
 
             <div className="space-y-2">
-              <Label>نوع الدفع</Label>
-              <Select value={paymentTypeFilter} onValueChange={setPaymentTypeFilter}>
+              <Label>نوع الشراء</Label>
+              <Select value={purchaseTypeFilter} onValueChange={setPurchaseTypeFilter}>
                 <SelectTrigger>
-                  <SelectValue placeholder="نوع الدفع" />
+                  <SelectValue placeholder="نوع الشراء" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">جميع الأنواع</SelectItem>
@@ -283,8 +334,15 @@ export default function SupplierReportPage() {
                 </div>
                 <div className="space-y-3">
                   <div className="flex justify-between">
-                    <Label className="font-semibold">المشروع:</Label>
-                    <span>{selectedProject?.name || "جميع المشاريع"}</span>
+                    <Label className="font-semibold">المشاريع المحددة:</Label>
+                    <span>
+                      {selectedProjects.length > 0 
+                        ? (selectedProjects.length === 1 
+                          ? selectedProjects[0].name 
+                          : `${selectedProjects.length} مشروع محدد`)
+                        : "جميع المشاريع"
+                      }
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <Label className="font-semibold">الفترة:</Label>
@@ -304,19 +362,19 @@ export default function SupplierReportPage() {
             <Card>
               <CardContent className="p-6 text-center">
                 <p className="text-sm text-gray-600">إجمالي المشتريات</p>
-                <p className="text-2xl font-bold">{formatCurrency(totals.totalAmount)}</p>
+                <p className="text-2xl font-bold">{formatCurrencyDisplay(totals.totalAmount)}</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-6 text-center">
                 <p className="text-sm text-gray-600">المدفوع</p>
-                <p className="text-2xl font-bold text-green-600">{formatCurrency(totals.paidAmount)}</p>
+                <p className="text-2xl font-bold text-green-600">{formatCurrencyDisplay(totals.paidAmount)}</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="p-6 text-center">
                 <p className="text-sm text-gray-600">المتبقي</p>
-                <p className="text-2xl font-bold text-red-600">{formatCurrency(totals.remainingAmount)}</p>
+                <p className="text-2xl font-bold text-red-600">{formatCurrencyDisplay(totals.remainingAmount)}</p>
               </CardContent>
             </Card>
           </div>
@@ -332,51 +390,58 @@ export default function SupplierReportPage() {
                 </div>
               ) : (
                 <div className="overflow-x-auto">
-                  <Table>
+                  <Table className="min-w-full">
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="text-center">التاريخ</TableHead>
-                        <TableHead className="text-center">رقم الفاتورة</TableHead>
-                        <TableHead className="text-center">المادة</TableHead>
-                        <TableHead className="text-center">الكمية</TableHead>
-                        <TableHead className="text-center">سعر الوحدة</TableHead>
-                        <TableHead className="text-center">المبلغ الإجمالي</TableHead>
-                        <TableHead className="text-center">نوع الدفع</TableHead>
-                        <TableHead className="text-center">المدفوع</TableHead>
-                        <TableHead className="text-center">المتبقي</TableHead>
+                        <TableHead className="text-center font-semibold">التاريخ</TableHead>
+                        <TableHead className="text-center font-semibold">رقم الفاتورة</TableHead>
+                        <TableHead className="text-center font-semibold">المشروع</TableHead>
+                        <TableHead className="text-center font-semibold">المادة</TableHead>
+                        <TableHead className="text-center font-semibold">الكمية</TableHead>
+                        <TableHead className="text-center font-semibold">سعر الوحدة</TableHead>
+                        <TableHead className="text-center font-semibold">المبلغ الإجمالي</TableHead>
+                        <TableHead className="text-center font-semibold">نوع الشراء</TableHead>
+                        <TableHead className="text-center font-semibold">المدفوع</TableHead>
+                        <TableHead className="text-center font-semibold">المتبقي</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {purchases.map((purchase) => (
-                        <TableRow key={purchase.id}>
-                          <TableCell className="text-center">{formatDate(purchase.invoiceDate)}</TableCell>
-                          <TableCell className="text-center">{purchase.invoiceNumber || "-"}</TableCell>
-                          <TableCell className="text-center">{purchase.materialId}</TableCell>
-                          <TableCell className="text-center">{purchase.quantity}</TableCell>
-                          <TableCell className="text-center">{formatCurrency(purchase.unitPrice)}</TableCell>
-                          <TableCell className="text-center font-medium">
-                            {formatCurrency(purchase.totalAmount)}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <Badge variant={getPaymentTypeVariant(purchase.paymentType)}>
-                              {purchase.paymentType}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-center text-green-600">
-                            {formatCurrency(purchase.paidAmount || "0")}
-                          </TableCell>
-                          <TableCell className="text-center text-red-600">
-                            {formatCurrency(purchase.remainingAmount || "0")}
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                      {purchases.map((purchase) => {
+                        const projectName = projects.find(p => p.id === purchase.projectId)?.name || 'مشروع غير محدد';
+                        return (
+                          <TableRow key={purchase.id} className="hover:bg-muted/50">
+                            <TableCell className="text-center">{formatDate(purchase.invoiceDate)}</TableCell>
+                            <TableCell className="text-center">{purchase.invoiceNumber || "-"}</TableCell>
+                            <TableCell className="text-center">
+                              <span className="text-xs bg-muted px-2 py-1 rounded">{projectName}</span>
+                            </TableCell>
+                            <TableCell className="text-center">{purchase.materialId}</TableCell>
+                            <TableCell className="text-center">{purchase.quantity}</TableCell>
+                            <TableCell className="text-center">{formatCurrencyDisplay(purchase.unitPrice)}</TableCell>
+                            <TableCell className="text-center font-medium">
+                              {formatCurrencyDisplay(purchase.totalAmount)}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Badge variant={getPurchaseTypeVariant(purchase.purchaseType)}>
+                                {purchase.purchaseType}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-center text-green-600 font-medium">
+                              {formatCurrencyDisplay(purchase.paidAmount || "0")}
+                            </TableCell>
+                            <TableCell className="text-center text-red-600 font-medium">
+                              {formatCurrencyDisplay(purchase.remainingAmount || "0")}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
 
                   <Separator className="my-4" />
 
                   {/* Totals Row */}
-                  <div className="bg-gray-50 p-4 rounded-lg">
+                  <div className="bg-muted/30 p-4 rounded-lg border-t-2">
                     <Table>
                       <TableBody>
                         <TableRow className="font-bold text-lg">
@@ -385,10 +450,11 @@ export default function SupplierReportPage() {
                           <TableCell className="text-center">-</TableCell>
                           <TableCell className="text-center">-</TableCell>
                           <TableCell className="text-center">-</TableCell>
-                          <TableCell className="text-center">{formatCurrency(totals.totalAmount)}</TableCell>
                           <TableCell className="text-center">-</TableCell>
-                          <TableCell className="text-center text-green-600">{formatCurrency(totals.paidAmount)}</TableCell>
-                          <TableCell className="text-center text-red-600">{formatCurrency(totals.remainingAmount)}</TableCell>
+                          <TableCell className="text-center font-bold">{formatCurrencyDisplay(totals.totalAmount)}</TableCell>
+                          <TableCell className="text-center">-</TableCell>
+                          <TableCell className="text-center text-green-600 font-bold">{formatCurrencyDisplay(totals.paidAmount)}</TableCell>
+                          <TableCell className="text-center text-red-600 font-bold">{formatCurrencyDisplay(totals.remainingAmount)}</TableCell>
                         </TableRow>
                       </TableBody>
                     </Table>
@@ -414,7 +480,7 @@ export default function SupplierReportPage() {
       )}
 
       {/* Print Styles */}
-      <style jsx>{`
+      <style>{`
         @media print {
           @page {
             margin: 0.5in;
@@ -432,6 +498,25 @@ export default function SupplierReportPage() {
           .container {
             max-width: none !important;
             padding: 0 !important;
+          }
+        }
+        
+        /* Mobile responsiveness */
+        @media (max-width: 768px) {
+          .overflow-x-auto {
+            -webkit-overflow-scrolling: touch;
+          }
+          
+          .container {
+            padding: 0.5rem !important;
+          }
+          
+          table {
+            font-size: 0.875rem;
+          }
+          
+          th, td {
+            padding: 0.5rem !important;
           }
         }
       `}</style>
