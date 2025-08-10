@@ -676,7 +676,13 @@ export default function WorkersUnifiedReports() {
             <CardContent className="p-6">
               <EnhancedWorkerAccountStatement
                 data={reportData[0]}
-                selectedProject={selectedProject || { id: '', name: 'جميع المشاريع' }}
+                selectedProject={{
+                  id: singleWorkerProjectIds.length === 1 ? singleWorkerProjectIds[0] : '',
+                  name: singleWorkerProjectIds.length === 0 ? 'جميع المشاريع' :
+                        singleWorkerProjectIds.length === 1 ? 
+                        projects.find(p => p.id === singleWorkerProjectIds[0])?.name || 'غير محدد' :
+                        `${singleWorkerProjectIds.length} مشاريع محددة`
+                }}
                 workerId={selectedWorkerId}
                 dateFrom={dateFrom}
                 dateTo={dateTo}

@@ -57,6 +57,16 @@ export const EnhancedWorkerAccountStatement = ({
     transfers = [],
     summary = {}
   } = data || {};
+  
+  console.log('🔍 بيانات العامل في المكون:', {
+    worker,
+    workerName: worker.name,
+    workerType: worker.type,
+    dailyWage: worker.dailyWage,
+    attendanceCount: attendance.length,
+    selectedProject: selectedProject?.name,
+    dataStructure: data
+  });
 
   // حساب الإحصائيات
   const totalEarned = attendance.reduce((sum: number, record: any) => sum + (Number(record.dailyWage) || 0), 0);
@@ -612,13 +622,13 @@ export const EnhancedWorkerAccountStatement = ({
           fontSize: '8px'
         }}>
           <div style={{ flex: 1, textAlign: 'right' }}>
-            <strong>العامل:</strong> {worker.name || 'غير محدد'} | <strong>المهنة:</strong> {worker.type || 'عامل'} | <strong>الأجر:</strong> {formatCurrency(Number(worker.dailyWage) || 0)}
+            <strong>اسم العامل:</strong> {worker.name || 'غير محدد'} | <strong>المهنة:</strong> {worker.type || 'عامل'} | <strong>الأجر اليومي:</strong> {formatCurrency(Number(worker.dailyWage) || 0)}
           </div>
           <div style={{ flex: 1, textAlign: 'center' }}>
-            <strong>المشروع:</strong> {selectedProject?.name || 'جميع المشاريع'} | <strong>أيام العمل:</strong> {workingDays}
+            <strong>اسم المشروع:</strong> {selectedProject?.name || 'جميع المشاريع'} | <strong>إجمالي عدد أيام العمل:</strong> {workingDays}
           </div>
           <div style={{ flex: 1, textAlign: 'left' }}>
-            <strong>المستحق:</strong> <span style={{ color: '#dc2626' }}>{formatCurrency(totalEarned)}</span> | <strong>الرصيد:</strong> <span style={{ color: currentBalance >= 0 ? '#059669' : '#dc2626' }}>{formatCurrency(currentBalance)}</span>
+            <strong>إجمالي المستحقات:</strong> <span style={{ color: '#dc2626' }}>{formatCurrency(totalEarned)}</span> | <strong>إجمالي المتبقي في الرصيد:</strong> <span style={{ color: currentBalance >= 0 ? '#059669' : '#dc2626' }}>{formatCurrency(currentBalance)}</span>
           </div>
         </div>
 
@@ -651,7 +661,7 @@ export const EnhancedWorkerAccountStatement = ({
                 <th style={{ border: '1px solid #d1d5db', padding: '1.5mm', textAlign: 'center', fontWeight: 'bold', width: '30%' }}>وصف العمل</th>
                 <th style={{ border: '1px solid #d1d5db', padding: '1.5mm', textAlign: 'center', fontWeight: 'bold', width: '12%' }}>الساعات</th>
                 <th style={{ border: '1px solid #d1d5db', padding: '1.5mm', textAlign: 'center', fontWeight: 'bold', width: '12%' }}>المستحق</th>
-                <th style={{ border: '1px solid #d1d5db', padding: '1.5mm', textAlign: 'center', fontWeight: 'bold', width: '12%' }}>المدفوع</th>
+                <th style={{ border: '1px solid #d1d5db', padding: '1.5mm', textAlign: 'center', fontWeight: 'bold', width: '12%' }}>إجمالي المبالغ المستلم</th>
                 <th style={{ border: '1px solid #d1d5db', padding: '1.5mm', textAlign: 'center', fontWeight: 'bold', width: '11%' }}>الحالة</th>
               </tr>
             </thead>
@@ -720,7 +730,7 @@ export const EnhancedWorkerAccountStatement = ({
               backgroundColor: '#dc2626',
               borderRadius: '2mm 2mm 0 0'
             }}>
-              سجل التحويلات للأهل
+              الحولات
             </h3>
             
             <table style={{
@@ -758,7 +768,7 @@ export const EnhancedWorkerAccountStatement = ({
               <tfoot>
                 <tr style={{ backgroundColor: '#dc2626', color: 'white' }}>
                   <td style={{ border: '2px solid #b91c1c', padding: '2mm', textAlign: 'center', fontWeight: 'bold' }}>
-                    إجمالي المحول
+                    إجمالي الحولات
                   </td>
                   <td style={{ border: '2px solid #b91c1c', padding: '2mm', textAlign: 'center', fontWeight: 'bold' }}>
                     {formatCurrency(totalTransferred)}
@@ -797,17 +807,17 @@ export const EnhancedWorkerAccountStatement = ({
             fontSize: '8px'
           }}>
             <div style={{ flex: 1, textAlign: 'center' }}>
-              <strong>المكتسب:</strong> <span style={{ color: '#059669' }}>{formatCurrency(totalEarned)}</span>
+              <strong>إجمالي المستحقات:</strong> <span style={{ color: '#059669' }}>{formatCurrency(totalEarned)}</span>
             </div>
             <div style={{ flex: 1, textAlign: 'center' }}>
-              <strong>المدفوع:</strong> <span style={{ color: '#059669' }}>{formatCurrency(totalPaid)}</span>
+              <strong>إجمالي المبالغ المستلم:</strong> <span style={{ color: '#059669' }}>{formatCurrency(totalPaid)}</span>
             </div>
             <div style={{ flex: 1, textAlign: 'center' }}>
-              <strong>الرصيد:</strong> <span style={{ color: currentBalance >= 0 ? '#059669' : '#dc2626', fontWeight: 'bold' }}>{formatCurrency(currentBalance)}</span>
+              <strong>إجمالي المتبقي في الرصيد:</strong> <span style={{ color: currentBalance >= 0 ? '#059669' : '#dc2626', fontWeight: 'bold' }}>{formatCurrency(currentBalance)}</span>
             </div>
             {totalTransferred > 0 && (
               <div style={{ flex: 1, textAlign: 'center' }}>
-                <strong>محول للأهل:</strong> <span style={{ color: '#dc2626' }}>{formatCurrency(totalTransferred)}</span>
+                <strong>إجمالي الحولات:</strong> <span style={{ color: '#dc2626' }}>{formatCurrency(totalTransferred)}</span>
               </div>
             )}
           </div>
@@ -850,7 +860,7 @@ export const EnhancedWorkerAccountStatement = ({
                   backgroundColor: '#f9fafb',
                   textAlign: 'center'
                 }}>
-                  <p style={{ fontWeight: 'bold', marginBottom: '3mm' }}>توقيع المحاسب</p>
+                  <p style={{ fontWeight: 'bold', marginBottom: '3mm' }}>توقيع المهندس المشرف</p>
                   <div style={{ height: '6mm', borderBottom: '1px solid #6b7280', margin: '0 2mm' }}></div>
                   <p style={{ marginTop: '1mm', fontSize: '7px', color: '#6b7280' }}>التاريخ: ___________</p>
                 </div>
@@ -877,7 +887,7 @@ export const EnhancedWorkerAccountStatement = ({
                     textAlign: 'center',
                     width: '40%'
                   }}>
-                    <p style={{ margin: '0 0 2mm 0', fontWeight: 'bold' }}>توقيع المحاسب (صفحة 1)</p>
+                    <p style={{ margin: '0 0 2mm 0', fontWeight: 'bold' }}>توقيع المهندس المشرف (صفحة 1)</p>
                     <div style={{ height: '4mm', borderBottom: '1px solid #d1d5db' }}></div>
                   </div>
                 </div>
@@ -910,7 +920,7 @@ export const EnhancedWorkerAccountStatement = ({
                     backgroundColor: '#f9fafb',
                     textAlign: 'center'
                   }}>
-                    <p style={{ fontWeight: 'bold', marginBottom: '3mm' }}>توقيع المحاسب النهائي</p>
+                    <p style={{ fontWeight: 'bold', marginBottom: '3mm' }}>توقيع المهندس المشرف النهائي</p>
                     <div style={{ height: '6mm', borderBottom: '1px solid #6b7280', margin: '0 2mm' }}></div>
                     <p style={{ marginTop: '1mm', fontSize: '7px', color: '#6b7280' }}>التاريخ: ___________</p>
                   </div>
