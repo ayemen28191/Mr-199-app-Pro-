@@ -385,7 +385,7 @@ export const EnhancedWorkerAccountStatement = ({
             
             @page {
               size: A4;
-              margin: 1.5cm 1cm;
+              margin: 0.8cm 0.6cm;
             }
           </style>
         </head>
@@ -444,97 +444,82 @@ export const EnhancedWorkerAccountStatement = ({
           width: '210mm',
           minHeight: '297mm',
           margin: '0 auto',
-          padding: '8mm',
+          padding: '4mm',
           fontFamily: '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
-          fontSize: '9px',
-          lineHeight: '1.2',
+          fontSize: '10px',
+          lineHeight: '1.3',
           color: '#1a1a1a',
           background: 'white',
           pageBreakAfter: 'avoid'
         }}
       >
         
-        {/* رأسية مهنية مضغوطة */}
+        {/* رأسية مهنية مضغوطة ومحسنة */}
         <div style={{
           textAlign: 'center',
-          marginBottom: '6mm',
-          borderBottom: '2px solid #1e40af',
-          paddingBottom: '4mm'
+          marginBottom: '3mm',
+          borderBottom: '1px solid #1e40af',
+          paddingBottom: '2mm'
         }}>
           <h1 style={{
-            fontSize: '14px',
+            fontSize: '12px',
             fontWeight: 'bold',
             color: '#1e40af',
-            margin: '0 0 2mm 0'
+            margin: '0 0 1mm 0'
           }}>
             شركة الحاج عبدالرحمن علي الجهني وأولاده
           </h1>
           <h2 style={{
-            fontSize: '11px',
+            fontSize: '10px',
             fontWeight: '600',
             color: '#374151',
-            margin: '0'
+            margin: '0 0 1mm 0'
           }}>
             كشف حساب العامل التفصيلي والشامل
           </h2>
           <p style={{
-            fontSize: '8px',
+            fontSize: '7px',
             color: '#6b7280',
-            margin: '1mm 0 0 0'
+            margin: '0'
           }}>
             الفترة: من {formatDate(dateFrom)} إلى {formatDate(dateTo)} | تاريخ الكشف: {formatDate(new Date().toISOString().split('T')[0])}
           </p>
         </div>
 
-        {/* بيانات العامل والمشروع - تخطيط محسن */}
+        {/* بيانات العامل والمشروع - تخطيط مضغوط ومحسن */}
         <div style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr 1fr',
-          gap: '4mm',
-          marginBottom: '6mm',
-          padding: '3mm',
+          display: 'flex',
+          justifyContent: 'space-between',
+          gap: '2mm',
+          marginBottom: '3mm',
+          padding: '2mm',
           backgroundColor: '#f8fafc',
           border: '1px solid #e2e8f0',
-          borderRadius: '2mm'
+          borderRadius: '1mm',
+          fontSize: '8px'
         }}>
-          <div style={{ textAlign: 'center' }}>
-            <h4 style={{ fontSize: '9px', fontWeight: 'bold', color: '#1f2937', marginBottom: '1mm' }}>بيانات العامل</h4>
-            <p style={{ fontSize: '8px', margin: '0.5mm 0' }}><strong>الاسم:</strong> {worker.name || 'غير محدد'}</p>
-            <p style={{ fontSize: '8px', margin: '0.5mm 0' }}><strong>المهنة:</strong> {worker.type || 'عامل'}</p>
-            <p style={{ fontSize: '8px', margin: '0.5mm 0' }}><strong>الأجر اليومي:</strong> {formatCurrency(Number(worker.dailyWage) || 0)}</p>
-            <p style={{ fontSize: '8px', margin: '0.5mm 0' }}><strong>الهاتف:</strong> {worker.phone || 'غير محدد'}</p>
+          <div style={{ flex: 1, textAlign: 'right' }}>
+            <strong>العامل:</strong> {worker.name || 'غير محدد'} | <strong>المهنة:</strong> {worker.type || 'عامل'} | <strong>الأجر:</strong> {formatCurrency(Number(worker.dailyWage) || 0)}
           </div>
-
-          <div style={{ textAlign: 'center' }}>
-            <h4 style={{ fontSize: '9px', fontWeight: 'bold', color: '#1f2937', marginBottom: '1mm' }}>الملخص المالي</h4>
-            <p style={{ fontSize: '8px', margin: '0.5mm 0', color: '#059669' }}><strong>إجمالي العمل:</strong> {workingDays} يوم</p>
-            <p style={{ fontSize: '8px', margin: '0.5mm 0', color: '#dc2626' }}><strong>إجمالي مستحق:</strong> {formatCurrency(totalEarned)}</p>
-            <p style={{ fontSize: '8px', margin: '0.5mm 0', color: '#059669' }}><strong>إجمالي مدفوع:</strong> {formatCurrency(totalPaid)}</p>
-            <p style={{ fontSize: '8px', margin: '0.5mm 0', color: remainingDue > 0 ? '#dc2626' : '#059669' }}><strong>المتبقي:</strong> {formatCurrency(remainingDue)}</p>
+          <div style={{ flex: 1, textAlign: 'center' }}>
+            <strong>المشروع:</strong> {selectedProject?.name || 'جميع المشاريع'} | <strong>أيام العمل:</strong> {workingDays}
           </div>
-
-          <div style={{ textAlign: 'center' }}>
-            <h4 style={{ fontSize: '9px', fontWeight: 'bold', color: '#1f2937', marginBottom: '1mm' }}>بيانات العمل</h4>
-            <p style={{ fontSize: '8px', margin: '0.5mm 0' }}><strong>المشروع:</strong> {selectedProject?.name || 'جميع المشاريع'}</p>
-            <p style={{ fontSize: '8px', margin: '0.5mm 0' }}><strong>فترة الكشف:</strong> {workingDays} أيام</p>
-            <p style={{ fontSize: '8px', margin: '0.5mm 0', color: currentBalance >= 0 ? '#059669' : '#dc2626' }}><strong>الرصيد الحالي:</strong> {formatCurrency(currentBalance)}</p>
-            {totalTransferred > 0 && (
-              <p style={{ fontSize: '8px', margin: '0.5mm 0', color: '#7c3aed' }}><strong>محول للأهل:</strong> {formatCurrency(totalTransferred)}</p>
-            )}
+          <div style={{ flex: 1, textAlign: 'left' }}>
+            <strong>المستحق:</strong> <span style={{ color: '#dc2626' }}>{formatCurrency(totalEarned)}</span> | <strong>الرصيد:</strong> <span style={{ color: currentBalance >= 0 ? '#059669' : '#dc2626' }}>{formatCurrency(currentBalance)}</span>
           </div>
         </div>
 
-        {/* جدول الحضور المفصل - احترافي ومضغوط */}
-        <div style={{ marginBottom: '4mm' }}>
+        {/* جدول الحضور المفصل - احترافي ومضغوط ومحسن */}
+        <div style={{ marginBottom: '2mm' }}>
           <h3 style={{
-            fontSize: '10px',
+            fontSize: '9px',
             fontWeight: 'bold',
             color: 'white',
-            marginBottom: '2mm',
+            marginBottom: '1mm',
             textAlign: 'center',
-            padding: '2mm',
+            padding: '1.5mm',
             backgroundColor: '#3b82f6',
-            borderRadius: '2mm 2mm 0 0'
+            borderRadius: '1mm 1mm 0 0'
           }}>
             سجل الحضور والأجور التفصيلي
           </h3>
@@ -542,19 +527,19 @@ export const EnhancedWorkerAccountStatement = ({
           <table style={{
             width: '100%',
             borderCollapse: 'collapse',
-            fontSize: '7px',
+            fontSize: '8px',
             border: '1px solid #d1d5db'
           }}>
             <thead>
               <tr style={{ backgroundColor: '#f3f4f6' }}>
-                <th style={{ border: '1px solid #d1d5db', padding: '2mm', textAlign: 'center', fontWeight: 'bold' }}>م</th>
-                <th style={{ border: '1px solid #d1d5db', padding: '2mm', textAlign: 'center', fontWeight: 'bold' }}>التاريخ</th>
-                <th style={{ border: '1px solid #d1d5db', padding: '2mm', textAlign: 'center', fontWeight: 'bold' }}>اليوم</th>
-                <th style={{ border: '1px solid #d1d5db', padding: '2mm', textAlign: 'center', fontWeight: 'bold' }}>وصف العمل</th>
-                <th style={{ border: '1px solid #d1d5db', padding: '2mm', textAlign: 'center', fontWeight: 'bold' }}>الساعات</th>
-                <th style={{ border: '1px solid #d1d5db', padding: '2mm', textAlign: 'center', fontWeight: 'bold' }}>المستحق</th>
-                <th style={{ border: '1px solid #d1d5db', padding: '2mm', textAlign: 'center', fontWeight: 'bold' }}>المدفوع</th>
-                <th style={{ border: '1px solid #d1d5db', padding: '2mm', textAlign: 'center', fontWeight: 'bold' }}>الحالة</th>
+                <th style={{ border: '1px solid #d1d5db', padding: '1.5mm', textAlign: 'center', fontWeight: 'bold', width: '6%' }}>م</th>
+                <th style={{ border: '1px solid #d1d5db', padding: '1.5mm', textAlign: 'center', fontWeight: 'bold', width: '12%' }}>التاريخ</th>
+                <th style={{ border: '1px solid #d1d5db', padding: '1.5mm', textAlign: 'center', fontWeight: 'bold', width: '10%' }}>اليوم</th>
+                <th style={{ border: '1px solid #d1d5db', padding: '1.5mm', textAlign: 'center', fontWeight: 'bold', width: '30%' }}>وصف العمل</th>
+                <th style={{ border: '1px solid #d1d5db', padding: '1.5mm', textAlign: 'center', fontWeight: 'bold', width: '12%' }}>الساعات</th>
+                <th style={{ border: '1px solid #d1d5db', padding: '1.5mm', textAlign: 'center', fontWeight: 'bold', width: '12%' }}>المستحق</th>
+                <th style={{ border: '1px solid #d1d5db', padding: '1.5mm', textAlign: 'center', fontWeight: 'bold', width: '12%' }}>المدفوع</th>
+                <th style={{ border: '1px solid #d1d5db', padding: '1.5mm', textAlign: 'center', fontWeight: 'bold', width: '11%' }}>الحالة</th>
               </tr>
             </thead>
             <tbody>
@@ -568,22 +553,22 @@ export const EnhancedWorkerAccountStatement = ({
                 
                 return (
                   <tr key={index} style={{ backgroundColor: index % 2 === 0 ? '#ffffff' : '#f9fafb' }}>
-                    <td style={{ border: '1px solid #d1d5db', padding: '1.5mm', textAlign: 'center' }}>{index + 1}</td>
-                    <td style={{ border: '1px solid #d1d5db', padding: '1.5mm', textAlign: 'center' }}>{formatDate(record.date)}</td>
-                    <td style={{ border: '1px solid #d1d5db', padding: '1.5mm', textAlign: 'center' }}>{formatDay(record.date)}</td>
-                    <td style={{ border: '1px solid #d1d5db', padding: '1.5mm', textAlign: 'right' }}>
+                    <td style={{ border: '1px solid #d1d5db', padding: '1mm', textAlign: 'center', fontSize: '7px' }}>{index + 1}</td>
+                    <td style={{ border: '1px solid #d1d5db', padding: '1mm', textAlign: 'center', fontSize: '7px' }}>{formatDate(record.date)}</td>
+                    <td style={{ border: '1px solid #d1d5db', padding: '1mm', textAlign: 'center', fontSize: '7px' }}>{formatDay(record.date)}</td>
+                    <td style={{ border: '1px solid #d1d5db', padding: '1mm', textAlign: 'right', fontSize: '7px' }}>
                       {record.workDescription || 'عمل يومي حسب متطلبات المشروع'}
                     </td>
-                    <td style={{ border: '1px solid #d1d5db', padding: '1.5mm', textAlign: 'center' }}>
-                      {record.startTime && record.endTime ? `${record.startTime}-${record.endTime}` : '8 ساعات'}
+                    <td style={{ border: '1px solid #d1d5db', padding: '1mm', textAlign: 'center', fontSize: '7px' }}>
+                      {record.startTime && record.endTime ? `${record.startTime}-${record.endTime}` : '8س'}
                     </td>
-                    <td style={{ border: '1px solid #d1d5db', padding: '1.5mm', textAlign: 'center', fontWeight: 'bold' }}>
+                    <td style={{ border: '1px solid #d1d5db', padding: '1mm', textAlign: 'center', fontWeight: 'bold', fontSize: '7px' }}>
                       {formatCurrency(dailyWageAmount)}
                     </td>
-                    <td style={{ border: '1px solid #d1d5db', padding: '1.5mm', textAlign: 'center', fontWeight: 'bold', color: '#059669' }}>
+                    <td style={{ border: '1px solid #d1d5db', padding: '1mm', textAlign: 'center', fontWeight: 'bold', color: '#059669', fontSize: '7px' }}>
                       {formatCurrency(paidAmount)}
                     </td>
-                    <td style={{ border: '1px solid #d1d5db', padding: '1.5mm', textAlign: 'center', fontWeight: 'bold', color: statusColor }}>
+                    <td style={{ border: '1px solid #d1d5db', padding: '1mm', textAlign: 'center', fontWeight: 'bold', color: statusColor, fontSize: '7px' }}>
                       {status}
                     </td>
                   </tr>
@@ -592,16 +577,16 @@ export const EnhancedWorkerAccountStatement = ({
             </tbody>
             <tfoot>
               <tr style={{ backgroundColor: '#10b981', color: 'white' }}>
-                <td colSpan={5} style={{ border: '2px solid #059669', padding: '2mm', textAlign: 'center', fontWeight: 'bold' }}>
+                <td colSpan={5} style={{ border: '2px solid #059669', padding: '1.5mm', textAlign: 'center', fontWeight: 'bold', fontSize: '8px' }}>
                   الإجماليات
                 </td>
-                <td style={{ border: '2px solid #059669', padding: '2mm', textAlign: 'center', fontWeight: 'bold' }}>
+                <td style={{ border: '2px solid #059669', padding: '1.5mm', textAlign: 'center', fontWeight: 'bold', fontSize: '8px' }}>
                   {formatCurrency(totalEarned)}
                 </td>
-                <td style={{ border: '2px solid #059669', padding: '2mm', textAlign: 'center', fontWeight: 'bold' }}>
+                <td style={{ border: '2px solid #059669', padding: '1.5mm', textAlign: 'center', fontWeight: 'bold', fontSize: '8px' }}>
                   {formatCurrency(totalPaid)}
                 </td>
-                <td style={{ border: '2px solid #059669', padding: '2mm', textAlign: 'center', fontWeight: 'bold' }}>
+                <td style={{ border: '2px solid #059669', padding: '1.5mm', textAlign: 'center', fontWeight: 'bold', fontSize: '8px' }}>
                   {totalEarned > 0 ? Math.round((totalPaid / totalEarned) * 100) + '%' : '0%'}
                 </td>
               </tr>
@@ -674,111 +659,164 @@ export const EnhancedWorkerAccountStatement = ({
           </div>
         )}
 
-        {/* الملخص النهائي */}
+        {/* الملخص النهائي - مضغوط */}
         <div style={{
-          marginTop: '4mm',
-          padding: '3mm',
+          marginTop: '2mm',
+          padding: '2mm',
           backgroundColor: '#f0f9ff',
-          border: '2px solid #0ea5e9',
-          borderRadius: '2mm'
+          border: '1px solid #0ea5e9',
+          borderRadius: '1mm'
         }}>
           <h3 style={{ 
-            fontSize: '11px', 
+            fontSize: '9px', 
             fontWeight: 'bold', 
             color: '#0c4a6e', 
             textAlign: 'center', 
-            marginBottom: '2mm' 
+            marginBottom: '1mm' 
           }}>
             الملخص المالي النهائي
           </h3>
           
           <div style={{
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
+            display: 'flex',
+            justifyContent: 'space-between',
             gap: '2mm',
-            fontSize: '9px'
+            fontSize: '8px'
           }}>
-            <div>
-              <p style={{ margin: '1mm 0', padding: '1mm', backgroundColor: 'white', borderRadius: '1mm' }}>
-                <strong>إجمالي المكتسب:</strong> <span style={{ color: '#059669' }}>{formatCurrency(totalEarned)}</span>
-              </p>
-              <p style={{ margin: '1mm 0', padding: '1mm', backgroundColor: 'white', borderRadius: '1mm' }}>
-                <strong>إجمالي المدفوع:</strong> <span style={{ color: '#059669' }}>{formatCurrency(totalPaid)}</span>
-              </p>
-              <p style={{ margin: '1mm 0', padding: '1mm', backgroundColor: 'white', borderRadius: '1mm' }}>
-                <strong>إجمالي المحول للأهل:</strong> <span style={{ color: '#dc2626' }}>{formatCurrency(totalTransferred)}</span>
-              </p>
+            <div style={{ flex: 1, textAlign: 'center' }}>
+              <strong>المكتسب:</strong> <span style={{ color: '#059669' }}>{formatCurrency(totalEarned)}</span>
             </div>
-            <div>
-              <p style={{ 
-                margin: '1mm 0', 
-                padding: '1mm', 
-                backgroundColor: currentBalance >= 0 ? '#dcfce7' : '#fef2f2', 
-                borderRadius: '1mm',
-                border: currentBalance >= 0 ? '1px solid #16a34a' : '1px solid #dc2626'
-              }}>
-                <strong>الرصيد الحالي:</strong> 
-                <span style={{ color: currentBalance >= 0 ? '#059669' : '#dc2626', fontWeight: 'bold' }}>
-                  {formatCurrency(currentBalance)}
-                </span>
-              </p>
-              <p style={{ 
-                margin: '1mm 0', 
-                padding: '1mm', 
-                backgroundColor: remainingDue <= 0 ? '#dcfce7' : '#fef2f2', 
-                borderRadius: '1mm',
-                border: remainingDue <= 0 ? '1px solid #16a34a' : '1px solid #dc2626'
-              }}>
-                <strong>المتبقي في الذمة:</strong> 
-                <span style={{ color: remainingDue <= 0 ? '#059669' : '#dc2626', fontWeight: 'bold' }}>
-                  {formatCurrency(remainingDue)}
-                </span>
-              </p>
+            <div style={{ flex: 1, textAlign: 'center' }}>
+              <strong>المدفوع:</strong> <span style={{ color: '#059669' }}>{formatCurrency(totalPaid)}</span>
             </div>
+            <div style={{ flex: 1, textAlign: 'center' }}>
+              <strong>الرصيد:</strong> <span style={{ color: currentBalance >= 0 ? '#059669' : '#dc2626', fontWeight: 'bold' }}>{formatCurrency(currentBalance)}</span>
+            </div>
+            {totalTransferred > 0 && (
+              <div style={{ flex: 1, textAlign: 'center' }}>
+                <strong>محول للأهل:</strong> <span style={{ color: '#dc2626' }}>{formatCurrency(totalTransferred)}</span>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* التوقيعات والملاحظات */}
-        <div style={{
-          marginTop: '6mm',
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr',
-          gap: '4mm',
-          fontSize: '8px'
-        }}>
-          <div style={{
-            padding: '2mm',
-            border: '1px solid #d1d5db',
-            borderRadius: '2mm',
-            backgroundColor: '#f9fafb'
-          }}>
-            <p style={{ fontWeight: 'bold', marginBottom: '4mm' }}>توقيع العامل:</p>
-            <div style={{ height: '8mm', borderBottom: '1px solid #6b7280' }}></div>
-            <p style={{ marginTop: '1mm', fontSize: '7px', color: '#6b7280' }}>التاريخ: ___________</p>
-          </div>
-          <div style={{
-            padding: '2mm',
-            border: '1px solid #d1d5db',
-            borderRadius: '2mm',
-            backgroundColor: '#f9fafb'
-          }}>
-            <p style={{ fontWeight: 'bold', marginBottom: '4mm' }}>توقيع المحاسب:</p>
-            <div style={{ height: '8mm', borderBottom: '1px solid #6b7280' }}></div>
-            <p style={{ marginTop: '1mm', fontSize: '7px', color: '#6b7280' }}>التاريخ: ___________</p>
-          </div>
-        </div>
+{/* نظام التوقيعات الذكي - يتكيف مع عدد الصفحات */}
+        {(() => {
+          // حساب عدد السجلات التقريبي في الصفحة الواحدة
+          const recordsPerPage = 25; // عدد السجلات التي تتسع في الصفحة الواحدة
+          const totalRecords = attendance.length + (transfers.length > 0 ? transfers.length + 2 : 0); // +2 للعنوان والإجماليات
+          const willSpanMultiplePages = totalRecords > recordsPerPage;
+          
+          if (!willSpanMultiplePages) {
+            // التوقيعات للصفحة الواحدة
+            return (
+              <div style={{
+                marginTop: '4mm',
+                display: 'flex',
+                justifyContent: 'space-between',
+                gap: '4mm',
+                fontSize: '8px'
+              }}>
+                <div style={{
+                  flex: 1,
+                  padding: '2mm',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '1mm',
+                  backgroundColor: '#f9fafb',
+                  textAlign: 'center'
+                }}>
+                  <p style={{ fontWeight: 'bold', marginBottom: '3mm' }}>توقيع العامل</p>
+                  <div style={{ height: '6mm', borderBottom: '1px solid #6b7280', margin: '0 2mm' }}></div>
+                  <p style={{ marginTop: '1mm', fontSize: '7px', color: '#6b7280' }}>التاريخ: ___________</p>
+                </div>
+                <div style={{
+                  flex: 1,
+                  padding: '2mm',
+                  border: '1px solid #d1d5db',
+                  borderRadius: '1mm',
+                  backgroundColor: '#f9fafb',
+                  textAlign: 'center'
+                }}>
+                  <p style={{ fontWeight: 'bold', marginBottom: '3mm' }}>توقيع المحاسب</p>
+                  <div style={{ height: '6mm', borderBottom: '1px solid #6b7280', margin: '0 2mm' }}></div>
+                  <p style={{ marginTop: '1mm', fontSize: '7px', color: '#6b7280' }}>التاريخ: ___________</p>
+                </div>
+              </div>
+            );
+          } else {
+            // توقيعات للصفحات المتعددة - توقيع في نهاية كل صفحة
+            return (
+              <>
+                {/* توقيع نهاية الصفحة الأولى */}
+                <div style={{
+                  marginTop: '2mm',
+                  pageBreakAfter: 'always',
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  fontSize: '7px',
+                  color: '#6b7280'
+                }}>
+                  <div style={{
+                    padding: '1mm',
+                    border: '1px solid #e5e7eb',
+                    borderRadius: '1mm',
+                    backgroundColor: '#f9fafb',
+                    textAlign: 'center',
+                    width: '40%'
+                  }}>
+                    <p style={{ margin: '0 0 2mm 0', fontWeight: 'bold' }}>توقيع المحاسب (صفحة 1)</p>
+                    <div style={{ height: '4mm', borderBottom: '1px solid #d1d5db' }}></div>
+                  </div>
+                </div>
+                
+                {/* توقيعات نهاية التقرير - الصفحة الأخيرة */}
+                <div style={{
+                  marginTop: '4mm',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  gap: '4mm',
+                  fontSize: '8px'
+                }}>
+                  <div style={{
+                    flex: 1,
+                    padding: '2mm',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '1mm',
+                    backgroundColor: '#f9fafb',
+                    textAlign: 'center'
+                  }}>
+                    <p style={{ fontWeight: 'bold', marginBottom: '3mm' }}>توقيع العامل</p>
+                    <div style={{ height: '6mm', borderBottom: '1px solid #6b7280', margin: '0 2mm' }}></div>
+                    <p style={{ marginTop: '1mm', fontSize: '7px', color: '#6b7280' }}>التاريخ: ___________</p>
+                  </div>
+                  <div style={{
+                    flex: 1,
+                    padding: '2mm',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '1mm',
+                    backgroundColor: '#f9fafb',
+                    textAlign: 'center'
+                  }}>
+                    <p style={{ fontWeight: 'bold', marginBottom: '3mm' }}>توقيع المحاسب النهائي</p>
+                    <div style={{ height: '6mm', borderBottom: '1px solid #6b7280', margin: '0 2mm' }}></div>
+                    <p style={{ marginTop: '1mm', fontSize: '7px', color: '#6b7280' }}>التاريخ: ___________</p>
+                  </div>
+                </div>
+              </>
+            );
+          }
+        })()}
 
-        {/* تذييل مهني */}
+        {/* تذييل مهني مضغوط */}
         <div style={{
-          marginTop: '4mm',
+          marginTop: '2mm',
           textAlign: 'center',
-          fontSize: '7px',
+          fontSize: '6px',
           color: '#6b7280',
           borderTop: '1px solid #e5e7eb',
-          paddingTop: '2mm'
+          paddingTop: '1mm'
         }}>
-          <p style={{margin: '1mm 0 0 0'}}>هذا الكشف صادر من نظام إدارة المشاريع الإنشائية</p>
-          <p style={{margin: '1mm 0 0 0'}}>للاستفسارات والمراجعات يرجى التواصل مع قسم المحاسبة</p>
+          <p style={{margin: '0'}}>نظام إدارة المشاريع الإنشائية | للاستفسارات والمراجعات يرجى التواصل مع قسم المحاسبة</p>
         </div>
       </div>
     </div>

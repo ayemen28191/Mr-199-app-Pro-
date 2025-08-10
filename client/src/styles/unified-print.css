@@ -3,10 +3,10 @@
    جميع التقارير والكشوف
    =============================== */
 
-/* إعدادات الصفحة الأساسية */
+/* إعدادات الصفحة الأساسية - مضغوطة ومحسنة */
 @page {
   size: A4 portrait;
-  margin: 15mm;
+  margin: 8mm 6mm;
 }
 
 /* إعدادات الطباعة العامة */
@@ -46,8 +46,8 @@
     padding: 0 !important;
     background: white !important;
     font-family: 'Arial', 'Segoe UI', sans-serif !important;
-    font-size: 12px !important;
-    line-height: 1.4 !important;
+    font-size: 11px !important;
+    line-height: 1.3 !important;
     color: #000 !important;
     direction: rtl !important;
     text-align: right !important;
@@ -247,27 +247,53 @@
     }
   }
 
-  /* تحسينات لكشف حساب العامل */
+  /* تحسينات لكشف حساب العامل - محسنة ومضغوطة */
+  .enhanced-worker-statement-print,
   .enhanced-worker-account-statement {
-    font-size: 11px !important;
+    font-size: 10px !important;
     line-height: 1.3 !important;
   }
 
+  .enhanced-worker-statement-print .statement-header,
   .enhanced-worker-account-statement .statement-header {
-    margin-bottom: 15px !important;
+    margin-bottom: 8px !important;
     text-align: center !important;
-    border-bottom: 2px solid #1e40af !important;
-    padding-bottom: 10px !important;
+    border-bottom: 1px solid #1e40af !important;
+    padding-bottom: 4px !important;
   }
 
+  .enhanced-worker-statement-print table th,
   .enhanced-worker-account-statement .enhanced-summary-table th {
-    font-size: 11px !important;
-    padding: 8px 4px !important;
+    font-size: 8px !important;
+    padding: 1.5mm !important;
   }
 
+  .enhanced-worker-statement-print table td,
   .enhanced-worker-account-statement .enhanced-summary-table td {
-    font-size: 10px !important;
-    padding: 6px 4px !important;
+    font-size: 7px !important;
+    padding: 1mm !important;
+  }
+
+  /* نظام كسر الصفحات الذكي */
+  .enhanced-worker-statement-print {
+    page-break-inside: avoid !important;
+  }
+
+  .enhanced-worker-statement-print table {
+    page-break-inside: auto !important;
+  }
+
+  .enhanced-worker-statement-print tr {
+    page-break-inside: avoid !important;
+    page-break-after: auto !important;
+  }
+
+  .enhanced-worker-statement-print thead {
+    display: table-header-group !important;
+  }
+
+  .enhanced-worker-statement-print tfoot {
+    display: table-footer-group !important;
   }
 
   /* تحسينات للتقرير اليومي */
