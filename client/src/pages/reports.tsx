@@ -33,6 +33,7 @@ import { printWithSettings, usePrintSettings } from "@/hooks/usePrintSettings";
 import { AdvancedProgressIndicator, useProgressSteps, type ProgressStep } from "@/components/AdvancedProgressIndicator";
 import { EnhancedErrorDisplay, FieldValidationDisplay, transformValidationErrors } from "@/components/EnhancedErrorDisplay";
 import { useWorkersSettlementValidation } from "@/hooks/useWorkersSettlementValidation";
+import { UnifiedExcelExporter } from "@/components/unified-excel-exporter";
 import "@/components/print-styles.css";
 import "@/components/invoice-print-styles.css";
 import "@/components/professional-report-print.css";
@@ -48,6 +49,11 @@ export default function Reports() {
   // Fetch real statistics data
   const { data: projectsWithStats = [] } = useQuery<any[]>({
     queryKey: ["/api/projects/with-stats"],
+  });
+
+  // Fetch active report template for Excel export
+  const { data: activeTemplate } = useQuery({
+    queryKey: ["/api/report-templates/active"],
   });
   
   // Report form states
@@ -627,7 +633,7 @@ export default function Reports() {
     }
   };
 
-  // Export Functions
+  // Export Functions with Template Settings
   const exportToExcel = async (data: any, filename: string) => {
     if (!data) {
       toast({
@@ -639,21 +645,26 @@ export default function Reports() {
     }
     
     try {
+      console.log('🎨 استخدام إعدادات القالب الحديثة للتصدير:', activeTemplate);
+      
+      // إنشاء مُصدّر Excel مع إعدادات القالب المحدثة
+      const exporter = new UnifiedExcelExporter(activeTemplate);
+      
       // تحديد نوع التقرير وإنشاء Excel مناسب
       if (activeReportType === 'daily' || activeReportType === 'professional') {
-        await exportDailyReportToExcel(data, filename);
+        await exportDailyReportWithTemplate(exporter, data, filename);
       } else if (activeReportType === 'worker') {
-        await exportWorkerReportToExcel(data, filename);
+        await exportWorkerReportWithTemplate(exporter, data, filename);
       } else if (activeReportType === 'workers_settlement') {
-        await exportWorkersSettlementToExcel(data, filename);
+        await exportWorkersSettlementWithTemplate(exporter, data, filename);
       } else {
         // تصدير عام للبيانات الأخرى
-        await exportGenericDataToExcel(data, filename);
+        await exportGenericDataWithTemplate(exporter, data, filename);
       }
       
       toast({
         title: "تم التصدير",
-        description: "تم تصدير التقرير إلى Excel بنجاح",
+        description: "تم تصدير التقرير إلى Excel بنجاح مع إعدادات القالب المحدثة",
       });
     } catch (error) {
       console.error('خطأ في التصدير:', error);
@@ -663,6 +674,93 @@ export default function Reports() {
         variant: "destructive",
       });
     }
+  };
+
+  // دوال التصدير الجديدة باستخدام إعدادات القوالب المحدثة
+  const exportDailyReportWithTemplate = async (exporter: UnifiedExcelExporter, data: any, filename: string) => {
+    const selectedProject = projects.find(p => p.id === selectedProjectId);
+    
+    const excelData = {
+      headers: ['البند', 'المبلغ', 'الملاحظات'],
+      rows: [
+        ['تحويلات العهدة', formatCurrency(data.trustTransfers || 0), ''],
+        ['أجور العمال', formatCurrency(data.totalWages || 0), ''],
+        ['المشتريات', formatCurrency(data.totalPurchases || 0), ''],
+        ['النقل', formatCurrency(data.transportation || 0), ''],
+        ['مصاريف متنوعة', formatCurrency(data.miscellaneous || 0), ''],
+        ['المهندسين', formatCurrency(data.engineers || 0), ''],
+      ],
+      title: `التقرير اليومي - ${selectedProject?.name || 'غير محدد'}`,
+      subtitle: `التاريخ: ${dailyReportDate}`,
+      summary: [
+        { label: 'إجمالي الدخل', value: formatCurrency(data.totalIncome || 0) },
+        { label: 'إجمالي المصاريف', value: formatCurrency(data.totalExpenses || 0) },
+        { label: 'الرصيد', value: formatCurrency((data.totalIncome || 0) - (data.totalExpenses || 0)) }
+      ]
+    };
+
+    await exporter.exportToExcel(excelData, filename);
+  };
+
+  const exportWorkerReportWithTemplate = async (exporter: UnifiedExcelExporter, data: any, filename: string) => {
+    const worker = workers.find(w => w.id === selectedWorkerId);
+    
+    const excelData = {
+      headers: ['التاريخ', 'الحضور', 'الأجر المستحق', 'المبلغ المدفوع', 'المتبقي'],
+      rows: data.attendance?.map((record: any) => [
+        formatDate(record.date),
+        record.present ? 'حاضر' : 'غائب',
+        formatCurrency(record.dailyWage || 0),
+        formatCurrency(record.paidAmount || 0),
+        formatCurrency((record.dailyWage || 0) - (record.paidAmount || 0))
+      ]) || [],
+      title: `كشف حساب العامل - ${worker?.name || 'غير محدد'}`,
+      subtitle: `الفترة: ${workerAccountDate1} إلى ${workerAccountDate2}`,
+      summary: [
+        { label: 'إجمالي الأجور المستحقة', value: formatCurrency(data.totalEarned || 0) },
+        { label: 'إجمالي المدفوع', value: formatCurrency(data.totalPaid || 0) },
+        { label: 'الرصيد المتبقي', value: formatCurrency((data.totalEarned || 0) - (data.totalPaid || 0)) }
+      ]
+    };
+
+    await exporter.exportToExcel(excelData, filename);
+  };
+
+  const exportWorkersSettlementWithTemplate = async (exporter: UnifiedExcelExporter, data: any, filename: string) => {
+    const excelData = {
+      headers: ['العامل', 'أيام العمل', 'إجمالي المستحق', 'إجمالي المدفوع', 'حوالات الأهل', 'الرصيد النهائي'],
+      rows: data.workers?.map((worker: any) => [
+        worker.worker_name,
+        worker.total_work_days.toFixed(1),
+        formatCurrency(worker.total_earned),
+        formatCurrency(worker.total_paid),
+        formatCurrency(worker.family_transfers),
+        formatCurrency(worker.final_balance)
+      ]) || [],
+      title: 'تقرير تصفية العمال',
+      subtitle: `${data.projects?.map((p: any) => p.name).join(', ') || 'مشاريع متعددة'}`,
+      summary: [
+        { label: 'إجمالي العمال', value: data.totals?.total_workers || 0 },
+        { label: 'إجمالي أيام العمل', value: data.totals?.total_work_days?.toFixed(1) || '0' },
+        { label: 'إجمالي المستحق', value: formatCurrency(data.totals?.total_earned || 0) },
+        { label: 'إجمالي المدفوع', value: formatCurrency(data.totals?.total_paid || 0) },
+        { label: 'الرصيد الإجمالي', value: formatCurrency(data.totals?.total_final_balance || 0) }
+      ]
+    };
+
+    await exporter.exportToExcel(excelData, filename);
+  };
+
+  const exportGenericDataWithTemplate = async (exporter: UnifiedExcelExporter, data: any, filename: string) => {
+    // تصدير عام للبيانات الأخرى
+    const excelData = {
+      headers: Object.keys(data).length > 0 ? Object.keys(data) : ['البيانات'],
+      rows: [Object.values(data)],
+      title: 'تقرير عام',
+      subtitle: `تاريخ الإنشاء: ${new Date().toLocaleDateString('ar')}`
+    };
+
+    await exporter.exportToExcel(excelData, filename);
   };
 
   const exportDailyReportToExcel = async (data: any, filename: string) => {
