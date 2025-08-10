@@ -1,20 +1,21 @@
 import { useState, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Printer, FileSpreadsheet, User, Building2, Calendar, Download } from "lucide-react";
+import { ArrowRight, User, Building2, Calendar, DollarSign, UserCheck, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { useSelectedProject } from "@/hooks/use-selected-project";
 import { useToast } from "@/hooks/use-toast";
 import { formatCurrency, formatDate, getCurrentDate } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
-import { EnhancedWorkerAccountStatement } from "@/components/EnhancedWorkerAccountStatement";
+import { UnifiedReportTemplate, SummaryCard, UnifiedTable } from "@/components/unified-report-template";
+import { addToExcelWithTemplate } from "@/components/excel-export-utils";
 import type { Worker, Project, WorkerAttendance, WorkerTransfer } from "@shared/schema";
 import * as ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
-import "@/styles/unified-print.css";
 
 interface WorkerStatementData {
   worker: Worker;

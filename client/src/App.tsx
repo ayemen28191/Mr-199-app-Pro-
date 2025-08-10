@@ -14,7 +14,7 @@ import ExcelStyleWorkerStatement from "@/pages/excel-style-worker-statement";
 import DailyExpensesReport from "@/pages/daily-expenses-report";
 import ExcelStyleDailyExpenses from "@/pages/excel-style-daily-expenses";
 import WorkersFilterReport from "@/pages/workers-filter-report";
-import EnhancedWorkerStatement from "@/pages/enhanced-worker-statement";
+import UnifiedWorkerStatement from "@/pages/unified-worker-statement";
 import ProjectTransfers from "@/pages/ProjectTransfers";
 import ProjectTransactionsPage from "@/pages/ProjectTransactionsSimple";
 
@@ -47,7 +47,7 @@ function Router() {
       <Route path="/daily-expenses-report" component={DailyExpensesReport} />
       <Route path="/excel-style-daily-expenses" component={ExcelStyleDailyExpenses} />
       <Route path="/workers-filter-report" component={WorkersFilterReport} />
-      <Route path="/enhanced-worker-statement" component={EnhancedWorkerStatement} />
+      <Route path="/enhanced-worker-statement" component={UnifiedWorkerStatement} />
       <Route path="/project-transfers" component={ProjectTransfers} />
       <Route path="/project-transactions" component={ProjectTransactionsPage} />
       <Route path="/autocomplete-admin" component={AutocompleteAdminPage} />
