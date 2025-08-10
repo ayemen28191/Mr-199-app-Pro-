@@ -73,9 +73,11 @@ export const EnhancedWorkerAccountStatement = ({
     return sum + 8; // افتراض 8 ساعات
   }, 0);
 
-  // دالة التصدير إلى Excel
+  // دالة التصدير إلى Excel المحسنة والمُصححة
   const exportToExcel = async () => {
     try {
+      console.log('🎯 بدء تصدير كشف حساب العامل إلى Excel...');
+      
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('كشف حساب العامل');
 
@@ -89,9 +91,9 @@ export const EnhancedWorkerAccountStatement = ({
       titleCell.font = { name: 'Arial', size: 16, bold: true };
       titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
       titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1e40af' } };
-      titleCell.font.color = { argb: 'FFFFFFFF' };
+      titleCell.font = { ...titleCell.font, color: { argb: 'FFFFFFFF' } };
 
-      // معلومات المشروع والعامل
+      // معلومات المشروع والعامل - تحسين معالجة البيانات
       worksheet.getCell('A3').value = 'اسم العامل:';
       worksheet.getCell('B3').value = worker.name || 'غير محدد';
       worksheet.getCell('D3').value = 'المشروع:';
@@ -103,20 +105,26 @@ export const EnhancedWorkerAccountStatement = ({
       worksheet.getCell('E4').value = `${formatDate(dateFrom)} - ${formatDate(dateTo)}`;
 
       worksheet.getCell('A5').value = 'الأجر اليومي:';
-      worksheet.getCell('B5').value = formatCurrency(Number(worker.dailyWage) || 0);
+      // إصلاح: استخدام القيم الرقمية الخام مع تنسيق العملة في Excel
+      const dailyWageValue = Number(worker.dailyWage) || 0;
+      worksheet.getCell('B5').value = dailyWageValue;
+      worksheet.getCell('B5').numFmt = '#,##0 "ر.ي"';
+      
       worksheet.getCell('D5').value = 'تاريخ الإصدار:';
-      worksheet.getCell('E5').value = formatDate(new Date().toISOString().split('T')[0]);
+      // إصلاح: استخدام تاريخ Excel المناسب
+      const todayDate = new Date();
+      worksheet.getCell('E5').value = todayDate;
+      worksheet.getCell('E5').numFmt = 'yyyy/mm/dd';
 
-      // رؤوس جدول الحضور
+      // رؤوس جدول الحضور - تحسين التنسيق
       const headers = ['م', 'التاريخ', 'اليوم', 'وصف العمل', 'الساعات', 'الأجر المستحق', 'المبلغ المدفوع', 'الحالة'];
       const headerRow = worksheet.getRow(7);
       headers.forEach((header, index) => {
         const cell = headerRow.getCell(index + 1);
         cell.value = header;
-        cell.font = { name: 'Arial', size: 11, bold: true };
+        cell.font = { name: 'Arial', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
         cell.alignment = { horizontal: 'center', vertical: 'middle' };
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF3b82f6' } };
-        cell.font.color = { argb: 'FFFFFFFF' };
         cell.border = {
           top: { style: 'thin' },
           left: { style: 'thin' },
@@ -125,23 +133,49 @@ export const EnhancedWorkerAccountStatement = ({
         };
       });
 
-      // بيانات الحضور
+      // بيانات الحضور - إصلاح معالجة البيانات الرقمية
       attendance.forEach((record: any, index: number) => {
         const row = worksheet.getRow(8 + index);
-        const status = Number(record.paidAmount) >= Number(record.dailyWage) ? 'مدفوع كاملاً' : 'مدفوع جزئياً';
+        const dailyWageAmount = Number(record.dailyWage) || 0;
+        const paidAmount = Number(record.paidAmount) || 0;
+        const status = paidAmount >= dailyWageAmount ? 'مدفوع كاملاً' : 
+                      paidAmount > 0 ? 'مدفوع جزئياً' : 'غير مدفوع';
         
+        // رقم تسلسلي
         row.getCell(1).value = index + 1;
-        row.getCell(2).value = formatDate(record.date);
+        
+        // التاريخ - استخدام تاريخ Excel
+        const recordDate = new Date(record.date);
+        row.getCell(2).value = recordDate;
+        row.getCell(2).numFmt = 'yyyy/mm/dd';
+        
+        // اليوم
         row.getCell(3).value = formatDay(record.date);
+        
+        // وصف العمل
         row.getCell(4).value = record.workDescription || 'عمل يومي حسب متطلبات المشروع';
-        row.getCell(5).value = record.startTime && record.endTime ? `${record.startTime}-${record.endTime}` : '8 ساعات';
-        row.getCell(6).value = Number(record.dailyWage) || 0;
-        row.getCell(7).value = Number(record.paidAmount) || 0;
+        
+        // الساعات
+        row.getCell(5).value = record.startTime && record.endTime ? 
+          `${record.startTime}-${record.endTime}` : '8 ساعات';
+        
+        // الأجر المستحق - قيمة رقمية مع تنسيق العملة
+        row.getCell(6).value = dailyWageAmount;
+        row.getCell(6).numFmt = '#,##0 "ر.ي"';
+        
+        // المبلغ المدفوع - قيمة رقمية مع تنسيق العملة
+        row.getCell(7).value = paidAmount;
+        row.getCell(7).numFmt = '#,##0 "ر.ي"';
+        
+        // الحالة
         row.getCell(8).value = status;
 
         // تنسيق الصف
-        row.eachCell((cell) => {
-          cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        row.eachCell((cell, colNumber) => {
+          cell.alignment = { 
+            horizontal: colNumber === 4 ? 'right' : 'center', 
+            vertical: 'middle' 
+          };
           cell.border = {
             top: { style: 'thin' },
             left: { style: 'thin' },
@@ -154,21 +188,28 @@ export const EnhancedWorkerAccountStatement = ({
         });
       });
 
-      // صف الإجماليات
+      // صف الإجماليات - إصلاح معالجة الأرقام
       const totalRowIndex = 8 + attendance.length;
       const totalRow = worksheet.getRow(totalRowIndex);
       totalRow.getCell(1).value = 'الإجماليات';
       worksheet.mergeCells(`A${totalRowIndex}:E${totalRowIndex}`);
+      
+      // قيم رقمية للإجماليات مع تنسيق العملة
       totalRow.getCell(6).value = totalEarned;
+      totalRow.getCell(6).numFmt = '#,##0 "ر.ي"';
       totalRow.getCell(7).value = totalPaid;
-      totalRow.getCell(8).value = `${((totalPaid / totalEarned) * 100).toFixed(0)}%`;
+      totalRow.getCell(7).numFmt = '#,##0 "ر.ي"';
+      
+      // نسبة الدفع
+      const paymentPercentage = totalEarned > 0 ? ((totalPaid / totalEarned) * 100) : 0;
+      totalRow.getCell(8).value = paymentPercentage / 100;
+      totalRow.getCell(8).numFmt = '0%';
 
       // تنسيق صف الإجماليات
       totalRow.eachCell((cell) => {
-        cell.font = { name: 'Arial', size: 11, bold: true };
+        cell.font = { name: 'Arial', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
         cell.alignment = { horizontal: 'center', vertical: 'middle' };
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF10b981' } };
-        cell.font.color = { argb: 'FFFFFFFF' };
         cell.border = {
           top: { style: 'medium' },
           left: { style: 'thin' },
@@ -177,43 +218,79 @@ export const EnhancedWorkerAccountStatement = ({
         };
       });
 
-      // الملخص المالي
+      // الملخص المالي - تحسين التنسيق والبيانات
       const summaryStartRow = totalRowIndex + 3;
-      worksheet.getCell(`A${summaryStartRow}`).value = 'الملخص المالي';
+      
+      // عنوان الملخص
       worksheet.mergeCells(`A${summaryStartRow}:B${summaryStartRow}`);
-      worksheet.getCell(`A${summaryStartRow}`).font = { name: 'Arial', size: 14, bold: true };
-      worksheet.getCell(`A${summaryStartRow}`).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF059669' } };
-      worksheet.getCell(`A${summaryStartRow}`).font.color = { argb: 'FFFFFFFF' };
+      const summaryTitleCell = worksheet.getCell(`A${summaryStartRow}`);
+      summaryTitleCell.value = 'الملخص المالي النهائي';
+      summaryTitleCell.font = { name: 'Arial', size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
+      summaryTitleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      summaryTitleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF059669' } };
 
-      worksheet.getCell(`A${summaryStartRow + 1}`).value = 'إجمالي المكتسب:';
-      worksheet.getCell(`B${summaryStartRow + 1}`).value = totalEarned;
-      worksheet.getCell(`A${summaryStartRow + 2}`).value = 'إجمالي المدفوع:';
-      worksheet.getCell(`B${summaryStartRow + 2}`).value = totalPaid;
-      worksheet.getCell(`A${summaryStartRow + 3}`).value = 'إجمالي المحول:';
-      worksheet.getCell(`B${summaryStartRow + 3}`).value = totalTransferred;
-      worksheet.getCell(`A${summaryStartRow + 4}`).value = 'الرصيد النهائي:';
-      worksheet.getCell(`B${summaryStartRow + 4}`).value = currentBalance;
-
-      // ضبط عرض الأعمدة
-      worksheet.columns = [
-        { width: 8 },   // م
-        { width: 12 },  // التاريخ
-        { width: 10 },  // اليوم
-        { width: 30 },  // وصف العمل
-        { width: 12 },  // الساعات
-        { width: 15 },  // الأجر المستحق
-        { width: 15 },  // المبلغ المدفوع
-        { width: 12 }   // الحالة
+      // بيانات الملخص مع قيم رقمية
+      const summaryItems = [
+        ['إجمالي المكتسب:', totalEarned],
+        ['إجمالي المدفوع:', totalPaid],
+        ['إجمالي المحول للأهل:', totalTransferred],
+        ['الرصيد الحالي:', currentBalance],
+        ['المتبقي في الذمة:', remainingDue]
       ];
 
-      // إنشاء الملف وتحميله
+      summaryItems.forEach((item, index) => {
+        const rowIndex = summaryStartRow + 1 + index;
+        worksheet.getCell(`A${rowIndex}`).value = item[0];
+        worksheet.getCell(`A${rowIndex}`).font = { name: 'Arial', size: 10, bold: true };
+        
+        worksheet.getCell(`B${rowIndex}`).value = item[1];
+        worksheet.getCell(`B${rowIndex}`).numFmt = '#,##0 "ر.ي"';
+        worksheet.getCell(`B${rowIndex}`).font = { name: 'Arial', size: 10, bold: true };
+        
+        // لون خاص للرصيد حسب القيمة
+        if (index === 3) { // الرصيد الحالي
+          const balanceColor = currentBalance >= 0 ? 'FF059669' : 'FFdc2626';
+          worksheet.getCell(`B${rowIndex}`).font = { 
+            ...worksheet.getCell(`B${rowIndex}`).font, 
+            color: { argb: balanceColor } 
+          };
+        }
+      });
+
+      // ضبط عرض الأعمدة للحصول على مظهر مثالي
+      worksheet.columns = [
+        { width: 8 },   // م
+        { width: 14 },  // التاريخ
+        { width: 12 },  // اليوم
+        { width: 35 },  // وصف العمل
+        { width: 15 },  // الساعات
+        { width: 18 },  // الأجر المستحق
+        { width: 18 },  // المبلغ المدفوع
+        { width: 15 }   // الحالة
+      ];
+
+      console.log('💾 حفظ ملف Excel...');
+      
+      // إنشاء الملف وتحميله مع اسم ملف محسن
       const buffer = await workbook.xlsx.writeBuffer();
-      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      const fileName = `كشف_حساب_العامل_${worker.name || 'غير_محدد'}_${formatDate(dateFrom)}_${formatDate(dateTo)}.xlsx`;
+      const blob = new Blob([buffer], { 
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+      });
+      
+      // اسم ملف محسن وآمن
+      const workerName = (worker.name || 'غير_محدد').replace(/[\\/:*?"<>|]/g, '_');
+      const fromDate = dateFrom.replace(/[\\/:*?"<>|]/g, '_');
+      const toDate = dateTo.replace(/[\\/:*?"<>|]/g, '_');
+      const fileName = `كشف_حساب_العامل_${workerName}_من_${fromDate}_إلى_${toDate}.xlsx`;
+      
       saveAs(blob, fileName);
+      
+      console.log('✅ تم تصدير كشف حساب العامل بنجاح');
+      alert('✅ تم تصدير كشف حساب العامل إلى Excel بنجاح');
+      
     } catch (error) {
-      console.error('خطأ في تصدير Excel:', error);
-      alert('حدث خطأ أثناء تصدير الملف');
+      console.error('❌ خطأ في تصدير Excel:', error);
+      alert('❌ حدث خطأ أثناء تصدير الملف. يرجى المحاولة مرة أخرى.');
     }
   };
 
