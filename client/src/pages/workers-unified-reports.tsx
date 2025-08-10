@@ -671,26 +671,6 @@ export default function WorkersUnifiedReports() {
                 <CardTitle className="text-xl font-bold text-green-800 dark:text-green-200">
                   كشف حساب العامل: {selectedWorker?.name}
                 </CardTitle>
-                <div className="flex gap-2">
-                  <Button
-                    onClick={exportSingleWorkerToExcel}
-                    variant="outline"
-                    size="sm"
-                    className="border-green-300 text-green-700 hover:bg-green-50"
-                  >
-                    <Download className="h-4 w-4 mr-1" />
-                    تصدير إكسل
-                  </Button>
-                  <Button
-                    onClick={handlePrint}
-                    variant="outline"
-                    size="sm"
-                    className="border-blue-300 text-blue-700 hover:bg-blue-50"
-                  >
-                    <Printer className="h-4 w-4 mr-1" />
-                    طباعة
-                  </Button>
-                </div>
               </div>
             </CardHeader>
             <CardContent className="p-6">
