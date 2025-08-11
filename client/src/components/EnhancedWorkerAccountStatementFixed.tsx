@@ -430,10 +430,10 @@ export const EnhancedWorkerAccountStatement = ({
     }
   };
 
-  // دالة الطباعة المحسنة والمطورة - مع إصلاح شامل لمشاكل الطباعة
+  // دالة الطباعة المبسطة والفعالة - حل نهائي لمشكلة الطباعة الفارغة
   const handlePrint = () => {
     try {
-      console.log('🖨️ بدء عملية الطباعة المحسنة...');
+      console.log('🖨️ بدء عملية الطباعة...');
       
       // التحقق من وجود المحتوى
       const printContent = document.getElementById('enhanced-worker-account-statement');
@@ -442,103 +442,70 @@ export const EnhancedWorkerAccountStatement = ({
         return;
       }
 
-      // استخدام الطباعة المباشرة للمتصفح بدلاً من نافذة منفصلة
-      const originalContents = document.body.innerHTML;
-      const originalTitle = document.title;
-      
-      // إنشاء CSS محسن للطباعة
-      const printCSS = `
-        <style>
-          @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap');
-          
-          * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-          }
-          
-          body {
-            font-family: 'Cairo', 'Arial', sans-serif !important;
+      // إخفاء أزرار التحكم مؤقتاً
+      const controlButtons = document.querySelector('.no-print');
+      const originalDisplay = controlButtons ? (controlButtons as HTMLElement).style.display : '';
+      if (controlButtons) {
+        (controlButtons as HTMLElement).style.display = 'none';
+      }
+
+      // إضافة CSS للطباعة بشكل مؤقت
+      const printStyles = document.createElement('style');
+      printStyles.id = 'temp-print-styles';
+      printStyles.innerHTML = `
+        @media print {
+          .no-print { display: none !important; }
+          body { 
+            font-family: Arial, sans-serif !important;
             direction: rtl !important;
-            background: white !important;
-            color: #1f2937 !important;
-            line-height: 1.3 !important;
-            font-size: 10px !important;
+            font-size: 12px !important;
+            line-height: 1.4 !important;
+          }
+          @page { 
+            size: A4 portrait; 
+            margin: 10mm; 
+          }
+          table { 
+            border-collapse: collapse !important; 
+            width: 100% !important;
+          }
+          th, td { 
+            border: 1px solid #000 !important; 
+            padding: 2mm !important; 
+            text-align: center !important;
+          }
+          .enhanced-worker-statement-print {
+            width: 100% !important;
+            max-width: none !important;
             margin: 0 !important;
-            padding: 4mm !important;
+            padding: 5mm !important;
           }
-          
-          @page {
-            size: A4 portrait;
-            margin: 8mm 6mm;
-            -webkit-print-color-adjust: exact;
-            color-adjust: exact;
-          }
-          
-          @media print {
-            .no-print, .no-print * {
-              display: none !important;
-              visibility: hidden !important;
-            }
-            
-            body {
-              font-size: 10px !important;
-              -webkit-print-color-adjust: exact;
-              color-adjust: exact;
-            }
-            
-            table {
-              page-break-inside: auto !important;
-              border-collapse: collapse !important;
-            }
-            
-            tr {
-              page-break-inside: avoid !important;
-              page-break-after: auto !important;
-            }
-            
-            th, td {
-              page-break-inside: avoid !important;
-              font-size: 8px !important;
-              padding: 1mm !important;
-            }
-            
-            h1, h2, h3 {
-              page-break-after: avoid !important;
-            }
-            
-            .enhanced-worker-statement-print {
-              width: 100% !important;
-              max-width: none !important;
-              margin: 0 !important;
-              padding: 0 !important;
-            }
-          }
-        </style>
+        }
       `;
+      document.head.appendChild(printStyles);
+
+      // تنفيذ الطباعة مباشرة
+      window.print();
       
-      // تحديث المحتوى للطباعة
-      document.title = `كشف حساب العامل - ${worker.name || 'غير محدد'}`;
-      document.body.innerHTML = printCSS + printContent.outerHTML;
-      
-      // تنفيذ الطباعة
+      // تنظيف بعد الطباعة
       setTimeout(() => {
-        window.print();
+        // إزالة CSS المؤقت
+        const tempStyles = document.getElementById('temp-print-styles');
+        if (tempStyles) {
+          tempStyles.remove();
+        }
         
-        // استرجاع المحتوى الأصلي بعد الطباعة
-        setTimeout(() => {
-          document.body.innerHTML = originalContents;
-          document.title = originalTitle;
-          console.log('✅ تمت عملية الطباعة بنجاح');
-        }, 1000);
-      }, 500);
+        // إعادة إظهار أزرار التحكم
+        if (controlButtons) {
+          (controlButtons as HTMLElement).style.display = originalDisplay;
+        }
+        
+        console.log('✅ تمت عملية الطباعة بنجاح');
+      }, 1000);
       
     } catch (error) {
       console.error('❌ خطأ في الطباعة:', error);
       alert('❌ حدث خطأ أثناء الطباعة. يرجى المحاولة مرة أخرى.');
-      
-      // استرجاع المحتوى في حالة الخطأ
-      location.reload();
     }
   };
 
