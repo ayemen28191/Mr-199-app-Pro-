@@ -915,99 +915,69 @@ export default function WorkersUnifiedReports() {
               </div>
             </CardHeader>
             <CardContent className="p-0">
-              <div id="printable-multiple-workers" className="print:p-0 print:m-0">
+              <div id="enhanced-workers-unified-statement" className="print:p-0 print:m-0 bg-white text-black">
                 
-                {/* Company Header - Same as Individual Worker Statement */}
-                <div className="company-header bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6 print:bg-blue-600 print:text-black print:border print:border-gray-400">
-                  <div className="text-center">
-                    <h1 className="text-2xl font-bold mb-2 print:text-lg">شركة الفتيني للمقاولات والاستشارات الهندسية</h1>
-                    <p className="text-lg opacity-90 print:text-sm">كشف تصفية العمال</p>
-                    <div className="mt-3 text-sm print:text-xs">
-                      <p>الفترة من {formatDate(dateFrom)} إلى {formatDate(dateTo)}</p>
-                      <p>المشاريع: {selectedProjectIds.length === 0 ? 'جميع المشاريع' : 
-                        selectedProjectIds.length === projects.length ? 'جميع المشاريع' :
-                        selectedProjectIds.map(id => projects.find(p => p.id === id)?.name).join(' - ')
-                      }</p>
+                {/* Header Section - طبق الأصل من التصميم */}
+                <div className="text-center mb-4 print:mb-2">
+                  <div className="bg-blue-600 text-white p-4 print:p-3 border-2 border-blue-700 company-header">
+                    <h1 className="text-xl font-bold print:text-base company-name">شركة الفتيني للمقاولات والاستشارات الهندسية</h1>
+                    <h2 className="text-lg font-bold print:text-sm statement-title">كشف تصفية العمال</h2>
+                    <p className="text-sm print:text-xs statement-period mt-1">
+                      الفترة: من {formatDate(dateFrom)} إلى {formatDate(dateTo)}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Quick Stats Bar - شريط الإحصائيات السريعة */}
+                <div className="mb-4 print:mb-2 border-b border-gray-300 pb-2 px-4 print:px-2">
+                  <div className="flex justify-between items-center text-sm print:text-xs">
+                    <div className="flex items-center gap-4">
+                      <span>عدد العمال: <strong>{(() => {
+                        const workerSummary = reportData.reduce((acc, row) => {
+                          acc.add(row.workerId);
+                          return acc;
+                        }, new Set());
+                        return workerSummary.size;
+                      })()}</strong></span>
+                      <span>عدد المشاريع: <strong>{(() => {
+                        const projectSummary = reportData.reduce((acc, row) => {
+                          if (row.projectName) acc.add(row.projectName);
+                          return acc;
+                        }, new Set());
+                        return projectSummary.size;
+                      })()}</strong></span>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <span>إجمالي أيام العمل: <strong>{reportData.reduce((sum, row) => sum + parseFloat(row.workDays || 0), 0).toFixed(1)}</strong></span>
                     </div>
                   </div>
                 </div>
 
-                {/* Financial Summary - Enhanced with new stats */}
-                <div className="financial-summary bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 p-4 print:bg-gray-100 print:border-b print:border-gray-400">
-                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 text-center print:grid-cols-8 print:gap-1">
-                    <div className="bg-white dark:bg-gray-800 rounded-lg p-3 shadow print:bg-transparent print:shadow-none print:border print:border-gray-300 print:p-2">
-                      <div className="text-lg font-bold text-blue-600 print:text-sm">
-                        {reportData.length}
-                      </div>
-                      <div className="text-xs text-gray-600 print:text-xs">عدد العمال</div>
-                    </div>
-                    <div className="bg-white dark:bg-gray-800 rounded-lg p-3 shadow print:bg-transparent print:shadow-none print:border print:border-gray-300 print:p-2">
-                      <div className="text-lg font-bold text-purple-600 print:text-sm">
-                        {reportData.reduce((sum, row) => sum + parseFloat(row.workDays || 0), 0).toFixed(1)}
-                      </div>
-                      <div className="text-xs text-gray-600 print:text-xs">إجمالي أيام العمل</div>
-                    </div>
-                    <div className="bg-white dark:bg-gray-800 rounded-lg p-3 shadow print:bg-transparent print:shadow-none print:border print:border-gray-300 print:p-2">
-                      <div className="text-lg font-bold text-teal-600 print:text-sm">
-                        {reportData.reduce((sum, row) => sum + parseFloat(row.totalWorkHours || 0), 0).toFixed(1)}
-                      </div>
-                      <div className="text-xs text-gray-600 print:text-xs">إجمالي الساعات</div>
-                    </div>
-                    <div className="bg-white dark:bg-gray-800 rounded-lg p-3 shadow print:bg-transparent print:shadow-none print:border print:border-gray-300 print:p-2">
-                      <div className="text-lg font-bold text-green-600 print:text-sm">
-                        {formatCurrency(reportData.reduce((sum, row) => sum + (parseFloat(row.dailyWage || 0) * parseFloat(row.workDays || 0)), 0))}
-                      </div>
-                      <div className="text-xs text-gray-600 print:text-xs">إجمالي المستحق</div>
-                    </div>
-                    <div className="bg-white dark:bg-gray-800 rounded-lg p-3 shadow print:bg-transparent print:shadow-none print:border print:border-gray-300 print:p-2">
-                      <div className="text-lg font-bold text-blue-600 print:text-sm">
-                        {formatCurrency(reportData.reduce((sum, row) => sum + parseFloat(row.paidAmount || 0), 0))}
-                      </div>
-                      <div className="text-xs text-gray-600 print:text-xs">إجمالي المستلم</div>
-                    </div>
-                    <div className="bg-white dark:bg-gray-800 rounded-lg p-3 shadow print:bg-transparent print:shadow-none print:border print:border-gray-300 print:p-2">
-                      <div className="text-lg font-bold text-indigo-600 print:text-sm">
-                        {formatCurrency(reportData.reduce((sum, row) => sum + parseFloat(row.totalTransferred || 0), 0))}
-                      </div>
-                      <div className="text-xs text-gray-600 print:text-xs">إجمالي المحول</div>
-                    </div>
-                    <div className="bg-white dark:bg-gray-800 rounded-lg p-3 shadow print:bg-transparent print:shadow-none print:border print:border-gray-300 print:p-2">
-                      <div className="text-lg font-bold text-orange-600 print:text-sm">
-                        {formatCurrency(reportData.reduce((sum, row) => sum + (parseFloat(row.dailyWage || 0) * parseFloat(row.workDays || 0)) - parseFloat(row.paidAmount || 0) - parseFloat(row.totalTransferred || 0), 0))}
-                      </div>
-                      <div className="text-xs text-gray-600 print:text-xs">المتبقي بعد الخصم</div>
-                    </div>
-                    <div className="bg-white dark:bg-gray-800 rounded-lg p-3 shadow print:bg-transparent print:shadow-none print:border print:border-gray-300 print:p-2">
-                      <div className="text-lg font-bold text-gray-600 print:text-sm">
-                        {reportData.reduce((sum, row) => sum + parseFloat(row.workDays || 0), 0) > 0 
-                          ? (reportData.reduce((sum, row) => sum + parseFloat(row.totalWorkHours || 0), 0) / reportData.reduce((sum, row) => sum + parseFloat(row.workDays || 0), 0)).toFixed(1)
-                          : '0'}
-                      </div>
-                      <div className="text-xs text-gray-600 print:text-xs">متوسط الساعات</div>
-                    </div>
-                  </div>
+                {/* Main Table Header - عنوان الجدول بالشريط الأزرق */}
+                <div className="bg-blue-600 text-white p-2 print:p-1 text-center font-bold section-title">
+                  <h3 className="text-base print:text-sm">كشف التصفية للعمال</h3>
                 </div>
 
-                {/* Workers Summary Table - Aggregated by Worker */}
-                <div className="p-6 print:p-4">
+                {/* Main Table - جدول العمال */}
+                <div className="px-2 print:px-1">
                   <div className="overflow-x-auto">
-                    <Table className="w-full print:text-xs">
-                      <TableHeader>
-                        <TableRow className="bg-gray-50 dark:bg-gray-800 print:bg-gray-200 print:border print:border-gray-400">
-                          <TableHead className="text-center font-bold align-middle border print:border-gray-400 print:py-1 print:text-xs">م</TableHead>
-                          <TableHead className="text-center font-bold align-middle border print:border-gray-400 print:py-1 print:text-xs">الاسم والرقم</TableHead>
-                          <TableHead className="text-center font-bold align-middle border print:border-gray-400 print:py-1 print:text-xs">المهنة</TableHead>
-                          <TableHead className="text-center font-bold align-middle border print:border-gray-400 print:py-1 print:text-xs">اسم المشروع</TableHead>
-                          <TableHead className="text-center font-bold align-middle border print:border-gray-400 print:py-1 print:text-xs">الأجر اليومي</TableHead>
-                          <TableHead className="text-center font-bold align-middle border print:border-gray-400 print:py-1 print:text-xs">أيام العمل</TableHead>
-                          <TableHead className="text-center font-bold align-middle border print:border-gray-400 print:py-1 print:text-xs">إجمالي الساعات</TableHead>
-                          <TableHead className="text-center font-bold align-middle border print:border-gray-400 print:py-1 print:text-xs">المبلغ المستحق</TableHead>
-                          <TableHead className="text-center font-bold align-middle border print:border-gray-400 print:py-1 print:text-xs">المبلغ المستلم</TableHead>
-                          <TableHead className="text-center font-bold align-middle border print:border-gray-400 print:py-1 print:text-xs">المبلغ المحول</TableHead>
-                          <TableHead className="text-center font-bold align-middle border print:border-gray-400 print:py-1 print:text-xs">المتبقي بعد الخصم</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
+                    <table className="w-full border-collapse border border-gray-400 print:border-gray-400 text-sm print:text-xs enhanced-table">
+                      <thead>
+                        <tr className="bg-blue-600 text-white print:bg-blue-600 print:text-black">
+                          <th className="border border-gray-400 p-2 print:p-1 text-center font-bold print:text-xs">ملاحظات</th>
+                          <th className="border border-gray-400 p-2 print:p-1 text-center font-bold print:text-xs">المتبقي</th>
+                          <th className="border border-gray-400 p-2 print:p-1 text-center font-bold print:text-xs">المبلغ المستلم</th>
+                          <th className="border border-gray-400 p-2 print:p-1 text-center font-bold print:text-xs">المبلغ المستحق</th>
+                          <th className="border border-gray-400 p-2 print:p-1 text-center font-bold print:text-xs">إجمالي الساعات</th>
+                          <th className="border border-gray-400 p-2 print:p-1 text-center font-bold print:text-xs">أيام العمل</th>
+                          <th className="border border-gray-400 p-2 print:p-1 text-center font-bold print:text-xs">الأجر اليومي</th>
+                          <th className="border border-gray-400 p-2 print:p-1 text-center font-bold print:text-xs">اسم المشروع</th>
+                          <th className="border border-gray-400 p-2 print:p-1 text-center font-bold print:text-xs">المهنة</th>
+                          <th className="border border-gray-400 p-2 print:p-1 text-center font-bold print:text-xs">الاسم والرقم</th>
+                          <th className="border border-gray-400 p-2 print:p-1 text-center font-bold print:text-xs">م</th>
+                        </tr>
+                      </thead>
+                      <tbody>
                         {(() => {
                           // تجميع البيانات حسب العامل مع تضمين المشاريع والحوالات
                           const workerSummary = reportData.reduce((acc, row) => {
