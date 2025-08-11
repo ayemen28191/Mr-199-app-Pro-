@@ -402,9 +402,9 @@ export default function WorkersUnifiedReports() {
     const workbook = XLSX.utils.book_new();
 
     // حساب الإحصائيات
-    const totalWorkDays = reportData.reduce((sum, row) => sum + row.workDays, 0);
-    const totalAmountDue = reportData.reduce((sum, row) => sum + (row.dailyWage * row.workDays), 0);
-    const totalPaidAmount = reportData.reduce((sum, row) => sum + (row.paidAmount || 0), 0);
+    const totalWorkDays = reportData.reduce((sum, row) => sum + parseFloat(row.workDays || 0), 0);
+    const totalAmountDue = reportData.reduce((sum, row) => sum + (parseFloat(row.dailyWage || 0) * parseFloat(row.workDays || 0)), 0);
+    const totalPaidAmount = reportData.reduce((sum, row) => sum + parseFloat(row.paidAmount || 0), 0);
     const totalRemaining = totalAmountDue - totalPaidAmount;
 
     // تجميع البيانات حسب العامل لتصدير الإكسل
@@ -420,9 +420,9 @@ export default function WorkersUnifiedReports() {
           totalPaidAmount: 0,
         };
       }
-      acc[workerId].totalWorkDays += row.workDays;
-      acc[workerId].totalAmountDue += (row.dailyWage * row.workDays);
-      acc[workerId].totalPaidAmount += (row.paidAmount || 0);
+      acc[workerId].totalWorkDays += parseFloat(row.workDays || 0);
+      acc[workerId].totalAmountDue += (parseFloat(row.dailyWage || 0) * parseFloat(row.workDays || 0));
+      acc[workerId].totalPaidAmount += parseFloat(row.paidAmount || 0);
       return acc;
     }, {});
 
@@ -907,13 +907,13 @@ export default function WorkersUnifiedReports() {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center print:grid-cols-4 print:gap-2">
                     <div className="bg-white dark:bg-gray-800 rounded-lg p-3 shadow print:bg-transparent print:shadow-none print:border print:border-gray-300 print:p-2">
                       <div className="text-lg font-bold text-blue-600 print:text-sm">
-                        {reportData.reduce((sum, row) => sum + row.workDays, 0)}
+                        {reportData.reduce((sum, row) => sum + parseFloat(row.workDays || 0), 0).toFixed(1)}
                       </div>
                       <div className="text-xs text-gray-600 print:text-xs">إجمالي أيام العمل</div>
                     </div>
                     <div className="bg-white dark:bg-gray-800 rounded-lg p-3 shadow print:bg-transparent print:shadow-none print:border print:border-gray-300 print:p-2">
                       <div className="text-lg font-bold text-green-600 print:text-sm">
-                        {formatCurrency(reportData.reduce((sum, row) => sum + (row.dailyWage * row.workDays), 0))}
+                        {formatCurrency(reportData.reduce((sum, row) => sum + (parseFloat(row.dailyWage || 0) * parseFloat(row.workDays || 0)), 0))}
                       </div>
                       <div className="text-xs text-gray-600 print:text-xs">إجمالي المستحق</div>
                     </div>
@@ -925,7 +925,7 @@ export default function WorkersUnifiedReports() {
                     </div>
                     <div className="bg-white dark:bg-gray-800 rounded-lg p-3 shadow print:bg-transparent print:shadow-none print:border print:border-gray-300 print:p-2">
                       <div className="text-lg font-bold text-orange-600 print:text-sm">
-                        {formatCurrency(reportData.reduce((sum, row) => sum + (row.dailyWage * row.workDays) - (row.paidAmount || 0), 0))}
+                        {formatCurrency(reportData.reduce((sum, row) => sum + (parseFloat(row.dailyWage || 0) * parseFloat(row.workDays || 0)) - (parseFloat(row.paidAmount || 0)), 0))}
                       </div>
                       <div className="text-xs text-gray-600 print:text-xs">المبلغ المتبقي</div>
                     </div>
@@ -963,9 +963,9 @@ export default function WorkersUnifiedReports() {
                                 totalPaidAmount: 0,
                               };
                             }
-                            acc[workerId].totalWorkDays += row.workDays;
-                            acc[workerId].totalAmountDue += (row.dailyWage * row.workDays);
-                            acc[workerId].totalPaidAmount += (row.paidAmount || 0);
+                            acc[workerId].totalWorkDays += parseFloat(row.workDays || 0);
+                            acc[workerId].totalAmountDue += (parseFloat(row.dailyWage || 0) * parseFloat(row.workDays || 0));
+                            acc[workerId].totalPaidAmount += parseFloat(row.paidAmount || 0);
                             return acc;
                           }, {});
 
@@ -1010,16 +1010,16 @@ export default function WorkersUnifiedReports() {
                             الإجمالي العام
                           </TableCell>
                           <TableCell className="font-bold text-blue-600 text-center align-middle border print:border-gray-400 print:py-1 print:text-xs print:text-black">
-                            {reportData.reduce((sum, row) => sum + row.workDays, 0)}
+                            {reportData.reduce((sum, row) => sum + parseFloat(row.workDays || 0), 0).toFixed(1)}
                           </TableCell>
                           <TableCell className="font-bold text-green-600 text-center align-middle border print:border-gray-400 print:py-1 print:text-xs print:text-black">
-                            {formatCurrency(reportData.reduce((sum, row) => sum + (row.dailyWage * row.workDays), 0))}
+                            {formatCurrency(reportData.reduce((sum, row) => sum + (parseFloat(row.dailyWage || 0) * parseFloat(row.workDays || 0)), 0))}
                           </TableCell>
                           <TableCell className="font-bold text-purple-600 text-center align-middle border print:border-gray-400 print:py-1 print:text-xs print:text-black">
                             {formatCurrency(reportData.reduce((sum, row) => sum + (row.paidAmount || 0), 0))}
                           </TableCell>
                           <TableCell className="font-bold text-orange-600 text-center align-middle border print:border-gray-400 print:py-1 print:text-xs print:text-black">
-                            {formatCurrency(reportData.reduce((sum, row) => sum + (row.dailyWage * row.workDays) - (row.paidAmount || 0), 0))}
+                            {formatCurrency(reportData.reduce((sum, row) => sum + (parseFloat(row.dailyWage || 0) * parseFloat(row.workDays || 0)) - (parseFloat(row.paidAmount || 0)), 0))}
                           </TableCell>
                         </TableRow>
                       </TableBody>
