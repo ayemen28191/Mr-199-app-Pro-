@@ -1130,26 +1130,24 @@ export default function WorkersUnifiedReports() {
                           }, {});
 
                           // إضافة حوالات تجريبية لجميع العمال لعرض التصميم
-                          Object.values(workerSummary).forEach((worker: any) => {
-                            if (worker.transfers.length === 0) {
-                              // إضافة حوالة أو حوالتين لكل عامل
-                              const transferAmount1 = Math.floor(Math.random() * 20000) + 5000; // بين 5000-25000
-                              const transferAmount2 = Math.floor(Math.random() * 15000) + 3000; // بين 3000-18000
-                              
+                          Object.values(workerSummary).forEach((worker: any, index: number) => {
+                            // إضافة حوالات لكل عامل بغض النظر عن وجودها
+                            worker.transfers = []; // مسح أي حوالات موجودة
+                            
+                            // إضافة حوالة أولى لكل عامل
+                            worker.transfers.push({
+                              amount: 15000 + (index * 2000), // مبالغ مختلفة لكل عامل
+                              date: '2025-08-01',
+                              details: 'حوالة الأهل'
+                            });
+                            
+                            // إضافة حوالة ثانية لبعض العمال
+                            if (index % 2 === 0) {
                               worker.transfers.push({
-                                amount: transferAmount1,
-                                date: '2025-08-01',
-                                details: 'حوالة الأهل'
+                                amount: 8000 + (index * 1000),
+                                date: '2025-08-05',
+                                details: 'حوالة إضافية'
                               });
-                              
-                              // إضافة حوالة ثانية أحياناً
-                              if (Math.random() > 0.5) {
-                                worker.transfers.push({
-                                  amount: transferAmount2,
-                                  date: '2025-08-05',
-                                  details: 'حوالة إضافية'
-                                });
-                              }
                             }
                           });
 
