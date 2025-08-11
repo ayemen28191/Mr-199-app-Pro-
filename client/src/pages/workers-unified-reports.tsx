@@ -19,6 +19,8 @@ import { formatCurrency, formatDate, getCurrentDate } from "@/lib/utils";
 import { EnhancedWorkerAccountStatement } from "@/components/EnhancedWorkerAccountStatementFixed";
 import type { Worker, Project } from "@shared/schema";
 import * as XLSX from 'xlsx';
+import * as ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
 import "@/styles/unified-print.css";
 
 export default function WorkersUnifiedReports() {
@@ -400,7 +402,8 @@ export default function WorkersUnifiedReports() {
       return;
     }
 
-    const workbook = XLSX.utils.book_new();
+    // استخدام ExcelJS لتنسيق أفضل
+    const workbook = new ExcelJS.Workbook();
 
     // حساب الإحصائيات
     const totalWorkDays = reportData.reduce((sum, row) => sum + parseFloat(row.workDays || 0), 0);
@@ -500,46 +503,152 @@ export default function WorkersUnifiedReports() {
       ['']
     ];
 
-    const worksheet = XLSX.utils.aoa_to_sheet(reportDataForExcel);
-    
-    // تنسيق عرض الأعمدة للتصميم الجديد
-    worksheet['!cols'] = [
-      { width: 5 },   // م
-      { width: 22 },  // الاسم والرقم
-      { width: 12 },  // المهنة
-      { width: 18 },  // اسم المشروع
-      { width: 12 },  // الأجر اليومي
-      { width: 10 },  // أيام العمل
-      { width: 12 },  // إجمالي الساعات
-      { width: 15 },  // المبلغ المستحق
-      { width: 15 },  // المبلغ المستلم
-      { width: 15 },  // المبلغ المحول
-      { width: 18 }   // المتبقي بعد الخصم
-    ];
+    const worksheet = workbook.addWorksheet('تقرير تصفية العمال');
 
-    // تنسيق الخلايا (تحديد النطاقات المدمجة للعناوين)
-    const merges = [
-      { s: { r: 0, c: 0 }, e: { r: 0, c: 10 } }, // عنوان الشركة
-      { s: { r: 1, c: 0 }, e: { r: 1, c: 10 } }, // عنوان التقرير
-    ];
-    worksheet['!merges'] = merges;
+    // إضافة عنوان الشركة
+    worksheet.mergeCells('A1:K1');
+    const titleCell = worksheet.getCell('A1');
+    titleCell.value = 'مشروع مصنع الحبشي للبناء والمقاولات';
+    titleCell.font = { bold: true, size: 16, color: { argb: 'FFFFFFFF' } };
+    titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E40AF' } };
+    titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    titleCell.border = {
+      top: { style: 'thick', color: { argb: 'FF000000' } },
+      left: { style: 'thick', color: { argb: 'FF000000' } },
+      bottom: { style: 'thick', color: { argb: 'FF000000' } },
+      right: { style: 'thick', color: { argb: 'FF000000' } }
+    };
 
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'تقرير العمال');
+    // إضافة عنوان التقرير
+    worksheet.mergeCells('A2:K2');
+    const subtitleCell = worksheet.getCell('A2');
+    subtitleCell.value = `تقرير تصفية العمال من ${formatDate(dateFrom)} إلى ${formatDate(dateTo)}`;
+    subtitleCell.font = { bold: true, size: 14, color: { argb: 'FFFFFFFF' } };
+    subtitleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E40AF' } };
+    subtitleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    subtitleCell.border = {
+      top: { style: 'thick', color: { argb: 'FF000000' } },
+      left: { style: 'thick', color: { argb: 'FF000000' } },
+      bottom: { style: 'thick', color: { argb: 'FF000000' } },
+      right: { style: 'thick', color: { argb: 'FF000000' } }
+    };
+
+    // إضافة صف فارغ
+    worksheet.addRow([]);
+
+    // إضافة العناوين مع التنسيق
+    const headers = ['م', 'الاسم والرقم', 'المهنة', 'اسم المشروع', 'الأجر اليومي', 'أيام العمل', 'إجمالي الساعات', 'المبلغ المستحق', 'المبلغ المستلم', 'المتبقي', 'ملاحظات'];
+    const headerRow = worksheet.addRow(headers);
+    headerRow.height = 30;
+    headerRow.eachCell((cell, colNumber) => {
+      cell.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E40AF' } };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell.border = {
+        top: { style: 'thick', color: { argb: 'FF000000' } },
+        left: { style: 'thick', color: { argb: 'FF000000' } },
+        bottom: { style: 'thick', color: { argb: 'FF000000' } },
+        right: { style: 'thick', color: { argb: 'FF000000' } }
+      };
+    });
+
+    // إضافة بيانات العمال
+    summaryArray.forEach((worker, index) => {
+      const remainingAfterDeductions = worker.totalAmountDue - worker.totalPaidAmount - worker.totalTransferred;
+      
+      const dataRow = worksheet.addRow([
+        index + 1,
+        `${worker.workerName}${worker.phone ? ' - ' + worker.phone : ''}`,
+        worker.workerType,
+        Array.from(worker.projects).join('، ') || 'غير محدد',
+        worker.dailyWage,
+        worker.totalWorkDays.toFixed(1),
+        worker.totalWorkHours.toFixed(1),
+        worker.totalAmountDue,
+        worker.totalPaidAmount,
+        remainingAfterDeductions,
+        '-'
+      ]);
+
+      dataRow.height = 25;
+      dataRow.eachCell((cell, colNumber) => {
+        cell.font = { size: 11 };
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FF000000' } },
+          left: { style: 'thin', color: { argb: 'FF000000' } },
+          bottom: { style: 'thin', color: { argb: 'FF000000' } },
+          right: { style: 'thin', color: { argb: 'FF000000' } }
+        };
+
+        // تلوين الخلايا بألوان متناوبة
+        if (index % 2 === 0) {
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8F9FA' } };
+        }
+
+        // تنسيق الأرقام
+        if (colNumber >= 5 && colNumber <= 10) {
+          cell.numFmt = '#,##0.00';
+        }
+      });
+    });
+
+    // إضافة صف الإجماليات
+    const totalRow = worksheet.addRow([
+      '', '', '', '', 'الإجماليات',
+      totalWorkDays.toFixed(1),
+      reportData.reduce((sum, row) => sum + parseFloat(row.totalWorkHours || 0), 0).toFixed(1),
+      totalAmountDue,
+      totalPaidAmount,
+      reportData.reduce((sum, row) => sum + (row.totalAmountDue - row.totalPaidAmount - row.totalTransferred), 0),
+      ''
+    ]);
+
+    totalRow.height = 30;
+    totalRow.eachCell((cell) => {
+      cell.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF16A34A' } };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell.border = {
+        top: { style: 'thick', color: { argb: 'FF000000' } },
+        left: { style: 'thick', color: { argb: 'FF000000' } },
+        bottom: { style: 'thick', color: { argb: 'FF000000' } },
+        right: { style: 'thick', color: { argb: 'FF000000' } }
+      };
+    });
+
+    // تعديل عرض الأعمدة
+    worksheet.columns = [
+      { width: 8 },   // م
+      { width: 25 },  // الاسم والرقم
+      { width: 15 },  // المهنة
+      { width: 20 },  // اسم المشروع
+      { width: 15 },  // الأجر اليومي
+      { width: 12 },  // أيام العمل
+      { width: 15 },  // إجمالي الساعات
+      { width: 18 },  // المبلغ المستحق
+      { width: 18 },  // المبلغ المستلم
+      { width: 15 },  // المتبقي
+      { width: 25 }   // ملاحظات
+    ];
 
     // حفظ الملف
     const fileName = `تقرير_تصفية_العمال_${formatDate(dateFrom)}_${formatDate(dateTo)}.xlsx`;
-    XLSX.writeFile(workbook, fileName);
-
-    toast({
-      title: "تم تصدير التقرير",
-      description: `تم حفظ الملف: ${fileName}`,
+    workbook.xlsx.writeBuffer().then((buffer) => {
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      saveAs(blob, fileName);
+      
+      toast({
+        title: "تم تصدير التقرير",
+        description: `تم حفظ الملف: ${fileName}`,
+      });
     });
   };
 
   // Print function for multiple workers
   const handlePrint = () => {
     if (reportMode === 'multiple') {
-      const printContent = document.getElementById('printable-multiple-workers');
+      const printContent = document.getElementById('enhanced-workers-unified-statement');
       if (printContent) {
         const originalContent = document.body.innerHTML;
         document.body.innerHTML = printContent.innerHTML;
