@@ -1117,7 +1117,7 @@ export default function WorkersUnifiedReports() {
                             acc[workerId].totalPaidAmount += parseFloat(row.paidAmount || 0);
                             acc[workerId].totalTransferred += parseFloat(row.totalTransferred || 0);
                             
-                            // جمع بيانات الحوالات الفعلية أو إضافة بيانات تجريبية للاختبار
+                            // جمع بيانات الحوالات الفعلية فقط
                             if (parseFloat(row.totalTransferred || 0) > 0) {
                               const existingTransfer = acc[workerId].transfers.find(t => t.amount === parseFloat(row.totalTransferred || 0));
                               if (!existingTransfer) {
@@ -1129,16 +1129,7 @@ export default function WorkersUnifiedReports() {
                               }
                             }
                             
-                            // إضافة حوالات تجريبية لعرض النظام (مؤقتة للاختبار)
-                            if (acc[workerId].transfers.length === 0 && Math.random() < 0.6) {
-                              const transferAmount = Math.floor(Math.random() * 50000) + 10000;
-                              acc[workerId].totalTransferred = transferAmount;
-                              acc[workerId].transfers.push({
-                                amount: transferAmount,
-                                date: getCurrentDate(),
-                                details: 'حوالة للأهل'
-                              });
-                            }
+
                             
                             return acc;
                           }, {});
