@@ -83,7 +83,7 @@ export const EnhancedWorkerAccountStatement: React.FC<EnhancedWorkerAccountState
       {/* رأس المستند */}
       <div className="statement-header">
         <div className="company-header">
-          <h1 className="company-name">شركة الحاج عبدالرحمن علي الجهني وأولاده</h1>
+          <h1 className="company-name">شركة الفتيني للمقاولات والاستشارات الهندسية</h1>
           <h2 className="statement-title">كشف حساب العامل الشامل والتفصيلي</h2>
           <div className="statement-period">
             الفترة: من {formatDate(dateFrom)} إلى {formatDate(dateTo)} | تاريخ الكشف: {formatDate(new Date().toISOString().split('T')[0])}

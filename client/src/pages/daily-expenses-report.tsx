@@ -273,7 +273,7 @@ export default function DailyExpensesReport() {
       // إضافة عنوان الشركة
       worksheet.mergeCells('A1:J2');
       const companyHeader = worksheet.getCell('A1');
-      companyHeader.value = `شركة الحاج عبدالرحمن علي الجهني وأولاده\nكشف المصروفات اليومية - ${selectedProject?.name}`;
+      companyHeader.value = `شركة الفتيني للمقاولات والاستشارات الهندسية\nكشف المصروفات اليومية - ${selectedProject?.name}`;
       companyHeader.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
       companyHeader.font = { size: 16, bold: true };
       

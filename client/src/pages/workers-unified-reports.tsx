@@ -259,7 +259,7 @@ export default function WorkersUnifiedReports() {
     // بيانات كشف الحساب بتصميم احترافي يطابق الكشف المطبوع
     const accountData = [
       // رأس الشركة
-      ['شركة الحاج عبدالرحمن علي الجهني وأولاده'],
+      ['شركة الفتيني للمقاولات والاستشارات الهندسية'],
       ['كشف حساب العامل الشامل والتفصيلي'],
       [''],
       // معلومات العامل والفترة
@@ -410,7 +410,7 @@ export default function WorkersUnifiedReports() {
     // ورقة التقرير بتصميم احترافي يطابق الكشف المطبوع
     const reportDataForExcel = [
       // رأس الشركة
-      ['شركة الحاج عبدالرحمن علي الجهني وأولاده'],
+      ['شركة الفتيني للمقاولات والاستشارات الهندسية'],
       ['تقرير تصفية العمال الموحد والتفصيلي'],
       [''],
       // معلومات التقرير
@@ -867,18 +867,18 @@ export default function WorkersUnifiedReports() {
                 <Table className="w-full">
                   <TableHeader>
                     <TableRow className="bg-gray-50 dark:bg-gray-800">
-                      <TableHead className="text-right font-bold">العامل</TableHead>
-                      <TableHead className="text-right font-bold">النوع</TableHead>
-                      <TableHead className="text-right font-bold">الأجر اليومي</TableHead>
-                      <TableHead className="text-right font-bold">التاريخ</TableHead>
-                      <TableHead className="text-right font-bold">المشروع</TableHead>
-                      <TableHead className="text-right font-bold">الأيام</TableHead>
-                      <TableHead className="text-right font-bold">الوصف</TableHead>
-                      <TableHead className="text-right font-bold">المستحق</TableHead>
-                      <TableHead className="text-right font-bold">المدفوع</TableHead>
-                      <TableHead className="text-right font-bold">المتبقي</TableHead>
-                      <TableHead className="text-right font-bold">نوع الدفع</TableHead>
-                      <TableHead className="text-right font-bold">ملاحظات</TableHead>
+                      <TableHead className="text-center font-bold align-middle">العامل</TableHead>
+                      <TableHead className="text-center font-bold align-middle">النوع</TableHead>
+                      <TableHead className="text-center font-bold align-middle">الأجر اليومي</TableHead>
+                      <TableHead className="text-center font-bold align-middle">التاريخ</TableHead>
+                      <TableHead className="text-center font-bold align-middle">المشروع</TableHead>
+                      <TableHead className="text-center font-bold align-middle">الأيام</TableHead>
+                      <TableHead className="text-center font-bold align-middle">الوصف</TableHead>
+                      <TableHead className="text-center font-bold align-middle">المستحق</TableHead>
+                      <TableHead className="text-center font-bold align-middle">المدفوع</TableHead>
+                      <TableHead className="text-center font-bold align-middle">المتبقي</TableHead>
+                      <TableHead className="text-center font-bold align-middle">نوع الدفع</TableHead>
+                      <TableHead className="text-center font-bold align-middle">ملاحظات</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -886,32 +886,32 @@ export default function WorkersUnifiedReports() {
                       const remainingAmount = (row.dailyWage * row.workDays) - (row.paidAmount || 0);
                       return (
                         <TableRow key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800">
-                          <TableCell className="font-medium">{row.workerName}</TableCell>
-                          <TableCell>
+                          <TableCell className="font-medium text-center align-middle">{row.workerName}</TableCell>
+                          <TableCell className="text-center align-middle">
                             <Badge variant="outline">{row.workerType}</Badge>
                           </TableCell>
-                          <TableCell>{formatCurrency(row.workerDailyWage)}</TableCell>
-                          <TableCell>{formatDate(row.date)}</TableCell>
-                          <TableCell className="font-medium">{row.projectName}</TableCell>
-                          <TableCell className="text-center">{row.workDays}</TableCell>
-                          <TableCell>{row.workDescription || '-'}</TableCell>
-                          <TableCell className="font-bold text-blue-600">
+                          <TableCell className="text-center align-middle">{formatCurrency(row.workerDailyWage)}</TableCell>
+                          <TableCell className="text-center align-middle">{formatDate(row.date)}</TableCell>
+                          <TableCell className="font-medium text-center align-middle">{row.projectName}</TableCell>
+                          <TableCell className="text-center align-middle">{row.workDays}</TableCell>
+                          <TableCell className="text-center align-middle">{row.workDescription || '-'}</TableCell>
+                          <TableCell className="font-bold text-blue-600 text-center align-middle">
                             {formatCurrency(row.dailyWage * row.workDays)}
                           </TableCell>
-                          <TableCell className="font-bold text-green-600">
+                          <TableCell className="font-bold text-green-600 text-center align-middle">
                             {formatCurrency(row.paidAmount || 0)}
                           </TableCell>
-                          <TableCell className={`font-bold ${remainingAmount > 0 ? 'text-orange-600' : remainingAmount < 0 ? 'text-red-600' : 'text-gray-600'}`}>
+                          <TableCell className={`font-bold text-center align-middle ${remainingAmount > 0 ? 'text-orange-600' : remainingAmount < 0 ? 'text-red-600' : 'text-gray-600'}`}>
                             {formatCurrency(remainingAmount)}
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="text-center align-middle">
                             <Badge variant={row.paymentType === 'full' ? 'default' : 'secondary'}>
                               {row.paymentType === 'full' ? 'كامل' : 
                                row.paymentType === 'partial' ? 'جزئي' : 
                                row.paymentType === 'none' ? 'لم يُدفع' : row.paymentType}
                             </Badge>
                           </TableCell>
-                          <TableCell>{row.notes || '-'}</TableCell>
+                          <TableCell className="text-center align-middle">{row.notes || '-'}</TableCell>
                         </TableRow>
                       );
                     })}

@@ -572,7 +572,7 @@ export const EnhancedWorkerAccountStatement = ({
             color: '#1e40af',
             margin: '0 0 1mm 0'
           }}>
-            شركة الحاج عبدالرحمن علي الجهني وأولاده
+            شركة الفتيني للمقاولات والاستشارات الهندسية
           </h1>
           <h2 style={{
             fontSize: '10px',
