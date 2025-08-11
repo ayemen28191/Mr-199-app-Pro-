@@ -961,23 +961,23 @@ export default function WorkersUnifiedReports() {
                 {/* Main Table - جدول العمال */}
                 <div className="px-2 print:px-1">
                   <div className="overflow-x-auto">
-                    <table className="w-full border-collapse border border-gray-400 print:border-gray-400 text-sm print:text-xs enhanced-table">
-                      <thead>
-                        <tr className="bg-blue-600 text-white print:bg-blue-600 print:text-black">
-                          <th className="border border-gray-400 p-2 print:p-1 text-center font-bold print:text-xs">ملاحظات</th>
-                          <th className="border border-gray-400 p-2 print:p-1 text-center font-bold print:text-xs">المتبقي</th>
-                          <th className="border border-gray-400 p-2 print:p-1 text-center font-bold print:text-xs">المبلغ المستلم</th>
-                          <th className="border border-gray-400 p-2 print:p-1 text-center font-bold print:text-xs">المبلغ المستحق</th>
-                          <th className="border border-gray-400 p-2 print:p-1 text-center font-bold print:text-xs">إجمالي الساعات</th>
-                          <th className="border border-gray-400 p-2 print:p-1 text-center font-bold print:text-xs">أيام العمل</th>
-                          <th className="border border-gray-400 p-2 print:p-1 text-center font-bold print:text-xs">الأجر اليومي</th>
-                          <th className="border border-gray-400 p-2 print:p-1 text-center font-bold print:text-xs">اسم المشروع</th>
-                          <th className="border border-gray-400 p-2 print:p-1 text-center font-bold print:text-xs">المهنة</th>
-                          <th className="border border-gray-400 p-2 print:p-1 text-center font-bold print:text-xs">الاسم والرقم</th>
-                          <th className="border border-gray-400 p-2 print:p-1 text-center font-bold print:text-xs">م</th>
-                        </tr>
-                      </thead>
-                      <tbody>
+                    <Table className="w-full border-collapse border border-gray-400 print:border-gray-400 text-sm print:text-xs enhanced-table">
+                      <TableHeader>
+                        <TableRow className="bg-blue-600 text-white print:bg-blue-600 print:text-black">
+                          <TableHead className="border border-gray-400 p-2 print:p-1 text-center font-bold print:text-xs text-white print:text-black">ملاحظات</TableHead>
+                          <TableHead className="border border-gray-400 p-2 print:p-1 text-center font-bold print:text-xs text-white print:text-black">المتبقي</TableHead>
+                          <TableHead className="border border-gray-400 p-2 print:p-1 text-center font-bold print:text-xs text-white print:text-black">المبلغ المستلم</TableHead>
+                          <TableHead className="border border-gray-400 p-2 print:p-1 text-center font-bold print:text-xs text-white print:text-black">المبلغ المستحق</TableHead>
+                          <TableHead className="border border-gray-400 p-2 print:p-1 text-center font-bold print:text-xs text-white print:text-black">إجمالي الساعات</TableHead>
+                          <TableHead className="border border-gray-400 p-2 print:p-1 text-center font-bold print:text-xs text-white print:text-black">أيام العمل</TableHead>
+                          <TableHead className="border border-gray-400 p-2 print:p-1 text-center font-bold print:text-xs text-white print:text-black">الأجر اليومي</TableHead>
+                          <TableHead className="border border-gray-400 p-2 print:p-1 text-center font-bold print:text-xs text-white print:text-black">اسم المشروع</TableHead>
+                          <TableHead className="border border-gray-400 p-2 print:p-1 text-center font-bold print:text-xs text-white print:text-black">المهنة</TableHead>
+                          <TableHead className="border border-gray-400 p-2 print:p-1 text-center font-bold print:text-xs text-white print:text-black">الاسم والرقم</TableHead>
+                          <TableHead className="border border-gray-400 p-2 print:p-1 text-center font-bold print:text-xs text-white print:text-black">م</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
                         {(() => {
                           // تجميع البيانات حسب العامل مع تضمين المشاريع والحوالات
                           const workerSummary = reportData.reduce((acc, row) => {
@@ -1062,11 +1062,11 @@ export default function WorkersUnifiedReports() {
                                 <TableCell className="font-bold text-blue-600 text-center align-middle border print:border-gray-400 print:py-1 print:text-xs print:text-black">
                                   {formatCurrency(worker.totalPaidAmount)}
                                 </TableCell>
-                                <TableCell className="font-bold text-indigo-600 text-center align-middle border print:border-gray-400 print:py-1 print:text-xs print:text-black">
-                                  {formatCurrency(worker.totalTransferred)}
-                                </TableCell>
                                 <TableCell className={`font-bold text-center align-middle border print:border-gray-400 print:py-1 print:text-xs print:text-black ${remainingAfterDeductions > 0 ? 'text-orange-600' : remainingAfterDeductions < 0 ? 'text-red-600' : 'text-gray-600'}`}>
                                   {formatCurrency(remainingAfterDeductions)}
+                                </TableCell>
+                                <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">
+                                  -
                                 </TableCell>
                               </TableRow>
                             );
@@ -1076,10 +1076,14 @@ export default function WorkersUnifiedReports() {
                               worker.transfers.forEach((transfer: any, transferIndex: number) => {
                                 workerRows.push(
                                   <TableRow key={`transfer-${worker.workerId}-${transferIndex}`} className="bg-red-50 dark:bg-red-900/20 print:bg-gray-100">
-                                    <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">-</TableCell>
                                     <TableCell className="text-right align-middle border print:border-gray-400 print:py-1 print:text-xs">
                                       <div className="text-sm text-red-600 font-medium print:text-xs">
-                                        ↳ {transfer.details} {transferIndex + 1}
+                                        ↳ {transfer.details} رقم {transferIndex + 1}: رقم حسابية {worker.workerId} • ملاحظة عن مبلغ عامل معين ظهر على منصة
+                                      </div>
+                                    </TableCell>
+                                    <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">
+                                      <div className="text-sm text-red-600 font-medium print:text-xs">
+                                        تصفية حسابية رقم {worker.workerId}، اسم المستلم: محمد على خالد الباز
                                       </div>
                                     </TableCell>
                                     <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">-</TableCell>
@@ -1088,7 +1092,7 @@ export default function WorkersUnifiedReports() {
                                     <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">-</TableCell>
                                     <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">-</TableCell>
                                     <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">-</TableCell>
-                                    <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">-</TableCell>
+                                    <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">0</TableCell>
                                     <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs font-bold text-red-600 print:text-black">
                                       {formatCurrency(transfer.amount)}
                                     </TableCell>
@@ -1102,31 +1106,67 @@ export default function WorkersUnifiedReports() {
                           });
                         })()}
                         {/* إجمالي عام */}
-                        <TableRow className="bg-blue-50 dark:bg-blue-950 print:bg-gray-100 border-t-2 border-blue-500 print:border-gray-600">
-                          <TableCell className="font-bold text-center align-middle border print:border-gray-400 print:py-1 print:text-xs" colSpan={5}>
-                            الإجمالي العام
+                        <TableRow className="bg-green-600 text-white print:bg-green-600 print:text-black border-t-2 border-green-500 print:border-green-600">
+                          <TableCell className="font-bold text-center align-middle border print:border-gray-400 print:py-1 print:text-xs text-white print:text-black">
+                            الإجماليات
                           </TableCell>
-                          <TableCell className="font-bold text-blue-600 text-center align-middle border print:border-gray-400 print:py-1 print:text-xs print:text-black">
+                          <TableCell className="font-bold text-center align-middle border print:border-gray-400 print:py-1 print:text-xs text-white print:text-black" colSpan={4}>
+                            
+                          </TableCell>
+                          <TableCell className="font-bold text-center align-middle border print:border-gray-400 print:py-1 print:text-xs text-white print:text-black">
                             {reportData.reduce((sum, row) => sum + parseFloat(row.workDays || 0), 0).toFixed(1)}
                           </TableCell>
-                          <TableCell className="font-bold text-teal-600 text-center align-middle border print:border-gray-400 print:py-1 print:text-xs print:text-black">
+                          <TableCell className="font-bold text-center align-middle border print:border-gray-400 print:py-1 print:text-xs text-white print:text-black">
                             {reportData.reduce((sum, row) => sum + parseFloat(row.totalWorkHours || 0), 0).toFixed(1)}
                           </TableCell>
-                          <TableCell className="font-bold text-green-600 text-center align-middle border print:border-gray-400 print:py-1 print:text-xs print:text-black">
+                          <TableCell className="font-bold text-center align-middle border print:border-gray-400 print:py-1 print:text-xs text-white print:text-black">
                             {formatCurrency(reportData.reduce((sum, row) => sum + (parseFloat(row.dailyWage || 0) * parseFloat(row.workDays || 0)), 0))}
                           </TableCell>
-                          <TableCell className="font-bold text-blue-600 text-center align-middle border print:border-gray-400 print:py-1 print:text-xs print:text-black">
+                          <TableCell className="font-bold text-center align-middle border print:border-gray-400 print:py-1 print:text-xs text-white print:text-black">
                             {formatCurrency(reportData.reduce((sum, row) => sum + parseFloat(row.paidAmount || 0), 0))}
                           </TableCell>
-                          <TableCell className="font-bold text-indigo-600 text-center align-middle border print:border-gray-400 print:py-1 print:text-xs print:text-black">
-                            {formatCurrency(reportData.reduce((sum, row) => sum + parseFloat(row.totalTransferred || 0), 0))}
-                          </TableCell>
-                          <TableCell className="font-bold text-orange-600 text-center align-middle border print:border-gray-400 print:py-1 print:text-xs print:text-black">
+                          <TableCell className="font-bold text-center align-middle border print:border-gray-400 print:py-1 print:text-xs text-white print:text-black">
                             {formatCurrency(reportData.reduce((sum, row) => sum + (parseFloat(row.dailyWage || 0) * parseFloat(row.workDays || 0)) - parseFloat(row.paidAmount || 0) - parseFloat(row.totalTransferred || 0), 0))}
+                          </TableCell>
+                          <TableCell className="font-bold text-center align-middle border print:border-gray-400 print:py-1 print:text-xs text-white print:text-black">
+                            
                           </TableCell>
                         </TableRow>
                       </TableBody>
                     </Table>
+                  </div>
+
+                  {/* Summary Section - الملخص النهائي */}
+                  <div className="mt-6 print:mt-4 px-4 print:px-2">
+                    <div className="bg-blue-100 dark:bg-blue-900 print:bg-blue-100 border border-blue-300 rounded-lg p-4 print:p-2 summary-section">
+                      <h3 className="text-center font-bold text-lg print:text-base mb-3 print:mb-2 text-blue-800 print:text-black">الملخص النهائي</h3>
+                      <div className="grid grid-cols-4 gap-4 print:gap-2 text-center text-sm print:text-xs">
+                        <div className="summary-item">
+                          <div className="font-bold text-green-600 print:text-black text-lg print:text-base">
+                            {formatCurrency(reportData.reduce((sum, row) => sum + (parseFloat(row.dailyWage || 0) * parseFloat(row.workDays || 0)), 0))}
+                          </div>
+                          <div className="text-gray-600 print:text-black font-medium">إجمالي المبلغ المستحق:</div>
+                        </div>
+                        <div className="summary-item">
+                          <div className="font-bold text-red-600 print:text-black text-lg print:text-base">
+                            {formatCurrency(reportData.reduce((sum, row) => sum + parseFloat(row.totalTransferred || 0), 0))}
+                          </div>
+                          <div className="text-gray-600 print:text-black font-medium">إجمالي المبلغ المحول:</div>
+                        </div>
+                        <div className="summary-item">
+                          <div className="font-bold text-blue-600 print:text-black text-lg print:text-base">
+                            {formatCurrency(reportData.reduce((sum, row) => sum + parseFloat(row.paidAmount || 0), 0))}
+                          </div>
+                          <div className="text-gray-600 print:text-black font-medium">إجمالي المبلغ المستلم:</div>
+                        </div>
+                        <div className="summary-item">
+                          <div className="font-bold text-orange-600 print:text-black text-lg print:text-base">
+                            {formatCurrency(reportData.reduce((sum, row) => sum + (parseFloat(row.dailyWage || 0) * parseFloat(row.workDays || 0)) - parseFloat(row.paidAmount || 0) - parseFloat(row.totalTransferred || 0), 0))}
+                          </div>
+                          <div className="text-gray-600 print:text-black font-medium">إجمالي المبلغ المتبقي:</div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Footer - Same as Individual Worker Statement */}

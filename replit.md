@@ -17,6 +17,12 @@ The system is built as a comprehensive web application with distinct frontend an
 ### UI/UX Decisions
 The interface emphasizes simplicity, clarity, and full responsiveness across devices. Design elements include interactive tables with filtering and sorting, professional layouts for reports, and optimized print views to ensure a user-friendly experience. Specific components like "Project Summary" utilize attractive color schemes and advanced visual effects, designed for responsiveness.
 
+### Recent Updates (August 11, 2025)
+- **Enhanced Worker Reports**: Redesigned unified worker reports to match exact Excel template format provided by user
+- **Template Matching**: Implemented pixel-perfect replica of Arabic construction company reports with proper column ordering
+- **Print Optimization**: Enhanced print layouts with professional styling matching physical Excel templates
+- **Data Structure**: Updated table structures to include proper fields: ملاحظات، المتبقي، المبلغ المستلم، المبلغ المستحق، etc.
+
 ### Technical Implementations
 - **Project Management**: Tools for creating and tracking multiple construction projects.
 - **Worker Management**: System for worker registration, attendance, wage calculation, and detailed account statements with accurate balance calculation.
