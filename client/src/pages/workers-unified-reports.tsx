@@ -19,6 +19,7 @@ import { formatCurrency, formatDate, getCurrentDate } from "@/lib/utils";
 import { EnhancedWorkerAccountStatement } from "@/components/EnhancedWorkerAccountStatementFixed";
 import type { Worker, Project } from "@shared/schema";
 import * as XLSX from 'xlsx';
+import "@/styles/unified-print.css";
 
 export default function WorkersUnifiedReports() {
   const { selectedProjectId } = useSelectedProject();
@@ -407,22 +408,32 @@ export default function WorkersUnifiedReports() {
     const totalPaidAmount = reportData.reduce((sum, row) => sum + parseFloat(row.paidAmount || 0), 0);
     const totalRemaining = totalAmountDue - totalPaidAmount;
 
-    // تجميع البيانات حسب العامل لتصدير الإكسل
+    // تجميع البيانات حسب العامل لتصدير الإكسل مع الحقول الجديدة
     const workerSummary = reportData.reduce((acc, row) => {
       const workerId = row.workerId;
       if (!acc[workerId]) {
         acc[workerId] = {
+          workerId: workerId,
           workerName: row.workerName,
           workerType: row.workerType,
-          dailyWage: row.workerDailyWage,
+          phone: row.phone,
+          projects: new Set(),
+          dailyWage: parseFloat(row.dailyWage || 0),
           totalWorkDays: 0,
+          totalWorkHours: 0,
           totalAmountDue: 0,
           totalPaidAmount: 0,
+          totalTransferred: 0,
         };
       }
+      if (row.projectName) {
+        acc[workerId].projects.add(row.projectName);
+      }
       acc[workerId].totalWorkDays += parseFloat(row.workDays || 0);
+      acc[workerId].totalWorkHours += parseFloat(row.totalWorkHours || 0);
       acc[workerId].totalAmountDue += (parseFloat(row.dailyWage || 0) * parseFloat(row.workDays || 0));
       acc[workerId].totalPaidAmount += parseFloat(row.paidAmount || 0);
+      acc[workerId].totalTransferred += parseFloat(row.totalTransferred || 0);
       return acc;
     }, {});
 
@@ -442,30 +453,46 @@ export default function WorkersUnifiedReports() {
       ['عدد المشاريع:', selectedProjectIds.length || 'جميع المشاريع'],
       ['إجمالي السجلات:', summaryArray.length],
       [''],
-      // ملخص الإحصائيات
+      // ملخص الإحصائيات المحدث
       ['ملخص الإحصائيات المالية:'],
-      ['إجمالي أيام العمل:', totalWorkDays],
+      ['عدد العمال:', summaryArray.length],
+      ['إجمالي أيام العمل:', totalWorkDays.toFixed(1)],
+      ['إجمالي الساعات:', reportData.reduce((sum, row) => sum + parseFloat(row.totalWorkHours || 0), 0).toFixed(1)],
       ['إجمالي المبلغ المستحق:', formatCurrency(totalAmountDue)],
-      ['إجمالي المبلغ المدفوع:', formatCurrency(totalPaidAmount)],
-      ['إجمالي المبلغ المتبقي:', formatCurrency(totalRemaining)],
+      ['إجمالي المبلغ المستلم:', formatCurrency(totalPaidAmount)],
+      ['إجمالي المبلغ المحول:', formatCurrency(reportData.reduce((sum, row) => sum + parseFloat(row.totalTransferred || 0), 0))],
+      ['المتبقي بعد الخصم:', formatCurrency(reportData.reduce((sum, row) => sum + (parseFloat(row.dailyWage || 0) * parseFloat(row.workDays || 0)) - parseFloat(row.paidAmount || 0) - parseFloat(row.totalTransferred || 0), 0))],
+      ['متوسط الساعات اليومية:', reportData.reduce((sum, row) => sum + parseFloat(row.workDays || 0), 0) > 0 
+        ? (reportData.reduce((sum, row) => sum + parseFloat(row.totalWorkHours || 0), 0) / reportData.reduce((sum, row) => sum + parseFloat(row.workDays || 0), 0)).toFixed(1)
+        : '0'],
       [''],
-      // عنوان الجدول
-      ['الإجماليات حسب العامل:'],
-      ['م', 'اسم العامل', 'نوع العامل', 'الأجر اليومي', 'إجمالي الأيام', 'إجمالي المستحق', 'إجمالي المدفوع', 'إجمالي المتبقي'],
-      // بيانات العمال المجمعة مع ترقيم
+      // عنوان الجدول المحدث
+      ['كشف التصفية الجماعي للعمال:'],
+      ['م', 'الاسم والرقم', 'المهنة', 'اسم المشروع', 'الأجر اليومي', 'أيام العمل', 'إجمالي الساعات', 'المبلغ المستحق', 'المبلغ المستلم', 'المبلغ المحول', 'المتبقي بعد الخصم'],
+      // بيانات العمال المجمعة مع الحقول الجديدة
       ...summaryArray.map((worker: any, index: number) => [
         index + 1,
-        worker.workerName,
+        `${worker.workerName}${worker.phone ? ' - ' + worker.phone : ''}`,
         worker.workerType,
+        Array.from(worker.projects).join('، ') || 'غير محدد',
         formatCurrency(worker.dailyWage),
-        worker.totalWorkDays,
+        worker.totalWorkDays.toFixed(1),
+        worker.totalWorkHours.toFixed(1),
         formatCurrency(worker.totalAmountDue),
         formatCurrency(worker.totalPaidAmount),
-        formatCurrency(worker.totalAmountDue - worker.totalPaidAmount)
+        formatCurrency(worker.totalTransferred),
+        formatCurrency(worker.totalAmountDue - worker.totalPaidAmount - worker.totalTransferred)
       ]),
       [''],
-      // صف الإجماليات
-      ['', '', '', 'الإجمالي العام:', totalWorkDays, formatCurrency(totalAmountDue), formatCurrency(totalPaidAmount), formatCurrency(totalRemaining)],
+      // صف الإجماليات المحدث
+      ['', '', '', 'الإجمالي العام:', '', 
+       totalWorkDays.toFixed(1), 
+       reportData.reduce((sum, row) => sum + parseFloat(row.totalWorkHours || 0), 0).toFixed(1),
+       formatCurrency(totalAmountDue), 
+       formatCurrency(totalPaidAmount), 
+       formatCurrency(reportData.reduce((sum, row) => sum + parseFloat(row.totalTransferred || 0), 0)),
+       formatCurrency(reportData.reduce((sum, row) => sum + (parseFloat(row.dailyWage || 0) * parseFloat(row.workDays || 0)) - parseFloat(row.paidAmount || 0) - parseFloat(row.totalTransferred || 0), 0))
+      ],
       [''],
       // تذييل التقرير
       ['تم إنشاء هذا التقرير آلياً بواسطة نظام إدارة مشاريع البناء'],
@@ -475,22 +502,25 @@ export default function WorkersUnifiedReports() {
 
     const worksheet = XLSX.utils.aoa_to_sheet(reportDataForExcel);
     
-    // تنسيق عرض الأعمدة
+    // تنسيق عرض الأعمدة للتصميم الجديد
     worksheet['!cols'] = [
       { width: 5 },   // م
-      { width: 18 },  // اسم العامل
-      { width: 12 },  // نوع العامل
+      { width: 22 },  // الاسم والرقم
+      { width: 12 },  // المهنة
+      { width: 18 },  // اسم المشروع
       { width: 12 },  // الأجر اليومي
-      { width: 12 },  // إجمالي الأيام
-      { width: 15 },  // إجمالي المستحق
-      { width: 15 },  // إجمالي المدفوع
-      { width: 15 }   // إجمالي المتبقي
+      { width: 10 },  // أيام العمل
+      { width: 12 },  // إجمالي الساعات
+      { width: 15 },  // المبلغ المستحق
+      { width: 15 },  // المبلغ المستلم
+      { width: 15 },  // المبلغ المحول
+      { width: 18 }   // المتبقي بعد الخصم
     ];
 
     // تنسيق الخلايا (تحديد النطاقات المدمجة للعناوين)
     const merges = [
-      { s: { r: 0, c: 0 }, e: { r: 0, c: 12 } }, // عنوان الشركة
-      { s: { r: 1, c: 0 }, e: { r: 1, c: 12 } }, // عنوان التقرير
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 10 } }, // عنوان الشركة
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 10 } }, // عنوان التقرير
     ];
     worksheet['!merges'] = merges;
 
@@ -902,14 +932,26 @@ export default function WorkersUnifiedReports() {
                   </div>
                 </div>
 
-                {/* Financial Summary - Same style as Individual Worker */}
+                {/* Financial Summary - Enhanced with new stats */}
                 <div className="financial-summary bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-700 p-4 print:bg-gray-100 print:border-b print:border-gray-400">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center print:grid-cols-4 print:gap-2">
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4 text-center print:grid-cols-8 print:gap-1">
                     <div className="bg-white dark:bg-gray-800 rounded-lg p-3 shadow print:bg-transparent print:shadow-none print:border print:border-gray-300 print:p-2">
                       <div className="text-lg font-bold text-blue-600 print:text-sm">
+                        {reportData.length}
+                      </div>
+                      <div className="text-xs text-gray-600 print:text-xs">عدد العمال</div>
+                    </div>
+                    <div className="bg-white dark:bg-gray-800 rounded-lg p-3 shadow print:bg-transparent print:shadow-none print:border print:border-gray-300 print:p-2">
+                      <div className="text-lg font-bold text-purple-600 print:text-sm">
                         {reportData.reduce((sum, row) => sum + parseFloat(row.workDays || 0), 0).toFixed(1)}
                       </div>
                       <div className="text-xs text-gray-600 print:text-xs">إجمالي أيام العمل</div>
+                    </div>
+                    <div className="bg-white dark:bg-gray-800 rounded-lg p-3 shadow print:bg-transparent print:shadow-none print:border print:border-gray-300 print:p-2">
+                      <div className="text-lg font-bold text-teal-600 print:text-sm">
+                        {reportData.reduce((sum, row) => sum + parseFloat(row.totalWorkHours || 0), 0).toFixed(1)}
+                      </div>
+                      <div className="text-xs text-gray-600 print:text-xs">إجمالي الساعات</div>
                     </div>
                     <div className="bg-white dark:bg-gray-800 rounded-lg p-3 shadow print:bg-transparent print:shadow-none print:border print:border-gray-300 print:p-2">
                       <div className="text-lg font-bold text-green-600 print:text-sm">
@@ -918,16 +960,30 @@ export default function WorkersUnifiedReports() {
                       <div className="text-xs text-gray-600 print:text-xs">إجمالي المستحق</div>
                     </div>
                     <div className="bg-white dark:bg-gray-800 rounded-lg p-3 shadow print:bg-transparent print:shadow-none print:border print:border-gray-300 print:p-2">
-                      <div className="text-lg font-bold text-purple-600 print:text-sm">
-                        {formatCurrency(reportData.reduce((sum, row) => sum + (row.paidAmount || 0), 0))}
+                      <div className="text-lg font-bold text-blue-600 print:text-sm">
+                        {formatCurrency(reportData.reduce((sum, row) => sum + parseFloat(row.paidAmount || 0), 0))}
                       </div>
-                      <div className="text-xs text-gray-600 print:text-xs">إجمالي المدفوع</div>
+                      <div className="text-xs text-gray-600 print:text-xs">إجمالي المستلم</div>
+                    </div>
+                    <div className="bg-white dark:bg-gray-800 rounded-lg p-3 shadow print:bg-transparent print:shadow-none print:border print:border-gray-300 print:p-2">
+                      <div className="text-lg font-bold text-indigo-600 print:text-sm">
+                        {formatCurrency(reportData.reduce((sum, row) => sum + parseFloat(row.totalTransferred || 0), 0))}
+                      </div>
+                      <div className="text-xs text-gray-600 print:text-xs">إجمالي المحول</div>
                     </div>
                     <div className="bg-white dark:bg-gray-800 rounded-lg p-3 shadow print:bg-transparent print:shadow-none print:border print:border-gray-300 print:p-2">
                       <div className="text-lg font-bold text-orange-600 print:text-sm">
-                        {formatCurrency(reportData.reduce((sum, row) => sum + (parseFloat(row.dailyWage || 0) * parseFloat(row.workDays || 0)) - (parseFloat(row.paidAmount || 0)), 0))}
+                        {formatCurrency(reportData.reduce((sum, row) => sum + (parseFloat(row.dailyWage || 0) * parseFloat(row.workDays || 0)) - parseFloat(row.paidAmount || 0) - parseFloat(row.totalTransferred || 0), 0))}
                       </div>
-                      <div className="text-xs text-gray-600 print:text-xs">المبلغ المتبقي</div>
+                      <div className="text-xs text-gray-600 print:text-xs">المتبقي بعد الخصم</div>
+                    </div>
+                    <div className="bg-white dark:bg-gray-800 rounded-lg p-3 shadow print:bg-transparent print:shadow-none print:border print:border-gray-300 print:p-2">
+                      <div className="text-lg font-bold text-gray-600 print:text-sm">
+                        {reportData.reduce((sum, row) => sum + parseFloat(row.workDays || 0), 0) > 0 
+                          ? (reportData.reduce((sum, row) => sum + parseFloat(row.totalWorkHours || 0), 0) / reportData.reduce((sum, row) => sum + parseFloat(row.workDays || 0), 0)).toFixed(1)
+                          : '0'}
+                      </div>
+                      <div className="text-xs text-gray-600 print:text-xs">متوسط الساعات</div>
                     </div>
                   </div>
                 </div>
@@ -939,87 +995,164 @@ export default function WorkersUnifiedReports() {
                       <TableHeader>
                         <TableRow className="bg-gray-50 dark:bg-gray-800 print:bg-gray-200 print:border print:border-gray-400">
                           <TableHead className="text-center font-bold align-middle border print:border-gray-400 print:py-1 print:text-xs">م</TableHead>
-                          <TableHead className="text-center font-bold align-middle border print:border-gray-400 print:py-1 print:text-xs">اسم العامل</TableHead>
-                          <TableHead className="text-center font-bold align-middle border print:border-gray-400 print:py-1 print:text-xs">النوع</TableHead>
+                          <TableHead className="text-center font-bold align-middle border print:border-gray-400 print:py-1 print:text-xs">الاسم والرقم</TableHead>
+                          <TableHead className="text-center font-bold align-middle border print:border-gray-400 print:py-1 print:text-xs">المهنة</TableHead>
+                          <TableHead className="text-center font-bold align-middle border print:border-gray-400 print:py-1 print:text-xs">اسم المشروع</TableHead>
                           <TableHead className="text-center font-bold align-middle border print:border-gray-400 print:py-1 print:text-xs">الأجر اليومي</TableHead>
-                          <TableHead className="text-center font-bold align-middle border print:border-gray-400 print:py-1 print:text-xs">إجمالي الأيام</TableHead>
-                          <TableHead className="text-center font-bold align-middle border print:border-gray-400 print:py-1 print:text-xs">إجمالي المستحق</TableHead>
-                          <TableHead className="text-center font-bold align-middle border print:border-gray-400 print:py-1 print:text-xs">إجمالي المدفوع</TableHead>
-                          <TableHead className="text-center font-bold align-middle border print:border-gray-400 print:py-1 print:text-xs">إجمالي المتبقي</TableHead>
+                          <TableHead className="text-center font-bold align-middle border print:border-gray-400 print:py-1 print:text-xs">أيام العمل</TableHead>
+                          <TableHead className="text-center font-bold align-middle border print:border-gray-400 print:py-1 print:text-xs">إجمالي الساعات</TableHead>
+                          <TableHead className="text-center font-bold align-middle border print:border-gray-400 print:py-1 print:text-xs">المبلغ المستحق</TableHead>
+                          <TableHead className="text-center font-bold align-middle border print:border-gray-400 print:py-1 print:text-xs">المبلغ المستلم</TableHead>
+                          <TableHead className="text-center font-bold align-middle border print:border-gray-400 print:py-1 print:text-xs">المبلغ المحول</TableHead>
+                          <TableHead className="text-center font-bold align-middle border print:border-gray-400 print:py-1 print:text-xs">المتبقي بعد الخصم</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {(() => {
-                          // تجميع البيانات حسب العامل
+                          // تجميع البيانات حسب العامل مع تضمين المشاريع والحوالات
                           const workerSummary = reportData.reduce((acc, row) => {
                             const workerId = row.workerId;
                             if (!acc[workerId]) {
                               acc[workerId] = {
+                                workerId: workerId,
                                 workerName: row.workerName,
                                 workerType: row.workerType,
-                                dailyWage: row.workerDailyWage,
+                                phone: row.phone,
+                                projects: new Set(),
+                                dailyWage: parseFloat(row.dailyWage || 0),
                                 totalWorkDays: 0,
+                                totalWorkHours: 0,
                                 totalAmountDue: 0,
                                 totalPaidAmount: 0,
+                                totalTransferred: 0,
+                                transfers: []
                               };
                             }
+                            // إضافة اسم المشروع
+                            if (row.projectName) {
+                              acc[workerId].projects.add(row.projectName);
+                            }
                             acc[workerId].totalWorkDays += parseFloat(row.workDays || 0);
+                            acc[workerId].totalWorkHours += parseFloat(row.totalWorkHours || 0);
                             acc[workerId].totalAmountDue += (parseFloat(row.dailyWage || 0) * parseFloat(row.workDays || 0));
                             acc[workerId].totalPaidAmount += parseFloat(row.paidAmount || 0);
+                            acc[workerId].totalTransferred += parseFloat(row.totalTransferred || 0);
+                            
+                            // جمع بيانات الحوالات إذا وجدت
+                            if (parseFloat(row.totalTransferred || 0) > 0) {
+                              acc[workerId].transfers.push({
+                                amount: parseFloat(row.totalTransferred || 0),
+                                date: row.date || '',
+                                details: row.transferDetails || 'حوالة'
+                              });
+                            }
+                            
                             return acc;
                           }, {});
 
                           const summaryArray = Object.values(workerSummary);
-                          
-                          return summaryArray.map((worker: any, index: number) => {
-                            const remainingAmount = worker.totalAmountDue - worker.totalPaidAmount;
-                            return (
-                              <TableRow key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800 print:border print:border-gray-300">
-                                <TableCell className="text-center align-middle border print:border-gray-300 print:py-1 print:text-xs font-medium">
-                                  {index + 1}
+                          let rowIndex = 0;
+
+                          return summaryArray.flatMap((worker: any) => {
+                            const projectNames = Array.from(worker.projects).join('، ');
+                            const remainingAfterDeductions = worker.totalAmountDue - worker.totalPaidAmount - worker.totalTransferred;
+                            
+                            const workerRows = [];
+                            
+                            // صف العامل الرئيسي
+                            rowIndex++;
+                            workerRows.push(
+                              <TableRow key={`worker-${worker.workerId}`} className={`${rowIndex % 2 === 0 ? 'bg-gray-50' : 'bg-white'} dark:bg-gray-800 print:bg-transparent hover:bg-gray-100 dark:hover:bg-gray-700`}>
+                                <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs font-medium">
+                                  {rowIndex}
                                 </TableCell>
-                                <TableCell className="font-medium text-center align-middle border print:border-gray-300 print:py-1 print:text-xs">
-                                  {worker.workerName}
+                                <TableCell className="text-right align-middle border print:border-gray-400 print:py-1 print:text-xs">
+                                  <div className="font-semibold">{worker.workerName}</div>
+                                  {worker.phone && <div className="text-sm text-gray-600 print:text-xs">{worker.phone}</div>}
                                 </TableCell>
-                                <TableCell className="text-center align-middle border print:border-gray-300 print:py-1 print:text-xs">
+                                <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">
                                   <span className="print:hidden"><Badge variant="outline">{worker.workerType}</Badge></span>
                                   <span className="hidden print:inline">{worker.workerType}</span>
                                 </TableCell>
-                                <TableCell className="text-center align-middle border print:border-gray-300 print:py-1 print:text-xs">
+                                <TableCell className="text-right align-middle border print:border-gray-400 print:py-1 print:text-xs">
+                                  <div className="text-sm">{projectNames || 'غير محدد'}</div>
+                                </TableCell>
+                                <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">
                                   {formatCurrency(worker.dailyWage)}
                                 </TableCell>
-                                <TableCell className="text-center align-middle border print:border-gray-300 print:py-1 print:text-xs font-bold text-blue-600 print:text-black">
-                                  {worker.totalWorkDays}
+                                <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs font-bold text-blue-600 print:text-black">
+                                  {worker.totalWorkDays.toFixed(1)}
                                 </TableCell>
-                                <TableCell className="font-bold text-green-600 text-center align-middle border print:border-gray-300 print:py-1 print:text-xs print:text-black">
+                                <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs font-bold text-teal-600 print:text-black">
+                                  {worker.totalWorkHours.toFixed(1)}
+                                </TableCell>
+                                <TableCell className="font-bold text-green-600 text-center align-middle border print:border-gray-400 print:py-1 print:text-xs print:text-black">
                                   {formatCurrency(worker.totalAmountDue)}
                                 </TableCell>
-                                <TableCell className="font-bold text-purple-600 text-center align-middle border print:border-gray-300 print:py-1 print:text-xs print:text-black">
+                                <TableCell className="font-bold text-blue-600 text-center align-middle border print:border-gray-400 print:py-1 print:text-xs print:text-black">
                                   {formatCurrency(worker.totalPaidAmount)}
                                 </TableCell>
-                                <TableCell className={`font-bold text-center align-middle border print:border-gray-300 print:py-1 print:text-xs print:text-black ${remainingAmount > 0 ? 'text-orange-600' : remainingAmount < 0 ? 'text-red-600' : 'text-gray-600'}`}>
-                                  {formatCurrency(remainingAmount)}
+                                <TableCell className="font-bold text-indigo-600 text-center align-middle border print:border-gray-400 print:py-1 print:text-xs print:text-black">
+                                  {formatCurrency(worker.totalTransferred)}
+                                </TableCell>
+                                <TableCell className={`font-bold text-center align-middle border print:border-gray-400 print:py-1 print:text-xs print:text-black ${remainingAfterDeductions > 0 ? 'text-orange-600' : remainingAfterDeductions < 0 ? 'text-red-600' : 'text-gray-600'}`}>
+                                  {formatCurrency(remainingAfterDeductions)}
                                 </TableCell>
                               </TableRow>
                             );
+
+                            // صفوف الحوالات تحت كل عامل (إن وجدت)
+                            if (worker.transfers.length > 0) {
+                              worker.transfers.forEach((transfer: any, transferIndex: number) => {
+                                workerRows.push(
+                                  <TableRow key={`transfer-${worker.workerId}-${transferIndex}`} className="bg-red-50 dark:bg-red-900/20 print:bg-gray-100">
+                                    <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">-</TableCell>
+                                    <TableCell className="text-right align-middle border print:border-gray-400 print:py-1 print:text-xs">
+                                      <div className="text-sm text-red-600 font-medium print:text-xs">
+                                        ↳ {transfer.details} {transferIndex + 1}
+                                      </div>
+                                    </TableCell>
+                                    <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">-</TableCell>
+                                    <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">-</TableCell>
+                                    <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">-</TableCell>
+                                    <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">-</TableCell>
+                                    <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">-</TableCell>
+                                    <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">-</TableCell>
+                                    <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">-</TableCell>
+                                    <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs font-bold text-red-600 print:text-black">
+                                      {formatCurrency(transfer.amount)}
+                                    </TableCell>
+                                    <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">-</TableCell>
+                                  </TableRow>
+                                );
+                              });
+                            }
+                            
+                            return workerRows;
                           });
                         })()}
                         {/* إجمالي عام */}
                         <TableRow className="bg-blue-50 dark:bg-blue-950 print:bg-gray-100 border-t-2 border-blue-500 print:border-gray-600">
-                          <TableCell className="font-bold text-center align-middle border print:border-gray-400 print:py-1 print:text-xs" colSpan={4}>
+                          <TableCell className="font-bold text-center align-middle border print:border-gray-400 print:py-1 print:text-xs" colSpan={5}>
                             الإجمالي العام
                           </TableCell>
                           <TableCell className="font-bold text-blue-600 text-center align-middle border print:border-gray-400 print:py-1 print:text-xs print:text-black">
                             {reportData.reduce((sum, row) => sum + parseFloat(row.workDays || 0), 0).toFixed(1)}
                           </TableCell>
+                          <TableCell className="font-bold text-teal-600 text-center align-middle border print:border-gray-400 print:py-1 print:text-xs print:text-black">
+                            {reportData.reduce((sum, row) => sum + parseFloat(row.totalWorkHours || 0), 0).toFixed(1)}
+                          </TableCell>
                           <TableCell className="font-bold text-green-600 text-center align-middle border print:border-gray-400 print:py-1 print:text-xs print:text-black">
                             {formatCurrency(reportData.reduce((sum, row) => sum + (parseFloat(row.dailyWage || 0) * parseFloat(row.workDays || 0)), 0))}
                           </TableCell>
-                          <TableCell className="font-bold text-purple-600 text-center align-middle border print:border-gray-400 print:py-1 print:text-xs print:text-black">
-                            {formatCurrency(reportData.reduce((sum, row) => sum + (row.paidAmount || 0), 0))}
+                          <TableCell className="font-bold text-blue-600 text-center align-middle border print:border-gray-400 print:py-1 print:text-xs print:text-black">
+                            {formatCurrency(reportData.reduce((sum, row) => sum + parseFloat(row.paidAmount || 0), 0))}
+                          </TableCell>
+                          <TableCell className="font-bold text-indigo-600 text-center align-middle border print:border-gray-400 print:py-1 print:text-xs print:text-black">
+                            {formatCurrency(reportData.reduce((sum, row) => sum + parseFloat(row.totalTransferred || 0), 0))}
                           </TableCell>
                           <TableCell className="font-bold text-orange-600 text-center align-middle border print:border-gray-400 print:py-1 print:text-xs print:text-black">
-                            {formatCurrency(reportData.reduce((sum, row) => sum + (parseFloat(row.dailyWage || 0) * parseFloat(row.workDays || 0)) - (parseFloat(row.paidAmount || 0)), 0))}
+                            {formatCurrency(reportData.reduce((sum, row) => sum + (parseFloat(row.dailyWage || 0) * parseFloat(row.workDays || 0)) - parseFloat(row.paidAmount || 0) - parseFloat(row.totalTransferred || 0), 0))}
                           </TableCell>
                         </TableRow>
                       </TableBody>
