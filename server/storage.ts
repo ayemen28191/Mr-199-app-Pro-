@@ -1360,7 +1360,11 @@ export class DatabaseStorage implements IStorage {
         lastUpdated: new Date()
       };
       
+      // جلب بيانات العامل
+      const [worker] = await db.select().from(workers).where(eq(workers.id, workerId));
+      
       return {
+        worker,
         attendance,
         transfers,
         balance,
@@ -1369,6 +1373,7 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error getting worker account statement for multiple projects:', error);
       return {
+        worker: null,
         attendance: [],
         transfers: [],
         balance: null,
