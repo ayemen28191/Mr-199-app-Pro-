@@ -55,7 +55,8 @@ export const EnhancedWorkerAccountStatement = ({
     worker = {},
     attendance = [],
     transfers = [],
-    summary = {}
+    summary = {},
+    projectsInfo = []
   } = data || {};
   
   console.log('🔍 بيانات العامل في المكون:', {
@@ -636,10 +637,14 @@ export const EnhancedWorkerAccountStatement = ({
           fontSize: '8px'
         }}>
           <div style={{ flex: 1, textAlign: 'right' }}>
-            <strong>اسم العامل:</strong> {worker.name || 'غير محدد'} | <strong>المهنة:</strong> {worker.type || 'عامل'} | <strong>الأجر اليومي:</strong> {formatCurrency(Number(worker.dailyWage) || 0)}
+            <strong>اسم العامل:</strong> {worker?.name || 'غير محدد'} | <strong>المهنة:</strong> {worker?.type || 'عامل'} | <strong>الأجر اليومي:</strong> {worker?.dailyWage ? formatCurrency(Number(worker.dailyWage)) : 'غير محدد'}
           </div>
           <div style={{ flex: 1, textAlign: 'center' }}>
-            <strong>اسم المشروع:</strong> {selectedProject?.name || 'جميع المشاريع'} | <strong>إجمالي عدد أيام العمل:</strong> {totalWorkDays}
+            <strong>المشاريع:</strong> {
+              projectsInfo && projectsInfo.length > 0 
+                ? projectsInfo.map((p: any) => p.projectName).join(', ')
+                : (selectedProject?.name || 'غير محدد')
+            }
           </div>
           <div style={{ flex: 1, textAlign: 'left' }}>
             <strong>إجمالي المستحقات:</strong> <span style={{ color: '#dc2626' }}>{formatCurrency(totalEarned)}</span> | <strong>إجمالي المتبقي في الرصيد:</strong> <span style={{ color: totalRemaining <= 0 ? '#059669' : '#dc2626' }}>{formatCurrency(totalRemaining)}</span>
