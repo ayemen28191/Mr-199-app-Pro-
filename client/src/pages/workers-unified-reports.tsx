@@ -1117,39 +1117,23 @@ export default function WorkersUnifiedReports() {
                             acc[workerId].totalPaidAmount += parseFloat(row.paidAmount || 0);
                             acc[workerId].totalTransferred += parseFloat(row.totalTransferred || 0);
                             
-                            // جمع بيانات الحوالات إذا وجدت أو إضافة حوالات تجريبية
+                            // جمع بيانات الحوالات الفعلية من كل صف
                             if (parseFloat(row.totalTransferred || 0) > 0) {
-                              acc[workerId].transfers.push({
-                                amount: parseFloat(row.totalTransferred || 0),
-                                date: row.date || '',
-                                details: row.transferDetails || 'حوالة'
-                              });
+                              // تحقق من وجود الحوالة لنفس المبلغ لتجنب التكرار
+                              const existingTransfer = acc[workerId].transfers.find(t => t.amount === parseFloat(row.totalTransferred || 0));
+                              if (!existingTransfer) {
+                                acc[workerId].transfers.push({
+                                  amount: parseFloat(row.totalTransferred || 0),
+                                  date: row.date || getCurrentDate(),
+                                  details: row.transferDetails || 'حوالة للأهل'
+                                });
+                              }
                             }
                             
                             return acc;
                           }, {});
 
-                          // إضافة حوالات تجريبية لجميع العمال لعرض التصميم
-                          Object.values(workerSummary).forEach((worker: any, index: number) => {
-                            // إضافة حوالات لكل عامل بغض النظر عن وجودها
-                            worker.transfers = []; // مسح أي حوالات موجودة
-                            
-                            // إضافة حوالة أولى لكل عامل
-                            worker.transfers.push({
-                              amount: 15000 + (index * 2000), // مبالغ مختلفة لكل عامل
-                              date: '2025-08-01',
-                              details: 'حوالة الأهل'
-                            });
-                            
-                            // إضافة حوالة ثانية لبعض العمال
-                            if (index % 2 === 0) {
-                              worker.transfers.push({
-                                amount: 8000 + (index * 1000),
-                                date: '2025-08-05',
-                                details: 'حوالة إضافية'
-                              });
-                            }
-                          });
+                          // الحوالات الموجودة فعلياً ستظهر من البيانات الحقيقية
 
                           const summaryArray = Object.values(workerSummary);
                           let rowIndex = 0;
@@ -1159,26 +1143,30 @@ export default function WorkersUnifiedReports() {
                             const remainingAfterDeductions = worker.totalAmountDue - worker.totalPaidAmount - worker.totalTransferred;
                             
                             const workerRows = [];
+                            let currentRowIndex = rowIndex;
                             
-                            // صف العامل الرئيسي
-                            rowIndex++;
+                            // تحديد عدد الصفوف المطلوبة للعامل (صف رئيسي + صفوف الحوالات)
+                            const totalWorkerRows = 1 + (worker.transfers?.length || 0);
+                            
+                            // صف العامل الرئيسي مع دمج الخلايا للاسم والمهنة والأجر والمتبقي
+                            currentRowIndex++;
                             workerRows.push(
-                              <TableRow key={`worker-${worker.workerId}`} className={`${rowIndex % 2 === 0 ? 'bg-gray-50' : 'bg-white'} dark:bg-gray-800 print:bg-transparent hover:bg-gray-100 dark:hover:bg-gray-700`}>
-                                <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs font-medium">
-                                  {rowIndex}
+                              <TableRow key={`worker-${worker.workerId}`} className={`${currentRowIndex % 2 === 0 ? 'bg-gray-50' : 'bg-white'} dark:bg-gray-800 print:bg-transparent hover:bg-gray-100 dark:hover:bg-gray-700`}>
+                                <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs font-medium" rowSpan={totalWorkerRows}>
+                                  {currentRowIndex}
                                 </TableCell>
-                                <TableCell className="text-right align-middle border print:border-gray-400 print:py-1 print:text-xs">
+                                <TableCell className="text-right align-middle border print:border-gray-400 print:py-1 print:text-xs" rowSpan={totalWorkerRows}>
                                   <div className="font-semibold">{worker.workerName}</div>
                                   {worker.phone && <div className="text-sm text-gray-600 print:text-xs">{worker.phone}</div>}
                                 </TableCell>
-                                <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">
+                                <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs" rowSpan={totalWorkerRows}>
                                   <span className="print:hidden"><Badge variant="outline">{worker.workerType}</Badge></span>
                                   <span className="hidden print:inline">{worker.workerType}</span>
                                 </TableCell>
                                 <TableCell className="text-right align-middle border print:border-gray-400 print:py-1 print:text-xs">
                                   <div className="text-sm">{projectNames || 'غير محدد'}</div>
                                 </TableCell>
-                                <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">
+                                <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs" rowSpan={totalWorkerRows}>
                                   {formatCurrency(worker.dailyWage)}
                                 </TableCell>
                                 <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs font-bold text-blue-600 print:text-black">
@@ -1193,45 +1181,50 @@ export default function WorkersUnifiedReports() {
                                 <TableCell className="font-bold text-blue-600 text-center align-middle border print:border-gray-400 print:py-1 print:text-xs print:text-black">
                                   {formatCurrency(worker.totalPaidAmount)}
                                 </TableCell>
-                                <TableCell className={`font-bold text-center align-middle border print:border-gray-400 print:py-1 print:text-xs print:text-black ${remainingAfterDeductions > 0 ? 'text-orange-600' : remainingAfterDeductions < 0 ? 'text-red-600' : 'text-gray-600'}`}>
+                                <TableCell className={`font-bold text-center align-middle border print:border-gray-400 print:py-1 print:text-xs print:text-black ${remainingAfterDeductions > 0 ? 'text-orange-600' : remainingAfterDeductions < 0 ? 'text-red-600' : 'text-gray-600'}`} rowSpan={totalWorkerRows}>
                                   {formatCurrency(remainingAfterDeductions)}
                                 </TableCell>
                                 <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">
-                                  -
+                                  عمل عادي
                                 </TableCell>
                               </TableRow>
                             );
 
-                            // صفوف الحوالات تحت كل عامل (إن وجدت)
-                            if (worker.transfers.length > 0) {
-                              worker.transfers.forEach((transfer: any, transferIndex: number) => {
-                                workerRows.push(
-                                  <TableRow key={`transfer-${worker.workerId}-${transferIndex}`} className="bg-red-50 dark:bg-red-900/20 print:bg-gray-100">
-                                    <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">-</TableCell>
-                                    <TableCell className="text-right align-middle border print:border-gray-400 print:py-1 print:text-xs">
-                                      <div className="text-sm text-red-600 font-medium print:text-xs">
-                                        تصفية حسابية رقم {worker.workerId}، اسم المستلم: محمد على خالد الباز
-                                      </div>
-                                    </TableCell>
-                                    <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">حوالة</TableCell>
-                                    <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">{projectNames || 'مشروع مصنع الحبشي'}</TableCell>
-                                    <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">0</TableCell>
-                                    <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">0</TableCell>
-                                    <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">0</TableCell>
-                                    <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">0</TableCell>
-                                    <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs font-bold text-red-600 print:text-black">
-                                      {formatCurrency(transfer.amount)}
-                                    </TableCell>
-                                    <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">-</TableCell>
-                                    <TableCell className="text-right align-middle border print:border-gray-400 print:py-1 print:text-xs">
-                                      <div className="text-sm text-red-600 font-medium print:text-xs">
-                                        ↳ {transfer.details} رقم {transferIndex + 1}: رقم حسابية {worker.workerId} • ملاحظة عن مبلغ عامل معين ظهر على منصة
-                                      </div>
-                                    </TableCell>
-                                  </TableRow>
-                                );
-                              });
-                            }
+                            // صفوف الحوالات (إجبارية للعرض)
+                            const transfersToShow = worker.transfers?.length > 0 ? worker.transfers : 
+                              worker.totalTransferred > 0 ? [{
+                                amount: worker.totalTransferred,
+                                date: getCurrentDate(),
+                                details: 'حوالة للأهل'
+                              }] : [];
+                            
+                            transfersToShow.forEach((transfer: any, transferIndex: number) => {
+                              workerRows.push(
+                                <TableRow key={`transfer-${worker.workerId}-${transferIndex}`} className="bg-red-50 dark:bg-red-900/20 print:bg-gray-100">
+                                  <TableCell className="text-right align-middle border print:border-gray-400 print:py-1 print:text-xs">
+                                    <div className="text-sm text-red-600 font-medium print:text-xs">
+                                      تحويل للأهل - {worker.workerName}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">حوالة</TableCell>
+                                  <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">0</TableCell>
+                                  <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">0</TableCell>
+                                  <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">0</TableCell>
+                                  <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">0</TableCell>
+                                  <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs font-bold text-red-600 print:text-black">
+                                    -{formatCurrency(transfer.amount)}
+                                  </TableCell>
+                                  <TableCell className="text-right align-middle border print:border-gray-400 print:py-1 print:text-xs">
+                                    <div className="text-sm text-red-600 font-medium print:text-xs">
+                                      {transfer.details} - {formatDate(transfer.date)}
+                                    </div>
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            });
+                            
+                            // تحديث rowIndex بعدد الصفوف المضافة
+                            rowIndex = currentRowIndex;
                             
                             return workerRows;
                           });
