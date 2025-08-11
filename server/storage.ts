@@ -1302,9 +1302,24 @@ export class DatabaseStorage implements IStorage {
         attendanceConditions.push(lte(workerAttendance.date, dateTo));
       }
       
-      const attendance = await db.select().from(workerAttendance)
+      const attendanceData = await db.select().from(workerAttendance)
         .where(and(...attendanceConditions))
         .orderBy(workerAttendance.date);
+      
+      // إضافة بيانات المشروع لكل سجل حضور
+      const projectsMap = new Map();
+      for (const projectId of projectIds) {
+        const project = await this.getProject(projectId);
+        if (project) {
+          projectsMap.set(projectId, project);
+        }
+      }
+      
+      // دمج بيانات الحضور مع بيانات المشروع
+      const attendance = attendanceData.map((record: any) => ({
+        ...record,
+        project: projectsMap.get(record.projectId) || null
+      }));
       
       // جلب التحويلات من المشاريع المحددة
       let transfersConditions = [
