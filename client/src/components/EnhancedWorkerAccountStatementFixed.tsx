@@ -716,7 +716,7 @@ export const EnhancedWorkerAccountStatement = ({
                     <td style={{ border: '1px solid #d1d5db', padding: '1mm', textAlign: 'center', fontSize: '7px', fontWeight: 'bold' }}>
                       {workDays}
                     </td>
-                    <td style={{ border: '1px solid #d1d5db', padding: '1mm', textAlign: 'center', fontWeight: 'bold', fontSize: '7px' }}>
+                    <td style={{ border: '1px solid #d1d5db', padding: '1mm', textAlign: 'center', fontWeight: 'bold', color: '#000000', fontSize: '7px' }}>
                       {formatCurrency(totalDue)}
                     </td>
                     <td style={{ border: '1px solid #d1d5db', padding: '1mm', textAlign: 'center', fontWeight: 'bold', color: '#dc2626', fontSize: '7px' }}>
@@ -743,13 +743,13 @@ export const EnhancedWorkerAccountStatement = ({
                 <td style={{ border: '2px solid #059669', padding: '1.5mm', textAlign: 'center', fontWeight: 'bold', fontSize: '8px' }}>
                   {totalWorkDays}
                 </td>
-                <td style={{ border: '2px solid #059669', padding: '1.5mm', textAlign: 'center', fontWeight: 'bold', fontSize: '8px' }}>
+                <td style={{ border: '2px solid #059669', padding: '1.5mm', textAlign: 'center', fontWeight: 'bold', color: '#000000', fontSize: '8px' }}>
                   {formatCurrency(totalEarned)}
                 </td>
-                <td style={{ border: '2px solid #059669', padding: '1.5mm', textAlign: 'center', fontWeight: 'bold', fontSize: '8px' }}>
+                <td style={{ border: '2px solid #059669', padding: '1.5mm', textAlign: 'center', fontWeight: 'bold', color: '#dc2626', fontSize: '8px' }}>
                   {formatCurrency(totalPaid)}
                 </td>
-                <td style={{ border: '2px solid #059669', padding: '1.5mm', textAlign: 'center', fontWeight: 'bold', fontSize: '8px' }}>
+                <td style={{ border: '2px solid #059669', padding: '1.5mm', textAlign: 'center', fontWeight: 'bold', color: totalRemaining < 0 ? '#dc2626' : '#059669', fontSize: '8px' }}>
                   {formatCurrency(totalRemaining)}
                 </td>
                 <td style={{ border: '2px solid #059669', padding: '1.5mm', textAlign: 'center', fontWeight: 'bold', fontSize: '8px' }}>
