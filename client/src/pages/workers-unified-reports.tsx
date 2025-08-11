@@ -177,7 +177,7 @@ export default function WorkersUnifiedReports() {
 
         console.log(`🔍 جمع بيانات العامل ${workerId}:`, url);
 
-        const response = await apiRequest(url, 'GET');
+        const response = await apiRequest('GET', url);
         
         if (response && response.attendance) {
           allAttendanceData.push(...response.attendance.map((att: any) => ({
