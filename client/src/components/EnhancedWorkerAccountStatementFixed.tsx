@@ -714,10 +714,10 @@ export const EnhancedWorkerAccountStatement = ({
                     <td style={{ border: '1px solid #d1d5db', padding: '1mm', textAlign: 'center', fontWeight: 'bold', fontSize: '7px' }}>
                       {formatCurrency(totalDue)}
                     </td>
-                    <td style={{ border: '1px solid #d1d5db', padding: '1mm', textAlign: 'center', fontWeight: 'bold', color: '#059669', fontSize: '7px' }}>
+                    <td style={{ border: '1px solid #d1d5db', padding: '1mm', textAlign: 'center', fontWeight: 'bold', color: '#dc2626', fontSize: '7px' }}>
                       {formatCurrency(paidAmount)}
                     </td>
-                    <td style={{ border: '1px solid #d1d5db', padding: '1mm', textAlign: 'center', fontWeight: 'bold', color: remaining > 0 ? '#dc2626' : '#059669', fontSize: '7px' }}>
+                    <td style={{ border: '1px solid #d1d5db', padding: '1mm', textAlign: 'center', fontWeight: 'bold', color: remaining < 0 ? '#dc2626' : '#059669', fontSize: '7px' }}>
                       {formatCurrency(remaining)}
                     </td>
                     <td style={{ border: '1px solid #d1d5db', padding: '1mm', textAlign: 'center', fontWeight: 'bold', color: statusColor, fontSize: '7px' }}>

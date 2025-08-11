@@ -102,7 +102,7 @@ async function runSupplierMigrations() {
       },
       {
         name: 'مؤسسة النجاح التجارية',
-        contactPerson: 'محمد سالم',
+        contactPerson: 'سالم محمد',
         phone: '777987654',
         address: 'شارع الستين، صنعاء',
         paymentTerms: 45,

@@ -547,7 +547,7 @@ export default function ExcelStyleDailyExpenses() {
                         <td className="amount-cell">{formatCurrency(parseFloat(transfer.amount))}</td>
                         <td>حوالة</td>
                         <td className="balance-cell">{formatCurrency(runningBalance)}</td>
-                        <td className="notes-cell">الحوالة من {transfer.senderName} باسم المهندس محمد تاريخ {formatDate(transfer.transferDate)}</td>
+                        <td className="notes-cell">الحوالة من {transfer.senderName} باسم {transfer.recipientName || 'المهندس المسؤول'} تاريخ {formatDate(transfer.transferDate)}</td>
                       </tr>
                     );
                   });
