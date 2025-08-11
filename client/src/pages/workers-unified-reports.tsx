@@ -318,7 +318,7 @@ export default function WorkersUnifiedReports() {
       ['عدد المشاريع:', selectedProjectIds.length || 'جميع المشاريع'],
       [''],
       ['تفاصيل الحضور:'],
-      ['العامل', 'نوع العامل', 'الأجر اليومي', 'التاريخ', 'المشروع', 'الأيام', 'الوصف', 'الأجر المستحق', 'المبلغ المدفوع', 'نوع الدفع', 'ملاحظات'],
+      ['العامل', 'نوع العامل', 'الأجر اليومي', 'التاريخ', 'المشروع', 'الأيام', 'الوصف', 'الأجر المستحق', 'المبلغ المدفوع', 'المتبقي', 'نوع الدفع', 'ملاحظات'],
       ...reportData.map((row: any) => [
         row.workerName,
         row.workerType,
@@ -329,6 +329,7 @@ export default function WorkersUnifiedReports() {
         row.workDescription || '',
         formatCurrency(row.dailyWage * row.workDays),
         formatCurrency(row.paidAmount || 0),
+        formatCurrency((row.dailyWage * row.workDays) - (row.paidAmount || 0)),
         row.paymentType || '',
         row.notes || ''
       ])
@@ -339,7 +340,7 @@ export default function WorkersUnifiedReports() {
     // تنسيق الخلايا
     worksheet['!cols'] = [
       { width: 15 }, { width: 12 }, { width: 12 }, { width: 12 }, { width: 15 }, 
-      { width: 8 }, { width: 20 }, { width: 12 }, { width: 12 }, { width: 12 }, { width: 20 }
+      { width: 8 }, { width: 20 }, { width: 12 }, { width: 12 }, { width: 12 }, { width: 12 }, { width: 20 }
     ];
 
     XLSX.utils.book_append_sheet(workbook, worksheet, 'تقرير العمال');
@@ -735,38 +736,45 @@ export default function WorkersUnifiedReports() {
                       <TableHead className="text-right font-bold">الوصف</TableHead>
                       <TableHead className="text-right font-bold">المستحق</TableHead>
                       <TableHead className="text-right font-bold">المدفوع</TableHead>
+                      <TableHead className="text-right font-bold">المتبقي</TableHead>
                       <TableHead className="text-right font-bold">نوع الدفع</TableHead>
                       <TableHead className="text-right font-bold">ملاحظات</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {reportData.map((row, index) => (
-                      <TableRow key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800">
-                        <TableCell className="font-medium">{row.workerName}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{row.workerType}</Badge>
-                        </TableCell>
-                        <TableCell>{formatCurrency(row.workerDailyWage)}</TableCell>
-                        <TableCell>{formatDate(row.date)}</TableCell>
-                        <TableCell className="font-medium">{row.projectName}</TableCell>
-                        <TableCell className="text-center">{row.workDays}</TableCell>
-                        <TableCell>{row.workDescription || '-'}</TableCell>
-                        <TableCell className="font-bold text-blue-600">
-                          {formatCurrency(row.dailyWage * row.workDays)}
-                        </TableCell>
-                        <TableCell className="font-bold text-green-600">
-                          {formatCurrency(row.paidAmount || 0)}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={row.paymentType === 'full' ? 'default' : 'secondary'}>
-                            {row.paymentType === 'full' ? 'كامل' : 
-                             row.paymentType === 'partial' ? 'جزئي' : 
-                             row.paymentType === 'none' ? 'لم يُدفع' : row.paymentType}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{row.notes || '-'}</TableCell>
-                      </TableRow>
-                    ))}
+                    {reportData.map((row, index) => {
+                      const remainingAmount = (row.dailyWage * row.workDays) - (row.paidAmount || 0);
+                      return (
+                        <TableRow key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                          <TableCell className="font-medium">{row.workerName}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">{row.workerType}</Badge>
+                          </TableCell>
+                          <TableCell>{formatCurrency(row.workerDailyWage)}</TableCell>
+                          <TableCell>{formatDate(row.date)}</TableCell>
+                          <TableCell className="font-medium">{row.projectName}</TableCell>
+                          <TableCell className="text-center">{row.workDays}</TableCell>
+                          <TableCell>{row.workDescription || '-'}</TableCell>
+                          <TableCell className="font-bold text-blue-600">
+                            {formatCurrency(row.dailyWage * row.workDays)}
+                          </TableCell>
+                          <TableCell className="font-bold text-green-600">
+                            {formatCurrency(row.paidAmount || 0)}
+                          </TableCell>
+                          <TableCell className={`font-bold ${remainingAmount > 0 ? 'text-orange-600' : remainingAmount < 0 ? 'text-red-600' : 'text-gray-600'}`}>
+                            {formatCurrency(remainingAmount)}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={row.paymentType === 'full' ? 'default' : 'secondary'}>
+                              {row.paymentType === 'full' ? 'كامل' : 
+                               row.paymentType === 'partial' ? 'جزئي' : 
+                               row.paymentType === 'none' ? 'لم يُدفع' : row.paymentType}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{row.notes || '-'}</TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>
