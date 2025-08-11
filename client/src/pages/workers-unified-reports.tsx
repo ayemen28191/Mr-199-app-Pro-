@@ -236,53 +236,146 @@ export default function WorkersUnifiedReports() {
     const attendance = data.attendance || [];
     const transfers = data.transfers || [];
 
+    // حساب الإحصائيات المالية
+    const totalWorkDays = attendance.reduce((sum: number, record: any) => sum + record.workDays, 0);
+    const totalWorkHours = attendance.reduce((sum: number, record: any) => {
+      if (record.startTime && record.endTime) {
+        const start = new Date(`2000-01-01T${record.startTime}`);
+        const end = new Date(`2000-01-01T${record.endTime}`);
+        const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+        return sum + (hours > 0 ? hours : 8);
+      }
+      return sum + 8;
+    }, 0);
+    const totalAmountDue = attendance.reduce((sum: number, record: any) => sum + (record.dailyWage * record.workDays), 0);
+    const totalAmountReceived = attendance.reduce((sum: number, record: any) => sum + (record.paidAmount || 0), 0);
+    const totalTransferred = transfers.reduce((sum: number, transfer: any) => sum + transfer.amount, 0);
+    const remainingAmount = totalAmountDue - totalAmountReceived;
+    const workerCurrentBalance = totalAmountDue - totalAmountReceived - totalTransferred;
+
     // إعداد البيانات للإكسل
     const workbook = XLSX.utils.book_new();
 
-    // ورقة كشف الحساب
+    // بيانات كشف الحساب بتصميم احترافي يطابق الكشف المطبوع
     const accountData = [
-      ['كشف حساب العامل'],
+      // رأس الشركة
+      ['شركة الحاج عبدالرحمن علي الجهني وأولاده'],
+      ['كشف حساب العامل الشامل والتفصيلي'],
       [''],
+      // معلومات العامل والفترة
+      ['معلومات العامل:'],
       ['اسم العامل:', worker?.name || ''],
       ['نوع العامل:', worker?.type || ''],
+      ['رقم الهاتف:', worker?.phone || '-'],
+      ['العنوان:', worker?.address || '-'],
       ['الأجر اليومي:', formatCurrency(worker?.dailyWage || 0)],
+      [''],
+      ['فترة التقرير:'],
       ['من تاريخ:', formatDate(dateFrom)],
       ['إلى تاريخ:', formatDate(dateTo)],
+      ['تاريخ إنشاء الكشف:', new Date().toLocaleDateString('ar-EG')],
       [''],
+      // ملخص مالي
+      ['الملخص المالي:'],
+      ['إجمالي أيام العمل:', totalWorkDays],
+      ['إجمالي ساعات العمل:', totalWorkHours.toFixed(1)],
+      ['إجمالي المبلغ المستحق:', formatCurrency(totalAmountDue)],
+      ['إجمالي المبلغ المستلم:', formatCurrency(totalAmountReceived)],
+      ['إجمالي التحويلات للأهل:', formatCurrency(totalTransferred)],
+      ['المبلغ المتبقي (قبل التحويلات):', formatCurrency(remainingAmount)],
+      ['الرصيد النهائي للعامل:', formatCurrency(workerCurrentBalance)],
+      [''],
+      // جدول تفاصيل الحضور
       ['تفاصيل الحضور:'],
-      ['التاريخ', 'المشروع', 'الأيام', 'الوصف', 'الأجر المستحق', 'المبلغ المدفوع', 'نوع الدفع', 'ملاحظات'],
-      ...attendance.map((att: any) => [
-        formatDate(att.date),
-        att.project?.name || '',
-        att.workDays,
-        att.workDescription || '',
-        formatCurrency(att.dailyWage * att.workDays),
-        formatCurrency(att.paidAmount || 0),
-        att.paymentType || '',
-        att.notes || ''
-      ]),
+      ['م', 'التاريخ', 'اسم المشروع', 'عدد الأيام', 'من الساعة', 'إلى الساعة', 'ساعات العمل', 'وصف العمل', 'الأجر المستحق', 'المبلغ المدفوع', 'المتبقي', 'نوع الدفع', 'ملاحظات'],
+      // بيانات الحضور
+      ...attendance.map((att: any, index: number) => {
+        const workHours = att.startTime && att.endTime ? 
+          (() => {
+            const start = new Date(`2000-01-01T${att.startTime}`);
+            const end = new Date(`2000-01-01T${att.endTime}`);
+            const hours = (end.getTime() - start.getTime()) / (1000 * 60 * 60);
+            return hours > 0 ? hours.toFixed(1) : '8.0';
+          })() : '8.0';
+        
+        const amountDue = att.dailyWage * att.workDays;
+        const remaining = amountDue - (att.paidAmount || 0);
+        
+        return [
+          index + 1,
+          formatDate(att.date),
+          att.project?.name || '-',
+          att.workDays.toFixed(1),
+          att.startTime || '-',
+          att.endTime || '-',
+          workHours,
+          att.workDescription || '-',
+          formatCurrency(amountDue),
+          formatCurrency(att.paidAmount || 0),
+          formatCurrency(remaining),
+          att.paymentType === 'full' ? 'كامل' : att.paymentType === 'partial' ? 'جزئي' : att.paymentType === 'none' ? 'لم يُدفع' : (att.paymentType || '-'),
+          att.notes || '-'
+        ];
+      }),
       [''],
-      ['تحويلات للأهل:'],
-      ['التاريخ', 'المبلغ', 'رقم التحويل', 'اسم المرسل', 'اسم المستلم', 'رقم المستلم', 'طريقة التحويل', 'ملاحظات'],
-      ...transfers.map((transfer: any) => [
-        formatDate(transfer.date),
-        formatCurrency(transfer.amount),
-        transfer.transferNumber || '',
-        transfer.senderName || '',
-        transfer.recipientName || '',
-        transfer.recipientPhone || '',
-        transfer.transferMethod || '',
-        transfer.notes || ''
-      ])
+      // صف الإجماليات
+      ['', '', '', totalWorkDays.toFixed(1), '', '', totalWorkHours.toFixed(1), 'الإجماليات:', formatCurrency(totalAmountDue), formatCurrency(totalAmountReceived), formatCurrency(remainingAmount), '', ''],
+      [''],
     ];
+
+    // إضافة تحويلات الأهل إذا وجدت
+    if (transfers && transfers.length > 0) {
+      accountData.push(
+        ['تحويلات الأهل:'],
+        ['م', 'التاريخ', 'المبلغ', 'رقم التحويل', 'اسم المرسل', 'اسم المستلم', 'رقم المستلم', 'طريقة التحويل', 'ملاحظات'],
+        ...transfers.map((transfer: any, index: number) => [
+          index + 1,
+          formatDate(transfer.date),
+          formatCurrency(transfer.amount),
+          transfer.transferNumber || '-',
+          transfer.senderName || '-',
+          transfer.recipientName || '-',
+          transfer.recipientPhone || '-',
+          transfer.transferMethod === 'hawaleh' ? 'حوالة' : transfer.transferMethod === 'bank' ? 'بنك' : 'نقداً',
+          transfer.notes || '-'
+        ]),
+        [''],
+        ['', 'إجمالي التحويلات:', formatCurrency(totalTransferred), '', '', '', '', '', ''],
+        ['']
+      );
+    }
+
+    // تذييل الكشف
+    accountData.push(
+      ['تم إنشاء هذا الكشف آلياً بواسطة نظام إدارة مشاريع البناء'],
+      [`التاريخ والوقت: ${new Date().toLocaleDateString('ar-EG')} - ${new Date().toLocaleTimeString('ar-EG')}`]
+    );
 
     const worksheet = XLSX.utils.aoa_to_sheet(accountData);
     
-    // تنسيق الخلايا
+    // تنسيق عرض الأعمدة
     worksheet['!cols'] = [
-      { width: 12 }, { width: 15 }, { width: 8 }, { width: 20 }, 
-      { width: 12 }, { width: 12 }, { width: 12 }, { width: 20 }
+      { width: 5 },   // م
+      { width: 12 },  // التاريخ
+      { width: 20 },  // اسم المشروع
+      { width: 8 },   // عدد الأيام
+      { width: 10 },  // من الساعة
+      { width: 10 },  // إلى الساعة
+      { width: 10 },  // ساعات العمل
+      { width: 25 },  // وصف العمل
+      { width: 12 },  // الأجر المستحق
+      { width: 12 },  // المبلغ المدفوع
+      { width: 12 },  // المتبقي
+      { width: 12 },  // نوع الدفع
+      { width: 20 }   // ملاحظات
     ];
+
+    // تنسيق الخلايا (تحديد النطاقات المدمجة للعناوين)
+    const merges = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 12 } }, // عنوان الشركة
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 12 } }, // عنوان الكشف
+    ];
+    worksheet['!merges'] = merges;
 
     XLSX.utils.book_append_sheet(workbook, worksheet, 'كشف حساب العامل');
 
@@ -308,40 +401,87 @@ export default function WorkersUnifiedReports() {
 
     const workbook = XLSX.utils.book_new();
 
-    // ورقة التقرير الموحد
+    // حساب الإحصائيات
+    const totalWorkDays = reportData.reduce((sum, row) => sum + row.workDays, 0);
+    const totalAmountDue = reportData.reduce((sum, row) => sum + (row.dailyWage * row.workDays), 0);
+    const totalPaidAmount = reportData.reduce((sum, row) => sum + (row.paidAmount || 0), 0);
+    const totalRemaining = totalAmountDue - totalPaidAmount;
+
+    // ورقة التقرير بتصميم احترافي يطابق الكشف المطبوع
     const reportDataForExcel = [
-      ['تقرير تصفية العمال الموحد'],
+      // رأس الشركة
+      ['شركة الحاج عبدالرحمن علي الجهني وأولاده'],
+      ['تقرير تصفية العمال الموحد والتفصيلي'],
       [''],
-      ['من تاريخ:', formatDate(dateFrom)],
-      ['إلى تاريخ:', formatDate(dateTo)],
-      ['عدد العمال:', selectedWorkerIds.length],
+      // معلومات التقرير
+      ['معلومات التقرير:'],
+      ['الفترة:', `من ${formatDate(dateFrom)} إلى ${formatDate(dateTo)}`],
+      ['تاريخ إنشاء التقرير:', new Date().toLocaleDateString('ar-EG')],
+      ['عدد العمال المحددين:', selectedWorkerIds.length],
       ['عدد المشاريع:', selectedProjectIds.length || 'جميع المشاريع'],
+      ['إجمالي السجلات:', reportData.length],
       [''],
-      ['تفاصيل الحضور:'],
-      ['العامل', 'نوع العامل', 'الأجر اليومي', 'التاريخ', 'المشروع', 'الأيام', 'الوصف', 'الأجر المستحق', 'المبلغ المدفوع', 'المتبقي', 'نوع الدفع', 'ملاحظات'],
-      ...reportData.map((row: any) => [
+      // ملخص الإحصائيات
+      ['ملخص الإحصائيات المالية:'],
+      ['إجمالي أيام العمل:', totalWorkDays],
+      ['إجمالي المبلغ المستحق:', formatCurrency(totalAmountDue)],
+      ['إجمالي المبلغ المدفوع:', formatCurrency(totalPaidAmount)],
+      ['إجمالي المبلغ المتبقي:', formatCurrency(totalRemaining)],
+      [''],
+      // عنوان الجدول
+      ['تفاصيل حضور العمال:'],
+      ['م', 'اسم العامل', 'نوع العامل', 'الأجر اليومي', 'التاريخ', 'اسم المشروع', 'عدد الأيام', 'وصف العمل', 'الأجر المستحق', 'المبلغ المدفوع', 'المبلغ المتبقي', 'نوع الدفع', 'ملاحظات'],
+      // بيانات العمال مع ترقيم
+      ...reportData.map((row: any, index: number) => [
+        index + 1,
         row.workerName,
         row.workerType,
         formatCurrency(row.workerDailyWage),
         formatDate(row.date),
         row.projectName,
         row.workDays,
-        row.workDescription || '',
+        row.workDescription || '-',
         formatCurrency(row.dailyWage * row.workDays),
         formatCurrency(row.paidAmount || 0),
         formatCurrency((row.dailyWage * row.workDays) - (row.paidAmount || 0)),
-        row.paymentType || '',
-        row.notes || ''
-      ])
+        row.paymentType === 'full' ? 'كامل' : row.paymentType === 'partial' ? 'جزئي' : row.paymentType === 'none' ? 'لم يُدفع' : (row.paymentType || '-'),
+        row.notes || '-'
+      ]),
+      [''],
+      // صف الإجماليات
+      ['', '', '', '', '', '', 'الإجماليات:', totalWorkDays, formatCurrency(totalAmountDue), formatCurrency(totalPaidAmount), formatCurrency(totalRemaining), '', ''],
+      [''],
+      // تذييل التقرير
+      ['تم إنشاء هذا التقرير آلياً بواسطة نظام إدارة مشاريع البناء'],
+      [`التاريخ والوقت: ${new Date().toLocaleDateString('ar-EG')} - ${new Date().toLocaleTimeString('ar-EG')}`],
+      ['']
     ];
 
     const worksheet = XLSX.utils.aoa_to_sheet(reportDataForExcel);
     
-    // تنسيق الخلايا
+    // تنسيق عرض الأعمدة
     worksheet['!cols'] = [
-      { width: 15 }, { width: 12 }, { width: 12 }, { width: 12 }, { width: 15 }, 
-      { width: 8 }, { width: 20 }, { width: 12 }, { width: 12 }, { width: 12 }, { width: 12 }, { width: 20 }
+      { width: 5 },   // م
+      { width: 18 },  // اسم العامل
+      { width: 12 },  // نوع العامل
+      { width: 12 },  // الأجر اليومي
+      { width: 12 },  // التاريخ
+      { width: 20 },  // اسم المشروع
+      { width: 8 },   // عدد الأيام
+      { width: 25 },  // وصف العمل
+      { width: 12 },  // الأجر المستحق
+      { width: 12 },  // المبلغ المدفوع
+      { width: 12 },  // المبلغ المتبقي
+      { width: 12 },  // نوع الدفع
+      { width: 20 }   // ملاحظات
     ];
+
+    // تنسيق الخلايا (تحديد النطاقات المدمجة للعناوين)
+    const merges = [
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 12 } }, // عنوان الشركة
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 12 } }, // عنوان التقرير
+    ];
+    worksheet['!merges'] = merges;
 
     XLSX.utils.book_append_sheet(workbook, worksheet, 'تقرير العمال');
 
