@@ -183,13 +183,43 @@ export default function WorkersUnifiedReports() {
         const response = await apiRequest('GET', url);
         
         if (response && response.attendance) {
+          console.log(`📋 بيانات العامل ${workerId}:`, response);
           allAttendanceData.push(...response.attendance.map((att: any) => ({
             ...att,
+            workerId: workerId,
             workerName: response.worker?.name || '',
             workerType: response.worker?.type || '',
+            workerPhone: response.worker?.phone || '',
             workerDailyWage: response.worker?.dailyWage || 0,
-            projectName: att.project?.name || ''
+            projectName: att.project?.name || 'غير محدد',
+            projectId: att.projectId || '',
+            date: att.date,
+            workDays: att.workDays || 0,
+            totalWorkHours: att.totalWorkHours || att.workDays * 8,
+            paidAmount: att.paidAmount || 0,
+            totalTransferred: att.totalTransferred || 0,
+            dailyWage: att.dailyWage || response.worker?.dailyWage || 0
           })));
+          
+          // إضافة بيانات الحوالات إذا وُجدت
+          if (response.transfers && response.transfers.length > 0) {
+            response.transfers.forEach((transfer: any) => {
+              allAttendanceData.push({
+                workerId: workerId,
+                workerName: response.worker?.name || '',
+                workerType: 'حوالة',
+                workerPhone: response.worker?.phone || '',
+                projectName: 'حوالة للأهل',
+                date: transfer.date,
+                workDays: 0,
+                totalWorkHours: 0,
+                paidAmount: 0,
+                totalTransferred: transfer.amount || 0,
+                dailyWage: 0,
+                transferDetails: transfer.description || 'حوالة للأهل'
+              });
+            });
+          }
         }
       }
 
@@ -617,7 +647,80 @@ export default function WorkersUnifiedReports() {
       };
     });
 
-    // تعديل عرض الأعمدة
+    // إضافة الملخص المالي
+    worksheet.addRow([]);
+    worksheet.addRow([]);
+    const financialSummaryStart = worksheet.lastRow.number + 1;
+    
+    // عنوان الملخص المالي
+    worksheet.mergeCells(`A${financialSummaryStart}:K${financialSummaryStart}`);
+    const financialTitle = worksheet.getCell(`A${financialSummaryStart}`);
+    financialTitle.value = 'الملخص المالي الشامل';
+    financialTitle.font = { bold: true, size: 14, color: { argb: 'FFFFFFFF' } };
+    financialTitle.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF16A34A' } };
+    financialTitle.alignment = { horizontal: 'center', vertical: 'middle', readingOrder: 1 };
+    financialTitle.border = {
+      top: { style: 'thick', color: { argb: 'FF000000' } },
+      left: { style: 'thick', color: { argb: 'FF000000' } },
+      bottom: { style: 'thick', color: { argb: 'FF000000' } },
+      right: { style: 'thick', color: { argb: 'FF000000' } }
+    };
+
+    // بيانات الملخص المالي
+    const summaryData = [
+      ['إجمالي العمال:', summaryArray.length],
+      ['إجمالي أيام العمل:', totalWorkDays.toFixed(1)],
+      ['إجمالي الساعات:', reportData.reduce((sum, row) => sum + parseFloat(row.totalWorkHours || 0), 0).toFixed(1)],
+      ['إجمالي المبالغ المستحقة:', formatCurrency(totalAmountDue)],
+      ['إجمالي المبالغ المستلمة:', formatCurrency(totalPaidAmount)],
+      ['إجمالي الحوالات:', formatCurrency(reportData.reduce((sum, row) => sum + parseFloat(row.totalTransferred || 0), 0))],
+      ['المبلغ المتبقي الإجمالي:', formatCurrency(reportData.reduce((sum, row) => sum + (parseFloat(row.dailyWage || 0) * parseFloat(row.workDays || 0)) - parseFloat(row.paidAmount || 0) - parseFloat(row.totalTransferred || 0), 0))]
+    ];
+
+    summaryData.forEach((row, index) => {
+      const summaryRow = worksheet.addRow(['', '', row[0], row[1], '', '', '', '', '', '', '']);
+      summaryRow.getCell(3).font = { bold: true };
+      summaryRow.getCell(4).font = { bold: true };
+      summaryRow.eachCell(cell => {
+        cell.alignment = { horizontal: 'right', readingOrder: 1 };
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FF000000' } },
+          left: { style: 'thin', color: { argb: 'FF000000' } },
+          bottom: { style: 'thin', color: { argb: 'FF000000' } },
+          right: { style: 'thin', color: { argb: 'FF000000' } }
+        };
+      });
+    });
+
+    // إضافة التوقيعات
+    worksheet.addRow([]);
+    worksheet.addRow([]);
+    const signatureStart = worksheet.lastRow.number + 1;
+    
+    // صف التوقيعات
+    const signatureRow = worksheet.addRow(['', '', 'توقيع المحاسب:', '', '', '', 'توقيع المدير المالي:', '', '', '', 'اعتماد الإدارة:']);
+    signatureRow.height = 40;
+    signatureRow.eachCell(cell => {
+      cell.font = { bold: true, size: 12 };
+      cell.alignment = { horizontal: 'center', vertical: 'bottom', readingOrder: 1 };
+      cell.border = {
+        top: { style: 'thick', color: { argb: 'FF000000' } },
+        bottom: { style: 'thick', color: { argb: 'FF000000' } }
+      };
+    });
+
+    // صف فارغ للتوقيعات
+    const emptySignatureRow = worksheet.addRow(['', '', '', '', '', '', '', '', '', '', '']);
+    emptySignatureRow.height = 30;
+    emptySignatureRow.eachCell(cell => {
+      cell.border = {
+        bottom: { style: 'thick', color: { argb: 'FF000000' } },
+        left: { style: 'thin', color: { argb: 'FF000000' } },
+        right: { style: 'thin', color: { argb: 'FF000000' } }
+      };
+    });
+
+    // تعديل عرض الأعمدة واتجاه النص من اليمين
     worksheet.columns = [
       { width: 8 },   // م
       { width: 25 },  // الاسم والرقم
@@ -631,6 +734,17 @@ export default function WorkersUnifiedReports() {
       { width: 15 },  // المتبقي
       { width: 25 }   // ملاحظات
     ];
+
+    // تطبيق اتجاه RTL على جميع الخلايا
+    worksheet.eachRow((row) => {
+      row.eachCell((cell) => {
+        if (!cell.alignment) cell.alignment = {};
+        cell.alignment.readingOrder = 1; // RTL
+        if (!cell.alignment.horizontal) {
+          cell.alignment.horizontal = 'right';
+        }
+      });
+    });
 
     // حفظ الملف
     const fileName = `تقرير_تصفية_العمال_${formatDate(dateFrom)}_${formatDate(dateTo)}.xlsx`;
