@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { formatCurrency, formatDate, getCurrentDate } from "@/lib/utils";
-import { EnhancedWorkerAccountStatement } from "@/components/EnhancedWorkerAccountStatement";
+import { EnhancedWorkerAccountStatement } from "@/components/EnhancedWorkerAccountStatementFixed";
 import type { Worker, Project } from "@shared/schema";
 import * as XLSX from 'xlsx';
 import * as ExcelJS from 'exceljs';
@@ -224,8 +224,8 @@ export default function WorkersUnifiedReports() {
     setIsGenerating(false);
   };
 
-  // Export to Excel - Enhanced Professional Format
-  const exportSingleWorkerToExcel = async () => {
+  // Export to Excel - Single Worker
+  const exportSingleWorkerToExcel = () => {
     if (!reportData || reportData.length === 0) {
       toast({
         title: "لا توجد بيانات للتصدير",
@@ -238,30 +238,6 @@ export default function WorkersUnifiedReports() {
     const worker = data.worker;
     const attendance = data.attendance || [];
     const transfers = data.transfers || [];
-
-    try {
-      const workbook = new ExcelJS.Workbook();
-      const worksheet = workbook.addWorksheet('كشف حساب العامل', {
-        pageSetup: {
-          paperSize: 9, // A4
-          orientation: 'portrait',
-          fitToPage: true,
-          margins: {
-            left: 0.25,
-            right: 0.25,
-            top: 0.75,
-            bottom: 0.75,
-            header: 0.3,
-            footer: 0.3
-          }
-        },
-        headerFooter: {
-          firstHeader: "&C&\"Arial,Bold\"&18 شركة الفتيني للمقاولات والاستشارات الهندسية",
-          firstFooter: "&C&\"Arial\"&10 تم إنشاء هذا التقرير آلياً - &D &T"
-        }
-      });
-
-      let currentRow = 1;
 
     // حساب الإحصائيات المالية
     const totalWorkDays = attendance.reduce((sum: number, record: any) => sum + record.workDays, 0);

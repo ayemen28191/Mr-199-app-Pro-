@@ -1,4 +1,5 @@
 // استيراد أنواع البيانات من exceljs
+import * as ExcelJS from 'exceljs';
 
 // إعدادات التصميم الموحد لجميع ملفات Excel
 export const EXCEL_STYLES = {
@@ -44,7 +45,7 @@ export const COMPANY_INFO = {
 
 // إضافة رأس موحد للتقرير
 export function addReportHeader(
-  worksheet: Worksheet,
+  worksheet: ExcelJS.Worksheet,
   reportTitle: string,
   reportSubtitle?: string,
   additionalInfo?: string[]
@@ -113,7 +114,7 @@ export function addReportHeader(
 }
 
 // إضافة ذيل موحد للتقرير
-export function addReportFooter(worksheet: Worksheet, startRow: number): void {
+export function addReportFooter(worksheet: ExcelJS.Worksheet, startRow: number): void {
   const currentDate = new Date().toLocaleDateString('ar-SA', {
     year: 'numeric',
     month: 'long',
@@ -153,7 +154,7 @@ export function addReportFooter(worksheet: Worksheet, startRow: number): void {
 
 // تنسيق جدول البيانات
 export function formatDataTable(
-  worksheet: Worksheet,
+  worksheet: ExcelJS.Worksheet,
   headerRow: number,
   dataStartRow: number,
   dataEndRow: number,
@@ -161,7 +162,7 @@ export function formatDataTable(
 ): void {
   // تنسيق رأس الجدول
   const headerRange = worksheet.getRow(headerRow);
-  headerRange.eachCell((cell) => {
+  headerRange.eachCell((cell: any) => {
     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_STYLES.colors.headerBg } };
     cell.font = EXCEL_STYLES.fonts.header;
     cell.alignment = { horizontal: 'center', vertical: 'middle' };
@@ -177,7 +178,7 @@ export function formatDataTable(
   // تنسيق بيانات الجدول
   for (let rowIndex = dataStartRow; rowIndex <= dataEndRow; rowIndex++) {
     const row = worksheet.getRow(rowIndex);
-    row.eachCell((cell) => {
+    row.eachCell((cell: any) => {
       cell.font = EXCEL_STYLES.fonts.data;
       cell.alignment = { horizontal: 'center', vertical: 'middle' };
       cell.border = {
@@ -197,7 +198,7 @@ export function formatDataTable(
     
     // حساب العرض المطلوب بناءً على المحتوى
     let maxLength = 0;
-    column.eachCell((cell) => {
+    column.eachCell((cell: any) => {
       const cellLength = cell.value?.toString().length || 0;
       if (cellLength > maxLength) {
         maxLength = cellLength;
@@ -210,9 +211,9 @@ export function formatDataTable(
 }
 
 // تنسيق صف المجاميع
-export function formatTotalsRow(worksheet: Worksheet, totalsRowIndex: number): void {
+export function formatTotalsRow(worksheet: ExcelJS.Worksheet, totalsRowIndex: number): void {
   const totalsRow = worksheet.getRow(totalsRowIndex);
-  totalsRow.eachCell((cell) => {
+  totalsRow.eachCell((cell: any) => {
     cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_STYLES.colors.totalsBg } };
     cell.font = EXCEL_STYLES.fonts.totals;
     cell.alignment = { horizontal: 'center', vertical: 'middle' };
