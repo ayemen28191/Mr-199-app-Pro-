@@ -1118,11 +1118,12 @@ export default function WorkersUnifiedReports() {
                       <TableHeader>
                         <TableRow className="bg-blue-600 text-white print:bg-blue-600 print:text-black">
                           <TableHead className="border border-gray-400 p-2 print:p-1 text-center font-bold print:text-xs text-white print:text-black">م</TableHead>
-                          <TableHead className="border border-gray-400 p-2 print:p-1 text-center font-bold print:text-xs text-white print:text-black">اسم المشروع</TableHead>
-                          <TableHead className="border border-gray-400 p-2 print:p-1 text-center font-bold print:text-xs text-white print:text-black">المهنة</TableHead>
                           <TableHead className="border border-gray-400 p-2 print:p-1 text-center font-bold print:text-xs text-white print:text-black">الاسم والرقم</TableHead>
+                          <TableHead className="border border-gray-400 p-2 print:p-1 text-center font-bold print:text-xs text-white print:text-black">المهنة</TableHead>
+                          <TableHead className="border border-gray-400 p-2 print:p-1 text-center font-bold print:text-xs text-white print:text-black">اسم المشروع</TableHead>
                           <TableHead className="border border-gray-400 p-2 print:p-1 text-center font-bold print:text-xs text-white print:text-black">الأجر اليومي</TableHead>
                           <TableHead className="border border-gray-400 p-2 print:p-1 text-center font-bold print:text-xs text-white print:text-black">أيام العمل</TableHead>
+                          <TableHead className="border border-gray-400 p-2 print:p-1 text-center font-bold print:text-xs text-white print:text-black">إجمالي الساعات</TableHead>
                           <TableHead className="border border-gray-400 p-2 print:p-1 text-center font-bold print:text-xs text-white print:text-black">المبلغ المستحق</TableHead>
                           <TableHead className="border border-gray-400 p-2 print:p-1 text-center font-bold print:text-xs text-white print:text-black">المبلغ المستلم</TableHead>
                           <TableHead className="border border-gray-400 p-2 print:p-1 text-center font-bold print:text-xs text-white print:text-black">المتبقي</TableHead>
@@ -1200,21 +1201,24 @@ export default function WorkersUnifiedReports() {
                                   {currentRowIndex}
                                 </TableCell>
                                 <TableCell className="text-right align-middle border print:border-gray-400 print:py-1 print:text-xs">
-                                  <div className="text-sm">{projectNames || 'غير محدد'}</div>
+                                  <div className="font-semibold">{worker.workerName}</div>
+                                  {worker.phone && <div className="text-sm text-gray-600 print:text-xs">{worker.phone}</div>}
                                 </TableCell>
                                 <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">
                                   <span className="print:hidden"><Badge variant="outline">{worker.workerType}</Badge></span>
                                   <span className="hidden print:inline">{worker.workerType}</span>
                                 </TableCell>
                                 <TableCell className="text-right align-middle border print:border-gray-400 print:py-1 print:text-xs">
-                                  <div className="font-semibold">{worker.workerName}</div>
-                                  {worker.phone && <div className="text-sm text-gray-600 print:text-xs">{worker.phone}</div>}
+                                  <div className="text-sm">{projectNames || 'غير محدد'}</div>
                                 </TableCell>
                                 <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">
                                   {formatCurrency(worker.dailyWage)}
                                 </TableCell>
                                 <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs font-bold text-blue-600 print:text-black">
                                   {worker.totalWorkDays.toFixed(1)}
+                                </TableCell>
+                                <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs font-bold text-purple-600 print:text-black">
+                                  {worker.totalWorkHours.toFixed(1)}
                                 </TableCell>
                                 <TableCell className="font-bold text-green-600 text-center align-middle border print:border-gray-400 print:py-1 print:text-xs print:text-black">
                                   {formatCurrency(worker.totalAmountDue)}
@@ -1236,13 +1240,14 @@ export default function WorkersUnifiedReports() {
                               workerRows.push(
                                 <TableRow key={`transfer-${worker.workerId}`} className="bg-red-50 dark:bg-red-900/20 print:bg-gray-100">
                                   <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">-</TableCell>
-                                  <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">{projectNames || 'عام'}</TableCell>
-                                  <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">حوالة</TableCell>
                                   <TableCell className="text-right align-middle border print:border-gray-400 print:py-1 print:text-xs">
                                     <div className="text-sm text-red-600 font-medium print:text-xs">
-                                      ↳ حوالة للأهل - {worker.workerName}
+                                      تصفية حسابية رقم الحوالة: {worker.workerId}، اسم المستلم: {worker.workerName}
                                     </div>
                                   </TableCell>
+                                  <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">حوالة</TableCell>
+                                  <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">{projectNames || 'عام'}</TableCell>
+                                  <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">0</TableCell>
                                   <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">0</TableCell>
                                   <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">0</TableCell>
                                   <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">0</TableCell>
@@ -1267,7 +1272,7 @@ export default function WorkersUnifiedReports() {
                         })()}
                         {/* إجمالي عام */}
                         <TableRow className="bg-green-600 text-white print:bg-green-600 print:text-black border-t-2 border-green-500 print:border-green-600">
-                          <TableCell className="font-bold text-center align-middle border print:border-gray-400 print:py-1 print:text-xs text-white print:text-black" colSpan={6}>
+                          <TableCell className="font-bold text-center align-middle border print:border-gray-400 print:py-1 print:text-xs text-white print:text-black" colSpan={7}>
                             الإجماليات
                           </TableCell>
                           <TableCell className="font-bold text-center align-middle border print:border-gray-400 print:py-1 print:text-xs text-white print:text-black">
