@@ -31,33 +31,34 @@ interface WorkerTransferRecord {
 }
 
 interface EnhancedWorkerAccountStatementProps {
-  worker: {
-    id: string;
-    name: string;
-    type: string;
-    dailyWage: number;
-    phone?: string;
-    address?: string;
+  data: {
+    worker: {
+      id: string;
+      name: string;
+      type: string;
+      dailyWage: number;
+      phone?: string;
+      address?: string;
+    };
+    project?: {
+      id: string;
+      name: string;
+      location?: string;
+    };
+    attendance: WorkerAttendanceRecord[];
+    transfers: WorkerTransferRecord[];
+    summary?: any;
   };
-  project: {
-    id: string;
-    name: string;
-    location?: string;
-  };
-  attendance: WorkerAttendanceRecord[];
-  transfers: WorkerTransferRecord[];
   dateFrom: string;
   dateTo: string;
 }
 
 export const EnhancedWorkerAccountStatement: React.FC<EnhancedWorkerAccountStatementProps> = ({
-  worker,
-  project,
-  attendance,
-  transfers,
+  data,
   dateFrom,
   dateTo
 }) => {
+  const { worker, project, attendance, transfers } = data;
   
   // حساب الإجماليات
   const totalWorkDays = attendance.reduce((sum, record) => sum + (record.workDays || 0), 0);
@@ -120,11 +121,11 @@ export const EnhancedWorkerAccountStatement: React.FC<EnhancedWorkerAccountState
         <div className="info-grid">
           <div className="info-item">
             <span className="info-label">اسم المشروع:</span>
-            <span className="info-value">{project.name}</span>
+            <span className="info-value">{project?.name || 'متعدد المشاريع'}</span>
           </div>
           <div className="info-item">
             <span className="info-label">الموقع:</span>
-            <span className="info-value">{project.location || 'غير محدد'}</span>
+            <span className="info-value">{project?.location || 'غير محدد'}</span>
           </div>
         </div>
       </div>
