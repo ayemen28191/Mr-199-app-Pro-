@@ -538,27 +538,59 @@ export const UnifiedWorkerReports: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {attendance.map((record: any, index: number) => {
-                const dayName = getDayName(record.date);
-                const workDays = Number(record.workDays) || 0;
-                const workHours = Number(record.workHours) || 0;
-                const dailyWage = Number(record.dailyWage) || 0;
-                const paidAmount = Number(record.paidAmount) || 0;
-                const amountDue = dailyWage * workDays;
+              {(() => {
+                // Combine attendance and transfers and sort by date
+                const allRecords: any[] = [];
                 
-                // Find transfers for this record date
-                const recordTransfers = transfers.filter((t: any) => {
-                  const transferDate = new Date(t.date).toDateString();
-                  const recordDate = new Date(record.date).toDateString();
-                  return transferDate === recordDate;
+                // Add attendance records
+                attendance.forEach((record: any) => {
+                  const workDays = Number(record.workDays) || 0;
+                  const workHours = Number(record.workHours) || 0;
+                  const dailyWage = Number(record.dailyWage) || 0;
+                  const paidAmount = Number(record.paidAmount) || 0;
+                  const amountDue = dailyWage * workDays;
+                  
+                  allRecords.push({
+                    type: 'attendance',
+                    date: record.date,
+                    dayName: getDayName(record.date),
+                    project: project?.name || '',
+                    dailyWage,
+                    workDays,
+                    workHours,
+                    amountDue,
+                    paidAmount,
+                    remaining: amountDue - paidAmount,
+                    notes: record.notes || ''
+                  });
                 });
-                const transferAmount = recordTransfers.reduce((sum: number, t: any) => sum + (Number(t.amount) || 0), 0);
                 
-                const remaining = amountDue - paidAmount - transferAmount;
+                // Add transfer records
+                transfers.forEach((transfer: any) => {
+                  const transferAmount = Number(transfer.amount) || 0;
+                  allRecords.push({
+                    type: 'transfer',
+                    date: transfer.date,
+                    dayName: 'الحوالة',
+                    project: project?.name || '',
+                    dailyWage: Number(worker?.dailyWage) || 8000,
+                    workDays: '-',
+                    workHours: '*',
+                    amountDue: 0,
+                    paidAmount: transferAmount,
+                    remaining: -transferAmount,
+                    notes: `رقم الحوالة: ${transfer.transferNumber || '3736'} - ${transfer.recipient || 'مجهول'}`,
+                    transferNumber: transfer.transferNumber || '3736',
+                    recipient: transfer.recipient || 'مجهول'
+                  });
+                });
                 
-                return (
-                  <tr key={index} style={{ 
-                    backgroundColor: index % 2 === 0 ? '#ffffff' : '#f8f9fa'
+                // Sort all records by date
+                allRecords.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                
+                return allRecords.map((record, index) => (
+                  <tr key={`${record.type}-${index}`} style={{ 
+                    backgroundColor: record.type === 'transfer' ? '#FFD700' : (index % 2 === 0 ? '#ffffff' : '#f8f9fa')
                   }}>
                     <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
                       {index + 1}
@@ -567,74 +599,35 @@ export const UnifiedWorkerReports: React.FC = () => {
                       {formatDate(record.date)}
                     </td>
                     <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
-                      {dayName}
+                      {record.dayName}
                     </td>
                     <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
-                      {project?.name || ''}
+                      {record.project}
                     </td>
                     <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
-                      {formatCurrency(dailyWage)}
+                      {formatCurrency(record.dailyWage)}
                     </td>
                     <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
-                      {workDays.toFixed(1)}
+                      {typeof record.workDays === 'number' ? record.workDays.toFixed(1) : record.workDays}
                     </td>
                     <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
-                      {workHours.toFixed(1)}
+                      {typeof record.workHours === 'number' ? record.workHours.toFixed(1) : record.workHours}
                     </td>
-                    <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', color: '#dc2626' }}>
-                      {formatCurrency(amountDue)}
+                    <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', color: record.type === 'transfer' ? '#000' : '#dc2626' }}>
+                      {formatCurrency(record.amountDue)}
                     </td>
-                    <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', color: '#16a34a' }}>
-                      {formatCurrency(paidAmount)}
+                    <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', color: record.type === 'transfer' ? '#000' : '#16a34a' }}>
+                      {formatCurrency(record.paidAmount)}
                     </td>
-                    <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', color: remaining > 0 ? '#dc2626' : '#16a34a' }}>
-                      {formatCurrency(amountDue - paidAmount)}
+                    <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', color: record.remaining > 0 ? '#dc2626' : '#16a34a' }}>
+                      {formatCurrency(record.remaining)}
                     </td>
-                    <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
-                      {record.notes || ''}
+                    <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', minWidth: '160px' }}>
+                      {record.notes}
                     </td>
                   </tr>
-                );
-              })}
-              
-              {/* Transfer Row - Only if transfers exist */}
-              {totalTransferred > 0 && transfers.length > 0 && (
-                <tr style={{ backgroundColor: '#FFD700', color: '#000', fontWeight: 'normal' }}>
-                  <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
-                    {attendance.length + 1}
-                  </td>
-                  <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
-                    {formatDate(transfers[0].date)}
-                  </td>
-                  <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
-                    الحوالة
-                  </td>
-                  <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
-                    {project?.name || ''}
-                  </td>
-                  <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
-                    {formatCurrency(8000)}
-                  </td>
-                  <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
-                    -
-                  </td>
-                  <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
-                    *
-                  </td>
-                  <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
-                    {formatCurrency(0)}
-                  </td>
-                  <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
-                    {formatCurrency(totalTransferred)}
-                  </td>
-                  <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
-                    {formatCurrency(-totalTransferred)}
-                  </td>
-                  <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', minWidth: '160px' }}>
-                    رقم الحوالة: 3736 - مجهول
-                  </td>
-                </tr>
-              )}
+                ));
+              })()}
               
               {/* Totals Row */}
               <tr style={{ backgroundColor: '#16a34a', color: 'white', fontWeight: 'bold' }}>
