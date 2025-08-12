@@ -525,7 +525,6 @@ export const UnifiedWorkerReports: React.FC = () => {
                 <th style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>إجمالي الساعات</th>
                 <th style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>المبلغ المستحق</th>
                 <th style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>المبلغ المستلم</th>
-                <th style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>الحوالة</th>
                 <th style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>المتبقي</th>
                 <th style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>ملاحظات</th>
               </tr>
@@ -578,11 +577,8 @@ export const UnifiedWorkerReports: React.FC = () => {
                     <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', color: '#16a34a' }}>
                       {formatCurrency(paidAmount)}
                     </td>
-                    <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', color: '#2563eb' }}>
-                      {formatCurrency(transferAmount)}
-                    </td>
                     <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', color: remaining > 0 ? '#dc2626' : '#16a34a' }}>
-                      {formatCurrency(remaining)}
+                      {formatCurrency(amountDue - paidAmount)}
                     </td>
                     <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
                       {record.notes || ''}
@@ -590,6 +586,36 @@ export const UnifiedWorkerReports: React.FC = () => {
                   </tr>
                 );
               })}
+              
+              {/* Transfer Row - Only if transfers exist */}
+              {totalTransferred > 0 && (
+                <tr style={{ backgroundColor: '#ffeb3b', color: '#000', fontWeight: 'bold' }}>
+                  <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>
+                    {attendance.length + 1}
+                  </td>
+                  <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>
+                    {/* يمكن ترك التاريخ فارغ أو وضع تاريخ أول تحويلة */}
+                  </td>
+                  <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>
+                    الحوالة
+                  </td>
+                  <td colSpan={3} style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>
+                    {project?.name || ''}
+                  </td>
+                  <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>
+                    {formatCurrency(totalTransferred)}
+                  </td>
+                  <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>
+                    -
+                  </td>
+                  <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>
+                    {formatCurrency(-totalTransferred)}
+                  </td>
+                  <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>
+                    رقم الحوالة
+                  </td>
+                </tr>
+              )}
               
               {/* Totals Row */}
               <tr style={{ backgroundColor: '#16a34a', color: 'white', fontWeight: 'bold' }}>
@@ -610,7 +636,7 @@ export const UnifiedWorkerReports: React.FC = () => {
                   {formatCurrency(totalAmountReceived)}
                 </td>
                 <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>
-                  {formatCurrency(totalAmountDue - totalAmountReceived)}
+                  {formatCurrency(totalAmountDue - totalAmountReceived - totalTransferred)}
                 </td>
                 <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}></td>
               </tr>
