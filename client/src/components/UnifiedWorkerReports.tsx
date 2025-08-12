@@ -570,18 +570,18 @@ export const UnifiedWorkerReports: React.FC = () => {
                   const transferAmount = Number(transfer.amount) || 0;
                   allRecords.push({
                     type: 'transfer',
-                    date: transfer.date,
-                    dayName: 'الحوالة',
+                    date: transfer.transferDate,
+                    dayName: getDayName(transfer.transferDate),
                     project: project?.name || '',
-                    dailyWage: Number(worker?.dailyWage) || 8000,
+                    dailyWage: '-',
                     workDays: '-',
-                    workHours: '*',
+                    workHours: '-',
                     amountDue: 0,
                     paidAmount: transferAmount,
                     remaining: -transferAmount,
-                    notes: `رقم الحوالة: ${transfer.transferNumber || '3736'} - ${transfer.recipient || 'مجهول'}`,
-                    transferNumber: transfer.transferNumber || '3736',
-                    recipient: transfer.recipient || 'مجهول'
+                    notes: `رقم الحوالة: ${transfer.transferNumber || 'غير محدد'} - المستلم: ${transfer.recipientName || 'غير محدد'}`,
+                    transferNumber: transfer.transferNumber || 'غير محدد',
+                    recipient: transfer.recipientName || 'غير محدد'
                   });
                 });
                 

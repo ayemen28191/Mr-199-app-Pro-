@@ -96,7 +96,7 @@ export function UnifiedExcelExporter({
       
       transfers.forEach((transfer: any) => {
         worksheet.addRow([
-          formatDate(transfer.transferDate || transfer.date),
+          formatDate(transfer.transferDate),
           formatCurrency(Number(transfer.amount)),
           transfer.recipientName,
           transfer.recipientPhone || '-',

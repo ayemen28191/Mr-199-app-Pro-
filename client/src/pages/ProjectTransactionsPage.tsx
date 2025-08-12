@@ -76,7 +76,7 @@ export default function ProjectTransactionsPage() {
       fundTransfers.forEach((transfer: any) => {
         allTransactions.push({
           id: `fund-${transfer.id || Math.random()}`,
-          date: transfer.transferDate || transfer.date,
+          date: transfer.transferDate,
           type: 'income',
           category: 'تحويل عهدة',
           amount: transfer.amount,

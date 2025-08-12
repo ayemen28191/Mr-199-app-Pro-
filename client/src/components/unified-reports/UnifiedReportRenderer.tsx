@@ -123,7 +123,7 @@ export const UnifiedReportRenderer: React.FC<UnifiedReportRendererProps> = ({
               <tbody>
                 {transfers.map((transfer: any, index: number) => (
                   <tr key={index}>
-                    <td>{formatDate(transfer.transferDate || transfer.date)}</td>
+                    <td>{formatDate(transfer.transferDate)}</td>
                     <td className="currency">{formatCurrency(Number(transfer.amount))}</td>
                     <td>{transfer.recipientName}</td>
                     <td>{transfer.recipientPhone || '-'}</td>

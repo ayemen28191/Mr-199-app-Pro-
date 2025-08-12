@@ -132,7 +132,7 @@ export default function ProjectTransactionsSimple() {
 
     // إضافة تحويلات العهدة العادية (دخل)
     fundTransfersArray.forEach((transfer: any) => {
-      const date = transfer.transferDate || transfer.date;
+      const date = transfer.transferDate;
       const amount = parseFloat(transfer.amount);
       
       if (date && !isNaN(amount) && amount > 0) {
@@ -149,7 +149,7 @@ export default function ProjectTransactionsSimple() {
 
     // إضافة التحويلات الواردة من مشاريع أخرى (دخل)
     incomingProjectTransfersArray.forEach((transfer: any) => {
-      const date = transfer.transferDate || transfer.date;
+      const date = transfer.transferDate;
       const amount = parseFloat(transfer.amount);
       
       if (date && !isNaN(amount) && amount > 0) {
@@ -166,7 +166,7 @@ export default function ProjectTransactionsSimple() {
 
     // إضافة التحويلات الصادرة إلى مشاريع أخرى (مصروف)
     outgoingProjectTransfersArray.forEach((transfer: any) => {
-      const date = transfer.transferDate || transfer.date;
+      const date = transfer.transferDate;
       const amount = parseFloat(transfer.amount);
       
       if (date && !isNaN(amount) && amount > 0) {

@@ -1272,7 +1272,7 @@ export default function Reports() {
           row.getCell(5).value = `تحويل أموال إلى مشروع: ${transfer.toProjectName || transfer.projectName || 'مشروع غير محدد'}${transfer.description ? ' | ' + transfer.description : ''}`;
           row.getCell(6).value = transfer.transferredBy || 'إدارة المشروع';
           row.getCell(7).value = '1 تحويل';
-          row.getCell(8).value = formatDate(transfer.transferDate || transfer.date || dailyReportDate);
+          row.getCell(8).value = formatDate(transfer.transferDate || dailyReportDate);
           row.getCell(9).value = `${transfer.transferNotes || transfer.notes || 'تحويل لمشروع'} | رقم المرجع: ${transfer.transferReference || transfer.transferNumber || 'غير محدد'}`;
           
           // تنسيق خلايا التحويلات الصادرة

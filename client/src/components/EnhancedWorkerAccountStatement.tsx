@@ -20,7 +20,7 @@ interface WorkerAttendanceRecord {
 
 interface WorkerTransferRecord {
   id: string;
-  date: string;
+  transferDate: string;
   amount: number;
   transferNumber: string;
   senderName: string;
@@ -262,7 +262,7 @@ export const EnhancedWorkerAccountStatement: React.FC<EnhancedWorkerAccountState
               {transfers.map((transfer, index) => (
                 <tr key={transfer.id} className={index % 2 === 0 ? 'even-row' : 'odd-row'}>
                   <td>{index + 1}</td>
-                  <td>{formatDate(transfer.date)}</td>
+                  <td>{formatDate(transfer.transferDate)}</td>
                   <td className="transfer-amount">{formatCurrency(transfer.amount)}</td>
                   <td>{transfer.transferNumber}</td>
                   <td>{transfer.senderName}</td>

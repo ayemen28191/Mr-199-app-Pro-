@@ -244,7 +244,7 @@ export default function WorkersUnifiedReportsFixed() {
                   amount: transfer.amount,
                   recipientName: transfer.recipientName,
                   transferNumber: transfer.transferNumber,
-                  date: transfer.date
+                  date: transfer.transferDate
                 }
               };
               workerRows.push(transferRow);

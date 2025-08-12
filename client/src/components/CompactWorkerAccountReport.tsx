@@ -108,7 +108,7 @@ export const CompactWorkerAccountReport = ({
           ))}
           {transfers.slice(0, 5).map((transfer: any, index: number) => (
             <tr key={`transfer-${index}`}>
-              <td>{formatDate(transfer.date)}</td>
+              <td>{formatDate(transfer.transferDate)}</td>
               <td>حوالة</td>
               <td>حوالة إلى {transfer.recipientName}</td>
               <td>-{formatCurrency(transfer.amount || 0)}</td>
