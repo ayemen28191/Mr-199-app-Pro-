@@ -201,22 +201,25 @@ export default function WorkersUnifiedReports() {
             dailyWage: att.dailyWage || response.worker?.dailyWage || 0
           })));
           
-          // إضافة بيانات الحوالات إذا وُجدت
+          // إضافة بيانات الحوالات إذا وُجدت - كصفوف منفصلة مع الاحتفاظ بمعلومات العامل
           if (response.transfers && response.transfers.length > 0) {
             response.transfers.forEach((transfer: any) => {
               allAttendanceData.push({
                 workerId: workerId,
                 workerName: response.worker?.name || '',
-                workerType: 'حوالة',
+                workerType: response.worker?.type || '', // الاحتفاظ بمهنة العامل الأصلية
                 workerPhone: response.worker?.phone || '',
-                projectName: 'حوالة للأهل',
-                date: transfer.date,
+                workerDailyWage: response.worker?.dailyWage || 0,
+                projectName: transfer.projectName || 'حوالة للأهل',
+                projectId: transfer.projectId || '',
+                date: transfer.transferDate || transfer.date,
                 workDays: 0,
                 totalWorkHours: 0,
                 paidAmount: 0,
                 totalTransferred: transfer.amount || 0,
-                dailyWage: 0,
-                transferDetails: transfer.description || 'حوالة للأهل'
+                dailyWage: response.worker?.dailyWage || 0, // استخدام أجر العامل الأصلي
+                transferDetails: transfer.description || 'حوالة للأهل',
+                isTransfer: true // علامة للتمييز بين الحضور والحوالة
               });
             });
           }
@@ -1226,159 +1229,71 @@ export default function WorkersUnifiedReports() {
                         {(() => {
                           console.log('🔍 البيانات الخام المستلمة:', reportData);
                           
-                          // فلترة البيانات لتجنب صفوف الحوالات المضافة بشكل خاطئ
-                          const filteredReportData = reportData.filter(row => {
-                            // استبعاد الصفوف التي تحتوي على "حوالة" كمهنة فقط
-                            return !(row.workerType === 'حوالة' && !row.workDays);
-                          });
+                          // عدم فلترة البيانات - نريد الاحتفاظ بجميع الصفوف شاملة الحوالات
+                          const filteredReportData = reportData;
 
                           console.log('🔍 البيانات بعد الفلترة:', filteredReportData);
 
-                          // تجميع البيانات حسب العامل مع تضمين المشاريع والحوالات
-                          const workerSummary = filteredReportData.reduce((acc, row) => {
-                            const workerId = row.workerId;
-                            if (!acc[workerId]) {
-                              acc[workerId] = {
-                                workerId: workerId,
-                                workerName: row.workerName || 'غير معروف',
-                                workerType: row.workerType || 'غير محدد',
-                                phone: row.workerPhone || row.phone || '',
-                                projects: new Set(),
-                                dailyWage: parseFloat(row.dailyWage || row.workerDailyWage || 0),
-                                totalWorkDays: 0,
-                                totalWorkHours: 0,
-                                totalAmountDue: 0,
-                                totalPaidAmount: 0,
-                                totalTransferred: 0,
-                                transfers: []
-                              };
-                            }
-                            
-                            // إضافة اسم المشروع مع تجنب القيم الفارغة
-                            if (row.projectName && row.projectName !== 'غير محدد' && row.projectName !== 'حوالة للأهل') {
-                              acc[workerId].projects.add(row.projectName);
-                            }
-                            
-                            // جمع البيانات المالية للعمل الفعلي فقط
-                            if (row.workDays && parseFloat(row.workDays) > 0) {
-                              acc[workerId].totalWorkDays += parseFloat(row.workDays || 0);
-                              acc[workerId].totalWorkHours += parseFloat(row.totalWorkHours || (parseFloat(row.workDays || 0) * 8));
-                              const amountDue = parseFloat(row.dailyWage || row.workerDailyWage || 0) * parseFloat(row.workDays || 0);
-                              acc[workerId].totalAmountDue += amountDue;
-                              acc[workerId].totalPaidAmount += parseFloat(row.paidAmount || 0);
-                            }
-
-                            // جمع بيانات الحوالات من جميع البيانات
-                            const transferAmount = parseFloat(row.totalTransferred || 0);
-                            if (transferAmount > 0) {
-                              const existingTransfer = acc[workerId].transfers.find((t: any) => 
-                                Math.abs(t.amount - transferAmount) < 0.01
-                              );
-                              if (!existingTransfer) {
-                                acc[workerId].transfers.push({
-                                  amount: transferAmount,
-                                  date: row.date || getCurrentDate(),
-                                  details: row.transferDetails || 'حوالة للأهل'
-                                });
-                                acc[workerId].totalTransferred += transferAmount;
-                              }
-                            }
-                            
-                            return acc;
-                          }, {});
-
-                          console.log('📊 ملخص العمال النهائي:', workerSummary);
-
-                          // الحوالات الموجودة فعلياً ستظهر من البيانات الحقيقية
-
-                          const summaryArray = Object.values(workerSummary);
+                          // عرض البيانات بطريقة مباشرة كما في الصورة المرفقة
                           let rowIndex = 0;
-
-                          return summaryArray.flatMap((worker: any) => {
-                            const projectNames = Array.from(worker.projects).join('، ');
-                            const remainingAfterDeductions = worker.totalAmountDue - worker.totalPaidAmount - worker.totalTransferred;
+                          
+                          return filteredReportData.map((row: any, index: number) => {
+                            rowIndex++;
                             
-                            const workerRows = [];
-                            let currentRowIndex = rowIndex;
+                            // حساب المتبقي
+                            const amountDue = parseFloat(row.dailyWage || row.workerDailyWage || 0) * parseFloat(row.workDays || 0);
+                            const paidAmount = parseFloat(row.paidAmount || 0);
+                            const transferredAmount = parseFloat(row.totalTransferred || 0);
+                            const remaining = amountDue - paidAmount - transferredAmount;
                             
-                            // تحديد عدد الصفوف المطلوبة للعامل (صف رئيسي + صفوف الحوالات)
-                            const totalWorkerRows = 1 + (worker.transfers?.length || 0);
+                            const isTransfer = row.isTransfer || (row.totalTransferred > 0 && !row.workDays);
                             
-                            // صف العامل الرئيسي
-                            currentRowIndex++;
-                            workerRows.push(
-                              <TableRow key={`worker-${worker.workerId}`} className={`${currentRowIndex % 2 === 0 ? 'bg-gray-50' : 'bg-white'} dark:bg-gray-800 print:bg-transparent hover:bg-gray-100 dark:hover:bg-gray-700`}>
+                            return (
+                              <TableRow 
+                                key={`row-${row.workerId}-${index}`} 
+                                className={`${isTransfer ? 'bg-red-50 dark:bg-red-900/20 print:bg-gray-100' : rowIndex % 2 === 0 ? 'bg-gray-50' : 'bg-white'} dark:bg-gray-800 print:bg-transparent hover:bg-gray-100 dark:hover:bg-gray-700`}
+                              >
                                 <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs font-medium">
-                                  {currentRowIndex}
+                                  {rowIndex}
                                 </TableCell>
                                 <TableCell className="text-right align-middle border print:border-gray-400 print:py-1 print:text-xs">
-                                  <div className="font-semibold">{worker.workerName}</div>
-                                  {worker.phone && <div className="text-sm text-gray-600 print:text-xs">{worker.phone}</div>}
+                                  <div className="font-semibold">{row.workerName || 'غير محدد'}</div>
+                                  {row.workerPhone && <div className="text-sm text-gray-600 print:text-xs">{row.workerPhone}</div>}
                                 </TableCell>
                                 <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">
-                                  <span className="print:hidden"><Badge variant="outline">{worker.workerType}</Badge></span>
-                                  <span className="hidden print:inline">{worker.workerType}</span>
+                                  <span className="print:hidden"><Badge variant="outline">{row.workerType || 'غير محدد'}</Badge></span>
+                                  <span className="hidden print:inline">{row.workerType || 'غير محدد'}</span>
                                 </TableCell>
                                 <TableCell className="text-right align-middle border print:border-gray-400 print:py-1 print:text-xs">
-                                  <div className="text-sm">{projectNames || 'غير محدد'}</div>
+                                  <div className="text-sm">{row.projectName || 'غير محدد'}</div>
                                 </TableCell>
                                 <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">
-                                  {formatCurrency(worker.dailyWage)}
+                                  {formatCurrency(parseFloat(row.dailyWage || row.workerDailyWage || 0))}
                                 </TableCell>
                                 <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs font-bold text-blue-600 print:text-black">
-                                  {worker.totalWorkDays.toFixed(1)}
+                                  {isTransfer ? '0' : (parseFloat(row.workDays || 0)).toFixed(1)}
                                 </TableCell>
                                 <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs font-bold text-teal-600 print:text-black">
-                                  {worker.totalWorkHours.toFixed(1)}
+                                  {isTransfer ? '0' : (parseFloat(row.totalWorkHours || (parseFloat(row.workDays || 0) * 8))).toFixed(1)}
                                 </TableCell>
                                 <TableCell className="font-bold text-green-600 text-center align-middle border print:border-gray-400 print:py-1 print:text-xs print:text-black">
-                                  {formatCurrency(worker.totalAmountDue)}
+                                  {isTransfer ? '0' : formatCurrency(amountDue)}
                                 </TableCell>
-                                <TableCell className="font-bold text-blue-600 text-center align-middle border print:border-gray-400 print:py-1 print:text-xs print:text-black">
-                                  {formatCurrency(worker.totalPaidAmount)}
+                                <TableCell className="font-bold text-center align-middle border print:border-gray-400 print:py-1 print:text-xs print:text-black">
+                                  {isTransfer ? formatCurrency(transferredAmount) : formatCurrency(paidAmount)}
                                 </TableCell>
-                                <TableCell className={`font-bold text-center align-middle border print:border-gray-400 print:py-1 print:text-xs print:text-black ${remainingAfterDeductions > 0 ? 'text-orange-600' : remainingAfterDeductions < 0 ? 'text-red-600' : 'text-gray-600'}`}>
-                                  {formatCurrency(remainingAfterDeductions)}
+                                <TableCell className={`font-bold text-center align-middle border print:border-gray-400 print:py-1 print:text-xs print:text-black ${isTransfer ? 'text-red-600' : remaining > 0 ? 'text-orange-600' : remaining < 0 ? 'text-red-600' : 'text-gray-600'}`}>
+                                  {isTransfer ? formatCurrency(-transferredAmount) : formatCurrency(remaining)}
                                 </TableCell>
-                                <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">
-                                  -
+                                <TableCell className="text-right align-middle border print:border-gray-400 print:py-1 print:text-xs">
+                                  {isTransfer ? (
+                                    <div className="text-sm text-red-600 font-medium print:text-xs">
+                                      حوالة للأهل - {row.transferDetails || 'مصروفة'}
+                                    </div>
+                                  ) : '-'}
                                 </TableCell>
                               </TableRow>
                             );
-
-                            // صفوف الحوالات للعمال الذين لديهم حوالات فعلية
-                            if (worker.totalTransferred > 0) {
-                              workerRows.push(
-                                <TableRow key={`transfer-${worker.workerId}`} className="bg-red-50 dark:bg-red-900/20 print:bg-gray-100">
-                                  <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">-</TableCell>
-                                  <TableCell className="text-right align-middle border print:border-gray-400 print:py-1 print:text-xs">
-                                    <div className="text-sm text-red-600 font-medium print:text-xs">
-                                      ↳ حوالة للأهل - {worker.workerName}
-                                    </div>
-                                  </TableCell>
-                                  <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">حوالة</TableCell>
-                                  <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">{projectNames || 'عام'}</TableCell>
-                                  <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">0</TableCell>
-                                  <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">0</TableCell>
-                                  <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">0</TableCell>
-                                  <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">0</TableCell>
-                                  <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs font-bold text-red-600 print:text-black">
-                                    {formatCurrency(worker.totalTransferred)}
-                                  </TableCell>
-                                  <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">0</TableCell>
-                                  <TableCell className="text-right align-middle border print:border-gray-400 print:py-1 print:text-xs">
-                                    <div className="text-sm text-red-600 font-medium print:text-xs">
-                                      حوالة للأهل - مصروفة
-                                    </div>
-                                  </TableCell>
-                                </TableRow>
-                              );
-                            }
-                            
-                            // تحديث rowIndex بعدد الصفوف المضافة
-                            rowIndex = currentRowIndex;
-                            
-                            return workerRows;
                           });
                         })()}
                         {/* إجمالي عام */}
