@@ -1205,11 +1205,15 @@ export class DatabaseStorage implements IStorage {
 
   // Reports
   async getWorkerAccountStatement(workerId: string, projectId?: string, dateFrom?: string, dateTo?: string): Promise<{
-    attendance: WorkerAttendance[];
+    worker: Worker | null;
+    attendance: any[];
     transfers: WorkerTransfer[];
     balance: WorkerBalance | null;
   }> {
     try {
+      // جلب بيانات العامل
+      const [worker] = await db.select().from(workers).where(eq(workers.id, workerId));
+      
       let attendanceConditions = [eq(workerAttendance.workerId, workerId)];
       
       if (projectId) {
@@ -1224,9 +1228,26 @@ export class DatabaseStorage implements IStorage {
         attendanceConditions.push(lte(workerAttendance.date, dateTo));
       }
       
-      const attendance = await db.select().from(workerAttendance)
+      const attendanceData = await db.select().from(workerAttendance)
         .where(and(...attendanceConditions))
         .orderBy(workerAttendance.date);
+
+      // جلب بيانات المشاريع المرتبطة بالحضور
+      const projectsMap = new Map();
+      const uniqueProjectIds = Array.from(new Set(attendanceData.map(record => record.projectId)));
+      
+      for (const pId of uniqueProjectIds) {
+        const [project] = await db.select().from(projects).where(eq(projects.id, pId));
+        if (project) {
+          projectsMap.set(pId, project);
+        }
+      }
+      
+      // دمج بيانات الحضور مع بيانات المشروع
+      const attendance = attendanceData.map((record: any) => ({
+        ...record,
+        project: projectsMap.get(record.projectId) || null
+      }));
       
       // Get worker transfers (including family transfers)
       let transfersConditions = [eq(workerTransfers.workerId, workerId)];
@@ -1255,6 +1276,7 @@ export class DatabaseStorage implements IStorage {
       }
       
       return {
+        worker,
         attendance,
         transfers, // This now includes all transfers including family transfers
         balance
@@ -1262,6 +1284,7 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error getting worker account statement:', error);
       return {
+        worker: null,
         attendance: [],
         transfers: [],
         balance: null
@@ -1271,7 +1294,8 @@ export class DatabaseStorage implements IStorage {
 
   // دالة جديدة لجلب كشف حساب العامل من مشاريع متعددة
   async getWorkerAccountStatementMultipleProjects(workerId: string, projectIds: string[], dateFrom?: string, dateTo?: string): Promise<{
-    attendance: WorkerAttendance[];
+    worker: Worker | null;
+    attendance: any[];
     transfers: WorkerTransfer[];
     balance: WorkerBalance | null;
     projectsInfo: { projectId: string; projectName: string }[];
