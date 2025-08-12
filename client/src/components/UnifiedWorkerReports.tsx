@@ -589,7 +589,7 @@ export const UnifiedWorkerReports: React.FC = () => {
               
               {/* Transfer Row - Only if transfers exist */}
               {totalTransferred > 0 && transfers.length > 0 && (
-                <tr style={{ backgroundColor: '#ffeb3b', color: '#000', fontWeight: 'bold' }}>
+                <tr style={{ backgroundColor: '#FFD700', color: '#000', fontWeight: 'normal' }}>
                   <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
                     {attendance.length + 1}
                   </td>
@@ -603,7 +603,7 @@ export const UnifiedWorkerReports: React.FC = () => {
                     {project?.name || ''}
                   </td>
                   <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
-                    {formatCurrency(8000)}
+                    8,000 ر.ي
                   </td>
                   <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
                     -
@@ -612,16 +612,16 @@ export const UnifiedWorkerReports: React.FC = () => {
                     *
                   </td>
                   <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
-                    {formatCurrency(totalTransferred)}
+                    0 ر.ي
                   </td>
                   <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
-                    0 ر.ي
+                    {formatCurrency(totalTransferred)}
                   </td>
                   <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
                     {formatCurrency(-totalTransferred)}
                   </td>
-                  <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
-                    رقم الحوالة: {transfers[0].id || 'مجهول'}
+                  <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', minWidth: '120px' }}>
+                    {`رقم الحوالة: ${transfers[0].transferNumber || transfers[0].id?.substring(0, 8) || '3736'} - ${transfers[0].recipient || 'مجهول'}`}
                   </td>
                 </tr>
               )}
