@@ -938,19 +938,19 @@ export default function WorkersUnifiedReportsFixed() {
                           {/* Average daily wage can be calculated if needed */}
                         </TableCell>
                         <TableCell className="border text-center text-white print:text-black print:text-xs">
-                          {reportData.filter(row => row.rowType === 'project').reduce((sum, row) => sum + row.totalDays, 0).toFixed(1)}
+                          {(reportData.filter(row => row.rowType === 'project').reduce((sum, row) => sum + (row.totalDays || 0), 0) || 0).toFixed(1)}
                         </TableCell>
                         <TableCell className="border text-center text-white print:text-black print:text-xs">
-                          {reportData.filter(row => row.rowType === 'project').reduce((sum, row) => sum + row.totalHours, 0).toFixed(1)}
+                          {(reportData.filter(row => row.rowType === 'project').reduce((sum, row) => sum + (row.totalHours || 0), 0) || 0).toFixed(1)}
                         </TableCell>
                         <TableCell className="border text-center text-white print:text-black print:text-xs">
-                          {formatCurrency(reportData.filter(row => row.rowType === 'project').reduce((sum, row) => sum + row.totalAmountDue, 0))}
+                          {formatCurrency(reportData.filter(row => row.rowType === 'project').reduce((sum, row) => sum + (row.totalAmountDue || 0), 0))}
                         </TableCell>
                         <TableCell className="border text-center text-white print:text-black print:text-xs">
-                          {formatCurrency(reportData.reduce((sum, row) => sum + row.totalAmountReceived, 0))}
+                          {formatCurrency(reportData.reduce((sum, row) => sum + (row.totalAmountReceived || 0), 0))}
                         </TableCell>
                         <TableCell className="border text-center text-white print:text-black print:text-xs">
-                          {formatCurrency(reportData.reduce((sum, row) => sum + row.remainingAmount, 0))}
+                          {formatCurrency(reportData.reduce((sum, row) => sum + (row.remainingAmount || 0), 0))}
                         </TableCell>
                         <TableCell className="border text-center text-white print:text-black print:text-xs"></TableCell>
                       </TableRow>
@@ -966,19 +966,19 @@ export default function WorkersUnifiedReportsFixed() {
                   <div className="grid grid-cols-3 gap-4 print:grid-cols-3 print:gap-2">
                     <div className="summary-item text-center p-4 print:p-2 bg-blue-100 print:bg-white print:border rounded-lg">
                       <div className="font-bold text-blue-600 print:text-black text-lg print:text-base">
-                        {formatCurrency(reportData.filter(row => row.rowType === 'project').reduce((sum, row) => sum + row.totalAmountDue, 0))}
+                        {formatCurrency(reportData.filter(row => row.rowType === 'project').reduce((sum, row) => sum + (row.totalAmountDue || 0), 0))}
                       </div>
                       <div className="text-gray-600 print:text-black font-medium print:text-xs">إجمالي المبلغ المستحق</div>
                     </div>
                     <div className="summary-item text-center p-4 print:p-2 bg-green-100 print:bg-white print:border rounded-lg">
                       <div className="font-bold text-green-600 print:text-black text-lg print:text-base">
-                        {formatCurrency(reportData.reduce((sum, row) => sum + row.totalAmountReceived, 0))}
+                        {formatCurrency(reportData.reduce((sum, row) => sum + (row.totalAmountReceived || 0), 0))}
                       </div>
                       <div className="text-gray-600 print:text-black font-medium print:text-xs">إجمالي المبلغ المستلم</div>
                     </div>
                     <div className="summary-item text-center p-4 print:p-2 bg-red-100 print:bg-white print:border rounded-lg">
                       <div className="font-bold text-red-600 print:text-black text-lg print:text-base">
-                        {formatCurrency(reportData.reduce((sum, row) => sum + row.remainingAmount, 0))}
+                        {formatCurrency(reportData.reduce((sum, row) => sum + (row.remainingAmount || 0), 0))}
                       </div>
                       <div className="text-gray-600 print:text-black font-medium print:text-xs">إجمالي المبلغ المتبقي</div>
                     </div>
