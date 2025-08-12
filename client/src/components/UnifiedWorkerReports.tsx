@@ -438,14 +438,30 @@ export const UnifiedWorkerReports: React.FC = () => {
 
   // Detailed Report Component
   const DetailedReportView = ({ data }: { data: any }) => {
-    const { worker, project, attendance, transfers } = data;
+    const { worker, project, attendance = [], transfers = [] } = data;
     
-    // Calculate totals
-    const totalDays = attendance.reduce((sum: number, att: any) => sum + (att.workDays || 0), 0);
-    const totalHours = attendance.reduce((sum: number, att: any) => sum + (att.workHours || 0), 0);
-    const totalAmountDue = attendance.reduce((sum: number, att: any) => sum + (att.dailyWage * att.workDays), 0);
-    const totalAmountReceived = attendance.reduce((sum: number, att: any) => sum + (att.paidAmount || 0), 0);
-    const totalTransferred = transfers.reduce((sum: number, transfer: any) => sum + transfer.amount, 0);
+    // Calculate totals with safe number handling
+    const totalDays = attendance.reduce((sum: number, att: any) => {
+      const workDays = Number(att.workDays) || 0;
+      return sum + workDays;
+    }, 0);
+    const totalHours = attendance.reduce((sum: number, att: any) => {
+      const workHours = Number(att.workHours) || 0;
+      return sum + workHours;
+    }, 0);
+    const totalAmountDue = attendance.reduce((sum: number, att: any) => {
+      const dailyWage = Number(att.dailyWage) || 0;
+      const workDays = Number(att.workDays) || 0;
+      return sum + (dailyWage * workDays);
+    }, 0);
+    const totalAmountReceived = attendance.reduce((sum: number, att: any) => {
+      const paidAmount = Number(att.paidAmount) || 0;
+      return sum + paidAmount;
+    }, 0);
+    const totalTransferred = transfers.reduce((sum: number, transfer: any) => {
+      const amount = Number(transfer.amount) || 0;
+      return sum + amount;
+    }, 0);
 
     return (
       <div className="unified-report detailed-report">
@@ -835,39 +851,41 @@ export const UnifiedWorkerReports: React.FC = () => {
         </CardContent>
       </Card>
 
-      <style jsx>{`
-        @media print {
-          body * {
-            visibility: hidden;
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          @media print {
+            body * {
+              visibility: hidden;
+            }
+            .unified-report, .unified-report * {
+              visibility: visible;
+            }
+            .unified-report {
+              position: absolute;
+              left: 0;
+              top: 0;
+              width: 100%;
+              direction: rtl;
+              font-family: 'Arial', sans-serif;
+              font-size: 12px;
+              line-height: 1.4;
+            }
+            @page {
+              size: A4;
+              margin: 1cm;
+            }
           }
-          .unified-report, .unified-report * {
-            visibility: visible;
+          
+          .unified-reports-container {
+            direction: rtl;
           }
+          
           .unified-report {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
             direction: rtl;
             font-family: 'Arial', sans-serif;
-            font-size: 12px;
-            line-height: 1.4;
           }
-          @page {
-            size: A4;
-            margin: 1cm;
-          }
-        }
-        
-        .unified-reports-container {
-          direction: rtl;
-        }
-        
-        .unified-report {
-          direction: rtl;
-          font-family: 'Arial', sans-serif;
-        }
-      `}</style>
+        `
+      }} />
     </div>
   );
 };
