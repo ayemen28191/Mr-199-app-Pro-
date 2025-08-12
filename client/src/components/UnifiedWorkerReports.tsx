@@ -59,6 +59,12 @@ const formatCurrency = (amount: number) => {
   }).format(amount) + ' ر.ي';
 };
 
+const getDayName = (dateStr: string) => {
+  const date = new Date(dateStr);
+  const days = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+  return days[date.getDay()];
+};
+
 // Main component
 export const UnifiedWorkerReports: React.FC = () => {
   const [reportType, setReportType] = useState<'clearance' | 'detailed'>('clearance');
