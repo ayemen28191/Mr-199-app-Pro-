@@ -30,7 +30,7 @@ import { EnhancedWorkerAccountStatement } from "@/components/EnhancedWorkerAccou
 import { UnifiedPrintButton, UnifiedExcelExporter } from "@/components/unified-reports";
 import { AdvancedProgressIndicator, useProgressSteps, type ProgressStep } from "@/components/AdvancedProgressIndicator";
 import { EnhancedErrorDisplay, FieldValidationDisplay, transformValidationErrors } from "@/components/EnhancedErrorDisplay";
-import { useWorkersSettlementValidation } from "@/hooks/useWorkersSettlementValidation";
+
 
 
 import "@/styles/unified-print.css";
@@ -70,7 +70,6 @@ export default function Reports() {
   const [showSettlementForm, setShowSettlementForm] = useState(false);
   
   // Enhanced validation and progress tracking
-  const { validateForm, validationResult } = useWorkersSettlementValidation();
   const [settlementErrors, setSettlementErrors] = useState<any[]>([]);
   
   // Header collapsible state
@@ -479,21 +478,18 @@ export default function Reports() {
       workerIds: selectedWorkerIds
     };
     
-    // تنفيذ التحقق الشامل
-    const validation = validateForm(formData);
-    
-    // عرض الأخطاء إن وجدت
-    if (!validation.isValid) {
+    // تنفيذ التحقق الأساسي
+    if (!projectIdsToUse.length) {
       errorStep('validate');
-      const enhancedErrors = transformValidationErrors([
-        ...validation.errors,
-        ...validation.warnings
-      ]);
-      setSettlementErrors(enhancedErrors);
+      setSettlementErrors([{
+        field: 'projectIds',
+        message: 'يجب اختيار مشروع واحد على الأقل',
+        type: 'error'
+      }]);
       
       toast({
         title: "خطأ في البيانات المدخلة",
-        description: `تم العثور على ${validation.errors.length} خطأ. يرجى تصحيحها والمحاولة مرة أخرى.`,
+        description: "يجب اختيار مشروع واحد على الأقل",
         variant: "destructive",
       });
       return;
@@ -501,12 +497,6 @@ export default function Reports() {
     
     // إكمال خطوة التحقق
     completeStep('validate');
-    
-    // عرض التحذيرات إن وجدت
-    if (validation.warnings.length > 0) {
-      const warningErrors = transformValidationErrors(validation.warnings);
-      setSettlementErrors(warningErrors);
-    }
 
     setIsGenerating(true);
     
@@ -640,7 +630,7 @@ export default function Reports() {
     
     try {
       // إنشاء مُصدّر Excel الاحترافي مع القالب النشط
-      const exporter = new UnifiedExcelExporter(activeTemplate as any);
+      const exporter = new (UnifiedExcelExporter as any)(activeTemplate || {});
       
       // تحويل البيانات للنظام الاحترافي
       const enhancedData = await convertDataToEnhanced(data, activeReportType || 'daily');
@@ -676,7 +666,7 @@ export default function Reports() {
       console.log('🎨 استخدام إعدادات القالب الحديثة للتصدير:', activeTemplate);
       
       // إنشاء مُصدّر Excel مع إعدادات القالب المحدثة
-      const exporter = new UnifiedExcelExporter(activeTemplate as any);
+      const exporter = new (UnifiedExcelExporter as any)(activeTemplate || {});
       
       // تحديد نوع التقرير وإنشاء Excel مناسب
       if (activeReportType === 'daily' || activeReportType === 'professional') {
@@ -2934,10 +2924,13 @@ export default function Reports() {
             <FileSpreadsheet className="h-4 w-4 mr-2" />
             تصدير احترافي
           </Button>
-          <UnifiedPrintButton 
-            data={{ project, dateFrom, dateTo, summary, details }}
-            title={`ملخص المشروع - ${project.name}`}
-          />
+          <Button
+            onClick={() => window.print()}
+            className="bg-gray-600 hover:bg-gray-700 text-white"
+          >
+            <Printer className="h-4 w-4 mr-2" />
+            طباعة
+          </Button>
         </div>
 
         {/* تذييل التقرير */}
@@ -3865,10 +3858,13 @@ export default function Reports() {
                                 <FileSpreadsheet className="h-4 w-4 mr-2" />
                                 تصدير Excel
                               </Button>
-                              <UnifiedPrintButton 
-                                data={settlementReportData}
-                                title="تقرير تصفية العمال"
-                              />
+                              <Button
+                                onClick={() => window.print()}
+                                className="bg-gray-600 hover:bg-gray-700 text-white"
+                              >
+                                <Printer className="h-4 w-4 mr-2" />
+                                طباعة
+                              </Button>
                             </div>
                           </div>
                         </div>
@@ -3968,15 +3964,13 @@ export default function Reports() {
                     <Download className="h-4 w-4 mr-2" />
                     تصدير Excel
                   </Button>
-                  <UnifiedPrintButton
-                    data={reportData}
-                    title={`تقرير ${activeReportType === 'daily' ? 'المصاريف اليومية' :
-                                    activeReportType === 'professional' ? 'المصاريف المهنية' :
-                                    activeReportType === 'worker' ? 'حساب العامل' :
-                                    activeReportType === 'material' ? 'المواد والمشتريات' :
-                                    activeReportType === 'project' ? 'ملخص المشروع' : 'التقرير'}`}
-                    className="px-6 py-2 rounded-xl"
-                  />
+                  <Button
+                    onClick={() => window.print()}
+                    className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-xl"
+                  >
+                    <Printer className="h-4 w-4 mr-2" />
+                    طباعة
+                  </Button>
                 </div>
               </div>
             </CardHeader>

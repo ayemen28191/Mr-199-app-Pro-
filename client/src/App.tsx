@@ -12,8 +12,7 @@ import MaterialPurchase from "@/pages/material-purchase";
 import ReportsFixed from "@/pages/reports";
 import DailyExpensesReport from "@/pages/daily-expenses-report";
 import ExcelStyleDailyExpenses from "@/pages/excel-style-daily-expenses";
-import WorkersUnifiedReports from "@/pages/workers-unified-reports";
-import { UnifiedWorkerReports } from '@/components/UnifiedWorkerReports';
+
 import ProjectTransfers from "@/pages/ProjectTransfers";
 import ProjectTransactionsPage from "@/pages/ProjectTransactionsSimple";
 
@@ -44,8 +43,7 @@ function Router() {
       <Route path="/material-purchase" component={MaterialPurchase} />
       <Route path="/daily-expenses-report" component={DailyExpensesReport} />
       <Route path="/excel-style-daily-expenses" component={ExcelStyleDailyExpenses} />
-      <Route path="/workers-unified-reports" component={WorkersUnifiedReports} />
-      <Route path="/unified-reports" component={() => <UnifiedWorkerReports />} />
+
       <Route path="/project-transfers" component={ProjectTransfers} />
       <Route path="/project-transactions" component={ProjectTransactionsPage} />
       <Route path="/autocomplete-admin" component={AutocompleteAdminPage} />

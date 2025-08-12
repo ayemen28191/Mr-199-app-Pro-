@@ -58,8 +58,7 @@ const allPages = [
       { path: "/advanced-reports", icon: TrendingUp, label: "التقارير المتقدمة", description: "تقارير تحليلية متقدمة" },
       { path: "/daily-expenses-report", icon: Calendar, label: "تقرير المصاريف اليومية", description: "تقرير مفصل للمصاريف اليومية" },
       { path: "/excel-style-daily-expenses", icon: FileSpreadsheet, label: "المصاريف اليومية (إكسل)", description: "المصاريف اليومية بصيغة Excel" },
-      { path: "/workers-unified-reports", icon: Users, label: "تقارير العمال الموحدة", description: "صفحة موحدة لجميع تقارير العمال - كشف حساب واحد أو متعدد" },
-      { path: "/unified-reports", icon: FileText, label: "التقارير الموحدة الجديدة", description: "قالب واحد لكشف التصفية والكشف التفصيلي حسب التصميم المطلوب" },
+
     ]
   },
   // الإعدادات والإدارة
