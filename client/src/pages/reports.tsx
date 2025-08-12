@@ -141,6 +141,8 @@ export default function Reports() {
 
   const selectedProject = projects.find(p => p.id === selectedProjectId);
 
+  // Helper functions (getCurrentDate and formatCurrency imported from lib/utils)
+
   // Calculate real statistics
   const totalActiveProjects = projects.filter(p => p.status === 'active').length;
   const totalWorkers = workers.length;
@@ -2919,14 +2921,14 @@ export default function Reports() {
               };
               exportToProfessionalExcel(excelData, `ملخص-المشروع-${project.name}-${dateFrom}-${dateTo}`);
             }}
-            className="bg-green-600 hover:bg-green-700 text-white"
+            className="bg-green-600 hover:bg-green-700 text-white transition-all duration-200"
           >
             <FileSpreadsheet className="h-4 w-4 mr-2" />
-            تصدير احترافي
+            تصدير احترافي Excel
           </Button>
           <Button
             onClick={() => window.print()}
-            className="bg-gray-600 hover:bg-gray-700 text-white"
+            className="bg-gray-600 hover:bg-gray-700 text-white transition-all duration-200"
           >
             <Printer className="h-4 w-4 mr-2" />
             طباعة
@@ -3851,16 +3853,16 @@ export default function Reports() {
                               <Button
                                 onClick={() => {
                                   const projectNames = settlementReportData.projects?.map((p: any) => p.name).join('-') || 'مشاريع-متعددة';
-                                  exportToExcel(settlementReportData, `تقرير-تصفية-العمال-${projectNames}-${getCurrentDate()}.xlsx`);
+                                  exportWorkersSettlementToExcel(settlementReportData, `تقرير-تصفية-العمال-${projectNames}-${getCurrentDate()}.xlsx`);
                                 }}
-                                className="bg-green-600 hover:bg-green-700 text-white"
+                                className="bg-green-600 hover:bg-green-700 text-white transition-all duration-200"
                               >
                                 <FileSpreadsheet className="h-4 w-4 mr-2" />
-                                تصدير Excel
+                                تصدير احترافي Excel
                               </Button>
                               <Button
                                 onClick={() => window.print()}
-                                className="bg-gray-600 hover:bg-gray-700 text-white"
+                                className="bg-gray-600 hover:bg-gray-700 text-white transition-all duration-200"
                               >
                                 <Printer className="h-4 w-4 mr-2" />
                                 طباعة
@@ -3958,15 +3960,18 @@ export default function Reports() {
                 </CardTitle>
                 <div className="flex items-center gap-3">
                   <Button
-                    onClick={() => exportToExcel(reportData, `report-${activeReportType}`)}
-                    className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-xl"
+                    onClick={() => {
+                      const fileName = `تقرير-${activeReportType}-${selectedProject?.name || 'عام'}-${getCurrentDate()}`;
+                      exportToExcel(reportData, fileName);
+                    }}
+                    className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-xl transition-all duration-200"
                   >
                     <Download className="h-4 w-4 mr-2" />
                     تصدير Excel
                   </Button>
                   <Button
                     onClick={() => window.print()}
-                    className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-xl"
+                    className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-xl transition-all duration-200"
                   >
                     <Printer className="h-4 w-4 mr-2" />
                     طباعة
