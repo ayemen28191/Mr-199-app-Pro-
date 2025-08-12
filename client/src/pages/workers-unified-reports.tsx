@@ -284,13 +284,13 @@ export default function WorkersUnifiedReports() {
       ['إجمالي ساعات العمل:', totalWorkHours.toFixed(1)],
       ['إجمالي المبلغ المستحق:', formatCurrency(totalAmountDue)],
       ['إجمالي المبلغ المستلم:', formatCurrency(totalAmountReceived)],
-      ['إجمالي التحويلات للأهل:', formatCurrency(totalTransferred)],
-      ['المبلغ المتبقي (قبل التحويلات):', formatCurrency(remainingAmount)],
-      ['الرصيد النهائي للعامل:', formatCurrency(workerCurrentBalance)],
+      ['إجمالي الحوالات:', formatCurrency(totalTransferred)],
+      ['المبلغ المتبقي (قبل الحوالات):', formatCurrency(remainingAmount)],
+      ['الرصيد المتبقي للعامل:', formatCurrency(workerCurrentBalance)],
       [''],
       // جدول تفاصيل الحضور
       ['تفاصيل الحضور:'],
-      ['م', 'التاريخ', 'اسم المشروع', 'عدد الأيام', 'من الساعة', 'إلى الساعة', 'ساعات العمل', 'وصف العمل', 'الأجر المستحق', 'المبلغ المدفوع', 'المتبقي', 'نوع الدفع', 'ملاحظات'],
+      ['م', 'التاريخ', 'اسم المشروع', 'عدد الأيام', 'من الساعة', 'إلى الساعة', 'ساعات العمل', 'وصف العمل', 'الأجر المستحق', 'المبلغ المستلم', 'المتبقي', 'نوع الدفع', 'ملاحظات'],
       // بيانات الحضور
       ...attendance.map((att: any, index: number) => {
         const workHours = att.startTime && att.endTime ? 
@@ -329,8 +329,8 @@ export default function WorkersUnifiedReports() {
     // إضافة تحويلات الأهل إذا وجدت
     if (transfers && transfers.length > 0) {
       accountData.push(
-        ['تحويلات الأهل:'],
-        ['م', 'التاريخ', 'المبلغ', 'رقم التحويل', 'اسم المرسل', 'اسم المستلم', 'رقم المستلم', 'طريقة التحويل', 'ملاحظات'],
+        ['الحوالات:'],
+        ['م', 'التاريخ', 'المبلغ', 'رقم الحولة', 'اسم المرسل', 'اسم المستلم', 'رقم المستلم', 'طريقة التحويل', 'ملاحظات'],
         ...transfers.map((transfer: any, index: number) => [
           index + 1,
           formatDate(transfer.date),
@@ -343,7 +343,7 @@ export default function WorkersUnifiedReports() {
           transfer.notes || '-'
         ]),
         [''],
-        ['', 'إجمالي التحويلات:', formatCurrency(totalTransferred), '', '', '', '', '', ''],
+        ['', 'إجمالي الحوالات:', formatCurrency(totalTransferred), '', '', '', '', '', ''],
         ['']
       );
     }
@@ -452,7 +452,7 @@ export default function WorkersUnifiedReports() {
       ['معلومات التقرير:'],
       ['الفترة:', `من ${formatDate(dateFrom)} إلى ${formatDate(dateTo)}`],
       ['تاريخ إنشاء التقرير:', new Date().toLocaleDateString('ar-EG')],
-      ['عدد العمال المحددين:', selectedWorkerIds.length],
+      ['عدد العمال:', selectedWorkerIds.length],
       ['عدد المشاريع:', selectedProjectIds.length || 'جميع المشاريع'],
       ['إجمالي السجلات:', summaryArray.length],
       [''],
@@ -537,7 +537,7 @@ export default function WorkersUnifiedReports() {
     worksheet.addRow([]);
 
     // إضافة العناوين مع التنسيق
-    const headers = ['م', 'الاسم والرقم', 'المهنة', 'اسم المشروع', 'الأجر اليومي', 'أيام العمل', 'إجمالي الساعات', 'المبلغ المستحق', 'المبلغ المستلم', 'المتبقي', 'ملاحظات'];
+    const headers = ['م', 'الاسم', 'المهنة', 'اسم المشروع', 'الأجر اليومي', 'أيام العمل', 'إجمالي الساعات', 'المبلغ المستحق', 'المبلغ المستلم', 'المتبقي', 'ملاحظات'];
     const headerRow = worksheet.addRow(headers);
     headerRow.height = 30;
     headerRow.eachCell((cell, colNumber) => {
