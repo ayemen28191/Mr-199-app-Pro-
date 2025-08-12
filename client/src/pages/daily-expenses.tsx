@@ -1008,8 +1008,8 @@ export default function DailyExpenses() {
                         variant="ghost" 
                         className="h-7 w-7 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                         onClick={() => {
-                          // توجيه إلى صفحة حسابات العمال مع معرف التحويل للتعديل
-                          setLocation(`/worker-accounts?edit=${transfer.id}&worker=${transfer.workerId}`);
+                          // ميزة التعديل معطلة مؤقتاً
+                          toast({ title: "قريباً", description: "سيتم إضافة ميزة التعديل" });
                         }}
                       >
                         <Edit2 className="h-3 w-3" />
@@ -1038,7 +1038,7 @@ export default function DailyExpenses() {
           )}
           <Button
             variant="outline"
-            onClick={() => setLocation("/worker-accounts")}
+            onClick={() => toast({ title: "قريباً", description: "سيتم إضافة ميزة إرسال الحوالات" })}
             className="w-full border-2 border-dashed"
           >
             <Plus className="ml-2 h-4 w-4" />
