@@ -6,7 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
 import WorkerAttendance from "@/pages/worker-attendance";
-import WorkerAccounts from "@/pages/worker-accounts";
+
 import DailyExpenses from "@/pages/daily-expenses";
 import MaterialPurchase from "@/pages/material-purchase";
 import ReportsFixed from "@/pages/reports";
@@ -38,7 +38,7 @@ function Router() {
       <Route path="/supplier-accounts" component={SupplierAccountsPage} />
       <Route path="/supplier-report" component={SupplierReportPage} />
       <Route path="/worker-attendance" component={WorkerAttendance} />
-      <Route path="/worker-accounts" component={WorkerAccounts} />
+
       <Route path="/daily-expenses" component={DailyExpenses} />
       <Route path="/material-purchase" component={MaterialPurchase} />
       <Route path="/daily-expenses-report" component={DailyExpensesReport} />

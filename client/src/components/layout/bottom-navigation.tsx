@@ -34,7 +34,7 @@ const allPages = [
     category: "العمليات اليومية",
     pages: [
       { path: "/worker-attendance", icon: UserCheck, label: "حضور العمال", description: "تسجيل حضور وغياب العمال" },
-      { path: "/worker-accounts", icon: Receipt, label: "حسابات العمال", description: "إدارة حسابات ومدفوعات العمال" },
+
       { path: "/daily-expenses", icon: Calculator, label: "المصاريف اليومية", description: "تسجيل المصاريف اليومية للمشاريع" },
       { path: "/material-purchase", icon: Package, label: "شراء المواد", description: "إدارة مشتريات مواد البناء" },
       { path: "/project-transfers", icon: ArrowLeftRight, label: "تحويلات العهدة", description: "إدارة تحويلات الأموال بين المشاريع" },
