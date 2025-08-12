@@ -3754,27 +3754,53 @@ export default function Reports() {
                             lineHeight: '1.4'
                           }}
                         >
-                          {/* رأس التقرير للطباعة */}
+                          {/* رأس التقرير مع الأزرار */}
                           <div className="bg-gradient-to-r from-teal-500 to-teal-600 p-4 text-white preserve-color">
-                            <div className="text-center">
-                              <h1 className="text-xl font-bold mb-2">تقرير تصفية العمال الشامل</h1>
-                              <h2 className="text-lg font-semibold">
-                                {settlementReportData.projects?.length > 1 
-                                  ? `${settlementReportData.projects.length} مشاريع` 
-                                  : settlementReportData.projects?.[0]?.name || 'غير محدد'
-                                }
-                              </h2>
-                              <div className="mt-2 text-sm">
-                                <p>تاريخ الإنشاء: {formatDate(settlementReportData.generated_at)}</p>
-                                {settlementReportData.filters?.dateFrom && settlementReportData.filters?.dateTo && (
-                                  <p>الفترة: {formatDate(settlementReportData.filters.dateFrom)} - {formatDate(settlementReportData.filters.dateTo)}</p>
+                            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+                              <div className="text-center md:text-right flex-1">
+                                <h1 className="text-xl font-bold mb-2">تقرير تصفية العمال الشامل</h1>
+                                <h2 className="text-lg font-semibold">
+                                  {settlementReportData.projects?.length > 1 
+                                    ? `${settlementReportData.projects.length} مشاريع` 
+                                    : settlementReportData.projects?.[0]?.name || 'غير محدد'
+                                  }
+                                </h2>
+                                <div className="mt-2 text-sm">
+                                  <p>تاريخ الإنشاء: {formatDate(settlementReportData.generated_at)}</p>
+                                  {settlementReportData.filters?.dateFrom && settlementReportData.filters?.dateTo && (
+                                    <p>الفترة: {formatDate(settlementReportData.filters.dateFrom)} - {formatDate(settlementReportData.filters.dateTo)}</p>
+                                  )}
+                                </div>
+                                {settlementReportData.projects?.length > 1 && (
+                                  <p className="text-xs mt-2">
+                                    المشاريع: {settlementReportData.projects.map((p: any) => p.name).join(', ')}
+                                  </p>
                                 )}
                               </div>
-                              {settlementReportData.projects?.length > 1 && (
-                                <p className="text-xs mt-2">
-                                  المشاريع: {settlementReportData.projects.map((p: any) => p.name).join(', ')}
-                                </p>
-                              )}
+                              
+                              {/* أزرار التحكم - مخفية عند الطباعة */}
+                              <div className="flex flex-col sm:flex-row gap-2 print:hidden">
+                                <Button
+                                  onClick={() => {
+                                    const projectNames = settlementReportData.projects?.map((p: any) => p.name).join('_') || 'مشاريع';
+                                    const fileName = `تصفية-عمال-${projectNames}-${getCurrentDate()}`;
+                                    exportWorkersSettlementToExcel(settlementReportData, fileName);
+                                  }}
+                                  className="bg-white hover:bg-gray-100 text-teal-600 px-3 sm:px-4 py-2 rounded-lg transition-all duration-200 text-sm font-medium shadow-md"
+                                >
+                                  <Download className="h-4 w-4 ml-1 sm:mr-2" />
+                                  <span className="hidden sm:inline">تصدير Excel</span>
+                                  <span className="sm:hidden">Excel</span>
+                                </Button>
+                                <Button
+                                  onClick={() => window.print()}
+                                  className="bg-white hover:bg-gray-100 text-teal-600 px-3 sm:px-4 py-2 rounded-lg transition-all duration-200 text-sm font-medium shadow-md"
+                                >
+                                  <Printer className="h-4 w-4 ml-1 sm:mr-2" />
+                                  <span className="hidden sm:inline">طباعة</span>
+                                  <span className="sm:hidden">طباعة</span>
+                                </Button>
+                              </div>
                             </div>
                           </div>
                           
@@ -3952,29 +3978,29 @@ export default function Reports() {
         {/* Report Display Area */}
         {reportData && activeReportType && (
           <Card className="mt-8 bg-white shadow-2xl border-0 rounded-2xl overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-gray-800 to-gray-900 text-white p-6">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-2xl font-bold flex items-center gap-3">
-                  <FileSpreadsheet className="h-7 w-7" />
-                  نتائج التقرير
+            <CardHeader className="bg-gradient-to-r from-gray-800 to-gray-900 text-white p-4 md:p-6">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <CardTitle className="text-xl md:text-2xl font-bold flex items-center gap-2 md:gap-3">
+                  <FileSpreadsheet className="h-6 w-6 md:h-7 md:w-7 flex-shrink-0" />
+                  <span>نتائج التقرير</span>
                 </CardTitle>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-col sm:flex-row items-stretch gap-2">
                   <Button
                     onClick={() => {
                       const fileName = `تقرير-${activeReportType}-${selectedProject?.name || 'عام'}-${getCurrentDate()}`;
                       exportToExcel(reportData, fileName);
                     }}
-                    className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-xl transition-all duration-200"
+                    className="bg-green-600 hover:bg-green-700 text-white px-3 sm:px-4 md:px-6 py-2 rounded-xl transition-all duration-200 text-sm md:text-base flex items-center justify-center gap-2"
                   >
-                    <Download className="h-4 w-4 mr-2" />
-                    تصدير Excel
+                    <Download className="h-4 w-4 flex-shrink-0" />
+                    <span>تصدير Excel</span>
                   </Button>
                   <Button
                     onClick={() => window.print()}
-                    className="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-xl transition-all duration-200"
+                    className="bg-gray-600 hover:bg-gray-700 text-white px-3 sm:px-4 md:px-6 py-2 rounded-xl transition-all duration-200 text-sm md:text-base flex items-center justify-center gap-2"
                   >
-                    <Printer className="h-4 w-4 mr-2" />
-                    طباعة
+                    <Printer className="h-4 w-4 flex-shrink-0" />
+                    <span>طباعة</span>
                   </Button>
                 </div>
               </div>

@@ -57,33 +57,7 @@ export function UnifiedReportTemplate({
               </div>
             </div>
 
-            {/* Action Buttons - Hidden in Print */}
-            <div className="flex gap-2 print:hidden">
-              {onPrint && (
-                <Button
-                  onClick={onPrint}
-                  variant="outline"
-                  size="sm"
-                  disabled={isLoading}
-                  className="flex items-center gap-2"
-                >
-                  <PrinterIcon className="h-4 w-4" />
-                  طباعة
-                </Button>
-              )}
-              {onExport && (
-                <Button
-                  onClick={onExport}
-                  variant="default"
-                  size="sm"
-                  disabled={isLoading}
-                  className="flex items-center gap-2"
-                >
-                  <DownloadIcon className="h-4 w-4" />
-                  تصدير Excel
-                </Button>
-              )}
-            </div>
+            {/* أزرار التحكم تمت إزالتها لمنع التكرار - الأزرار موجودة في الصفحة الرئيسية */}
           </div>
 
           <Separator className="mt-4" />

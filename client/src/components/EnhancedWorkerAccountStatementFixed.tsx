@@ -511,35 +511,7 @@ export const EnhancedWorkerAccountStatement = ({
 
   return (
     <div style={{ direction: 'rtl' }}>
-      {/* أزرار التحكم - تخفى عند الطباعة */}
-      <div className="no-print" style={{ 
-        marginBottom: '20px', 
-        display: 'flex', 
-        gap: '10px', 
-        justifyContent: 'center'
-      }}>
-        <Button
-          onClick={handlePrint}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-6 py-2 rounded-lg shadow-lg transform hover:scale-105 transition-all duration-300"
-        >
-          <Printer className="h-4 w-4 mr-2" />
-          طباعة الكشف
-        </Button>
-        <Button
-          onClick={exportToExcel}
-          className="bg-green-600 hover:bg-green-700 text-white font-medium px-6 py-2 rounded-lg shadow-lg transform hover:scale-105 transition-all duration-300"
-        >
-          <FileSpreadsheet className="h-4 w-4 mr-2" />
-          تصدير إلى Excel
-        </Button>
-        <Button
-          onClick={exportToPDF}
-          className="bg-red-600 hover:bg-red-700 text-white font-medium px-6 py-2 rounded-lg shadow-lg transform hover:scale-105 transition-all duration-300"
-        >
-          <FileText className="h-4 w-4 mr-2" />
-          تصدير إلى PDF
-        </Button>
-      </div>
+      {/* أزرار التحكم تمت إزالتها لمنع التكرار - الأزرار موجودة في الصفحة الرئيسية */}
 
       <div 
         id="enhanced-worker-account-statement" 

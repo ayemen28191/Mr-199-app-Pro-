@@ -973,3 +973,130 @@
   color: #92400e !important;
   font-style: italic !important;
 }
+
+/* تحسينات إضافية للهواتف المحمولة - إصلاح الأزرار المكررة */
+@media (max-width: 768px) {
+  /* تحسين تخطيط الأزرار على الهواتف */
+  .mobile-button-container {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+    width: 100% !important;
+  }
+
+  .mobile-button-container button {
+    width: 100% !important;
+    justify-content: center !important;
+    min-height: 44px !important;
+    font-size: 0.9rem !important;
+    padding: 0.75rem 1rem !important;
+  }
+
+  /* تحسين العناوين للهواتف */
+  .mobile-report-header {
+    flex-direction: column !important;
+    text-align: center !important;
+    gap: 1rem !important;
+  }
+
+  .mobile-report-title {
+    font-size: 1.25rem !important;
+    margin-bottom: 0.5rem !important;
+  }
+
+  /* تحسين الجداول على الهواتف */
+  .mobile-table-wrapper {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    border-radius: 8px !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  }
+
+  .mobile-table-wrapper table {
+    min-width: 600px !important;
+    font-size: 0.875rem !important;
+    border-collapse: collapse !important;
+  }
+
+  .mobile-table-wrapper th,
+  .mobile-table-wrapper td {
+    padding: 0.5rem 0.75rem !important;
+    white-space: nowrap !important;
+    border: 1px solid #e5e7eb !important;
+  }
+
+  /* تحسين الكروت للهواتف */
+  .mobile-responsive-card {
+    margin: 0.5rem !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+  }
+
+  .mobile-responsive-card-header {
+    padding: 1rem !important;
+    background: linear-gradient(135deg, #374151 0%, #1f2937 100%) !important;
+  }
+
+  .mobile-responsive-card-content {
+    padding: 1rem !important;
+  }
+
+  /* تحسين النصوص على الهواتف */
+  .mobile-text {
+    font-size: 0.9rem !important;
+    line-height: 1.4 !important;
+  }
+
+  .mobile-title {
+    font-size: 1.1rem !important;
+    font-weight: 600 !important;
+  }
+
+  /* إخفاء النصوص الطويلة على الهواتف وإظهار نسخة مختصرة */
+  .desktop-text {
+    display: none !important;
+  }
+
+  .mobile-text-short {
+    display: inline !important;
+  }
+
+  /* تحسين المسافات للهواتف */
+  .mobile-spacing {
+    margin: 0.5rem 0 !important;
+    padding: 0.75rem !important;
+  }
+
+  /* تحسين أيقونات الهواتف */
+  .mobile-icon {
+    width: 1rem !important;
+    height: 1rem !important;
+    flex-shrink: 0 !important;
+  }
+}
+
+/* تحسينات للشاشات الأصغر (الهواتف الصغيرة) */
+@media (max-width: 480px) {
+  .mobile-button-container button {
+    font-size: 0.8rem !important;
+    padding: 0.625rem 0.75rem !important;
+  }
+
+  .mobile-table-wrapper table {
+    font-size: 0.75rem !important;
+  }
+
+  .mobile-table-wrapper th,
+  .mobile-table-wrapper td {
+    padding: 0.375rem 0.5rem !important;
+  }
+
+  .mobile-responsive-card {
+    margin: 0.25rem !important;
+  }
+
+  .mobile-responsive-card-header,
+  .mobile-responsive-card-content {
+    padding: 0.75rem !important;
+  }
+}
