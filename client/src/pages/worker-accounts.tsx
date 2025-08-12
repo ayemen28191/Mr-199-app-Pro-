@@ -96,10 +96,7 @@ export default function WorkerAccountsPage() {
   });
 
   const { data: transfers = [] } = useQuery({
-    queryKey: ['/api/worker-transfers'],
-    select: (data: WorkerTransfer[]) => selectedProject 
-      ? data.filter(t => t.projectId === selectedProject)
-      : data
+    queryKey: ['/api/worker-transfers']
   });
 
   // Create transfer mutation
@@ -249,7 +246,7 @@ export default function WorkerAccountsPage() {
     }
   };
 
-  const filteredTransfers = selectedProject 
+  const filteredTransfers = selectedProject && selectedProject !== 'all' 
     ? transfers.filter(t => t.projectId === selectedProject)
     : transfers;
 
@@ -295,7 +292,7 @@ export default function WorkerAccountsPage() {
                 <SelectValue placeholder="جميع المشاريع" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">جميع المشاريع</SelectItem>
+                <SelectItem value="all">جميع المشاريع</SelectItem>
                 {projects.map((project: Project) => (
                   <SelectItem key={project.id} value={project.id}>
                     {project.name}
@@ -322,7 +319,7 @@ export default function WorkerAccountsPage() {
               <Send className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-medium text-foreground mb-2">لا توجد حوالات</h3>
               <p className="text-muted-foreground mb-4">
-                {selectedProject ? 'لا توجد حوالات في هذا المشروع' : 'لم يتم إرسال أي حوالات بعد'}
+                {selectedProject && selectedProject !== 'all' ? 'لا توجد حوالات في هذا المشروع' : 'لم يتم إرسال أي حوالات بعد'}
               </p>
               <Button 
                 onClick={() => {
