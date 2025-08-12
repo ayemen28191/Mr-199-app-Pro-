@@ -18,6 +18,7 @@ import ProjectTransactionsPage from "@/pages/ProjectTransactionsSimple";
 
 import ProjectsPage from "@/pages/projects";
 import WorkersPage from "@/pages/workers";
+import WorkerAccountsPage from "@/pages/worker-accounts";
 import SuppliersProPage from "@/pages/suppliers-professional";
 import SupplierAccountsPage from "@/pages/supplier-accounts";
 import SupplierReportPage from "@/pages/supplier-report";
@@ -34,6 +35,7 @@ function Router() {
       <Route path="/" component={Dashboard} />
       <Route path="/projects" component={ProjectsPage} />
       <Route path="/workers" component={WorkersPage} />
+      <Route path="/worker-accounts" component={WorkerAccountsPage} />
       <Route path="/suppliers-pro" component={SuppliersProPage} />
       <Route path="/supplier-accounts" component={SupplierAccountsPage} />
       <Route path="/supplier-report" component={SupplierReportPage} />
