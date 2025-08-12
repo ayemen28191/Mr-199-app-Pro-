@@ -185,17 +185,10 @@ export default function WorkersUnifiedReports() {
         if (response && response.attendance) {
           allAttendanceData.push(...response.attendance.map((att: any) => ({
             ...att,
-            workerId: workerId,
             workerName: response.worker?.name || '',
             workerType: response.worker?.type || '',
-            phone: response.worker?.phone || '',
-            dailyWage: att.dailyWage || response.worker?.dailyWage || 0,
-            workDays: att.workDays || 0,
-            totalWorkHours: att.totalWorkHours || (att.workDays * 8),
-            paidAmount: att.paidAmount || 0,
-            projectName: att.project?.name || '',
-            transfers: response.transfers || [],
-            notes: att.notes || ''
+            workerDailyWage: response.worker?.dailyWage || 0,
+            projectName: att.project?.name || ''
           })));
         }
       }
@@ -291,13 +284,13 @@ export default function WorkersUnifiedReports() {
       ['إجمالي ساعات العمل:', totalWorkHours.toFixed(1)],
       ['إجمالي المبلغ المستحق:', formatCurrency(totalAmountDue)],
       ['إجمالي المبلغ المستلم:', formatCurrency(totalAmountReceived)],
-      ['إجمالي الحوالات:', formatCurrency(totalTransferred)],
-      ['المبلغ المتبقي (قبل الحوالات):', formatCurrency(remainingAmount)],
-      ['الرصيد المتبقي للعامل:', formatCurrency(workerCurrentBalance)],
+      ['إجمالي التحويلات للأهل:', formatCurrency(totalTransferred)],
+      ['المبلغ المتبقي (قبل التحويلات):', formatCurrency(remainingAmount)],
+      ['الرصيد النهائي للعامل:', formatCurrency(workerCurrentBalance)],
       [''],
       // جدول تفاصيل الحضور
       ['تفاصيل الحضور:'],
-      ['م', 'التاريخ', 'اسم المشروع', 'عدد الأيام', 'من الساعة', 'إلى الساعة', 'ساعات العمل', 'وصف العمل', 'الأجر المستحق', 'المبلغ المستلم', 'المتبقي', 'نوع الدفع', 'ملاحظات'],
+      ['م', 'التاريخ', 'اسم المشروع', 'عدد الأيام', 'من الساعة', 'إلى الساعة', 'ساعات العمل', 'وصف العمل', 'الأجر المستحق', 'المبلغ المدفوع', 'المتبقي', 'نوع الدفع', 'ملاحظات'],
       // بيانات الحضور
       ...attendance.map((att: any, index: number) => {
         const workHours = att.startTime && att.endTime ? 
@@ -336,8 +329,8 @@ export default function WorkersUnifiedReports() {
     // إضافة تحويلات الأهل إذا وجدت
     if (transfers && transfers.length > 0) {
       accountData.push(
-        ['الحوالات:'],
-        ['م', 'التاريخ', 'المبلغ', 'رقم الحولة', 'اسم المرسل', 'اسم المستلم', 'رقم المستلم', 'طريقة التحويل', 'ملاحظات'],
+        ['تحويلات الأهل:'],
+        ['م', 'التاريخ', 'المبلغ', 'رقم التحويل', 'اسم المرسل', 'اسم المستلم', 'رقم المستلم', 'طريقة التحويل', 'ملاحظات'],
         ...transfers.map((transfer: any, index: number) => [
           index + 1,
           formatDate(transfer.date),
@@ -350,7 +343,7 @@ export default function WorkersUnifiedReports() {
           transfer.notes || '-'
         ]),
         [''],
-        ['', 'إجمالي الحوالات:', formatCurrency(totalTransferred), '', '', '', '', '', ''],
+        ['', 'إجمالي التحويلات:', formatCurrency(totalTransferred), '', '', '', '', '', ''],
         ['']
       );
     }
@@ -399,8 +392,8 @@ export default function WorkersUnifiedReports() {
     });
   };
 
-  // Export to Excel - Multiple Workers - مطابق للتصميم المطلوب
-  const exportMultipleWorkersToExcel = async () => {
+  // Export to Excel - Multiple Workers
+  const exportMultipleWorkersToExcel = () => {
     if (!reportData || reportData.length === 0) {
       toast({
         title: "لا توجد بيانات للتصدير",
@@ -409,283 +402,246 @@ export default function WorkersUnifiedReports() {
       return;
     }
 
+    // استخدام ExcelJS لتنسيق أفضل
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet("كشف تصفية العمال");
 
-    // إعداد التنسيقات المساعدة
-    const headerFill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1F5F99" } };
-    const totalFill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF16A34A" } };
-    const borderStyle = { style: "thin", color: { argb: "FF000000" } };
-    const transferFill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFEF2F2" } };
+    // حساب الإحصائيات
+    const totalWorkDays = reportData.reduce((sum, row) => sum + parseFloat(row.workDays || 0), 0);
+    const totalAmountDue = reportData.reduce((sum, row) => sum + (parseFloat(row.dailyWage || 0) * parseFloat(row.workDays || 0)), 0);
+    const totalPaidAmount = reportData.reduce((sum, row) => sum + parseFloat(row.paidAmount || 0), 0);
+    const totalRemaining = totalAmountDue - totalPaidAmount;
 
-    const addBorders = (row) => {
-      row.eachCell((cell) => {
-        cell.border = {
-          top: borderStyle,
-          left: borderStyle,
-          bottom: borderStyle,
-          right: borderStyle,
+    // تجميع البيانات حسب العامل لتصدير الإكسل مع الحقول الجديدة
+    const workerSummary = reportData.reduce((acc, row) => {
+      const workerId = row.workerId;
+      if (!acc[workerId]) {
+        acc[workerId] = {
+          workerId: workerId,
+          workerName: row.workerName,
+          workerType: row.workerType,
+          phone: row.phone,
+          projects: new Set(),
+          dailyWage: parseFloat(row.dailyWage || 0),
+          totalWorkDays: 0,
+          totalWorkHours: 0,
+          totalAmountDue: 0,
+          totalPaidAmount: 0,
+          totalTransferred: 0,
         };
-      });
-    };
-
-    // ====== رأس التقرير ======
-    worksheet.mergeCells("A1:K1");
-    worksheet.getCell("A1").value = "شركة الفتيني للمقاولات والاستشارات الهندسية";
-    worksheet.getCell("A1").alignment = { horizontal: "center" };
-    worksheet.getCell("A1").font = { bold: true, size: 16, color: { argb: "FF1F5F99" } };
-
-    worksheet.mergeCells("A2:K2");
-    worksheet.getCell("A2").value = "كشف تصفية للعمال";
-    worksheet.getCell("A2").alignment = { horizontal: "center" };
-    worksheet.getCell("A2").font = { bold: true, size: 14, color: { argb: "FF1F5F99" } };
-
-    worksheet.mergeCells("A3:K3");
-    worksheet.getCell("A3").value = `للفترة من ${dateFrom} إلى ${dateTo}`;
-    worksheet.getCell("A3").alignment = { horizontal: "center" };
-    worksheet.getCell("A3").font = { bold: false, size: 12 };
-
-    // ====== صف المعلومات الإضافية ======
-    const summaryInfo = worksheet.addRow([
-      `عدد العمال: ${selectedWorkerIds.length}`,
-      '', '', '', '', '', '', '', '', 
-      `عدد المشاريع: ${selectedProjectIds.length}`,
-      `إجمالي أيام العمل: ${reportData.reduce((sum, row) => sum + parseFloat(row.workDays || 0), 0).toFixed(1)}`
-    ]);
-    summaryInfo.eachCell((cell, colNumber) => {
-      cell.font = { bold: true, size: 10 };
-      if (colNumber === 1 || colNumber === 10 || colNumber === 11) {
-        cell.alignment = { horizontal: "center" };
       }
-    });
-
-    worksheet.addRow([]);
-
-    // ====== رأس الجدول ======
-    const headerText = worksheet.addRow([]);
-    worksheet.mergeCells("A6:K6");
-    worksheet.getCell("A6").value = "كشف التصفية للعمال";
-    worksheet.getCell("A6").alignment = { horizontal: "center" };
-    worksheet.getCell("A6").font = { bold: true, size: 14, color: { argb: "FFFFFFFF" } };
-    worksheet.getCell("A6").fill = headerFill;
-    addBorders(headerText);
-
-    // ====== صف العناوين ======
-    const headerRow = worksheet.addRow([
-      "م",
-      "الاسم والرقم",
-      "المهنة",
-      "اسم المشروع",
-      "الأجر اليومي",
-      "أيام العمل",
-      "إجمالي الساعات", 
-      "المبلغ المستحق",
-      "المبلغ المستلم",
-      "المتبقي",
-      "ملاحظات",
-    ]);
-    headerRow.eachCell((cell) => {
-      cell.fill = headerFill;
-      cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
-      cell.alignment = { horizontal: "center", vertical: "middle" };
-    });
-    addBorders(headerRow);
-
-    // ====== البيانات ======
-    let rowNumber = 1;
-    let totalDays = 0, totalHours = 0, totalDue = 0, totalPaid = 0, totalRemain = 0;
-
-    // تجميع البيانات لكل عامل ومشروع
-    const groupedData = {};
-    for (const rec of reportData) {
-      const key = rec.workerId;
-      if (!groupedData[key]) {
-        groupedData[key] = {
-          workerName: rec.workerName,
-          workerType: rec.workerType,
-          phone: rec.phone || "",
-          projects: [],
-          transfers: []
-        };
-        
-        // جلب بيانات التحويلات للعامل
-        try {
-          const transfersResponse = await apiRequest('GET', `/api/transfers?workerId=${rec.workerId}&dateFrom=${dateFrom}&dateTo=${dateTo}`);
-          if (transfersResponse && Array.isArray(transfersResponse)) {
-            groupedData[key].transfers = transfersResponse;
-          }
-        } catch (error) {
-          console.log('خطأ في جلب التحويلات:', error);
-        }
+      if (row.projectName) {
+        acc[workerId].projects.add(row.projectName);
       }
-      
-      groupedData[key].projects.push({
-        projectName: rec.projectName,
-        dailyWage: rec.dailyWage,
-        workDays: rec.workDays,
-        workHours: rec.totalWorkHours || (rec.workDays * 8), // افتراض 8 ساعات يوميا
-        amountDue: rec.dailyWage * rec.workDays,
-        paidAmount: rec.paidAmount || 0,
-        remaining: (rec.dailyWage * rec.workDays) - (rec.paidAmount || 0),
-        notes: rec.notes || "",
-      });
-    }
+      acc[workerId].totalWorkDays += parseFloat(row.workDays || 0);
+      acc[workerId].totalWorkHours += parseFloat(row.totalWorkHours || 0);
+      acc[workerId].totalAmountDue += (parseFloat(row.dailyWage || 0) * parseFloat(row.workDays || 0));
+      acc[workerId].totalPaidAmount += parseFloat(row.paidAmount || 0);
+      acc[workerId].totalTransferred += parseFloat(row.totalTransferred || 0);
+      return acc;
+    }, {});
 
-    // إضافة الصفوف
-    for (const [workerId, worker] of Object.entries(groupedData)) {
-      // صف لكل مشروع
-      for (const proj of worker.projects) {
-        const row = worksheet.addRow([
-          rowNumber++,
-          `${worker.workerName}${worker.phone ? ' - ' + worker.phone : ''}`,
-          worker.workerType || "",
-          proj.projectName || "",
-          proj.dailyWage,
-          proj.workDays,
-          proj.workHours,
-          proj.amountDue,
-          proj.paidAmount,
-          proj.remaining,
-          proj.notes,
-        ]);
+    const summaryArray = Object.values(workerSummary);
 
-        // تنسيق الصف
-        row.eachCell((cell, colNumber) => {
-          if (colNumber >= 5 && colNumber <= 10) {
-            // الأعمدة المالية
-            cell.numFmt = '#,##0.00';
-          }
-          cell.alignment = { horizontal: "center", vertical: "middle" };
-        });
-
-        // تلوين الأعمدة المالية
-        row.getCell(8).font = { color: { argb: "FF1F4E78" } }; // مستحق - أزرق
-        row.getCell(9).font = { color: { argb: "FFB22222" } }; // مستلم - أحمر  
-        row.getCell(10).font = { color: { argb: "FF006400" } }; // متبقي - أخضر
-
-        addBorders(row);
-
-        // تحديث الإجماليات
-        totalDays += proj.workDays;
-        totalHours += proj.workHours;
-        totalDue += proj.amountDue;
-        totalPaid += proj.paidAmount;
-        totalRemain += proj.remaining;
-      }
-
-      // إضافة صفوف الحوالات إن وجدت
-      if (worker.transfers && worker.transfers.length > 0) {
-        for (const transfer of worker.transfers) {
-          const transferText = `تصفية حسابية رقم الحوالة: ${transfer.id || "غير محدد"}، اسم المستلم: ${transfer.receiverName || "غير محدد"}`;
-          const transferRow = worksheet.addRow([
-            "",
-            "حوالة",
-            "",
-            formatDate(transfer.date),
-            "",
-            "",
-            "",
-            "",
-            transfer.amount,
-            "",
-            transferText,
-          ]);
-          
-          transferRow.eachCell((cell) => {
-            cell.font = { italic: true, color: { argb: "FF800000" } };
-            cell.fill = transferFill;
-            cell.alignment = { horizontal: "center", vertical: "middle" };
-          });
-          addBorders(transferRow);
-        }
-      }
-    }
-
-    // ====== صف الإجماليات ======
-    const totalsRow = worksheet.addRow([
-      "",
-      "الإجماليات", 
-      "",
-      "",
-      "",
-      totalDays.toFixed(1),
-      totalHours.toFixed(1),
-      totalDue,
-      totalPaid,
-      totalRemain,
-      "",
-    ]);
-    totalsRow.eachCell((cell) => {
-      cell.fill = totalFill;
-      cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
-      cell.alignment = { horizontal: "center" };
-      if ([6, 7, 8, 9, 10].includes(cell.col)) {
-        cell.numFmt = '#,##0.00';
-      }
-    });
-    addBorders(totalsRow);
-
-    worksheet.addRow([]);
-
-    // ====== الملخص النهائي ======
-    const summaryTitle = worksheet.addRow(["الملخص النهائي"]);
-    worksheet.mergeCells(`A${summaryTitle.number}:K${summaryTitle.number}`);
-    summaryTitle.getCell(1).alignment = { horizontal: "center" };
-    summaryTitle.getCell(1).font = { bold: true, size: 12 };
-    summaryTitle.getCell(1).fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFE0E7FF" } };
-
-    const summaryRows = [
-      ["إجمالي المبلغ المستحق:", `${totalDue.toLocaleString()} ر.ي`],
-      ["إجمالي المبلغ المستلم:", `${totalPaid.toLocaleString()} ر.ي`],  
-      ["إجمالي المبلغ المتبقي:", `${totalRemain.toLocaleString()} ر.ي`]
+    // ورقة التقرير بتصميم احترافي يطابق الكشف المطبوع
+    const reportDataForExcel = [
+      // رأس الشركة
+      ['شركة الفتيني للمقاولات والاستشارات الهندسية'],
+      ['كشف تصفية العمال'],
+      [''],
+      // معلومات التقرير
+      ['معلومات التقرير:'],
+      ['الفترة:', `من ${formatDate(dateFrom)} إلى ${formatDate(dateTo)}`],
+      ['تاريخ إنشاء التقرير:', new Date().toLocaleDateString('ar-EG')],
+      ['عدد العمال المحددين:', selectedWorkerIds.length],
+      ['عدد المشاريع:', selectedProjectIds.length || 'جميع المشاريع'],
+      ['إجمالي السجلات:', summaryArray.length],
+      [''],
+      // ملخص الإحصائيات المحدث
+      ['ملخص الإحصائيات المالية:'],
+      ['عدد العمال:', summaryArray.length],
+      ['إجمالي أيام العمل:', totalWorkDays.toFixed(1)],
+      ['إجمالي الساعات:', reportData.reduce((sum, row) => sum + parseFloat(row.totalWorkHours || 0), 0).toFixed(1)],
+      ['إجمالي المبلغ المستحق:', formatCurrency(totalAmountDue)],
+      ['إجمالي المبلغ المستلم:', formatCurrency(totalPaidAmount)],
+      ['إجمالي المبلغ المحول:', formatCurrency(reportData.reduce((sum, row) => sum + parseFloat(row.totalTransferred || 0), 0))],
+      ['المتبقي بعد الخصم:', formatCurrency(reportData.reduce((sum, row) => sum + (parseFloat(row.dailyWage || 0) * parseFloat(row.workDays || 0)) - parseFloat(row.paidAmount || 0) - parseFloat(row.totalTransferred || 0), 0))],
+      ['متوسط الساعات اليومية:', reportData.reduce((sum, row) => sum + parseFloat(row.workDays || 0), 0) > 0 
+        ? (reportData.reduce((sum, row) => sum + parseFloat(row.totalWorkHours || 0), 0) / reportData.reduce((sum, row) => sum + parseFloat(row.workDays || 0), 0)).toFixed(1)
+        : '0'],
+      [''],
+      // عنوان الجدول المحدث
+      ['كشف التصفية الجماعي للعمال:'],
+      ['م', 'الاسم والرقم', 'المهنة', 'اسم المشروع', 'الأجر اليومي', 'أيام العمل', 'إجمالي الساعات', 'المبلغ المستحق', 'المبلغ المستلم', 'المبلغ المحول', 'المتبقي بعد الخصم'],
+      // بيانات العمال المجمعة مع الحقول الجديدة
+      ...summaryArray.map((worker: any, index: number) => [
+        index + 1,
+        `${worker.workerName}${worker.phone ? ' - ' + worker.phone : ''}`,
+        worker.workerType,
+        Array.from(worker.projects).join('، ') || 'غير محدد',
+        formatCurrency(worker.dailyWage),
+        worker.totalWorkDays.toFixed(1),
+        worker.totalWorkHours.toFixed(1),
+        formatCurrency(worker.totalAmountDue),
+        formatCurrency(worker.totalPaidAmount),
+        formatCurrency(worker.totalTransferred),
+        formatCurrency(worker.totalAmountDue - worker.totalPaidAmount - worker.totalTransferred)
+      ]),
+      [''],
+      // صف الإجماليات المحدث
+      ['', '', '', 'الإجمالي العام:', '', 
+       totalWorkDays.toFixed(1), 
+       reportData.reduce((sum, row) => sum + parseFloat(row.totalWorkHours || 0), 0).toFixed(1),
+       formatCurrency(totalAmountDue), 
+       formatCurrency(totalPaidAmount), 
+       formatCurrency(reportData.reduce((sum, row) => sum + parseFloat(row.totalTransferred || 0), 0)),
+       formatCurrency(reportData.reduce((sum, row) => sum + (parseFloat(row.dailyWage || 0) * parseFloat(row.workDays || 0)) - parseFloat(row.paidAmount || 0) - parseFloat(row.totalTransferred || 0), 0))
+      ],
+      [''],
+      // تذييل التقرير
+      ['تم إنشاء هذا التقرير آلياً بواسطة نظام إدارة مشاريع البناء'],
+      [`التاريخ والوقت: ${new Date().toLocaleDateString('ar-EG')} - ${new Date().toLocaleTimeString('ar-EG')}`],
+      ['']
     ];
 
-    summaryRows.forEach(rowData => {
-      const summaryRow = worksheet.addRow(rowData);
-      summaryRow.getCell(1).font = { bold: true };
-      summaryRow.getCell(2).font = { bold: true };
-    });
+    const worksheet = workbook.addWorksheet('تقرير تصفية العمال');
 
+    // إضافة عنوان الشركة
+    worksheet.mergeCells('A1:K1');
+    const titleCell = worksheet.getCell('A1');
+    titleCell.value = 'مشروع مصنع الحبشي للبناء والمقاولات';
+    titleCell.font = { bold: true, size: 16, color: { argb: 'FFFFFFFF' } };
+    titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E40AF' } };
+    titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    titleCell.border = {
+      top: { style: 'thick', color: { argb: 'FF000000' } },
+      left: { style: 'thick', color: { argb: 'FF000000' } },
+      bottom: { style: 'thick', color: { argb: 'FF000000' } },
+      right: { style: 'thick', color: { argb: 'FF000000' } }
+    };
+
+    // إضافة عنوان التقرير
+    worksheet.mergeCells('A2:K2');
+    const subtitleCell = worksheet.getCell('A2');
+    subtitleCell.value = `تقرير تصفية العمال من ${formatDate(dateFrom)} إلى ${formatDate(dateTo)}`;
+    subtitleCell.font = { bold: true, size: 14, color: { argb: 'FFFFFFFF' } };
+    subtitleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E40AF' } };
+    subtitleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    subtitleCell.border = {
+      top: { style: 'thick', color: { argb: 'FF000000' } },
+      left: { style: 'thick', color: { argb: 'FF000000' } },
+      bottom: { style: 'thick', color: { argb: 'FF000000' } },
+      right: { style: 'thick', color: { argb: 'FF000000' } }
+    };
+
+    // إضافة صف فارغ
     worksheet.addRow([]);
 
-    // ====== صفوف التوقيع ======
-    const signatureRow = worksheet.addRow(["توقيع المدير العام", "", "توقيع مدير المشروع", "", "توقيع المهندس"]);
-    signatureRow.eachCell((cell, colNumber) => {
-      if ([1, 3, 5].includes(colNumber)) {
-        cell.alignment = { horizontal: "center" };
-        cell.font = { bold: true };
-      }
+    // إضافة العناوين مع التنسيق
+    const headers = ['م', 'الاسم والرقم', 'المهنة', 'اسم المشروع', 'الأجر اليومي', 'أيام العمل', 'إجمالي الساعات', 'المبلغ المستحق', 'المبلغ المستلم', 'المتبقي', 'ملاحظات'];
+    const headerRow = worksheet.addRow(headers);
+    headerRow.height = 30;
+    headerRow.eachCell((cell, colNumber) => {
+      cell.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E40AF' } };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell.border = {
+        top: { style: 'thick', color: { argb: 'FF000000' } },
+        left: { style: 'thick', color: { argb: 'FF000000' } },
+        bottom: { style: 'thick', color: { argb: 'FF000000' } },
+        right: { style: 'thick', color: { argb: 'FF000000' } }
+      };
     });
 
-    const signatureLines = worksheet.addRow(["________________________", "", "________________________", "", "________________________"]);
-    signatureLines.eachCell((cell, colNumber) => {
-      if ([1, 3, 5].includes(colNumber)) {
-        cell.alignment = { horizontal: "center" };
-      }
+    // إضافة بيانات العمال
+    summaryArray.forEach((worker, index) => {
+      const remainingAfterDeductions = worker.totalAmountDue - worker.totalPaidAmount - worker.totalTransferred;
+      
+      const dataRow = worksheet.addRow([
+        index + 1,
+        `${worker.workerName}${worker.phone ? ' - ' + worker.phone : ''}`,
+        worker.workerType,
+        Array.from(worker.projects).join('، ') || 'غير محدد',
+        worker.dailyWage,
+        worker.totalWorkDays.toFixed(1),
+        worker.totalWorkHours.toFixed(1),
+        worker.totalAmountDue,
+        worker.totalPaidAmount,
+        remainingAfterDeductions,
+        '-'
+      ]);
+
+      dataRow.height = 25;
+      dataRow.eachCell((cell, colNumber) => {
+        cell.font = { size: 11 };
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FF000000' } },
+          left: { style: 'thin', color: { argb: 'FF000000' } },
+          bottom: { style: 'thin', color: { argb: 'FF000000' } },
+          right: { style: 'thin', color: { argb: 'FF000000' } }
+        };
+
+        // تلوين الخلايا بألوان متناوبة
+        if (index % 2 === 0) {
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8F9FA' } };
+        }
+
+        // تنسيق الأرقام
+        if (colNumber >= 5 && colNumber <= 10) {
+          cell.numFmt = '#,##0.00';
+        }
+      });
     });
 
-    // ضبط عرض الأعمدة
+    // إضافة صف الإجماليات
+    const totalRow = worksheet.addRow([
+      '', '', '', '', 'الإجماليات',
+      totalWorkDays.toFixed(1),
+      reportData.reduce((sum, row) => sum + parseFloat(row.totalWorkHours || 0), 0).toFixed(1),
+      totalAmountDue,
+      totalPaidAmount,
+      reportData.reduce((sum, row) => sum + (row.totalAmountDue - row.totalPaidAmount - row.totalTransferred), 0),
+      ''
+    ]);
+
+    totalRow.height = 30;
+    totalRow.eachCell((cell) => {
+      cell.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF16A34A' } };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell.border = {
+        top: { style: 'thick', color: { argb: 'FF000000' } },
+        left: { style: 'thick', color: { argb: 'FF000000' } },
+        bottom: { style: 'thick', color: { argb: 'FF000000' } },
+        right: { style: 'thick', color: { argb: 'FF000000' } }
+      };
+    });
+
+    // تعديل عرض الأعمدة
     worksheet.columns = [
       { width: 8 },   // م
-      { width: 25 },  // الاسم
-      { width: 15 },  // المهنة  
-      { width: 20 },  // المشروع
+      { width: 25 },  // الاسم والرقم
+      { width: 15 },  // المهنة
+      { width: 20 },  // اسم المشروع
       { width: 15 },  // الأجر اليومي
       { width: 12 },  // أيام العمل
-      { width: 15 },  // الساعات
-      { width: 18 },  // المستحق
-      { width: 18 },  // المستلم
+      { width: 15 },  // إجمالي الساعات
+      { width: 18 },  // المبلغ المستحق
+      { width: 18 },  // المبلغ المستلم
       { width: 15 },  // المتبقي
-      { width: 30 }   // ملاحظات
+      { width: 25 }   // ملاحظات
     ];
 
     // حفظ الملف
-    const buffer = await workbook.xlsx.writeBuffer();
-    saveAs(new Blob([buffer]), `كشف_تصفية_العمال_${dateFrom}_${dateTo}.xlsx`);
-    
-    toast({
-      title: "تم تصدير كشف التصفية بنجاح ✅",
-      description: "تم حفظ الملف بالتنسيق المطلوب"
+    const fileName = `تقرير_تصفية_العمال_${formatDate(dateFrom)}_${formatDate(dateTo)}.xlsx`;
+    workbook.xlsx.writeBuffer().then((buffer) => {
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      saveAs(blob, fileName);
+      
+      toast({
+        title: "تم تصدير التقرير",
+        description: `تم حفظ الملف: ${fileName}`,
+      });
     });
   };
 
@@ -1217,7 +1173,7 @@ export default function WorkersUnifiedReports() {
                                 <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs font-bold text-blue-600 print:text-black">
                                   {worker.totalWorkDays.toFixed(1)}
                                 </TableCell>
-                                <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs font-bold text-purple-600 print:text-black">
+                                <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs font-bold text-teal-600 print:text-black">
                                   {worker.totalWorkHours.toFixed(1)}
                                 </TableCell>
                                 <TableCell className="font-bold text-green-600 text-center align-middle border print:border-gray-400 print:py-1 print:text-xs print:text-black">
@@ -1242,7 +1198,7 @@ export default function WorkersUnifiedReports() {
                                   <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">-</TableCell>
                                   <TableCell className="text-right align-middle border print:border-gray-400 print:py-1 print:text-xs">
                                     <div className="text-sm text-red-600 font-medium print:text-xs">
-                                      تصفية حسابية رقم الحوالة: {worker.workerId}، اسم المستلم: {worker.workerName}
+                                      ↳ حوالة للأهل - {worker.workerName}
                                     </div>
                                   </TableCell>
                                   <TableCell className="text-center align-middle border print:border-gray-400 print:py-1 print:text-xs">حوالة</TableCell>
@@ -1272,8 +1228,14 @@ export default function WorkersUnifiedReports() {
                         })()}
                         {/* إجمالي عام */}
                         <TableRow className="bg-green-600 text-white print:bg-green-600 print:text-black border-t-2 border-green-500 print:border-green-600">
-                          <TableCell className="font-bold text-center align-middle border print:border-gray-400 print:py-1 print:text-xs text-white print:text-black" colSpan={7}>
+                          <TableCell className="font-bold text-center align-middle border print:border-gray-400 print:py-1 print:text-xs text-white print:text-black" colSpan={5}>
                             الإجماليات
+                          </TableCell>
+                          <TableCell className="font-bold text-center align-middle border print:border-gray-400 print:py-1 print:text-xs text-white print:text-black">
+                            {reportData.reduce((sum, row) => sum + parseFloat(row.workDays || 0), 0).toFixed(1)}
+                          </TableCell>
+                          <TableCell className="font-bold text-center align-middle border print:border-gray-400 print:py-1 print:text-xs text-white print:text-black">
+                            {reportData.reduce((sum, row) => sum + parseFloat(row.totalWorkHours || 0), 0).toFixed(1)}
                           </TableCell>
                           <TableCell className="font-bold text-center align-middle border print:border-gray-400 print:py-1 print:text-xs text-white print:text-black">
                             {formatCurrency(reportData.reduce((sum, row) => sum + (parseFloat(row.dailyWage || 0) * parseFloat(row.workDays || 0)), 0))}
