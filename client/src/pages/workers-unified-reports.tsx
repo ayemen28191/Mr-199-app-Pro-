@@ -903,7 +903,7 @@ export default function WorkersUnifiedReportsFixed() {
                             {row.projectName}
                           </TableCell>
                           <TableCell className="border text-center print:text-xs">
-                            {row.rowType === 'project' ? formatCurrency(row.dailyWage) : formatCurrency(row.dailyWage)}
+                            {formatCurrency(row.dailyWage || 0)}
                           </TableCell>
                           <TableCell className="border text-center print:text-xs">
                             {row.rowType === 'project' ? row.totalDays.toFixed(1) : ''}
@@ -911,13 +911,13 @@ export default function WorkersUnifiedReportsFixed() {
                           <TableCell className="border text-center print:text-xs">
                             {row.rowType === 'project' ? row.totalHours.toFixed(1) : ''}
                           </TableCell>
-                          <TableCell className="border text-center print:text-xs" style={{ color: '#000' }}>
+                          <TableCell className="border text-center print:text-xs" style={{ color: '#000000', fontWeight: 'bold' }}>
                             {row.rowType === 'project' ? formatCurrency(row.totalAmountDue) : ''}
                           </TableCell>
-                          <TableCell className="border text-center print:text-xs" style={{ color: '#dc2626' }}>
+                          <TableCell className="border text-center print:text-xs" style={{ color: '#dc2626', fontWeight: 'bold' }}>
                             {formatCurrency(row.totalAmountReceived)}
                           </TableCell>
-                          <TableCell className="border text-center print:text-xs" style={{ color: row.remainingAmount < 0 ? '#dc2626' : '#16a34a' }}>
+                          <TableCell className="border text-center print:text-xs" style={{ color: row.remainingAmount < 0 ? '#dc2626' : '#16a34a', fontWeight: 'bold' }}>
                             {formatCurrency(row.remainingAmount)}
                           </TableCell>
                           <TableCell className="border text-center print:text-xs">
@@ -943,13 +943,13 @@ export default function WorkersUnifiedReportsFixed() {
                         <TableCell className="border text-center text-white print:text-black print:text-xs">
                           {(Number(reportData.filter(row => row.rowType === 'project').reduce((sum, row) => sum + (row.totalHours || 0), 0)) || 0).toFixed(1)}
                         </TableCell>
-                        <TableCell className="border text-center text-white print:text-black print:text-xs" style={{ color: '#000' }}>
+                        <TableCell className="border text-center print:text-xs" style={{ color: '#000000', fontWeight: 'bold', backgroundColor: '#ffffff' }}>
                           {formatCurrency(reportData.filter(row => row.rowType === 'project').reduce((sum, row) => sum + (row.totalAmountDue || 0), 0))}
                         </TableCell>
-                        <TableCell className="border text-center text-white print:text-black print:text-xs" style={{ color: '#dc2626' }}>
+                        <TableCell className="border text-center print:text-xs" style={{ color: '#dc2626', fontWeight: 'bold', backgroundColor: '#ffffff' }}>
                           {formatCurrency(reportData.reduce((sum, row) => sum + (row.totalAmountReceived || 0), 0))}
                         </TableCell>
-                        <TableCell className="border text-center text-white print:text-black print:text-xs" style={{ color: reportData.reduce((sum, row) => sum + (row.remainingAmount || 0), 0) < 0 ? '#dc2626' : '#16a34a' }}>
+                        <TableCell className="border text-center print:text-xs" style={{ color: reportData.reduce((sum, row) => sum + (row.remainingAmount || 0), 0) < 0 ? '#dc2626' : '#16a34a', fontWeight: 'bold', backgroundColor: '#ffffff' }}>
                           {formatCurrency(reportData.reduce((sum, row) => sum + (row.remainingAmount || 0), 0))}
                         </TableCell>
                         <TableCell className="border text-center text-white print:text-black print:text-xs"></TableCell>
