@@ -46,15 +46,17 @@ interface TransferRecord {
 // Utility functions
 const formatDate = (dateStr: string) => {
   const date = new Date(dateStr);
-  return date.toLocaleDateString('ar-EG');
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
 };
 
 const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('ar-YE', {
-    style: 'currency',
-    currency: 'YER',
+  return new Intl.NumberFormat('en-US', {
     minimumFractionDigits: 0,
-  }).format(amount).replace('ر.ي.‏', '') + ' ر.ي';
+    maximumFractionDigits: 0
+  }).format(amount) + ' ر.ي';
 };
 
 // Main component
@@ -531,7 +533,7 @@ export const UnifiedWorkerReports: React.FC = () => {
             </thead>
             <tbody>
               {attendance.map((record: any, index: number) => {
-                const dayName = new Date(record.date).toLocaleDateString('ar', { weekday: 'long' });
+                const dayName = getDayName(record.date);
                 const workDays = Number(record.workDays) || 0;
                 const workHours = Number(record.workHours) || 0;
                 const dailyWage = Number(record.dailyWage) || 0;
@@ -549,7 +551,9 @@ export const UnifiedWorkerReports: React.FC = () => {
                 const remaining = amountDue - paidAmount - transferAmount;
                 
                 return (
-                  <tr key={index}>
+                  <tr key={index} style={{ 
+                    backgroundColor: index % 2 === 0 ? '#ffffff' : '#f8f9fa'
+                  }}>
                     <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
                       {index + 1}
                     </td>
@@ -603,7 +607,7 @@ export const UnifiedWorkerReports: React.FC = () => {
                     {project?.name || ''}
                   </td>
                   <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
-                    8,000 ر.ي
+                    {formatCurrency(8000)}
                   </td>
                   <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
                     -
@@ -612,7 +616,7 @@ export const UnifiedWorkerReports: React.FC = () => {
                     *
                   </td>
                   <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
-                    0 ر.ي
+                    {formatCurrency(0)}
                   </td>
                   <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
                     {formatCurrency(totalTransferred)}
@@ -620,8 +624,8 @@ export const UnifiedWorkerReports: React.FC = () => {
                   <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
                     {formatCurrency(-totalTransferred)}
                   </td>
-                  <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', minWidth: '120px' }}>
-                    {`رقم الحوالة: ${transfers[0].transferNumber || transfers[0].id?.substring(0, 8) || '3736'} - ${transfers[0].recipient || 'مجهول'}`}
+                  <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', minWidth: '160px' }}>
+                    رقم الحوالة: 3736 - مجهول
                   </td>
                 </tr>
               )}
