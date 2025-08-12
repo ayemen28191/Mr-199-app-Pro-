@@ -211,9 +211,9 @@ export const EnhancedWorkerAccountStatement: React.FC<EnhancedWorkerAccountState
                   <td>{record.endTime || '-'}</td>
                   <td>{workHours.toFixed(1)}</td>
                   <td className="work-description">{record.workDescription || '-'}</td>
-                  <td className="amount-due">{formatCurrency(amountDue)}</td>
-                  <td className="amount-paid">{formatCurrency(record.paidAmount || 0)}</td>
-                  <td className={`amount-remaining ${remaining > 0 ? 'positive' : remaining < 0 ? 'negative' : 'zero'}`}>
+                  <td className="amount-due" style={{ color: '#000' }}>{formatCurrency(amountDue)}</td>
+                  <td className="amount-paid" style={{ color: '#dc2626' }}>{formatCurrency(record.paidAmount || 0)}</td>
+                  <td className={`amount-remaining ${remaining > 0 ? 'positive' : remaining < 0 ? 'negative' : 'zero'}`} style={{ color: remaining < 0 ? '#dc2626' : '#16a34a' }}>
                     {formatCurrency(remaining)}
                   </td>
                   <td>{record.paymentType === 'full' ? 'كامل' : record.paymentType === 'partial' ? 'جزئي' : 'آجل'}</td>
@@ -229,9 +229,9 @@ export const EnhancedWorkerAccountStatement: React.FC<EnhancedWorkerAccountState
               <td colSpan={2}>-</td>
               <td><strong>{totalWorkHours.toFixed(1)}</strong></td>
               <td>-</td>
-              <td className="total-due"><strong>{formatCurrency(totalAmountDue)}</strong></td>
-              <td className="total-paid"><strong>{formatCurrency(totalAmountReceived)}</strong></td>
-              <td className={`total-remaining ${remainingAmount > 0 ? 'positive' : remainingAmount < 0 ? 'negative' : 'zero'}`}>
+              <td className="total-due" style={{ color: '#000' }}><strong>{formatCurrency(totalAmountDue)}</strong></td>
+              <td className="total-paid" style={{ color: '#dc2626' }}><strong>{formatCurrency(totalAmountReceived)}</strong></td>
+              <td className={`total-remaining ${remainingAmount > 0 ? 'positive' : remainingAmount < 0 ? 'negative' : 'zero'}`} style={{ color: remainingAmount < 0 ? '#dc2626' : '#16a34a' }}>
                 <strong>{formatCurrency(remainingAmount)}</strong>
               </td>
               <td colSpan={2}>-</td>

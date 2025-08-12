@@ -236,7 +236,7 @@ export default function WorkersUnifiedReportsFixed() {
                 projectName: projectData.projectName,
                 totalDays: 0,
                 totalHours: 0,
-                dailyWage: 0,
+                dailyWage: response.worker.dailyWage || 0, // إضافة الأجر اليومي للعامل في صف الحوالة
                 totalAmountDue: 0,
                 totalAmountReceived: transfer.amount,
                 remainingAmount: -transfer.amount,

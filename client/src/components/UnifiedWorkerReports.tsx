@@ -221,13 +221,13 @@ export const UnifiedWorkerReports: React.FC = () => {
             workerName: '',
             workerType: '',
             projectName: project?.name || '',
-            dailyWage: '',
+            dailyWage: worker.dailyWage, // إضافة الأجر اليومي للعامل في صف الحوالة
             workDays: '',
             workHours: '',
             amountDue: '',
             amountReceived: transfer.amount,
             remaining: -transfer.amount,
-            notes: `حوالة حسنة، رقم الى: ${transfer.recipientName} - رقم: ${transfer.transferNumber}`
+            notes: `حوالة إلى: ${transfer.recipientName} - رقم: ${transfer.transferNumber}`
           });
         });
       });
@@ -330,13 +330,13 @@ export const UnifiedWorkerReports: React.FC = () => {
                   <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
                     {row.workHours !== '' ? row.workHours.toFixed(1) : ''}
                   </td>
-                  <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', color: row.type === 'project' ? '#dc2626' : '' }}>
+                  <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', color: '#000' }}>
                     {row.amountDue !== '' ? formatCurrency(row.amountDue) : ''}
                   </td>
-                  <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', color: '#16a34a' }}>
+                  <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', color: '#dc2626' }}>
                     {row.amountReceived !== '' ? formatCurrency(row.amountReceived) : ''}
                   </td>
-                  <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', color: row.remaining > 0 ? '#dc2626' : '#16a34a' }}>
+                  <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', color: row.remaining < 0 ? '#dc2626' : '#16a34a' }}>
                     {row.remaining !== '' ? formatCurrency(row.remaining) : ''}
                   </td>
                   <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
