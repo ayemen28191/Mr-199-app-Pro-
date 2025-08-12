@@ -525,6 +525,7 @@ export const UnifiedWorkerReports: React.FC = () => {
                 <th style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>إجمالي الساعات</th>
                 <th style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>المبلغ المستحق</th>
                 <th style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>المبلغ المستلم</th>
+                <th style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>الحوالة</th>
                 <th style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>المتبقي</th>
                 <th style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>ملاحظات</th>
               </tr>
@@ -537,7 +538,16 @@ export const UnifiedWorkerReports: React.FC = () => {
                 const dailyWage = Number(record.dailyWage) || 0;
                 const paidAmount = Number(record.paidAmount) || 0;
                 const amountDue = dailyWage * workDays;
-                const remaining = amountDue - paidAmount;
+                
+                // Find transfers for this record date
+                const recordTransfers = transfers.filter((t: any) => {
+                  const transferDate = new Date(t.date).toDateString();
+                  const recordDate = new Date(record.date).toDateString();
+                  return transferDate === recordDate;
+                });
+                const transferAmount = recordTransfers.reduce((sum: number, t: any) => sum + (Number(t.amount) || 0), 0);
+                
+                const remaining = amountDue - paidAmount - transferAmount;
                 
                 return (
                   <tr key={index}>
@@ -567,6 +577,9 @@ export const UnifiedWorkerReports: React.FC = () => {
                     </td>
                     <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', color: '#16a34a' }}>
                       {formatCurrency(paidAmount)}
+                    </td>
+                    <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', color: '#2563eb' }}>
+                      {formatCurrency(transferAmount)}
                     </td>
                     <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', color: remaining > 0 ? '#dc2626' : '#16a34a' }}>
                       {formatCurrency(remaining)}
