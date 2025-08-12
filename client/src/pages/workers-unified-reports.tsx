@@ -854,13 +854,13 @@ export default function WorkersUnifiedReportsFixed() {
                   </div>
                   <div className="text-center p-2 bg-orange-50 print:bg-white print:border">
                     <div className="text-lg font-bold text-orange-600 print:text-black print:text-base">
-                      {(reportData.filter(row => row.rowType === 'project').reduce((sum, row) => sum + (row.totalDays || 0), 0) || 0).toFixed(1)}
+                      {(Number(reportData.filter(row => row.rowType === 'project').reduce((sum, row) => sum + (row.totalDays || 0), 0)) || 0).toFixed(1)}
                     </div>
                     <div className="text-sm text-gray-600 print:text-black print:text-xs">إجمالي أيام العمل</div>
                   </div>
                   <div className="text-center p-2 bg-purple-50 print:bg-white print:border">
                     <div className="text-lg font-bold text-purple-600 print:text-black print:text-base">
-                      {(reportData.filter(row => row.rowType === 'project').reduce((sum, row) => sum + (row.totalHours || 0), 0) || 0).toFixed(1)}
+                      {(Number(reportData.filter(row => row.rowType === 'project').reduce((sum, row) => sum + (row.totalHours || 0), 0)) || 0).toFixed(1)}
                     </div>
                     <div className="text-sm text-gray-600 print:text-black print:text-xs">إجمالي الساعات</div>
                   </div>
@@ -938,10 +938,10 @@ export default function WorkersUnifiedReportsFixed() {
                           {/* Average daily wage can be calculated if needed */}
                         </TableCell>
                         <TableCell className="border text-center text-white print:text-black print:text-xs">
-                          {(reportData.filter(row => row.rowType === 'project').reduce((sum, row) => sum + (row.totalDays || 0), 0) || 0).toFixed(1)}
+                          {(Number(reportData.filter(row => row.rowType === 'project').reduce((sum, row) => sum + (row.totalDays || 0), 0)) || 0).toFixed(1)}
                         </TableCell>
                         <TableCell className="border text-center text-white print:text-black print:text-xs">
-                          {(reportData.filter(row => row.rowType === 'project').reduce((sum, row) => sum + (row.totalHours || 0), 0) || 0).toFixed(1)}
+                          {(Number(reportData.filter(row => row.rowType === 'project').reduce((sum, row) => sum + (row.totalHours || 0), 0)) || 0).toFixed(1)}
                         </TableCell>
                         <TableCell className="border text-center text-white print:text-black print:text-xs">
                           {formatCurrency(reportData.filter(row => row.rowType === 'project').reduce((sum, row) => sum + (row.totalAmountDue || 0), 0))}
