@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-+١١٠import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -441,8 +441,23 @@ export default function WorkersUnifiedReports() {
     const totalPaidAmount = reportData.reduce((sum, row) => sum + parseFloat(row.paidAmount || 0), 0);
     const totalRemaining = totalAmountDue - totalPaidAmount;
 
+    // تعريف نوع ملخص العامل
+    interface WorkerSummary {
+      workerId: string;
+      workerName: string;
+      workerType: string;
+      phone: string;
+      projects: Set<string>;
+      dailyWage: number;
+      totalWorkDays: number;
+      totalWorkHours: number;
+      totalAmountDue: number;
+      totalPaidAmount: number;
+      totalTransferred: number;
+    }
+
     // تجميع البيانات حسب العامل لتصدير الإكسل مع الحقول الجديدة
-    const workerSummary = reportData.reduce((acc, row) => {
+    const workerSummary: Record<string, WorkerSummary> = reportData.reduce((acc, row) => {
       const workerId = row.workerId;
       if (!acc[workerId]) {
         acc[workerId] = {
@@ -450,7 +465,7 @@ export default function WorkersUnifiedReports() {
           workerName: row.workerName,
           workerType: row.workerType,
           phone: row.phone,
-          projects: new Set(),
+          projects: new Set<string>(),
           dailyWage: parseFloat(row.dailyWage || 0),
           totalWorkDays: 0,
           totalWorkHours: 0,
@@ -468,9 +483,9 @@ export default function WorkersUnifiedReports() {
       acc[workerId].totalPaidAmount += parseFloat(row.paidAmount || 0);
       acc[workerId].totalTransferred += parseFloat(row.totalTransferred || 0);
       return acc;
-    }, {});
+    }, {} as Record<string, WorkerSummary>);
 
-    const summaryArray = Object.values(workerSummary);
+    const summaryArray: WorkerSummary[] = Object.values(workerSummary);
 
     // ورقة التقرير بتصميم احترافي يطابق الكشف المطبوع
     const reportDataForExcel = [
@@ -746,7 +761,7 @@ export default function WorkersUnifiedReports() {
     worksheet.eachRow((row) => {
       row.eachCell((cell) => {
         if (!cell.alignment) cell.alignment = {};
-        cell.alignment.readingOrder = 1; // RTL
+        cell.alignment.readingOrder = "rtl" as any; // RTL
         if (!cell.alignment.horizontal) {
           cell.alignment.horizontal = 'right';
         }
