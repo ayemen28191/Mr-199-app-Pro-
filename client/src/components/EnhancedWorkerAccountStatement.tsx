@@ -61,8 +61,8 @@ export const EnhancedWorkerAccountStatement: React.FC<EnhancedWorkerAccountState
   const { worker, project, attendance, transfers } = data;
   
   // حساب الإجماليات
-  const totalWorkDays = attendance.reduce((sum, record) => sum + (record.workDays || 0), 0);
-  const totalWorkHours = attendance.reduce((sum, record) => {
+  const totalWorkDays = (attendance || []).reduce((sum, record) => sum + (record.workDays || 0), 0);
+  const totalWorkHours = (attendance || []).reduce((sum, record) => {
     if (record.startTime && record.endTime) {
       const start = new Date(`2000-01-01T${record.startTime}`);
       const end = new Date(`2000-01-01T${record.endTime}`);
@@ -72,9 +72,9 @@ export const EnhancedWorkerAccountStatement: React.FC<EnhancedWorkerAccountState
     return sum + 8; // افتراض 8 ساعات إذا لم تكن الأوقات متوفرة
   }, 0);
   
-  const totalAmountDue = attendance.reduce((sum, record) => sum + (record.dailyWage * record.workDays), 0);
-  const totalAmountReceived = attendance.reduce((sum, record) => sum + (record.paidAmount || 0), 0);
-  const totalTransferred = transfers.reduce((sum, transfer) => sum + transfer.amount, 0);
+  const totalAmountDue = (attendance || []).reduce((sum, record) => sum + (record.dailyWage * record.workDays), 0);
+  const totalAmountReceived = (attendance || []).reduce((sum, record) => sum + (record.paidAmount || 0), 0);
+  const totalTransferred = (transfers || []).reduce((sum, transfer) => sum + transfer.amount, 0);
   const remainingAmount = totalAmountDue - totalAmountReceived;
   // الرصيد الصحيح للعامل = المستحق - المدفوع - المحول للأهل
   const workerCurrentBalance = totalAmountDue - totalAmountReceived - totalTransferred;
@@ -156,15 +156,15 @@ export const EnhancedWorkerAccountStatement: React.FC<EnhancedWorkerAccountState
           </div>
           <div className="summary-item days">
             <span className="summary-label">إجمالي أيام العمل</span>
-            <span className="summary-value">{totalWorkDays.toFixed(1)} يوم</span>
+            <span className="summary-value">{(totalWorkDays || 0).toFixed(1)} يوم</span>
           </div>
           <div className="summary-item hours">
             <span className="summary-label">إجمالي ساعات العمل</span>
-            <span className="summary-value">{totalWorkHours.toFixed(1)} ساعة</span>
+            <span className="summary-value">{(totalWorkHours || 0).toFixed(1)} ساعة</span>
           </div>
           <div className="summary-item avg">
             <span className="summary-label">متوسط الساعات اليومية</span>
-            <span className="summary-value">{totalWorkDays > 0 ? (totalWorkHours / totalWorkDays).toFixed(1) : '0'} ساعة</span>
+            <span className="summary-value">{(totalWorkDays || 0) > 0 ? ((totalWorkHours || 0) / totalWorkDays).toFixed(1) : '0'} ساعة</span>
           </div>
         </div>
       </div>
