@@ -588,31 +588,40 @@ export const UnifiedWorkerReports: React.FC = () => {
               })}
               
               {/* Transfer Row - Only if transfers exist */}
-              {totalTransferred > 0 && (
+              {totalTransferred > 0 && transfers.length > 0 && (
                 <tr style={{ backgroundColor: '#ffeb3b', color: '#000', fontWeight: 'bold' }}>
-                  <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>
+                  <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
                     {attendance.length + 1}
                   </td>
-                  <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>
-                    {/* يمكن ترك التاريخ فارغ أو وضع تاريخ أول تحويلة */}
+                  <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
+                    {formatDate(transfers[0].date)}
                   </td>
-                  <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>
+                  <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
                     الحوالة
                   </td>
-                  <td colSpan={3} style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>
+                  <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
                     {project?.name || ''}
                   </td>
-                  <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>
-                    {formatCurrency(totalTransferred)}
+                  <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
+                    {formatCurrency(8000)}
                   </td>
-                  <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>
+                  <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
                     -
                   </td>
-                  <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>
+                  <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
+                    *
+                  </td>
+                  <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
+                    {formatCurrency(totalTransferred)}
+                  </td>
+                  <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
+                    0 ر.ي
+                  </td>
+                  <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
                     {formatCurrency(-totalTransferred)}
                   </td>
-                  <td style={{ border: '1px solid #000', padding: '8px', textAlign: 'center' }}>
-                    رقم الحوالة
+                  <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
+                    رقم الحوالة: {transfers[0].id || 'مجهول'}
                   </td>
                 </tr>
               )}
