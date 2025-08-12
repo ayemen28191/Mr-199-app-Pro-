@@ -46,6 +46,7 @@ interface WorkerTransfer {
   recipientName: string;
   recipientPhone?: string;
   transferMethod: 'cash' | 'bank' | 'hawaleh';
+  transferNumber?: string;
   transferDate: string;
   notes?: string;
 }
@@ -57,6 +58,7 @@ interface TransferFormData {
   recipientName: string;
   recipientPhone: string;
   transferMethod: 'cash' | 'bank' | 'hawaleh';
+  transferNumber: string;
   notes: string;
 }
 
@@ -82,6 +84,7 @@ export default function WorkerAccountsPage() {
     recipientName: '',
     recipientPhone: '',
     transferMethod: 'hawaleh',
+    transferNumber: '',
     notes: ''
   });
 
@@ -180,6 +183,7 @@ export default function WorkerAccountsPage() {
           recipientName: transfer.recipientName,
           recipientPhone: transfer.recipientPhone || '',
           transferMethod: transfer.transferMethod,
+          transferNumber: transfer.transferNumber || '',
           notes: transfer.notes || ''
         });
         setShowTransferDialog(true);
@@ -195,6 +199,7 @@ export default function WorkerAccountsPage() {
       recipientName: '',
       recipientPhone: '',
       transferMethod: 'hawaleh',
+      transferNumber: '',
       notes: ''
     });
   };
@@ -228,6 +233,7 @@ export default function WorkerAccountsPage() {
       recipientName: transfer.recipientName,
       recipientPhone: transfer.recipientPhone || '',
       transferMethod: transfer.transferMethod,
+      transferNumber: transfer.transferNumber || '',
       notes: transfer.notes || ''
     });
     setShowTransferDialog(true);
@@ -514,6 +520,15 @@ export default function WorkerAccountsPage() {
                   <SelectItem value="cash">نقداً</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            <div>
+              <Label>رقم الحولة</Label>
+              <Input
+                value={formData.transferNumber}
+                onChange={(e) => setFormData({...formData, transferNumber: e.target.value})}
+                placeholder="رقم الحولة أو المرجع"
+              />
             </div>
 
             <div>
