@@ -532,8 +532,12 @@ export const UnifiedWorkerReports: React.FC = () => {
             <tbody>
               {attendance.map((record: any, index: number) => {
                 const dayName = new Date(record.date).toLocaleDateString('ar', { weekday: 'long' });
-                const amountDue = record.dailyWage * record.workDays;
-                const remaining = amountDue - (record.paidAmount || 0);
+                const workDays = Number(record.workDays) || 0;
+                const workHours = Number(record.workHours) || 0;
+                const dailyWage = Number(record.dailyWage) || 0;
+                const paidAmount = Number(record.paidAmount) || 0;
+                const amountDue = dailyWage * workDays;
+                const remaining = amountDue - paidAmount;
                 
                 return (
                   <tr key={index}>
@@ -550,19 +554,19 @@ export const UnifiedWorkerReports: React.FC = () => {
                       {project?.name || ''}
                     </td>
                     <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
-                      {formatCurrency(record.dailyWage)}
+                      {formatCurrency(dailyWage)}
                     </td>
                     <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
-                      {record.workDays.toFixed(1)}
+                      {workDays.toFixed(1)}
                     </td>
                     <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center' }}>
-                      {record.workHours.toFixed(1)}
+                      {workHours.toFixed(1)}
                     </td>
                     <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', color: '#dc2626' }}>
                       {formatCurrency(amountDue)}
                     </td>
                     <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', color: '#16a34a' }}>
-                      {formatCurrency(record.paidAmount || 0)}
+                      {formatCurrency(paidAmount)}
                     </td>
                     <td style={{ border: '1px solid #000', padding: '6px', textAlign: 'center', color: remaining > 0 ? '#dc2626' : '#16a34a' }}>
                       {formatCurrency(remaining)}
