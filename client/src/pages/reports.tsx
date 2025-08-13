@@ -672,13 +672,19 @@ export default function Reports() {
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('التقرير');
 
-      // إعداد الصفحة باللغة العربية
+      // إعداد الصفحة باللغة العربية مع تصحيح التشفير
       worksheet.views = [{ rightToLeft: true }];
       worksheet.pageSetup = {
         paperSize: 9, // A4
         orientation: 'landscape',
         margins: { left: 0.7, right: 0.7, top: 0.7, bottom: 0.7 }
       };
+      
+      // إعداد خصائص المصنف للغة العربية
+      workbook.creator = 'نظام إدارة البناء';
+      workbook.lastModifiedBy = 'نظام إدارة البناء';
+      workbook.created = new Date();
+      workbook.modified = new Date();
 
       let currentRow = 1;
 
@@ -686,18 +692,29 @@ export default function Reports() {
       worksheet.mergeCells(`A${currentRow}:F${currentRow}`);
       const titleCell = worksheet.getCell(`A${currentRow}`);
       titleCell.value = getReportTitle(activeReportType);
-      titleCell.font = { name: 'Arial', size: 16, bold: true };
+      titleCell.font = { name: 'Arial Unicode MS', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
       titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
       titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4A90E2' } };
-      titleCell.font = { ...titleCell.font, color: { argb: 'FFFFFFFF' } };
-      worksheet.getRow(currentRow).height = 30;
+      worksheet.getRow(currentRow).height = 35;
       currentRow += 2;
 
       // معلومات أساسية
-      worksheet.getCell(`A${currentRow}`).value = 'المشروع:';
-      worksheet.getCell(`B${currentRow}`).value = selectedProject?.name || 'جميع المشاريع';
-      worksheet.getCell(`D${currentRow}`).value = 'تاريخ الإنشاء:';
-      worksheet.getCell(`E${currentRow}`).value = new Date().toLocaleDateString('ar-EG');
+      const projectInfoCell = worksheet.getCell(`A${currentRow}`);
+      projectInfoCell.value = 'المشروع:';
+      projectInfoCell.font = { name: 'Arial Unicode MS', bold: true };
+      
+      const projectNameCell = worksheet.getCell(`B${currentRow}`);
+      projectNameCell.value = selectedProject?.name || 'جميع المشاريع';
+      projectNameCell.font = { name: 'Arial Unicode MS' };
+      
+      const dateInfoCell = worksheet.getCell(`D${currentRow}`);
+      dateInfoCell.value = 'تاريخ الإنشاء:';
+      dateInfoCell.font = { name: 'Arial Unicode MS', bold: true };
+      
+      const dateValueCell = worksheet.getCell(`E${currentRow}`);
+      dateValueCell.value = new Date().toLocaleDateString('ar-EG');
+      dateValueCell.font = { name: 'Arial Unicode MS' };
+      
       currentRow += 2;
 
       // تصدير البيانات حسب نوع التقرير
@@ -758,12 +775,13 @@ export default function Reports() {
     headers.forEach((header, index) => {
       const cell = worksheet.getCell(currentRow, index + 1);
       cell.value = header;
-      cell.font = { name: 'Arial', size: 12, bold: true };
+      cell.font = { name: 'Arial Unicode MS', size: 12, bold: true };
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE8E8E8' } };
       cell.border = {
         top: { style: 'thin' }, bottom: { style: 'thin' },
         left: { style: 'thin' }, right: { style: 'thin' }
       };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
     });
     currentRow++;
 
@@ -834,12 +852,14 @@ export default function Reports() {
       // تنسيق الخلايا
       for (let col = 1; col <= 6; col++) {
         const cell = worksheet.getCell(currentRow, col);
+        cell.font = { name: 'Arial Unicode MS', size: 11 };
         cell.border = {
           top: { style: 'thin' }, bottom: { style: 'thin' },
           left: { style: 'thin' }, right: { style: 'thin' }
         };
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
         if (col === 3) { // عمود المبلغ
-          cell.numFmt = '#,##0';
+          cell.numFmt = '#,##0.00';
         }
       }
       currentRow++;
@@ -847,24 +867,36 @@ export default function Reports() {
 
     // الملخص
     currentRow += 2;
-    worksheet.getCell(currentRow, 1).value = 'الملخص:';
-    worksheet.getCell(currentRow, 1).font = { bold: true, size: 14 };
+    const summaryTitleCell = worksheet.getCell(currentRow, 1);
+    summaryTitleCell.value = 'الملخص:';
+    summaryTitleCell.font = { name: 'Arial Unicode MS', bold: true, size: 14 };
     currentRow++;
 
-    worksheet.getCell(currentRow, 1).value = 'إجمالي الدخل:';
-    worksheet.getCell(currentRow, 2).value = data.totalIncome || 0;
-    worksheet.getCell(currentRow, 2).numFmt = '#,##0';
+    const incomeCell = worksheet.getCell(currentRow, 1);
+    incomeCell.value = 'إجمالي الدخل:';
+    incomeCell.font = { name: 'Arial Unicode MS', bold: true };
+    const incomeValueCell = worksheet.getCell(currentRow, 2);
+    incomeValueCell.value = data.totalIncome || 0;
+    incomeValueCell.numFmt = '#,##0.00';
+    incomeValueCell.font = { name: 'Arial Unicode MS' };
     currentRow++;
 
-    worksheet.getCell(currentRow, 1).value = 'إجمالي المصاريف:';
-    worksheet.getCell(currentRow, 2).value = data.totalExpenses || 0;
-    worksheet.getCell(currentRow, 2).numFmt = '#,##0';
+    const expensesCell = worksheet.getCell(currentRow, 1);
+    expensesCell.value = 'إجمالي المصاريف:';
+    expensesCell.font = { name: 'Arial Unicode MS', bold: true };
+    const expensesValueCell = worksheet.getCell(currentRow, 2);
+    expensesValueCell.value = data.totalExpenses || 0;
+    expensesValueCell.numFmt = '#,##0.00';
+    expensesValueCell.font = { name: 'Arial Unicode MS' };
     currentRow++;
 
-    worksheet.getCell(currentRow, 1).value = 'الرصيد النهائي:';
-    worksheet.getCell(currentRow, 2).value = (data.totalIncome || 0) - (data.totalExpenses || 0);
-    worksheet.getCell(currentRow, 2).numFmt = '#,##0';
-    worksheet.getCell(currentRow, 2).font = { bold: true };
+    const balanceCell = worksheet.getCell(currentRow, 1);
+    balanceCell.value = 'الرصيد النهائي:';
+    balanceCell.font = { name: 'Arial Unicode MS', bold: true };
+    const balanceValueCell = worksheet.getCell(currentRow, 2);
+    balanceValueCell.value = (data.totalIncome || 0) - (data.totalExpenses || 0);
+    balanceValueCell.numFmt = '#,##0.00';
+    balanceValueCell.font = { name: 'Arial Unicode MS', bold: true, color: { argb: 'FF008000' } };
   };
 
   const exportWorkerReportData = async (data: any, worksheet: any, startRow: number) => {
@@ -2761,32 +2793,76 @@ export default function Reports() {
             line-height: 1.4 !important;
           }
           
-          /* تنسيق الجداول */
+          /* تنسيق الجداول المحسن للطباعة */
           table {
             width: 100% !important;
             border-collapse: collapse !important;
-            margin: 5mm 0 !important;
+            margin: 8mm 0 !important;
+            font-size: 14px !important;
+            min-width: 100% !important;
           }
           
           th, td {
-            border: 1px solid #000 !important;
-            padding: 2mm !important;
+            border: 2px solid #000 !important;
+            padding: 4mm !important;
             text-align: center !important;
-            font-size: 11px !important;
+            font-size: 14px !important;
             color: #000 !important;
             background: white !important;
+            white-space: nowrap !important;
+            overflow: visible !important;
+            word-wrap: break-word !important;
           }
           
           th {
-            background: #f0f0f0 !important;
+            background: #e5e5e5 !important;
             font-weight: bold !important;
+            font-size: 15px !important;
+            color: #000 !important;
           }
           
-          /* تنسيق العناوين */
+          /* تحسين ترويسة الجدول */
+          thead tr {
+            background: #d0d0d0 !important;
+          }
+          
+          /* صفوف بديلة */
+          tbody tr:nth-child(even) {
+            background: #f8f8f8 !important;
+          }
+          
+          tbody tr:nth-child(odd) {
+            background: white !important;
+          }
+          
+          /* تنسيق العناوين المحسن */
           h1, h2, h3 {
             color: #000 !important;
-            margin: 5mm 0 !important;
+            margin: 8mm 0 4mm 0 !important;
             break-after: avoid !important;
+            font-size: 18px !important;
+            font-weight: bold !important;
+            text-align: center !important;
+          }
+          
+          h1 {
+            font-size: 22px !important;
+            border-bottom: 3px solid #000 !important;
+            padding-bottom: 2mm !important;
+          }
+          
+          h2 {
+            font-size: 18px !important;
+            color: #333 !important;
+          }
+          
+          /* معلومات المشروع والتاريخ */
+          .project-info {
+            font-size: 16px !important;
+            margin: 5mm 0 !important;
+            border: 1px solid #000 !important;
+            padding: 3mm !important;
+            background: #f5f5f5 !important;
           }
           
           /* إخفاء الأزرار */
@@ -2797,10 +2873,36 @@ export default function Reports() {
             display: none !important;
           }
           
-          /* إعدادات الصفحة */
+          /* إعدادات الصفحة المحسنة */
           @page {
-            size: A4;
-            margin: 10mm;
+            size: A4 landscape;
+            margin: 15mm 10mm;
+          }
+          
+          /* تحسين النصوص العربية */
+          * {
+            font-family: 'Arial', 'Tahoma', sans-serif !important;
+          }
+          
+          /* تحسين التباعد والتخطيط */
+          .report-section {
+            margin: 5mm 0 !important;
+            page-break-inside: avoid !important;
+          }
+          
+          /* تأكيد اتجاه RTL */
+          [dir="rtl"], 
+          [data-report-content] {
+            direction: rtl !important;
+            text-align: right !important;
+          }
+          
+          /* إخفاء عناصر التفاعل */
+          .interactive,
+          .hover-effect,
+          .transition,
+          .shadow {
+            display: none !important;
           }
         }
       `;
