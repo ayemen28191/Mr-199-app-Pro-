@@ -6,7 +6,15 @@
 /* إعدادات الصفحة الأساسية - مضغوطة ومحسنة */
 @page {
   size: A4 portrait;
-  margin: 8mm 6mm;
+  margin: 10mm 8mm 8mm 8mm;
+  /* منع قطع المحتوى بين الصفحات */
+  orphans: 3;
+  widows: 3;
+}
+
+/* صفحة أولى بإعدادات خاصة */
+@page :first {
+  margin: 8mm 8mm 8mm 8mm;
 }
 
 /* إعدادات الطباعة العامة */
@@ -61,11 +69,21 @@
     max-width: 190mm !important;
     height: auto !important;
     margin: 0 auto !important;
-    padding: 5mm !important;
+    padding: 3mm !important;
     background: white !important;
     color: #000 !important;
     overflow: visible !important;
     page-break-inside: avoid !important;
+    transform: scale(0.85) !important;
+    transform-origin: top center !important;
+  }
+
+  /* ضمان عدم تجاوز صفحة واحدة */
+  .print-single-page {
+    max-height: 270mm !important;
+    overflow: hidden !important;
+    transform: scale(0.75) !important;
+    transform-origin: top center !important;
   }
 
   /* تنسيق العناوين */

@@ -677,7 +677,7 @@ export default function Reports() {
       worksheet.pageSetup = {
         paperSize: 9, // A4
         orientation: 'landscape',
-        margins: { left: 0.7, right: 0.7, top: 0.7, bottom: 0.7 }
+        margins: { left: 0.7, right: 0.7, top: 0.7, bottom: 0.7, header: 0.3, footer: 0.3 }
       };
       
       // إعداد خصائص المصنف للغة العربية
@@ -691,7 +691,7 @@ export default function Reports() {
       // العنوان الرئيسي
       worksheet.mergeCells(`A${currentRow}:F${currentRow}`);
       const titleCell = worksheet.getCell(`A${currentRow}`);
-      titleCell.value = getReportTitle(activeReportType);
+      titleCell.value = getReportTitle(activeReportType || 'general');
       titleCell.font = { name: 'Arial Unicode MS', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
       titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
       titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4A90E2' } };
@@ -728,17 +728,31 @@ export default function Reports() {
         await exportGenericReportData(data, worksheet, currentRow);
       }
 
-      // تصدير الملف
+      // تصدير الملف مع التشفير الصحيح
       const buffer = await workbook.xlsx.writeBuffer();
-      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      const url = URL.createObjectURL(blob);
+      const blob = new Blob([buffer], { 
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8' 
+      });
+      
+      // تحسين عملية التحميل لتجنب المشاكل
+      const timestamp = new Date().toISOString().split('T')[0];
+      const downloadName = `${filename}-${timestamp}.xlsx`;
+      
+      // تحميل الملف باستخدام المتصفحات الحديثة
+      const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
+      link.style.display = 'none';
       link.href = url;
-      link.download = `${filename}-${new Date().toISOString().split('T')[0]}.xlsx`;
+      link.download = downloadName;
+      link.setAttribute('download', downloadName);
       document.body.appendChild(link);
       link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      
+      // تنظيف الذاكرة
+      setTimeout(() => {
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+      }, 100);
       
       toast({
         title: "تم التصدير",
@@ -786,7 +800,7 @@ export default function Reports() {
     currentRow++;
 
     // جمع جميع المعاملات
-    const allTransactions = [];
+    const allTransactions: any[] = [];
     
     if (data.fundTransfers) {
       data.fundTransfers.forEach((t: any) => {

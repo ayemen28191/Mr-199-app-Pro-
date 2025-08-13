@@ -31,7 +31,21 @@ export function UnifiedExcelExporter({
   const exportToExcel = async () => {
     try {
       const workbook = new ExcelJS.Workbook();
-      const worksheet = workbook.addWorksheet('التقرير');
+      
+      // إعداد المصنف للغة العربية وترميز UTF-8
+      workbook.creator = 'نظام إدارة البناء';
+      workbook.lastModifiedBy = 'نظام إدارة البناء';
+      workbook.created = new Date();
+      workbook.modified = new Date();
+      
+      const worksheet = workbook.addWorksheet('التقرير', {
+        views: [{ rightToLeft: true }],
+        pageSetup: {
+          paperSize: 9, // A4
+          orientation: 'portrait',
+          margins: { left: 0.7, right: 0.7, top: 0.7, bottom: 0.7, header: 0.3, footer: 0.3 }
+        }
+      });
 
       // إعداد الأعمدة حسب نوع التقرير
       if (reportType === 'worker_statement') {
@@ -42,13 +56,25 @@ export function UnifiedExcelExporter({
         await exportProjectSummary(worksheet, data);
       }
 
-      // حفظ الملف
+      // حفظ الملف مع التشفير الصحيح
       const buffer = await workbook.xlsx.writeBuffer();
-      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-      saveAs(blob, `${fileName}.xlsx`);
+      const blob = new Blob([buffer], { 
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8' 
+      });
+      
+      // استخدام رابط تحميل مباشر لتجنب مشاكل التصدير
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${fileName}-${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
       
     } catch (error) {
       console.error('خطأ في تصدير Excel:', error);
+      alert('حدث خطأ في تصدير الملف. يرجى المحاولة مرة أخرى.');
     }
   };
 
