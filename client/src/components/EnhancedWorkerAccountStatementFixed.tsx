@@ -102,98 +102,85 @@ export const EnhancedWorkerAccountStatement = ({
       // إعداد اتجاه الكتابة من اليمين لليسار
       worksheet.views = [{ rightToLeft: true }];
 
-      // إضافة العنوان الرئيسي
-      worksheet.mergeCells('A1:H1');
-      const titleCell = worksheet.getCell('A1');
-      titleCell.value = 'AL-HAJ ABDULRAHMAN ALI AL-JAHNI & SONS COMPANY';
-      titleCell.font = { name: 'Arial', size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
+      // رأس الشركة - بنفس تصميم المعاينة
+      worksheet.mergeCells('A1:J1');
+      const companyCell = worksheet.getCell('A1');
+      companyCell.value = 'شركة التميز لمقاولات والاستثمارات الهندسية';
+      companyCell.font = { name: 'Arial Unicode MS', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
+      companyCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      companyCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2563eb' } };
+
+      // عنوان التقرير
+      worksheet.addRow([]);
+      worksheet.mergeCells('A3:J3');
+      const titleCell = worksheet.getCell('A3');
+      titleCell.value = 'كشف حساب العامل التفصيلي والشامل';
+      titleCell.font = { name: 'Arial Unicode MS', size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
       titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
       titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1e40af' } };
 
-      // العنوان الفرعي
-      worksheet.mergeCells('A2:H2');
-      const subtitleCell = worksheet.getCell('A2');
-      subtitleCell.value = 'Worker Account Statement - Detailed Report';
-      subtitleCell.font = { name: 'Arial', size: 12, bold: true };
-      subtitleCell.alignment = { horizontal: 'center', vertical: 'middle' };
-      subtitleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFe0f2fe' } };
+      // معلومات العامل
+      worksheet.addRow([]);
+      const infoRow = worksheet.addRow(['اسم العامل:', worker.name || 'غير محدد', '', 'نوع العامل:', worker.type || 'غير محدد', '', 'الأجر اليومي:', formatCurrency(Number(worker.dailyWage) || 0), '', '']);
+      infoRow.font = { name: 'Arial Unicode MS', size: 11, bold: true };
 
-      // معلومات العامل والمشروع
-      worksheet.getCell('A4').value = 'Worker Name:';
-      worksheet.getCell('B4').value = worker.name || 'Not Specified';
-      worksheet.getCell('D4').value = 'Project:';
-      worksheet.getCell('E4').value = selectedProject?.name || 'All Projects';
+      worksheet.addRow([]);
 
-      worksheet.getCell('A5').value = 'Worker Type:';
-      worksheet.getCell('B5').value = worker.type || 'Worker';
-      worksheet.getCell('D5').value = 'Period:';
-      worksheet.getCell('E5').value = `${formatDate(dateFrom)} - ${formatDate(dateTo)}`;
-
-      worksheet.getCell('A6').value = 'Daily Wage:';
-      const dailyWageValue = Number(worker.dailyWage) || 0;
-      worksheet.getCell('B6').value = dailyWageValue;
-      worksheet.getCell('B6').numFmt = '#,##0 "YER"';
+      // رؤوس جدول الحضور - بنفس تصميم المعاينة
+      const headers = ['م', 'التاريخ', 'اليوم', 'وصف العمل', 'الساعات', 'المبلغ المستحق', 'المبلغ المستلم', 'المتبقي', 'الحالة', 'ملاحظات'];
+      const headerRow = worksheet.addRow(headers);
       
-      worksheet.getCell('D6').value = 'Report Date:';
-      const todayDate = new Date();
-      worksheet.getCell('E6').value = todayDate;
-      worksheet.getCell('E6').numFmt = 'dd/mm/yyyy';
-
-      // رؤوس جدول الحضور
-      const headers = ['#', 'Date', 'Day', 'Work Description', 'Hours', 'Amount Due', 'Amount Paid', 'Status'];
-      const headerRow = worksheet.getRow(8);
-      headers.forEach((header, index) => {
-        const cell = headerRow.getCell(index + 1);
-        cell.value = header;
-        cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+      headerRow.eachCell((cell) => {
+        cell.font = { name: 'Arial Unicode MS', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
         cell.alignment = { horizontal: 'center', vertical: 'middle' };
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF3b82f6' } };
         cell.border = {
-          top: { style: 'thin' },
-          left: { style: 'thin' },
-          bottom: { style: 'thin' },
-          right: { style: 'thin' }
+          top: { style: 'thin', color: { argb: 'FF000000' } },
+          left: { style: 'thin', color: { argb: 'FF000000' } },
+          bottom: { style: 'thin', color: { argb: 'FF000000' } },
+          right: { style: 'thin', color: { argb: 'FF000000' } }
         };
       });
 
-      // بيانات الحضور
+      // بيانات الحضور مع نفس التنسيق
+      let totalEarnedExcel = 0;
+      let totalPaidExcel = 0;
+      
       attendance.forEach((record: any, index: number) => {
-        const row = worksheet.getRow(9 + index);
-        const dailyWageAmount = Number(record.dailyWage) || 0;
-        const paidAmount = Number(record.paidAmount) || 0;
-        const status = paidAmount >= dailyWageAmount ? 'Fully Paid' : 
-                      paidAmount > 0 ? 'Partially Paid' : 'Unpaid';
+        const dailyWage = Number(record.dailyWage) || Number(worker?.dailyWage) || 0;
+        const workDays = Number(record.workDays) || 1;
+        const earned = dailyWage * workDays;
+        const paid = Number(record.paidAmount) || 0;
+        const remaining = earned - paid;
+        const status = paid >= earned ? 'مدفوع كامل' : paid > 0 ? 'مدفوع جزئي' : 'غير مدفوع';
         
-        row.getCell(1).value = index + 1;
-        
-        const recordDate = new Date(record.date);
-        row.getCell(2).value = recordDate;
-        row.getCell(2).numFmt = 'dd/mm/yyyy';
-        
-        row.getCell(3).value = formatDay(record.date);
-        row.getCell(4).value = record.workDescription || 'Daily construction work as per project requirements';
-        row.getCell(5).value = record.startTime && record.endTime ? 
-          `${record.startTime}-${record.endTime}` : '8 hours';
-        
-        row.getCell(6).value = dailyWageAmount;
-        row.getCell(6).numFmt = '#,##0 "YER"';
-        
-        row.getCell(7).value = paidAmount;
-        row.getCell(7).numFmt = '#,##0 "YER"';
-        
-        row.getCell(8).value = status;
+        totalEarnedExcel += earned;
+        totalPaidExcel += paid;
 
-        // تنسيق الصف
-        row.eachCell((cell, colNumber) => {
+        const dataRow = worksheet.addRow([
+          index + 1,
+          formatDate(record.date),
+          record.dayName || new Date(record.date).toLocaleDateString('ar', { weekday: 'long' }),
+          record.workDescription || 'عمل بناء وفقاً لمتطلبات المشروع',
+          record.workHours || '8 ساعات',
+          formatCurrency(earned),
+          formatCurrency(paid),
+          formatCurrency(remaining),
+          status,
+          record.notes || '-'
+        ]);
+
+        dataRow.eachCell((cell, colNumber) => {
+          cell.font = { name: 'Arial Unicode MS', size: 9 };
           cell.alignment = { 
-            horizontal: colNumber === 4 ? 'left' : 'center', 
+            horizontal: colNumber === 4 || colNumber === 10 ? 'right' : 'center', 
             vertical: 'middle' 
           };
           cell.border = {
-            top: { style: 'thin' },
-            left: { style: 'thin' },
-            bottom: { style: 'thin' },
-            right: { style: 'thin' }
+            top: { style: 'thin', color: { argb: 'FF000000' } },
+            left: { style: 'thin', color: { argb: 'FF000000' } },
+            bottom: { style: 'thin', color: { argb: 'FF000000' } },
+            right: { style: 'thin', color: { argb: 'FF000000' } }
           };
           if (index % 2 === 0) {
             cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
@@ -202,113 +189,39 @@ export const EnhancedWorkerAccountStatement = ({
       });
 
       // صف الإجماليات
-      const totalRowIndex = 9 + attendance.length;
-      const totalRow = worksheet.getRow(totalRowIndex);
-      totalRow.getCell(1).value = 'TOTALS';
-      worksheet.mergeCells(`A${totalRowIndex}:E${totalRowIndex}`);
-      
-      totalRow.getCell(6).value = totalEarned;
-      totalRow.getCell(6).numFmt = '#,##0 "YER"';
-      totalRow.getCell(7).value = totalPaid;
-      totalRow.getCell(7).numFmt = '#,##0 "YER"';
-      
-      const paymentPercentage = totalEarned > 0 ? ((totalPaid / totalEarned) * 100) : 0;
-      totalRow.getCell(8).value = paymentPercentage / 100;
-      totalRow.getCell(8).numFmt = '0.0%';
+      const totalRow = worksheet.addRow([
+        'الإجماليات', '', '', '', '',
+        formatCurrency(totalEarnedExcel),
+        formatCurrency(totalPaidExcel),
+        formatCurrency(totalEarnedExcel - totalPaidExcel),
+        '', ''
+      ]);
 
       // تنسيق صف الإجماليات
       totalRow.eachCell((cell) => {
-        cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+        cell.font = { name: 'Arial Unicode MS', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
         cell.alignment = { horizontal: 'center', vertical: 'middle' };
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF10b981' } };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF059669' } };
         cell.border = {
-          top: { style: 'medium' },
-          left: { style: 'thin' },
-          bottom: { style: 'medium' },
-          right: { style: 'thin' }
+          top: { style: 'medium', color: { argb: 'FF000000' } },
+          left: { style: 'thin', color: { argb: 'FF000000' } },
+          bottom: { style: 'medium', color: { argb: 'FF000000' } },
+          right: { style: 'thin', color: { argb: 'FF000000' } }
         };
       });
 
-      // الملخص المالي
-      const summaryStartRow = totalRowIndex + 2;
-      
-      worksheet.mergeCells(`A${summaryStartRow}:B${summaryStartRow}`);
-      const summaryTitleCell = worksheet.getCell(`A${summaryStartRow}`);
-      summaryTitleCell.value = 'FINANCIAL SUMMARY';
-      summaryTitleCell.font = { name: 'Arial', size: 12, bold: true, color: { argb: 'FFFFFFFF' } };
-      summaryTitleCell.alignment = { horizontal: 'center', vertical: 'middle' };
-      summaryTitleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF059669' } };
-
-      const summaryItems = [
-        ['Total Earned:', totalEarned],
-        ['Total Paid:', totalPaid],
-        ['Total Transferred to Family:', totalTransferred],
-        ['Current Balance:', currentBalance],
-        ['Amount Due:', totalRemaining]
-      ];
-
-      summaryItems.forEach((item, index) => {
-        const rowIndex = summaryStartRow + 1 + index;
-        worksheet.getCell(`A${rowIndex}`).value = item[0];
-        worksheet.getCell(`A${rowIndex}`).font = { name: 'Arial', size: 10, bold: true };
-        
-        worksheet.getCell(`B${rowIndex}`).value = item[1];
-        worksheet.getCell(`B${rowIndex}`).numFmt = '#,##0 "YER"';
-        worksheet.getCell(`B${rowIndex}`).font = { name: 'Arial', size: 10, bold: true };
-        
-        if (index === 3) { // Current Balance
-          const balanceColor = (item[1] as number) >= 0 ? 'FF059669' : 'FFdc2626';
-          worksheet.getCell(`B${rowIndex}`).font = { 
-            ...worksheet.getCell(`B${rowIndex}`).font, 
-            color: { argb: balanceColor } 
-          };
-        }
-      });
-
-      // إضافة جدول التحويلات إذا كان هناك تحويلات
-      if (transfers.length > 0) {
-        const transfersStartRow = summaryStartRow + summaryItems.length + 3;
-        
-        worksheet.mergeCells(`D${transfersStartRow}:F${transfersStartRow}`);
-        const transfersTitleCell = worksheet.getCell(`D${transfersStartRow}`);
-        transfersTitleCell.value = 'MONEY TRANSFERS';
-        transfersTitleCell.font = { name: 'Arial', size: 12, bold: true, color: { argb: 'FFFFFFFF' } };
-        transfersTitleCell.alignment = { horizontal: 'center', vertical: 'middle' };
-        transfersTitleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFdc2626' } };
-
-        const transferHeaders = ['Date', 'Amount', 'Transfer #'];
-        const transferHeaderRow = worksheet.getRow(transfersStartRow + 1);
-        transferHeaders.forEach((header, index) => {
-          const cell = transferHeaderRow.getCell(index + 4);
-          cell.value = header;
-          cell.font = { name: 'Arial', size: 10, bold: true };
-          cell.alignment = { horizontal: 'center', vertical: 'middle' };
-          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFfee2e2' } };
-        });
-
-        transfers.forEach((transfer: any, index: number) => {
-          const row = worksheet.getRow(transfersStartRow + 2 + index);
-          const transferDate = new Date(transfer.transferDate);
-          row.getCell(4).value = transferDate;
-          row.getCell(4).numFmt = 'dd/mm/yyyy';
-          
-          row.getCell(5).value = Number(transfer.amount);
-          row.getCell(5).numFmt = '#,##0 "YER"';
-          
-          row.getCell(6).value = transfer.transferNumber || 'N/A';
-        });
-      }
-
       // ضبط عرض الأعمدة
       worksheet.columns = [
-        { width: 6 },   // #
-        { width: 12 },  // Date
-        { width: 12 },  // Day
-        { width: 40 },  // Work Description
-        { width: 15 },  // Hours
-        { width: 15 },  // Amount Due
-        { width: 15 },  // Amount Paid
-        { width: 18 }   // Status
+        { width: 5 },   // #
+        { width: 12 },  // التاريخ
+        { width: 10 },  // اليوم
+        { width: 25 },  // وصف العمل
+        { width: 10 },  // الساعات
+        { width: 15 },  // المستحق
+        { width: 15 },  // المستلم
+        { width: 12 },  // المتبقي
+        { width: 12 },  // الحالة
+        { width: 20 }   // ملاحظات
       ];
 
       // إعداد الطباعة
@@ -515,19 +428,24 @@ export const EnhancedWorkerAccountStatement = ({
 
       <div 
         id="enhanced-worker-account-statement" 
-        className="enhanced-worker-statement-print bg-white"
+        className="enhanced-worker-statement-print bg-white print-preview-content"
         style={{
           direction: 'rtl',
-          width: '210mm',
-          minHeight: '297mm',
+          width: '100%',
+          maxWidth: '210mm',
           margin: '0 auto',
-          padding: '4mm',
+          padding: '8mm',
           fontFamily: '"Segoe UI", Tahoma, Geneva, Verdana, sans-serif',
-          fontSize: '10px',
-          lineHeight: '1.3',
+          fontSize: '11px',
+          lineHeight: '1.4',
           color: '#1a1a1a',
           background: 'white',
-          pageBreakAfter: 'avoid'
+          pageBreakAfter: 'avoid',
+          border: '1px solid #e2e8f0',
+          borderRadius: '8px',
+          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+          transform: 'scale(1)',
+          transformOrigin: 'top center'
         }}
       >
         
@@ -539,18 +457,19 @@ export const EnhancedWorkerAccountStatement = ({
           paddingBottom: '2mm'
         }}>
           <h1 style={{
-            fontSize: '12px',
+            fontSize: '16px',
             fontWeight: 'bold',
             color: '#1e40af',
-            margin: '0 0 1mm 0'
+            margin: '0 0 2mm 0',
+            textShadow: '1px 1px 2px rgba(0,0,0,0.1)'
           }}>
             شركة الفتيني للمقاولات والاستشارات الهندسية
           </h1>
           <h2 style={{
-            fontSize: '10px',
+            fontSize: '14px',
             fontWeight: '600',
             color: '#374151',
-            margin: '0 0 1mm 0'
+            margin: '0 0 2mm 0'
           }}>
             كشف حساب العامل التفصيلي والشامل
           </h2>
@@ -563,30 +482,32 @@ export const EnhancedWorkerAccountStatement = ({
           </p>
         </div>
 
-        {/* بيانات العامل والمشروع - تخطيط مضغوط ومحسن */}
+        {/* معلومات أساسية مضغوطة */}
         <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          gap: '2mm',
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr 1fr',
+          gap: '3mm',
           marginBottom: '3mm',
           padding: '2mm',
-          backgroundColor: '#f8fafc',
-          border: '1px solid #e2e8f0',
-          borderRadius: '1mm',
-          fontSize: '8px'
+          backgroundColor: '#f0f7ff',
+          border: '1px solid #2563eb',
+          borderRadius: '2mm',
+          fontSize: '10px'
         }}>
-          <div style={{ flex: 1, textAlign: 'right' }}>
-            <strong>اسم العامل:</strong> {worker?.name || 'غير محدد'} | <strong>المهنة:</strong> {worker?.type || 'عامل'} | <strong>الأجر اليومي:</strong> {worker?.dailyWage ? formatCurrency(Number(worker.dailyWage)) : 'غير محدد'}
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ marginBottom: '1mm' }}><strong>👤 العامل:</strong> {worker?.name || 'غير محدد'}</div>
+            <div style={{ marginBottom: '1mm' }}><strong>🛠️ المهنة:</strong> {worker?.type || 'عامل'}</div>
+            <div><strong>💰 الأجر اليومي:</strong> {worker?.dailyWage ? formatCurrency(Number(worker.dailyWage)) : 'غير محدد'}</div>
           </div>
-          <div style={{ flex: 1, textAlign: 'center' }}>
-            <strong>المشاريع:</strong> {
-              projectsInfo && projectsInfo.length > 0 
-                ? projectsInfo.map((p: any) => p.projectName).join(', ')
-                : (selectedProject?.name || 'غير محدد')
-            }
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ marginBottom: '1mm' }}><strong>🏗️ المشروع:</strong></div>
+            <div style={{ marginBottom: '1mm', color: '#1e40af', fontWeight: 'bold' }}>{selectedProject?.name || 'غير محدد'}</div>
+            <div><strong>📅 الفترة:</strong> {formatDate(dateFrom)} - {formatDate(dateTo)}</div>
           </div>
-          <div style={{ flex: 1, textAlign: 'left' }}>
-            <strong>إجمالي المستحقات:</strong> <span style={{ color: '#dc2626' }}>{formatCurrency(totalEarned)}</span> | <strong>إجمالي المتبقي في الرصيد:</strong> <span style={{ color: totalRemaining <= 0 ? '#059669' : '#dc2626' }}>{formatCurrency(totalRemaining)}</span>
+          <div style={{ textAlign: 'left' }}>
+            <div style={{ marginBottom: '1mm' }}><strong>💵 إجمالي المستحق:</strong> <span style={{ color: '#059669', fontWeight: 'bold' }}>{formatCurrency(totalEarned)}</span></div>
+            <div style={{ marginBottom: '1mm' }}><strong>💸 إجمالي المدفوع:</strong> <span style={{ color: '#dc2626', fontWeight: 'bold' }}>{formatCurrency(totalPaid)}</span></div>
+            <div><strong>⚖️ الرصيد المتبقي:</strong> <span style={{ color: totalRemaining <= 0 ? '#059669' : '#dc2626', fontWeight: 'bold' }}>{formatCurrency(totalRemaining)}</span></div>
           </div>
         </div>
 
@@ -608,7 +529,7 @@ export const EnhancedWorkerAccountStatement = ({
           <table style={{
             width: '100%',
             borderCollapse: 'collapse',
-            fontSize: '8px',
+            fontSize: '9px',
             border: '1px solid #d1d5db'
           }}>
             <thead>
