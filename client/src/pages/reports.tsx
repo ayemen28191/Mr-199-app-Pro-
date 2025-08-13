@@ -653,7 +653,7 @@ export default function Reports() {
     }
   };
 
-  // النظام القديم للتوافق
+  // دالة تصدير Excel البسيطة والفعالة
   const exportToExcel = async (data: any, filename: string) => {
     if (!data) {
       toast({
@@ -665,26 +665,67 @@ export default function Reports() {
     }
     
     try {
-      console.log('🎨 استخدام إعدادات القالب الحديثة للتصدير:', activeTemplate);
+      console.log('📊 بدء تصدير التقرير إلى Excel:', { activeReportType, filename });
       
-      // إنشاء مُصدّر Excel مع إعدادات القالب المحدثة
-      const exporter = new (UnifiedExcelExporter as any)(activeTemplate || {});
-      
-      // تحديد نوع التقرير وإنشاء Excel مناسب
+      // استيراد ExcelJS بشكل ديناميكي
+      const ExcelJS = await import('exceljs');
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('التقرير');
+
+      // إعداد الصفحة باللغة العربية
+      worksheet.views = [{ rightToLeft: true }];
+      worksheet.pageSetup = {
+        paperSize: 9, // A4
+        orientation: 'landscape',
+        margins: { left: 0.7, right: 0.7, top: 0.7, bottom: 0.7 }
+      };
+
+      let currentRow = 1;
+
+      // العنوان الرئيسي
+      worksheet.mergeCells(`A${currentRow}:F${currentRow}`);
+      const titleCell = worksheet.getCell(`A${currentRow}`);
+      titleCell.value = getReportTitle(activeReportType);
+      titleCell.font = { name: 'Arial', size: 16, bold: true };
+      titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4A90E2' } };
+      titleCell.font = { ...titleCell.font, color: { argb: 'FFFFFFFF' } };
+      worksheet.getRow(currentRow).height = 30;
+      currentRow += 2;
+
+      // معلومات أساسية
+      worksheet.getCell(`A${currentRow}`).value = 'المشروع:';
+      worksheet.getCell(`B${currentRow}`).value = selectedProject?.name || 'جميع المشاريع';
+      worksheet.getCell(`D${currentRow}`).value = 'تاريخ الإنشاء:';
+      worksheet.getCell(`E${currentRow}`).value = new Date().toLocaleDateString('ar-EG');
+      currentRow += 2;
+
+      // تصدير البيانات حسب نوع التقرير
       if (activeReportType === 'daily' || activeReportType === 'professional') {
-        await exportDailyReportWithTemplate(exporter, data, filename);
+        await exportDailyReportData(data, worksheet, currentRow);
       } else if (activeReportType === 'worker') {
-        await exportWorkerReportWithTemplate(exporter, data, filename);
-      } else if (activeReportType === 'workers_settlement') {
-        await exportWorkersSettlementWithTemplate(exporter, data, filename);
+        await exportWorkerReportData(data, worksheet, currentRow);
+      } else if (activeReportType === 'project') {
+        await exportProjectReportData(data, worksheet, currentRow);
       } else {
-        // تصدير عام للبيانات الأخرى
-        await exportGenericDataWithTemplate(exporter, data, filename);
+        await exportGenericReportData(data, worksheet, currentRow);
       }
+
+      // تصدير الملف
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${filename}-${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
       
       toast({
         title: "تم التصدير",
-        description: "تم تصدير التقرير إلى Excel بنجاح مع إعدادات القالب المحدثة",
+        description: "تم تصدير التقرير إلى Excel بنجاح",
       });
     } catch (error) {
       console.error('خطأ في التصدير:', error);
@@ -694,6 +735,200 @@ export default function Reports() {
         variant: "destructive",
       });
     }
+  };
+
+  // دالة مساعدة للحصول على عنوان التقرير
+  const getReportTitle = (type: string) => {
+    switch (type) {
+      case 'daily': return 'تقرير المصروفات اليومية';
+      case 'professional': return 'التقرير المحترف للمصروفات';
+      case 'worker': return 'كشف حساب العامل';
+      case 'project': return 'ملخص المشروع';
+      case 'material': return 'تقرير مشتريات المواد';
+      default: return 'تقرير عام';
+    }
+  };
+
+  // دوال التصدير المختلفة
+  const exportDailyReportData = async (data: any, worksheet: any, startRow: number) => {
+    let currentRow = startRow;
+    
+    // رؤوس الجدول
+    const headers = ['البيان', 'النوع', 'المبلغ', 'التاريخ', 'المشروع', 'ملاحظات'];
+    headers.forEach((header, index) => {
+      const cell = worksheet.getCell(currentRow, index + 1);
+      cell.value = header;
+      cell.font = { name: 'Arial', size: 12, bold: true };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE8E8E8' } };
+      cell.border = {
+        top: { style: 'thin' }, bottom: { style: 'thin' },
+        left: { style: 'thin' }, right: { style: 'thin' }
+      };
+    });
+    currentRow++;
+
+    // جمع جميع المعاملات
+    const allTransactions = [];
+    
+    if (data.fundTransfers) {
+      data.fundTransfers.forEach((t: any) => {
+        allTransactions.push({
+          description: t.description || 'تحويل عهدة',
+          type: 'تحويل عهدة',
+          amount: t.amount || 0,
+          date: t.date || '',
+          project: t.project_name || '',
+          notes: t.notes || ''
+        });
+      });
+    }
+
+    if (data.workerAttendance) {
+      data.workerAttendance.forEach((w: any) => {
+        allTransactions.push({
+          description: w.worker_name || 'عامل',
+          type: 'أجور عمال',
+          amount: w.total_amount || 0,
+          date: w.expense_date || '',
+          project: w.project_name || '',
+          notes: w.notes || ''
+        });
+      });
+    }
+
+    if (data.materialPurchases) {
+      data.materialPurchases.forEach((m: any) => {
+        allTransactions.push({
+          description: m.description || 'مشتريات',
+          type: 'مشتريات مواد',
+          amount: m.amount || 0,
+          date: m.expense_date || '',
+          project: m.project_name || '',
+          notes: m.notes || ''
+        });
+      });
+    }
+
+    if (data.transportationExpenses) {
+      data.transportationExpenses.forEach((t: any) => {
+        allTransactions.push({
+          description: t.description || 'نقل',
+          type: 'نقل',
+          amount: t.amount || 0,
+          date: t.expense_date || '',
+          project: t.project_name || '',
+          notes: t.notes || ''
+        });
+      });
+    }
+
+    // إضافة البيانات إلى الجدول
+    allTransactions.forEach((transaction) => {
+      worksheet.getCell(currentRow, 1).value = transaction.description;
+      worksheet.getCell(currentRow, 2).value = transaction.type;
+      worksheet.getCell(currentRow, 3).value = transaction.amount;
+      worksheet.getCell(currentRow, 4).value = transaction.date;
+      worksheet.getCell(currentRow, 5).value = transaction.project;
+      worksheet.getCell(currentRow, 6).value = transaction.notes;
+      
+      // تنسيق الخلايا
+      for (let col = 1; col <= 6; col++) {
+        const cell = worksheet.getCell(currentRow, col);
+        cell.border = {
+          top: { style: 'thin' }, bottom: { style: 'thin' },
+          left: { style: 'thin' }, right: { style: 'thin' }
+        };
+        if (col === 3) { // عمود المبلغ
+          cell.numFmt = '#,##0';
+        }
+      }
+      currentRow++;
+    });
+
+    // الملخص
+    currentRow += 2;
+    worksheet.getCell(currentRow, 1).value = 'الملخص:';
+    worksheet.getCell(currentRow, 1).font = { bold: true, size: 14 };
+    currentRow++;
+
+    worksheet.getCell(currentRow, 1).value = 'إجمالي الدخل:';
+    worksheet.getCell(currentRow, 2).value = data.totalIncome || 0;
+    worksheet.getCell(currentRow, 2).numFmt = '#,##0';
+    currentRow++;
+
+    worksheet.getCell(currentRow, 1).value = 'إجمالي المصاريف:';
+    worksheet.getCell(currentRow, 2).value = data.totalExpenses || 0;
+    worksheet.getCell(currentRow, 2).numFmt = '#,##0';
+    currentRow++;
+
+    worksheet.getCell(currentRow, 1).value = 'الرصيد النهائي:';
+    worksheet.getCell(currentRow, 2).value = (data.totalIncome || 0) - (data.totalExpenses || 0);
+    worksheet.getCell(currentRow, 2).numFmt = '#,##0';
+    worksheet.getCell(currentRow, 2).font = { bold: true };
+  };
+
+  const exportWorkerReportData = async (data: any, worksheet: any, startRow: number) => {
+    let currentRow = startRow;
+    
+    // معلومات العامل
+    worksheet.getCell(currentRow, 1).value = 'اسم العامل:';
+    worksheet.getCell(currentRow, 2).value = data.worker?.name || 'غير محدد';
+    worksheet.getCell(currentRow, 4).value = 'من تاريخ:';
+    worksheet.getCell(currentRow, 5).value = data.dateFrom || '';
+    currentRow++;
+    
+    worksheet.getCell(currentRow, 4).value = 'إلى تاريخ:';
+    worksheet.getCell(currentRow, 5).value = data.dateTo || '';
+    currentRow += 2;
+
+    // رؤوس الجدول
+    const headers = ['التاريخ', 'المشروع', 'الوصف', 'المستحق', 'المدفوع', 'الرصيد'];
+    headers.forEach((header, index) => {
+      const cell = worksheet.getCell(currentRow, index + 1);
+      cell.value = header;
+      cell.font = { bold: true };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE8E8E8' } };
+    });
+    currentRow++;
+
+    // إضافة المعاملات
+    if (data.transactions) {
+      data.transactions.forEach((transaction: any) => {
+        worksheet.getCell(currentRow, 1).value = transaction.date || '';
+        worksheet.getCell(currentRow, 2).value = transaction.project_name || '';
+        worksheet.getCell(currentRow, 3).value = transaction.description || '';
+        worksheet.getCell(currentRow, 4).value = transaction.earned || 0;
+        worksheet.getCell(currentRow, 5).value = transaction.paid || 0;
+        worksheet.getCell(currentRow, 6).value = transaction.balance || 0;
+        currentRow++;
+      });
+    }
+  };
+
+  const exportProjectReportData = async (data: any, worksheet: any, startRow: number) => {
+    let currentRow = startRow;
+    
+    // معلومات المشروع
+    worksheet.getCell(currentRow, 1).value = 'ملخص المشروع:';
+    worksheet.getCell(currentRow, 1).font = { bold: true, size: 14 };
+    currentRow += 2;
+
+    worksheet.getCell(currentRow, 1).value = 'إجمالي الدخل:';
+    worksheet.getCell(currentRow, 2).value = data.totalIncome || 0;
+    currentRow++;
+
+    worksheet.getCell(currentRow, 1).value = 'إجمالي المصاريف:';
+    worksheet.getCell(currentRow, 2).value = data.totalExpenses || 0;
+    currentRow++;
+
+    worksheet.getCell(currentRow, 1).value = 'الرصيد النهائي:';
+    worksheet.getCell(currentRow, 2).value = (data.totalIncome || 0) - (data.totalExpenses || 0);
+    worksheet.getCell(currentRow, 2).font = { bold: true };
+  };
+
+  const exportGenericReportData = async (data: any, worksheet: any, startRow: number) => {
+    worksheet.getCell(startRow, 1).value = 'البيانات العامة:';
+    worksheet.getCell(startRow + 1, 1).value = JSON.stringify(data, null, 2);
   };
 
   // دالة تحويل البيانات للنظام الاحترافي
@@ -2476,16 +2711,114 @@ export default function Reports() {
 
   const printReport = () => {
     try {
-      // تحديد نوع التقرير بناءً على التقرير النشط
-      let reportType = 'daily_expenses'; // افتراضي
-      if (activeReportType === 'daily') reportType = 'daily_expenses';
-      else if (activeReportType === 'professional') reportType = 'daily_expenses';
-      else if (activeReportType === 'worker') reportType = 'worker_statement';
-      else if (activeReportType === 'material') reportType = 'material_purchases';
-      else if (activeReportType === 'project') reportType = 'project_summary';
-
-      // طباعة مباشرة
-      window.print();
+      console.log('🖨️ بدء عملية الطباعة للتقرير:', activeReportType);
+      
+      // إضافة CSS خاص بالطباعة
+      const printStyle = document.createElement('style');
+      printStyle.id = 'print-report-styles';
+      printStyle.innerHTML = `
+        @media print {
+          /* إخفاء كل شيء عدا المحتوى */
+          body * {
+            visibility: hidden !important;
+          }
+          
+          /* إظهار محتوى التقرير فقط */
+          [data-report-content],
+          [data-report-content] *,
+          .print-content,
+          .print-content *,
+          .professional-report-container,
+          .professional-report-container *,
+          .enhanced-worker-account-report,
+          .enhanced-worker-account-report *,
+          .daily-report-container,
+          .daily-report-container *,
+          #workers-settlement-report,
+          #workers-settlement-report * {
+            visibility: visible !important;
+          }
+          
+          /* تموضع المحتوى */
+          [data-report-content],
+          .print-content,
+          .professional-report-container,
+          .enhanced-worker-account-report,
+          .daily-report-container,
+          #workers-settlement-report {
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: 100% !important;
+            height: auto !important;
+            margin: 0 !important;
+            padding: 10mm !important;
+            background: white !important;
+            color: black !important;
+            direction: rtl !important;
+            font-family: Arial, sans-serif !important;
+            font-size: 12px !important;
+            line-height: 1.4 !important;
+          }
+          
+          /* تنسيق الجداول */
+          table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            margin: 5mm 0 !important;
+          }
+          
+          th, td {
+            border: 1px solid #000 !important;
+            padding: 2mm !important;
+            text-align: center !important;
+            font-size: 11px !important;
+            color: #000 !important;
+            background: white !important;
+          }
+          
+          th {
+            background: #f0f0f0 !important;
+            font-weight: bold !important;
+          }
+          
+          /* تنسيق العناوين */
+          h1, h2, h3 {
+            color: #000 !important;
+            margin: 5mm 0 !important;
+            break-after: avoid !important;
+          }
+          
+          /* إخفاء الأزرار */
+          .no-print,
+          button,
+          .btn,
+          [class*="button"] {
+            display: none !important;
+          }
+          
+          /* إعدادات الصفحة */
+          @page {
+            size: A4;
+            margin: 10mm;
+          }
+        }
+      `;
+      
+      document.head.appendChild(printStyle);
+      
+      // تأخير قصير للسماح للـ CSS بالتطبيق
+      setTimeout(() => {
+        window.print();
+        
+        // إزالة الـ CSS بعد الطباعة
+        setTimeout(() => {
+          const existingStyle = document.getElementById('print-report-styles');
+          if (existingStyle) {
+            existingStyle.remove();
+          }
+        }, 1000);
+      }, 100);
       
     } catch (error) {
       console.error('خطأ في الطباعة:', error);
@@ -3793,7 +4126,7 @@ export default function Reports() {
                                   <span className="sm:hidden">Excel</span>
                                 </Button>
                                 <Button
-                                  onClick={() => window.print()}
+                                  onClick={printReport}
                                   className="bg-white hover:bg-gray-100 text-teal-600 px-3 sm:px-4 py-2 rounded-lg transition-all duration-200 text-sm font-medium shadow-md"
                                 >
                                   <Printer className="h-4 w-4 ml-1 sm:mr-2" />
@@ -3874,26 +4207,7 @@ export default function Reports() {
                               <p>تاريخ الطباعة: {new Date().toLocaleDateString('ar')} - {new Date().toLocaleTimeString('ar')}</p>
                             </div>
                             
-                            {/* Export Buttons - مخفية في الطباعة */}
-                            <div className="flex gap-3 mt-6 pt-4 border-t border-teal-200 no-print">
-                              <Button
-                                onClick={() => {
-                                  const projectNames = settlementReportData.projects?.map((p: any) => p.name).join('-') || 'مشاريع-متعددة';
-                                  exportWorkersSettlementToExcel(settlementReportData, `تقرير-تصفية-العمال-${projectNames}-${getCurrentDate()}.xlsx`);
-                                }}
-                                className="bg-green-600 hover:bg-green-700 text-white transition-all duration-200"
-                              >
-                                <FileSpreadsheet className="h-4 w-4 mr-2" />
-                                تصدير احترافي Excel
-                              </Button>
-                              <Button
-                                onClick={() => window.print()}
-                                className="bg-gray-600 hover:bg-gray-700 text-white transition-all duration-200"
-                              >
-                                <Printer className="h-4 w-4 mr-2" />
-                                طباعة
-                              </Button>
-                            </div>
+                            {/* الأزرار مخفية في الطباعة - تم نقلها للرأس */}
                           </div>
                         </div>
                       )}
@@ -3996,7 +4310,7 @@ export default function Reports() {
                     <span>تصدير Excel</span>
                   </Button>
                   <Button
-                    onClick={() => window.print()}
+                    onClick={printReport}
                     className="bg-gray-600 hover:bg-gray-700 text-white px-3 sm:px-4 md:px-6 py-2 rounded-xl transition-all duration-200 text-sm md:text-base flex items-center justify-center gap-2"
                   >
                     <Printer className="h-4 w-4 flex-shrink-0" />
