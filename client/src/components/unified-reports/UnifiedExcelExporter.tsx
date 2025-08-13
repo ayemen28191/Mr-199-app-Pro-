@@ -38,12 +38,14 @@ export function UnifiedExcelExporter({
       workbook.created = new Date();
       workbook.modified = new Date();
       
+      // تم التحديث لاستخدام مخطط التقارير الموحد - 13 أغسطس 2025
       const worksheet = workbook.addWorksheet('التقرير', {
-        views: [{ rightToLeft: true }],
+        views: [{ rightToLeft: true, zoomScale: 100 }],
         pageSetup: {
           paperSize: 9, // A4
           orientation: 'portrait',
-          margins: { left: 0.7, right: 0.7, top: 0.7, bottom: 0.7, header: 0.3, footer: 0.3 }
+          scale: 100,
+          margins: { left: 0.75, right: 0.75, top: 1.0, bottom: 1.0, header: 0.5, footer: 0.5 }
         }
       });
 

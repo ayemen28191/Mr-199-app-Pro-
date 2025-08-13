@@ -1,5 +1,4 @@
 // مكون التقارير الموحد - نظام شامل لجميع التقارير
-// تم تحديثه لاستخدام القالب الموحد A4 - 13 أغسطس 2025
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Printer, FileSpreadsheet, Download } from 'lucide-react';
@@ -44,19 +43,6 @@ export const UnifiedReportRenderer: React.FC<UnifiedReportRendererProps> = ({
     }
   };
 
-  // تحضير البيانات للقالب الموحد
-  const prepareReportData = () => {
-    const currentDate = new Date().toLocaleDateString('ar-SA');
-    return {
-      COMPANY_NAME: 'نظام إدارة مشاريع البناء',
-      REPORT_TITLE: header.title,
-      REPORT_DATE: `تاريخ التقرير: ${currentDate}`,
-      CONTACT_INFO: 'للاستفسار: info@construction.com | +967 1 234567',
-      PAGE_NUMBER: '1',
-      TOTAL_PAGES: '1'
-    };
-  };
-
   const renderWorkerStatement = () => {
     const { worker, attendance = [], transfers = [] } = data;
     
@@ -76,7 +62,7 @@ export const UnifiedReportRenderer: React.FC<UnifiedReportRendererProps> = ({
     const workerBalance = totalEarned - totalPaid - totalTransferred;
 
     return (
-      <div className="report-container worker-statement-content">
+      <div className="worker-statement-content">
         {/* معلومات العامل */}
         <div className="worker-info">
           <div className="info-section">
@@ -178,7 +164,7 @@ export const UnifiedReportRenderer: React.FC<UnifiedReportRendererProps> = ({
     const { expenses = [], summary = {} } = data;
     
     return (
-      <div className="report-container daily-expenses-content">
+      <div className="daily-expenses-content">
         {/* جدول المصاريف */}
         {expenses.length > 0 && (
           <div className="no-break">
