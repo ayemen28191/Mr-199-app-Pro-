@@ -66,24 +66,55 @@
     display: block !important;
     position: static !important;
     width: 100% !important;
-    max-width: 190mm !important;
+    max-width: 200mm !important;
     height: auto !important;
     margin: 0 auto !important;
-    padding: 3mm !important;
+    padding: 4mm !important;
     background: white !important;
     color: #000 !important;
     overflow: visible !important;
     page-break-inside: avoid !important;
-    transform: scale(0.85) !important;
+    transform: scale(0.78) !important;
     transform-origin: top center !important;
+    max-height: 270mm !important;
   }
 
   /* ضمان عدم تجاوز صفحة واحدة */
   .print-single-page {
-    max-height: 270mm !important;
+    max-height: 265mm !important;
     overflow: hidden !important;
-    transform: scale(0.75) !important;
+    transform: scale(0.7) !important;
     transform-origin: top center !important;
+  }
+
+  /* تحسين المعاينة للعرض الكامل */
+  .print-preview-mode .print-content {
+    transform: scale(1) !important;
+    max-width: none !important;
+    width: 100% !important;
+    padding: 20px !important;
+    max-height: none !important;
+    overflow: visible !important;
+    min-height: auto !important;
+  }
+
+  /* إعدادات خاصة لعرض الكشف كاملاً في المعاينة */
+  .preview-full-display {
+    transform: scale(1) !important;
+    zoom: 1 !important;
+    width: 100% !important;
+    max-width: none !important;
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+  }
+
+  .preview-full-display .print-content {
+    transform: none !important;
+    width: 100% !important;
+    max-width: none !important;
+    padding: 15px !important;
+    margin: 0 !important;
   }
 
   /* تنسيق العناوين */
