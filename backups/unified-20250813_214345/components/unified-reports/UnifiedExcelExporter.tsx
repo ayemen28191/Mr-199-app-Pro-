@@ -1,5 +1,5 @@
 // مكون تصدير Excel الموحد - مبسط وقوي
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import { FileSpreadsheet } from 'lucide-react';
 import * as ExcelJS from 'exceljs';
@@ -27,22 +27,6 @@ export function UnifiedExcelExporter({
   className = "",
   variant = "outline"
 }: UnifiedExcelExporterProps) {
-
-  const [schema, setSchema] = useState<any>(null);
-
-  // تحميل المخطط من public/templates
-  useEffect(() => {
-    (async () => {
-      try {
-        const resp = await fetch('/templates/report_schema.json');
-        if (resp.ok) {
-          setSchema(await resp.json());
-        }
-      } catch (e) {
-        console.warn('فشل تحميل مخطط التقارير:', e);
-      }
-    })();
-  }, []);
 
   const exportToExcel = async () => {
     try {

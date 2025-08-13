@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{REPORT_TITLE}}</title>
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 10mm 10mm 10mm 10mm;
+            orphans: 3;
+            widows: 3;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        html, body {
+            width: 100%;
+            height: 100%;
+            font-family: 'Arial', 'Segoe UI', sans-serif;
+            font-size: 11px;
+            line-height: 1.4;
+            color: #000;
+            direction: rtl;
+            text-align: right;
+            background: white;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        
+        .report-container {
+            width: 100%;
+            max-width: 190mm;
+            margin: 0 auto;
+            padding: 4mm;
+            background: white;
+            min-height: 277mm;
+            position: relative;
+        }
+        
+        .report-header {
+            text-align: center;
+            border-bottom: 2px solid #1e40af;
+            padding-bottom: 8px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .company-logo {
+            width: 50px;
+            height: 50px;
+            background: #f3f4f6;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: #1e40af;
+            flex-shrink: 0;
+        }
+        
+        .header-content {
+            flex: 1;
+            text-align: center;
+        }
+        
+        .company-name {
+            font-size: 16px;
+            font-weight: bold;
+            color: #1e40af;
+            margin-bottom: 4px;
+        }
+        
+        .report-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #374151;
+            margin-bottom: 4px;
+        }
+        
+        .report-date {
+            font-size: 10px;
+            color: #6b7280;
+        }
+        
+        .report-content {
+            margin: 15px 0;
+            min-height: 200mm;
+        }
+        
+        .report-footer {
+            border-top: 1px solid #d1d5db;
+            padding-top: 10px;
+            margin-top: 15px;
+            text-align: center;
+            position: absolute;
+            bottom: 4mm;
+            left: 4mm;
+            right: 4mm;
+        }
+        
+        .footer-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .footer-contact {
+            font-size: 9px;
+            color: #6b7280;
+        }
+        
+        .footer-page {
+            font-size: 9px;
+            color: #6b7280;
+        }
+        
+        .signature-section {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 12px;
+        }
+        
+        .signature-box {
+            text-align: center;
+            width: 45%;
+        }
+        
+        .signature-line {
+            border-bottom: 1px solid #000;
+            height: 18px;
+            margin-bottom: 4px;
+        }
+        
+        .signature-label {
+            font-size: 9px;
+            color: #374151;
+        }
+        
+        @media print {
+            .report-container {
+                box-shadow: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                max-width: none !important;
+                width: 100% !important;
+            }
+            
+            .no-print {
+                display: none !important;
+            }
+            
+            .page-break {
+                page-break-before: always;
+            }
+            
+            .no-break {
+                page-break-inside: avoid;
+            }
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 8px 0;
+            font-size: 10px;
+        }
+        
+        th, td {
+            border: 1px solid #000;
+            padding: 3px;
+            text-align: center;
+            vertical-align: middle;
+        }
+        
+        th {
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            color: white;
+            font-weight: bold;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        
+        tbody tr:nth-child(odd) {
+            background-color: #f9fafb;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+        
+        .currency {
+            font-weight: bold;
+            color: #059669;
+        }
+        
+        .total-amount {
+            font-size: 12px;
+            font-weight: bold;
+            color: #1e40af;
+            text-align: center;
+            padding: 6px;
+            border: 2px solid #1e40af;
+            border-radius: 4px;
+            margin: 8px 0;
+            background: #f0f9ff;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+    </style>
+</head>
+<body>
+    <div class="report-container">
+        <div class="report-header">
+            <div class="company-logo">{{LOGO_SRC}}</div>
+            <div class="header-content">
+                <div class="company-name">نظام إدارة مشاريع البناء</div>
+                <div class="report-title">{{REPORT_TITLE}}</div>
+                <div class="report-date">{{FROM_DATE}} - {{TO_DATE}}</div>
+            </div>
+            <div style="width: 50px;"></div>
+        </div>
+        
+        <div class="report-content">
+            <!-- INSERT REPORT BODY HERE -->
+        </div>
+        
+        <div class="report-footer">
+            <div class="footer-info">
+                <div class="footer-contact">للاستفسار: info@construction.com | +967 1 234567</div>
+                <div class="footer-page">صفحة 1 من 1</div>
+            </div>
+            
+            <div class="signature-section">
+                <div class="signature-box">
+                    <div class="signature-line"></div>
+                    <div class="signature-label">إعداد: مدير المشروع</div>
+                </div>
+                <div class="signature-box">
+                    <div class="signature-line"></div>
+                    <div class="signature-label">مراجعة: المدير المالي</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

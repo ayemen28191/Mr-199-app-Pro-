@@ -1,7 +1,6 @@
 // مكون التقارير الموحد - نظام شامل لجميع التقارير
-// تم تحديثه تلقائياً للقالب الموحد A4 - 13 أغسطس 2025
-// ملاحظة: تغيير آلي - يحتاج مراجعة إن ظهرت تنسيقات مختلة
-import React, { useEffect, useState } from 'react';
+// تم تحديثه لاستخدام القالب الموحد A4 - 13 أغسطس 2025
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Printer, FileSpreadsheet, Download } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/utils';
@@ -37,40 +36,6 @@ export const UnifiedReportRenderer: React.FC<UnifiedReportRendererProps> = ({
   onExportPDF
 }) => {
   
-  const [template, setTemplate] = useState<string | null>(null);
-
-  // تحميل القالب الموحد من public/templates
-  useEffect(() => {
-    (async () => {
-      try {
-        const resp = await fetch('/templates/report_base.html');
-        if (resp.ok) { 
-          setTemplate(await resp.text()); 
-          return; 
-        }
-      } catch(e) { 
-        console.warn('فشل تحميل القالب:', e);
-      }
-      // قالب احتياطي بسيط
-      setTemplate(`
-        <div class="report-container">
-          <header style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-            <div><span style="font-size:20px">🏗️</span></div>
-            <div style="text-align:center">
-              <div style="font-weight:bold">{{REPORT_TITLE}}</div>
-              <div style="font-size:12px">{{FROM_DATE}} — {{TO_DATE}}</div>
-            </div>
-            <div style="width:30px"></div>
-          </header>
-          <main><!-- INSERT REPORT BODY HERE --></main>
-          <footer style="margin-top:8px;font-size:11px;text-align:center">
-            تم الإنشاء {{GENERATED_AT}}
-          </footer>
-        </div>
-      `);
-    })();
-  }, []);
-  
   const handlePrint = () => {
     if (onPrint) {
       onPrint();
@@ -88,11 +53,7 @@ export const UnifiedReportRenderer: React.FC<UnifiedReportRendererProps> = ({
       REPORT_DATE: `تاريخ التقرير: ${currentDate}`,
       CONTACT_INFO: 'للاستفسار: info@construction.com | +967 1 234567',
       PAGE_NUMBER: '1',
-      TOTAL_PAGES: '1',
-      FROM_DATE: header.dateRange?.split(' - ')[0] || '',
-      TO_DATE: header.dateRange?.split(' - ')[1] || '',
-      GENERATED_AT: new Date().toLocaleString('ar-EG'),
-      LOGO_SRC: '🏗️'
+      TOTAL_PAGES: '1'
     };
   };
 
@@ -281,141 +242,59 @@ export const UnifiedReportRenderer: React.FC<UnifiedReportRendererProps> = ({
     }
   };
 
-  // تحويل المحتوى إلى HTML للقالب الموحد
-  const renderContentAsHTML = () => {
-    if (type === 'worker_statement') {
-      const { worker, attendance = [], transfers = [] } = data;
-      return `
-        <div class="worker-info">
-          <h3>معلومات العامل</h3>
-          <p><strong>الاسم:</strong> ${worker?.name || 'غير محدد'}</p>
-          <p><strong>النوع:</strong> ${worker?.type || 'غير محدد'}</p>
-          <p><strong>الأجر اليومي:</strong> ${formatCurrency(Number(worker?.dailyWage || 0))}</p>
-        </div>
-        <table>
-          <thead>
-            <tr><th>التاريخ</th><th>أيام العمل</th><th>المستحق</th><th>المدفوع</th><th>الرصيد</th></tr>
-          </thead>
-          <tbody>
-            ${attendance.map((record: any) => `
-              <tr>
-                <td>${formatDate(record.workDate)}</td>
-                <td>${record.workDays || 1}</td>
-                <td>${formatCurrency(Number(record.dailyWage) * Number(record.workDays || 1))}</td>
-                <td>${formatCurrency(Number(record.paidAmount || 0))}</td>
-                <td>${formatCurrency(Number(record.balance || 0))}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      `;
-    } else if (type === 'daily_expenses') {
-      const { expenses = [], summary = {} } = data;
-      return `
-        <table>
-          <thead>
-            <tr><th>النوع</th><th>الوصف</th><th>المبلغ</th><th>ملاحظات</th></tr>
-          </thead>
-          <tbody>
-            ${expenses.map((expense: any) => `
-              <tr>
-                <td>${expense.category}</td>
-                <td>${expense.description}</td>
-                <td class="currency">${formatCurrency(Number(expense.amount))}</td>
-                <td>${expense.notes || '-'}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-        <div class="total-amount">
-          إجمالي مصاريف اليوم: ${formatCurrency(Number(summary.total || 0))}
-        </div>
-      `;
-    }
-    return '<div>نوع التقرير غير مدعوم</div>';
-  };
-
-  const reportData = prepareReportData();
-
-  // استخدام القالب الموحد إذا كان متاحاً
-  if (template) {
-    const contentHtml = renderContentAsHTML();
-    const filledTemplate = template
-      .replace('<!-- INSERT REPORT BODY HERE -->', contentHtml)
-      .replace(/{{REPORT_TITLE}}/g, reportData.REPORT_TITLE)
-      .replace(/{{FROM_DATE}}/g, reportData.FROM_DATE)
-      .replace(/{{TO_DATE}}/g, reportData.TO_DATE)
-      .replace(/{{GENERATED_AT}}/g, reportData.GENERATED_AT)
-      .replace(/{{LOGO_SRC}}/g, reportData.LOGO_SRC);
-
-    return (
-      <div className="unified-report-renderer">
-        {/* أزرار التحكم */}
-        <div className="no-print mb-4 flex gap-2">
-          <Button onClick={handlePrint} className="flex items-center gap-2">
-            <Printer size={16} />
+  return (
+    <div className="unified-report-container">
+      {/* أزرار التحكم */}
+      <div className="no-print report-controls">
+        <div className="flex gap-2 mb-4">
+          <Button onClick={handlePrint} variant="outline" size="sm">
+            <Printer className="w-4 h-4 ml-2" />
             طباعة
           </Button>
           {onExportExcel && (
-            <Button onClick={onExportExcel} variant="outline" className="flex items-center gap-2">
-              <FileSpreadsheet size={16} />
+            <Button onClick={onExportExcel} variant="outline" size="sm">
+              <FileSpreadsheet className="w-4 h-4 ml-2" />
               تصدير Excel
             </Button>
           )}
           {onExportPDF && (
-            <Button onClick={onExportPDF} variant="outline" className="flex items-center gap-2">
-              <Download size={16} />
+            <Button onClick={onExportPDF} variant="outline" size="sm">
+              <Download className="w-4 h-4 ml-2" />
               تصدير PDF
             </Button>
           )}
         </div>
-
-        {/* محتوى التقرير بالقالب الموحد */}
-        <div className="print-content" dangerouslySetInnerHTML={{ __html: filledTemplate }} />
-      </div>
-    );
-  }
-
-  // العرض الاحتياطي (إذا فشل تحميل القالب)
-  return (
-    <div className="unified-report-renderer">
-      {/* أزرار التحكم */}
-      <div className="no-print mb-4 flex gap-2">
-        <Button onClick={handlePrint} className="flex items-center gap-2">
-          <Printer size={16} />
-          طباعة
-        </Button>
-        {onExportExcel && (
-          <Button onClick={onExportExcel} variant="outline" className="flex items-center gap-2">
-            <FileSpreadsheet size={16} />
-            تصدير Excel
-          </Button>
-        )}
-        {onExportPDF && (
-          <Button onClick={onExportPDF} variant="outline" className="flex items-center gap-2">
-            <Download size={16} />
-            تصدير PDF
-          </Button>
-        )}
       </div>
 
-      {/* محتوى التقرير - العرض الاحتياطي */}
+      {/* محتوى التقرير */}
       <div className="print-content">
-        <div className="report-header" style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'8px'}}>
-          <div><span style={{fontSize:'20px'}}>🏗️</span></div>
-          <div style={{textAlign:'center'}}>
-            <div style={{fontWeight:'bold'}}>{header.title}</div>
-            <div style={{fontSize:'12px'}}>{header.dateRange}</div>
-          </div>
-          <div style={{width:'30px'}}></div>
-        </div>
-        
-        <div className="report-content">
-          {renderContent()}
+        {/* رأس التقرير */}
+        <div className="report-header">
+          <h1>{header.title}</h1>
+          {header.subtitle && <p className="subtitle">{header.subtitle}</p>}
+          {header.projectName && (
+            <div className="project-info">
+              <div className="info-section">
+                <div className="info-label">المشروع</div>
+                <div>{header.projectName}</div>
+              </div>
+            </div>
+          )}
         </div>
 
-        <div style={{marginTop:'8px',fontSize:'11px',textAlign:'center'}}>
-          تم الإنشاء — {new Date().toLocaleString('ar-EG')}
+        {/* محتوى التقرير */}
+        {renderContent()}
+
+        {/* التوقيعات */}
+        <div className="signature-section">
+          <div className="signature-box">
+            <div className="signature-line"></div>
+            <div>توقيع المسؤول</div>
+          </div>
+          <div className="signature-box">
+            <div className="signature-line"></div>
+            <div>توقيع المحاسب</div>
+          </div>
         </div>
       </div>
     </div>

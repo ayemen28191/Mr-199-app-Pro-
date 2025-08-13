@@ -1,0 +1,51 @@
+{
+  "expenses": {
+    "columns": ["expense_date", "project_name", "category", "amount", "worker_name", "notes"],
+    "headers": ["التاريخ", "المشروع", "الفئة", "المبلغ", "العامل", "ملاحظات"],
+    "widths": [12, 20, 15, 12, 18, 25]
+  },
+  "purchases": {
+    "columns": ["purchase_date", "item_name", "quantity", "unit_price", "total_amount", "supplier", "project_name"],
+    "headers": ["التاريخ", "المادة", "الكمية", "سعر الوحدة", "الإجمالي", "المورد", "المشروع"],
+    "widths": [12, 25, 10, 12, 12, 18, 20]
+  },
+  "projects": {
+    "columns": ["project_name", "total_income", "total_expenses", "net_balance", "status"],
+    "headers": ["اسم المشروع", "إجمالي الدخل", "إجمالي المصاريف", "الرصيد الصافي", "الحالة"],
+    "widths": [30, 15, 15, 15, 12]
+  },
+  "workers": {
+    "columns": ["worker_name", "work_days", "daily_wage", "total_earned", "total_paid", "balance"],
+    "headers": ["اسم العامل", "أيام العمل", "الأجر اليومي", "المستحق", "المدفوع", "الرصيد"],
+    "widths": [25, 10, 12, 15, 15, 15]
+  },
+  "excelSettings": {
+    "paperSize": 9,
+    "orientation": "portrait",
+    "rtlSupport": true,
+    "margins": {
+      "top": 0.5,
+      "bottom": 0.5,
+      "left": 0.3,
+      "right": 0.3,
+      "header": 0.3,
+      "footer": 0.3
+    },
+    "defaultFont": {
+      "name": "Arial",
+      "size": 10
+    },
+    "headerFont": {
+      "name": "Arial",
+      "size": 12,
+      "bold": true
+    },
+    "colors": {
+      "headerBackground": "FF1e40af",
+      "headerText": "FFFFFFFF",
+      "alternateRow": "FFf9fafb",
+      "border": "FF000000",
+      "currency": "FF059669"
+    }
+  }
+}
