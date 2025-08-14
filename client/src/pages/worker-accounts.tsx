@@ -23,6 +23,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
+import { AutocompleteInput } from '@/components/ui/autocomplete-input-database';
 
 interface Worker {
   id: string;
@@ -71,6 +72,47 @@ export default function WorkerAccountsPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // دالة مساعدة لحفظ قيم الإكمال التلقائي
+  const saveAutocompleteValue = async (field: string, value: string) => {
+    if (!value || value.trim().length < 2) return;
+    
+    try {
+      await apiRequest('POST', '/api/autocomplete', {
+        category: field,
+        value: value.trim(),
+        usageCount: 1
+      });
+      console.log(`✅ تم حفظ قيمة الإكمال التلقائي: ${field} = ${value.trim()}`);
+    } catch (error) {
+      console.error(`❌ خطأ في حفظ قيمة الإكمال التلقائي ${field}:`, error);
+    }
+  };
+
+  // دالة لحفظ جميع قيم الإكمال التلقائي للحولة
+  const saveAllTransferAutocompleteValues = async () => {
+    const promises = [];
+    
+    if (formData.recipientName && formData.recipientName.trim().length >= 2) {
+      promises.push(saveAutocompleteValue('recipientNames', formData.recipientName));
+    }
+    
+    if (formData.recipientPhone && formData.recipientPhone.trim().length >= 3) {
+      promises.push(saveAutocompleteValue('recipientPhones', formData.recipientPhone));
+    }
+    
+    if (formData.transferNumber && formData.transferNumber.trim().length >= 1) {
+      promises.push(saveAutocompleteValue('workerTransferNumbers', formData.transferNumber));
+    }
+    
+    if (formData.notes && formData.notes.trim().length >= 2) {
+      promises.push(saveAutocompleteValue('workerTransferNotes', formData.notes));
+    }
+    
+    if (promises.length > 0) {
+      await Promise.all(promises);
+    }
+  };
+
   // Get URL parameters for editing
   const urlParams = new URLSearchParams(window.location.search);
   const editTransferId = urlParams.get('edit');
@@ -89,26 +131,31 @@ export default function WorkerAccountsPage() {
   });
 
   // Fetch data
-  const { data: workers = [] } = useQuery({
+  const { data: workers = [] } = useQuery<Worker[]>({
     queryKey: ['/api/workers'],
     select: (data: Worker[]) => data.filter(w => w.isActive)
   });
 
-  const { data: projects = [] } = useQuery({
+  const { data: projects = [] } = useQuery<Project[]>({
     queryKey: ['/api/projects']
   });
 
-  const { data: transfers = [] } = useQuery({
+  const { data: transfers = [] } = useQuery<WorkerTransfer[]>({
     queryKey: ['/api/worker-transfers']
   });
 
   // Create transfer mutation
   const createTransferMutation = useMutation({
     mutationFn: async (data: TransferFormData) => {
-      return apiRequest('/api/worker-transfers', 'POST', data);
+      // حفظ جميع قيم الإكمال التلقائي قبل العملية الأساسية
+      await saveAllTransferAutocompleteValues();
+      
+      // تنفيذ العملية الأساسية
+      return apiRequest('POST', '/api/worker-transfers', data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/worker-transfers'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/autocomplete'] });
       setShowTransferDialog(false);
       resetForm();
       toast({
@@ -116,10 +163,25 @@ export default function WorkerAccountsPage() {
         description: "تم إرسال الحولة بنجاح"
       });
     },
-    onError: () => {
+    onError: async (error: any) => {
+      // حفظ جميع قيم الإكمال التلقائي حتى في حالة الخطأ
+      await saveAllTransferAutocompleteValues();
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/autocomplete'] });
+      
+      console.error("خطأ في إرسال الحولة:", error);
+      
+      let errorMessage = "فشل في إرسال الحولة";
+      
+      if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "خطأ",
-        description: "فشل في إرسال الحولة",
+        description: errorMessage,
         variant: "destructive"
       });
     }
@@ -128,10 +190,14 @@ export default function WorkerAccountsPage() {
   // Update transfer mutation
   const updateTransferMutation = useMutation({
     mutationFn: async (data: { id: string; updates: Partial<TransferFormData> }) => {
-      return apiRequest(`/api/worker-transfers/${data.id}`, 'PATCH', data.updates);
+      // حفظ جميع قيم الإكمال التلقائي قبل العملية الأساسية
+      await saveAllTransferAutocompleteValues();
+      
+      return apiRequest('PATCH', `/api/worker-transfers/${data.id}`, data.updates);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/worker-transfers'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/autocomplete'] });
       setShowTransferDialog(false);
       setEditingTransfer(null);
       resetForm();
@@ -140,10 +206,25 @@ export default function WorkerAccountsPage() {
         description: "تم تحديث الحولة بنجاح"
       });
     },
-    onError: () => {
+    onError: async (error: any) => {
+      // حفظ جميع قيم الإكمال التلقائي حتى في حالة الخطأ
+      await saveAllTransferAutocompleteValues();
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/autocomplete'] });
+      
+      console.error("خطأ في تحديث الحولة:", error);
+      
+      let errorMessage = "فشل في تحديث الحولة";
+      
+      if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "خطأ",
-        description: "فشل في تحديث الحولة",
+        description: errorMessage,
         variant: "destructive"
       });
     }
@@ -152,7 +233,7 @@ export default function WorkerAccountsPage() {
   // Delete transfer mutation
   const deleteTransferMutation = useMutation({
     mutationFn: async (id: string) => {
-      return apiRequest(`/api/worker-transfers/${id}`, 'DELETE');
+      return apiRequest('DELETE', `/api/worker-transfers/${id}`);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/worker-transfers'] });
@@ -161,10 +242,20 @@ export default function WorkerAccountsPage() {
         description: "تم حذف الحولة بنجاح"
       });
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error("خطأ في حذف الحولة:", error);
+      
+      let errorMessage = "فشل في حذف الحولة";
+      
+      if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "خطأ",
-        description: "فشل في حذف الحولة",
+        description: errorMessage,
         variant: "destructive"
       });
     }
@@ -487,19 +578,23 @@ export default function WorkerAccountsPage() {
 
             <div>
               <Label>اسم المستلم *</Label>
-              <Input
+              <AutocompleteInput
+                category="recipientNames"
                 value={formData.recipientName}
-                onChange={(e) => setFormData({...formData, recipientName: e.target.value})}
+                onChange={(value) => setFormData({...formData, recipientName: value})}
                 placeholder="اسم الشخص المستلم للحولة"
+                className="w-full"
               />
             </div>
 
             <div>
               <Label>رقم الهاتف</Label>
-              <Input
+              <AutocompleteInput
+                category="recipientPhones"
                 value={formData.recipientPhone}
-                onChange={(e) => setFormData({...formData, recipientPhone: e.target.value})}
+                onChange={(value) => setFormData({...formData, recipientPhone: value})}
                 placeholder="رقم هاتف المستلم (اختياري)"
+                className="w-full"
               />
             </div>
 
@@ -524,19 +619,23 @@ export default function WorkerAccountsPage() {
 
             <div>
               <Label>رقم الحولة</Label>
-              <Input
+              <AutocompleteInput
+                category="workerTransferNumbers"
                 value={formData.transferNumber}
-                onChange={(e) => setFormData({...formData, transferNumber: e.target.value})}
+                onChange={(value) => setFormData({...formData, transferNumber: value})}
                 placeholder="رقم الحولة أو المرجع"
+                className="w-full"
               />
             </div>
 
             <div>
               <Label>ملاحظات</Label>
-              <Input
+              <AutocompleteInput
+                category="workerTransferNotes"
                 value={formData.notes}
-                onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                onChange={(value) => setFormData({...formData, notes: value})}
                 placeholder="ملاحظات إضافية (اختياري)"
+                className="w-full"
               />
             </div>
 
