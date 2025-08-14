@@ -462,25 +462,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/fund-transfers", async (req, res) => {
     try {
+      console.log("📝 إنشاء حولة جديدة:", req.body);
+      
       const result = insertFundTransferSchema.safeParse(req.body);
       if (!result.success) {
-        return res.status(400).json({ message: "Invalid fund transfer data", errors: result.error.issues });
+        console.error("❌ خطأ في التحقق من البيانات:", result.error.issues);
+        return res.status(400).json({ 
+          message: "بيانات الحولة غير صحيحة", 
+          errors: result.error.issues.map(issue => `${issue.path.join('.')}: ${issue.message}`).join(', ')
+        });
       }
       
       // محاولة إنشاء التحويل مباشرة - إذا كان هناك تكرار ستعطي قاعدة البيانات خطأ
       try {
         const transfer = await storage.createFundTransfer(result.data);
+        console.log("✅ تم إنشاء الحولة بنجاح:", transfer.id);
         res.status(201).json(transfer);
       } catch (dbError: any) {
+        console.error("❌ خطأ في قاعدة البيانات:", dbError);
+        
         // فحص إذا كان الخطأ بسبب تكرار رقم الحوالة
         if (dbError.code === '23505' && (dbError.constraint === 'fund_transfers_transfer_number_key' || dbError.constraint === 'fund_transfers_transfer_number_unique')) {
           return res.status(400).json({ message: "يوجد تحويل بنفس رقم الحوالة مسبقاً" });
         }
-        throw dbError; // إعادة رفع الخطأ إذا لم يكن تكرار
+        
+        // معالجة أخطاء أخرى من قاعدة البيانات
+        if (dbError.code === '23503') {
+          return res.status(400).json({ message: "المشروع المحدد غير موجود" });
+        }
+        
+        throw dbError; // إعادة رفع الخطأ إذا لم يكن معروف
       }
-    } catch (error) {
-      console.error("Error creating fund transfer:", error);
-      res.status(500).json({ message: "Error creating fund transfer" });
+    } catch (error: any) {
+      console.error("❌ خطأ عام في إنشاء الحولة:", error);
+      res.status(500).json({ 
+        message: error?.message || "حدث خطأ أثناء إنشاء الحولة" 
+      });
     }
   });
 

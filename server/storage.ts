@@ -386,14 +386,23 @@ export class DatabaseStorage implements IStorage {
 
   async createFundTransfer(transfer: InsertFundTransfer): Promise<FundTransfer> {
     try {
+      console.log('💾 إنشاء حولة جديدة في قاعدة البيانات:', {
+        projectId: transfer.projectId,
+        amount: transfer.amount,
+        transferType: transfer.transferType,
+        senderName: transfer.senderName
+      });
+      
       const [newTransfer] = await db
         .insert(fundTransfers)
         .values(transfer)
         .returning();
       
       if (!newTransfer) {
-        throw new Error('فشل في إنشاء تحويل العهدة');
+        throw new Error('فشل في إنشاء تحويل العهدة - لم يتم إرجاع البيانات من قاعدة البيانات');
       }
+      
+      console.log('✅ تم إنشاء الحولة بنجاح في قاعدة البيانات:', newTransfer.id);
       
       // تحديث الملخص اليومي في الخلفية (دون انتظار)
       const transferDate = new Date(transfer.transferDate).toISOString().split('T')[0];
@@ -401,14 +410,25 @@ export class DatabaseStorage implements IStorage {
       
       return newTransfer;
     } catch (error: any) {
-      console.error('Error creating fund transfer:', error);
+      console.error('❌ خطأ في إنشاء الحولة:', error);
       
       // إذا كان الخطأ متعلق بتكرار رقم التحويل
       if (error.code === '23505' && error.constraint?.includes('transfer_number')) {
         throw new Error('يوجد تحويل بنفس رقم الحوالة مسبقاً');
       }
       
-      throw error;
+      // إذا كان الخطأ متعلق بمرجع خارجي غير صحيح (المشروع غير موجود)
+      if (error.code === '23503') {
+        throw new Error('المشروع المحدد غير موجود');
+      }
+      
+      // إذا كان الخطأ متعلق بقيود البيانات
+      if (error.code === '23514') {
+        throw new Error('البيانات المدخلة لا تتوافق مع قيود قاعدة البيانات');
+      }
+      
+      // خطأ عام
+      throw new Error(error.message || 'حدث خطأ غير متوقع أثناء إنشاء الحولة');
     }
   }
 

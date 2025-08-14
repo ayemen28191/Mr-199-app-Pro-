@@ -222,7 +222,7 @@ export default function DailyExpenses() {
       setTransferNumber("");
       setTransferType("");
     },
-    onError: async (error) => {
+    onError: async (error: any) => {
       // حفظ قيم الإكمال التلقائي حتى في حالة الخطأ
       await Promise.all([
         saveAutocompleteValue('senderNames', senderName),
@@ -232,9 +232,22 @@ export default function DailyExpenses() {
       // تحديث كاش autocomplete
       queryClient.invalidateQueries({ queryKey: ["/api/autocomplete"] });
       
+      console.error("خطأ في إضافة الحولة:", error);
+      
+      let errorMessage = "حدث خطأ أثناء إضافة الحولة";
+      
+      // معالجة أنواع مختلفة من الأخطاء
+      if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      
       toast({
-        title: "خطأ في إضافة العهدة",
-        description: error?.message || "حدث خطأ أثناء إضافة تحويل العهدة",
+        title: "فشل في إضافة الحولة",
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -322,8 +335,22 @@ export default function DailyExpenses() {
       });
       toast({ title: "تم الحذف", description: "تم حذف العهدة بنجاح" });
     },
-    onError: () => {
-      toast({ title: "خطأ", description: "حدث خطأ أثناء حذف العهدة", variant: "destructive" });
+    onError: (error: any) => {
+      console.error("خطأ في حذف الحولة:", error);
+      
+      let errorMessage = "حدث خطأ أثناء حذف الحولة";
+      
+      if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      toast({ 
+        title: "فشل في حذف الحولة", 
+        description: errorMessage, 
+        variant: "destructive" 
+      });
     }
   });
 
@@ -388,10 +415,20 @@ export default function DailyExpenses() {
         description: "تم تحديث العهدة بنجاح",
       });
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error("خطأ في تحديث الحولة:", error);
+      
+      let errorMessage = "حدث خطأ أثناء تحديث الحولة";
+      
+      if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
-        title: "خطأ",
-        description: "حدث خطأ أثناء تحديث العهدة",
+        title: "فشل في تحديث الحولة",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -414,10 +451,29 @@ export default function DailyExpenses() {
   };
 
   const handleAddFundTransfer = () => {
-    if (!selectedProjectId || !fundAmount || !transferType) {
+    // التحقق من البيانات المطلوبة
+    if (!selectedProjectId) {
       toast({
         title: "خطأ",
-        description: "يرجى ملء جميع البيانات المطلوبة",
+        description: "يرجى اختيار المشروع أولاً",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!fundAmount || fundAmount.trim() === "" || parseFloat(fundAmount) <= 0) {
+      toast({
+        title: "خطأ",
+        description: "يرجى إدخال مبلغ صحيح",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!transferType || transferType.trim() === "") {
+      toast({
+        title: "خطأ",
+        description: "يرجى اختيار نوع التحويل",
         variant: "destructive",
       });
       return;
@@ -425,10 +481,10 @@ export default function DailyExpenses() {
 
     const transferData = {
       projectId: selectedProjectId,
-      amount: fundAmount,
-      senderName,
-      transferNumber,
-      transferType,
+      amount: fundAmount.toString(),
+      senderName: senderName.trim() || "غير محدد",
+      transferNumber: transferNumber.trim() || null,
+      transferType: transferType,
       transferDate: new Date(selectedDate + 'T12:00:00.000Z'),
       notes: "",
     };
@@ -650,8 +706,10 @@ export default function DailyExpenses() {
                 inputMode="decimal"
                 value={fundAmount}
                 onChange={(e) => setFundAmount(e.target.value)}
-                placeholder="المبلغ"
+                placeholder="المبلغ *"
                 className="text-center arabic-numbers"
+                min="0"
+                step="0.01"
               />
               <AutocompleteInput
                 value={senderName}
@@ -672,7 +730,7 @@ export default function DailyExpenses() {
             <div className="flex gap-2">
               <Select value={transferType} onValueChange={setTransferType}>
                 <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="نوع التحويل" />
+                  <SelectValue placeholder="نوع التحويل *" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="حولة">حولة بنكية</SelectItem>
@@ -680,8 +738,19 @@ export default function DailyExpenses() {
                   <SelectItem value="صراف">صراف آلي</SelectItem>
                 </SelectContent>
               </Select>
-              <Button onClick={handleAddFundTransfer} size="sm" className="bg-primary">
-                {editingFundTransferId ? <Save className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+              <Button 
+                onClick={handleAddFundTransfer} 
+                size="sm" 
+                className="bg-primary"
+                disabled={addFundTransferMutation.isPending || updateFundTransferMutation.isPending}
+              >
+                {addFundTransferMutation.isPending || updateFundTransferMutation.isPending ? (
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                ) : editingFundTransferId ? (
+                  <Save className="h-4 w-4" />
+                ) : (
+                  <Plus className="h-4 w-4" />
+                )}
               </Button>
               {editingFundTransferId && (
                 <Button onClick={resetFundTransferForm} size="sm" variant="outline">
