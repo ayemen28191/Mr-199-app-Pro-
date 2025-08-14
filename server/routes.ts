@@ -1655,8 +1655,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/worker-transfers", async (req, res) => {
     try {
+      console.log("📥 البيانات المستلمة لإنشاء حولة العامل:", JSON.stringify(req.body, null, 2));
+      
       const validationResult = insertWorkerTransferSchema.safeParse(req.body);
       if (!validationResult.success) {
+        console.log("❌ خطأ في التحقق من البيانات:", JSON.stringify(validationResult.error.errors, null, 2));
         return res.status(400).json({ 
           message: "Invalid worker transfer data", 
           errors: validationResult.error.errors 
