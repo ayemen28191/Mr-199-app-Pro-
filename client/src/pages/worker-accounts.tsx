@@ -60,6 +60,7 @@ interface TransferFormData {
   recipientPhone: string;
   transferMethod: 'cash' | 'bank' | 'hawaleh';
   transferNumber: string;
+  transferDate: string;
   notes: string;
 }
 
@@ -127,6 +128,7 @@ export default function WorkerAccountsPage() {
     recipientPhone: '',
     transferMethod: 'hawaleh',
     transferNumber: '',
+    transferDate: new Date().toISOString().split('T')[0], // تاريخ اليوم بصيغة YYYY-MM-DD
     notes: ''
   });
 
@@ -275,6 +277,7 @@ export default function WorkerAccountsPage() {
           recipientPhone: transfer.recipientPhone || '',
           transferMethod: transfer.transferMethod,
           transferNumber: transfer.transferNumber || '',
+          transferDate: transfer.transferDate,
           notes: transfer.notes || ''
         });
         setShowTransferDialog(true);
@@ -291,12 +294,13 @@ export default function WorkerAccountsPage() {
       recipientPhone: '',
       transferMethod: 'hawaleh',
       transferNumber: '',
+      transferDate: new Date().toISOString().split('T')[0],
       notes: ''
     });
   };
 
   const handleSubmit = () => {
-    if (!formData.workerId || !formData.projectId || !formData.amount || !formData.recipientName) {
+    if (!formData.workerId || !formData.projectId || !formData.amount || !formData.recipientName || !formData.transferDate) {
       toast({
         title: "خطأ",
         description: "الرجاء ملء جميع الحقول المطلوبة",
@@ -325,6 +329,7 @@ export default function WorkerAccountsPage() {
       recipientPhone: transfer.recipientPhone || '',
       transferMethod: transfer.transferMethod,
       transferNumber: transfer.transferNumber || '',
+      transferDate: transfer.transferDate,
       notes: transfer.notes || ''
     });
     setShowTransferDialog(true);
@@ -615,6 +620,16 @@ export default function WorkerAccountsPage() {
                   <SelectItem value="cash">نقداً</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            <div>
+              <Label>تاريخ التحويل *</Label>
+              <Input
+                type="date"
+                value={formData.transferDate}
+                onChange={(e) => setFormData({...formData, transferDate: e.target.value})}
+                className="w-full"
+              />
             </div>
 
             <div>
