@@ -60,10 +60,33 @@ export default function DailyExpenses() {
     try {
       await apiRequest('POST', '/api/autocomplete', {
         category: field,
-        value: value.trim()
+        value: value.trim(),
+        usageCount: 1 // زيادة عداد الاستخدام
       });
+      console.log(`✅ تم حفظ قيمة الإكمال التلقائي: ${field} = ${value.trim()}`);
     } catch (error) {
-      console.error(`Error saving autocomplete value for ${field}:`, error);
+      console.error(`❌ خطأ في حفظ قيمة الإكمال التلقائي ${field}:`, error);
+    }
+  };
+
+  // دالة لحفظ جميع قيم الإكمال التلقائي للحولة
+  const saveAllFundTransferAutocompleteValues = async () => {
+    const promises = [];
+    
+    if (senderName && senderName.trim().length >= 2) {
+      promises.push(saveAutocompleteValue('senderNames', senderName));
+    }
+    
+    if (transferNumber && transferNumber.trim().length >= 1) {
+      promises.push(saveAutocompleteValue('transferNumbers', transferNumber));
+    }
+    
+    if (transferType && transferType.trim().length >= 2) {
+      promises.push(saveAutocompleteValue('transferTypes', transferType));
+    }
+    
+    if (promises.length > 0) {
+      await Promise.all(promises);
     }
   };
 
@@ -190,13 +213,33 @@ export default function DailyExpenses() {
     }
   }, [previousBalance]);
 
+  // تهيئة قيم الإكمال التلقائي الافتراضية لنوع التحويل
+  useEffect(() => {
+    const initializeDefaultTransferTypes = async () => {
+      const defaultTypes = ['حولة بنكية', 'تسليم يدوي', 'صراف آلي', 'تحويل داخلي', 'شيك', 'نقدية'];
+      
+      for (const type of defaultTypes) {
+        try {
+          await saveAutocompleteValue('transferTypes', type);
+        } catch (error) {
+          // تجاهل الأخطاء في حالة وجود القيم مسبقاً
+          console.log(`Type ${type} might already exist:`, error);
+        }
+      }
+    };
+
+    // تهيئة القيم مرة واحدة فقط
+    const hasInitialized = localStorage.getItem('transferTypesInitialized');
+    if (!hasInitialized) {
+      initializeDefaultTransferTypes();
+      localStorage.setItem('transferTypesInitialized', 'true');
+    }
+  }, []);
+
   const addFundTransferMutation = useMutation({
     mutationFn: async (data: InsertFundTransfer) => {
-      // حفظ قيم الإكمال التلقائي قبل العملية الأساسية
-      await Promise.all([
-        saveAutocompleteValue('senderNames', senderName),
-        saveAutocompleteValue('transferNumbers', transferNumber)
-      ]);
+      // حفظ جميع قيم الإكمال التلقائي قبل العملية الأساسية
+      await saveAllFundTransferAutocompleteValues();
       
       // تنفيذ العملية الأساسية
       return apiRequest("POST", "/api/fund-transfers", data);
@@ -223,11 +266,8 @@ export default function DailyExpenses() {
       setTransferType("");
     },
     onError: async (error: any) => {
-      // حفظ قيم الإكمال التلقائي حتى في حالة الخطأ
-      await Promise.all([
-        saveAutocompleteValue('senderNames', senderName),
-        saveAutocompleteValue('transferNumbers', transferNumber)
-      ]);
+      // حفظ جميع قيم الإكمال التلقائي حتى في حالة الخطأ
+      await saveAllFundTransferAutocompleteValues();
       
       // تحديث كاش autocomplete
       queryClient.invalidateQueries({ queryKey: ["/api/autocomplete"] });
@@ -728,16 +768,13 @@ export default function DailyExpenses() {
               className="w-full mb-2 arabic-numbers"
             />
             <div className="flex gap-2">
-              <Select value={transferType} onValueChange={setTransferType}>
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="نوع التحويل *" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="حولة">حولة بنكية</SelectItem>
-                  <SelectItem value="تسليم يدوي">تسليم يدوي</SelectItem>
-                  <SelectItem value="صراف">صراف آلي</SelectItem>
-                </SelectContent>
-              </Select>
+              <AutocompleteInput
+                value={transferType}
+                onChange={setTransferType}
+                category="transferTypes"
+                placeholder="نوع التحويل *"
+                className="flex-1"
+              />
               <Button 
                 onClick={handleAddFundTransfer} 
                 size="sm" 
