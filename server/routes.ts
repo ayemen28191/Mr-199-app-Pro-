@@ -1709,6 +1709,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // إضافة route PATCH للتحديث الجزئي
+  app.patch("/api/worker-transfers/:id", async (req, res) => {
+    try {
+      console.log("📥 البيانات المستلمة لتعديل حولة العامل:", JSON.stringify(req.body, null, 2));
+      
+      const validationResult = insertWorkerTransferSchema.partial().safeParse(req.body);
+      if (!validationResult.success) {
+        console.log("❌ خطأ في التحقق من البيانات:", JSON.stringify(validationResult.error.errors, null, 2));
+        return res.status(400).json({ 
+          message: "Invalid worker transfer data", 
+          errors: validationResult.error.errors 
+        });
+      }
+
+      const transfer = await storage.updateWorkerTransfer(req.params.id, validationResult.data);
+      if (!transfer) {
+        return res.status(404).json({ message: "Worker transfer not found" });
+      }
+      
+      // تحديث الملخص اليومي بعد تعديل الحوالة
+      setImmediate(() => {
+        storage.updateDailySummaryForDate(transfer.projectId, transfer.transferDate)
+          .catch(error => console.error("Error updating daily summary after worker transfer update:", error));
+      });
+      
+      console.log("✅ تم تعديل حولة العامل بنجاح:", transfer.id);
+      res.json(transfer);
+    } catch (error) {
+      console.error("Error updating worker transfer:", error);
+      res.status(500).json({ message: "Failed to update worker transfer" });
+    }
+  });
+
   app.delete("/api/worker-transfers/:id", async (req, res) => {
     try {
       // الحصول على بيانات الحوالة قبل حذفها لتحديث الملخص اليومي
