@@ -1,211 +1,261 @@
 // مكون التقارير الموحد - نظام شامل لجميع التقارير
-// تم تحديثه تلقائياً للقالب الموحد A4 - 13 أغسطس 2025
-// ملاحظة: تغيير آلي - يحتاج مراجعة إن ظهرت تنسيقات مختلة
-import React, { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Printer, FileSpreadsheet, Download } from 'lucide-react';
+// تم تحديثه للنسخة النهائية - 14 أغسطس 2025
+import React from 'react';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import '@/styles/unified-print.css';
 
-interface ReportHeader {
-  title: string;
-  subtitle?: string;
-  projectName?: string;
-  workerName?: string;
-  dateRange?: string;
-}
-
-interface ReportData {
-  [key: string]: any;
-}
-
 interface UnifiedReportRendererProps {
-  type: 'worker_statement' | 'daily_expenses' | 'project_summary' | 'supplier_statement';
-  header: ReportHeader;
-  data: ReportData;
-  onPrint?: () => void;
-  onExportExcel?: () => void;
-  onExportPDF?: () => void;
+  reportData: any;
+  reportType: string;
+  projectName?: string;
 }
 
 export const UnifiedReportRenderer: React.FC<UnifiedReportRendererProps> = ({
-  type,
-  header,
-  data,
-  onPrint,
-  onExportExcel,
-  onExportPDF
+  reportData,
+  reportType,
+  projectName
 }) => {
-  
-  const [template, setTemplate] = useState<string | null>(null);
 
-  // تحميل القالب الموحد من public/templates
-  useEffect(() => {
-    (async () => {
-      try {
-        const resp = await fetch('/templates/report_base.html');
-        if (resp.ok) { 
-          setTemplate(await resp.text()); 
-          return; 
-        }
-      } catch(e) { 
-        console.warn('فشل تحميل القالب:', e);
-      }
-      // قالب احتياطي بسيط
-      setTemplate(`
-        <div class="report-container">
-          <header style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-            <div><span style="font-size:20px">🏗️</span></div>
-            <div style="text-align:center">
-              <div style="font-weight:bold">{{REPORT_TITLE}}</div>
-              <div style="font-size:12px">{{FROM_DATE}} — {{TO_DATE}}</div>
-            </div>
-            <div style="width:30px"></div>
-          </header>
-          <main><!-- INSERT REPORT BODY HERE --></main>
-          <footer style="margin-top:8px;font-size:11px;text-align:center">
-            تم الإنشاء {{GENERATED_AT}}
-          </footer>
-        </div>
-      `);
-    })();
-  }, []);
-  
-  const handlePrint = () => {
-    if (onPrint) {
-      onPrint();
-    } else {
-      window.print();
-    }
-  };
+  const renderDailyExpensesReport = () => {
+    if (!reportData?.expenses) return <div>لا توجد بيانات لعرضها</div>;
 
-  // تحضير البيانات للقالب الموحد
-  const prepareReportData = () => {
-    const currentDate = new Date().toLocaleDateString('ar-SA');
-    return {
-      COMPANY_NAME: 'نظام إدارة مشاريع البناء',
-      REPORT_TITLE: header.title,
-      REPORT_DATE: `تاريخ التقرير: ${currentDate}`,
-      CONTACT_INFO: 'للاستفسار: info@construction.com | +967 1 234567',
-      PAGE_NUMBER: '1',
-      TOTAL_PAGES: '1',
-      FROM_DATE: header.dateRange?.split(' - ')[0] || '',
-      TO_DATE: header.dateRange?.split(' - ')[1] || '',
-      GENERATED_AT: new Date().toLocaleString('ar-EG'),
-      LOGO_SRC: '🏗️'
-    };
-  };
-
-  const renderWorkerStatement = () => {
-    const { worker, attendance = [], transfers = [] } = data;
-    
-    // حساب الإجماليات
-    const totalEarned = attendance.reduce((sum: number, record: any) => {
-      return sum + (Number(record.dailyWage) * Number(record.workDays || 1));
-    }, 0);
-    
-    const totalPaid = attendance.reduce((sum: number, record: any) => {
-      return sum + Number(record.paidAmount || 0);
-    }, 0);
-    
-    const totalTransferred = transfers.reduce((sum: number, transfer: any) => {
-      return sum + Number(transfer.amount || 0);
-    }, 0);
-    
-    const workerBalance = totalEarned - totalPaid - totalTransferred;
+    const { expenses, summary, project } = reportData;
 
     return (
-      <div className="report-container worker-statement-content">
-        {/* معلومات العامل */}
-        <div className="worker-info">
-          <div className="info-section">
-            <div className="info-label">معلومات العامل</div>
-            <div>الاسم: {worker?.name || 'غير محدد'}</div>
-            <div>النوع: {worker?.type || 'غير محدد'}</div>
-            <div>الأجر اليومي: {formatCurrency(Number(worker?.dailyWage || 0))}</div>
+      <div className="unified-report-container">
+        <div className="report-header text-center mb-6">
+          <h1 className="text-2xl font-bold mb-2">كشف المصروفات اليومية</h1>
+          <h2 className="text-lg text-gray-700">{project?.name || projectName}</h2>
+          <p className="text-sm text-gray-600">التاريخ: {formatDate(summary?.date)}</p>
+        </div>
+
+        <div className="expenses-table-container">
+          <table className="w-full border-collapse border border-gray-300">
+            <thead>
+              <tr className="bg-blue-50">
+                <th className="border border-gray-300 p-3 text-right">الرقم</th>
+                <th className="border border-gray-300 p-3 text-right">النوع</th>
+                <th className="border border-gray-300 p-3 text-right">الوصف</th>
+                <th className="border border-gray-300 p-3 text-right">المبلغ</th>
+                <th className="border border-gray-300 p-3 text-right">تاريخ الدفع</th>
+              </tr>
+            </thead>
+            <tbody>
+              {expenses.map((expense: any, index: number) => (
+                <tr key={expense.id} className="hover:bg-gray-50">
+                  <td className="border border-gray-300 p-3">{index + 1}</td>
+                  <td className="border border-gray-300 p-3">{expense.type}</td>
+                  <td className="border border-gray-300 p-3">{expense.description}</td>
+                  <td className="border border-gray-300 p-3 text-left font-mono">
+                    {formatCurrency(expense.amount)}
+                  </td>
+                  <td className="border border-gray-300 p-3">{formatDate(expense.payment_date)}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="bg-blue-100 font-bold">
+                <td colSpan={3} className="border border-gray-300 p-3 text-right">
+                  إجمالي المصروفات:
+                </td>
+                <td className="border border-gray-300 p-3 text-left font-mono">
+                  {formatCurrency(summary?.total || 0)}
+                </td>
+                <td className="border border-gray-300 p-3"></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    );
+  };
+
+  const renderWorkerStatementReport = () => {
+    if (!reportData?.transactions) return <div>لا توجد بيانات لعرضها</div>;
+
+    const { worker, transactions, summary } = reportData;
+
+    return (
+      <div className="unified-report-container">
+        <div className="report-header text-center mb-6">
+          <h1 className="text-2xl font-bold mb-2">كشف حساب العامل</h1>
+          <h2 className="text-lg text-gray-700">العامل: {worker?.name}</h2>
+          <p className="text-sm text-gray-600">
+            الفترة: {formatDate(summary?.dateFrom)} - {formatDate(summary?.dateTo)}
+          </p>
+        </div>
+
+        <div className="statement-table-container">
+          <table className="w-full border-collapse border border-gray-300">
+            <thead>
+              <tr className="bg-purple-50">
+                <th className="border border-gray-300 p-3 text-right">التاريخ</th>
+                <th className="border border-gray-300 p-3 text-right">الوصف</th>
+                <th className="border border-gray-300 p-3 text-right">المستحق</th>
+                <th className="border border-gray-300 p-3 text-right">المدفوع</th>
+                <th className="border border-gray-300 p-3 text-right">الرصيد</th>
+              </tr>
+            </thead>
+            <tbody>
+              {transactions.map((transaction: any, index: number) => (
+                <tr key={index} className="hover:bg-gray-50">
+                  <td className="border border-gray-300 p-3">{formatDate(transaction.date)}</td>
+                  <td className="border border-gray-300 p-3">{transaction.description}</td>
+                  <td className="border border-gray-300 p-3 text-left font-mono">
+                    {transaction.credit ? formatCurrency(transaction.credit) : '-'}
+                  </td>
+                  <td className="border border-gray-300 p-3 text-left font-mono">
+                    {transaction.debit ? formatCurrency(transaction.debit) : '-'}
+                  </td>
+                  <td className="border border-gray-300 p-3 text-left font-mono">
+                    {formatCurrency(transaction.balance)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="bg-purple-100 font-bold">
+                <td colSpan={4} className="border border-gray-300 p-3 text-right">
+                  الرصيد النهائي:
+                </td>
+                <td className="border border-gray-300 p-3 text-left font-mono">
+                  {formatCurrency(summary?.finalBalance || 0)}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    );
+  };
+
+  const renderMaterialsReport = () => {
+    if (!reportData?.materials) return <div>لا توجد بيانات لعرضها</div>;
+
+    const { materials, summary, project } = reportData;
+
+    return (
+      <div className="unified-report-container">
+        <div className="report-header text-center mb-6">
+          <h1 className="text-2xl font-bold mb-2">كشف المواد المشتراة</h1>
+          <h2 className="text-lg text-gray-700">{project?.name || projectName}</h2>
+          <p className="text-sm text-gray-600">
+            الفترة: {formatDate(summary?.dateFrom)} - {formatDate(summary?.dateTo)}
+          </p>
+        </div>
+
+        <div className="materials-table-container">
+          <table className="w-full border-collapse border border-gray-300">
+            <thead>
+              <tr className="bg-green-50">
+                <th className="border border-gray-300 p-3 text-right">المادة</th>
+                <th className="border border-gray-300 p-3 text-right">الكمية</th>
+                <th className="border border-gray-300 p-3 text-right">السعر</th>
+                <th className="border border-gray-300 p-3 text-right">المورد</th>
+                <th className="border border-gray-300 p-3 text-right">التاريخ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {materials.map((material: any, index: number) => (
+                <tr key={index} className="hover:bg-gray-50">
+                  <td className="border border-gray-300 p-3">{material.description}</td>
+                  <td className="border border-gray-300 p-3">{material.quantity || '-'}</td>
+                  <td className="border border-gray-300 p-3 text-left font-mono">
+                    {formatCurrency(material.amount)}
+                  </td>
+                  <td className="border border-gray-300 p-3">{material.supplier || '-'}</td>
+                  <td className="border border-gray-300 p-3">{formatDate(material.payment_date)}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr className="bg-green-100 font-bold">
+                <td colSpan={4} className="border border-gray-300 p-3 text-right">
+                  إجمالي المواد:
+                </td>
+                <td className="border border-gray-300 p-3 text-left font-mono">
+                  {formatCurrency(summary?.total || 0)}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    );
+  };
+
+  const renderProjectSummaryReport = () => {
+    if (!reportData?.summary) return <div>لا توجد بيانات لعرضها</div>;
+
+    const { summary, project } = reportData;
+
+    return (
+      <div className="unified-report-container">
+        <div className="report-header text-center mb-6">
+          <h1 className="text-2xl font-bold mb-2">ملخص المشروع</h1>
+          <h2 className="text-lg text-gray-700">{project?.name || projectName}</h2>
+          <p className="text-sm text-gray-600">
+            الفترة: {formatDate(summary?.dateFrom)} - {formatDate(summary?.dateTo)}
+          </p>
+        </div>
+
+        <div className="summary-grid grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="income-section">
+            <h3 className="text-lg font-semibold mb-3 text-green-700">الإيرادات</h3>
+            <div className="bg-green-50 border border-green-200 rounded p-4">
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span>تحويلات العهدة:</span>
+                  <span className="font-mono">{formatCurrency(summary.totalTrustTransfers || 0)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>تحويلات واردة:</span>
+                  <span className="font-mono">{formatCurrency(summary.totalIncomingTransfers || 0)}</span>
+                </div>
+                <hr className="border-green-200" />
+                <div className="flex justify-between font-bold">
+                  <span>إجمالي الإيرادات:</span>
+                  <span className="font-mono">{formatCurrency(summary.totalIncome || 0)}</span>
+                </div>
+              </div>
+            </div>
           </div>
-          <div className="info-section">
-            <div className="info-label">فترة التقرير</div>
-            <div className="date-range">{header.dateRange}</div>
+
+          <div className="expenses-section">
+            <h3 className="text-lg font-semibold mb-3 text-red-700">المصروفات</h3>
+            <div className="bg-red-50 border border-red-200 rounded p-4">
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span>أجور العمال:</span>
+                  <span className="font-mono">{formatCurrency(summary.totalWages || 0)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>مشتريات المواد:</span>
+                  <span className="font-mono">{formatCurrency(summary.totalMaterials || 0)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>النقل:</span>
+                  <span className="font-mono">{formatCurrency(summary.totalTransportation || 0)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>مصاريف متنوعة:</span>
+                  <span className="font-mono">{formatCurrency(summary.totalMiscellaneous || 0)}</span>
+                </div>
+                <hr className="border-red-200" />
+                <div className="flex justify-between font-bold">
+                  <span>إجمالي المصروفات:</span>
+                  <span className="font-mono">{formatCurrency(summary.totalExpenses || 0)}</span>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* جدول الحضور */}
-        {attendance.length > 0 && (
-          <div className="no-break">
-            <h3>سجل الحضور والأجور</h3>
-            <table>
-              <thead>
-                <tr>
-                  <th>التاريخ</th>
-                  <th>أيام العمل</th>
-                  <th>الأجر المستحق</th>
-                  <th>المبلغ المدفوع</th>
-                  <th>ملاحظات</th>
-                </tr>
-              </thead>
-              <tbody>
-                {attendance.map((record: any, index: number) => (
-                  <tr key={index}>
-                    <td>{formatDate(record.date)}</td>
-                    <td>{record.workDays || 1}</td>
-                    <td className="currency">{formatCurrency(Number(record.dailyWage) * Number(record.workDays || 1))}</td>
-                    <td className="currency">{formatCurrency(Number(record.paidAmount || 0))}</td>
-                    <td>{record.notes || '-'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* جدول التحويلات */}
-        {transfers.length > 0 && (
-          <div className="no-break">
-            <h3>حوالات الأهل</h3>
-            <table>
-              <thead>
-                <tr>
-                  <th>التاريخ</th>
-                  <th>المبلغ</th>
-                  <th>اسم المستلم</th>
-                  <th>رقم الهاتف</th>
-                  <th>طريقة التحويل</th>
-                </tr>
-              </thead>
-              <tbody>
-                {transfers.map((transfer: any, index: number) => (
-                  <tr key={index}>
-                    <td>{formatDate(transfer.transferDate)}</td>
-                    <td className="currency">{formatCurrency(Number(transfer.amount))}</td>
-                    <td>{transfer.recipientName}</td>
-                    <td>{transfer.recipientPhone || '-'}</td>
-                    <td>{transfer.transferMethod}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* الملخص المالي */}
-        <div className="summary-card">
-          <h3>الملخص المالي</h3>
-          <div className="summary-grid">
-            <div className="summary-item">
-              <span>إجمالي المستحق:</span>
-              <span className="currency">{formatCurrency(totalEarned)}</span>
-            </div>
-            <div className="summary-item">
-              <span>إجمالي المدفوع:</span>
-              <span className="currency">{formatCurrency(totalPaid)}</span>
-            </div>
-            <div className="summary-item">
-              <span>إجمالي المحول:</span>
-              <span className="currency">{formatCurrency(totalTransferred)}</span>
-            </div>
-            <div className="total-amount">
-              الرصيد الحالي: {formatCurrency(workerBalance)}
+        <div className="final-summary mt-6 text-center">
+          <div className="bg-blue-50 border border-blue-200 rounded p-4 inline-block">
+            <h3 className="text-lg font-semibold mb-2">الرصيد النهائي</h3>
+            <div className="text-2xl font-bold text-blue-700">
+              {formatCurrency((summary.totalIncome || 0) - (summary.totalExpenses || 0))}
             </div>
           </div>
         </div>
@@ -213,213 +263,25 @@ export const UnifiedReportRenderer: React.FC<UnifiedReportRendererProps> = ({
     );
   };
 
-  const renderDailyExpenses = () => {
-    const { expenses = [], summary = {} } = data;
-    
-    return (
-      <div className="report-container daily-expenses-content">
-        {/* جدول المصاريف */}
-        {expenses.length > 0 && (
-          <div className="no-break">
-            <h3>مصاريف اليوم</h3>
-            <table>
-              <thead>
-                <tr>
-                  <th>النوع</th>
-                  <th>الوصف</th>
-                  <th>المبلغ</th>
-                  <th>ملاحظات</th>
-                </tr>
-              </thead>
-              <tbody>
-                {expenses.map((expense: any, index: number) => (
-                  <tr key={index}>
-                    <td>{expense.category}</td>
-                    <td>{expense.description}</td>
-                    <td className="currency">{formatCurrency(Number(expense.amount))}</td>
-                    <td>{expense.notes || '-'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* ملخص المصاريف */}
-        <div className="summary-card">
-          <h3>ملخص مصاريف اليوم</h3>
-          <div className="summary-grid">
-            <div className="summary-item">
-              <span>أجور العمال:</span>
-              <span className="currency">{formatCurrency(Number(summary.labor || 0))}</span>
-            </div>
-            <div className="summary-item">
-              <span>مصاريف متنوعة:</span>
-              <span className="currency">{formatCurrency(Number(summary.pettyExpenses || 0))}</span>
-            </div>
-            <div className="summary-item">
-              <span>مشتريات المواد:</span>
-              <span className="currency">{formatCurrency(Number(summary.materials || 0))}</span>
-            </div>
-            <div className="total-amount">
-              إجمالي مصاريف اليوم: {formatCurrency(Number(summary.total || 0))}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const renderContent = () => {
-    switch (type) {
+  // تحديد نوع التقرير وعرض المحتوى المناسب
+  const renderReport = () => {
+    switch (reportType) {
+      case 'daily':
+        return renderDailyExpensesReport();
       case 'worker_statement':
-        return renderWorkerStatement();
-      case 'daily_expenses':
-        return renderDailyExpenses();
+        return renderWorkerStatementReport();
+      case 'materials':
+        return renderMaterialsReport();
+      case 'project_summary':
+        return renderProjectSummaryReport();
       default:
         return <div>نوع التقرير غير مدعوم</div>;
     }
   };
 
-  // تحويل المحتوى إلى HTML للقالب الموحد
-  const renderContentAsHTML = () => {
-    if (type === 'worker_statement') {
-      const { worker, attendance = [], transfers = [] } = data;
-      return `
-        <div class="worker-info">
-          <h3>معلومات العامل</h3>
-          <p><strong>الاسم:</strong> ${worker?.name || 'غير محدد'}</p>
-          <p><strong>النوع:</strong> ${worker?.type || 'غير محدد'}</p>
-          <p><strong>الأجر اليومي:</strong> ${formatCurrency(Number(worker?.dailyWage || 0))}</p>
-        </div>
-        <table>
-          <thead>
-            <tr><th>التاريخ</th><th>أيام العمل</th><th>المستحق</th><th>المدفوع</th><th>الرصيد</th></tr>
-          </thead>
-          <tbody>
-            ${attendance.map((record: any) => `
-              <tr>
-                <td>${formatDate(record.workDate)}</td>
-                <td>${record.workDays || 1}</td>
-                <td>${formatCurrency(Number(record.dailyWage) * Number(record.workDays || 1))}</td>
-                <td>${formatCurrency(Number(record.paidAmount || 0))}</td>
-                <td>${formatCurrency(Number(record.balance || 0))}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      `;
-    } else if (type === 'daily_expenses') {
-      const { expenses = [], summary = {} } = data;
-      return `
-        <table>
-          <thead>
-            <tr><th>النوع</th><th>الوصف</th><th>المبلغ</th><th>ملاحظات</th></tr>
-          </thead>
-          <tbody>
-            ${expenses.map((expense: any) => `
-              <tr>
-                <td>${expense.category}</td>
-                <td>${expense.description}</td>
-                <td class="currency">${formatCurrency(Number(expense.amount))}</td>
-                <td>${expense.notes || '-'}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-        <div class="total-amount">
-          إجمالي مصاريف اليوم: ${formatCurrency(Number(summary.total || 0))}
-        </div>
-      `;
-    }
-    return '<div>نوع التقرير غير مدعوم</div>';
-  };
-
-  const reportData = prepareReportData();
-
-  // استخدام القالب الموحد إذا كان متاحاً
-  if (template) {
-    const contentHtml = renderContentAsHTML();
-    const filledTemplate = template
-      .replace('<!-- INSERT REPORT BODY HERE -->', contentHtml)
-      .replace(/{{REPORT_TITLE}}/g, reportData.REPORT_TITLE)
-      .replace(/{{FROM_DATE}}/g, reportData.FROM_DATE)
-      .replace(/{{TO_DATE}}/g, reportData.TO_DATE)
-      .replace(/{{GENERATED_AT}}/g, reportData.GENERATED_AT)
-      .replace(/{{LOGO_SRC}}/g, reportData.LOGO_SRC);
-
-    return (
-      <div className="unified-report-renderer">
-        {/* أزرار التحكم */}
-        <div className="no-print mb-4 flex gap-2">
-          <Button onClick={handlePrint} className="flex items-center gap-2">
-            <Printer size={16} />
-            طباعة
-          </Button>
-          {onExportExcel && (
-            <Button onClick={onExportExcel} variant="outline" className="flex items-center gap-2">
-              <FileSpreadsheet size={16} />
-              تصدير Excel
-            </Button>
-          )}
-          {onExportPDF && (
-            <Button onClick={onExportPDF} variant="outline" className="flex items-center gap-2">
-              <Download size={16} />
-              تصدير PDF
-            </Button>
-          )}
-        </div>
-
-        {/* محتوى التقرير بالقالب الموحد */}
-        <div className="print-content" dangerouslySetInnerHTML={{ __html: filledTemplate }} />
-      </div>
-    );
-  }
-
-  // العرض الاحتياطي (إذا فشل تحميل القالب)
   return (
-    <div className="unified-report-renderer">
-      {/* أزرار التحكم */}
-      <div className="no-print mb-4 flex gap-2">
-        <Button onClick={handlePrint} className="flex items-center gap-2">
-          <Printer size={16} />
-          طباعة
-        </Button>
-        {onExportExcel && (
-          <Button onClick={onExportExcel} variant="outline" className="flex items-center gap-2">
-            <FileSpreadsheet size={16} />
-            تصدير Excel
-          </Button>
-        )}
-        {onExportPDF && (
-          <Button onClick={onExportPDF} variant="outline" className="flex items-center gap-2">
-            <Download size={16} />
-            تصدير PDF
-          </Button>
-        )}
-      </div>
-
-      {/* محتوى التقرير - العرض الاحتياطي */}
-      <div className="print-content">
-        <div className="report-header" style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'8px'}}>
-          <div><span style={{fontSize:'20px'}}>🏗️</span></div>
-          <div style={{textAlign:'center'}}>
-            <div style={{fontWeight:'bold'}}>{header.title}</div>
-            <div style={{fontSize:'12px'}}>{header.dateRange}</div>
-          </div>
-          <div style={{width:'30px'}}></div>
-        </div>
-        
-        <div className="report-content">
-          {renderContent()}
-        </div>
-
-        <div style={{marginTop:'8px',fontSize:'11px',textAlign:'center'}}>
-          تم الإنشاء — {new Date().toLocaleString('ar-EG')}
-        </div>
-      </div>
+    <div className="unified-report-wrapper print:p-0">
+      {renderReport()}
     </div>
   );
 };
-
-export default UnifiedReportRenderer;

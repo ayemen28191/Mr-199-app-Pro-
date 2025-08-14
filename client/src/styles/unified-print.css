@@ -1,640 +1,238 @@
-/* ===============================
-   نظام الطباعة الموحد والمحسن
-   جميع التقارير والكشوف
-   =============================== */
+/* أنماط النظام الموحد للتقارير - A4 محسن للطباعة */
+/* تم إنشاؤه: 14 أغسطس 2025 */
 
-/* إعدادات الصفحة الأساسية - مضغوطة ومحسنة */
-@page {
-  size: A4 portrait;
-  margin: 10mm 8mm 8mm 8mm;
-  /* منع قطع المحتوى بين الصفحات */
-  orphans: 3;
-  widows: 3;
+.unified-report-container {
+  @apply max-w-4xl mx-auto bg-white;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.5;
+  color: #333;
+  direction: rtl;
 }
 
-/* صفحة أولى بإعدادات خاصة */
-@page :first {
-  margin: 8mm 8mm 8mm 8mm;
+.unified-report-wrapper {
+  @apply p-6;
 }
 
-/* إعدادات الطباعة العامة */
+/* رأس التقرير */
+.report-header {
+  @apply border-b-2 border-gray-200 pb-4 mb-6;
+}
+
+.report-header h1 {
+  @apply text-3xl font-bold text-gray-800 mb-2;
+}
+
+.report-header h2 {
+  @apply text-xl text-gray-600 mb-2;
+}
+
+.report-header p {
+  @apply text-gray-500;
+}
+
+/* الجداول */
+.expenses-table-container,
+.statement-table-container,
+.materials-table-container {
+  @apply overflow-hidden rounded-lg shadow-sm border border-gray-200;
+}
+
+.unified-report-container table {
+  @apply w-full border-collapse;
+  font-size: 14px;
+}
+
+.unified-report-container th {
+  @apply bg-gray-50 font-semibold text-gray-700 p-3 text-right border border-gray-300;
+}
+
+.unified-report-container td {
+  @apply p-3 border border-gray-300 text-gray-800;
+}
+
+.unified-report-container tbody tr:nth-child(even) {
+  @apply bg-gray-50;
+}
+
+.unified-report-container tbody tr:hover {
+  @apply bg-blue-50;
+}
+
+/* تنسيق الأرقام */
+.unified-report-container .font-mono {
+  font-family: 'Courier New', monospace;
+  @apply text-left;
+}
+
+/* قسم ملخص المشروع */
+.summary-grid {
+  @apply grid grid-cols-1 md:grid-cols-2 gap-6;
+}
+
+.income-section,
+.expenses-section {
+  @apply rounded-lg border p-4;
+}
+
+.income-section {
+  @apply bg-green-50 border-green-200;
+}
+
+.expenses-section {
+  @apply bg-red-50 border-red-200;
+}
+
+.final-summary {
+  @apply mt-8 text-center;
+}
+
+/* أنماط الطباعة */
 @media print {
-  /* إخفاء عناصر الواجهة غير المرغوبة */
-  .no-print,
-  nav,
-  .sidebar,
-  .header-controls,
-  .print\:hidden,
-  .bg-gradient-to-r,
-  button:not(.print-show),
-  .toast-container,
-  .dropdown-menu,
-  .modal-backdrop,
-  .mobile-sticky-header {
-    display: none !important;
+  @page {
+    size: A4;
+    margin: 15mm 10mm;
+    direction: rtl;
   }
-
-  /* إعدادات الجسم الأساسية */
-  * {
-    box-sizing: border-box !important;
-  }
-
-  html {
-    width: 100% !important;
-    height: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    font-size: 16px !important;
-  }
-
+  
   body {
-    width: 100% !important;
-    height: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    background: white !important;
-    font-family: 'Arial', 'Segoe UI', sans-serif !important;
-    font-size: 11px !important;
-    line-height: 1.3 !important;
-    color: #000 !important;
-    direction: rtl !important;
-    text-align: right !important;
+    -webkit-print-color-adjust: exact !important;
+    color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
-
-  /* إظهار المحتوى المطبوع فقط */
-  .print-content {
-    display: block !important;
-    position: static !important;
-    width: 100% !important;
-    max-width: 200mm !important;
-    height: auto !important;
-    margin: 0 auto !important;
-    padding: 4mm !important;
-    background: white !important;
-    color: #000 !important;
-    overflow: visible !important;
-    page-break-inside: avoid !important;
-    transform: scale(0.78) !important;
-    transform-origin: top center !important;
-    max-height: 270mm !important;
-  }
-
-  /* ضمان عدم تجاوز صفحة واحدة */
-  .print-single-page {
-    max-height: 265mm !important;
-    overflow: hidden !important;
-    transform: scale(0.7) !important;
-    transform-origin: top center !important;
-  }
-
-  /* تحسين المعاينة للعرض الكامل */
-  .print-preview-mode .print-content {
-    transform: scale(1) !important;
+  
+  .unified-report-wrapper {
+    @apply p-0 m-0;
     max-width: none !important;
     width: 100% !important;
-    padding: 20px !important;
-    max-height: none !important;
-    overflow: visible !important;
-    min-height: auto !important;
   }
-
-  /* إعدادات خاصة لعرض الكشف كاملاً في المعاينة */
-  .preview-full-display {
-    transform: scale(1) !important;
-    zoom: 1 !important;
+  
+  .unified-report-container {
+    @apply max-w-none;
     width: 100% !important;
-    max-width: none !important;
-    overflow: visible !important;
-    height: auto !important;
-    max-height: none !important;
-  }
-
-  .preview-full-display .print-content {
-    transform: none !important;
-    width: 100% !important;
-    max-width: none !important;
-    padding: 15px !important;
     margin: 0 !important;
   }
-
-  /* تنسيق العناوين */
-  .print-content h1 {
-    font-size: 18px !important;
-    font-weight: bold !important;
-    margin: 0 0 10px 0 !important;
-    text-align: center !important;
-    color: #1e40af !important;
-  }
-
-  .print-content h2 {
-    font-size: 16px !important;
-    font-weight: bold !important;
-    margin: 15px 0 8px 0 !important;
-    color: #374151 !important;
-  }
-
-  .print-content h3 {
-    font-size: 14px !important;
-    font-weight: bold !important;
-    margin: 10px 0 5px 0 !important;
-    color: #4b5563 !important;
-  }
-
-  /* تنسيق الجداول */
-  .print-content table {
-    width: 100% !important;
-    border-collapse: collapse !important;
-    margin: 10px 0 !important;
-    font-size: 11px !important;
-    break-inside: avoid !important;
-  }
-
-  .print-content th,
-  .print-content td {
-    border: 1px solid #000 !important;
-    padding: 6px 4px !important;
-    text-align: center !important;
-    vertical-align: middle !important;
-    direction: rtl !important;
-    word-wrap: break-word !important;
-  }
-
-  .print-content th {
-    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%) !important;
-    color: white !important;
-    font-weight: bold !important;
-    font-size: 12px !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-
-  .print-content tbody tr:nth-child(odd) {
-    background-color: #f9fafb !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-
-  /* تنسيق خاص لكشف التصفية الجماعي */
-  #printable-multiple-workers {
-    width: 100% !important;
-    max-width: none !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    background: white !important;
-    color: #000 !important;
-  }
-
-  #printable-multiple-workers .company-header {
-    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%) !important;
-    color: white !important;
-    padding: 15px !important;
-    text-align: center !important;
-    border: 2px solid #1e40af !important;
-    margin-bottom: 10px !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-
-  #printable-multiple-workers .financial-summary {
-    background: #f3f4f6 !important;
-    padding: 10px !important;
-    border: 1px solid #d1d5db !important;
-    margin-bottom: 15px !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-
-  #printable-multiple-workers .financial-summary > div {
-    display: grid !important;
-    grid-template-columns: repeat(8, 1fr) !important;
-    gap: 4px !important;
-  }
-
-  #printable-multiple-workers .financial-summary div div {
-    background: white !important;
-    border: 1px solid #d1d5db !important;
-    padding: 8px 4px !important;
-    text-align: center !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-
-  #printable-multiple-workers .screen-only {
+  
+  /* إخفاء العناصر غير المطلوبة للطباعة */
+  .no-print,
+  button,
+  .hover\\:shadow-lg,
+  .transition-shadow {
     display: none !important;
   }
-
-  #printable-multiple-workers .footer {
-    margin-top: 20px !important;
-    padding-top: 15px !important;
-    border-top: 2px solid #374151 !important;
+  
+  /* تحسين عرض الجداول للطباعة */
+  .unified-report-container table {
+    font-size: 12px !important;
+    page-break-inside: avoid;
   }
-
-  #printable-multiple-workers .footer > div {
-    display: grid !important;
-    grid-template-columns: repeat(3, 1fr) !important;
-    gap: 20px !important;
-    text-align: center !important;
+  
+  .unified-report-container th,
+  .unified-report-container td {
+    padding: 8px 6px !important;
+    border: 1px solid #000 !important;
+    font-size: 11px !important;
   }
-
-  #printable-multiple-workers .footer div div {
-    border-top: 1px solid #6b7280 !important;
-    padding-top: 8px !important;
-    margin-top: 25px !important;
+  
+  .unified-report-container th {
+    background-color: #f5f5f5 !important;
+    font-weight: bold !important;
   }
-
-  .print-content tbody tr:nth-child(even) {
-    background-color: white !important;
+  
+  /* رأس التقرير للطباعة */
+  .report-header {
+    page-break-after: avoid;
+    margin-bottom: 20px !important;
+    border-bottom: 2px solid #000 !important;
   }
-
-  /* تنسيق الكروت والملخصات */
-  .print-content .summary-card {
-    border: 2px solid #e5e7eb !important;
-    border-radius: 6px !important;
-    padding: 10px !important;
-    margin: 10px 0 !important;
-    background: #f8fafc !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
+  
+  .report-header h1 {
+    font-size: 20px !important;
+    margin-bottom: 8px !important;
   }
-
-  .print-content .total-amount {
+  
+  .report-header h2 {
     font-size: 16px !important;
-    font-weight: bold !important;
-    color: #1e40af !important;
-    text-align: center !important;
-    padding: 8px !important;
-    border: 2px solid #1e40af !important;
-    border-radius: 4px !important;
-    margin: 10px 0 !important;
-    background: #f0f9ff !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-
-  /* تنسيق معلومات المشروع والعامل */
-  .print-content .project-info,
-  .print-content .worker-info {
-    display: flex !important;
-    justify-content: space-between !important;
-    margin: 15px 0 !important;
-    padding: 8px !important;
-    border: 1px solid #d1d5db !important;
-    border-radius: 4px !important;
-    background: #f9fafb !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-
-  .print-content .info-section {
-    flex: 1 !important;
-    padding: 0 10px !important;
-  }
-
-  .print-content .info-label {
-    font-weight: bold !important;
-    color: #374151 !important;
     margin-bottom: 4px !important;
   }
-
-  /* تنسيق التواريخ والأرقام */
-  .print-content .date-range {
-    text-align: center !important;
-    font-weight: bold !important;
-    color: #6b7280 !important;
-    margin: 10px 0 !important;
-  }
-
-  .print-content .currency {
-    font-weight: bold !important;
-    color: #059669 !important;
-  }
-
-  /* إصلاح مشكلة الأرقام الكبيرة */
-  .print-content .number-display,
-  .print-content .currency-display {
-    font-size: 11px !important;
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    max-width: 80px !important;
-  }
-
-  /* تحسين كسر الصفحات */
-  .print-content .page-break {
-    page-break-before: always !important;
-  }
-
-  .print-content .no-break {
-    page-break-inside: avoid !important;
-  }
-
-  /* تنسيق التوقيعات */
-  .print-content .signature-section {
-    margin-top: 30mm !important;
-    display: flex !important;
-    justify-content: space-between !important;
-    border-top: 1px solid #000 !important;
-    padding-top: 10mm !important;
-  }
-
-  .print-content .signature-box {
-    text-align: center !important;
-    width: 45% !important;
-  }
-
-  .print-content .signature-line {
-    border-bottom: 1px solid #000 !important;
-    margin-bottom: 5px !important;
-    height: 20px !important;
-  }
-
-  /* تحسينات خاصة للشاشات الصغيرة */
-  @media print and (max-width: 210mm) {
-    .print-content {
-      padding: 3mm !important;
-    }
-    
-    .print-content table {
-      font-size: 9px !important;
-    }
-    
-    .print-content th,
-    .print-content td {
-      padding: 3px 2px !important;
-    }
-  }
-
-  /* تحسينات لكشف حساب العامل - محسنة ومضغوطة */
-  .enhanced-worker-statement-print,
-  .enhanced-worker-account-statement {
-    font-size: 10px !important;
-    line-height: 1.3 !important;
-  }
-
-  .enhanced-worker-statement-print .statement-header,
-  .enhanced-worker-account-statement .statement-header {
-    margin-bottom: 8px !important;
-    text-align: center !important;
-    border-bottom: 1px solid #1e40af !important;
-    padding-bottom: 4px !important;
-  }
-
-  .enhanced-worker-statement-print table th,
-  .enhanced-worker-account-statement .enhanced-summary-table th {
-    font-size: 8px !important;
-    padding: 1.5mm !important;
-  }
-
-  .enhanced-worker-statement-print table td,
-  .enhanced-worker-account-statement .enhanced-summary-table td {
-    font-size: 7px !important;
-    padding: 1mm !important;
-  }
-
-  /* نظام كسر الصفحات الذكي */
-  .enhanced-worker-statement-print {
-    page-break-inside: avoid !important;
-  }
-
-  .enhanced-worker-statement-print table {
-    page-break-inside: auto !important;
-  }
-
-  .enhanced-worker-statement-print tr {
-    page-break-inside: avoid !important;
-    page-break-after: auto !important;
-  }
-
-  .enhanced-worker-statement-print thead {
-    display: table-header-group !important;
-  }
-
-  .enhanced-worker-statement-print tfoot {
-    display: table-footer-group !important;
-  }
-
-  /* تحسينات للتقرير اليومي */
-  .daily-expenses-report {
-    font-size: 11px !important;
-  }
-
-  .daily-expenses-report .expense-summary {
-    display: block !important;
-    margin: 10px 0 !important;
-  }
-
-  .daily-expenses-report .expense-item {
-    display: flex !important;
-    justify-content: space-between !important;
-    padding: 4px 0 !important;
-    border-bottom: 1px solid #e5e7eb !important;
-  }
-
-  /* الحفاظ على الألوان في الطباعة */
-  .preserve-color,
-  .professional-gradient {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-    color-adjust: exact !important;
-  }
-
-  /* تحسينات خاصة للكشف الجماعي المحسن */
-  #enhanced-workers-unified-statement {
-    width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    background: white !important;
-  }
-
-  #enhanced-workers-unified-statement .statement-header {
-    text-align: center !important;
-    margin-bottom: 15px !important;
-    border-bottom: 2px solid #1e40af !important;
-    padding-bottom: 10px !important;
-  }
-
-  #enhanced-workers-unified-statement .company-name {
-    font-size: 18px !important;
-    font-weight: bold !important;
-    color: #1e40af !important;
-    margin-bottom: 5px !important;
-  }
-
-  #enhanced-workers-unified-statement .statement-title {
-    font-size: 16px !important;
-    font-weight: bold !important;
-    color: #374151 !important;
-    margin-bottom: 5px !important;
-  }
-
-  #enhanced-workers-unified-statement .statement-period {
+  
+  .report-header p {
     font-size: 12px !important;
-    color: #6b7280 !important;
   }
-
-  #enhanced-workers-unified-statement .financial-summary {
-    background: #f3f4f6 !important;
-    padding: 10px !important;
-    border: 1px solid #d1d5db !important;
-    margin-bottom: 15px !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
+  
+  /* تحسين ملخص المشروع للطباعة */
+  .summary-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 20px !important;
+    page-break-inside: avoid;
   }
-
-  #enhanced-workers-unified-statement .section-title {
-    font-size: 14px !important;
-    font-weight: bold !important;
-    margin-bottom: 8px !important;
-    color: #374151 !important;
+  
+  .income-section,
+  .expenses-section {
+    border: 2px solid #333 !important;
+    padding: 15px !important;
+    page-break-inside: avoid;
   }
-
-  #enhanced-workers-unified-statement .summary-grid {
-    display: grid !important;
-    grid-template-columns: repeat(8, 1fr) !important;
-    gap: 4px !important;
+  
+  .final-summary {
+    page-break-inside: avoid;
+    margin-top: 30px !important;
   }
-
-  #enhanced-workers-unified-statement .summary-item {
-    background: white !important;
-    border: 1px solid #d1d5db !important;
-    padding: 6px 3px !important;
-    text-align: center !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
+  
+  .final-summary .bg-blue-50 {
+    border: 2px solid #000 !important;
+    padding: 20px !important;
   }
-
-  #enhanced-workers-unified-statement .summary-label {
-    font-size: 9px !important;
-    color: #6b7280 !important;
-    margin-bottom: 2px !important;
+  
+  /* منع فواصل الصفحات غير المرغوبة */
+  .expenses-table-container,
+  .statement-table-container,
+  .materials-table-container {
+    page-break-inside: avoid;
   }
-
-  #enhanced-workers-unified-statement .summary-value {
-    font-size: 11px !important;
-    font-weight: bold !important;
+  
+  /* ألوان محسنة للطباعة */
+  .bg-blue-50 { background-color: #f8f9fa !important; }
+  .bg-purple-50 { background-color: #f8f9fa !important; }
+  .bg-green-50 { background-color: #f8f9fa !important; }
+  .bg-blue-100 { background-color: #e9ecef !important; }
+  .bg-purple-100 { background-color: #e9ecef !important; }
+  .bg-green-100 { background-color: #e9ecef !important; }
+  
+  /* خط محسن للطباعة */
+  .unified-report-container {
+    font-family: 'Times New Roman', serif !important;
   }
-
-  #enhanced-workers-unified-statement .attendance-table {
-    width: 100% !important;
-    border-collapse: collapse !important;
-    margin: 10px 0 !important;
-    font-size: 9px !important;
-  }
-
-  #enhanced-workers-unified-statement .attendance-table th {
-    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%) !important;
-    color: white !important;
-    font-weight: bold !important;
-    font-size: 10px !important;
-    padding: 4px 2px !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-
-  #enhanced-workers-unified-statement .attendance-table td {
-    padding: 3px 2px !important;
-    font-size: 8px !important;
-    border: 1px solid #000 !important;
-  }
-
-  #enhanced-workers-unified-statement .even-row {
-    background-color: #f9fafb !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-
-  #enhanced-workers-unified-statement .odd-row {
-    background-color: white !important;
-  }
-
-  #enhanced-workers-unified-statement .transfer-row {
-    background-color: #fee2e2 !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-
-  #enhanced-workers-unified-statement .totals-row {
-    background: #f3f4f6 !important;
-    border-top: 2px solid #374151 !important;
-    font-weight: bold !important;
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-  }
-
-  #enhanced-workers-unified-statement .work-description {
-    font-size: 8px !important;
-    max-width: 60px !important;
-    word-wrap: break-word !important;
-    overflow-wrap: break-word !important;
-  }
-
-  #enhanced-workers-unified-statement .amount-due {
-    color: #059669 !important;
-    font-weight: bold !important;
-  }
-
-  #enhanced-workers-unified-statement .amount-paid {
-    color: #3b82f6 !important;
-    font-weight: bold !important;
-  }
-
-  #enhanced-workers-unified-statement .transfer-amount {
-    color: #6366f1 !important;
-    font-weight: bold !important;
-  }
-
-  #enhanced-workers-unified-statement .amount-remaining.positive {
-    color: #f59e0b !important;
-    font-weight: bold !important;
-  }
-
-  #enhanced-workers-unified-statement .amount-remaining.negative {
-    color: #ef4444 !important;
-    font-weight: bold !important;
-  }
-
-  #enhanced-workers-unified-statement .amount-remaining.zero {
-    color: #6b7280 !important;
-  }
-
-  #enhanced-workers-unified-statement .total-days {
-    color: #3b82f6 !important;
-    font-weight: bold !important;
-  }
-
-  #enhanced-workers-unified-statement .total-hours {
-    color: #0d9488 !important;
-    font-weight: bold !important;
-  }
-
-  #enhanced-workers-unified-statement .total-due {
-    color: #059669 !important;
-    font-weight: bold !important;
-  }
-
-  #enhanced-workers-unified-statement .total-paid {
-    color: #3b82f6 !important;
-    font-weight: bold !important;
-  }
-
-  #enhanced-workers-unified-statement .total-transferred {
-    color: #6366f1 !important;
-    font-weight: bold !important;
-  }
-
-  #enhanced-workers-unified-statement .total-remaining {
-    color: #f59e0b !important;
-    font-weight: bold !important;
+  
+  /* تحسين المسافات */
+  .unified-report-container .space-y-2 > * + * {
+    margin-top: 8px !important;
   }
 }
 
-/* إعدادات المعاينة في الشاشة */
-.print-preview-mode .print-content {
-  max-width: 210mm;
-  min-height: 297mm;
-  margin: 20px auto;
-  padding: 15mm;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  border: 1px solid #e5e7eb;
-  background: white;
+/* أنماط إضافية للشاشات الصغيرة */
+@media (max-width: 768px) {
+  .unified-report-container {
+    font-size: 14px;
+  }
+  
+  .unified-report-container table {
+    font-size: 12px;
+  }
+  
+  .unified-report-container th,
+  .unified-report-container td {
+    padding: 8px 4px;
+  }
+  
+  .summary-grid {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .report-header h1 {
+    font-size: 24px !important;
+  }
+  
+  .report-header h2 {
+    font-size: 18px !important;
+  }
 }
