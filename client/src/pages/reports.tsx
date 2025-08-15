@@ -48,7 +48,7 @@ interface ReportStats {
 
 export default function Reports() {
   const [, setLocation] = useLocation();
-  const { selectedProjectId } = useSelectedProject();
+  const { selectedProjectId, selectProject } = useSelectedProject();
   const { toast } = useToast();
 
   // حالات التقارير المختلفة
@@ -260,7 +260,12 @@ export default function Reports() {
             </div>
             <div className="flex items-center gap-3 flex-wrap">
               <div className="flex-1 min-w-[300px] max-w-[400px]">
-                <ProjectSelector onProjectChange={() => {}} variant="compact" className="w-full" />
+                <ProjectSelector 
+                  selectedProjectId={selectedProjectId}
+                  onProjectChange={selectProject} 
+                  variant="compact" 
+                  className="w-full" 
+                />
               </div>
               <Button 
                 variant="outline" 
@@ -277,6 +282,33 @@ export default function Reports() {
       </div>
 
       <div className="container mx-auto p-4 space-y-6">
+        {/* رسالة التنبيه عند عدم اختيار مشروع */}
+        {!selectedProjectId && (
+          <Card className="border-amber-200 bg-amber-50 dark:bg-amber-900/20">
+            <CardContent className="p-6">
+              <div className="flex items-start gap-4">
+                <div className="bg-amber-100 dark:bg-amber-900/40 rounded-full p-2">
+                  <Info className="h-6 w-6 text-amber-600" />
+                </div>
+                <div>
+                  <h3 className="font-semibold text-amber-900 dark:text-amber-100">تنبيه مهم</h3>
+                  <p className="text-amber-700 dark:text-amber-300 mt-1">
+                    يرجى اختيار مشروع من القائمة أعلاه لبدء إنشاء التقارير والاستفادة من جميع الميزات المتاحة.
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-3 border-amber-300 text-amber-700 hover:bg-amber-100"
+                    onClick={() => setLocation('/projects')}
+                  >
+                    <Building2 className="h-4 w-4 mr-2" />
+                    إدارة المشاريع
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
         {/* لوحة الإحصائيات الذكية */}
         {selectedProjectId && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
