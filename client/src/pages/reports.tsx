@@ -248,6 +248,24 @@ export default function Reports() {
       });
       return;
     }
+
+    // تأكد من عرض المعاينة قبل الطباعة
+    if (!showPreview) {
+      setShowPreview(true);
+      // انتظار قليل حتى يتم عرض العنصر
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    // تحقق من وجود العنصر
+    const element = document.getElementById('report-preview');
+    if (!element || !element.innerHTML.trim()) {
+      toast({
+        title: "خطأ في الطباعة ❌",
+        description: "لا يمكن العثور على محتوى التقرير للطباعة",
+        variant: "destructive",
+      });
+      return;
+    }
     
     try {
       await printReport.direct('report-preview', 'تقرير احترافي');

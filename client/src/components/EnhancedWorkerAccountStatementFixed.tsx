@@ -351,8 +351,8 @@ export const EnhancedWorkerAccountStatement = ({
       
       // التحقق من وجود المحتوى
       const printContent = document.getElementById('enhanced-worker-account-statement');
-      if (!printContent) {
-        alert('❌ لم يتم العثور على محتوى الطباعة');
+      if (!printContent || !printContent.innerHTML.trim()) {
+        alert('❌ لم يتم العثور على محتوى الطباعة أو المحتوى فارغ');
         return;
       }
 

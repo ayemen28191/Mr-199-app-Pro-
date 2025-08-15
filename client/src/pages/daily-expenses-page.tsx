@@ -58,7 +58,25 @@ export default function DailyExpensesPage() {
   };
 
   const handlePrint = async () => {
-    if (!reportData) return;
+    if (!reportData) {
+      toast({
+        title: "لا توجد بيانات للطباعة",
+        description: "يرجى تحديد المشروع والتاريخ أولاً",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // تحقق من وجود العنصر والمحتوى
+    const element = document.getElementById('daily-expense-report');
+    if (!element || !element.innerHTML.trim()) {
+      toast({
+        title: "خطأ في الطباعة",
+        description: "لا يمكن العثور على محتوى التقرير للطباعة",
+        variant: "destructive"
+      });
+      return;
+    }
     
     try {
       await printReport.direct('daily-expense-report', 'تقرير المصروفات اليومية');

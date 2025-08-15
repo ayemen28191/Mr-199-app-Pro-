@@ -43,6 +43,18 @@ export class UnifiedPrintManager {
   static async printDirect(elementId: string, options: Partial<PrintOptions> = {}) {
     const config = { ...this.defaultOptions, ...options };
     
+    // التحقق من وجود العنصر أولاً
+    const element = document.getElementById(elementId);
+    if (!element) {
+      console.error(`Print Error: Element with id '${elementId}' not found`);
+      throw new Error(`لا يمكن العثور على عنصر الطباعة: ${elementId}`);
+    }
+
+    if (!element.innerHTML.trim()) {
+      console.error(`Print Error: Element '${elementId}' is empty`);
+      throw new Error(`عنصر الطباعة فارغ: ${elementId}`);
+    }
+    
     // إخفاء العناصر غير المرغوبة
     this.hideNonPrintElements();
     
@@ -60,6 +72,7 @@ export class UnifiedPrintManager {
     this.applyPrintStyles(config);
     
     try {
+      console.log(`🖨️ طباعة العنصر: ${elementId}`);
       window.print();
     } finally {
       // إعادة إظهار العناصر المخفية
