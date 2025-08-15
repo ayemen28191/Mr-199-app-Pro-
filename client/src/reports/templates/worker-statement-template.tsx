@@ -59,14 +59,17 @@ export function WorkerStatementTemplate({
 
   // تحضير بيانات جدول الحضور
   const attendanceData = (data.attendance || []).map(record => {
-    const wageAmount = record.wage || 0;
+    // حساب المبلغ المستحق بناءً على الحضور
+    const isPresent = record.isPresent || record.status === 'present';
+    const dailyWage = parseFloat(record.dailyWage || data.worker?.dailyWage || 0);
+    const wageAmount = isPresent ? dailyWage : 0;
     const paidAmount = record.paidAmount || 0;
     const remainingAmount = wageAmount - paidAmount;
     
     return [
       formatDate(record.date),
       new Date(record.date).toLocaleDateString('ar-SA', { weekday: 'long' }),
-      record.status === 'present' ? 'حاضر' : 'غائب',
+      isPresent ? 'حاضر' : 'غائب',
       formatCurrency(wageAmount),
       formatCurrency(paidAmount),
       formatCurrency(remainingAmount),

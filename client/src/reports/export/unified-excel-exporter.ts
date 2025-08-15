@@ -213,14 +213,17 @@ export class UnifiedExcelExporter {
     let currentRow = startRow + 2;
     
     attendance.forEach(record => {
-      const wageAmount = record.wage || 0;
+      // حساب المبلغ المستحق بناءً على الحضور
+      const isPresent = record.isPresent || record.status === 'present';
+      const dailyWage = parseFloat(record.dailyWage || 0);
+      const wageAmount = isPresent ? dailyWage : 0;
       const paidAmount = record.paidAmount || 0;
       const remainingAmount = wageAmount - paidAmount;
       
       const row = worksheet.addRow([
         record.date,
         record.dayName || new Date(record.date).toLocaleDateString('ar-SA', { weekday: 'long' }),
-        record.status === 'present' ? 'حاضر' : 'غائب',
+        isPresent ? 'حاضر' : 'غائب',
         wageAmount,
         paidAmount,
         remainingAmount,
