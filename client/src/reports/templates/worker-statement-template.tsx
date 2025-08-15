@@ -58,7 +58,7 @@ export function WorkerStatementTemplate({
   ];
 
   // تحضير بيانات جدول الحضور
-  const attendanceData = data.attendance.map(record => [
+  const attendanceData = (data.attendance || []).map(record => [
     formatDate(record.date),
     new Date(record.date).toLocaleDateString('ar-SA', { weekday: 'long' }),
     record.status === 'present' ? 'حاضر' : 'غائب',
@@ -68,18 +68,18 @@ export function WorkerStatementTemplate({
   ]);
 
   // تحضير بيانات جدول التحويلات
-  const transfersData = data.transfers.map(transfer => [
+  const transfersData = (data.transfers || []).map(transfer => [
     formatDate(transfer.date),
     transfer.transferMethod === 'hawaleh' ? 'حوالة أهل' : 
     transfer.transferMethod === 'bank' ? 'تحويل بنكي' : 'نقد',
     formatCurrency(transfer.amount),
-    transfer.recipientName || data.worker.name,
+    transfer.recipientName || data.worker?.name || 'غير محدد',
     transfer.recipientPhone || "",
     transfer.notes || ""
   ]);
 
   // تحضير بيانات جدول المشاريع
-  const projectsData = data.projects.map(project => [
+  const projectsData = (data.projects || []).map(project => [
     project.name,
     project.workDays || 0,
     formatCurrency(project.totalWages || 0),
@@ -160,13 +160,13 @@ export function WorkerStatementTemplate({
       </div>
 
       {/* سجل الحضور */}
-      {data.attendance.length > 0 && (
+      {(data.attendance || []).length > 0 && (
         <Card className="print:shadow-none print:border print:border-gray-300">
           <CardHeader>
             <CardTitle className="text-lg print:text-base">
               سجل الحضور
               <Badge variant="secondary" className="mr-2">
-                {data.attendance.length} يوم
+                {(data.attendance || []).length} يوم
               </Badge>
             </CardTitle>
           </CardHeader>
@@ -180,13 +180,13 @@ export function WorkerStatementTemplate({
       )}
 
       {/* سجل التحويلات المالية */}
-      {data.transfers.length > 0 && (
+      {(data.transfers || []).length > 0 && (
         <Card className="print:shadow-none print:border print:border-gray-300">
           <CardHeader>
             <CardTitle className="text-lg print:text-base">
               سجل التحويلات المالية
               <Badge variant="secondary" className="mr-2">
-                {data.transfers.length} تحويل
+                {(data.transfers || []).length} تحويل
               </Badge>
             </CardTitle>
           </CardHeader>
@@ -200,13 +200,13 @@ export function WorkerStatementTemplate({
       )}
 
       {/* توزيع العمل على المشاريع */}
-      {data.projects.length > 0 && (
+      {(data.projects || []).length > 0 && (
         <Card className="print:shadow-none print:border print:border-gray-300">
           <CardHeader>
             <CardTitle className="text-lg print:text-base">
               توزيع العمل على المشاريع
               <Badge variant="secondary" className="mr-2">
-                {data.projects.length} مشروع
+                {(data.projects || []).length} مشروع
               </Badge>
             </CardTitle>
           </CardHeader>
