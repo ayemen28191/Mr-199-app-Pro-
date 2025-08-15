@@ -65,14 +65,15 @@ export function DailyExpenseTemplate({
     },
     {
       title: "أجور العمال",
-      data: data.workerAttendance?.filter((a: any) => a.paidAmount > 0) || [],
-      headers: ["العامل", "التاريخ", "الأجر المستحق", "المدفوع", "المتبقي"],
+      data: data.workerAttendance || [],
+      headers: ["العامل", "التاريخ", "الحالة", "الأجر المستحق", "المدفوع", "المتبقي"],
       mapRow: (item: any) => [
         item.worker?.name || "غير محدد",
         formatDate(item.date),
-        formatCurrency(item.wage || 0),
+        item.status === 'present' ? '✓ حاضر' : '✗ غائب',
+        formatCurrency(item.wage || item.worker?.dailyWage || 0),
         formatCurrency(item.paidAmount || 0),
-        formatCurrency((item.wage || 0) - (item.paidAmount || 0))
+        formatCurrency((item.wage || item.worker?.dailyWage || 0) - (item.paidAmount || 0))
       ]
     },
     {
@@ -109,6 +110,17 @@ export function DailyExpenseTemplate({
         item.transferMethod === 'hawaleh' ? 'حوالة' : item.transferMethod === 'bank' ? 'بنكي' : 'نقد',
         formatDate(item.date)
       ]
+    },
+    {
+      title: "مصروفات متنوعة",
+      data: data.miscExpenses || [],
+      headers: ["الوصف", "المبلغ", "التاريخ", "ملاحظات"],
+      mapRow: (item: any) => [
+        item.description || "مصروف متنوع",
+        formatCurrency(item.amount),
+        formatDate(item.date),
+        item.notes || ""
+      ]
     }
   ];
 
@@ -123,26 +135,26 @@ export function DailyExpenseTemplate({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <SummaryCard
           title="إجمالي الدخل"
-          value={data.totalIncome}
+          value={data.totalIncome || 0}
           valueColor="text-green-600"
           icon={<TrendingUp className="h-5 w-5 text-green-500" />}
         />
         <SummaryCard
           title="إجمالي المصاريف"
-          value={data.totalExpenses}
+          value={data.totalExpenses || 0}
           valueColor="text-red-600"
           icon={<TrendingDown className="h-5 w-5 text-red-500" />}
         />
         <SummaryCard
           title="الرصيد المرحل"
-          value={data.carriedForward}
+          value={data.carriedForward || 0}
           valueColor="text-blue-600"
           icon={<Activity className="h-5 w-5 text-blue-500" />}
         />
         <SummaryCard
           title="الرصيد النهائي"
-          value={data.remainingBalance}
-          valueColor={data.remainingBalance >= 0 ? "text-green-600" : "text-red-600"}
+          value={data.remainingBalance || 0}
+          valueColor={(data.remainingBalance || 0) >= 0 ? "text-green-600" : "text-red-600"}
           icon={<DollarSign className="h-5 w-5 text-gray-500" />}
         />
       </div>

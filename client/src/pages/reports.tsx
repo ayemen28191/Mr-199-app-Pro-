@@ -646,26 +646,70 @@ export default function Reports() {
       {/* ستايل خاص بالطباعة */}
       <style>{`
         @media print {
-          body * {
-            visibility: hidden;
+          /* إخفاء جميع العناصر غير المطلوبة في الطباعة */
+          .no-print,
+          .sidebar,
+          .navbar,
+          button:not(.print-visible),
+          .bg-gradient-to-br,
+          .container.mx-auto,
+          .tabs,
+          .card:not(#report-preview) {
+            display: none !important;
           }
-          #report-preview, #report-preview * {
-            visibility: visible;
+
+          /* تنسيق خاص للتقرير المطبوع */
+          body {
+            background: white !important;
+            color: black !important;
+            font-family: 'Arial', sans-serif !important;
+            margin: 0 !important;
+            padding: 0 !important;
           }
+
           #report-preview {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 210mm;
-            min-height: 297mm;
-            padding: 20mm;
-            margin: 0;
-            box-shadow: none;
-            background: white;
+            display: block !important;
+            visibility: visible !important;
+            position: static !important;
+            width: 100% !important;
+            max-width: none !important;
+            margin: 0 !important;
+            padding: 20mm !important;
+            box-shadow: none !important;
+            border: none !important;
+            background: white !important;
+            direction: rtl !important;
+            text-align: right !important;
           }
+
+          #report-preview * {
+            visibility: visible !important;
+            color: black !important;
+            background: transparent !important;
+          }
+
+          /* تنسيق خاص للجداول في الطباعة */
+          #report-preview table {
+            border-collapse: collapse !important;
+            width: 100% !important;
+            margin: 10px 0 !important;
+          }
+
+          #report-preview th,
+          #report-preview td {
+            border: 1px solid #333 !important;
+            padding: 8px !important;
+            text-align: right !important;
+          }
+
+          #report-preview th {
+            background-color: #f5f5f5 !important;
+            font-weight: bold !important;
+          }
+
           @page {
             size: A4;
-            margin: 0;
+            margin: 15mm;
           }
         }
       `}</style>
