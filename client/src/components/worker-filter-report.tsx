@@ -20,7 +20,6 @@ interface Worker {
   type: string;
   dailyWage: number;
   isActive: boolean;
-  projectId: string;
 }
 
 interface WorkerFilterReportProps {
@@ -55,23 +54,18 @@ export default function WorkerFilterReport({}: WorkerFilterReportProps) {
     error: workersError 
   });
 
-  // تصفية العمال حسب المشاريع المختارة
+  // عرض جميع العمال (لأن العلاقة مع المشاريع في جدول منفصل)
   const filteredWorkers = useMemo(() => {
-    console.log('🔍 تصفية العمال:', { 
+    console.log('🔍 عرض جميع العمال المتاحين:', { 
       allWorkersCount: allWorkers.length, 
       selectedProjectsCount: selectedProjects.length,
-      selectedProjects,
-      allWorkers: allWorkers.map(w => ({ id: w.id, name: w.name, projectId: w.projectId }))
+      allWorkers: allWorkers.map(w => ({ id: w.id, name: w.name, type: w.type }))
     });
     
-    if (selectedProjects.length === 0) {
-      // إذا لم يتم تحديد مشاريع، أظهر جميع العمال
-      console.log('📝 عرض جميع العمال (لم يتم تحديد مشاريع)');
-      return allWorkers;
-    }
-    const filtered = allWorkers.filter(worker => selectedProjects.includes(worker.projectId));
-    console.log('📝 عرض عمال مفلترين:', filtered.length);
-    return filtered;
+    // عرض جميع العمال بغض النظر عن المشاريع المختارة
+    // لأن العلاقة مع المشاريع موجودة في worker_attendance
+    console.log('📝 عرض جميع العمال (التصفية بالمشاريع لاحقاً)');
+    return allWorkers;
   }, [allWorkers, selectedProjects]);
 
   // تعيين التاريخ الافتراضي
@@ -151,7 +145,7 @@ export default function WorkerFilterReport({}: WorkerFilterReportProps) {
       workerCount: selectedWorkersData.length,
       totalDailyWages: selectedWorkersData.reduce((sum, w) => sum + w.dailyWage, 0),
       workers: selectedWorkersData.map(worker => {
-        const project = projects.find(p => p.id === worker.projectId);
+        // العامل يمكن أن يعمل في عدة مشاريع
         const workDays = Math.floor(Math.random() * 30) + 1; // محاكاة أيام العمل
         const totalEarned = workDays * worker.dailyWage;
         const totalPaid = Math.floor(totalEarned * (0.7 + Math.random() * 0.3)); // محاكاة المدفوع
@@ -161,7 +155,7 @@ export default function WorkerFilterReport({}: WorkerFilterReportProps) {
           id: worker.id,
           name: worker.name,
           type: worker.type,
-          project: project?.name || 'غير محدد',
+          project: 'يعمل في عدة مشاريع', // العامل يمكن أن يعمل في عدة مشاريع
           dailyWage: worker.dailyWage,
           workDays,
           totalEarned,
@@ -285,16 +279,14 @@ export default function WorkerFilterReport({}: WorkerFilterReportProps) {
               )}
             </div>
 
-            {selectedProjects.length === 0 && (
-              <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200">
-                <p className="text-blue-600 dark:text-blue-400 font-medium">
-                  💡 لم يتم تحديد مشاريع محددة - سيتم عرض جميع العمال
-                </p>
-                <p className="text-sm text-blue-500 mt-1">
-                  يمكنك تحديد مشاريع معينة لتصفية العمال، أو ترك الخيار فارغاً لعرض الجميع
-                </p>
-              </div>
-            )}
+            <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200">
+              <p className="text-green-600 dark:text-green-400 font-medium">
+                📈 يتم عرض جميع العمال المتاحين في النظام
+              </p>
+              <p className="text-sm text-green-500 mt-1">
+                يمكن للعامل العمل في عدة مشاريع، والتقرير يشمل جميع العمال
+              </p>
+            </div>
           </div>
 
           {/* فترة التقرير */}
@@ -387,7 +379,6 @@ export default function WorkerFilterReport({}: WorkerFilterReportProps) {
                   </div>
                 ) : (
                   filteredWorkers.map(worker => {
-                    const workerProject = projects.find(p => p.id === worker.projectId);
                     return (
                       <div key={worker.id} className="flex items-center justify-between p-3 bg-white dark:bg-gray-700 rounded-lg border">
                         <div className="flex items-center space-x-3">
@@ -404,11 +395,9 @@ export default function WorkerFilterReport({}: WorkerFilterReportProps) {
                               {worker.name}
                             </label>
                             <p className="text-xs text-gray-500">{worker.type}</p>
-                            {workerProject && (
-                              <p className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded mt-1">
-                                {workerProject.name}
-                              </p>
-                            )}
+                            <p className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded mt-1">
+                              يعمل في مشاريع متعددة
+                            </p>
                           </div>
                         </div>
                         <div className="text-left">
