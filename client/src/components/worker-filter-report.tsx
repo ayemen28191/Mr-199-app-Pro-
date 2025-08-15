@@ -42,18 +42,36 @@ export default function WorkerFilterReport({}: WorkerFilterReportProps) {
   });
 
   // جلب جميع العمال (سيتم تصفيتهم لاحقاً)
-  const { data: allWorkers = [] } = useQuery<Worker[]>({
+  const { data: allWorkers = [], isLoading: workersLoading, error: workersError } = useQuery<Worker[]>({
     queryKey: ['/api/workers'],
     enabled: true
   });
 
+  // رسائل تشخيصية
+  console.log('🔍 حالة جلب العمال:', { 
+    allWorkers: allWorkers.length, 
+    isLoading: workersLoading, 
+    hasError: !!workersError,
+    error: workersError 
+  });
+
   // تصفية العمال حسب المشاريع المختارة
   const filteredWorkers = useMemo(() => {
+    console.log('🔍 تصفية العمال:', { 
+      allWorkersCount: allWorkers.length, 
+      selectedProjectsCount: selectedProjects.length,
+      selectedProjects,
+      allWorkers: allWorkers.map(w => ({ id: w.id, name: w.name, projectId: w.projectId }))
+    });
+    
     if (selectedProjects.length === 0) {
       // إذا لم يتم تحديد مشاريع، أظهر جميع العمال
+      console.log('📝 عرض جميع العمال (لم يتم تحديد مشاريع)');
       return allWorkers;
     }
-    return allWorkers.filter(worker => selectedProjects.includes(worker.projectId));
+    const filtered = allWorkers.filter(worker => selectedProjects.includes(worker.projectId));
+    console.log('📝 عرض عمال مفلترين:', filtered.length);
+    return filtered;
   }, [allWorkers, selectedProjects]);
 
   // تعيين التاريخ الافتراضي
@@ -349,10 +367,22 @@ export default function WorkerFilterReport({}: WorkerFilterReportProps) {
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg min-h-[200px] max-h-[400px] overflow-y-auto">
-                {filteredWorkers.length === 0 ? (
+                {workersLoading ? (
+                  <div className="col-span-full text-center text-blue-500 py-8">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-2"></div>
+                    <p>جاري تحميل العمال...</p>
+                  </div>
+                ) : workersError ? (
+                  <div className="col-span-full text-center text-red-500 py-8">
+                    <User className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                    <p>خطأ في تحميل العمال</p>
+                    <p className="text-sm mt-1">{workersError.message}</p>
+                  </div>
+                ) : filteredWorkers.length === 0 ? (
                   <div className="col-span-full text-center text-gray-500 py-8">
                     <User className="h-12 w-12 mx-auto mb-2 opacity-50" />
                     <p>لا توجد عمال متاحين</p>
+                    <p className="text-sm mt-1">إجمالي العمال: {allWorkers.length} | مفلتر: {filteredWorkers.length}</p>
                     <p className="text-sm mt-1">تأكد من وجود عمال في النظام أو اختر مشاريع تحتوي على عمال</p>
                   </div>
                 ) : (
