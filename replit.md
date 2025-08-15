@@ -1,57 +1,106 @@
-# Arabic Construction Project Management System
+# Overview
 
-## Overview
-This is a comprehensive web application designed for managing construction projects in Arabic. Its core purpose is to streamline project oversight, financial management, and workforce administration. Key capabilities include robust tools for expense tracking, worker management, supplier administration, and detailed reporting. The system provides a complete solution for managing construction projects, from financial movements to workforce and supplier interactions, all within an accurate Arabic interface and responsive design.
+This is a comprehensive Arabic construction project management system built as a full-stack web application. The system manages multiple construction projects, tracking workers, materials, expenses, financial transfers, and generating detailed reports. It features a modern React frontend with TypeScript and a Node.js/Express backend using PostgreSQL with Drizzle ORM.
 
-## User Preferences
-- اللغة الأساسية: العربية
-- الاتجاه: من اليمين لليسار (RTL)
-- التركيز على البساطة والوضوح في الواجهة
-- التحسين المستمر للأداء
-- التواصل: جميع الردود والملاحظات والتوجيهات يجب أن تكون باللغة العربية حصرياً
-- أسلوب التفاعل: استخدام اللغة العربية الواضحة والمباشرة في جميع الاستجابات والتفاعلات
-- طريقة التواصل: الأولوية للوضوح والبساطة، تجنب المصطلحات التقنية المعقدة
+# User Preferences
 
-## System Architecture
-The system is built as a comprehensive web application with distinct frontend and backend components, prioritizing an Arabic-first, Right-to-Left (RTL) design.
+Preferred communication style: Simple, everyday language.
 
-### UI/UX Decisions
-The interface emphasizes simplicity, clarity, and full responsiveness across devices. Design elements include interactive tables with filtering and sorting, professional layouts for reports, and optimized print views to ensure a user-friendly experience. Specific components like "Project Summary" utilize attractive color schemes and advanced visual effects, designed for responsiveness.
+# System Architecture
 
-### Recent Updates (August 15, 2025)
-- **System Diagnostics Enhancement**: Removed obsolete error messages about carried_forward_amount field, which was working correctly all along
-- **Performance Report Update**: Updated comprehensive test reports to show 100% success rate with all 15 operations passing
-- **Database Status Clarification**: Confirmed all database tables and operations are functioning perfectly with Supabase PostgreSQL
-- **Error Message Cleanup**: Eliminated false positive warnings that showed up in diagnostic reports while actual functionality remained intact
-- **Test Report Accuracy**: Updated daily expense summaries status from "warning" to "success" to reflect actual working state
+## Frontend Architecture
 
-### Previous Updates (August 12, 2025)
-- **Enhanced Worker Reports**: Redesigned unified worker reports to match exact Excel template format provided by user
-- **Template Matching**: Implemented pixel-perfect replica of Arabic construction company reports with proper column ordering
-- **Print Optimization**: Enhanced print layouts with professional styling matching physical Excel templates
-- **Data Structure**: Updated table structures to include proper fields: ملاحظات، المتبقي، المبلغ المستلم، المبلغ المستحق، etc.
-- **Code Cleanup**: Comprehensive project cleanup to remove duplicate components and maintain only active features
-- **Component Consolidation**: Removed duplicate worker account statement components while preserving /reports functionality
-- **Duplicate Button Fix**: Resolved duplicate Export/Print buttons issue in reports page by removing redundant buttons from individual components
-- **Mobile Optimization**: Enhanced responsive design for mobile devices with improved button layouts and touch-friendly interfaces
-- **CSS Improvements**: Added comprehensive mobile CSS classes and responsive utilities for better user experience on smartphones
+- **Framework**: React 18 with TypeScript and Vite for fast development
+- **UI Library**: Shadcn/UI components with Radix UI primitives for accessibility
+- **Styling**: Tailwind CSS with RTL (right-to-left) support for Arabic content
+- **State Management**: TanStack Query for server state and React hooks for local state
+- **Routing**: React Router for client-side navigation
+- **Forms**: React Hook Form with Zod validation for type-safe forms
 
-### Technical Implementations
-- **Project Management**: Tools for creating and tracking multiple construction projects.
-- **Worker Management**: System for worker registration, attendance, wage calculation, and detailed account statements with accurate balance calculation.
-- **Expense Tracking**: Detailed recording and categorization of project-related expenses, supporting both cash and deferred purchases.
-- **Reporting System**: Comprehensive financial reports, daily summaries, and detailed account statements with filtering by project and date range. Reports cover various expense categories (labor, petty cash, purchases, wages, transportation, engineers) and income (trust transfers), featuring interactive tables, professional Excel export, and print functionality.
-- **Supplier Management**: System for managing suppliers, tracking debt, supporting cash and deferred transactions, and linking payments to projects, with smart autocompletion.
-- **Advanced Autocompletion**: Provides intelligent suggestions based on previous usage across various input fields.
+## Backend Architecture
 
-### System Design Choices
-- **Performance Optimization**: Achieved through optimized database indexing, intelligent cleanup, smart data limits for autocompletion, batch operations, and regular updates of materialized views.
-- **Data Unification**: Standardized Gregorian calendar dates and Yemeni Rial (ر.ي) currency.
-- **Administrative Interface**: Provides system statistics, manual maintenance tools, and health monitoring.
-- **Error Handling**: Detailed, user-friendly error messages with actionable advice.
+- **Runtime**: Node.js with Express.js framework
+- **Language**: TypeScript with ES modules
+- **Database ORM**: Drizzle ORM for type-safe database operations
+- **Authentication**: Session-based auth with bcrypt password hashing
+- **API Design**: RESTful endpoints with comprehensive CRUD operations
+
+## Database Design
+
+The system uses PostgreSQL with a comprehensive schema including:
+
+### Core Entities
+- **Projects**: Construction project management with financial tracking
+- **Workers**: Employee management with different skill types and daily wages
+- **Materials**: Construction materials inventory and purchasing
+- **Suppliers**: Vendor management for material purchases
+
+### Financial Tracking
+- **Fund Transfers**: Money transfers to projects from external sources
+- **Worker Attendance**: Daily work tracking with wage calculations
+- **Material Purchases**: Purchase orders and inventory management
+- **Daily Expense Summaries**: Automatic financial reconciliation per project per day
+- **Worker Transfers**: Money transfers to workers and their families
+
+### Advanced Features
+- **Autocomplete System**: Smart suggestions for frequently used data
+- **Print Settings**: Customizable report printing configurations
+- **Backup System**: Automated data backup and recovery
+
+## Key Architectural Decisions
+
+### Database Schema Strategy
+- **Normalized Design**: Separate tables for related entities to ensure data integrity
+- **UUID Primary Keys**: Using UUIDs instead of auto-incrementing integers for better distributed system support
+- **Audit Trail**: Created/updated timestamps on all major entities
+- **Financial Integrity**: Automatic calculation of balances and daily summaries
+
+### Performance Optimizations
+- **Indexed Queries**: Strategic database indexes for frequently accessed data
+- **Batch Operations**: Bulk insert/update operations for better performance
+- **Cached Calculations**: Daily summaries to avoid expensive real-time calculations
+- **Optimistic Updates**: Client-side optimistic updates for better UX
+
+### Security Measures
+- **Session-based Authentication**: Secure session management with express-session
+- **Password Hashing**: bcrypt with salt rounds for secure password storage
+- **Input Validation**: Comprehensive validation using Zod schemas
+- **SQL Injection Prevention**: Parameterized queries through Drizzle ORM
+
+### Reporting System
+- **Multi-format Export**: PDF, Excel, and print-optimized HTML reports
+- **Template-based**: Unified report templates for consistent formatting
+- **Arabic RTL Support**: Proper right-to-left text layout for Arabic content
+- **Print Optimization**: A4 page formatting with proper margins and page breaks
 
 ## External Dependencies
-- **Frontend**: React.js, TypeScript, Tailwind CSS, TanStack Query, Wouter
-- **Backend**: Node.js, Express.js
-- **Database**: Supabase PostgreSQL
-- **ORM**: Drizzle ORM
+
+### Primary Technologies
+- **Database**: PostgreSQL (via Supabase or Neon Database)
+- **ORM**: Drizzle ORM with TypeScript support
+- **Authentication**: bcrypt for password hashing
+- **Session Management**: express-session with connect-pg-simple
+
+### UI Components
+- **Radix UI**: Accessible component primitives
+- **Lucide React**: Modern icon library
+- **React Hook Form**: Form state management
+- **TanStack Query**: Server state synchronization
+
+### Development Tools
+- **Vite**: Fast build tool and dev server
+- **TypeScript**: Type safety across the entire application
+- **Tailwind CSS**: Utility-first CSS framework
+- **ESLint/Prettier**: Code quality and formatting
+
+### Reporting Libraries
+- **ExcelJS**: Excel file generation
+- **jsPDF**: PDF generation capabilities
+- **html2canvas**: HTML to image conversion for reports
+
+### Deployment & Infrastructure
+- **Replit**: Development and hosting environment
+- **PostgreSQL**: Primary database system
+- **Node.js**: Server runtime environment
+
+The architecture supports a scalable, maintainable construction management system with robust financial tracking, comprehensive reporting, and an intuitive Arabic-language interface optimized for construction industry workflows.
