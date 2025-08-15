@@ -70,7 +70,7 @@ export function UnifiedFilterTemplate<T extends Record<string, any>>({
 }: UnifiedFilterTemplateProps<T>) {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>({});
-  const [sortBy, setSortBy] = useState<string>("");
+  const [sortBy, setSortBy] = useState<string>("none");
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   // تطبيق التصفية والبحث والترتيب
@@ -98,7 +98,7 @@ export function UnifiedFilterTemplate<T extends Record<string, any>>({
     });
 
     // تطبيق الترتيب
-    if (sortBy) {
+    if (sortBy && sortBy !== "none") {
       result.sort((a, b) => {
         const aValue = getNestedValue(a, sortBy);
         const bValue = getNestedValue(b, sortBy);
@@ -145,14 +145,14 @@ export function UnifiedFilterTemplate<T extends Record<string, any>>({
   const resetAllFilters = () => {
     setSearchTerm("");
     setActiveFilters({});
-    setSortBy("");
+    setSortBy("none");
     setSortDirection('asc');
   };
 
   // عدد المرشحات النشطة
   const activeFilterCount = Object.values(activeFilters).filter(v => v && v !== 'all').length + 
                            (searchTerm ? 1 : 0) + 
-                           (sortBy ? 1 : 0);
+                           (sortBy && sortBy !== "none" ? 1 : 0);
 
   return (
     <Card className={`shadow-lg border-2 border-blue-100 ${className}`}>
@@ -227,7 +227,7 @@ export function UnifiedFilterTemplate<T extends Record<string, any>>({
                   <SelectContent>
                     <SelectItem value="all">جميع الخيارات</SelectItem>
                     {option.options?.map((opt) => (
-                      <SelectItem key={opt.value} value={opt.value}>
+                      <SelectItem key={opt.value || 'empty'} value={opt.value || 'empty'}>
                         {opt.label}
                       </SelectItem>
                     ))}
@@ -266,7 +266,7 @@ export function UnifiedFilterTemplate<T extends Record<string, any>>({
                 <SelectValue placeholder="اختر حقل الترتيب" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">بدون ترتيب</SelectItem>
+                <SelectItem value="none">بدون ترتيب</SelectItem>
                 {sortOptions.map((option) => (
                   <SelectItem key={option.key} value={option.key}>
                     {option.label}
@@ -276,7 +276,7 @@ export function UnifiedFilterTemplate<T extends Record<string, any>>({
             </Select>
           </div>
 
-          {sortBy && (
+          {sortBy && sortBy !== "none" && (
             <div className="flex items-center gap-1">
               <Button
                 variant={sortDirection === 'asc' ? 'default' : 'outline'}
