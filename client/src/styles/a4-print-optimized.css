@@ -1,0 +1,238 @@
+/* تحسين الطباعة على ورق A4 - حساب كشف العمال */
+@media print {
+  /* إعدادات الصفحة الأساسية */
+  @page {
+    size: A4;
+    margin: 1cm;
+    padding: 0;
+  }
+  
+  /* إخفاء العناصر غير المطلوبة للطباعة */
+  .no-print, .no-print *, 
+  button:not(.print-only),
+  .sidebar, .navbar, .header-actions,
+  .dialog-overlay, .dialog-content,
+  .toast, .tooltip, .dropdown {
+    display: none !important;
+  }
+  
+  /* تنسيق الجسم الرئيسي */
+  body {
+    font-size: 10pt !important;
+    line-height: 1.2 !important;
+    color: #000 !important;
+    background: #fff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  /* عنوان التقرير */
+  .report-header {
+    text-align: center !important;
+    margin-bottom: 10pt !important;
+    page-break-inside: avoid !important;
+  }
+  
+  .report-header h1 {
+    font-size: 16pt !important;
+    font-weight: bold !important;
+    margin: 0 0 5pt 0 !important;
+    color: #000 !important;
+  }
+  
+  .report-header h2, .report-header p {
+    font-size: 12pt !important;
+    margin: 2pt 0 !important;
+    color: #333 !important;
+  }
+  
+  /* تنسيق الجدول الرئيسي */
+  .worker-account-table, 
+  .statement-table-container table,
+  .expenses-table-container table,
+  table.report-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 9pt !important;
+    margin: 0 !important;
+    page-break-inside: avoid !important;
+    table-layout: fixed !important;
+  }
+  
+  /* رؤوس الجدول */
+  .worker-account-table th,
+  .statement-table-container th,
+  .expenses-table-container th,
+  table.report-table th {
+    background-color: #e5e7eb !important;
+    color: #000 !important;
+    font-weight: bold !important;
+    padding: 4pt 2pt !important;
+    border: 1pt solid #000 !important;
+    text-align: center !important;
+    font-size: 8pt !important;
+    vertical-align: middle !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+  
+  /* خلايا الجدول */
+  .worker-account-table td,
+  .statement-table-container td,
+  .expenses-table-container td,
+  table.report-table td {
+    padding: 3pt 2pt !important;
+    border: 0.5pt solid #666 !important;
+    text-align: center !important;
+    vertical-align: middle !important;
+    font-size: 8pt !important;
+    word-wrap: break-word !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    max-width: 0 !important;
+  }
+  
+  /* تنسيق العملة والأرقام */
+  .currency, .amount, .balance {
+    text-align: left !important;
+    direction: ltr !important;
+    font-weight: bold !important;
+  }
+  
+  /* الصفوف المتناوبة */
+  .worker-account-table tbody tr:nth-child(even),
+  .statement-table-container tbody tr:nth-child(even),
+  table.report-table tbody tr:nth-child(even) {
+    background-color: #f9fafb !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  /* صف الإجمالي */
+  .total-row, .summary-row, tfoot tr {
+    background-color: #dbeafe !important;
+    font-weight: bold !important;
+    color: #1e40af !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  /* تحسين عرض الأعمدة */
+  .worker-account-table th:first-child,
+  .worker-account-table td:first-child {
+    width: 8% !important; /* رقم */
+  }
+  
+  .worker-account-table th:nth-child(2),
+  .worker-account-table td:nth-child(2) {
+    width: 12% !important; /* التاريخ */
+  }
+  
+  .worker-account-table th:nth-child(3),
+  .worker-account-table td:nth-child(3) {
+    width: 25% !important; /* الوصف */
+    text-align: right !important;
+  }
+  
+  .worker-account-table th:nth-child(4),
+  .worker-account-table td:nth-child(4),
+  .worker-account-table th:nth-child(5),
+  .worker-account-table td:nth-child(5),
+  .worker-account-table th:nth-child(6),
+  .worker-account-table td:nth-child(6) {
+    width: 15% !important; /* المبالغ */
+  }
+  
+  /* منع تقسيم الصفحات في أماكن غير مرغوبة */
+  .report-section {
+    page-break-inside: avoid !important;
+  }
+  
+  /* تنسيق معلومات الملخص في النهاية */
+  .summary-section {
+    margin-top: 15pt !important;
+    page-break-inside: avoid !important;
+    border: 1pt solid #000 !important;
+    padding: 8pt !important;
+  }
+  
+  .summary-item {
+    display: flex !important;
+    justify-content: space-between !important;
+    margin: 3pt 0 !important;
+    font-size: 10pt !important;
+  }
+  
+  .summary-label {
+    font-weight: bold !important;
+  }
+  
+  .summary-value {
+    font-weight: bold !important;
+    color: #000 !important;
+  }
+  
+  /* تنسيق التوقيعات */
+  .signatures-section {
+    margin-top: 20pt !important;
+    page-break-inside: avoid !important;
+    display: flex !important;
+    justify-content: space-between !important;
+  }
+  
+  .signature-box {
+    width: 30% !important;
+    text-align: center !important;
+    border-top: 1pt solid #000 !important;
+    padding-top: 5pt !important;
+    margin-top: 20pt !important;
+  }
+  
+  /* إصلاح مشاكل الطباعة الشائعة */
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+    filter: none !important;
+  }
+  
+  /* تحسين استخدام المساحة */
+  .container, .main-content {
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  
+  /* إخفاء scrollbars */
+  ::-webkit-scrollbar {
+    display: none !important;
+  }
+  
+  /* تنسيق النصوص العربية */
+  * {
+    direction: rtl !important;
+    text-align: right !important;
+  }
+  
+  .currency, .amount, .balance, .number {
+    direction: ltr !important;
+    text-align: center !important;
+  }
+}
+
+/* تحسينات إضافية للطباعة الملونة */
+@media print and (color) {
+  .worker-account-table th {
+    background-color: #3b82f6 !important;
+    color: #fff !important;
+  }
+  
+  .total-row {
+    background-color: #1e40af !important;
+    color: #fff !important;
+  }
+}
