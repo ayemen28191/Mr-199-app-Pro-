@@ -46,7 +46,6 @@ const allPages = [
     category: "إدارة الموردين", 
     pages: [
       { path: "/supplier-accounts", icon: CreditCard, label: "حسابات الموردين", description: "إدارة حسابات ودفعات الموردين" },
-      { path: "/supplier-report", icon: BarChart, label: "تقرير الموردين", description: "تقارير شاملة عن المعاملات مع الموردين" },
     ]
   },
   // التقارير والإحصائيات
@@ -54,10 +53,6 @@ const allPages = [
     category: "التقارير والإحصائيات",
     pages: [
       { path: "/reports", icon: FileSpreadsheet, label: "التقارير الأساسية", description: "التقارير المالية الأساسية" },
-      { path: "/mobile-reports", icon: Target, label: "التقارير المحمولة", description: "تقارير محسّنة للأجهزة المحمولة" },
-      { path: "/advanced-reports", icon: TrendingUp, label: "التقارير المتقدمة", description: "تقارير تحليلية متقدمة" },
-      { path: "/daily-expenses-report", icon: Calendar, label: "تقرير المصاريف اليومية", description: "تقرير مفصل للمصاريف اليومية" },
-      { path: "/excel-style-daily-expenses", icon: FileSpreadsheet, label: "المصاريف اليومية (إكسل)", description: "المصاريف اليومية بصيغة Excel" },
 
     ]
   },

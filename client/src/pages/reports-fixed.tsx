@@ -16,8 +16,7 @@ import { getCurrentDate, formatCurrency, formatDate } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Worker, Project } from "@shared/schema";
-import { UnifiedReportRenderer, UnifiedPrintButton, UnifiedExcelExporter } from "@/components/unified-reports";
-import "@/styles/unified-print.css";
+
 
 export default function ReportsFixed() {
   const [, setLocation] = useLocation();
@@ -474,25 +473,10 @@ export default function ReportsFixed() {
         {/* Analytics Tab */}
         <TabsContent value="analytics" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="p-4 text-center hover:shadow-lg transition-shadow cursor-pointer"
-                  onClick={() => setLocation("/daily-expenses-report")}>
-              <BarChart className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-              <h3 className="font-semibold">تقارير المصروفات المتقدمة</h3>
-              <p className="text-sm text-gray-600">تحليل شامل للمصروفات</p>
-            </Card>
-            
-            <Card className="p-4 text-center hover:shadow-lg transition-shadow cursor-pointer"
-                  onClick={() => setLocation("/excel-style-daily-expenses")}>
-              <FileSpreadsheet className="h-8 w-8 text-green-600 mx-auto mb-2" />
-              <h3 className="font-semibold">تقارير Excel المتطورة</h3>
-              <p className="text-sm text-gray-600">تصميم مطابق لـ Excel</p>
-            </Card>
-            
-            <Card className="p-4 text-center hover:shadow-lg transition-shadow cursor-pointer"
-                  onClick={() => setLocation("/mobile-reports")}>
-              <BarChart className="h-8 w-8 text-purple-600 mx-auto mb-2" />
-              <h3 className="font-semibold">واجهة الهواتف</h3>
-              <p className="text-sm text-gray-600">تصميم محسن للجوال</p>
+            <Card className="p-4 text-center bg-gray-100 cursor-not-allowed">
+              <AlertCircle className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+              <h3 className="font-semibold text-gray-500">التقارير المتقدمة</h3>
+              <p className="text-sm text-gray-400">تم حذف هذه التقارير</p>
             </Card>
           </div>
         </TabsContent>

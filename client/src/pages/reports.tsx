@@ -23,17 +23,15 @@ import { getCurrentDate, formatCurrency, formatDate } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Worker, Project } from "@shared/schema";
-import { ProfessionalDailyReport } from "@/components/ProfessionalDailyReport";
-import { ProfessionalWorkerAccountReport } from "@/components/ProfessionalWorkerAccountReport";
-import { CompactWorkerAccountReport } from "@/components/CompactWorkerAccountReport";
+
 import { EnhancedWorkerAccountStatement } from "@/components/EnhancedWorkerAccountStatementFixed";
-import { UnifiedPrintButton, UnifiedExcelExporter } from "@/components/unified-reports";
+
 import { AdvancedProgressIndicator, useProgressSteps, type ProgressStep } from "@/components/AdvancedProgressIndicator";
 import { EnhancedErrorDisplay, FieldValidationDisplay, transformValidationErrors } from "@/components/EnhancedErrorDisplay";
 
 
 
-import "@/styles/unified-print.css";
+
 
 export default function Reports() {
   const [, setLocation] = useLocation();
@@ -4443,11 +4441,9 @@ export default function Reports() {
               )}
               {activeReportType === 'professional' && (
                 <div id="professional-report-content" className="professional-report-container" data-report-content="daily_expenses">
-                  <ProfessionalDailyReport 
-                    data={reportData}
-                    selectedProject={selectedProject}
-                    selectedDate={dailyReportDate}
-                  />
+                  <div className="text-center text-gray-600 py-8">
+                    تم حذف هذا النوع من التقارير
+                  </div>
                 </div>
               )}
               {activeReportType === 'worker' && renderWorkerAccountReport(reportData)}
