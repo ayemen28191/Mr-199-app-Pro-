@@ -72,6 +72,8 @@ export default function DailyExpensesReport() {
     }
   }, [projects, selectedProjectId, selectProject]);
 
+
+
   // تصدير Excel باستخدام النظام الاحترافي الجديد
   const exportToProfessionalExcel = async () => {
     try {
@@ -563,17 +565,17 @@ export default function DailyExpensesReport() {
           remainingBalance: day.summary.remainingBalance
         })),
         columns: [
-          { key: 'date', label: 'التاريخ', type: 'date', width: 15 },
-          { key: 'carriedForward', label: 'الرصيد المرحل', type: 'currency', width: 15 },
-          { key: 'fundTransfers', label: 'تحويلات العهدة', type: 'currency', width: 15 },
-          { key: 'workerWages', label: 'أجور العمال', type: 'currency', width: 15 },
-          { key: 'materialCosts', label: 'شراء المواد', type: 'currency', width: 15 },
-          { key: 'transportationCosts', label: 'أجور المواصلات', type: 'currency', width: 15 },
-          { key: 'workerTransfers', label: 'حوالات العمال', type: 'currency', width: 15 },
-          { key: 'miscExpenses', label: 'نثريات العمال', type: 'currency', width: 15 },
-          { key: 'totalIncome', label: 'إجمالي الإيرادات', type: 'currency', width: 18 },
-          { key: 'totalExpenses', label: 'إجمالي المصروفات', type: 'currency', width: 18 },
-          { key: 'remainingBalance', label: 'الرصيد المتبقي', type: 'currency', width: 18 }
+          { key: 'date', label: 'التاريخ', type: 'date' as const, width: 15 },
+          { key: 'carriedForward', label: 'الرصيد المرحل', type: 'currency' as const, width: 15 },
+          { key: 'fundTransfers', label: 'تحويلات العهدة', type: 'currency' as const, width: 15 },
+          { key: 'workerWages', label: 'أجور العمال', type: 'currency' as const, width: 15 },
+          { key: 'materialCosts', label: 'شراء المواد', type: 'currency' as const, width: 15 },
+          { key: 'transportationCosts', label: 'أجور المواصلات', type: 'currency' as const, width: 15 },
+          { key: 'workerTransfers', label: 'حوالات العمال', type: 'currency' as const, width: 15 },
+          { key: 'miscExpenses', label: 'نثريات العمال', type: 'currency' as const, width: 15 },
+          { key: 'totalIncome', label: 'إجمالي الإيرادات', type: 'currency' as const, width: 18 },
+          { key: 'totalExpenses', label: 'إجمالي المصروفات', type: 'currency' as const, width: 18 },
+          { key: 'remainingBalance', label: 'الرصيد المتبقي', type: 'currency' as const, width: 18 }
         ],
         summary: [
           {

@@ -212,7 +212,7 @@ export class UnifiedExcelExporter {
       });
 
       // صف فارغ بين الأقسام
-      if (sectionIndex < this.options.summary.length - 1) {
+      if (this.options.summary && sectionIndex < this.options.summary.length - 1) {
         this.currentRow++;
       }
     });
