@@ -43,6 +43,7 @@ import {
   UnifiedFilterTemplate, 
   WorkerFilterPresets 
 } from "@/components/unified-filter-template";
+import WorkerFilterReport from "@/components/worker-filter-report";
 
 // أنواع بيانات التقارير
 interface ReportStats {
@@ -431,7 +432,7 @@ export default function Reports() {
         {/* واجهة إنشاء التقارير المحسنة */}
         <Tabs defaultValue="daily" className="space-y-6">
           <div className="flex items-center justify-between flex-wrap gap-4">
-            <TabsList className="grid grid-cols-2 w-fit">
+            <TabsList className="grid grid-cols-3 w-fit">
               <TabsTrigger value="daily" className="flex items-center gap-2 text-base">
                 <Receipt className="h-5 w-5" />
                 المصروفات اليومية
@@ -439,6 +440,10 @@ export default function Reports() {
               <TabsTrigger value="worker" className="flex items-center gap-2 text-base">
                 <UserCheck className="h-5 w-5" />
                 كشف حساب العامل
+              </TabsTrigger>
+              <TabsTrigger value="filter-workers" className="flex items-center gap-2 text-base">
+                <Users className="h-5 w-5" />
+                تصفية العمال
               </TabsTrigger>
             </TabsList>
 
@@ -713,6 +718,11 @@ export default function Reports() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* تبويب تصفية العمال الجديد */}
+          <TabsContent value="filter-workers">
+            <WorkerFilterReport selectedProjectId={selectedProjectId} />
           </TabsContent>
         </Tabs>
 
