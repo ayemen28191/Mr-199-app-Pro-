@@ -38,6 +38,12 @@ import {
   printReport 
 } from "@/reports";
 
+// استيراد نظام التصفية الموحد
+import { 
+  UnifiedFilterTemplate, 
+  WorkerFilterPresets 
+} from "@/components/unified-filter-template";
+
 // أنواع بيانات التقارير
 interface ReportStats {
   totalGenerated: number;
@@ -63,7 +69,7 @@ export default function Reports() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showPreview, setShowPreview] = useState(false);
-
+  
   // جلب بيانات المشاريع والعمال
   const { data: projects = [] } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
@@ -72,6 +78,14 @@ export default function Reports() {
   const { data: workers = [] } = useQuery<Worker[]>({
     queryKey: ["/api/workers"],
   });
+
+  // حالة تصفية العمال
+  const [filteredWorkers, setFilteredWorkers] = useState<Worker[]>([]);
+
+  // تحديث قائمة العمال المفلترة عند تغيير البيانات
+  useEffect(() => {
+    setFilteredWorkers(workers);
+  }, [workers]);
 
   // جلب الإحصائيات المحسنة مع إعادة التحديث التلقائي
   const { data: projectsWithStats = [], refetch: refetchStats } = useQuery<any[]>({
@@ -544,6 +558,51 @@ export default function Reports() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-6 space-y-6">
+                {/* نظام تصفية العمال المتقدم */}
+                <UnifiedFilterTemplate
+                  data={workers}
+                  searchFields={WorkerFilterPresets.searchFields}
+                  filterOptions={WorkerFilterPresets.filterOptions}
+                  sortOptions={WorkerFilterPresets.sortOptions}
+                  onFilteredDataChange={setFilteredWorkers}
+                  title="تصفية وترتيب العمال"
+                  subtitle="استخدم الخيارات أدناه للعثور على العامل المطلوب بسرعة"
+                  icon={<Users className="h-6 w-6" />}
+                  className="mb-6"
+                />
+
+                {/* لوحة إحصائيات العمال المفلترين */}
+                {filteredWorkers.length > 0 && (
+                  <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 mb-6">
+                    <CardContent className="p-4">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                        <div>
+                          <div className="text-2xl font-bold text-blue-600">{filteredWorkers.length}</div>
+                          <div className="text-sm text-muted-foreground">إجمالي العمال</div>
+                        </div>
+                        <div>
+                          <div className="text-2xl font-bold text-green-600">
+                            {filteredWorkers.filter(w => w.isActive).length}
+                          </div>
+                          <div className="text-sm text-muted-foreground">العمال النشطين</div>
+                        </div>
+                        <div>
+                          <div className="text-2xl font-bold text-purple-600">
+                            {formatCurrency(filteredWorkers.reduce((sum, w) => sum + Number(w.dailyWage || 0), 0))}
+                          </div>
+                          <div className="text-sm text-muted-foreground">إجمالي الأجور اليومية</div>
+                        </div>
+                        <div>
+                          <div className="text-2xl font-bold text-indigo-600">
+                            {new Set(filteredWorkers.map(w => w.type)).size}
+                          </div>
+                          <div className="text-sm text-muted-foreground">أنواع العمل</div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="space-y-3">
                     <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
@@ -554,16 +613,29 @@ export default function Reports() {
                         <SelectValue placeholder="اختر العامل..." />
                       </SelectTrigger>
                       <SelectContent>
-                        {workers.map(worker => (
+                        {filteredWorkers.map(worker => (
                           <SelectItem key={worker.id} value={worker.id} className="text-lg">
                             <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                              <div className={`w-2 h-2 rounded-full ${worker.isActive ? 'bg-green-500' : 'bg-red-500'}`}></div>
                               {worker.name} - {worker.type}
+                              <Badge variant={worker.isActive ? "default" : "secondary"} className="text-xs">
+                                {worker.isActive ? 'نشط' : 'غير نشط'}
+                              </Badge>
                             </div>
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
+                    {filteredWorkers.length === 0 && workers.length > 0 && (
+                      <div className="text-center p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                        <p className="text-sm text-red-600 dark:text-red-400 font-medium">
+                          ⚠️ لا توجد عمال مطابقة لمعايير التصفية الحالية
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          يرجى تعديل معايير البحث أو إعادة تعيين المرشحات
+                        </p>
+                      </div>
+                    )}
                   </div>
                   <div className="space-y-3">
                     <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
