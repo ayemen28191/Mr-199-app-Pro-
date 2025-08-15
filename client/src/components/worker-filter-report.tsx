@@ -41,15 +41,18 @@ export default function WorkerFilterReport({ selectedProjectId }: WorkerFilterRe
     enabled: true
   });
 
-  // جلب العمال بناء على المشاريع المختارة
+  // جلب جميع العمال (سيتم تصفيتهم لاحقاً)
   const { data: allWorkers = [] } = useQuery<Worker[]>({
     queryKey: ['/api/workers'],
-    enabled: selectedProjects.length > 0
+    enabled: true
   });
 
   // تصفية العمال حسب المشاريع المختارة
   const filteredWorkers = useMemo(() => {
-    if (selectedProjects.length === 0) return [];
+    if (selectedProjects.length === 0) {
+      // إذا لم يتم تحديد مشاريع، أظهر جميع العمال
+      return allWorkers;
+    }
     return allWorkers.filter(worker => selectedProjects.includes(worker.projectId));
   }, [allWorkers, selectedProjects]);
 
@@ -109,8 +112,8 @@ export default function WorkerFilterReport({ selectedProjectId }: WorkerFilterRe
 
   // إنشاء التقرير
   const generateReport = () => {
-    if (selectedProjects.length === 0) {
-      alert('يرجى اختيار مشروع واحد على الأقل');
+    if (filteredWorkers.length === 0) {
+      alert('لا توجد عمال متاحين لإنشاء التقرير');
       return;
     }
     
@@ -270,12 +273,12 @@ export default function WorkerFilterReport({ selectedProjectId }: WorkerFilterRe
             </div>
 
             {selectedProjects.length === 0 && (
-              <div className="text-center p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200">
-                <p className="text-orange-600 dark:text-orange-400 font-medium">
-                  ⚠️ يرجى اختيار مشروع واحد على الأقل لإنشاء التقرير
+              <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200">
+                <p className="text-blue-600 dark:text-blue-400 font-medium">
+                  💡 لم يتم تحديد مشاريع محددة - سيتم عرض جميع العمال
                 </p>
-                <p className="text-sm text-orange-500 mt-1">
-                  إذا لم تجد مشاريع متاحة، سيتم استخدام المشروع المحدد حالياً في الأعلى
+                <p className="text-sm text-blue-500 mt-1">
+                  يمكنك تحديد مشاريع معينة لتصفية العمال، أو ترك الخيار فارغاً لعرض الجميع
                 </p>
               </div>
             )}
@@ -410,7 +413,7 @@ export default function WorkerFilterReport({ selectedProjectId }: WorkerFilterRe
           <div className="flex justify-center">
             <Button
               onClick={generateReport}
-              disabled={selectedProjects.length === 0}
+              disabled={filteredWorkers.length === 0}
               className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-8 py-3 text-lg"
               size="lg"
             >
