@@ -49,12 +49,12 @@ export function WorkerStatementTemplate({
 }: WorkerStatementTemplateProps) {
   // إعداد معلومات الرأس
   const headerInfo = [
-    { label: "اسم العامل", value: data.worker.name },
-    { label: "نوع العمل", value: data.worker.type },
-    { label: "الأجر اليومي", value: formatCurrency(data.worker.dailyWage) },
+    { label: "اسم العامل", value: data.worker?.name || "غير محدد" },
+    { label: "نوع العمل", value: data.worker?.type || "غير محدد" },
+    { label: "الأجر اليومي", value: formatCurrency(data.worker?.dailyWage || 0) },
     { label: "فترة التقرير", value: `من ${formatDate(data.dateFrom)} إلى ${formatDate(data.dateTo)}` },
-    { label: "إجمالي أيام العمل", value: `${data.summary.totalWorkDays} يوم` },
-    { label: "الحالة", value: data.worker.isActive ? "نشط" : "غير نشط" }
+    { label: "إجمالي أيام العمل", value: `${data.summary?.totalWorkDays || 0} يوم` },
+    { label: "الحالة", value: data.worker?.isActive ? "نشط" : "غير نشط" }
   ];
 
   // تحضير بيانات جدول الحضور
@@ -130,31 +130,31 @@ export function WorkerStatementTemplate({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <SummaryCard
           title="أيام العمل الكلية"
-          value={`${data.summary.totalWorkDays} يوم`}
+          value={`${data.summary?.totalWorkDays || 0} يوم`}
           icon={<Calendar className="h-5 w-5 text-blue-500" />}
         />
         <SummaryCard
           title="إجمالي الأجور المستحقة"
-          value={data.summary.totalWagesEarned}
+          value={data.summary?.totalWagesEarned || 0}
           valueColor="text-blue-600"
           icon={<DollarSign className="h-5 w-5 text-blue-500" />}
         />
         <SummaryCard
           title="إجمالي المدفوع"
-          value={data.summary.totalPaidAmount}
+          value={data.summary?.totalPaidAmount || 0}
           valueColor="text-green-600"
           icon={<CreditCard className="h-5 w-5 text-green-500" />}
         />
         <SummaryCard
           title="إجمالي التحويلات"
-          value={data.summary.totalTransfers}
+          value={data.summary?.totalTransfers || 0}
           valueColor="text-orange-600"
           icon={<Clock className="h-5 w-5 text-orange-500" />}
         />
         <SummaryCard
           title="الرصيد المتبقي"
-          value={data.summary.remainingBalance}
-          valueColor={data.summary.remainingBalance >= 0 ? "text-green-600" : "text-red-600"}
+          value={data.summary?.remainingBalance || 0}
+          valueColor={(data.summary?.remainingBalance || 0) >= 0 ? "text-green-600" : "text-red-600"}
           icon={<DollarSign className="h-5 w-5 text-gray-500" />}
         />
       </div>
@@ -220,7 +220,7 @@ export function WorkerStatementTemplate({
       )}
 
       {/* تنبيهات مالية */}
-      {data.summary.remainingBalance < 0 && (
+      {(data.summary?.remainingBalance || 0) < 0 && (
         <Card className="border-red-200 bg-red-50 print:bg-white print:border-red-400">
           <CardContent className="pt-6">
             <div className="flex items-start gap-3">
@@ -230,7 +230,7 @@ export function WorkerStatementTemplate({
               <div>
                 <h3 className="font-semibold text-red-900 print:text-black">تنبيه: دين للعامل</h3>
                 <p className="text-sm text-red-700 print:text-gray-700 mt-1">
-                  يوجد مبلغ مستحق للعامل بقيمة {formatCurrency(Math.abs(data.summary.remainingBalance))}. 
+                  يوجد مبلغ مستحق للعامل بقيمة {formatCurrency(Math.abs(data.summary?.remainingBalance || 0))}. 
                   يُرجى مراجعة المحاسبة وصرف المستحقات.
                 </p>
               </div>
