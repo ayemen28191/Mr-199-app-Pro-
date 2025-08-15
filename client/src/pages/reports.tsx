@@ -24,6 +24,14 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Worker, Project } from "@shared/schema";
 
+// استيراد النظام الموحد الجديد
+import { 
+  UnifiedReportTemplate, 
+  DailyExpenseTemplate, 
+  WorkerStatementTemplate,
+  quickExport,
+  printReport 
+} from "@/reports";
 import { EnhancedWorkerAccountStatement } from "@/components/EnhancedWorkerAccountStatementFixed";
 
 import { AdvancedProgressIndicator, useProgressSteps, type ProgressStep } from "@/components/AdvancedProgressIndicator";
@@ -629,15 +637,14 @@ export default function Reports() {
     }
     
     try {
-      // استخدام أدوات التصدير المحسنة
-      const { exportDailyExpenseReport, exportWorkerStatement, exportMaterialReport } = await import('@/components/excel-export-utils');
-      
+      // استخدام النظام الموحد الجديد للتصدير
       if (activeReportType === 'daily') {
-        await exportDailyExpenseReport(data, filename);
+        await quickExport.dailyExpenses(data, filename);
       } else if (activeReportType === 'worker') {
-        await exportWorkerStatement(data, filename);
+        await quickExport.workerStatement(data, filename);
       } else {
-        await exportMaterialReport(data, filename);
+        // تصدير تقرير عام
+        await quickExport.dailyExpenses(data, filename);
       }
       
       toast({
@@ -2756,12 +2763,14 @@ export default function Reports() {
     }
   };
 
-  const printReport = () => {
+  const handlePrintReport = async () => {
     try {
-      console.log('🖨️ بدء عملية الطباعة للتقرير:', activeReportType);
+      console.log('🖨️ بدء عملية الطباعة بالنظام الموحد الجديد');
       
-      // إضافة CSS خاص بالطباعة
-      const printStyle = document.createElement('style');
+      const reportElement = document.getElementById('report-content');
+      if (reportElement) {
+        await printReport.direct('report-content', `تقرير ${activeReportType === 'daily' ? 'المصروفات اليومية' : 'كشف حساب العامل'}`);
+      } else {
       printStyle.id = 'print-report-styles';
       printStyle.innerHTML = `
         @media print {
@@ -4243,7 +4252,7 @@ export default function Reports() {
                                   <span className="sm:hidden">Excel</span>
                                 </Button>
                                 <Button
-                                  onClick={printReport}
+                                  onClick={handlePrintReport}
                                   className="bg-white hover:bg-gray-100 text-teal-600 px-3 sm:px-4 py-2 rounded-lg transition-all duration-200 text-sm font-medium shadow-md"
                                 >
                                   <Printer className="h-4 w-4 ml-1 sm:mr-2" />
@@ -4427,7 +4436,7 @@ export default function Reports() {
                     <span>تصدير Excel</span>
                   </Button>
                   <Button
-                    onClick={printReport}
+                    onClick={handlePrintReport}
                     className="bg-gray-600 hover:bg-gray-700 text-white px-3 sm:px-4 md:px-6 py-2 rounded-xl transition-all duration-200 text-sm md:text-base flex items-center justify-center gap-2"
                   >
                     <Printer className="h-4 w-4 flex-shrink-0" />

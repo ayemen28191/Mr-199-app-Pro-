@@ -9,7 +9,7 @@ import WorkerAttendance from "@/pages/worker-attendance";
 
 import DailyExpenses from "@/pages/daily-expenses";
 import MaterialPurchase from "@/pages/material-purchase";
-import ReportsFixed from "@/pages/reports";
+import ReportsSimplified from "@/pages/reports-simplified";
 
 import ProjectTransfers from "@/pages/ProjectTransfers";
 import ProjectTransactionsPage from "@/pages/ProjectTransactionsSimple";
@@ -42,7 +42,7 @@ function Router() {
       <Route path="/project-transactions" component={ProjectTransactionsPage} />
       <Route path="/autocomplete-admin" component={AutocompleteAdminPage} />
 
-      <Route path="/reports" component={ReportsFixed} />
+      <Route path="/reports" component={ReportsSimplified} />
 
       <Route component={NotFound} />
     </Switch>
