@@ -15,9 +15,10 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
-// import { UnifiedExcelExporter } from "@/components/unified-reports"; // مؤقتاً - سيتم تفعيله لاحقاً
+import { UnifiedA4Report, UnifiedReportActions } from "@/components/UnifiedA4Report";
+import { exportToUnifiedExcel } from "@/utils/UnifiedExcelExporter";
 import type { Project } from "@shared/schema";
-import "../styles/daily-expenses-print.css";
+import "../styles/unified-print-a4.css";
 
 interface DailyExpenseData {
   date: string;
@@ -522,6 +523,100 @@ export default function DailyExpensesReport() {
     });
   };
 
+  // وظائف النظام الموحد للطباعة والتصدير
+  const handleUnifiedPrint = useCallback(() => {
+    window.print();
+  }, []);
+
+  const handleUnifiedExport = useCallback(async () => {
+    if (!reportData.length) {
+      toast({
+        title: "تنبيه",
+        description: "لا توجد بيانات للتصدير",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const totals = calculateTotals();
+      const finalBalance = (totals?.totalIncome || 0) - (totals?.totalExpenses || 0);
+
+      await exportToUnifiedExcel({
+        title: "كشف المصروفات اليومية التفصيلي",
+        fileName: `كشف-المصروفات-${selectedProject?.name || 'المشروع'}`,
+        projectName: selectedProject?.name,
+        dateFrom,
+        dateTo,
+        reportDate: new Date().toISOString(),
+        data: reportData.map((day, index) => ({
+          date: day.date,
+          carriedForward: day.summary.carriedForward,
+          fundTransfers: day.summary.totalFundTransfers,
+          workerWages: day.summary.totalWorkerWages,
+          materialCosts: day.summary.totalMaterialCosts,
+          transportationCosts: day.summary.totalTransportationCosts,
+          workerTransfers: day.summary.totalWorkerTransfers,
+          miscExpenses: day.summary.totalWorkerMiscExpenses || 0,
+          totalIncome: day.summary.totalIncome,
+          totalExpenses: day.summary.totalExpenses,
+          remainingBalance: day.summary.remainingBalance
+        })),
+        columns: [
+          { key: 'date', label: 'التاريخ', type: 'date', width: 15 },
+          { key: 'carriedForward', label: 'الرصيد المرحل', type: 'currency', width: 15 },
+          { key: 'fundTransfers', label: 'تحويلات العهدة', type: 'currency', width: 15 },
+          { key: 'workerWages', label: 'أجور العمال', type: 'currency', width: 15 },
+          { key: 'materialCosts', label: 'شراء المواد', type: 'currency', width: 15 },
+          { key: 'transportationCosts', label: 'أجور المواصلات', type: 'currency', width: 15 },
+          { key: 'workerTransfers', label: 'حوالات العمال', type: 'currency', width: 15 },
+          { key: 'miscExpenses', label: 'نثريات العمال', type: 'currency', width: 15 },
+          { key: 'totalIncome', label: 'إجمالي الإيرادات', type: 'currency', width: 18 },
+          { key: 'totalExpenses', label: 'إجمالي المصروفات', type: 'currency', width: 18 },
+          { key: 'remainingBalance', label: 'الرصيد المتبقي', type: 'currency', width: 18 }
+        ],
+        summary: [
+          {
+            title: "ملخص الإيرادات",
+            items: [
+              { label: "إجمالي تحويلات العهدة", value: totals?.totalFundTransfers || 0, type: 'currency' },
+              { label: "إجمالي الإيرادات", value: totals?.totalIncome || 0, type: 'currency' }
+            ]
+          },
+          {
+            title: "ملخص المصروفات",
+            items: [
+              { label: "إجمالي أجور العمال", value: totals?.totalWorkerWages || 0, type: 'currency' },
+              { label: "إجمالي شراء المواد", value: totals?.totalMaterialCosts || 0, type: 'currency' },
+              { label: "إجمالي أجور المواصلات", value: totals?.totalTransportationCosts || 0, type: 'currency' },
+              { label: "إجمالي حوالات العمال", value: totals?.totalWorkerTransfers || 0, type: 'currency' },
+              { label: "إجمالي نثريات العمال", value: totals?.totalWorkerMiscExpenses || 0, type: 'currency' },
+              { label: "إجمالي المصروفات", value: totals?.totalExpenses || 0, type: 'currency' }
+            ]
+          }
+        ],
+        finalBalance: {
+          label: "الرصيد النهائي للفترة",
+          value: finalBalance,
+          type: finalBalance >= 0 ? 'positive' : 'negative'
+        }
+      });
+
+      toast({
+        title: "تم بنجاح",
+        description: "تم تصدير التقرير إلى ملف Excel بنجاح",
+      });
+
+    } catch (error) {
+      console.error('خطأ في التصدير:', error);
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ في تصدير التقرير",
+        variant: "destructive",
+      });
+    }
+  }, [reportData, selectedProject, dateFrom, dateTo, toast]);
+
   const totals = calculateTotals();
   const finalBalance = reportData.length > 0 ? reportData[reportData.length - 1].summary.remainingBalance : 0;
 
@@ -668,214 +763,115 @@ export default function DailyExpensesReport() {
         </CardContent>
       </Card>
 
-      {/* Report Display */}
+      {/* النظام الموحد للتقارير */}
       {reportData.length > 0 && (
-        <div className="print-preview">
-          {/* Report Header */}
-          <div className="report-header bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-6 rounded-lg mb-6 border border-blue-200 dark:border-blue-800">
-            <div className="text-center">
-              <h2 className="text-3xl font-bold text-blue-900 dark:text-blue-100 mb-2">كشف المصروفات اليومية التفصيلي</h2>
-              <div className="text-lg text-blue-700 dark:text-blue-300 font-medium">
-                مشروع: <span className="font-bold">{selectedProject?.name}</span>
-              </div>
-              <div className="text-sm text-blue-600 dark:text-blue-400 mt-1">
-                الفترة: من {formatDate(dateFrom)} إلى {formatDate(dateTo)}
-              </div>
-              <div className="text-xs text-blue-500 dark:text-blue-500 mt-2">
-                تم إنشاؤه في {formatDate(getCurrentDate())} - نظام إدارة مشاريع البناء
-              </div>
-            </div>
-          </div>
+        <>
+          {/* أزرار الطباعة والتصدير الموحدة */}
+          <UnifiedReportActions
+            onPrint={handleUnifiedPrint}
+            onExport={handleUnifiedExport}
+          />
 
-          {/* Summary Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 no-print">
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-green-500" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">إجمالي الإيرادات</p>
-                    <p className="text-lg font-bold text-green-600">
-                      {formatCurrency(totals?.totalIncome || 0)}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2">
-                  <DollarSign className="h-4 w-4 text-red-500" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">إجمالي المصروفات</p>
-                    <p className="text-lg font-bold text-red-600">
-                      {formatCurrency(totals?.totalExpenses || 0)}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2">
-                  <BarChart3 className="h-4 w-4 text-blue-500" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">الرصيد النهائي</p>
-                    <p className="text-lg font-bold text-blue-600">
-                      {formatCurrency(finalBalance)}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-purple-500" />
-                  <div>
-                    <p className="text-sm text-muted-foreground">عدد الأيام</p>
-                    <p className="text-lg font-bold text-purple-600">
-                      {reportData.length} يوم
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          {/* التقرير الموحد */}
+          <UnifiedA4Report
+            title="كشف المصروفات اليومية التفصيلي"
+            projectName={selectedProject?.name}
+            dateFrom={dateFrom}
+            dateTo={dateTo}
+            reportDate={new Date().toISOString()}
+            data={reportData.map(day => ({
+              date: day.date,
+              carriedForward: day.summary.carriedForward,
+              fundTransfers: day.summary.totalFundTransfers,
+              workerWages: day.summary.totalWorkerWages,
+              materialCosts: day.summary.totalMaterialCosts,
+              transportationCosts: day.summary.totalTransportationCosts,
+              workerTransfers: day.summary.totalWorkerTransfers,
+              miscExpenses: day.summary.totalWorkerMiscExpenses || 0,
+              totalIncome: day.summary.totalIncome,
+              totalExpenses: day.summary.totalExpenses,
+              remainingBalance: day.summary.remainingBalance
+            }))}
+            columns={[
+              { key: 'date', label: 'التاريخ', type: 'date' },
+              { key: 'carriedForward', label: 'الرصيد المرحل', type: 'currency' },
+              { key: 'fundTransfers', label: 'تحويلات العهدة', type: 'currency' },
+              { key: 'workerWages', label: 'أجور العمال', type: 'currency' },
+              { key: 'materialCosts', label: 'شراء المواد', type: 'currency' },
+              { key: 'transportationCosts', label: 'المواصلات', type: 'currency' },
+              { key: 'workerTransfers', label: 'حوالات العمال', type: 'currency' },
+              { key: 'miscExpenses', label: 'نثريات', type: 'currency' },
+              { key: 'totalIncome', label: 'إجمالي الإيرادات', type: 'currency' },
+              { key: 'totalExpenses', label: 'إجمالي المصروفات', type: 'currency' },
+              { key: 'remainingBalance', label: 'الرصيد المتبقي', type: 'currency' }
+            ]}
+            summary={[
+              {
+                title: "ملخص الإيرادات",
+                items: [
+                  { label: "إجمالي تحويلات العهدة", value: totals?.totalFundTransfers || 0, type: 'currency' },
+                  { label: "إجمالي الإيرادات", value: totals?.totalIncome || 0, type: 'currency' }
+                ]
+              },
+              {
+                title: "ملخص المصروفات",
+                items: [
+                  { label: "إجمالي أجور العمال", value: totals?.totalWorkerWages || 0, type: 'currency' },
+                  { label: "إجمالي شراء المواد", value: totals?.totalMaterialCosts || 0, type: 'currency' },
+                  { label: "إجمالي أجور المواصلات", value: totals?.totalTransportationCosts || 0, type: 'currency' },
+                  { label: "إجمالي حوالات العمال", value: totals?.totalWorkerTransfers || 0, type: 'currency' },
+                  { label: "إجمالي المصروفات", value: totals?.totalExpenses || 0, type: 'currency' }
+                ]
+              }
+            ]}
+            finalBalance={{
+              label: "الرصيد النهائي للفترة",
+              value: finalBalance,
+              type: finalBalance >= 0 ? 'positive' : 'negative'
+            }}
+          />
+        </>
+      )}
 
-          {/* Daily Reports Table */}
-          <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
-            <table className="report-table w-full bg-white dark:bg-gray-800">
-              <thead>
-                <tr className="bg-blue-600 text-white">
-                  <th className="px-4 py-3 text-center font-semibold">التاريخ</th>
-                  <th className="px-4 py-3 text-center font-semibold">الرصيد المرحل</th>
-                  <th className="px-4 py-3 text-center font-semibold text-green-100">الحوالات المالية</th>
-                  <th className="px-4 py-3 text-center font-semibold text-orange-100">أجور العمال</th>
-                  <th className="px-4 py-3 text-center font-semibold text-orange-100">شراء المواد</th>
-                  <th className="px-4 py-3 text-center font-semibold text-orange-100">أجور المواصلات</th>
-                  <th className="px-4 py-3 text-center font-semibold text-orange-100">حوالات العمال</th>
-                  <th className="px-4 py-3 text-center font-semibold text-purple-100">نثريات العمال</th>
-                  <th className="px-4 py-3 text-center font-semibold text-green-100">إجمالي الإيرادات</th>
-                  <th className="px-4 py-3 text-center font-semibold text-red-100">إجمالي المصروفات</th>
-                  <th className="px-4 py-3 text-center font-semibold text-blue-100">الرصيد المتبقي</th>
-                </tr>
-              </thead>
-              <tbody>
-                {reportData.map((day, index) => (
-                  <tr 
-                    key={day.date} 
-                    className={`
-                      ${index % 2 === 0 ? "bg-gray-50 dark:bg-gray-900/30" : "bg-white dark:bg-gray-800"} 
-                      hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors duration-200
-                    `}
-                  >
-                    <td className="px-4 py-3 font-semibold text-gray-900 dark:text-gray-100 date-cell text-center border-b border-gray-200 dark:border-gray-700">
-                      {formatDate(day.date)}
-                    </td>
-                    <td className="px-4 py-3 currency text-gray-700 dark:text-gray-300 text-center border-b border-gray-200 dark:border-gray-700">
-                      {formatCurrency(day.summary.carriedForward)}
-                    </td>
-                    <td className="px-4 py-3 currency text-green-700 dark:text-green-400 font-medium text-center border-b border-gray-200 dark:border-gray-700 bg-green-50 dark:bg-green-900/20">
-                      {formatCurrency(day.summary.totalFundTransfers)}
-                    </td>
-                    <td className="px-4 py-3 currency text-orange-700 dark:text-orange-400 font-medium text-center border-b border-gray-200 dark:border-gray-700 bg-orange-50 dark:bg-orange-900/20">
-                      {formatCurrency(day.summary.totalWorkerWages)}
-                    </td>
-                    <td className="px-4 py-3 currency text-orange-700 dark:text-orange-400 font-medium text-center border-b border-gray-200 dark:border-gray-700 bg-orange-50 dark:bg-orange-900/20">
-                      {formatCurrency(day.summary.totalMaterialCosts)}
-                    </td>
-                    <td className="px-4 py-3 currency text-orange-700 dark:text-orange-400 font-medium text-center border-b border-gray-200 dark:border-gray-700 bg-orange-50 dark:bg-orange-900/20">
-                      {formatCurrency(day.summary.totalTransportationCosts)}
-                    </td>
-                    <td className="px-4 py-3 currency text-orange-700 dark:text-orange-400 font-medium text-center border-b border-gray-200 dark:border-gray-700 bg-orange-50 dark:bg-orange-900/20">
-                      {formatCurrency(day.summary.totalWorkerTransfers)}
-                    </td>
-                    <td className="px-4 py-3 currency text-purple-700 dark:text-purple-400 font-medium text-center border-b border-gray-200 dark:border-gray-700 bg-purple-50 dark:bg-purple-900/20">
-                      {formatCurrency(day.summary.totalWorkerMiscExpenses || 0)}
-                    </td>
-                    <td className="px-4 py-3 currency font-bold text-green-800 dark:text-green-300 text-center border-b border-gray-200 dark:border-gray-700 bg-green-100 dark:bg-green-900/30">
-                      {formatCurrency(day.summary.totalIncome)}
-                    </td>
-                    <td className="px-4 py-3 currency font-bold text-red-800 dark:text-red-300 text-center border-b border-gray-200 dark:border-gray-700 bg-red-100 dark:bg-red-900/30">
-                      {formatCurrency(day.summary.totalExpenses)}
-                    </td>
-                    <td className={`
-                      px-4 py-3 currency font-bold text-center border-b border-gray-200 dark:border-gray-700
-                      ${day.summary.remainingBalance >= 0 
-                        ? 'text-blue-800 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/30' 
-                        : 'text-red-800 dark:text-red-300 bg-red-100 dark:bg-red-900/30'
-                      }
-                    `}>
-                      {formatCurrency(day.summary.remainingBalance)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr className="bg-gradient-to-r from-blue-600 to-blue-700 text-white font-bold text-lg">
-                  <td className="px-4 py-4 text-center font-bold border-t-2 border-blue-500">الإجمالي</td>
-                  <td className="px-4 py-4 text-center border-t-2 border-blue-500">-</td>
-                  <td className="px-4 py-4 currency text-center border-t-2 border-blue-500 text-green-200">
-                    {formatCurrency(totals?.totalFundTransfers || 0)}
-                  </td>
-                  <td className="px-4 py-4 currency text-center border-t-2 border-blue-500 text-orange-200">
-                    {formatCurrency(totals?.totalWorkerWages || 0)}
-                  </td>
-                  <td className="px-4 py-4 currency text-center border-t-2 border-blue-500 text-orange-200">
-                    {formatCurrency(totals?.totalMaterialCosts || 0)}
-                  </td>
-                  <td className="px-4 py-4 currency text-center border-t-2 border-blue-500 text-orange-200">
-                    {formatCurrency(totals?.totalTransportationCosts || 0)}
-                  </td>
-                  <td className="px-4 py-4 currency text-center border-t-2 border-blue-500 text-orange-200">
-                    {formatCurrency(totals?.totalWorkerTransfers || 0)}
-                  </td>
-                  <td className="px-4 py-4 currency text-center border-t-2 border-blue-500 text-purple-200">
-                    {formatCurrency(totals?.totalWorkerMiscExpenses || 0)}
-                  </td>
-                  <td className="px-4 py-4 currency text-center border-t-2 border-blue-500 text-green-200 font-extrabold">
-                    {formatCurrency(totals?.totalIncome || 0)}
-                  </td>
-                  <td className="px-4 py-4 currency text-center border-t-2 border-blue-500 text-red-200 font-extrabold">
-                    {formatCurrency(totals?.totalExpenses || 0)}
-                  </td>
-                  <td className={`
-                    px-4 py-4 currency text-center border-t-2 border-blue-500 font-extrabold text-xl
-                    ${finalBalance >= 0 ? 'text-yellow-200' : 'text-red-200'}
-                  `}>
-                    {formatCurrency(finalBalance)}
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-
-          {/* Report Footer */}
-          <div className="mt-8 p-6 bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-lg border-t-4 border-blue-500">
-            <div className="text-center space-y-2">
-              <div className="flex items-center justify-center gap-2">
-                <CheckCircle className="h-4 w-4 text-green-600" />
-                <p className="text-sm font-medium text-gray-800 dark:text-gray-200">
-                  تم إنشاء هذا التقرير بنجاح في {formatDate(getCurrentDate())}
-                </p>
-              </div>
-              <p className="text-xs text-gray-600 dark:text-gray-400">
-                نظام إدارة مشاريع البناء الاحترافي - مشروع: {selectedProject?.name}
-              </p>
-              <div className="flex items-center justify-center gap-4 mt-3 text-xs text-gray-500 dark:text-gray-500">
-                <span>✅ بيانات حقيقية من النظام</span>
-                <span>📊 تقرير تفاعلي</span>
-                <span>🖨️ جاهز للطباعة</span>
-                <span>📈 تصدير Excel احترافي</span>
-              </div>
-            </div>
+      {/* عرض أدوات التحكم القديمة للمقارنة - مؤقت */}
+      {reportData.length > 0 && (
+        <div className="no-print mt-8 border-t pt-6">
+          <h3 className="text-lg font-bold mb-4">أدوات التحكم الإضافية</h3>
+          <div className="flex flex-wrap gap-3">
+            <Button 
+              onClick={exportToProfessionalExcel} 
+              variant="outline"
+              className="flex items-center gap-2"
+              size="sm"
+            >
+              <Settings className="h-4 w-4" />
+              تصدير احترافي (قديم)
+            </Button>
+            
+            <Button 
+              onClick={exportToExcel} 
+              variant="outline"
+              className="flex items-center gap-2"
+              size="sm"
+            >
+              <FileSpreadsheet className="h-4 w-4" />
+              تصدير عادي (قديم)
+            </Button>
+            
+            <Button 
+              onClick={printReport} 
+              variant="outline"
+              className="flex items-center gap-2"
+              size="sm"
+            >
+              <Printer className="h-4 w-4" />
+              طباعة محسنة (قديم)
+            </Button>
           </div>
         </div>
       )}
+
+
 
       {/* Empty State */}
       {reportData.length === 0 && !isLoading && (
