@@ -722,7 +722,7 @@ export default function Reports() {
 
           {/* تبويب تصفية العمال الجديد */}
           <TabsContent value="filter-workers">
-            <WorkerFilterReport selectedProjectId={selectedProjectId} />
+            <WorkerFilterReport />
           </TabsContent>
         </Tabs>
 

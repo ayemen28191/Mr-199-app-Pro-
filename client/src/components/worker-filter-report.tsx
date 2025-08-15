@@ -24,10 +24,10 @@ interface Worker {
 }
 
 interface WorkerFilterReportProps {
-  selectedProjectId: string | null;
+  // لا نحتاج selectedProjectId لأن المكون مستقل
 }
 
-export default function WorkerFilterReport({ selectedProjectId }: WorkerFilterReportProps) {
+export default function WorkerFilterReport({}: WorkerFilterReportProps) {
   // State للتحكم في الفلاتر
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
   const [dateFrom, setDateFrom] = useState('');
@@ -66,12 +66,7 @@ export default function WorkerFilterReport({ selectedProjectId }: WorkerFilterRe
     setDateTo(today.toISOString().split('T')[0]);
   }, []);
 
-  // تعيين المشروع المختار افتراضياً
-  useEffect(() => {
-    if (selectedProjectId && projects.length > 0) {
-      setSelectedProjects([selectedProjectId]);
-    }
-  }, [selectedProjectId, projects]);
+  // لا نعتمد على المشروع المحدد عالمياً - المستخدم يختار بنفسه
 
   // وظائف التحكم في المشاريع
   const handleProjectToggle = (projectId: string) => {
@@ -327,12 +322,12 @@ export default function WorkerFilterReport({ selectedProjectId }: WorkerFilterRe
           </div>
 
           {/* اختيار العمال */}
-          {selectedProjects.length > 0 && (
+          {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <label className="text-lg font-semibold text-gray-800 dark:text-gray-200">
                   <User className="inline h-5 w-5 mr-2" />
-                  اختيار العمال
+                  اختيار العمال ({filteredWorkers.length} متاح)
                 </label>
                 <div className="flex gap-2">
                   <Button 
@@ -341,7 +336,7 @@ export default function WorkerFilterReport({ selectedProjectId }: WorkerFilterRe
                     onClick={selectAllWorkers}
                     disabled={filteredWorkers.length === 0}
                   >
-                    تحديد الكل
+                    تحديد الكل ({filteredWorkers.length})
                   </Button>
                   <Button 
                     variant="outline" 
@@ -357,39 +352,48 @@ export default function WorkerFilterReport({ selectedProjectId }: WorkerFilterRe
                 {filteredWorkers.length === 0 ? (
                   <div className="col-span-full text-center text-gray-500 py-8">
                     <User className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                    <p>لا توجد عمال في المشاريع المختارة</p>
+                    <p>لا توجد عمال متاحين</p>
+                    <p className="text-sm mt-1">تأكد من وجود عمال في النظام أو اختر مشاريع تحتوي على عمال</p>
                   </div>
                 ) : (
-                  filteredWorkers.map(worker => (
-                    <div key={worker.id} className="flex items-center justify-between p-3 bg-white dark:bg-gray-700 rounded-lg border">
-                      <div className="flex items-center space-x-3">
-                        <Checkbox
-                          id={`worker-${worker.id}`}
-                          checked={selectedWorkers.includes(worker.id)}
-                          onCheckedChange={() => handleWorkerToggle(worker.id)}
-                        />
-                        <div>
-                          <label 
-                            htmlFor={`worker-${worker.id}`}
-                            className="font-medium cursor-pointer"
-                          >
-                            {worker.name}
-                          </label>
-                          <p className="text-xs text-gray-500">{worker.type}</p>
+                  filteredWorkers.map(worker => {
+                    const workerProject = projects.find(p => p.id === worker.projectId);
+                    return (
+                      <div key={worker.id} className="flex items-center justify-between p-3 bg-white dark:bg-gray-700 rounded-lg border">
+                        <div className="flex items-center space-x-3">
+                          <Checkbox
+                            id={`worker-${worker.id}`}
+                            checked={selectedWorkers.includes(worker.id)}
+                            onCheckedChange={() => handleWorkerToggle(worker.id)}
+                          />
+                          <div>
+                            <label 
+                              htmlFor={`worker-${worker.id}`}
+                              className="font-medium cursor-pointer"
+                            >
+                              {worker.name}
+                            </label>
+                            <p className="text-xs text-gray-500">{worker.type}</p>
+                            {workerProject && (
+                              <p className="text-xs text-blue-600 bg-blue-50 px-2 py-1 rounded mt-1">
+                                {workerProject.name}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-left">
+                          <Badge variant={worker.isActive ? "default" : "secondary"} className="text-xs">
+                            {worker.isActive ? 'نشط' : 'غير نشط'}
+                          </Badge>
+                          <p className="text-xs text-gray-500 mt-1">{worker.dailyWage} ريال/يوم</p>
                         </div>
                       </div>
-                      <div className="text-left">
-                        <Badge variant={worker.isActive ? "default" : "secondary"} className="text-xs">
-                          {worker.isActive ? 'نشط' : 'غير نشط'}
-                        </Badge>
-                        <p className="text-xs text-gray-500 mt-1">{worker.dailyWage} ريال/يوم</p>
-                      </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </div>
-          )}
+          }
 
           {/* معلومات الاختيار */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
