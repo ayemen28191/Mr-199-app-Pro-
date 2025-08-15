@@ -58,14 +58,21 @@ export function WorkerStatementTemplate({
   ];
 
   // تحضير بيانات جدول الحضور
-  const attendanceData = (data.attendance || []).map(record => [
-    formatDate(record.date),
-    new Date(record.date).toLocaleDateString('ar-SA', { weekday: 'long' }),
-    record.status === 'present' ? 'حاضر' : 'غائب',
-    formatCurrency(record.wage || 0),
-    formatCurrency(record.paidAmount || 0),
-    record.notes || ""
-  ]);
+  const attendanceData = (data.attendance || []).map(record => {
+    const wageAmount = record.wage || 0;
+    const paidAmount = record.paidAmount || 0;
+    const remainingAmount = wageAmount - paidAmount;
+    
+    return [
+      formatDate(record.date),
+      new Date(record.date).toLocaleDateString('ar-SA', { weekday: 'long' }),
+      record.status === 'present' ? 'حاضر' : 'غائب',
+      formatCurrency(wageAmount),
+      formatCurrency(paidAmount),
+      formatCurrency(remainingAmount),
+      record.notes || ""
+    ];
+  });
 
   // تحضير بيانات جدول التحويلات
   const transfersData = (data.transfers || []).map(transfer => [
@@ -172,7 +179,7 @@ export function WorkerStatementTemplate({
           </CardHeader>
           <CardContent>
             <UnifiedTable
-              headers={["التاريخ", "اليوم", "الحالة", "الأجر المستحق", "المدفوع", "ملاحظات"]}
+              headers={["التاريخ", "اليوم", "الحالة", "الأجر المستحق", "المدفوع", "المتبقي", "ملاحظات"]}
               data={attendanceData}
             />
           </CardContent>

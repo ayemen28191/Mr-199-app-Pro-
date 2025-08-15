@@ -195,13 +195,13 @@ export class UnifiedExcelExporter {
    */
   private addAttendanceTable(worksheet: ExcelJS.Worksheet, attendance: any[], startRow: number): number {
     const sectionTitle = worksheet.addRow(['سجل الحضور']);
-    worksheet.mergeCells(`A${startRow}:F${startRow}`);
+    worksheet.mergeCells(`A${startRow}:G${startRow}`);
     
     const titleCell = sectionTitle.getCell(1);
     titleCell.font = EXCEL_STYLES.fonts.subHeader;
     titleCell.alignment = { horizontal: 'center' };
 
-    const headers = ['التاريخ', 'اليوم', 'الحالة', 'الأجر', 'المدفوع', 'ملاحظات'];
+    const headers = ['التاريخ', 'اليوم', 'الحالة', 'الأجر', 'المدفوع', 'المتبقي', 'ملاحظات'];
     const headerRow = worksheet.addRow(headers);
     
     headers.forEach((_, index) => {
@@ -213,18 +213,23 @@ export class UnifiedExcelExporter {
     let currentRow = startRow + 2;
     
     attendance.forEach(record => {
+      const wageAmount = record.wage || 0;
+      const paidAmount = record.paidAmount || 0;
+      const remainingAmount = wageAmount - paidAmount;
+      
       const row = worksheet.addRow([
         record.date,
         record.dayName || new Date(record.date).toLocaleDateString('ar-SA', { weekday: 'long' }),
         record.status === 'present' ? 'حاضر' : 'غائب',
-        record.wage || 0,
-        record.paidAmount || 0,
+        wageAmount,
+        paidAmount,
+        remainingAmount,
         record.notes || ''
       ]);
       
       row.eachCell((cell, colNumber) => {
         cell.font = EXCEL_STYLES.fonts.data;
-        if (colNumber === 4 || colNumber === 5) {
+        if (colNumber === 4 || colNumber === 5 || colNumber === 6) {
           cell.numFmt = '#,##0 "ريال"';
         }
       });

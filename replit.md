@@ -2,6 +2,13 @@
 
 This is a comprehensive Arabic construction project management system built as a full-stack web application. The system manages multiple construction projects, tracking workers, materials, expenses, financial transfers, and generating detailed reports. It features a modern React frontend with TypeScript and a Node.js/Express backend using PostgreSQL with Drizzle ORM.
 
+## Recent Updates (August 15, 2025)
+
+- **Enhanced Worker Account Statement**: Added "المتبقي" (Remaining Balance) column to worker attendance tracking
+- **Improved Excel Export**: Updated Excel export system to include remaining balance calculations
+- **Unified Report Templates**: Refined report templates with better financial tracking and print optimization
+- **Error Prevention**: Implemented comprehensive null safety checks in report generation
+
 # User Preferences
 
 Preferred communication style: Simple, everyday language in Arabic.
@@ -75,6 +82,27 @@ The system uses PostgreSQL with a comprehensive schema including:
 - **Template-based**: Unified report templates for consistent formatting
 - **Arabic RTL Support**: Proper right-to-left text layout for Arabic content
 - **Print Optimization**: A4 page formatting with proper margins and page breaks
+
+### Enhanced Report Components (Latest Update)
+- **Worker Statement Template**: `client/src/reports/templates/worker-statement-template.tsx`
+  - Added comprehensive remaining balance calculations for worker attendance
+  - Improved error handling with null safety checks for all data properties
+  - Enhanced table structure with 7 columns: التاريخ، اليوم، الحالة، الأجر المستحق، المدفوع، المتبقي، ملاحظات
+  
+- **Excel Export System**: `client/src/reports/export/unified-excel-exporter.ts`
+  - Updated to include remaining balance column in attendance tracking
+  - Enhanced data formatting with proper Arabic currency display
+  - Improved table sizing and cell formatting for better readability
+  
+- **Print Styles**: `client/src/styles/unified-print-styles.css`
+  - Comprehensive A4 print formatting with Arabic text optimization
+  - Professional table styling with alternating row colors
+  - Currency and number formatting for financial data display
+  
+- **Report Templates**: `client/src/components/unified-report-template.tsx`
+  - Reusable components for consistent report formatting
+  - Professional header and footer sections
+  - Responsive grid layouts for report information display
 
 ## External Dependencies
 
