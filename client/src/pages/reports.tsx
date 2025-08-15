@@ -73,27 +73,50 @@ export default function Reports() {
     queryKey: ["/api/workers"],
   });
 
-  // جلب الإحصائيات
-  const { data: projectsWithStats = [] } = useQuery<any[]>({
+  // جلب الإحصائيات المحسنة مع إعادة التحديث التلقائي
+  const { data: projectsWithStats = [], refetch: refetchStats } = useQuery<any[]>({
     queryKey: ["/api/projects/with-stats"],
+    refetchInterval: 30000, // إعادة التحديث كل 30 ثانية
+    staleTime: 10000, // البيانات طازجة لـ 10 ثواني
+  });
+
+  // جلب الإحصائيات المحددة للمشروع المختار بشكل منفصل
+  const { data: selectedProjectStats = null, refetch: refetchProjectStats } = useQuery({
+    queryKey: ["/api/projects", selectedProjectId, "stats"],
+    enabled: !!selectedProjectId,
+    refetchInterval: 30000,
+    staleTime: 10000,
   });
 
   const selectedProject = projects.find(p => p.id === selectedProjectId);
   const selectedProjectWithStats = projectsWithStats.find((p: any) => p.id === selectedProjectId);
-  const selectedProjectStats = selectedProjectWithStats?.stats || {};
+  
+  // استخدام البيانات المحددة أولاً، ثم البيانات العامة كاحتياط
+  const projectStats = selectedProjectStats || selectedProjectWithStats?.stats || {};
 
-  // حساب الإحصائيات
+  // حساب الإحصائيات مع التحقق من صحة البيانات
   const reportStats: ReportStats = {
     totalGenerated: projectsWithStats.length,
     todayReports: 0, // يمكن حسابها من قاعدة البيانات
     activeProjects: projects.filter(p => p.status === 'active').length,
-    completionRate: selectedProjectStats.completionRate || 0
+    completionRate: projectStats.completionRate || 0
   };
 
-  const totalFundTransfers = selectedProjectStats.totalIncome || 0;
-  const totalExpenses = selectedProjectStats.totalExpenses || 0;
-  const currentBalance = selectedProjectStats.currentBalance || 0;
+  // تحسين استخراج البيانات مع التحقق من القيم
+  const totalFundTransfers = Number(projectStats?.totalIncome) || 0;
+  const totalExpenses = Number(projectStats?.totalExpenses) || 0;
+  const currentBalance = Number(projectStats?.currentBalance) || 0;
   const totalWorkers = workers.length;
+  
+  // إضافة تسجيل للتشخيص
+  console.log('📊 إحصائيات المشروع في التقارير:', {
+    selectedProjectId,
+    projectStats,
+    totalIncome: totalFundTransfers,
+    totalExpenses,
+    currentBalance,
+    hasStats: !!projectStats
+  });
 
   // إنشاء تقرير المصروفات اليومية
   const generateDailyExpensesReport = async () => {

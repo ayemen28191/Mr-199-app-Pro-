@@ -54,14 +54,33 @@ export default function ProjectsPage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
-  // Fetch projects with statistics
-  const { data: projects = [], isLoading } = useQuery<ProjectWithStats[]>({
+  // Fetch projects with statistics مع إعادة التحديث المحسنة
+  const { data: projects = [], isLoading, refetch: refetchProjects } = useQuery<ProjectWithStats[]>({
     queryKey: ["/api/projects/with-stats"],
     queryFn: async () => {
+      console.log('🔄 جلب المشاريع مع الإحصائيات...');
       const response = await fetch("/api/projects/with-stats");
-      if (!response.ok) throw new Error("فشل في تحميل المشاريع");
-      return response.json();
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ خطأ في جلب المشاريع:', errorText);
+        throw new Error("فشل في تحميل المشاريع");
+      }
+      const data = await response.json();
+      console.log('✅ تم جلب المشاريع:', data.length, 'مشروع');
+      // تسجيل عينة من البيانات للتشخيص
+      if (data.length > 0) {
+        console.log('📊 عينة من إحصائيات المشاريع:', data.slice(0, 2).map((p: any) => ({
+          name: p.name,
+          totalIncome: p.stats?.totalIncome,
+          totalExpenses: p.stats?.totalExpenses,
+          currentBalance: p.stats?.currentBalance
+        })));
+      }
+      return data;
     },
+    refetchInterval: 60000, // إعادة التحديث كل دقيقة
+    staleTime: 30000, // البيانات طازجة لـ 30 ثانية
+    refetchOnWindowFocus: true,
   });
 
   // Create project form
