@@ -126,11 +126,7 @@ export class UnifiedPrintManager {
             config.margins!.left,
             config.margins!.top,
             imgWidth,
-            imgHeight,
-            undefined,
-            'FAST',
-            0,
-            yOffset
+            imgHeight
           );
         }
       } else {

@@ -27,9 +27,9 @@ export const EXCEL_STYLES = {
   
   // حدود موحدة
   borders: {
-    thin: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-    medium: { style: 'medium', color: { argb: 'FF94A3B8' } },
-    thick: { style: 'thick', color: { argb: 'FF475569' } },
+    thin: { style: 'thin' as const, color: { argb: 'FFE2E8F0' } },
+    medium: { style: 'medium' as const, color: { argb: 'FF94A3B8' } },
+    thick: { style: 'thick' as const, color: { argb: 'FF475569' } },
   },
 };
 

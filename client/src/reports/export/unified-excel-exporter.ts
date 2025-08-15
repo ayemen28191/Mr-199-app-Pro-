@@ -11,7 +11,7 @@ import * as ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 
 // استيراد الأنماط الموحدة
-import { EXCEL_STYLES, COMPANY_INFO, addReportHeader } from '../../../components/excel-export-utils';
+import { EXCEL_STYLES, COMPANY_INFO, addReportHeader } from '../../components/excel-export-utils';
 
 export class UnifiedExcelExporter {
   private workbook: ExcelJS.Workbook;
@@ -33,9 +33,11 @@ export class UnifiedExcelExporter {
    */
   async exportDailyExpenses(data: any, filename: string = 'daily-expenses') {
     const worksheet = this.workbook.addWorksheet('المصروفات اليومية', {
-      rightToLeft: true,
       properties: { defaultColWidth: 15 }
     });
+    
+    // تعيين اتجاه RTL للورقة
+    worksheet.views = [{ rightToLeft: true }];
 
     // إضافة رأس التقرير
     let currentRow = addReportHeader(
@@ -58,9 +60,11 @@ export class UnifiedExcelExporter {
    */
   async exportWorkerStatement(data: any, filename: string = 'worker-statement') {
     const worksheet = this.workbook.addWorksheet('كشف حساب العامل', {
-      rightToLeft: true,
       properties: { defaultColWidth: 12 }
     });
+    
+    // تعيين اتجاه RTL للورقة
+    worksheet.views = [{ rightToLeft: true }];
 
     let currentRow = addReportHeader(
       worksheet,

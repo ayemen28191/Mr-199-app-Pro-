@@ -8,7 +8,7 @@
  */
 
 // قوالب التقارير
-export { default as UnifiedReportTemplate } from '../components/unified-report-template';
+export { UnifiedReportTemplate, SummaryCard, UnifiedTable } from '../components/unified-report-template';
 export { EnhancedWorkerAccountStatement } from '../components/EnhancedWorkerAccountStatementFixed';
 
 // مكونات التصدير
@@ -19,6 +19,9 @@ export { UnifiedPrintManager, printReport } from './print/unified-print-manager'
 
 // أدوات مساعدة
 export * from '../components/excel-export-utils';
+
+// قوالب التقارير
+export * from './templates';
 
 // أنواع البيانات
 export interface ReportData {
