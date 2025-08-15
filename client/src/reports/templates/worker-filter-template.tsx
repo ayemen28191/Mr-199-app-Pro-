@@ -38,15 +38,15 @@ interface WorkerFilterTemplateProps {
 
 export default function WorkerFilterTemplate({ data }: WorkerFilterTemplateProps) {
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('ar-SA', {
+    return new Intl.NumberFormat('en-US', {
       style: 'decimal',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
-    }).format(amount);
+    }).format(amount) + ' YER';
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('ar-SA', {
+    return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit'
@@ -105,8 +105,8 @@ export default function WorkerFilterTemplate({ data }: WorkerFilterTemplateProps
               <th className="border border-gray-300 p-2 text-center w-16">الأجر اليومي</th>
               <th className="border border-gray-300 p-2 text-center w-16">أيام العمل</th>
               <th className="border border-gray-300 p-2 text-center w-20">إجمالي المستحق</th>
-              <th className="border border-gray-300 p-2 text-center w-20">المبلغ المدفوع</th>
-              <th className="border border-gray-300 p-2 text-center w-20">المبلغ المستحق</th>
+              <th className="border border-gray-300 p-2 text-center w-20">المبلغ المستلم</th>
+              <th className="border border-gray-300 p-2 text-center w-20">المبلغ المتبقي</th>
               <th className="border border-gray-300 p-2 text-center w-16">الحالة</th>
               <th className="border border-gray-300 p-2 text-center w-20">ملاحظات</th>
             </tr>
@@ -127,19 +127,19 @@ export default function WorkerFilterTemplate({ data }: WorkerFilterTemplateProps
                   {worker.project}
                 </td>
                 <td className="border border-gray-300 p-2 text-center">
-                  {formatCurrency(worker.dailyWage)} ر.س
+                  {formatCurrency(worker.dailyWage)}
                 </td>
                 <td className="border border-gray-300 p-2 text-center">
                   {worker.workDays}
                 </td>
-                <td className="border border-gray-300 p-2 text-center font-medium">
-                  {formatCurrency(worker.totalEarned)} ر.س
+                <td className="border border-gray-300 p-2 text-center font-medium text-black">
+                  {formatCurrency(worker.totalEarned)}
                 </td>
-                <td className="border border-gray-300 p-2 text-center text-red-600">
-                  {formatCurrency(worker.totalPaid)} ر.س
+                <td className="border border-gray-300 p-2 text-center text-red-600 font-medium">
+                  {formatCurrency(worker.totalPaid)}
                 </td>
                 <td className="border border-gray-300 p-2 text-center font-medium text-green-600">
-                  {formatCurrency(worker.remaining)} ر.س
+                  {formatCurrency(worker.remaining)}
                 </td>
                 <td className="border border-gray-300 p-2 text-center">
                   <span className={`px-2 py-1 rounded text-xs ${

@@ -738,6 +738,111 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get worker attendance with project details for filtering
+  app.get("/api/worker-attendance/by-projects", async (req, res) => {
+    try {
+      const { projectIds, dateFrom, dateTo } = req.query;
+      console.log("🔍 طلب جلب سجلات الحضور:", { projectIds, dateFrom, dateTo });
+      
+      if (!projectIds) {
+        return res.status(400).json({ message: "مطلوب معرفات المشاريع" });
+      }
+
+      // تقسيم معرفات المشاريع
+      const projectIdArray = (projectIds as string).split(',').filter(id => id.trim());
+      console.log("🎯 المشاريع المحددة:", projectIdArray);
+      
+      if (projectIdArray.length === 0) {
+        return res.json([]);
+      }
+
+      const allAttendanceRecords = [];
+      
+      // جلب بيانات المشاريع والعمال
+      const projects = await storage.getProjects();
+      const workers = await storage.getWorkers();
+      
+      // إنشاء خرائط للبحث السريع
+      const projectMap = new Map(projects.map(p => [p.id, p]));
+      const workerMap = new Map(workers.map(w => [w.id, w]));
+      
+      for (const projectId of projectIdArray) {
+        const project = projectMap.get(projectId);
+        if (!project) {
+          console.log(`⚠️ مشروع غير موجود: ${projectId}`);
+          continue;
+        }
+
+        try {
+          // جلب جميع سجلات الحضور للمشروع
+          let projectAttendance = [];
+          
+          if (dateFrom && dateTo) {
+            // إذا تم تحديد تواريخ معينة
+            const fromDate = new Date(dateFrom as string);
+            const toDate = new Date(dateTo as string);
+            
+            for (let d = new Date(fromDate); d <= toDate; d.setDate(d.getDate() + 1)) {
+              const dateStr = d.toISOString().split('T')[0];
+              try {
+                const dayAttendance = await storage.getWorkerAttendance(projectId, dateStr);
+                projectAttendance.push(...dayAttendance);
+              } catch (dayError) {
+                // تجاهل الأيام التي لا تحتوي على بيانات
+              }
+            }
+          } else {
+            // جلب جميع السجلات (آخر 30 يوم)
+            const today = new Date();
+            const thirtyDaysAgo = new Date(today);
+            thirtyDaysAgo.setDate(today.getDate() - 30);
+            
+            for (let d = new Date(thirtyDaysAgo); d <= today; d.setDate(d.getDate() + 1)) {
+              const dateStr = d.toISOString().split('T')[0];
+              try {
+                const dayAttendance = await storage.getWorkerAttendance(projectId, dateStr);
+                projectAttendance.push(...dayAttendance);
+              } catch (dayError) {
+                // تجاهل الأيام التي لا تحتوي على بيانات
+              }
+            }
+          }
+          
+          // إضافة تفاصيل المشروع والعامل
+          for (const attendance of projectAttendance) {
+            const worker = workerMap.get(attendance.workerId);
+            if (worker) {
+              allAttendanceRecords.push({
+                id: attendance.id,
+                workerId: attendance.workerId,
+                workerName: worker.name,
+                workerType: worker.type,
+                projectId: projectId,
+                projectName: project.name,
+                date: attendance.date,
+                dailyWage: Number(attendance.dailyWage) || 0,
+                actualWage: Number(attendance.actualWage) || 0,
+                paidAmount: Number(attendance.paidAmount) || 0,
+                remainingAmount: Number(attendance.remainingAmount) || 0,
+                isPresent: attendance.isPresent,
+                workDays: Number(attendance.workDays) || 0
+              });
+            }
+          }
+          
+        } catch (projectError) {
+          console.error(`⛔ خطأ في معالجة المشروع ${projectId}:`, projectError);
+        }
+      }
+
+      console.log(`✅ تم جلب ${allAttendanceRecords.length} سجل حضور`);
+      res.json(allAttendanceRecords);
+    } catch (error) {
+      console.error("⛔ خطأ في جلب سجلات الحضور:", error);
+      res.status(500).json({ message: "خطأ في جلب سجلات الحضور", error: error instanceof Error ? error.message : 'خطأ غير معروف' });
+    }
+  });
+
   // Materials
   app.get("/api/materials", async (req, res) => {
     try {

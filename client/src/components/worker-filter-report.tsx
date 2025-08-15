@@ -22,6 +22,22 @@ interface Worker {
   isActive: boolean;
 }
 
+interface WorkerAttendanceRecord {
+  id: string;
+  workerId: string;
+  workerName: string;
+  workerType: string;
+  projectId: string;
+  projectName: string;
+  date: string;
+  dailyWage: number;
+  actualWage: number;
+  paidAmount: number;
+  remainingAmount: number;
+  isPresent: boolean;
+  workDays: number;
+}
+
 interface WorkerFilterReportProps {
   // لا نحتاج selectedProjectId لأن المكون مستقل
 }
@@ -40,33 +56,68 @@ export default function WorkerFilterReport({}: WorkerFilterReportProps) {
     enabled: true
   });
 
-  // جلب جميع العمال (سيتم تصفيتهم لاحقاً)
-  const { data: allWorkers = [], isLoading: workersLoading, error: workersError } = useQuery<Worker[]>({
-    queryKey: ['/api/workers'],
-    enabled: true
+  // جلب سجلات حضور العمال للمشاريع المحددة
+  const { data: workerAttendanceRecords = [], isLoading: workersLoading, error: workersError } = useQuery<WorkerAttendanceRecord[]>({
+    queryKey: ['/api/worker-attendance', 'with-project-details', selectedProjects],
+    enabled: selectedProjects.length > 0,
+    queryFn: async () => {
+      if (selectedProjects.length === 0) return [];
+      const projectIds = selectedProjects.join(',');
+      const response = await fetch(`/api/worker-attendance/by-projects?projectIds=${projectIds}&dateFrom=${dateFrom}&dateTo=${dateTo}`);
+      if (!response.ok) throw new Error('فشل في جلب سجلات الحضور');
+      return response.json();
+    }
   });
 
   // رسائل تشخيصية
-  console.log('🔍 حالة جلب العمال:', { 
-    allWorkers: allWorkers.length, 
+  console.log('🔍 حالة جلب سجلات الحضور:', { 
+    attendanceRecords: workerAttendanceRecords.length, 
+    selectedProjects: selectedProjects.length,
     isLoading: workersLoading, 
     hasError: !!workersError,
     error: workersError 
   });
 
-  // عرض جميع العمال (لأن العلاقة مع المشاريع في جدول منفصل)
+  // معالجة سجلات الحضور لعرضها
   const filteredWorkers = useMemo(() => {
-    console.log('🔍 عرض جميع العمال المتاحين:', { 
-      allWorkersCount: allWorkers.length, 
-      selectedProjectsCount: selectedProjects.length,
-      allWorkers: allWorkers.map(w => ({ id: w.id, name: w.name, type: w.type }))
+    console.log('🔍 معالجة سجلات الحضور:', { 
+      recordsCount: workerAttendanceRecords.length, 
+      selectedProjectsCount: selectedProjects.length
     });
     
-    // عرض جميع العمال بغض النظر عن المشاريع المختارة
-    // لأن العلاقة مع المشاريع موجودة في worker_attendance
-    console.log('📝 عرض جميع العمال (التصفية بالمشاريع لاحقاً)');
-    return allWorkers;
-  }, [allWorkers, selectedProjects]);
+    if (workerAttendanceRecords.length === 0) {
+      return [];
+    }
+
+    // تجميع البيانات حسب العامل والمشروع
+    const workerProjectMap = new Map<string, any>();
+    
+    workerAttendanceRecords.forEach(record => {
+      const key = `${record.workerId}-${record.projectId}`;
+      if (!workerProjectMap.has(key)) {
+        workerProjectMap.set(key, {
+          workerId: record.workerId,
+          workerName: record.workerName,
+          workerType: record.workerType,
+          projectId: record.projectId,
+          projectName: record.projectName,
+          totalEarned: 0,
+          totalPaid: 0,
+          totalRemaining: 0,
+          workDays: 0,
+          dailyWage: record.dailyWage
+        });
+      }
+      
+      const entry = workerProjectMap.get(key);
+      entry.totalEarned += Number(record.actualWage) || 0;
+      entry.totalPaid += Number(record.paidAmount) || 0;
+      entry.totalRemaining += Number(record.remainingAmount) || 0;
+      entry.workDays += Number(record.workDays) || 0;
+    });
+    
+    return Array.from(workerProjectMap.values());
+  }, [workerAttendanceRecords, selectedProjects, dateFrom, dateTo]);
 
   // تعيين التاريخ الافتراضي
   useEffect(() => {
@@ -100,17 +151,17 @@ export default function WorkerFilterReport({}: WorkerFilterReportProps) {
     setSelectedWorkers([]);
   };
 
-  // وظائف التحكم في العمال
-  const handleWorkerToggle = (workerId: string) => {
+  // وظائف التحكم في العمال (نستخدم مفتاح مركب للعامل-المشروع)
+  const handleWorkerToggle = (workerProjectKey: string) => {
     setSelectedWorkers(prev => 
-      prev.includes(workerId) 
-        ? prev.filter(id => id !== workerId)
-        : [...prev, workerId]
+      prev.includes(workerProjectKey) 
+        ? prev.filter(id => id !== workerProjectKey)
+        : [...prev, workerProjectKey]
     );
   };
 
   const selectAllWorkers = () => {
-    setSelectedWorkers(filteredWorkers.map(w => w.id));
+    setSelectedWorkers(filteredWorkers.map(w => `${w.workerId}-${w.projectId}`));
   };
 
   const clearWorkerSelection = () => {
@@ -130,7 +181,7 @@ export default function WorkerFilterReport({}: WorkerFilterReportProps) {
 
   // إحصائيات الاختيار
   const selectedProjectsData = projects.filter(p => selectedProjects.includes(p.id));
-  const selectedWorkersData = filteredWorkers.filter(w => selectedWorkers.includes(w.id));
+  const selectedWorkersData = filteredWorkers.filter(w => selectedWorkers.includes(`${w.workerId}-${w.projectId}`));
 
   // إنشاء بيانات التقرير للعرض
   const generateReportData = (): WorkerFilterData => {
@@ -145,24 +196,18 @@ export default function WorkerFilterReport({}: WorkerFilterReportProps) {
       workerCount: selectedWorkersData.length,
       totalDailyWages: selectedWorkersData.reduce((sum, w) => sum + w.dailyWage, 0),
       workers: selectedWorkersData.map(worker => {
-        // العامل يمكن أن يعمل في عدة مشاريع
-        const workDays = Math.floor(Math.random() * 30) + 1; // محاكاة أيام العمل
-        const totalEarned = workDays * worker.dailyWage;
-        const totalPaid = Math.floor(totalEarned * (0.7 + Math.random() * 0.3)); // محاكاة المدفوع
-        const remaining = totalEarned - totalPaid;
-        
         return {
-          id: worker.id,
-          name: worker.name,
-          type: worker.type,
-          project: 'يعمل في عدة مشاريع', // العامل يمكن أن يعمل في عدة مشاريع
+          id: `${worker.workerId}-${worker.projectId}`,
+          name: worker.workerName,
+          type: worker.workerType,
+          project: worker.projectName,
           dailyWage: worker.dailyWage,
-          workDays,
-          totalEarned,
-          totalPaid,
-          remaining,
-          isActive: worker.isActive,
-          notes: worker.isActive ? '' : 'متوقف'
+          workDays: worker.workDays,
+          totalEarned: worker.totalEarned,
+          totalPaid: worker.totalPaid,
+          remaining: worker.totalRemaining,
+          isActive: true, // العمال الذين لديهم سجلات حضور
+          notes: ''
         };
       }),
       totals: {
@@ -279,12 +324,12 @@ export default function WorkerFilterReport({}: WorkerFilterReportProps) {
               )}
             </div>
 
-            <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200">
-              <p className="text-green-600 dark:text-green-400 font-medium">
-                📈 يتم عرض جميع العمال المتاحين في النظام
+            <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200">
+              <p className="text-blue-600 dark:text-blue-400 font-medium">
+                📋 سيتم عرض العمال الذين عملوا في المشاريع المحددة فقط
               </p>
-              <p className="text-sm text-green-500 mt-1">
-                يمكن للعامل العمل في عدة مشاريع، والتقرير يشمل جميع العمال
+              <p className="text-sm text-blue-500 mt-1">
+                اختر المشاريع أولاً لعرض العمال المتاحين
               </p>
             </div>
           </div>
@@ -374,37 +419,43 @@ export default function WorkerFilterReport({}: WorkerFilterReportProps) {
                   <div className="col-span-full text-center text-gray-500 py-8">
                     <User className="h-12 w-12 mx-auto mb-2 opacity-50" />
                     <p>لا توجد عمال متاحين</p>
-                    <p className="text-sm mt-1">إجمالي العمال: {allWorkers.length} | مفلتر: {filteredWorkers.length}</p>
-                    <p className="text-sm mt-1">تأكد من وجود عمال في النظام أو اختر مشاريع تحتوي على عمال</p>
+                    <p className="text-sm mt-1">سجلات الحضور: {workerAttendanceRecords.length} | مفلتر: {filteredWorkers.length}</p>
+                    <p className="text-sm mt-1">اختر المشاريع والتواريخ لعرض العمال الذين عملوا فيها</p>
                   </div>
                 ) : (
                   filteredWorkers.map(worker => {
+                    const workerKey = `${worker.workerId}-${worker.projectId}`;
                     return (
-                      <div key={worker.id} className="flex items-center justify-between p-3 bg-white dark:bg-gray-700 rounded-lg border">
+                      <div key={workerKey} className="flex items-center justify-between p-3 bg-white dark:bg-gray-700 rounded-lg border">
                         <div className="flex items-center space-x-3">
                           <Checkbox
-                            id={`worker-${worker.id}`}
-                            checked={selectedWorkers.includes(worker.id)}
-                            onCheckedChange={() => handleWorkerToggle(worker.id)}
+                            id={`worker-${workerKey}`}
+                            checked={selectedWorkers.includes(workerKey)}
+                            onCheckedChange={() => handleWorkerToggle(workerKey)}
                           />
-                          <div>
+                          <div className="flex-1">
                             <label 
-                              htmlFor={`worker-${worker.id}`}
-                              className="font-medium cursor-pointer"
+                              htmlFor={`worker-${workerKey}`}
+                              className="font-medium cursor-pointer text-lg"
                             >
-                              {worker.name}
+                              {worker.workerName}
                             </label>
-                            <p className="text-xs text-gray-500">{worker.type}</p>
-                            <p className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded mt-1">
-                              يعمل في مشاريع متعددة
-                            </p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">{worker.workerType}</p>
+                            <div className="bg-blue-100 dark:bg-blue-900/30 px-2 py-1 rounded mt-1 text-xs">
+                              <span className="text-blue-700 dark:text-blue-300 font-medium">{worker.projectName}</span>
+                            </div>
+                            <div className="flex gap-4 mt-2 text-xs">
+                              <span className="text-black font-medium">المستحق: {worker.totalEarned.toLocaleString('en')} YER</span>
+                              <span className="text-red-600 font-medium">المستلم: {worker.totalPaid.toLocaleString('en')} YER</span>
+                              <span className="text-green-600 font-medium">المتبقي: {worker.totalRemaining.toLocaleString('en')} YER</span>
+                            </div>
                           </div>
                         </div>
                         <div className="text-left">
-                          <Badge variant={worker.isActive ? "default" : "secondary"} className="text-xs">
-                            {worker.isActive ? 'نشط' : 'غير نشط'}
+                          <Badge variant="default" className="text-xs bg-green-100 text-green-800">
+                            {worker.workDays.toLocaleString('en')} أيام
                           </Badge>
-                          <p className="text-xs text-gray-500 mt-1">{worker.dailyWage} ريال/يوم</p>
+                          <p className="text-xs text-gray-500 mt-1">{worker.dailyWage.toLocaleString('en')} YER/يوم</p>
                         </div>
                       </div>
                     );
@@ -426,7 +477,7 @@ export default function WorkerFilterReport({}: WorkerFilterReportProps) {
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-purple-600">
-                {selectedWorkersData.reduce((sum, worker) => sum + worker.dailyWage, 0)}
+                {selectedWorkersData.reduce((sum, worker) => sum + worker.dailyWage, 0).toLocaleString('en')} YER
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400">إجمالي الأجور اليومية</div>
             </div>
