@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { AutocompleteInput } from '@/components/ui/autocomplete-input-database';
-import '@/styles/a4-print-optimized.css';
+import '@/styles/unified-print-styles.css';
 
 interface Worker {
   id: string;

@@ -629,13 +629,16 @@ export default function Reports() {
     }
     
     try {
-      // إنشاء مُصدّر Excel الاحترافي مع القالب النشط
-      const exporter = new (UnifiedExcelExporter as any)(activeTemplate || {});
+      // استخدام أدوات التصدير المحسنة
+      const { exportDailyExpenseReport, exportWorkerStatement, exportMaterialReport } = await import('@/components/excel-export-utils');
       
-      // تحويل البيانات للنظام الاحترافي
-      const enhancedData = await convertDataToEnhanced(data, activeReportType || 'daily');
-      
-      await exporter.exportToExcel(enhancedData, `${filename}-احترافي`);
+      if (activeReportType === 'daily') {
+        await exportDailyExpenseReport(data, filename);
+      } else if (activeReportType === 'worker') {
+        await exportWorkerStatement(data, filename);
+      } else {
+        await exportMaterialReport(data, filename);
+      }
       
       toast({
         title: "تم التصدير الاحترافي",

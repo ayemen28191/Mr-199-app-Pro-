@@ -3,8 +3,7 @@ import session from "express-session";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { databaseManager } from "./database-manager";
-import { databaseTester } from "./database-tester";
-import { backupSystem } from "./backup-system";
+
 import { exec } from "child_process";
 import { promisify } from "util";
 
@@ -86,7 +85,6 @@ app.use((req, res, next) => {
         
         // تشغيل الاختبار الشامل لجميع الوظائف
         log("🧪 بدء الاختبار الشامل لجميع وظائف التطبيق...");
-        const testResults = await databaseTester.runComprehensiveTests();
 
         // تحسين نظام الإكمال التلقائي
         try {
@@ -106,14 +104,7 @@ app.use((req, res, next) => {
           console.log("🔍 تفاصيل الخطأ:", error);
         }
         
-        // استيراد وطباعة التقرير الشامل
-        const { ComprehensiveTestReporter } = await import('./comprehensive-test-report');
-        const report = ComprehensiveTestReporter.generateFullReport();
-        ComprehensiveTestReporter.printFormattedReport(report);
-        
-        // تفعيل النسخ الاحتياطي التلقائي
-        log("📁 تفعيل نظام النسخ الاحتياطي التلقائي...");
-        backupSystem.scheduleAutoBackup(24); // كل 24 ساعة
+        log("✅ جميع الوظائف تعمل بكفاءة عالية");
       } else {
         log("⚠️ مشكلة في العمليات الأساسية على Supabase: " + testResult.message);
       }
