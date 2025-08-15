@@ -1122,6 +1122,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`🟦 Generating daily expense report for project ${projectId}, date ${date}`);
       
+      // جلب معلومات المشروع أولاً
+      const project = await storage.getProject(projectId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
+      
       const [
         fundTransfers,
         workerAttendance,
@@ -1263,16 +1269,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         date,
         projectId,
+        projectName: project.name, // إضافة اسم المشروع
+        
+        // البيانات الأساسية بالتنسيق الذي يتوقعه القالب
         fundTransfers,
         workerAttendance: workerAttendanceWithWorkers,
         materialPurchases: materialPurchasesWithMaterials,
         transportationExpenses: transportationExpensesWithWorkers,
         workerTransfers: workerTransfersWithWorkers,
-        workerMiscExpenses: workerMiscExpensesWithWorkers,
+        miscExpenses: workerMiscExpensesWithWorkers, // تغيير الاسم ليتطابق مع القالب
+        
+        // ترحيل الأموال بين المشاريع
         incomingProjectTransfers: incomingProjectTransfersWithProjects,
         outgoingProjectTransfers: outgoingProjectTransfersWithProjects,
         totalIncomingTransfers,
         totalOutgoingTransfers,
+        
+        // الملخص المالي في المستوى الأعلى (كما يتوقعه القالب)
+        carriedForward,
+        totalIncome,
+        totalExpenses,
+        remainingBalance,
+        
+        // تفاصيل إضافية للتقرير
         dailySummary,
         summary: {
           carriedForward,
