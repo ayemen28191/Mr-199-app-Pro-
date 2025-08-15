@@ -1229,6 +1229,13 @@ export class DatabaseStorage implements IStorage {
     attendance: any[];
     transfers: WorkerTransfer[];
     balance: WorkerBalance | null;
+    summary: {
+      totalWorkDays: number;
+      totalWagesEarned: number;
+      totalPaidAmount: number;
+      totalTransfers: number;
+      remainingBalance: number;
+    };
   }> {
     try {
       // جلب بيانات العامل
@@ -1295,11 +1302,31 @@ export class DatabaseStorage implements IStorage {
         balance = workerBalance || null;
       }
       
+      // حساب الإحصائيات الإجمالية
+      const totalWorkDays = attendance.reduce((sum, record) => sum + (Number(record.workDays) || 1), 0);
+      const totalWagesEarned = attendance.reduce((sum, record) => {
+        const dailyWage = Number(record.dailyWage) || Number(worker?.dailyWage) || 0;
+        const workDays = Number(record.workDays) || 1;
+        return sum + (dailyWage * workDays);
+      }, 0);
+      const totalPaidAmount = attendance.reduce((sum, record) => sum + (Number(record.paidAmount) || 0), 0);
+      const totalTransfers = transfers.reduce((sum, transfer) => sum + (Number(transfer.amount) || 0), 0);
+      const remainingBalance = totalWagesEarned - totalPaidAmount;
+
+      const summary = {
+        totalWorkDays,
+        totalWagesEarned,
+        totalPaidAmount,
+        totalTransfers,
+        remainingBalance
+      };
+
       return {
         worker,
         attendance,
         transfers, // This now includes all transfers including family transfers
-        balance
+        balance,
+        summary
       };
     } catch (error) {
       console.error('Error getting worker account statement:', error);
@@ -1307,7 +1334,14 @@ export class DatabaseStorage implements IStorage {
         worker: null,
         attendance: [],
         transfers: [],
-        balance: null
+        balance: null,
+        summary: {
+          totalWorkDays: 0,
+          totalWagesEarned: 0,
+          totalPaidAmount: 0,
+          totalTransfers: 0,
+          remainingBalance: 0
+        }
       };
     }
   }
@@ -1451,16 +1485,118 @@ export class DatabaseStorage implements IStorage {
       throw new Error('Worker not found');
     }
 
-    return {
-      worker,
-      projects: [],
-      totals: {
-        totalEarned: '0',
-        totalPaid: '0',
-        totalTransferred: '0',
-        totalBalance: '0'
+    try {
+      // جلب جميع المشاريع التي عمل بها العامل
+      let projectConditions = [eq(workerAttendance.workerId, workerId)];
+      
+      if (dateFrom) {
+        projectConditions.push(gte(workerAttendance.date, dateFrom));
       }
-    };
+      
+      if (dateTo) {
+        projectConditions.push(lte(workerAttendance.date, dateTo));
+      }
+      
+      // الحصول على المشاريع المميزة
+      const distinctProjects = await db.selectDistinct({ projectId: workerAttendance.projectId })
+        .from(workerAttendance)
+        .where(and(...projectConditions));
+      
+      const projectsList = [];
+      let totalEarned = 0;
+      let totalPaid = 0;
+      let totalTransferred = 0;
+      let totalBalance = 0;
+      
+      // لكل مشروع، احسب التفاصيل
+      for (const { projectId } of distinctProjects) {
+        const [project] = await db.select().from(projects).where(eq(projects.id, projectId));
+        if (!project) continue;
+        
+        // جلب الحضور لهذا المشروع
+        let attendanceConditions = [
+          eq(workerAttendance.workerId, workerId),
+          eq(workerAttendance.projectId, projectId)
+        ];
+        
+        if (dateFrom) {
+          attendanceConditions.push(gte(workerAttendance.date, dateFrom));
+        }
+        
+        if (dateTo) {
+          attendanceConditions.push(lte(workerAttendance.date, dateTo));
+        }
+        
+        const attendance = await db.select().from(workerAttendance)
+          .where(and(...attendanceConditions))
+          .orderBy(workerAttendance.date);
+        
+        // جلب التحويلات لهذا المشروع
+        let transfersConditions = [
+          eq(workerTransfers.workerId, workerId),
+          eq(workerTransfers.projectId, projectId)
+        ];
+        
+        if (dateFrom) {
+          transfersConditions.push(gte(workerTransfers.transferDate, dateFrom));
+        }
+        
+        if (dateTo) {
+          transfersConditions.push(lte(workerTransfers.transferDate, dateTo));
+        }
+        
+        const transfers = await db.select().from(workerTransfers)
+          .where(and(...transfersConditions))
+          .orderBy(workerTransfers.transferDate);
+        
+        // حساب الإحصائيات لهذا المشروع
+        const projectEarned = attendance.reduce((sum, record) => {
+          const dailyWage = Number(record.dailyWage) || Number(worker.dailyWage) || 0;
+          const workDays = Number(record.workDays) || 1;
+          return sum + (dailyWage * workDays);
+        }, 0);
+        
+        const projectPaid = attendance.reduce((sum, record) => sum + (Number(record.paidAmount) || 0), 0);
+        const projectTransferred = transfers.reduce((sum, transfer) => sum + (Number(transfer.amount) || 0), 0);
+        
+        const balance = await this.getWorkerBalance(workerId, projectId);
+        
+        projectsList.push({
+          project,
+          attendance,
+          balance: balance || null,
+          transfers
+        });
+        
+        totalEarned += projectEarned;
+        totalPaid += projectPaid;
+        totalTransferred += projectTransferred;
+        totalBalance += balance ? Number(balance.currentBalance) : 0;
+      }
+      
+      return {
+        worker,
+        projects: projectsList,
+        totals: {
+          totalEarned: totalEarned.toString(),
+          totalPaid: totalPaid.toString(),
+          totalTransferred: totalTransferred.toString(),
+          totalBalance: totalBalance.toString()
+        }
+      };
+    } catch (error) {
+      console.error('Error getting worker multi-project statement:', error);
+      return {
+        worker,
+        projects: [],
+        totals: {
+          totalEarned: '0',
+          totalPaid: '0',
+          totalTransferred: '0',
+          totalBalance: '0'
+        }
+      };
+    }
   }
 
   async getWorkerProjects(workerId: string): Promise<Project[]> {
