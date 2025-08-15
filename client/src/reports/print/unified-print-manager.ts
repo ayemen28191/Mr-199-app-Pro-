@@ -50,9 +50,20 @@ export class UnifiedPrintManager {
       throw new Error(`لا يمكن العثور على عنصر الطباعة: ${elementId}`);
     }
 
-    if (!element.innerHTML.trim()) {
-      console.error(`Print Error: Element '${elementId}' is empty`);
-      throw new Error(`عنصر الطباعة فارغ: ${elementId}`);
+    // التحقق من أن العنصر يحتوي على محتوى حقيقي
+    const textContent = element.innerText || element.textContent || '';
+    const hasVisibleContent = textContent.trim().length > 0;
+    const hasTableData = element.querySelector('table tbody tr:not(.empty-state)');
+    
+    if (!hasVisibleContent && !hasTableData) {
+      console.error(`Print Error: Element '${elementId}' has no visible content`);
+      throw new Error(`عنصر الطباعة لا يحتوي على بيانات للطباعة. يرجى التأكد من تحميل البيانات أولاً.`);
+    }
+
+    // التحقق من وجود رسائل خطأ أو تحميل
+    const loadingElement = element.querySelector('.loading, .error, [data-loading]');
+    if (loadingElement) {
+      throw new Error(`لا يمكن الطباعة أثناء التحميل أو في حالة وجود خطأ. يرجى انتظار تحميل البيانات.`);
     }
     
     // إخفاء العناصر غير المرغوبة

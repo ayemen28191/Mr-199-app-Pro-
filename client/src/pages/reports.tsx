@@ -252,16 +252,29 @@ export default function Reports() {
     // تأكد من عرض المعاينة قبل الطباعة
     if (!showPreview) {
       setShowPreview(true);
-      // انتظار قليل حتى يتم عرض العنصر
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // انتظار أطول حتى يتم تحميل وعرض المحتوى
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
 
-    // تحقق من وجود العنصر
+    // تحقق من وجود العنصر والمحتوى
     const element = document.getElementById('report-preview');
-    if (!element || !element.innerHTML.trim()) {
+    if (!element) {
       toast({
-        title: "خطأ في الطباعة ❌",
-        description: "لا يمكن العثور على محتوى التقرير للطباعة",
+        title: "خطأ في الطباعة",
+        description: "لا يمكن العثور على عنصر التقرير للطباعة",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // التحقق من وجود محتوى حقيقي
+    const hasContent = element.querySelector('table tbody tr:not(.empty-state)') || 
+                      element.innerText.trim().length > 50;
+    
+    if (!hasContent) {
+      toast({
+        title: "لا توجد بيانات للطباعة",
+        description: "يرجى إنشاء التقرير والتأكد من تحميل البيانات أولاً",
         variant: "destructive",
       });
       return;
@@ -301,12 +314,7 @@ export default function Reports() {
             </div>
             <div className="flex items-center gap-3 flex-wrap">
               <div className="flex-1 min-w-[300px] max-w-[400px]">
-                <ProjectSelector 
-                  selectedProjectId={selectedProjectId}
-                  onProjectChange={selectProject} 
-                  variant="compact" 
-                  className="w-full" 
-                />
+                <ProjectSelector onProjectChange={selectProject} />
               </div>
               <Button 
                 variant="outline" 

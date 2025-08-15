@@ -19,12 +19,20 @@ import { DailyExpenseTemplate, quickExport, printReport } from '@/reports';
 import { getCurrentDate, formatCurrency } from '@/lib/utils';
 import { Printer, FileSpreadsheet, ArrowLeft } from 'lucide-react';
 import ProjectSelector from '@/components/project-selector';
+import type { Project } from '@shared/schema';
 
 export default function DailyExpensesPage() {
   const { selectedProjectId } = useSelectedProject();
   const { toast } = useToast();
   const [selectedDate, setSelectedDate] = useState(getCurrentDate());
   const [isExporting, setIsExporting] = useState(false);
+
+  // جلب بيانات المشروع المحدد
+  const { data: projects = [] } = useQuery<Project[]>({
+    queryKey: ["/api/projects"],
+  });
+
+  const selectedProject = projects.find(p => p.id === selectedProjectId);
 
   // جلب بيانات التقرير
   const { data: reportData, isLoading, error } = useQuery({
@@ -33,13 +41,21 @@ export default function DailyExpensesPage() {
   });
 
   const handleExportExcel = async () => {
-    if (!reportData) return;
+    if (!reportData) {
+      toast({
+        title: "لا توجد بيانات للتصدير",
+        description: "يرجى تحديد المشروع والتاريخ أولاً",
+        variant: "destructive"
+      });
+      return;
+    }
     
     setIsExporting(true);
     try {
+      const projectName = (reportData as any)?.projectName || selectedProject?.name || 'مشروع';
       await quickExport.dailyExpenses(
-        reportData,
-        `مصروفات-يومية-${reportData.projectName}-${selectedDate}`
+        reportData as any,
+        `مصروفات-يومية-${projectName}-${selectedDate}`
       );
       
       toast({
@@ -155,7 +171,7 @@ export default function DailyExpensesPage() {
                 />
               </div>
 
-              <ProjectSelector />
+              <ProjectSelector onProjectChange={() => {}} />
 
               <Button
                 onClick={handleExportExcel}
@@ -181,11 +197,22 @@ export default function DailyExpensesPage() {
 
       {/* محتوى التقرير */}
       <div className="container mx-auto p-4" id="daily-expense-report">
-        <DailyExpenseTemplate
-          data={reportData}
-          onPrint={handlePrint}
-          onExport={handleExportExcel}
-        />
+        {reportData ? (
+          <DailyExpenseTemplate
+            data={reportData as any}
+            onPrint={handlePrint}
+            onExport={handleExportExcel}
+          />
+        ) : (
+          <Card>
+            <CardContent className="pt-6">
+              <div className="text-center text-gray-500">
+                <p className="text-lg mb-2">يرجى تحديد المشروع والتاريخ لعرض التقرير</p>
+                <p className="text-sm">سيتم تحميل تقرير المصروفات اليومية تلقائياً</p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     </div>
   );
