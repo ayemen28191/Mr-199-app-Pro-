@@ -56,7 +56,7 @@ export default function DailyExpensesBulkExport() {
   const [exportProgress, setExportProgress] = useState({ current: 0, total: 0 });
 
   // جلب بيانات المشاريع
-  const { data: projects = [] } = useQuery<Project[]>({
+  const { data: projects = [], isLoading: projectsLoading } = useQuery<Project[]>({
     queryKey: ["/api/projects"],
   });
 
@@ -595,12 +595,24 @@ export default function DailyExpensesBulkExport() {
         <div className="bg-gray-50 p-4 rounded-lg mb-6">
           <h3 className="font-semibold text-gray-800 mb-2">المشروع المحدد:</h3>
           <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="text-sm">
-              {selectedProject?.name || 'لم يتم تحديد مشروع'}
-            </Badge>
-            {selectedProject?.status && (
-              <Badge variant={selectedProject.status === 'active' ? 'default' : 'secondary'}>
-                {selectedProject.status === 'active' ? 'نشط' : selectedProject.status}
+            {projectsLoading ? (
+              <Badge variant="secondary" className="text-sm">
+                جاري التحميل...
+              </Badge>
+            ) : selectedProject ? (
+              <>
+                <Badge variant="default" className="text-sm">
+                  {selectedProject.name}
+                </Badge>
+                {selectedProject.status && (
+                  <Badge variant={selectedProject.status === 'active' ? 'default' : 'secondary'}>
+                    {selectedProject.status === 'active' ? 'نشط' : selectedProject.status}
+                  </Badge>
+                )}
+              </>
+            ) : (
+              <Badge variant="destructive" className="text-sm">
+                لم يتم تحديد مشروع
               </Badge>
             )}
           </div>
