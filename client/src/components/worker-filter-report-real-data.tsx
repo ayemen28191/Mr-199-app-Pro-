@@ -69,7 +69,7 @@ interface WorkerSummary {
   totalRemaining: number;
 }
 
-export default function WorkerFilterReport() {
+export default function WorkerFilterReportRealData() {
   const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([]);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');

@@ -15,7 +15,7 @@ import '@/styles/unified-print-styles.css';
 import '@/styles/excel-print-styles.css';
 
 // واجهة بيانات المكون المحسنة
-interface EnhancedWorkerAccountStatementProps {
+interface EnhancedWorkerAccountStatementRealDataProps {
   data: any;
   selectedProject: any;
   workerId: string;
@@ -23,13 +23,13 @@ interface EnhancedWorkerAccountStatementProps {
   dateTo: string;
 }
 
-export const EnhancedWorkerAccountStatement = ({ 
+export const EnhancedWorkerAccountStatementRealData = ({ 
   data, 
   selectedProject, 
   workerId, 
   dateFrom, 
   dateTo 
-}: EnhancedWorkerAccountStatementProps) => {
+}: EnhancedWorkerAccountStatementRealDataProps) => {
   
   // دوال التنسيق المحسنة
   const formatCurrency = (amount: number) => {
@@ -280,7 +280,7 @@ export const EnhancedWorkerAccountStatement = ({
     try {
       console.log('🖨️ بدء عملية الطباعة بالبيانات الحقيقية...');
       
-      const printContent = document.getElementById('enhanced-worker-account-statement');
+      const printContent = document.getElementById('enhanced-worker-account-statement-real-data');
       if (!printContent || !printContent.innerHTML.trim()) {
         alert('❌ لم يتم العثور على محتوى الطباعة أو المحتوى فارغ');
         return;
@@ -298,8 +298,27 @@ export const EnhancedWorkerAccountStatement = ({
 
   return (
     <div style={{ direction: 'rtl' }}>
+      {/* أزرار التحكم */}
+      <div className="no-print flex justify-end gap-2 mb-4">
+        <Button
+          onClick={exportToExcel}
+          className="bg-green-600 hover:bg-green-700 text-white"
+        >
+          <FileSpreadsheet className="h-4 w-4 mr-2" />
+          تصدير Excel (بيانات حقيقية)
+        </Button>
+        <Button
+          onClick={handlePrint}
+          variant="outline"
+          className="border-blue-600 text-blue-600 hover:bg-blue-50"
+        >
+          <Printer className="h-4 w-4 mr-2" />
+          طباعة
+        </Button>
+      </div>
+
       <div 
-        id="enhanced-worker-account-statement" 
+        id="enhanced-worker-account-statement-real-data" 
         className="enhanced-worker-statement-print bg-white print-preview-content"
         style={{
           direction: 'rtl',
@@ -562,4 +581,4 @@ export const EnhancedWorkerAccountStatement = ({
   );
 };
 
-export default EnhancedWorkerAccountStatement;
+export default EnhancedWorkerAccountStatementRealData;
