@@ -44,6 +44,7 @@ import {
   WorkerFilterPresets 
 } from "@/components/unified-filter-template";
 import WorkerFilterReport from "@/components/worker-filter-report";
+import DailyExpensesBulkExport from "@/components/daily-expenses-bulk-export";
 
 // أنواع بيانات التقارير
 interface ReportStats {
@@ -444,7 +445,7 @@ export default function Reports() {
         <Tabs defaultValue="daily" className="space-y-6">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="bg-white dark:bg-gray-800 rounded-xl p-2 shadow-lg border">
-              <TabsList className="grid grid-cols-3 w-full bg-transparent gap-2">
+              <TabsList className="grid grid-cols-4 w-full bg-transparent gap-2">
                 <TabsTrigger 
                   value="daily" 
                   className="flex items-center gap-2 text-sm md:text-base px-4 py-3 rounded-lg transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white data-[state=active]:shadow-lg hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -468,6 +469,14 @@ export default function Reports() {
                   <Users className="h-4 w-4 md:h-5 md:w-5" />
                   <span className="hidden md:inline">تصفية العمال</span>
                   <span className="md:hidden">عمال</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="bulk-export" 
+                  className="flex items-center gap-2 text-sm md:text-base px-4 py-3 rounded-lg transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-orange-500 data-[state=active]:to-red-500 data-[state=active]:text-white data-[state=active]:shadow-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  <FileSpreadsheet className="h-4 w-4 md:h-5 md:w-5" />
+                  <span className="hidden md:inline">تصدير مجمع</span>
+                  <span className="md:hidden">تصدير</span>
                 </TabsTrigger>
               </TabsList>
             </div>
@@ -811,6 +820,23 @@ export default function Reports() {
           {/* تبويب تصفية العمال الجديد */}
           <TabsContent value="filter-workers">
             <WorkerFilterReport />
+          </TabsContent>
+
+          {/* تبويب التصدير المجمع */}
+          <TabsContent value="bulk-export">
+            <Card className="shadow-lg">
+              <CardHeader className="bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20">
+                <CardTitle className="flex items-center gap-3 text-xl">
+                  <div className="bg-orange-600 p-2 rounded-lg">
+                    <FileSpreadsheet className="h-6 w-6 text-white" />
+                  </div>
+                  تصدير المصروفات اليومية لفترة زمنية
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <DailyExpensesBulkExport />
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
 

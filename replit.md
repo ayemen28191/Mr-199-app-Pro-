@@ -38,12 +38,25 @@ This is a comprehensive Arabic construction project management system built as a
 - **Accurate Totals**: إصلاح الإجماليات لتعكس أيام العمل الفعلية وليس القيم الافتراضية
 - **Debug Logging**: إضافة console.log لتتبع الحسابات والتأكد من صحتها
 
+### Daily Expenses Bulk Export Feature ✅ (Latest Update - August 16, 2025)
+- **New Bulk Export Functionality**: إضافة ميزة تصدير المصروفات اليومية لفترة زمنية
+  - مكون جديد: `client/src/components/daily-expenses-bulk-export.tsx`
+  - تصدير فترة زمنية كاملة في ملف Excel واحد
+  - كل يوم في ورقة منفصلة مع تفاصيل كاملة
+  - شريط تقدم وإدارة أخطاء محسنة
+- **Reports Page Integration**: دمج الميزة في صفحة التقارير
+  - تبويب جديد "تصدير مجمع" في صفحة التقارير
+  - واجهة سهلة لاختيار الفترة الزمنية والمشروع
+  - تصميم متجاوب ومتوافق مع النظام الموحد
+
 ### Files Updated ✅
 - `client/src/components/enhanced-worker-account-statement-real-data.tsx` - إصلاح حسابات عدد الأيام
 - `client/src/components/worker-filter-report.tsx` - إصلاح حسابات التقرير والإجماليات
 - `client/src/components/worker-filter-report-real-data.tsx` - إصلاح حسابات البيانات الحقيقية
 - `client/src/reports/templates/worker-statement-template.tsx` - إضافة عمود عدد الأيام
 - `client/src/styles/excel-print-styles.css` - ملف CSS جديد للطباعة الاحترافية
+- `client/src/components/daily-expenses-bulk-export.tsx` - مكون تصدير المصروفات المجمعة الجديد
+- `client/src/pages/reports.tsx` - دمج ميزة التصدير المجمع في صفحة التقارير
 
 # User Preferences
 
