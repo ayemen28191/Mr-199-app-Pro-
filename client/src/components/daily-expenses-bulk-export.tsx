@@ -445,17 +445,46 @@ export default function DailyExpensesBulkExport() {
         if (amount && amount > 0) {
           currentBalance -= amount; // طرح تحويلات العمال من الرصيد
           
+          // تحسين اسم الحساب ليظهر تفاصيل التحويل
+          const workerName = transfer.workerName || transfer.worker?.name || 'عامل';
+          const fromAccount = transfer.fromAccount || transfer.sourceAccount || 'المشروع';
+          const accountName = `حولة من حساب ${fromAccount} إلى ${workerName}`;
+          
+          // تحسين الملاحظات لتظهر بيانات التحويل كاملة
+          let transferNotes = '';
+          const recipientName = transfer.recipientName || transfer.receiverName || workerName;
+          const transferNumber = transfer.transferNumber || transfer.referenceNumber || transfer.transactionId;
+          
+          // بناء الملاحظات بالتفاصيل المطلوبة
+          if (recipientName && transferNumber) {
+            transferNotes = `اسم المستلم: ${recipientName} - رقم الحوالة: ${transferNumber}`;
+          } else if (recipientName) {
+            transferNotes = `اسم المستلم: ${recipientName}`;
+          } else if (transferNumber) {
+            transferNotes = `رقم الحوالة: ${transferNumber}`;
+          } else if (transfer.notes || transfer.description) {
+            transferNotes = transfer.notes || transfer.description;
+          } else {
+            transferNotes = `تحويل إلى ${workerName}`;
+          }
+          
+          // إضافة تاريخ التحويل إن وجد
+          if (transfer.transferDate && transfer.transferDate !== dayData.date) {
+            const transferDate = formatDate(transfer.transferDate);
+            transferNotes += ` - تاريخ التحويل: ${transferDate}`;
+          }
+          
           const transferRow = worksheet.addRow([
             formatNumber(amount),
-            'تحويل عامل',
+            accountName, // اسم الحساب المحسن
             'منصرف',
             formatNumber(currentBalance),
-            `تحويل إلى ${transfer.workerName || 'عامل'} - ${transfer.notes || transfer.description || 'تحويل'}`
+            transferNotes // الملاحظات المحسنة
           ]);
           
           transferRow.eachCell((cell) => {
             cell.font = { name: 'Arial Unicode MS', size: 10 };
-            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
             cell.border = {
               top: { style: 'thin' }, bottom: { style: 'thin' },
               left: { style: 'thin' }, right: { style: 'thin' }

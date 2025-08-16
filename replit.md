@@ -63,6 +63,10 @@ This is a comprehensive Arabic construction project management system built as a
   - تطبيق التفاف النص وتوسيط المحتوى على جميع الخلايا
   - زيادة ارتفاع الصفوف إلى 22 لراحة أكبر في القراءة
   - تقليل الهوامش لاستغلال أفضل لمساحة الصفحة
+- **Enhanced Worker Transfer Display**: تحسين عرض تحويلات العمال
+  - اسم الحساب يظهر: "حولة من حساب [المصدر] إلى [اسم العامل]"
+  - الملاحظات تشمل: اسم المستلم، رقم الحوالة، وتاريخ التحويل
+  - عرض تفاصيل شاملة لجميع بيانات التحويل المالي
 
 ### Files Updated ✅
 - `client/src/components/enhanced-worker-account-statement-real-data.tsx` - إصلاح حسابات عدد الأيام
