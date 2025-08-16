@@ -265,16 +265,23 @@ export default function DailyExpensesBulkExport() {
         if (workerAmount > 0) {
           currentBalance -= workerAmount; // طرح أجرة العامل من الرصيد
           
-          // تنسيق ملاحظات العامل والمعامل المحسن
+          // تنسيق ملاحظات العامل والمعامل المحسن (مطابق للصورة)
           const multiplier = worker.multiplier || worker.overtimeMultiplier || null;
           const workDays = worker.workDays || 1;
           const startTime = worker.startTime || '4:00';
           const endTime = worker.endTime || worker.hoursWorked || worker.workHours || '7:00';
           
-          // تنسيق الملاحظة مع تفاصيل العمل والمعامل
-          let notes = `العمل من الساعة ${startTime} عصر وحتى الساعة ${endTime} صباحاً — ${workDays} أيام`;
+          // تنسيق الملاحظة مع جميع التفاصيل المطلوبة
+          let notes = `العمل من الساعة ${startTime} عصر وحتى الساعة ${endTime} صباحاً`;
+          if (workDays && workDays !== 1) {
+            notes += ` — ${workDays} أيام`;
+          }
           if (multiplier && multiplier !== 1) {
             notes += ` — معامل ${multiplier}`;
+          }
+          // إضافة وصف العمل إن وجد
+          if (worker.workDescription) {
+            notes += ` - ${worker.workDescription}`;
           }
           
           // عرض المعامل إذا وجد
@@ -481,7 +488,7 @@ export default function DailyExpensesBulkExport() {
     });
     
     // صف المبلغ المتبقي النهائي (خلفية برتقالية)
-    const finalBalanceRow = worksheet.addRow(['', '', '', formatNumber(dayData.remainingBalance || currentBalance), '']);
+    const finalBalanceRow = worksheet.addRow(['', '', '', formatNumber(currentBalance), '']);
     finalBalanceRow.eachCell((cell, index) => {
       cell.font = { name: 'Arial Unicode MS', size: 12, bold: true };
       cell.alignment = { horizontal: 'center', vertical: 'middle' };
@@ -490,6 +497,11 @@ export default function DailyExpensesBulkExport() {
         top: { style: 'medium' }, bottom: { style: 'medium' },
         left: { style: 'thin' }, right: { style: 'thin' }
       };
+      
+      // تلوين الرصيد السالب بالأحمر
+      if (index === 4 && currentBalance < 0) {
+        cell.font = { ...cell.font, color: { argb: 'FFFF0000' } };
+      }
     });
     finalBalanceRow.height = 25;
 
@@ -501,7 +513,7 @@ export default function DailyExpensesBulkExport() {
       // فراغ قبل الجدول الإضافي
       worksheet.addRow(['']);
       
-      const purchasesHeaders = ['اسم المشروع', 'محل التوريد', 'نوع الدفع', 'المبلغ', 'الملاحظات'];
+      const purchasesHeaders = ['المشروع', 'محل التوريد', 'المبلغ', 'نوع الدفع', 'الملاحظات'];
       const purchasesHeaderRow = worksheet.addRow(purchasesHeaders);
       
       purchasesHeaderRow.eachCell((cell) => {
@@ -522,8 +534,8 @@ export default function DailyExpensesBulkExport() {
         const purchaseRow = worksheet.addRow([
           dayData.projectName,
           purchase.supplierName || purchase.supplier?.name || 'إبراهيم نجم الدين',
-          paymentType,
           formatNumber(purchase.totalAmount || purchase.totalCost || 0),
+          paymentType,
           purchaseDescription
         ]);
         
@@ -531,8 +543,8 @@ export default function DailyExpensesBulkExport() {
           cell.font = { name: 'Arial Unicode MS', size: 10 };
           cell.alignment = { horizontal: 'center', vertical: 'middle' };
           
-          // تمييز المشتريات الآجلة بلون مختلف
-          if (paymentType === 'آجل' || paymentType === 'أجل') {
+          // تمييز المشتريات الآجلة بلون مختلف (في عمود نوع الدفع)
+          if (index === 4 && (paymentType === 'آجل' || paymentType === 'أجل')) {
             cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFE6CC' } }; // لون برتقالي فاتح للآجل
           }
           
