@@ -131,12 +131,12 @@ export default function DailyExpensesBulkExport() {
     worksheet.views = [{ rightToLeft: true }];
 
     // رأس التقرير مطابق للصور المرجعية
-    worksheet.mergeCells('A1:F1');
+    worksheet.mergeCells('A1:E1');
     const headerCell = worksheet.getCell('A1');
     const dayName = getDayName(dayData.date);
     const formattedDate = formatDate(dayData.date);
     headerCell.value = `كشف مصروفات ${dayData.projectName} يوم ${dayName} تاريخ ${formattedDate}`;
-    headerCell.font = { name: 'Arial Unicode MS', size: 14, bold: true };
+    headerCell.font = { name: 'Arial Unicode MS', size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
     headerCell.alignment = { horizontal: 'center', vertical: 'middle' };
     headerCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF5B9BD5' } }; // أزرق مطابق للمرجع
     headerCell.border = {
@@ -145,8 +145,8 @@ export default function DailyExpensesBulkExport() {
     };
     worksheet.getRow(1).height = 30;
 
-    // رؤوس الجدول الرئيسي مطابقة للصور المرجعية (6 أعمدة)
-    const headers = ['المبلغ', 'نوع الحساب', 'نوع', 'الإجمالي المبلغ المتبقي', 'عدد الأيام', 'ملاحظات'];
+    // رؤوس الجدول الرئيسي مطابقة للصور المرجعية (5 أعمدة فقط)
+    const headers = ['المبلغ', 'نوع الحساب', 'نوع', 'الإجمالي المبلغ المتبقي', 'ملاحظات'];
     const headerRow = worksheet.addRow(headers);
     
     headerRow.eachCell((cell, index) => {
@@ -160,11 +160,13 @@ export default function DailyExpensesBulkExport() {
     });
     worksheet.getRow(2).height = 25;
 
-    // حساب الرصيد الجاري - البداية بالمبلغ المرحل أولاً
-    let currentBalance = dayData.carriedForward || 0;
+    // حساب الرصيد الجاري - البداية بصفر أو بالرصيد المرحل
+    let currentBalance = 0;
     
     // صف المبلغ المرحل من سابق (إذا كان هناك رصيد مرحل)
     if (dayData.carriedForward && dayData.carriedForward !== 0) {
+      currentBalance = dayData.carriedForward; // إضافة الرصيد المرحل
+      
       const yesterdayDate = new Date(dayData.date);
       yesterdayDate.setDate(yesterdayDate.getDate() - 1);
       const formattedYesterday = formatDate(yesterdayDate.toISOString().split('T')[0]);
@@ -172,16 +174,15 @@ export default function DailyExpensesBulkExport() {
       const carryForwardRow = worksheet.addRow([
         formatNumber(Math.abs(dayData.carriedForward)),
         'مرحلة',
-        dayData.carriedForward > 0 ? 'ترحيل' : 'ترحيل',
+        'ترحيل',
         formatNumber(currentBalance),
-        '',
         `مرحلة من تاريخ ${formattedYesterday}`
       ]);
       
       carryForwardRow.eachCell((cell) => {
         cell.font = { name: 'Arial Unicode MS', size: 10, bold: true };
         cell.alignment = { horizontal: 'center', vertical: 'middle' };
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD4F6D4' } }; // أخضر فاتح للمرحلة
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFB8E6B8' } }; // أخضر فاتح للمرحلة
         cell.border = {
           top: { style: 'thin' }, bottom: { style: 'thin' },
           left: { style: 'thin' }, right: { style: 'thin' }
@@ -189,30 +190,37 @@ export default function DailyExpensesBulkExport() {
       });
     }
 
-    // الحوالات المالية - حوالات من المشروع نفسه
+    // الحوالات المالية - حوالات من المشروع نفسه أو مشاريع أخرى
     if (dayData.fundTransfers && dayData.fundTransfers.length > 0) {
       dayData.fundTransfers.forEach((transfer: any) => {
         if (transfer.amount > 0) {
-          currentBalance += transfer.amount;
+          currentBalance += transfer.amount; // إضافة الحوالة للرصيد
           
-          // تحديد نوع الحوالة
+          // تحديد نوع الحوالة والملاحظة
           const isFromOtherProject = transfer.fromProject && transfer.fromProject !== dayData.projectName;
-          const transferType = isFromOtherProject ? 'حوالة من مشروع آخر' : 'حوالة';
-          const backgroundColor = isFromOtherProject ? 'FFB5E7A0' : 'FFD4F6D4'; // أخضر مختلف للحوالات الخارجية
+          const transferType = isFromOtherProject ? `حق مواصلات` : 'حوالة';
+          
+          let notes = '';
+          if (transfer.description || transfer.notes) {
+            notes = transfer.description || transfer.notes;
+          } else if (transfer.fromProject) {
+            notes = `حوالة من ${transfer.fromProject} رقم الامتياز ${transfer.referenceNumber || ''}`;
+          } else {
+            notes = `حوالة رقم ${transfer.referenceNumber || ''}`;
+          }
           
           const transferRow = worksheet.addRow([
             formatNumber(transfer.amount),
             transferType,
             'توريد',
             formatNumber(currentBalance),
-            '',
-            transfer.notes || transfer.description || `حوالة من ${transfer.fromProject || 'مصدر خارجي'} رقم الحوالة ${transfer.referenceNumber || ''}`
+            notes
           ]);
           
           transferRow.eachCell((cell) => {
             cell.font = { name: 'Arial Unicode MS', size: 10 };
             cell.alignment = { horizontal: 'center', vertical: 'middle' };
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: backgroundColor } };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFB8E6B8' } }; // أخضر فاتح للحوالات
             cell.border = {
               top: { style: 'thin' }, bottom: { style: 'thin' },
               left: { style: 'thin' }, right: { style: 'thin' }
@@ -222,33 +230,47 @@ export default function DailyExpensesBulkExport() {
       });
     }
 
-    // مصروفات العمال مع تفاصيل أيام العمل
+    // مصروفات العمال مع تفاصيل أيام العمل والمعاملات
     if (dayData.workerAttendance && dayData.workerAttendance.length > 0) {
       dayData.workerAttendance.forEach((worker: any) => {
         const workerAmount = worker.paidAmount || worker.actualWage || worker.totalWage || 0;
         if (workerAmount > 0) {
-          currentBalance -= workerAmount;
+          currentBalance -= workerAmount; // طرح أجرة العامل من الرصيد
           
-          // تنسيق ملاحظات العامل
-          let notes = '';
-          const workDays = worker.workDays || worker.daysWorked || 1;
-          const startTime = worker.startTime || '4';
-          const endTime = worker.endTime || worker.hoursWorked || worker.workHours || '12';
+          // تنسيق ملاحظات العامل والمعامل
+          const multiplier = worker.multiplier || worker.overtimeMultiplier || null;
+          const startTime = worker.startTime || '4:00';
+          const endTime = worker.endTime || worker.hoursWorked || worker.workHours || '7:00';
+          const notes = `العمل من الساعة ${startTime} إلى عصر وحتى الساعة ${endTime} صباحاً`;
           
-          notes = `العمل من الساعة ${startTime} عصراً إلى الساعة ${endTime} فجراً`;
+          // عرض المعامل إذا وجد
+          let amountDisplayWithMultiplier = formatNumber(workerAmount);
+          if (multiplier && multiplier !== 1) {
+            amountDisplayWithMultiplier = `${multiplier}\n${formatNumber(workerAmount)}`;
+          }
           
           const workerRow = worksheet.addRow([
-            formatNumber(workerAmount),
+            amountDisplayWithMultiplier,
             `مصروف ${worker.workerName || worker.worker?.name || 'عامل'}`,
             'منصرف',
             formatNumber(currentBalance),
-            workDays.toString(),
             notes
           ]);
           
           workerRow.eachCell((cell, index) => {
             cell.font = { name: 'Arial Unicode MS', size: 10 };
             cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            
+            // إضافة المعامل في عمود المبلغ إذا وجد
+            if (index === 1 && multiplier && multiplier !== 1) {
+              cell.value = { richText: [
+                { text: multiplier.toString(), font: { size: 8, bold: true } },
+                { text: '\n' },
+                { text: formatNumber(workerAmount), font: { size: 10 } }
+              ]};
+              cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            }
+            
             cell.border = {
               top: { style: 'thin' }, bottom: { style: 'thin' },
               left: { style: 'thin' }, right: { style: 'thin' }
@@ -258,19 +280,18 @@ export default function DailyExpensesBulkExport() {
       });
     }
 
-    // مصاريف النقليات والمواصلات (تم تغيير من "نثريات" إلى "نقليات")
+    // مصاريف النقليات والمواصلات
     if (dayData.transportationExpenses && dayData.transportationExpenses.length > 0) {
       dayData.transportationExpenses.forEach((expense: any) => {
         const amount = expense.amount || expense.totalAmount || 0;
         if (amount > 0) {
-          currentBalance -= amount;
+          currentBalance -= amount; // طرح مصروف النقليات من الرصيد
           
           const expenseRow = worksheet.addRow([
             formatNumber(amount),
-            'نقليات',
+            'نقليات', // تغيير من "نثريات" إلى "نقليات"
             'منصرف',
             formatNumber(currentBalance),
-            '',
             expense.notes || expense.description || expense.destination || `${expense.expenseType || 'مواصلات'}`
           ]);
           
@@ -286,23 +307,22 @@ export default function DailyExpensesBulkExport() {
       });
     }
 
-    // مشتريات المواد النقدية فقط (المؤجلة ستظهر في الجدول السفلي)
+    // مشتريات المواد النقدية فقط (المؤجلة لا تظهر في الجدول الرئيسي)
     if (dayData.materialPurchases && dayData.materialPurchases.length > 0) {
       dayData.materialPurchases.forEach((material: any) => {
         // إظهار المشتريات النقدية فقط في الجدول الرئيسي
-        const isCashPurchase = material.paymentType === 'cash' || !material.paymentType;
+        const isCashPurchase = !material.paymentType || material.paymentType === 'cash';
         const amount = material.totalAmount || material.totalCost || 0;
         
         if (amount > 0 && isCashPurchase) {
-          currentBalance -= amount;
+          currentBalance -= amount; // طرح مشتريات المواد النقدية من الرصيد
           
           const materialRow = worksheet.addRow([
             formatNumber(amount),
             'مهندس',
             'منصرف',
             formatNumber(currentBalance),
-            '',
-            `${material.materialName || material.material?.name || 'مواد'} - شراء نقدي`
+            `${material.materialName || material.material?.name || 'مواد'}`
           ]);
           
           materialRow.eachCell((cell) => {
@@ -322,14 +342,13 @@ export default function DailyExpensesBulkExport() {
       dayData.workerTransfers.forEach((transfer: any) => {
         const amount = transfer.amount || 0;
         if (amount > 0) {
-          currentBalance -= amount;
+          currentBalance -= amount; // طرح تحويلات العمال من الرصيد
           
           const transferRow = worksheet.addRow([
             formatNumber(amount),
             'تحويل عامل',
             'منصرف',
             formatNumber(currentBalance),
-            '',
             `تحويل إلى ${transfer.workerName || 'عامل'} - ${transfer.notes || transfer.description || 'تحويل'}`
           ]);
           
@@ -350,14 +369,13 @@ export default function DailyExpensesBulkExport() {
       dayData.supplierPayments.forEach((payment: any) => {
         const amount = payment.amount || 0;
         if (amount > 0) {
-          currentBalance -= amount;
+          currentBalance -= amount; // طرح مدفوعات الموردين من الرصيد
           
           const paymentRow = worksheet.addRow([
             formatNumber(amount),
             'دفع مورد',
             'منصرف',
             formatNumber(currentBalance),
-            '',
             `دفع إلى ${payment.supplierName || 'مورد'} - ${payment.notes || payment.description || 'دفعة'}`
           ]);
           
@@ -378,14 +396,13 @@ export default function DailyExpensesBulkExport() {
       dayData.miscExpenses.forEach((misc: any) => {
         const amount = misc.amount || misc.totalAmount || 0;
         if (amount > 0) {
-          currentBalance -= amount;
+          currentBalance -= amount; // طرح المصاريف المتنوعة من الرصيد
           
           const miscRow = worksheet.addRow([
             formatNumber(amount),
             misc.expenseType || 'مصروف متنوع',
             'منصرف',
             formatNumber(currentBalance),
-            '',
             misc.notes || misc.description || 'مصروف متنوع'
           ]);
           
@@ -401,8 +418,28 @@ export default function DailyExpensesBulkExport() {
       });
     }
 
+    // صف فارغ قبل المبلغ المتبقي
+    const emptyRow = worksheet.addRow(['', '', '', '', '']);
+    emptyRow.eachCell((cell) => {
+      cell.border = {
+        top: { style: 'thin' }, bottom: { style: 'thin' },
+        left: { style: 'thin' }, right: { style: 'thin' }
+      };
+    });
+    
+    // صف عنوان المبلغ المتبقي
+    const balanceTitleRow = worksheet.addRow(['', '', '', 'المبلغ المتبقي', '']);
+    balanceTitleRow.eachCell((cell) => {
+      cell.font = { name: 'Arial Unicode MS', size: 11, bold: true };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell.border = {
+        top: { style: 'thin' }, bottom: { style: 'thin' },
+        left: { style: 'thin' }, right: { style: 'thin' }
+      };
+    });
+    
     // صف المبلغ المتبقي النهائي (خلفية برتقالية)
-    const finalBalanceRow = worksheet.addRow(['', '', '', formatNumber(dayData.remainingBalance || currentBalance), '', 'المبلغ المتبقي']);
+    const finalBalanceRow = worksheet.addRow(['', '', '', formatNumber(dayData.remainingBalance || currentBalance), '']);
     finalBalanceRow.eachCell((cell, index) => {
       cell.font = { name: 'Arial Unicode MS', size: 12, bold: true };
       cell.alignment = { horizontal: 'center', vertical: 'middle' };
@@ -417,12 +454,12 @@ export default function DailyExpensesBulkExport() {
     // فراغ قبل الجدول الإضافي
     worksheet.addRow(['']);
 
-    // جدول المشتريات الشامل (جميع المشتريات - نقدية ومؤجلة)
+    // جدول المشتريات (جميع المشتريات بغض النظر عن نوع الدفع)
     if (dayData.materialPurchases && dayData.materialPurchases.length > 0) {
       // فراغ قبل الجدول الإضافي
       worksheet.addRow(['']);
       
-      const purchasesHeaders = ['اسم المشروع', 'محل التوريد', 'نوع الدفع', 'المبلغ', 'الملاحظات'];
+      const purchasesHeaders = ['اسم المشروع', 'محل التوريد', 'الملاحظات'];
       const purchasesHeaderRow = worksheet.addRow(purchasesHeaders);
       
       purchasesHeaderRow.eachCell((cell) => {
@@ -435,27 +472,19 @@ export default function DailyExpensesBulkExport() {
         };
       });
 
-      // عرض جميع المشتريات (نقدية ومؤجلة)
+      // عرض جميع المشتريات (حسب الصور المرجعية)
       dayData.materialPurchases.forEach((purchase: any) => {
-        const paymentType = purchase.paymentType === 'deferred' ? 'آجل' : 'نقدي';
-        const amount = purchase.totalAmount || purchase.totalCost || 0;
         const purchaseDescription = `شراء عدد ${purchase.quantity || 1} ${purchase.materialName || purchase.material?.name || 'مادة'} ${purchase.notes || ''}`;
         
         const purchaseRow = worksheet.addRow([
           dayData.projectName,
-          purchase.supplierName || purchase.supplier?.name || 'مورد',
-          paymentType,
-          formatNumber(amount),
+          purchase.supplierName || purchase.supplier?.name || 'إبراهيم نجم الدين',
           purchaseDescription
         ]);
         
         purchaseRow.eachCell((cell) => {
           cell.font = { name: 'Arial Unicode MS', size: 10 };
           cell.alignment = { horizontal: 'center', vertical: 'middle' };
-          // تلوين المشتريات المؤجلة بلون مختلف
-          if (purchase.paymentType === 'deferred') {
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFD4AA' } }; // برتقالي فاتح للمؤجل
-          }
           cell.border = {
             top: { style: 'thin' }, bottom: { style: 'thin' },
             left: { style: 'thin' }, right: { style: 'thin' }
@@ -464,13 +493,12 @@ export default function DailyExpensesBulkExport() {
       });
     }
 
-    // تعديل عرض الأعمدة ليطابق الصور المرجعية (6 أعمدة)
+    // تعديل عرض الأعمدة ليطابق الصور المرجعية (5 أعمدة فقط)
     worksheet.columns = [
       { width: 15 }, // المبلغ
       { width: 20 }, // نوع الحساب
       { width: 12 }, // نوع
       { width: 18 }, // الإجمالي المبلغ المتبقي
-      { width: 10 }, // عدد الأيام
       { width: 40 }  // ملاحظات
     ];
 
