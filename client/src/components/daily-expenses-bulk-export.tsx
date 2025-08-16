@@ -474,7 +474,7 @@ export default function DailyExpensesBulkExport() {
           // تحسين اسم الحساب ليظهر تفاصيل التحويل
           const workerName = transfer.workerName || transfer.worker?.name || 'عامل';
           const fromAccount = transfer.fromAccount || transfer.sourceAccount || 'المشروع';
-          const accountName = `حولة من حساب ${fromAccount} إلى ${workerName}`;
+          const accountName = `حولة من حساب ${fromAccount} ${workerName}`;
           
           // تحسين الملاحظات لتظهر بيانات التحويل كاملة
           let transferNotes = '';
