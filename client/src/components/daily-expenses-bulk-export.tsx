@@ -69,15 +69,19 @@ export default function DailyExpensesBulkExport() {
     return `${Number(amount).toLocaleString('en-US', { useGrouping: true })} ريال`;
   };
 
-  // دالة تنسيق الأرقام (إنجليزية) - بدون كلمة "ريال"
+  // دالة تنسيق الأرقام (إنجليزية) - بدون كلمة "ريال" وبدون أرقام عشرية
   const formatNumber = (num: number) => {
     if (typeof num !== 'number' || isNaN(num)) return '0';
-    return Number(num).toLocaleString('en-US', { useGrouping: true });
+    return Math.round(Number(num)).toLocaleString('en-US', { useGrouping: true });
   };
 
-  // دالة تنسيق التاريخ (بالإنجليزية)
+  // دالة تنسيق التاريخ بتنسيق DD-MM-YYYY
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-GB');
+    const date = new Date(dateStr);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
   };
 
   // دالة جلب بيانات المصروفات اليومية لفترة
@@ -168,7 +172,7 @@ export default function DailyExpensesBulkExport() {
     console.log(`📊 بدء حساب الرصيد ليوم ${dayData.date}`);
     console.log(`📈 الرصيد المرحل: ${dayData.carriedForward}`);
     
-    // صف المبلغ المرحل من سابق (إذا كان هناك رصيد مرحل)
+    // صف المبلغ المرحل من سابق (إذا كان هناك رصيد مرحل وأكبر من صفر)
     if (dayData.carriedForward && dayData.carriedForward !== 0) {
       currentBalance = parseFloat(dayData.carriedForward.toString()); // إضافة الرصيد المرحل
       console.log(`📈 بعد إضافة المرحل: ${currentBalance}`);
@@ -198,18 +202,24 @@ export default function DailyExpensesBulkExport() {
       });
     }
 
-    // الحوالات المرحلة من مشاريع أخرى (الأموال الواردة من مشاريع أخرى)
+    // الحوالات المرحلة من مشاريع أخرى (الأموال الواردة من مشاريع أخرى) - فقط إذا المبلغ أكبر من صفر
     if (dayData.incomingProjectTransfers && dayData.incomingProjectTransfers.length > 0) {
       dayData.incomingProjectTransfers.forEach((transfer: any) => {
-        if (transfer.amount > 0) {
+        if (transfer.amount && transfer.amount > 0) {
           currentBalance += transfer.amount; // إضافة المبلغ المرحل للرصيد
+          
+          // تبسيط الملاحظات - فقط اسم المشروع والتاريخ
+          const transferDate = transfer.transferDate || transfer.date ? 
+            formatDate(transfer.transferDate || transfer.date) : 
+            formatDate(dayData.date);
+          const projectName = (transfer.fromProjectName || 'مشروع غير محدد').replace('مشروع ', '');
           
           const transferRow = worksheet.addRow([
             formatNumber(transfer.amount),
             'مرحل من مشروع آخر',
             'ترحيل',
             formatNumber(currentBalance),
-            `مرحل من مشروع: ${transfer.fromProjectName || 'مشروع غير محدد'} - ${transfer.transferNotes || transfer.description || ''}`
+            `مرحلة من مشروع: ${projectName} بتاريخ ${transferDate}`
           ]);
           
           transferRow.eachCell((cell) => {
@@ -225,10 +235,10 @@ export default function DailyExpensesBulkExport() {
       });
     }
 
-    // الحوالات المالية العادية - حوالات من نفس المشروع
+    // الحوالات المالية العادية - حوالات من نفس المشروع - فقط إذا المبلغ أكبر من صفر
     if (dayData.fundTransfers && dayData.fundTransfers.length > 0) {
       dayData.fundTransfers.forEach((transfer: any) => {
-        if (transfer.amount > 0) {
+        if (transfer.amount && transfer.amount > 0) {
           currentBalance += parseFloat(transfer.amount.toString()); // إضافة الحوالة للرصيد
           console.log(`📈 بعد حوالة ${transfer.amount}: ${currentBalance}`);
           
@@ -276,11 +286,40 @@ export default function DailyExpensesBulkExport() {
           // تنسيق ملاحظات العامل والمعامل المحسن (مطابق للصورة)
           const multiplier = worker.multiplier || worker.overtimeMultiplier || null;
           const workDays = worker.workDays || 1;
-          const startTime = worker.startTime || '4:00';
-          const endTime = worker.endTime || worker.hoursWorked || worker.workHours || '7:00';
+          
+          // تحويل الأوقات إلى نظام 12 ساعة مع تحديد عصر/صباحاً
+          const formatTimeWith12Hour = (timeStr: string) => {
+            if (!timeStr) return '';
+            
+            // استخراج الساعة والدقيقة
+            const timeParts = timeStr.split(':');
+            let hour = parseInt(timeParts[0]);
+            const minute = timeParts[1] || '00';
+            
+            // تحديد فترة اليوم
+            let period = '';
+            if (hour >= 6 && hour < 12) {
+              period = 'صباحاً';
+            } else if (hour >= 12 && hour < 18) {
+              period = 'ظهراً';
+            } else if (hour >= 18 && hour < 24) {
+              period = 'مساءً';
+            } else {
+              period = 'صباحاً'; // من منتصف الليل إلى 6 صباحاً
+            }
+            
+            // تحويل إلى نظام 12 ساعة
+            if (hour === 0) hour = 12;
+            else if (hour > 12) hour = hour - 12;
+            
+            return `${hour}:${minute} ${period}`;
+          };
+          
+          const startTime = formatTimeWith12Hour(worker.startTime || '16:00'); // افتراضي 4 عصراً
+          const endTime = formatTimeWith12Hour(worker.endTime || worker.hoursWorked || worker.workHours || '07:00'); // افتراضي 7 صباحاً
           
           // تنسيق الملاحظة مع جميع التفاصيل المطلوبة
-          let notes = `العمل من الساعة ${startTime} عصر وحتى الساعة ${endTime} صباحاً`;
+          let notes = `العمل من الساعة ${startTime} وحتى الساعة ${endTime}`;
           if (workDays && workDays !== 1) {
             notes += ` — ${workDays} أيام`;
           }
