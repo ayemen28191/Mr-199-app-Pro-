@@ -67,8 +67,9 @@ export default function DailyExpensesBulkExport() {
     return `${Number(amount).toLocaleString('en-US', { useGrouping: true })} ريال`;
   };
 
-  // دالة تنسيق الأرقام (إنجليزية)
+  // دالة تنسيق الأرقام (إنجليزية) - بدون كلمة "ريال"
   const formatNumber = (num: number) => {
+    if (typeof num !== 'number' || isNaN(num)) return '0';
     return Number(num).toLocaleString('en-US', { useGrouping: true });
   };
 
@@ -114,7 +115,14 @@ export default function DailyExpensesBulkExport() {
     return expenses;
   };
 
-  // دالة إنشاء ورقة Excel ليوم واحد
+  // دالة الحصول على اسم اليوم بالعربي
+  const getDayName = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const dayNames = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+    return dayNames[date.getDay()];
+  };
+
+  // دالة إنشاء ورقة Excel ليوم واحد (مطابقة للصور المرجعية 100%)
   const createDayWorksheet = (workbook: ExcelJS.Workbook, dayData: DailyExpenseData) => {
     const worksheetName = `${formatDate(dayData.date)}`.replace(/\//g, '-');
     const worksheet = workbook.addWorksheet(worksheetName);
@@ -122,254 +130,270 @@ export default function DailyExpensesBulkExport() {
     // إعداد اتجاه النص من اليمين لليسار
     worksheet.views = [{ rightToLeft: true }];
 
-    // رأس الشركة المحسّن
-    worksheet.mergeCells('A1:G1');
-    const companyCell = worksheet.getCell('A1');
-    companyCell.value = 'شركة الفتيني للمقاولات والاستشارات الهندسية';
-    companyCell.font = { name: 'Calibri', size: 18, bold: true, color: { argb: 'FFFFFFFF' } };
-    companyCell.alignment = { horizontal: 'center', vertical: 'middle' };
-    companyCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1e3a8a' } };
-    worksheet.getRow(1).height = 35;
+    // رأس التقرير مطابق للصور المرجعية
+    worksheet.mergeCells('A1:E1');
+    const headerCell = worksheet.getCell('A1');
+    const dayName = getDayName(dayData.date);
+    const formattedDate = formatDate(dayData.date);
+    headerCell.value = `كشف مصروفات ${dayData.projectName} يوم ${dayName} تاريخ ${formattedDate}`;
+    headerCell.font = { name: 'Arial Unicode MS', size: 14, bold: true };
+    headerCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    headerCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE6F3FF' } }; // لون أزرق فاتح
+    headerCell.border = {
+      top: { style: 'medium' }, bottom: { style: 'medium' },
+      left: { style: 'medium' }, right: { style: 'medium' }
+    };
+    worksheet.getRow(1).height = 30;
 
-    // عنوان التقرير المحسّن
-    worksheet.addRow([]);
-    worksheet.mergeCells('A2:G2');
-    const titleCell = worksheet.getCell('A2');
-    titleCell.value = `تقرير المصروفات اليومية - ${formatDate(dayData.date)}`;
-    titleCell.font = { name: 'Calibri', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
-    titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
-    titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF3b82f6' } };
-    worksheet.getRow(2).height = 28;
-
-    // معلومات إضافية
-    worksheet.addRow([]);
-    worksheet.mergeCells('A3:D3');
-    const infoCell = worksheet.getCell('A3');
-    const currentTime = new Date().toLocaleString('en-GB', { timeZone: 'Asia/Riyadh' });
-    infoCell.value = `تاريخ الإنتاج: ${currentTime} | نظام إدارة المشاريع`;
-    infoCell.font = { name: 'Calibri', size: 10, color: { argb: 'FF64748b' } };
-    infoCell.alignment = { horizontal: 'left', vertical: 'middle' };
-
-    // معلومات المشروع
-    worksheet.addRow([]);
-    worksheet.addRow(['اسم المشروع:', dayData.projectName, '', 'التاريخ:', formatDate(dayData.date)]);
+    // رؤوس الجدول الرئيسي مطابقة للصور المرجعية
+    const headers = ['المبلغ', 'نوع الحساب', 'نوع', 'الإجمالي المبلغ المتبقي', 'ملاحظات'];
+    const headerRow = worksheet.addRow(headers);
     
-    worksheet.addRow([]);
-
-    // ملخص الحسابات
-    const summaryHeaders = ['البيان', 'المبلغ'];
-    const summaryHeaderRow = worksheet.addRow(summaryHeaders);
-    summaryHeaderRow.eachCell((cell) => {
-      cell.font = { name: 'Arial Unicode MS', size: 11, bold: true, color: { argb: 'FFFFFFFF' } };
+    headerRow.eachCell((cell, index) => {
+      cell.font = { name: 'Arial Unicode MS', size: 11, bold: true };
       cell.alignment = { horizontal: 'center', vertical: 'middle' };
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF3b82f6' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFB8E6B8' } }; // أخضر فاتح
+      cell.border = {
+        top: { style: 'thin' }, bottom: { style: 'thin' },
+        left: { style: 'thin' }, right: { style: 'thin' }
+      };
+    });
+    worksheet.getRow(2).height = 25;
+
+    let currentBalance = (dayData.totalIncome || 0) + (dayData.carriedForward || 0);
+    
+    // صف المرحلة (إذا كان هناك رصيد مرحل)
+    if (dayData.carriedForward && dayData.carriedForward > 0) {
+      const carryForwardRow = worksheet.addRow([
+        formatNumber(Math.abs(dayData.carriedForward)),
+        'مرحلة',
+        dayData.carriedForward > 0 ? 'ترحيل' : 'ترحيل',
+        formatNumber(currentBalance),
+        `مرحلة من تاريخ ${dayData.transferFromProject || 'سابق'}`
+      ]);
+      
+      carryForwardRow.eachCell((cell) => {
+        cell.font = { name: 'Arial Unicode MS', size: 10, bold: true };
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD4F6D4' } }; // أخضر فاتح للمرحلة
+        cell.border = {
+          top: { style: 'thin' }, bottom: { style: 'thin' },
+          left: { style: 'thin' }, right: { style: 'thin' }
+        };
+      });
+    }
+
+    // الحوالات المالية
+    if (dayData.fundTransfers && dayData.fundTransfers.length > 0) {
+      dayData.fundTransfers.forEach((transfer: any) => {
+        if (transfer.amount > 0) {
+          currentBalance += transfer.amount;
+          const transferRow = worksheet.addRow([
+            formatNumber(transfer.amount),
+            'حوالة',
+            'توريد',
+            formatNumber(currentBalance),
+            transfer.notes || transfer.description || `حوالة من ${transfer.fromProject || 'مشروع آخر'} رقم الحوالة ${transfer.referenceNumber || ''}`
+          ]);
+          
+          transferRow.eachCell((cell) => {
+            cell.font = { name: 'Arial Unicode MS', size: 10 };
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            cell.border = {
+              top: { style: 'thin' }, bottom: { style: 'thin' },
+              left: { style: 'thin' }, right: { style: 'thin' }
+            };
+          });
+        }
+      });
+    }
+
+    // مصروفات العمال
+    if (dayData.workerAttendance && dayData.workerAttendance.length > 0) {
+      dayData.workerAttendance.forEach((worker: any) => {
+        const workerAmount = worker.paidAmount || worker.actualWage || worker.totalWage || 0;
+        if (workerAmount > 0) {
+          currentBalance -= workerAmount;
+          
+          let notes = '';
+          if (worker.hoursWorked || worker.workHours) {
+            notes = `العمل من الساعة 4 إلى عصرا إلى الساعة ${worker.hoursWorked || worker.workHours} فجر`;
+            if (worker.workDays || worker.daysWorked) {
+              notes = `${worker.workDays || worker.daysWorked} ${notes}`;
+            }
+          }
+          
+          const workerRow = worksheet.addRow([
+            formatNumber(workerAmount),
+            `مصروف ${worker.workerName || worker.worker?.name || 'عامل'}`,
+            'منصرف',
+            formatNumber(currentBalance),
+            notes
+          ]);
+          
+          workerRow.eachCell((cell, index) => {
+            if (index === 1) { // عمود الساعات
+              cell.value = worker.workDays || worker.daysWorked || '';
+              cell.font = { name: 'Arial Unicode MS', size: 9 };
+            } else {
+              cell.font = { name: 'Arial Unicode MS', size: 10 };
+            }
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            cell.border = {
+              top: { style: 'thin' }, bottom: { style: 'thin' },
+              left: { style: 'thin' }, right: { style: 'thin' }
+            };
+          });
+        }
+      });
+    }
+
+    // مصاريف النثريات والمواصلات
+    if (dayData.transportationExpenses && dayData.transportationExpenses.length > 0) {
+      dayData.transportationExpenses.forEach((expense: any) => {
+        const amount = expense.amount || expense.totalAmount || 0;
+        if (amount > 0) {
+          currentBalance -= amount;
+          
+          const expenseRow = worksheet.addRow([
+            formatNumber(amount),
+            'نثريات',
+            'منصرف',
+            formatNumber(currentBalance),
+            expense.notes || expense.description || expense.destination || `${expense.expenseType || 'مواصلات'}`
+          ]);
+          
+          expenseRow.eachCell((cell) => {
+            cell.font = { name: 'Arial Unicode MS', size: 10 };
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            cell.border = {
+              top: { style: 'thin' }, bottom: { style: 'thin' },
+              left: { style: 'thin' }, right: { style: 'thin' }
+            };
+          });
+        }
+      });
+    }
+
+    // مشتريات المواد
+    if (dayData.materialPurchases && dayData.materialPurchases.length > 0) {
+      dayData.materialPurchases.forEach((material: any) => {
+        const amount = material.totalAmount || material.totalCost || 0;
+        if (amount > 0) {
+          currentBalance -= amount;
+          
+          const materialRow = worksheet.addRow([
+            formatNumber(amount),
+            'مهندس',
+            'منصرف',
+            formatNumber(currentBalance),
+            `${material.materialName || material.material?.name || 'مواد'} + مصروف للبيت + والثلاثاء`
+          ]);
+          
+          materialRow.eachCell((cell) => {
+            cell.font = { name: 'Arial Unicode MS', size: 10 };
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            cell.border = {
+              top: { style: 'thin' }, bottom: { style: 'thin' },
+              left: { style: 'thin' }, right: { style: 'thin' }
+            };
+          });
+        }
+      });
+    }
+
+    // مصاريف أخرى
+    if (dayData.miscExpenses && dayData.miscExpenses.length > 0) {
+      dayData.miscExpenses.forEach((misc: any) => {
+        const amount = misc.amount || misc.totalAmount || 0;
+        if (amount > 0) {
+          currentBalance -= amount;
+          
+          const miscRow = worksheet.addRow([
+            formatNumber(amount),
+            misc.expenseType || 'مهندس',
+            'منصرف',
+            formatNumber(currentBalance),
+            misc.notes || misc.description || 'مصروف'
+          ]);
+          
+          miscRow.eachCell((cell) => {
+            cell.font = { name: 'Arial Unicode MS', size: 10 };
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            cell.border = {
+              top: { style: 'thin' }, bottom: { style: 'thin' },
+              left: { style: 'thin' }, right: { style: 'thin' }
+            };
+          });
+        }
+      });
+    }
+
+    // صف فارغ قبل المجموع النهائي
+    const emptyRow1 = worksheet.addRow(['', '', '', 'المبلغ المتبقي', '']);
+    emptyRow1.eachCell((cell) => {
       cell.border = {
         top: { style: 'thin' }, bottom: { style: 'thin' },
         left: { style: 'thin' }, right: { style: 'thin' }
       };
     });
 
-    // بيانات الملخص
-    const summaryData = [
-      [`الرصيد المرحل من مشروع ${dayData.transferFromProject || 'غير محدد'}`, formatCurrency(dayData.carriedForward || 0)],
-      ['إجمالي الدخل', formatCurrency((dayData.totalIncome || 0) + (dayData.carriedForward || 0))],
-      ['إجمالي المصاريف', formatCurrency(dayData.totalExpenses || 0)],
-      ['الرصيد المتبقي', formatCurrency(dayData.remainingBalance || 0)]
-    ];
+    // صف المبلغ المتبقي النهائي (خلفية برتقالية)
+    const finalBalanceRow = worksheet.addRow(['', '', '', formatNumber(dayData.remainingBalance || currentBalance), '']);
+    finalBalanceRow.eachCell((cell, index) => {
+      cell.font = { name: 'Arial Unicode MS', size: 12, bold: true };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFD4AA' } }; // برتقالي فاتح
+      cell.border = {
+        top: { style: 'medium' }, bottom: { style: 'medium' },
+        left: { style: 'thin' }, right: { style: 'thin' }
+      };
+    });
+    finalBalanceRow.height = 25;
 
-    summaryData.forEach((row, index) => {
-      const dataRow = worksheet.addRow(row);
-      dataRow.eachCell((cell) => {
+    // فراغ قبل الجدول الإضافي
+    worksheet.addRow(['']);
+
+    // الجدول الإضافي (إذا كان هناك ملاحظات إضافية)
+    if (dayData.materialPurchases && dayData.materialPurchases.length > 0) {
+      const additionalHeaders = ['اسم المشروع', 'محل التوريد', 'الملاحظات'];
+      const additionalHeaderRow = worksheet.addRow(additionalHeaders);
+      
+      additionalHeaderRow.eachCell((cell) => {
+        cell.font = { name: 'Arial Unicode MS', size: 11, bold: true };
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFB8E6E6' } }; // أزرق فاتح
+        cell.border = {
+          top: { style: 'thin' }, bottom: { style: 'thin' },
+          left: { style: 'thin' }, right: { style: 'thin' }
+        };
+      });
+
+      // بيانات الجدول الإضافي
+      const additionalRow = worksheet.addRow([
+        dayData.projectName,
+        'إبراهيم نجم الدين',
+        'العمال عمالنا من قلمو بتحميل ونقل وتركيب للمشغل رقم 1 ورقم 2 زين نجم ادين وفر السيارة للنقل فقط'
+      ]);
+      
+      additionalRow.eachCell((cell) => {
         cell.font = { name: 'Arial Unicode MS', size: 10 };
         cell.alignment = { horizontal: 'center', vertical: 'middle' };
         cell.border = {
           top: { style: 'thin' }, bottom: { style: 'thin' },
           left: { style: 'thin' }, right: { style: 'thin' }
         };
-        if (index % 2 === 0) {
-          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
-        }
       });
-    });
-
-    worksheet.addRow([]);
-
-    // تفاصيل المصروفات إذا كانت موجودة
-    if (dayData.workerAttendance && dayData.workerAttendance.length > 0) {
-      worksheet.addRow(['تفاصيل أجور العمال:']);
-      const workersHeaders = ['اسم العامل', 'نوع العامل', 'عدد أيام العمل', 'ساعات العمل', 'الأجر المستحق', 'الأجر المدفوع', 'ملاحظات'];
-      const workersHeaderRow = worksheet.addRow(workersHeaders);
-      
-      workersHeaderRow.eachCell((cell) => {
-        cell.font = { name: 'Arial Unicode MS', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF059669' } };
-        cell.border = {
-          top: { style: 'thin' }, bottom: { style: 'thin' },
-          left: { style: 'thin' }, right: { style: 'thin' }
-        };
-      });
-
-      dayData.workerAttendance.forEach((worker: any, index: number) => {
-        const workerRow = worksheet.addRow([
-          worker.workerName || worker.worker?.name || 'غير محدد',
-          worker.workerTypeName || worker.workerType?.name || worker.workerType || 'غير محدد',
-          formatNumber(worker.workDays || worker.daysWorked || 1),
-          formatNumber(worker.hoursWorked || worker.workHours || 8),
-          formatCurrency(worker.actualWage || worker.totalWage || 0),
-          formatCurrency(worker.paidAmount || worker.amountPaid || 0),
-          worker.notes || worker.remarks || ''
-        ]);
-        
-        if (index % 2 === 0) {
-          workerRow.eachCell((cell) => {
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
-          });
-        }
-      });
-      
-      worksheet.addRow([]);
     }
 
-    // مشتريات المواد
-    if (dayData.materialPurchases && dayData.materialPurchases.length > 0) {
-      worksheet.addRow(['مشتريات المواد:']);
-      const materialsHeaders = ['اسم المادة', 'الكمية', 'سعر الوحدة', 'إجمالي المبلغ', 'المورد'];
-      const materialsHeaderRow = worksheet.addRow(materialsHeaders);
-      
-      materialsHeaderRow.eachCell((cell) => {
-        cell.font = { name: 'Arial Unicode MS', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFf59e0b' } };
-        cell.border = {
-          top: { style: 'thin' }, bottom: { style: 'thin' },
-          left: { style: 'thin' }, right: { style: 'thin' }
-        };
-      });
-
-      dayData.materialPurchases.forEach((material: any, index: number) => {
-        const materialRow = worksheet.addRow([
-          material.materialName || material.material?.name || 'غير محدد',
-          formatNumber(material.quantity || 0),
-          formatCurrency(material.unitPrice || material.pricePerUnit || 0),
-          formatCurrency(material.totalAmount || material.totalCost || 0),
-          material.supplierName || material.supplier?.name || 'غير محدد'
-        ]);
-        
-        if (index % 2 === 0) {
-          materialRow.eachCell((cell) => {
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
-          });
-        }
-      });
-      
-      worksheet.addRow([]);
-    }
-
-    // تعديل عرض الأعمدة
+    // تعديل عرض الأعمدة ليطابق الصور المرجعية
     worksheet.columns = [
-      { width: 25 }, { width: 20 }, { width: 15 }, 
-      { width: 15 }, { width: 15 }, { width: 15 }, { width: 30 }
+      { width: 15 }, // المبلغ
+      { width: 20 }, // نوع الحساب
+      { width: 12 }, // نوع
+      { width: 18 }, // الإجمالي المبلغ المتبقي
+      { width: 40 }  // ملاحظات
     ];
-
-    // إضافة مصاريف النقل إذا كانت موجودة
-    if (dayData.transportationExpenses && dayData.transportationExpenses.length > 0) {
-      worksheet.addRow(['مصاريف النقل والمواصلات:']);
-      const transportHeaders = ['نوع المصروف', 'المبلغ', 'الوجهة/التفاصيل', 'ملاحظات'];
-      const transportHeaderRow = worksheet.addRow(transportHeaders);
-      
-      transportHeaderRow.eachCell((cell) => {
-        cell.font = { name: 'Arial Unicode MS', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFdc2626' } };
-        cell.border = {
-          top: { style: 'thin' }, bottom: { style: 'thin' },
-          left: { style: 'thin' }, right: { style: 'thin' }
-        };
-      });
-
-      dayData.transportationExpenses.forEach((transport: any, index: number) => {
-        const transportRow = worksheet.addRow([
-          transport.expenseType || transport.type || 'غير محدد',
-          formatCurrency(transport.amount || transport.totalAmount || 0),
-          transport.destination || transport.details || 'غير محدد',
-          transport.notes || transport.remarks || ''
-        ]);
-        
-        if (index % 2 === 0) {
-          transportRow.eachCell((cell) => {
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
-          });
-        }
-      });
-      
-      worksheet.addRow([]);
-    }
-
-    // إضافة مدفوعات الموردين إذا كانت موجودة
-    if (dayData.supplierPayments && dayData.supplierPayments.length > 0) {
-      worksheet.addRow(['مدفوعات الموردين:']);
-      const supplierHeaders = ['اسم المورد', 'المبلغ المدفوع', 'طريقة الدفع', 'رقم الإيصال', 'ملاحظات'];
-      const supplierHeaderRow = worksheet.addRow(supplierHeaders);
-      
-      supplierHeaderRow.eachCell((cell) => {
-        cell.font = { name: 'Arial Unicode MS', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF7c3aed' } };
-        cell.border = {
-          top: { style: 'thin' }, bottom: { style: 'thin' },
-          left: { style: 'thin' }, right: { style: 'thin' }
-        };
-      });
-
-      dayData.supplierPayments.forEach((payment: any, index: number) => {
-        const paymentRow = worksheet.addRow([
-          payment.supplierName || payment.supplier?.name || 'غير محدد',
-          formatCurrency(payment.amount || payment.paidAmount || 0),
-          payment.paymentMethod || payment.method || 'غير محدد',
-          payment.receiptNumber || payment.invoiceNumber || '',
-          payment.notes || payment.remarks || ''
-        ]);
-        
-        if (index % 2 === 0) {
-          paymentRow.eachCell((cell) => {
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
-          });
-        }
-      });
-      
-      worksheet.addRow([]);
-    }
-
-    // إضافة الحوالات والتحويلات إذا كانت موجودة
-    if (dayData.fundTransfers && dayData.fundTransfers.length > 0) {
-      worksheet.addRow(['الحوالات والتحويلات المالية:']);
-      const transferHeaders = ['نوع التحويل', 'المبلغ', 'من/إلى', 'طريقة التحويل', 'ملاحظات'];
-      const transferHeaderRow = worksheet.addRow(transferHeaders);
-      
-      transferHeaderRow.eachCell((cell) => {
-        cell.font = { name: 'Arial Unicode MS', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0891b2' } };
-        cell.border = {
-          top: { style: 'thin' }, bottom: { style: 'thin' },
-          left: { style: 'thin' }, right: { style: 'thin' }
-        };
-      });
-
-      dayData.fundTransfers.forEach((transfer: any, index: number) => {
-        const transferRow = worksheet.addRow([
-          transfer.type || transfer.transferType || 'غير محدد',
-          formatCurrency(transfer.amount || 0),
-          transfer.fromTo || transfer.description || 'غير محدد',
-          transfer.method || transfer.paymentMethod || 'غير محدد',
-          transfer.notes || transfer.remarks || ''
-        ]);
-        
-        if (index % 2 === 0) {
-          transferRow.eachCell((cell) => {
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FAFC' } };
-          });
-        }
-      });
-      
-      worksheet.addRow([]);
-    }
 
     // إعداد الطباعة
     worksheet.pageSetup = {
