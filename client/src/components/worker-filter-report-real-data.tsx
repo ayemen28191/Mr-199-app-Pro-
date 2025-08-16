@@ -127,31 +127,37 @@ export default function WorkerFilterReportRealData() {
       console.log('📊 البيانات المستلمة من الخادم:', data);
 
       // التحقق من أن البيانات في التنسيق المتوقع
-      const workersData = data.workersData || data || [];
+      const workersData = data.workers || [];
+      
+      // التأكد من أن workersData هو مصفوفة
+      if (!Array.isArray(workersData)) {
+        console.error('❌ البيانات المستلمة ليست مصفوفة:', workersData);
+        throw new Error('تنسيق البيانات غير صحيح');
+      }
       
       // تحويل البيانات إلى تنسيق ملخص العمال
       const summaryData: WorkerSummary[] = workersData.map((workerData: any) => {
-        const worker = workers.find(w => w.id === workerData.workerId);
+        const worker = workers.find(w => w.id === workerData.worker_id);
         
         // استخدام البيانات من API بدلاً من حسابها يدوياً
-        const totalWorkDays = Number(workerData.totalWorkDays) || 0;
-        const totalWorkHours = Number(workerData.totalWorkHours) || 0;
-        const totalEarned = Number(workerData.totalEarned) || 0;
-        const totalPaid = Number(workerData.totalPaid) || 0;
+        const totalWorkDays = Number(workerData.total_work_days) || 0;
+        const totalWorkHours = totalWorkDays * 8; // تقدير الساعات
+        const totalEarned = Number(workerData.total_earned) || 0;
+        const totalPaid = Number(workerData.total_paid) || 0;
 
         // الحصول على اسم المشروع
-        let projectName = workerData.projectName || 'جميع المشاريع';
+        let projectName = 'جميع المشاريع';
         if (projectIds.length === 1) {
           const project = projects.find(p => p.id === projectIds[0]);
-          projectName = project?.name || projectName;
+          projectName = project?.name || 'مشروع محدد';
         }
 
         return {
-          workerId: workerData.workerId,
-          workerName: workerData.workerName || worker?.name || 'غير معروف',
-          workerType: workerData.workerType || worker?.type || 'غير محدد',
+          workerId: workerData.worker_id,
+          workerName: workerData.worker_name || worker?.name || 'غير معروف',
+          workerType: workerData.worker_type || worker?.type || 'غير محدد',
           projectName,
-          dailyWage: Number(workerData.dailyWage) || Number(worker?.dailyWage) || 0,
+          dailyWage: Number(workerData.daily_wage) || Number(worker?.dailyWage) || 0,
           totalWorkDays,
           totalWorkHours,
           totalEarned,
@@ -162,6 +168,7 @@ export default function WorkerFilterReportRealData() {
 
       setWorkersSummary(summaryData);
       console.log('✅ تم معالجة بيانات الملخص:', summaryData);
+      console.log('📈 إجماليات التقرير:', data.totals);
 
     } catch (error) {
       console.error('❌ خطأ في جلب بيانات الحضور:', error);
