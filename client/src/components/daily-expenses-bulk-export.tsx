@@ -44,6 +44,8 @@ interface DailyExpenseData {
   workerTransfers: any[];
   miscExpenses: any[];
   supplierPayments?: any[];
+  incomingProjectTransfers?: any[]; // الأموال المرحلة من مشاريع أخرى
+  outgoingProjectTransfers?: any[]; // الأموال المرحلة إلى مشاريع أخرى
 }
 
 export default function DailyExpensesBulkExport() {
@@ -190,28 +192,54 @@ export default function DailyExpensesBulkExport() {
       });
     }
 
-    // الحوالات المالية - حوالات من المشروع نفسه أو مشاريع أخرى
+    // الحوالات المرحلة من مشاريع أخرى (الأموال الواردة من مشاريع أخرى)
+    if (dayData.incomingProjectTransfers && dayData.incomingProjectTransfers.length > 0) {
+      dayData.incomingProjectTransfers.forEach((transfer: any) => {
+        if (transfer.amount > 0) {
+          currentBalance += transfer.amount; // إضافة المبلغ المرحل للرصيد
+          
+          const transferRow = worksheet.addRow([
+            formatNumber(transfer.amount),
+            'مرحل من مشروع آخر',
+            'ترحيل',
+            formatNumber(currentBalance),
+            `مرحل من مشروع: ${transfer.fromProjectName || 'مشروع غير محدد'} - ${transfer.transferNotes || transfer.description || ''}`
+          ]);
+          
+          transferRow.eachCell((cell) => {
+            cell.font = { name: 'Arial Unicode MS', size: 10, bold: true };
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFCC99' } }; // لون مميز للمبالغ المرحلة من مشاريع أخرى
+            cell.border = {
+              top: { style: 'thin' }, bottom: { style: 'thin' },
+              left: { style: 'thin' }, right: { style: 'thin' }
+            };
+          });
+        }
+      });
+    }
+
+    // الحوالات المالية العادية - حوالات من نفس المشروع
     if (dayData.fundTransfers && dayData.fundTransfers.length > 0) {
       dayData.fundTransfers.forEach((transfer: any) => {
         if (transfer.amount > 0) {
           currentBalance += transfer.amount; // إضافة الحوالة للرصيد
           
-          // تحديد نوع الحوالة والملاحظة
-          const isFromOtherProject = transfer.fromProject && transfer.fromProject !== dayData.projectName;
-          const transferType = isFromOtherProject ? `حق مواصلات` : 'حوالة';
-          
+          // تفاصيل الحوالة المحسنة
           let notes = '';
-          if (transfer.description || transfer.notes) {
+          if (transfer.senderName && transfer.transferNumber) {
+            notes = `حوالة من: ${transfer.senderName}، رقم الحوالة: ${transfer.transferNumber}`;
+          } else if (transfer.description || transfer.notes) {
             notes = transfer.description || transfer.notes;
-          } else if (transfer.fromProject) {
-            notes = `حوالة من ${transfer.fromProject} رقم الامتياز ${transfer.referenceNumber || ''}`;
+          } else if (transfer.transferNumber) {
+            notes = `حوالة رقم ${transfer.transferNumber}`;
           } else {
-            notes = `حوالة رقم ${transfer.referenceNumber || ''}`;
+            notes = 'حوالة مالية';
           }
           
           const transferRow = worksheet.addRow([
             formatNumber(transfer.amount),
-            transferType,
+            'حوالة',
             'توريد',
             formatNumber(currentBalance),
             notes
@@ -237,11 +265,17 @@ export default function DailyExpensesBulkExport() {
         if (workerAmount > 0) {
           currentBalance -= workerAmount; // طرح أجرة العامل من الرصيد
           
-          // تنسيق ملاحظات العامل والمعامل
+          // تنسيق ملاحظات العامل والمعامل المحسن
           const multiplier = worker.multiplier || worker.overtimeMultiplier || null;
+          const workDays = worker.workDays || 1;
           const startTime = worker.startTime || '4:00';
           const endTime = worker.endTime || worker.hoursWorked || worker.workHours || '7:00';
-          const notes = `العمل من الساعة ${startTime} إلى عصر وحتى الساعة ${endTime} صباحاً`;
+          
+          // تنسيق الملاحظة مع تفاصيل العمل والمعامل
+          let notes = `العمل من الساعة ${startTime} عصر وحتى الساعة ${endTime} صباحاً — ${workDays} أيام`;
+          if (multiplier && multiplier !== 1) {
+            notes += ` — معامل ${multiplier}`;
+          }
           
           // عرض المعامل إذا وجد
           let amountDisplayWithMultiplier = formatNumber(workerAmount);
@@ -391,16 +425,24 @@ export default function DailyExpensesBulkExport() {
       });
     }
 
-    // مصاريف أخرى ومتنوعة
+    // مصاريف أخرى ومتنوعة وحسابات أخرى
     if (dayData.miscExpenses && dayData.miscExpenses.length > 0) {
       dayData.miscExpenses.forEach((misc: any) => {
         const amount = misc.amount || misc.totalAmount || 0;
         if (amount > 0) {
           currentBalance -= amount; // طرح المصاريف المتنوعة من الرصيد
           
+          // تحديد نوع المصروف
+          let expenseType = misc.expenseType || 'مصروف متنوع';
+          if (expenseType.includes('نثريات') && misc.description && misc.description.includes('نقليات')) {
+            expenseType = 'نقليات';
+          } else if (misc.category && misc.category.includes('حسابات أخرى')) {
+            expenseType = 'منصرف - حسابات أخرى';
+          }
+          
           const miscRow = worksheet.addRow([
             formatNumber(amount),
-            misc.expenseType || 'مصروف متنوع',
+            expenseType,
             'منصرف',
             formatNumber(currentBalance),
             misc.notes || misc.description || 'مصروف متنوع'
@@ -454,12 +496,12 @@ export default function DailyExpensesBulkExport() {
     // فراغ قبل الجدول الإضافي
     worksheet.addRow(['']);
 
-    // جدول المشتريات (جميع المشتريات بغض النظر عن نوع الدفع)
+    // جدول المشتريات (جميع المشتريات مع عمود نوع الدفع)
     if (dayData.materialPurchases && dayData.materialPurchases.length > 0) {
       // فراغ قبل الجدول الإضافي
       worksheet.addRow(['']);
       
-      const purchasesHeaders = ['اسم المشروع', 'محل التوريد', 'الملاحظات'];
+      const purchasesHeaders = ['اسم المشروع', 'محل التوريد', 'نوع الدفع', 'المبلغ', 'الملاحظات'];
       const purchasesHeaderRow = worksheet.addRow(purchasesHeaders);
       
       purchasesHeaderRow.eachCell((cell) => {
@@ -472,19 +514,28 @@ export default function DailyExpensesBulkExport() {
         };
       });
 
-      // عرض جميع المشتريات (حسب الصور المرجعية)
+      // عرض جميع المشتريات مع نوع الدفع
       dayData.materialPurchases.forEach((purchase: any) => {
         const purchaseDescription = `شراء عدد ${purchase.quantity || 1} ${purchase.materialName || purchase.material?.name || 'مادة'} ${purchase.notes || ''}`;
+        const paymentType = purchase.purchaseType || purchase.paymentType || 'نقد';
         
         const purchaseRow = worksheet.addRow([
           dayData.projectName,
           purchase.supplierName || purchase.supplier?.name || 'إبراهيم نجم الدين',
+          paymentType,
+          formatNumber(purchase.totalAmount || purchase.totalCost || 0),
           purchaseDescription
         ]);
         
-        purchaseRow.eachCell((cell) => {
+        purchaseRow.eachCell((cell, index) => {
           cell.font = { name: 'Arial Unicode MS', size: 10 };
           cell.alignment = { horizontal: 'center', vertical: 'middle' };
+          
+          // تمييز المشتريات الآجلة بلون مختلف
+          if (paymentType === 'آجل' || paymentType === 'أجل') {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFE6CC' } }; // لون برتقالي فاتح للآجل
+          }
+          
           cell.border = {
             top: { style: 'thin' }, bottom: { style: 'thin' },
             left: { style: 'thin' }, right: { style: 'thin' }
@@ -493,14 +544,21 @@ export default function DailyExpensesBulkExport() {
       });
     }
 
-    // تعديل عرض الأعمدة ليطابق الصور المرجعية (5 أعمدة فقط)
-    worksheet.columns = [
+    // تعديل عرض الأعمدة للجدول الرئيسي (5 أعمدة)
+    const columnsConfig = [
       { width: 15 }, // المبلغ
       { width: 20 }, // نوع الحساب
       { width: 12 }, // نوع
       { width: 18 }, // الإجمالي المبلغ المتبقي
       { width: 40 }  // ملاحظات
     ];
+    
+    // تطبيق إعدادات الأعمدة على الصفوف الموجودة فقط
+    for (let i = 0; i < columnsConfig.length; i++) {
+      if (worksheet.getColumn(i + 1)) {
+        worksheet.getColumn(i + 1).width = columnsConfig[i].width;
+      }
+    }
 
     // إعداد الطباعة
     worksheet.pageSetup = {
