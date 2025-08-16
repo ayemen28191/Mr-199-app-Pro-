@@ -148,7 +148,7 @@ export default function DailyExpensesBulkExport() {
     worksheet.getRow(1).height = 30;
 
     // رؤوس الجدول الرئيسي مطابقة للصور المرجعية (5 أعمدة فقط)
-    const headers = ['المبلغ', 'نوع الحساب', 'نوع', 'الإجمالي المبلغ المتبقي', 'ملاحظات'];
+    const headers = ['المبلغ', 'نوع الحساب', 'نوع', 'المتبقي', 'ملاحظات'];
     const headerRow = worksheet.addRow(headers);
     
     headerRow.eachCell((cell, index) => {
@@ -165,9 +165,13 @@ export default function DailyExpensesBulkExport() {
     // حساب الرصيد الجاري - البداية بصفر أو بالرصيد المرحل
     let currentBalance = 0;
     
+    console.log(`📊 بدء حساب الرصيد ليوم ${dayData.date}`);
+    console.log(`📈 الرصيد المرحل: ${dayData.carriedForward}`);
+    
     // صف المبلغ المرحل من سابق (إذا كان هناك رصيد مرحل)
     if (dayData.carriedForward && dayData.carriedForward !== 0) {
-      currentBalance = dayData.carriedForward; // إضافة الرصيد المرحل
+      currentBalance = parseFloat(dayData.carriedForward.toString()); // إضافة الرصيد المرحل
+      console.log(`📈 بعد إضافة المرحل: ${currentBalance}`);
       
       const yesterdayDate = new Date(dayData.date);
       yesterdayDate.setDate(yesterdayDate.getDate() - 1);
@@ -178,8 +182,10 @@ export default function DailyExpensesBulkExport() {
         'مرحلة',
         'ترحيل',
         formatNumber(currentBalance),
-        `مرحلة من تاريخ ${formattedYesterday}`
+        `مرحل من تاريخ ${formattedYesterday}`
       ]);
+      
+      console.log(`✅ تم إضافة صف المرحل: مبلغ=${formatNumber(Math.abs(dayData.carriedForward))}, متبقي=${formatNumber(currentBalance)}`);
       
       carryForwardRow.eachCell((cell) => {
         cell.font = { name: 'Arial Unicode MS', size: 10, bold: true };
@@ -223,7 +229,8 @@ export default function DailyExpensesBulkExport() {
     if (dayData.fundTransfers && dayData.fundTransfers.length > 0) {
       dayData.fundTransfers.forEach((transfer: any) => {
         if (transfer.amount > 0) {
-          currentBalance += transfer.amount; // إضافة الحوالة للرصيد
+          currentBalance += parseFloat(transfer.amount.toString()); // إضافة الحوالة للرصيد
+          console.log(`📈 بعد حوالة ${transfer.amount}: ${currentBalance}`);
           
           // تفاصيل الحوالة المحسنة
           let notes = '';
@@ -261,9 +268,10 @@ export default function DailyExpensesBulkExport() {
     // مصروفات العمال مع تفاصيل أيام العمل والمعاملات
     if (dayData.workerAttendance && dayData.workerAttendance.length > 0) {
       dayData.workerAttendance.forEach((worker: any) => {
-        const workerAmount = worker.paidAmount || worker.actualWage || worker.totalWage || 0;
+        const workerAmount = parseFloat((worker.paidAmount || worker.actualWage || worker.totalWage || 0).toString());
         if (workerAmount > 0) {
           currentBalance -= workerAmount; // طرح أجرة العامل من الرصيد
+          console.log(`📉 بعد أجرة عامل ${workerAmount}: ${currentBalance}`);
           
           // تنسيق ملاحظات العامل والمعامل المحسن (مطابق للصورة)
           const multiplier = worker.multiplier || worker.overtimeMultiplier || null;
@@ -324,9 +332,10 @@ export default function DailyExpensesBulkExport() {
     // مصاريف النقليات والمواصلات
     if (dayData.transportationExpenses && dayData.transportationExpenses.length > 0) {
       dayData.transportationExpenses.forEach((expense: any) => {
-        const amount = expense.amount || expense.totalAmount || 0;
+        const amount = parseFloat((expense.amount || expense.totalAmount || 0).toString());
         if (amount > 0) {
           currentBalance -= amount; // طرح مصروف النقليات من الرصيد
+          console.log(`📉 بعد نقليات ${amount}: ${currentBalance}`);
           
           const expenseRow = worksheet.addRow([
             formatNumber(amount),
@@ -353,10 +362,11 @@ export default function DailyExpensesBulkExport() {
       dayData.materialPurchases.forEach((material: any) => {
         // إظهار المشتريات النقدية فقط في الجدول الرئيسي
         const isCashPurchase = !material.paymentType || material.paymentType === 'cash';
-        const amount = material.totalAmount || material.totalCost || 0;
+        const amount = parseFloat((material.totalAmount || material.totalCost || 0).toString());
         
         if (amount > 0 && isCashPurchase) {
           currentBalance -= amount; // طرح مشتريات المواد النقدية من الرصيد
+          console.log(`📉 بعد مشتريات ${amount}: ${currentBalance}`);
           
           const materialRow = worksheet.addRow([
             formatNumber(amount),
@@ -477,7 +487,7 @@ export default function DailyExpensesBulkExport() {
     });
     
     // صف عنوان المبلغ المتبقي
-    const balanceTitleRow = worksheet.addRow(['', '', '', 'المبلغ المتبقي', '']);
+    const balanceTitleRow = worksheet.addRow(['', '', '', 'المبلغ المتبقي النهائي', '']);
     balanceTitleRow.eachCell((cell) => {
       cell.font = { name: 'Arial Unicode MS', size: 11, bold: true };
       cell.alignment = { horizontal: 'center', vertical: 'middle' };
@@ -488,6 +498,7 @@ export default function DailyExpensesBulkExport() {
     });
     
     // صف المبلغ المتبقي النهائي (خلفية برتقالية)
+    console.log(`🏁 الرصيد النهائي: ${currentBalance}`);
     const finalBalanceRow = worksheet.addRow(['', '', '', formatNumber(currentBalance), '']);
     finalBalanceRow.eachCell((cell, index) => {
       cell.font = { name: 'Arial Unicode MS', size: 12, bold: true };
