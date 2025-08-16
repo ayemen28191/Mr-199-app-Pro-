@@ -292,52 +292,27 @@ export default function DailyExpensesBulkExport() {
           currentBalance -= paidAmount; // طرح الأجرة المدفوعة فعلياً من الرصيد
           console.log(`📉 بعد أجرة عامل مدفوعة ${paidAmount}: ${currentBalance}`);
           
-          // تنسيق ملاحظات العامل والمعامل المحسن (مطابق للصورة)
+          // تنسيق ملاحظات العامل المحسنة (بدون تكرار وبتصميم أفضل)
           const multiplier = worker.multiplier || worker.overtimeMultiplier || null;
           const workDays = worker.workDays || 1;
           
-          // تحويل الأوقات إلى نظام 12 ساعة مع تحديد عصر/صباحاً
-          const formatTimeWith12Hour = (timeStr: string) => {
-            if (!timeStr) return '';
-            
-            // استخراج الساعة والدقيقة
-            const timeParts = timeStr.split(':');
-            let hour = parseInt(timeParts[0]);
-            const minute = timeParts[1] || '00';
-            
-            // تحديد فترة اليوم
-            let period = '';
-            if (hour >= 6 && hour < 12) {
-              period = 'صباحاً';
-            } else if (hour >= 12 && hour < 18) {
-              period = 'ظهراً';
-            } else if (hour >= 18 && hour < 24) {
-              period = 'مساءً';
-            } else {
-              period = 'صباحاً'; // من منتصف الليل إلى 6 صباحاً
-            }
-            
-            // تحويل إلى نظام 12 ساعة
-            if (hour === 0) hour = 12;
-            else if (hour > 12) hour = hour - 12;
-            
-            return `${hour}:${minute} ${period}`;
-          };
+          // استخدام الملاحظات المخزنة في النظام إن وجدت، وإلا استخدام الافتراضية
+          let notes = '';
+          if (worker.notes && worker.notes.trim()) {
+            // استخدام الملاحظات المخزنة في النظام
+            notes = worker.notes.trim();
+          } else if (worker.workDescription && worker.workDescription.trim()) {
+            // استخدام وصف العمل إن وجد
+            notes = worker.workDescription.trim();
+          } else {
+            // الملاحظة الافتراضية البسيطة
+            notes = 'أجر عامل';
+          }
           
-          const startTime = formatTimeWith12Hour(worker.startTime || '16:00'); // افتراضي 4 عصراً
-          const endTime = formatTimeWith12Hour(worker.endTime || worker.hoursWorked || worker.workHours || '07:00'); // افتراضي 7 صباحاً
-          
-          // تنسيق الملاحظة مع جميع التفاصيل المطلوبة
-          let notes = `العمل من الساعة ${startTime} وحتى الساعة ${endTime}`;
+          // إضافة عدد أيام العمل بشكل منفصل ومميز (سيتم تلوينه)
+          let workDaysText = '';
           if (workDays && workDays !== 1) {
-            notes += ` — ${workDays} أيام`;
-          }
-          if (multiplier && multiplier !== 1) {
-            notes += ` — معامل ${multiplier}`;
-          }
-          // إضافة وصف العمل إن وجد
-          if (worker.workDescription) {
-            notes += ` - ${worker.workDescription}`;
+            workDaysText = ` — ${workDays} أيام`;
           }
           
           // عرض المعامل إذا وجد
@@ -351,12 +326,12 @@ export default function DailyExpensesBulkExport() {
             `مصروف ${worker.workerName || worker.worker?.name || 'عامل'}`,
             'منصرف',
             formatNumber(currentBalance),
-            notes
+            notes + workDaysText // دمج الملاحظات مع أيام العمل
           ]);
           
           workerRow.eachCell((cell, index) => {
             cell.font = { name: 'Arial Unicode MS', size: 10 };
-            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }; // إضافة التفاف النص
             
             // إضافة المعامل في عمود المبلغ إذا وجد
             if (index === 1 && multiplier && multiplier !== 1) {
@@ -368,6 +343,27 @@ export default function DailyExpensesBulkExport() {
               cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
             }
             
+            // تلوين عدد أيام العمل في عمود الملاحظات بلون مختلف
+            if (index === 5 && workDaysText) { // عمود الملاحظات
+              const richTextArray = [];
+              
+              // النص العادي
+              if (notes) {
+                richTextArray.push({ text: notes, font: { name: 'Arial Unicode MS', size: 10 } });
+              }
+              
+              // أيام العمل بلون مختلف (أزرق)
+              if (workDaysText) {
+                richTextArray.push({ 
+                  text: workDaysText, 
+                  font: { name: 'Arial Unicode MS', size: 10, bold: true, color: { argb: 'FF0066CC' } } 
+                });
+              }
+              
+              cell.value = { richText: richTextArray };
+              cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            }
+            
             cell.border = {
               top: { style: 'thin' }, bottom: { style: 'thin' },
               left: { style: 'thin' }, right: { style: 'thin' }
@@ -375,29 +371,8 @@ export default function DailyExpensesBulkExport() {
           });
         }
         
-        // إضافة أجور العمال التي عملت ولم تسحب أجر (لإظهار الديون المستحقة)
-        if (totalWage > paidAmount && totalWage > 0) {
-          const unWithdrawnAmount = totalWage - paidAmount;
-          console.log(`📋 عامل ${worker.workerName} - أجر مستحق غير مسحوب: ${unWithdrawnAmount}`);
-          
-          const unWithdrawnRow = worksheet.addRow([
-            formatNumber(unWithdrawnAmount),
-            `أجر مستحق ${worker.workerName || worker.worker?.name || 'عامل'}`,
-            'مستحق',
-            formatNumber(currentBalance), // الرصيد لا يتغير لأن الأجر لم يُدفع
-            `عمل ولم يسحب أجر - مستحق له ${formatNumber(unWithdrawnAmount)} ريال`
-          ]);
-          
-          unWithdrawnRow.eachCell((cell) => {
-            cell.font = { name: 'Arial Unicode MS', size: 10, color: { argb: 'FF800000' } };
-            cell.alignment = { horizontal: 'center', vertical: 'middle' };
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFCCCC' } };
-            cell.border = {
-              top: { style: 'thin' }, bottom: { style: 'thin' },
-              left: { style: 'thin' }, right: { style: 'thin' }
-            };
-          });
-        }
+        // إزالة صف الأجور المستحقة من الجدول الرئيسي حسب الطلب
+        // (تم حذف الكود لإظهار الأجور المستحقة غير المسحوبة)
       });
     }
 
@@ -622,31 +597,50 @@ export default function DailyExpensesBulkExport() {
       });
     }
 
-    // تعديل عرض الأعمدة للجدول الرئيسي (5 أعمدة)
+    // تعديل عرض الأعمدة للجدول الرئيسي (5 أعمدة) مناسب لطباعة A4
     const columnsConfig = [
-      { width: 15 }, // المبلغ
-      { width: 20 }, // نوع الحساب
-      { width: 12 }, // نوع
-      { width: 18 }, // الإجمالي المبلغ المتبقي
-      { width: 40 }  // ملاحظات
+      { width: 12 }, // المبلغ - تقليل العرض
+      { width: 18 }, // نوع الحساب - تقليل العرض  
+      { width: 10 }, // نوع - تقليل العرض
+      { width: 15 }, // المتبقي - تقليل العرض
+      { width: 35 }  // ملاحظات - تقليل العرض مع التفاف النص
     ];
     
-    // تطبيق إعدادات الأعمدة على الصفوف الموجودة فقط
+    // تطبيق إعدادات الأعمدة وزيادة ارتفاع الصفوف
     for (let i = 0; i < columnsConfig.length; i++) {
       if (worksheet.getColumn(i + 1)) {
         worksheet.getColumn(i + 1).width = columnsConfig[i].width;
       }
     }
+    
+    // زيادة ارتفاع جميع الصفوف بعد الرأس للتناسب مع التفاف النص وتوسيط المحتوى
+    for (let rowIndex = 3; rowIndex <= worksheet.rowCount; rowIndex++) {
+      const row = worksheet.getRow(rowIndex);
+      if (row && row.hasValues) {
+        row.height = 22; // زيادة الارتفاع إلى 22 لراحة أكبر
+        
+        // تطبيق التفاف النص وتوسيط المحتوى على جميع الخلايا
+        row.eachCell((cell) => {
+          cell.alignment = { 
+            horizontal: 'center', 
+            vertical: 'middle', 
+            wrapText: true 
+          };
+        });
+      }
+    }
 
-    // إعداد الطباعة
+    // إعداد الطباعة المحسن لمقاس A4
     worksheet.pageSetup = {
       paperSize: 9, // A4
       orientation: 'portrait',
       fitToPage: true,
+      fitToHeight: 1, // ضغط المحتوى في صفحة واحدة عمودياً
+      fitToWidth: 1,  // ضغط المحتوى في صفحة واحدة أفقياً
       margins: {
-        left: 0.7, right: 0.7,
-        top: 0.75, bottom: 0.75,
-        header: 0.3, footer: 0.3
+        left: 0.5, right: 0.5,  // تقليل الهوامش لاستغلال أفضل للمساحة
+        top: 0.6, bottom: 0.6,
+        header: 0.2, footer: 0.2
       }
     };
 
