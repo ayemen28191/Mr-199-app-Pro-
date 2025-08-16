@@ -80,12 +80,15 @@ export default function Reports() {
     queryKey: ["/api/workers"],
   });
 
-  // حالة تصفية العمال
+  // حالة تصفية العمال - إصلاح عدم ظهور العمال
   const [filteredWorkers, setFilteredWorkers] = useState<Worker[]>([]);
 
   // تحديث قائمة العمال المفلترة عند تغيير البيانات
   useEffect(() => {
-    setFilteredWorkers(workers);
+    console.log('🔄 تحديث قائمة العمال المفلترة:', workers.length);
+    if (workers.length > 0) {
+      setFilteredWorkers(workers);
+    }
   }, [workers]);
 
   // جلب الإحصائيات المحسنة مع إعادة التحديث التلقائي
@@ -432,31 +435,67 @@ export default function Reports() {
         {/* واجهة إنشاء التقارير المحسنة */}
         <Tabs defaultValue="daily" className="space-y-6">
           <div className="flex items-center justify-between flex-wrap gap-4">
-            <TabsList className="grid grid-cols-3 w-fit">
-              <TabsTrigger value="daily" className="flex items-center gap-2 text-base">
-                <Receipt className="h-5 w-5" />
-                المصروفات اليومية
-              </TabsTrigger>
-              <TabsTrigger value="worker" className="flex items-center gap-2 text-base">
-                <UserCheck className="h-5 w-5" />
-                كشف حساب العامل
-              </TabsTrigger>
-              <TabsTrigger value="filter-workers" className="flex items-center gap-2 text-base">
-                <Users className="h-5 w-5" />
-                تصفية العمال
-              </TabsTrigger>
-            </TabsList>
+            <div className="bg-white dark:bg-gray-800 rounded-xl p-2 shadow-lg border">
+              <TabsList className="grid grid-cols-3 w-full bg-transparent gap-2">
+                <TabsTrigger 
+                  value="daily" 
+                  className="flex items-center gap-2 text-sm md:text-base px-4 py-3 rounded-lg transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white data-[state=active]:shadow-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  <Receipt className="h-4 w-4 md:h-5 md:w-5" />
+                  <span className="hidden md:inline">المصروفات اليومية</span>
+                  <span className="md:hidden">مصروفات</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="worker" 
+                  className="flex items-center gap-2 text-sm md:text-base px-4 py-3 rounded-lg transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-green-500 data-[state=active]:to-emerald-500 data-[state=active]:text-white data-[state=active]:shadow-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  <UserCheck className="h-4 w-4 md:h-5 md:w-5" />
+                  <span className="hidden md:inline">كشف حساب العامل</span>
+                  <span className="md:hidden">كشف حساب</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="filter-workers" 
+                  className="flex items-center gap-2 text-sm md:text-base px-4 py-3 rounded-lg transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-500 data-[state=active]:to-indigo-500 data-[state=active]:text-white data-[state=active]:shadow-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  <Users className="h-4 w-4 md:h-5 md:w-5" />
+                  <span className="hidden md:inline">تصفية العمال</span>
+                  <span className="md:hidden">عمال</span>
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
             {reportData && (
               <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground bg-green-50 dark:bg-green-900/20 px-3 py-2 rounded-lg">
+                  <CheckCircle2 className="h-4 w-4 text-green-600" />
+                  <span>تقرير جاهز للعرض والتصدير</span>
+                </div>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setShowPreview(!showPreview)}
-                  className="flex items-center gap-2"
+                  className="flex items-center gap-2 hover:bg-blue-50 hover:border-blue-300"
                 >
                   <Eye className="h-4 w-4" />
                   {showPreview ? 'إخفاء المعاينة' : 'عرض المعاينة'}
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleExportExcel}
+                  className="flex items-center gap-2 hover:bg-green-50 hover:border-green-300"
+                >
+                  <FileSpreadsheet className="h-4 w-4" />
+                  تصدير Excel
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePrint}
+                  className="flex items-center gap-2 hover:bg-purple-50 hover:border-purple-300"
+                >
+                  <Printer className="h-4 w-4" />
+                  طباعة
                 </Button>
               </div>
             )}
@@ -610,35 +649,78 @@ export default function Reports() {
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div className="space-y-3">
-                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      👷 اختيار العامل
+                    <label className="flex items-center justify-between text-sm font-semibold text-gray-700 dark:text-gray-300">
+                      <span>👷 اختيار العامل</span>
+                      <Badge variant="outline" className="text-xs">
+                        {filteredWorkers.length} من {workers.length} عامل متاح
+                      </Badge>
                     </label>
                     <Select value={selectedWorkerId} onValueChange={setSelectedWorkerId}>
                       <SelectTrigger className="text-lg">
-                        <SelectValue placeholder="اختر العامل..." />
+                        <SelectValue 
+                          placeholder={
+                            filteredWorkers.length > 0 
+                              ? `اختر من ${filteredWorkers.length} عامل متاح...` 
+                              : "لا توجد عمال متاحة..."
+                          } 
+                        />
                       </SelectTrigger>
                       <SelectContent>
-                        {filteredWorkers.map(worker => (
-                          <SelectItem key={worker.id} value={worker.id} className="text-lg">
-                            <div className="flex items-center gap-2">
-                              <div className={`w-2 h-2 rounded-full ${worker.isActive ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                              {worker.name} - {worker.type}
-                              <Badge variant={worker.isActive ? "default" : "secondary"} className="text-xs">
-                                {worker.isActive ? 'نشط' : 'غير نشط'}
-                              </Badge>
-                            </div>
-                          </SelectItem>
-                        ))}
+                        {filteredWorkers.length > 0 ? (
+                          filteredWorkers.map(worker => (
+                            <SelectItem key={worker.id} value={worker.id} className="text-lg">
+                              <div className="flex items-center gap-2">
+                                <div className={`w-2 h-2 rounded-full ${worker.isActive ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                                {worker.name} - {worker.type}
+                                <Badge variant={worker.isActive ? "default" : "secondary"} className="text-xs">
+                                  {worker.isActive ? 'نشط' : 'غير نشط'}
+                                </Badge>
+                              </div>
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <div className="p-4 text-center text-muted-foreground">
+                            لا توجد عمال مطابقة للتصفية الحالية
+                          </div>
+                        )}
                       </SelectContent>
                     </Select>
+                    
+                    {/* رسائل التنبيه المحسنة */}
                     {filteredWorkers.length === 0 && workers.length > 0 && (
-                      <div className="text-center p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
-                        <p className="text-sm text-red-600 dark:text-red-400 font-medium">
-                          ⚠️ لا توجد عمال مطابقة لمعايير التصفية الحالية
+                      <div className="text-center p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                        <div className="flex items-center justify-center gap-2 mb-2">
+                          <AlertCircle className="h-5 w-5 text-amber-600" />
+                          <p className="text-sm text-amber-700 dark:text-amber-300 font-medium">
+                            لا توجد عمال مطابقة لمعايير التصفية
+                          </p>
+                        </div>
+                        <p className="text-xs text-amber-600 dark:text-amber-400">
+                          يرجى تعديل معايير البحث أو إعادة تعيين المرشحات أعلاه
                         </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          يرجى تعديل معايير البحث أو إعادة تعيين المرشحات
+                      </div>
+                    )}
+                    
+                    {workers.length === 0 && (
+                      <div className="text-center p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+                        <div className="flex items-center justify-center gap-2 mb-2">
+                          <AlertCircle className="h-5 w-5 text-red-600" />
+                          <p className="text-sm text-red-700 dark:text-red-300 font-medium">
+                            خطأ في تحميل العمال
+                          </p>
+                        </div>
+                        <p className="text-xs text-red-600 dark:text-red-400">
+                          فشل في طلب سجلات الحضور. يرجى المحاولة مرة أخرى
                         </p>
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="mt-2" 
+                          onClick={() => window.location.reload()}
+                        >
+                          <RefreshCw className="h-4 w-4 mr-2" />
+                          إعادة المحاولة
+                        </Button>
                       </div>
                     )}
                   </div>
