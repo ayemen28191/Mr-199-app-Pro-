@@ -69,12 +69,24 @@ export default function DailyExpensesBulkExport() {
     return `${Number(amount).toLocaleString('en-US', { useGrouping: true })} ريال`;
   };
 
-  // دالة تنسيق الأرقام (إنجليزية) - بدون كلمة "ريال" وبدون أرقام عشرية
+  // دالة تنسيق الأرقام (إنجليزية) - إزالة الأصفار الزائدة وتنسيق صحيح
   const formatNumber = (num: number) => {
     if (typeof num !== 'number' || isNaN(num)) return '0';
-    // إزالة الأرقام العشرية وتنسيق الأرقام بدون فواصل عشرية
-    const rounded = Math.round(Number(num));
-    return rounded.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    
+    // التعامل مع الأرقام العشرية بذكاء - إزالة الأصفار الزائدة
+    let numStr = Number(num).toString();
+    
+    // إذا كان العدد عشري، نتحقق من الأصفار الزائدة
+    if (numStr.includes('.')) {
+      // إزالة الأصفار الزائدة من نهاية الجزء العشري
+      numStr = parseFloat(numStr).toString();
+    }
+    
+    // تنسيق الأرقام بفواصل الآلاف فقط للأعداد الكبيرة
+    const [integerPart, decimalPart] = numStr.split('.');
+    const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    
+    return decimalPart ? `${formattedInteger}.${decimalPart}` : formattedInteger;
   };
 
   // دالة تنسيق التاريخ بتنسيق DD-MM-YYYY
@@ -243,9 +255,13 @@ export default function DailyExpensesBulkExport() {
     // الحوالات المالية العادية - حوالات من نفس المشروع - فقط إذا المبلغ أكبر من صفر
     if (dayData.fundTransfers && dayData.fundTransfers.length > 0) {
       dayData.fundTransfers.forEach((transfer: any) => {
-        if (transfer.amount && transfer.amount > 0) {
-          currentBalance += parseFloat(transfer.amount.toString()); // إضافة الحوالة للرصيد
-          console.log(`📈 بعد حوالة ${transfer.amount}: ${currentBalance}`);
+        const transferAmount = parseFloat((transfer.amount || 0).toString());
+        
+        console.log(`🔍 فحص حوالة مالية: المبلغ=${transferAmount}, البيانات=`, transfer);
+        
+        if (transferAmount && transferAmount > 0) {
+          currentBalance += transferAmount; // إضافة الحوالة للرصيد
+          console.log(`📈 بعد حوالة ${transferAmount}: ${currentBalance}`);
           
           // تفاصيل الحوالة المحسنة
           let notes = '';
@@ -260,7 +276,7 @@ export default function DailyExpensesBulkExport() {
           }
           
           const transferRow = worksheet.addRow([
-            formatNumber(transfer.amount),
+            formatNumber(transferAmount), // إصلاح: استخدام transferAmount بدلاً من transfer.amount
             'حوالة',
             'توريد',
             formatNumber(currentBalance),
@@ -269,13 +285,15 @@ export default function DailyExpensesBulkExport() {
           
           transferRow.eachCell((cell) => {
             cell.font = { name: 'Arial Unicode MS', size: 10 };
-            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
             cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFB8E6B8' } }; // أخضر فاتح للحوالات
             cell.border = {
               top: { style: 'thin' }, bottom: { style: 'thin' },
               left: { style: 'thin' }, right: { style: 'thin' }
             };
           });
+        } else {
+          console.log(`⚠️ تخطي حوالة بمبلغ صفر أو فارغ: ${transferAmount}`);
         }
       });
     }
@@ -309,10 +327,11 @@ export default function DailyExpensesBulkExport() {
             notes = 'أجر عامل';
           }
           
-          // إضافة عدد أيام العمل بشكل منفصل ومميز (سيتم تلوينه)
+          // إضافة عدد أيام العمل بشكل منفصل ومميز (سيتم تلوينه) مع إزالة الأصفار الزائدة
           let workDaysText = '';
           if (workDays && workDays !== 1) {
-            workDaysText = ` — ${workDays} أيام`;
+            const formattedDays = formatNumber(workDays); // استخدام دالة تنسيق الأرقام المحسنة
+            workDaysText = ` — ${formattedDays} أيام`;
           }
           
           // عرض المعامل إذا وجد
@@ -596,9 +615,10 @@ export default function DailyExpensesBulkExport() {
         };
       });
 
-      // عرض جميع المشتريات مع نوع الدفع
+      // عرض جميع المشتريات مع نوع الدفع وتنسيق أفضل للكميات والأرقام
       dayData.materialPurchases.forEach((purchase: any) => {
-        const purchaseDescription = `شراء عدد ${purchase.quantity || 1} ${purchase.materialName || purchase.material?.name || 'مادة'} ${purchase.notes || ''}`;
+        const quantity = formatNumber(purchase.quantity || 1); // تنسيق الكمية لإزالة الأصفار الزائدة
+        const purchaseDescription = `شراء عدد ${quantity} ${purchase.materialName || purchase.material?.name || 'مادة'} ${purchase.notes || ''}`;
         const paymentType = purchase.purchaseType || purchase.paymentType || 'نقد';
         
         const purchaseRow = worksheet.addRow([

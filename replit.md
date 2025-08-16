@@ -68,6 +68,17 @@ This is a comprehensive Arabic construction project management system built as a
   - الملاحظات تشمل: اسم المستلم، رقم الحوالة، وتاريخ التحويل
   - عرض تفاصيل شاملة لجميع بيانات التحويل المالي
 
+### Critical Bug Fixes ✅ (Latest Update - August 16, 2025)
+- **Fund Transfer Amount Display Fix**: إصلاح عدم ظهور مبلغ الحوالة
+  - إصلاح مشكلة عدم ظهور المبلغ في صف "حولة نوع توريد"
+  - تحسين معالجة البيانات المالية مع طباعة debug logs للتشخيص
+  - ضمان عرض جميع الحوالات المالية بشكل صحيح
+- **Number Formatting Enhancement**: تحسين تنسيق الأرقام لإزالة الأصفار الزائدة
+  - إصلاح عرض أيام العمل من 1.50 إلى 1.5
+  - إزالة الأصفار الزائدة من جميع الأرقام في التقرير
+  - تطبيق التنسيق المحسن على الكميات في جدول المشتريات
+  - تحسين دالة formatNumber() لمعالجة الأرقام العشرية بذكاء
+
 ### Files Updated ✅
 - `client/src/components/enhanced-worker-account-statement-real-data.tsx` - إصلاح حسابات عدد الأيام
 - `client/src/components/worker-filter-report.tsx` - إصلاح حسابات التقرير والإجماليات
