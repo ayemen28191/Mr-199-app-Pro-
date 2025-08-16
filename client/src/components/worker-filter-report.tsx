@@ -5,7 +5,19 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Users, Calendar, Filter, CheckCircle2, FileSpreadsheet, Printer, User, Building2 } from 'lucide-react';
+import { 
+  Users, 
+  Filter, 
+  FileSpreadsheet, 
+  Printer, 
+  Search,
+  Building2,
+  Calendar,
+  TrendingUp,
+  DollarSign,
+  UserCheck,
+  Download
+} from 'lucide-react';
 
 interface Project {
   id: string;
@@ -27,39 +39,36 @@ export default function WorkerFilterReport() {
   const [dateTo, setDateTo] = useState('');
   const [selectedWorkers, setSelectedWorkers] = useState<string[]>([]);
   const [reportGenerated, setReportGenerated] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
-  // جلب المشاريع
+  // جلب المشاريع والعمال
   const { data: projects = [] } = useQuery<Project[]>({
     queryKey: ['/api/projects'],
     enabled: true
   });
 
-  // جلب جميع العمال
   const { data: workers = [], isLoading: workersLoading } = useQuery<Worker[]>({
     queryKey: ['/api/workers'],
     enabled: true
   });
 
-  console.log('🔍 العمال المحملين:', workers.length, 'عمال متاحين');
-  console.log('📋 أسماء العمال:', workers.slice(0, 5).map(w => w.name));
-
-  // إعدادات افتراضية للتواريخ
+  // إعداد التواريخ الافتراضية
   useEffect(() => {
     const today = new Date().toISOString().split('T')[0];
-    const firstOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
-    
-    if (!dateFrom) setDateFrom(firstOfMonth);
-    if (!dateTo) setDateTo(today);
+    const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
+    setDateFrom(startOfMonth);
+    setDateTo(today);
   }, []);
 
-  const handleProjectSelection = (projectId: string, checked: boolean) => {
-    if (checked) {
-      setSelectedProjects(prev => [...prev, projectId]);
-    } else {
-      setSelectedProjects(prev => prev.filter(id => id !== projectId));
-    }
-    setSelectedWorkers([]); // إعادة تعيين العمال عند تغيير المشروع
-  };
+  // فلترة العمال حسب البحث
+  const filteredWorkers = workers.filter(worker =>
+    worker.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    worker.type.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const selectedWorkersData = filteredWorkers.filter(w => selectedWorkers.includes(w.id));
+  const totalDailyWages = selectedWorkersData.reduce((sum, w) => sum + Number(w.dailyWage || 0), 0);
+  const activeWorkers = selectedWorkersData.filter(w => w.isActive).length;
 
   const handleWorkerSelection = (workerId: string, checked: boolean) => {
     if (checked) {
@@ -69,271 +78,321 @@ export default function WorkerFilterReport() {
     }
   };
 
-  const handleSelectAllWorkers = () => {
-    if (selectedWorkers.length === workers.length) {
+  const handleSelectAll = () => {
+    if (selectedWorkers.length === filteredWorkers.length) {
       setSelectedWorkers([]);
     } else {
-      setSelectedWorkers(workers.map(w => w.id));
+      setSelectedWorkers(filteredWorkers.map(w => w.id));
     }
   };
 
   const generateReport = () => {
-    console.log('🚀 إنشاء تقرير العمال');
-    console.log('📊 المشاريع المحددة:', selectedProjects.length);
-    console.log('👥 العمال المحددين:', selectedWorkers.length);
-    console.log('📅 النطاق الزمني:', { من: dateFrom, إلى: dateTo });
-    
-    if (workers.length === 0) {
-      alert('لا توجد عمال متاحين لإنشاء التقرير');
+    if (selectedWorkers.length === 0) {
+      alert('يرجى تحديد عامل واحد على الأقل');
       return;
     }
-    
     setReportGenerated(true);
   };
 
-  const selectedWorkersData = workers.filter(w => selectedWorkers.includes(w.id));
-  const totalDailyWages = selectedWorkersData.reduce((sum, w) => sum + Number(w.dailyWage || 0), 0);
+  if (workersLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="text-lg font-medium text-gray-700">جاري تحميل بيانات العمال...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-6">
-      <Card className="shadow-lg">
-        <CardHeader className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20">
-          <CardTitle className="flex items-center gap-3 text-xl">
-            <div className="bg-purple-600 p-2 rounded-lg">
-              <Users className="h-6 w-6 text-white" />
-            </div>
-            تقرير تصفية العمال
-            <Badge variant="secondary" className="bg-purple-100 text-purple-800">
-              {workers.length} عامل متاح
-            </Badge>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-6 space-y-6">
-          {/* عرض حالة التحميل */}
-          {workersLoading && (
-            <div className="text-center p-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
-              <p className="mt-2 text-muted-foreground">جاري تحميل العمال...</p>
-            </div>
-          )}
+    <div className="space-y-8 p-6">
+      {/* عنوان القسم */}
+      <div className="text-center border-b border-gray-200 pb-6">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">تقرير تصفية العمال</h1>
+        <p className="text-lg text-gray-600">تقرير شامل للعمال المحددين مع الأجور والأدوار المهنية</p>
+        <div className="flex items-center justify-center gap-4 mt-4">
+          <Badge variant="secondary" className="px-4 py-2 text-sm">
+            <Users className="h-4 w-4 mr-2" />
+            {workers.length} عامل متاح
+          </Badge>
+          <Badge variant="outline" className="px-4 py-2 text-sm">
+            <Building2 className="h-4 w-4 mr-2" />
+            {projects.length} مشروع
+          </Badge>
+        </div>
+      </div>
 
-          {/* رسالة نجاح التحميل */}
-          {!workersLoading && workers.length > 0 && (
-            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
-                <span className="text-green-800 dark:text-green-300 font-medium">
-                  تم تحميل {workers.length} عامل بنجاح
-                </span>
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+        {/* قسم الفلاتر */}
+        <div className="xl:col-span-1 space-y-6">
+          <Card className="border-0 shadow-lg">
+            <CardHeader className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-t-lg">
+              <CardTitle className="flex items-center gap-3">
+                <Filter className="h-5 w-5" />
+                فلاتر التقرير
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 space-y-6">
+              {/* النطاق الزمني */}
+              <div className="space-y-4">
+                <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  النطاق الزمني
+                </h3>
+                <div className="grid grid-cols-1 gap-3">
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 mb-1 block">من تاريخ</label>
+                    <Input
+                      type="date"
+                      value={dateFrom}
+                      onChange={(e) => setDateFrom(e.target.value)}
+                      className="w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 mb-1 block">إلى تاريخ</label>
+                    <Input
+                      type="date"
+                      value={dateTo}
+                      onChange={(e) => setDateTo(e.target.value)}
+                      className="w-full"
+                    />
+                  </div>
+                </div>
               </div>
-            </div>
-          )}
 
-          {/* اختيار النطاق الزمني */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium">تاريخ البداية</label>
-              <Input
-                type="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium">تاريخ النهاية</label>
-              <Input
-                type="date"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-              />
-            </div>
-          </div>
-
-          {/* اختيار المشاريع */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold flex items-center gap-2">
-              <Building2 className="h-5 w-5" />
-              اختيار المشاريع ({selectedProjects.length} محدد)
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {projects.map((project) => (
-                <div key={project.id} className="flex items-center space-x-2 rtl:space-x-reverse p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">
-                  <Checkbox
-                    id={`project-${project.id}`}
-                    checked={selectedProjects.includes(project.id)}
-                    onCheckedChange={(checked) => handleProjectSelection(project.id, checked as boolean)}
+              {/* البحث في العمال */}
+              <div className="space-y-4">
+                <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                  <Search className="h-4 w-4" />
+                  البحث في العمال
+                </h3>
+                <div className="relative">
+                  <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    placeholder="ابحث بالاسم أو نوع العمل..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
                   />
-                  <label htmlFor={`project-${project.id}`} className="flex-1 cursor-pointer">
-                    <div className="font-medium">{project.name}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {project.status === 'active' ? '🟢 نشط' : '🔴 غير نشط'}
-                    </div>
-                  </label>
                 </div>
-              ))}
-            </div>
-          </div>
+              </div>
 
-          {/* اختيار العمال */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold flex items-center gap-2">
-                <User className="h-5 w-5" />
-                اختيار العمال ({selectedWorkers.length} محدد)
-              </h3>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleSelectAllWorkers}
-                className="flex items-center gap-2"
-              >
-                {selectedWorkers.length === workers.length ? 'إلغاء الكل' : 'تحديد الكل'}
-              </Button>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-60 overflow-y-auto">
-              {workers.map((worker) => (
-                <div key={worker.id} className="flex items-center space-x-2 rtl:space-x-reverse p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">
-                  <Checkbox
-                    id={`worker-${worker.id}`}
-                    checked={selectedWorkers.includes(worker.id)}
-                    onCheckedChange={(checked) => handleWorkerSelection(worker.id, checked as boolean)}
-                  />
-                  <label htmlFor={`worker-${worker.id}`} className="flex-1 cursor-pointer">
-                    <div className="font-medium">{worker.name}</div>
-                    <div className="text-sm text-muted-foreground">
-                      {worker.type} - {Number(worker.dailyWage || 0).toLocaleString()} ريال/يوم
+              {/* إحصائيات سريعة */}
+              {selectedWorkers.length > 0 && (
+                <div className="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-4 space-y-3">
+                  <h4 className="font-semibold text-gray-900">الإحصائيات</h4>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-blue-600">{selectedWorkers.length}</div>
+                      <div className="text-gray-600">عامل محدد</div>
                     </div>
-                    <div className="text-xs">
-                      {worker.isActive ? '✅ نشط' : '⏸️ غير نشط'}
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-green-600">{activeWorkers}</div>
+                      <div className="text-gray-600">نشط</div>
                     </div>
-                  </label>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* إحصائيات سريعة */}
-          {selectedWorkers.length > 0 && (
-            <Card className="bg-purple-50 dark:bg-purple-900/20">
-              <CardContent className="p-4">
-                <h4 className="font-semibold mb-3">إحصائيات العمال المحددين</h4>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                  <div>
-                    <div className="text-2xl font-bold text-purple-600">{selectedWorkers.length}</div>
-                    <div className="text-sm text-muted-foreground">إجمالي العمال</div>
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold text-green-600">
-                      {selectedWorkersData.filter(w => w.isActive).length}
+                    <div className="text-center col-span-2">
+                      <div className="text-xl font-bold text-indigo-600">{totalDailyWages.toLocaleString()}</div>
+                      <div className="text-gray-600">مجموع الأجور اليومية (ريال)</div>
                     </div>
-                    <div className="text-sm text-muted-foreground">العمال النشطين</div>
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold text-blue-600">
-                      {totalDailyWages.toLocaleString()}
-                    </div>
-                    <div className="text-sm text-muted-foreground">مجموع الأجور اليومية</div>
-                  </div>
-                  <div>
-                    <div className="text-2xl font-bold text-indigo-600">
-                      {new Set(selectedWorkersData.map(w => w.type)).size}
-                    </div>
-                    <div className="text-sm text-muted-foreground">أنواع العمل</div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          )}
+              )}
 
-          {/* أزرار العمل */}
-          <div className="flex flex-wrap gap-3">
-            <Button
-              onClick={generateReport}
-              disabled={workers.length === 0}
-              className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white"
-            >
-              <Filter className="h-4 w-4" />
-              إنشاء تقرير التصفية
-            </Button>
-
-            {reportGenerated && (
-              <>
-                <Button variant="outline" className="flex items-center gap-2">
-                  <FileSpreadsheet className="h-4 w-4" />
-                  تصدير Excel
+              {/* أزرار العمل */}
+              <div className="space-y-3">
+                <Button
+                  onClick={generateReport}
+                  disabled={selectedWorkers.length === 0}
+                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-medium py-3"
+                  size="lg"
+                >
+                  <Filter className="h-5 w-5 mr-2" />
+                  إنشاء التقرير
                 </Button>
-                <Button variant="outline" className="flex items-center gap-2">
-                  <Printer className="h-4 w-4" />
-                  طباعة
-                </Button>
-              </>
-            )}
-          </div>
 
-          {/* عرض التقرير */}
-          {reportGenerated && (
-            <Card className="mt-6">
-              <CardHeader>
-                <CardTitle className="text-center">
-                  تقرير شامل للعمال المحددين مع الأجور والأدوار المهنية
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <table className="w-full border-collapse border border-gray-300 dark:border-gray-600">
-                    <thead>
-                      <tr className="bg-gray-100 dark:bg-gray-800">
-                        <th className="border border-gray-300 dark:border-gray-600 p-3 text-right">م</th>
-                        <th className="border border-gray-300 dark:border-gray-600 p-3 text-right">اسم العامل</th>
-                        <th className="border border-gray-300 dark:border-gray-600 p-3 text-right">نوع العمل</th>
-                        <th className="border border-gray-300 dark:border-gray-600 p-3 text-right">الأجر اليومي</th>
-                        <th className="border border-gray-300 dark:border-gray-600 p-3 text-right">الحالة</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {selectedWorkersData.length > 0 ? (
-                        selectedWorkersData.map((worker, index) => (
-                          <tr key={worker.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
-                            <td className="border border-gray-300 dark:border-gray-600 p-3">{index + 1}</td>
-                            <td className="border border-gray-300 dark:border-gray-600 p-3 font-medium">{worker.name}</td>
-                            <td className="border border-gray-300 dark:border-gray-600 p-3">{worker.type}</td>
-                            <td className="border border-gray-300 dark:border-gray-600 p-3">
-                              {Number(worker.dailyWage || 0).toLocaleString()} ريال
-                            </td>
-                            <td className="border border-gray-300 dark:border-gray-600 p-3">
-                              <Badge variant={worker.isActive ? "default" : "secondary"}>
-                                {worker.isActive ? "نشط" : "غير نشط"}
-                              </Badge>
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan={5} className="border border-gray-300 dark:border-gray-600 p-8 text-center text-muted-foreground">
-                            يرجى تحديد العمال لعرض التقرير
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-
-                {selectedWorkersData.length > 0 && (
-                  <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                    <h4 className="font-semibold mb-2">ملخص التقرير:</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                      <div>إجمالي العمال: <span className="font-bold">{selectedWorkersData.length}</span></div>
-                      <div>العمال النشطين: <span className="font-bold">{selectedWorkersData.filter(w => w.isActive).length}</span></div>
-                      <div>مجموع الأجور: <span className="font-bold">{totalDailyWages.toLocaleString()} ريال</span></div>
-                    </div>
+                {reportGenerated && (
+                  <div className="flex gap-2">
+                    <Button variant="outline" className="flex-1">
+                      <FileSpreadsheet className="h-4 w-4 mr-2" />
+                      Excel
+                    </Button>
+                    <Button variant="outline" className="flex-1">
+                      <Printer className="h-4 w-4 mr-2" />
+                      طباعة
+                    </Button>
                   </div>
                 )}
-              </CardContent>
-            </Card>
-          )}
-        </CardContent>
-      </Card>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* قائمة العمال */}
+        <div className="xl:col-span-2">
+          <Card className="border-0 shadow-lg">
+            <CardHeader className="bg-gradient-to-r from-gray-800 to-gray-900 text-white rounded-t-lg">
+              <div className="flex items-center justify-between">
+                <CardTitle className="flex items-center gap-3">
+                  <Users className="h-5 w-5" />
+                  قائمة العمال ({filteredWorkers.length})
+                </CardTitle>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleSelectAll}
+                  className="text-white border-white/20 hover:bg-white/10"
+                >
+                  {selectedWorkers.length === filteredWorkers.length ? 'إلغاء الكل' : 'تحديد الكل'}
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              <div className="max-h-[600px] overflow-y-auto">
+                {filteredWorkers.length > 0 ? (
+                  <div className="divide-y divide-gray-200">
+                    {filteredWorkers.map((worker) => (
+                      <div key={worker.id} className="p-4 hover:bg-gray-50 transition-colors">
+                        <div className="flex items-center space-x-4 rtl:space-x-reverse">
+                          <Checkbox
+                            id={`worker-${worker.id}`}
+                            checked={selectedWorkers.includes(worker.id)}
+                            onCheckedChange={(checked) => handleWorkerSelection(worker.id, checked as boolean)}
+                            className="h-5 w-5"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                <h3 className="text-lg font-semibold text-gray-900">{worker.name}</h3>
+                                <p className="text-sm text-gray-600">{worker.type}</p>
+                              </div>
+                              <div className="text-right">
+                                <div className="text-lg font-bold text-green-600">
+                                  {Number(worker.dailyWage || 0).toLocaleString()} ريال
+                                </div>
+                                <div className="text-sm text-gray-500">أجر يومي</div>
+                              </div>
+                            </div>
+                            <div className="mt-2 flex items-center gap-3">
+                              <Badge variant={worker.isActive ? "default" : "secondary"} className="text-xs">
+                                {worker.isActive ? "✅ نشط" : "⏸️ غير نشط"}
+                              </Badge>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-lg text-gray-600">لا توجد عمال متطابقين مع البحث</p>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* عرض التقرير */}
+      {reportGenerated && (
+        <Card className="border-0 shadow-lg">
+          <CardHeader className="bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-t-lg">
+            <CardTitle className="text-center text-xl">
+              تقرير شامل للعمال المحددين مع الأجور والأدوار المهنية
+            </CardTitle>
+            <div className="text-center text-sm opacity-90">
+              تاريخ التقرير: {new Date().toLocaleDateString('ar-EG')} | الفترة: {dateFrom} إلى {dateTo}
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-4 text-right text-sm font-semibold text-gray-900 border-b">م</th>
+                    <th className="px-6 py-4 text-right text-sm font-semibold text-gray-900 border-b">اسم العامل</th>
+                    <th className="px-6 py-4 text-right text-sm font-semibold text-gray-900 border-b">نوع العمل</th>
+                    <th className="px-6 py-4 text-right text-sm font-semibold text-gray-900 border-b">الأجر اليومي</th>
+                    <th className="px-6 py-4 text-right text-sm font-semibold text-gray-900 border-b">الحالة</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {selectedWorkersData.map((worker, index) => (
+                    <tr key={worker.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 text-sm text-gray-900">{index + 1}</td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm font-medium text-gray-900">{worker.name}</div>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-700">{worker.type}</td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm font-semibold text-green-600">
+                          {Number(worker.dailyWage || 0).toLocaleString()} ريال
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <Badge variant={worker.isActive ? "default" : "secondary"} className="text-xs">
+                          {worker.isActive ? "نشط" : "غير نشط"}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot className="bg-gray-50">
+                  <tr>
+                    <td colSpan={3} className="px-6 py-4 text-sm font-bold text-gray-900">
+                      الإجمالي ({selectedWorkersData.length} عامل)
+                    </td>
+                    <td className="px-6 py-4 text-sm font-bold text-green-600">
+                      {totalDailyWages.toLocaleString()} ريال
+                    </td>
+                    <td className="px-6 py-4 text-sm font-medium text-gray-700">
+                      {activeWorkers} عامل نشط
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+
+            {/* ملخص احترافي */}
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 m-6 rounded-lg">
+              <h4 className="text-lg font-bold text-gray-900 mb-4">ملخص التقرير</h4>
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div className="text-center">
+                  <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-full mx-auto mb-2">
+                    <Users className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div className="text-2xl font-bold text-gray-900">{selectedWorkersData.length}</div>
+                  <div className="text-sm text-gray-600">إجمالي العمال</div>
+                </div>
+                <div className="text-center">
+                  <div className="flex items-center justify-center w-12 h-12 bg-green-100 rounded-full mx-auto mb-2">
+                    <UserCheck className="h-6 w-6 text-green-600" />
+                  </div>
+                  <div className="text-2xl font-bold text-gray-900">{activeWorkers}</div>
+                  <div className="text-sm text-gray-600">العمال النشطين</div>
+                </div>
+                <div className="text-center">
+                  <div className="flex items-center justify-center w-12 h-12 bg-indigo-100 rounded-full mx-auto mb-2">
+                    <DollarSign className="h-6 w-6 text-indigo-600" />
+                  </div>
+                  <div className="text-2xl font-bold text-gray-900">{totalDailyWages.toLocaleString()}</div>
+                  <div className="text-sm text-gray-600">مجموع الأجور (ريال)</div>
+                </div>
+                <div className="text-center">
+                  <div className="flex items-center justify-center w-12 h-12 bg-purple-100 rounded-full mx-auto mb-2">
+                    <TrendingUp className="h-6 w-6 text-purple-600" />
+                  </div>
+                  <div className="text-2xl font-bold text-gray-900">{new Set(selectedWorkersData.map(w => w.type)).size}</div>
+                  <div className="text-sm text-gray-600">أنواع العمل</div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
