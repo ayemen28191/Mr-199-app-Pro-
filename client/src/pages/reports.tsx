@@ -83,13 +83,21 @@ export default function Reports() {
   // حالة تصفية العمال - إصلاح عدم ظهور العمال
   const [filteredWorkers, setFilteredWorkers] = useState<Worker[]>([]);
 
-  // تحديث قائمة العمال المفلترة عند تغيير البيانات
+  // تحديث قائمة العمال المفلترة عند تغيير البيانات - إصلاح جذري
   useEffect(() => {
-    console.log('🔄 تحديث قائمة العمال المفلترة:', workers.length);
-    if (workers.length > 0) {
+    console.log('🔄 تحديث قائمة العمال المفلترة:', workers.length, 'عمال');
+    console.log('📋 بيانات العمال:', workers.slice(0, 3).map(w => w.name));
+    // تعيين العمال مباشرة بدون شروط
+    setFilteredWorkers(workers);
+  }, [workers]);
+
+  // إعادة تعيين العمال عند عدم وجود عمال مفلترة ولكن يوجد عمال أصلية
+  useEffect(() => {
+    if (filteredWorkers.length === 0 && workers.length > 0) {
+      console.log('🔧 إعادة تعيين العمال المفلترة لحل مشكلة العرض');
       setFilteredWorkers(workers);
     }
-  }, [workers]);
+  }, [filteredWorkers, workers]);
 
   // جلب الإحصائيات المحسنة مع إعادة التحديث التلقائي
   const { data: projectsWithStats = [], refetch: refetchStats } = useQuery<any[]>({

@@ -7,7 +7,7 @@
  * الحالة: نشط
  */
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -114,8 +114,9 @@ export function UnifiedFilterTemplate<T extends Record<string, any>>({
     return result;
   }, [data, searchTerm, activeFilters, sortBy, sortDirection, searchFields]);
 
-  // إشعار المكون الأب بالتغييرات
-  useMemo(() => {
+  // إشعار المكون الأب بالتغييرات - إصلاح عدم ظهور البيانات
+  useEffect(() => {
+    console.log('🔄 إشعار المكون الأب بالتغييرات، عدد النتائج:', filteredAndSortedData.length);
     onFilteredDataChange(filteredAndSortedData);
   }, [filteredAndSortedData, onFilteredDataChange]);
 
