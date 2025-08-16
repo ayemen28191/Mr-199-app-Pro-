@@ -3050,29 +3050,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "معرفات المشاريع مطلوبة" });
       }
 
-      // تحويل projectIds إلى مصفوفة
-      let selectedProjectIds: string[] = [];
-      if (typeof projectIds === 'string') {
-        selectedProjectIds = projectIds.split(',').filter(id => id.trim());
-      }
-
-      if (selectedProjectIds.length === 0) {
-        return res.status(400).json({ message: "يجب تحديد مشروع واحد على الأقل" });
-      }
-
       // جلب البيانات الأساسية
       const [allProjects, allWorkers] = await Promise.all([
         storage.getProjects(),
         storage.getWorkers()
       ]);
 
-      // فلترة المشاريع المحددة
-      const selectedProjects = allProjects.filter(project => 
-        selectedProjectIds.includes(project.id)
-      );
+      // تحويل projectIds إلى مصفوفة ومعالجة حالة 'all'
+      let selectedProjectIds: string[] = [];
+      let selectedProjects: any[] = [];
+      
+      if (typeof projectIds === 'string') {
+        if (projectIds.trim() === 'all' || projectIds.trim() === '') {
+          // في حالة 'all' أو فارغ، استخدم جميع المشاريع
+          selectedProjects = allProjects;
+          selectedProjectIds = allProjects.map(p => p.id);
+        } else {
+          // في حالة تحديد مشاريع معينة
+          selectedProjectIds = projectIds.split(',').filter(id => id.trim());
+          selectedProjects = allProjects.filter(project => 
+            selectedProjectIds.includes(project.id)
+          );
+        }
+      }
 
       if (selectedProjects.length === 0) {
-        return res.status(404).json({ message: "لا توجد مشاريع صالحة" });
+        return res.status(404).json({ message: "لا توجد مشاريع متاحة" });
       }
 
       // فلترة العمال إذا تم تحديدهم
