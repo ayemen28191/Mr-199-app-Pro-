@@ -23,10 +23,12 @@ import {
   RefreshCw,
   X,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  Camera
 } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
+import html2canvas from 'html2canvas';
 import { 
   COMPANY_INFO, 
   EXCEL_STYLES, 
@@ -324,6 +326,55 @@ export default function WorkerFilterReportRealData() {
     window.print();
   };
 
+  // دالة تحميل صورة التقرير
+  const downloadReportImage = async () => {
+    try {
+      console.log('📸 بدء تحميل صورة تقرير تصفية العمال...');
+      
+      const element = document.getElementById('worker-filter-report-content');
+      if (!element) {
+        alert('❌ لم يتم العثور على محتوى التقرير');
+        return;
+      }
+
+      // إخفاء الأزرار مؤقتاً
+      const buttons = element.querySelectorAll('button, .no-print');
+      buttons.forEach(btn => (btn as HTMLElement).style.display = 'none');
+
+      // التقاط الصورة
+      const canvas = await html2canvas(element, {
+        backgroundColor: '#ffffff',
+        scale: 2, // جودة عالية
+        useCORS: true,
+        allowTaint: true,
+        scrollX: 0,
+        scrollY: 0,
+        width: element.scrollWidth,
+        height: element.scrollHeight
+      });
+
+      // إظهار الأزرار مرة أخرى
+      buttons.forEach(btn => (btn as HTMLElement).style.display = '');
+
+      // تحويل إلى صورة وتحميلها
+      const imgData = canvas.toDataURL('image/png', 1.0);
+      const link = document.createElement('a');
+      const projectName = selectedProjectIds.length === 1 ? 
+        projects.find(p => p.id === selectedProjectIds[0])?.name || 'مشروع' : 'جميع_المشاريع';
+      link.download = `تقرير_تصفية_العمال_${projectName}_${formatDate(dateFrom)}_إلى_${formatDate(dateTo)}.png`;
+      link.href = imgData;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      console.log('✅ تم تحميل صورة التقرير بنجاح');
+      
+    } catch (error) {
+      console.error('❌ خطأ في تحميل الصورة:', error);
+      alert('❌ حدث خطأ أثناء تحميل صورة التقرير. يرجى المحاولة مرة أخرى.');
+    }
+  };
+
   const clearFilters = () => {
     setSelectedProjectIds([]);
     setSearchTerm('');
@@ -522,6 +573,10 @@ export default function WorkerFilterReportRealData() {
                   <FileSpreadsheet className="h-4 w-4 mr-1" />
                   Excel
                 </Button>
+                <Button variant="secondary" size="sm" onClick={downloadReportImage} className="bg-purple-600 hover:bg-purple-700 text-white">
+                  <Camera className="h-4 w-4 mr-1" />
+                  صورة
+                </Button>
                 <Button variant="secondary" size="sm" onClick={printReport}>
                   <Printer className="h-4 w-4 mr-1" />
                   طباعة
@@ -532,7 +587,7 @@ export default function WorkerFilterReportRealData() {
               </div>
             </div>
           </CardHeader>
-          <CardContent className="p-0">
+          <CardContent className="p-0" id="worker-filter-report-content">
             {/* صف الإحصائيات - بتصميم Excel */}
             <div className="bg-gray-100 px-6 py-4 border-b print:bg-white">
               <div className="grid grid-cols-6 gap-4 text-sm print:text-xs">

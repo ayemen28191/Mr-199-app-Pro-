@@ -5,7 +5,7 @@
  */
 
 import React from 'react';
-import { FileSpreadsheet, Printer, FileText } from 'lucide-react';
+import { FileSpreadsheet, Printer, FileText, Camera } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
@@ -276,6 +276,53 @@ export const EnhancedWorkerAccountStatementRealData = ({
     }
   };
 
+  // دالة تحميل صورة التقرير
+  const downloadImage = async () => {
+    try {
+      console.log('📸 بدء تحميل صورة التقرير...');
+      
+      const element = document.getElementById('enhanced-worker-account-statement-real-data');
+      if (!element) {
+        alert('❌ لم يتم العثور على محتوى التقرير');
+        return;
+      }
+
+      // إخفاء أزرار التحكم مؤقتاً
+      const controlButtons = document.querySelectorAll('.no-print');
+      controlButtons.forEach(btn => (btn as HTMLElement).style.display = 'none');
+
+      // التقاط الصورة
+      const canvas = await html2canvas(element, {
+        backgroundColor: '#ffffff',
+        scale: 2, // جودة عالية
+        useCORS: true,
+        allowTaint: true,
+        scrollX: 0,
+        scrollY: 0,
+        width: element.scrollWidth,
+        height: element.scrollHeight
+      });
+
+      // إظهار الأزرار مرة أخرى
+      controlButtons.forEach(btn => (btn as HTMLElement).style.display = '');
+
+      // تحويل إلى صورة وتحميلها
+      const imgData = canvas.toDataURL('image/png', 1.0);
+      const link = document.createElement('a');
+      link.download = `كشف_حساب_العامل_${worker?.name || 'عامل'}_${formatDate(dateFrom)}_إلى_${formatDate(dateTo)}.png`;
+      link.href = imgData;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      console.log('✅ تم تحميل صورة التقرير بنجاح');
+      
+    } catch (error) {
+      console.error('❌ خطأ في تحميل الصورة:', error);
+      alert('❌ حدث خطأ أثناء تحميل الصورة. يرجى المحاولة مرة أخرى.');
+    }
+  };
+
   return (
     <div style={{ direction: 'rtl' }}>
       {/* أزرار التحكم */}
@@ -285,7 +332,14 @@ export const EnhancedWorkerAccountStatementRealData = ({
           className="bg-green-600 hover:bg-green-700 text-white"
         >
           <FileSpreadsheet className="h-4 w-4 mr-2" />
-          تصدير Excel (بيانات حقيقية)
+          تصدير Excel
+        </Button>
+        <Button
+          onClick={downloadImage}
+          className="bg-purple-600 hover:bg-purple-700 text-white"
+        >
+          <Camera className="h-4 w-4 mr-2" />
+          تحميل صورة
         </Button>
         <Button
           onClick={handlePrint}

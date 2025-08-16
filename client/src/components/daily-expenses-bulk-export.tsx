@@ -20,10 +20,12 @@ import {
   Download, 
   RefreshCw,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  Camera
 } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
+import html2canvas from 'html2canvas';
 import type { Project } from '@shared/schema';
 
 interface DailyExpenseData {
@@ -384,6 +386,47 @@ export default function DailyExpensesBulkExport() {
     return worksheet;
   };
 
+  // دالة تحميل صورة المعاينة
+  const downloadComponentImage = async () => {
+    try {
+      console.log('📸 بدء تحميل صورة معاينة تصدير المصروفات المجمعة...');
+      
+      const element = document.getElementById('bulk-export-component');
+      if (!element) {
+        alert('❌ لم يتم العثور على محتوى المعاينة');
+        return;
+      }
+
+      // التقاط الصورة
+      const canvas = await html2canvas(element, {
+        backgroundColor: '#ffffff',
+        scale: 2, // جودة عالية
+        useCORS: true,
+        allowTaint: true,
+        scrollX: 0,
+        scrollY: 0,
+        width: element.scrollWidth,
+        height: element.scrollHeight
+      });
+
+      // تحويل إلى صورة وتحميلها
+      const imgData = canvas.toDataURL('image/png', 1.0);
+      const link = document.createElement('a');
+      const projectName = selectedProject?.name?.replace(/[\\/:*?"<>|]/g, '-') || 'مشروع';
+      link.download = `معاينة_تصدير_المصروفات_المجمعة_${projectName}.png`;
+      link.href = imgData;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      console.log('✅ تم تحميل صورة المعاينة بنجاح');
+      
+    } catch (error) {
+      console.error('❌ خطأ في تحميل الصورة:', error);
+      alert('❌ حدث خطأ أثناء تحميل صورة المعاينة. يرجى المحاولة مرة أخرى.');
+    }
+  };
+
   // دالة التصدير الرئيسية
   const handleBulkExport = async () => {
     if (!selectedProjectId) {
@@ -488,12 +531,23 @@ export default function DailyExpensesBulkExport() {
   }, []);
 
   return (
-    <Card className="w-full">
+    <Card className="w-full" id="bulk-export-component">
       <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-t-lg">
-        <CardTitle className="flex items-center gap-2">
-          <FileSpreadsheet className="h-5 w-5" />
-          تصدير المصروفات اليومية لفترة زمنية
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
+            <FileSpreadsheet className="h-5 w-5" />
+            تصدير المصروفات اليومية لفترة زمنية
+          </CardTitle>
+          <Button 
+            onClick={downloadComponentImage}
+            variant="secondary" 
+            size="sm" 
+            className="bg-purple-600 hover:bg-purple-700 text-white"
+          >
+            <Camera className="h-4 w-4 mr-1" />
+            تحميل صورة
+          </Button>
+        </div>
       </CardHeader>
       
       <CardContent className="p-6">
