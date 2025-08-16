@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Users, Calendar, Filter, CheckCircle2, FileSpreadsheet, Printer, User, Building2 } from 'lucide-react';
-import WorkerFilterTemplate, { type WorkerFilterData } from '@/reports/templates/worker-filter-template';
 
 interface Project {
   id: string;
@@ -22,28 +21,7 @@ interface Worker {
   isActive: boolean;
 }
 
-interface WorkerAttendanceRecord {
-  id: string;
-  workerId: string;
-  workerName: string;
-  workerType: string;
-  projectId: string;
-  projectName: string;
-  date: string;
-  dailyWage: number;
-  actualWage: number;
-  paidAmount: number;
-  remainingAmount: number;
-  isPresent: boolean;
-  workDays: number;
-}
-
-interface WorkerFilterReportProps {
-  // لا نحتاج selectedProjectId لأن المكون مستقل
-}
-
-export default function WorkerFilterReport({}: WorkerFilterReportProps) {
-  // State للتحكم في الفلاتر
+export default function WorkerFilterReport() {
   const [selectedProjects, setSelectedProjects] = useState<string[]>([]);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
@@ -56,489 +34,306 @@ export default function WorkerFilterReport({}: WorkerFilterReportProps) {
     enabled: true
   });
 
-  // جلب سجلات حضور العمال للمشاريع المحددة
-  const { data: workerAttendanceRecords = [], isLoading: workersLoading, error: workersError } = useQuery<WorkerAttendanceRecord[]>({
-    queryKey: ['/api/worker-attendance', 'with-project-details', selectedProjects],
-    enabled: selectedProjects.length > 0,
-    queryFn: async () => {
-      if (selectedProjects.length === 0) return [];
-      const projectIds = selectedProjects.join(',');
-      const response = await fetch(`/api/worker-attendance/by-projects?projectIds=${projectIds}&dateFrom=${dateFrom}&dateTo=${dateTo}`);
-      if (!response.ok) throw new Error('فشل في جلب سجلات الحضور');
-      return response.json();
-    }
+  // جلب جميع العمال
+  const { data: workers = [], isLoading: workersLoading } = useQuery<Worker[]>({
+    queryKey: ['/api/workers'],
+    enabled: true
   });
 
-  // رسائل تشخيصية
-  console.log('🔍 حالة جلب سجلات الحضور:', { 
-    attendanceRecords: workerAttendanceRecords.length, 
-    selectedProjects: selectedProjects.length,
-    isLoading: workersLoading, 
-    hasError: !!workersError,
-    error: workersError 
-  });
+  console.log('🔍 العمال المحملين:', workers.length, 'عمال متاحين');
+  console.log('📋 أسماء العمال:', workers.slice(0, 5).map(w => w.name));
 
-  // معالجة سجلات الحضور لعرضها
-  const filteredWorkers = useMemo(() => {
-    console.log('🔍 معالجة سجلات الحضور:', { 
-      recordsCount: workerAttendanceRecords.length, 
-      selectedProjectsCount: selectedProjects.length
-    });
-    
-    if (workerAttendanceRecords.length === 0) {
-      return [];
-    }
-
-    // تجميع البيانات حسب العامل والمشروع
-    const workerProjectMap = new Map<string, any>();
-    
-    workerAttendanceRecords.forEach(record => {
-      const key = `${record.workerId}-${record.projectId}`;
-      if (!workerProjectMap.has(key)) {
-        workerProjectMap.set(key, {
-          workerId: record.workerId,
-          workerName: record.workerName,
-          workerType: record.workerType,
-          projectId: record.projectId,
-          projectName: record.projectName,
-          totalEarned: 0,
-          totalPaid: 0,
-          totalRemaining: 0,
-          workDays: 0,
-          dailyWage: record.dailyWage
-        });
-      }
-      
-      const entry = workerProjectMap.get(key);
-      entry.totalEarned += Number(record.actualWage) || 0;
-      entry.totalPaid += Number(record.paidAmount) || 0;
-      entry.totalRemaining += Number(record.remainingAmount) || 0;
-      entry.workDays += Number(record.workDays) || 0;
-    });
-    
-    return Array.from(workerProjectMap.values());
-  }, [workerAttendanceRecords, selectedProjects, dateFrom, dateTo]);
-
-  // تعيين التاريخ الافتراضي
+  // إعدادات افتراضية للتواريخ
   useEffect(() => {
-    const today = new Date();
-    const thirtyDaysAgo = new Date(today);
-    thirtyDaysAgo.setDate(today.getDate() - 30);
+    const today = new Date().toISOString().split('T')[0];
+    const firstOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
     
-    setDateFrom(thirtyDaysAgo.toISOString().split('T')[0]);
-    setDateTo(today.toISOString().split('T')[0]);
+    if (!dateFrom) setDateFrom(firstOfMonth);
+    if (!dateTo) setDateTo(today);
   }, []);
 
-  // لا نعتمد على المشروع المحدد عالمياً - المستخدم يختار بنفسه
-
-  // وظائف التحكم في المشاريع
-  const handleProjectToggle = (projectId: string) => {
-    setSelectedProjects(prev => 
-      prev.includes(projectId) 
-        ? prev.filter(id => id !== projectId)
-        : [...prev, projectId]
-    );
-    setSelectedWorkers([]); // إعادة تعيين العمال المختارين
+  const handleProjectSelection = (projectId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedProjects(prev => [...prev, projectId]);
+    } else {
+      setSelectedProjects(prev => prev.filter(id => id !== projectId));
+    }
+    setSelectedWorkers([]); // إعادة تعيين العمال عند تغيير المشروع
   };
 
-  const selectAllProjects = () => {
-    setSelectedProjects(projects.map(p => p.id));
-    setSelectedWorkers([]);
+  const handleWorkerSelection = (workerId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedWorkers(prev => [...prev, workerId]);
+    } else {
+      setSelectedWorkers(prev => prev.filter(id => id !== workerId));
+    }
   };
 
-  const clearProjectSelection = () => {
-    setSelectedProjects([]);
-    setSelectedWorkers([]);
+  const handleSelectAllWorkers = () => {
+    if (selectedWorkers.length === workers.length) {
+      setSelectedWorkers([]);
+    } else {
+      setSelectedWorkers(workers.map(w => w.id));
+    }
   };
 
-  // وظائف التحكم في العمال (نستخدم مفتاح مركب للعامل-المشروع)
-  const handleWorkerToggle = (workerProjectKey: string) => {
-    setSelectedWorkers(prev => 
-      prev.includes(workerProjectKey) 
-        ? prev.filter(id => id !== workerProjectKey)
-        : [...prev, workerProjectKey]
-    );
-  };
-
-  const selectAllWorkers = () => {
-    setSelectedWorkers(filteredWorkers.map(w => `${w.workerId}-${w.projectId}`));
-  };
-
-  const clearWorkerSelection = () => {
-    setSelectedWorkers([]);
-  };
-
-  // إنشاء التقرير
   const generateReport = () => {
-    if (filteredWorkers.length === 0) {
+    console.log('🚀 إنشاء تقرير العمال');
+    console.log('📊 المشاريع المحددة:', selectedProjects.length);
+    console.log('👥 العمال المحددين:', selectedWorkers.length);
+    console.log('📅 النطاق الزمني:', { من: dateFrom, إلى: dateTo });
+    
+    if (workers.length === 0) {
       alert('لا توجد عمال متاحين لإنشاء التقرير');
       return;
     }
     
-    // إنشاء التقرير حتى لو لم تكن هناك تواريخ محددة
     setReportGenerated(true);
   };
 
-  // إحصائيات الاختيار
-  const selectedProjectsData = projects.filter(p => selectedProjects.includes(p.id));
-  const selectedWorkersData = filteredWorkers.filter(w => selectedWorkers.includes(`${w.workerId}-${w.projectId}`));
-
-  // إنشاء بيانات التقرير للعرض
-  const generateReportData = (): WorkerFilterData => {
-    return {
-      companyName: 'شركة الفتني للمقاولات والاستشارات الهندسية',
-      reportTitle: 'كشف تصفية العمال',
-      dateRange: {
-        from: dateFrom || '2025-01-01',
-        to: dateTo || new Date().toISOString().split('T')[0]
-      },
-      projectCount: selectedProjectsData.length,
-      workerCount: selectedWorkersData.length,
-      totalDailyWages: selectedWorkersData.reduce((sum, w) => sum + w.dailyWage, 0),
-      workers: selectedWorkersData.map(worker => {
-        return {
-          id: `${worker.workerId}-${worker.projectId}`,
-          name: worker.workerName,
-          type: worker.workerType,
-          project: worker.projectName,
-          dailyWage: worker.dailyWage,
-          workDays: worker.workDays,
-          totalEarned: worker.totalEarned,
-          totalPaid: worker.totalPaid,
-          remaining: worker.totalRemaining,
-          isActive: true, // العمال الذين لديهم سجلات حضور
-          notes: ''
-        };
-      }),
-      totals: {
-        totalRemaining: 0,
-        totalPaid: 0,
-        totalEarned: 0,
-        totalWorkDays: 0,
-        averageDailyWage: selectedWorkersData.length > 0 
-          ? Math.round(selectedWorkersData.reduce((sum, w) => sum + w.dailyWage, 0) / selectedWorkersData.length)
-          : 0
-      }
-    };
-  };
-
-  // حساب الإجماليات
-  const reportData = generateReportData();
-  if (reportData.workers.length > 0) {
-    reportData.totals = {
-      totalEarned: reportData.workers.reduce((sum, w) => sum + w.totalEarned, 0),
-      totalPaid: reportData.workers.reduce((sum, w) => sum + w.totalPaid, 0),
-      totalRemaining: reportData.workers.reduce((sum, w) => sum + w.remaining, 0),
-      totalWorkDays: reportData.workers.reduce((sum, w) => sum + w.workDays, 0),
-      averageDailyWage: reportData.totalDailyWages / reportData.workers.length || 0
-    };
-  }
-
-  // وظائف التصدير
-  const handleExportExcel = () => {
-    console.log('تصدير Excel للعمال المفلترين');
-    // سيتم إضافة منطق التصدير لاحقاً
-  };
-
-  const handlePrintReport = () => {
-    window.print();
-  };
+  const selectedWorkersData = workers.filter(w => selectedWorkers.includes(w.id));
+  const totalDailyWages = selectedWorkersData.reduce((sum, w) => sum + Number(w.dailyWage || 0), 0);
 
   return (
     <div className="space-y-6">
-      {/* عنوان التقرير */}
-      <Card className="shadow-lg border-2 border-green-200 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-3 text-2xl">
-            <div className="bg-green-600 p-3 rounded-lg">
-              <Users className="h-8 w-8 text-white" />
-            </div>
-            <div>
-              <h2 className="text-green-800 dark:text-green-200">تقرير تصفية العمال</h2>
-              <p className="text-sm text-green-600 dark:text-green-400 font-normal mt-1">
-                تقرير شامل للعمال المحددين مع الأجور والأدوار المهنية
-              </p>
-            </div>
-          </CardTitle>
-        </CardHeader>
-      </Card>
-
-      {/* إعداد تقرير تصفية العمال */}
       <Card className="shadow-lg">
-        <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20">
-          <CardTitle className="flex items-center gap-3">
-            <Filter className="h-6 w-6 text-blue-600" />
-            إعداد تقرير تصفية العمال
+        <CardHeader className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20">
+          <CardTitle className="flex items-center gap-3 text-xl">
+            <div className="bg-purple-600 p-2 rounded-lg">
+              <Users className="h-6 w-6 text-white" />
+            </div>
+            تقرير تصفية العمال
+            <Badge variant="secondary" className="bg-purple-100 text-purple-800">
+              {workers.length} عامل متاح
+            </Badge>
           </CardTitle>
         </CardHeader>
         <CardContent className="p-6 space-y-6">
-          
-          {/* اختيار المشاريع (مطلوب) */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <label className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-                <Building2 className="inline h-5 w-5 mr-2" />
-                اختيار المشاريع (مطلوب)
-              </label>
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={selectAllProjects}
-                  disabled={projects.length === 0}
-                >
-                  تحديد الكل
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={clearProjectSelection}
-                >
-                  إلغاء التحديد
-                </Button>
+          {/* عرض حالة التحميل */}
+          {workersLoading && (
+            <div className="text-center p-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+              <p className="mt-2 text-muted-foreground">جاري تحميل العمال...</p>
+            </div>
+          )}
+
+          {/* رسالة نجاح التحميل */}
+          {!workersLoading && workers.length > 0 && (
+            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-5 w-5 text-green-600" />
+                <span className="text-green-800 dark:text-green-300 font-medium">
+                  تم تحميل {workers.length} عامل بنجاح
+                </span>
               </div>
             </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg min-h-[120px]">
-              {projects.length === 0 ? (
-                <div className="col-span-full text-center text-gray-500 py-8">
-                  <Building2 className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p>لا توجد مشاريع متاحة</p>
-                </div>
-              ) : (
-                projects.map(project => (
-                  <div key={project.id} className="flex items-center space-x-2">
-                    <Checkbox
-                      id={`project-${project.id}`}
-                      checked={selectedProjects.includes(project.id)}
-                      onCheckedChange={() => handleProjectToggle(project.id)}
-                    />
-                    <label 
-                      htmlFor={`project-${project.id}`}
-                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                    >
-                      {project.name}
-                    </label>
-                  </div>
-                ))
-              )}
-            </div>
+          )}
 
-            <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200">
-              <p className="text-blue-600 dark:text-blue-400 font-medium">
-                📋 سيتم عرض العمال الذين عملوا في المشاريع المحددة فقط
-              </p>
-              <p className="text-sm text-blue-500 mt-1">
-                اختر المشاريع أولاً لعرض العمال المتاحين
-              </p>
+          {/* اختيار النطاق الزمني */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">تاريخ البداية</label>
+              <Input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">تاريخ النهاية</label>
+              <Input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+              />
             </div>
           </div>
 
-          {/* فترة التقرير */}
+          {/* اختيار المشاريع */}
           <div className="space-y-4">
-            <label className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-              <Calendar className="inline h-5 w-5 mr-2" />
-              فترة التقرير
-            </label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm text-gray-600 dark:text-gray-400">من تاريخ (اختياري)</label>
-                <Input
-                  type="date"
-                  value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
-                  className="text-lg"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm text-gray-600 dark:text-gray-400">إلى تاريخ (اختياري)</label>
-                <Input
-                  type="date"
-                  value={dateTo}
-                  onChange={(e) => setDateTo(e.target.value)}
-                  className="text-lg"
-                />
-              </div>
-            </div>
-            
-            <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-              <div className="flex items-start gap-3">
-                <div className="text-blue-600 mt-1">💡</div>
-                <div className="text-sm text-blue-700 dark:text-blue-300">
-                  <p className="font-semibold">نصائح لاختيار الفترة:</p>
-                  <ul className="list-disc list-inside mt-1 space-y-1">
-                    <li>اتركها فارغة لشمول جميع السجلات</li>
-                    <li>اختر فترة محددة لتقرير معين</li>
-                    <li>الفترات الطويلة تحتاج وقت أكثر للمعالجة</li>
-                  </ul>
+            <h3 className="text-lg font-semibold flex items-center gap-2">
+              <Building2 className="h-5 w-5" />
+              اختيار المشاريع ({selectedProjects.length} محدد)
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {projects.map((project) => (
+                <div key={project.id} className="flex items-center space-x-2 rtl:space-x-reverse p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">
+                  <Checkbox
+                    id={`project-${project.id}`}
+                    checked={selectedProjects.includes(project.id)}
+                    onCheckedChange={(checked) => handleProjectSelection(project.id, checked as boolean)}
+                  />
+                  <label htmlFor={`project-${project.id}`} className="flex-1 cursor-pointer">
+                    <div className="font-medium">{project.name}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {project.status === 'active' ? '🟢 نشط' : '🔴 غير نشط'}
+                    </div>
+                  </label>
                 </div>
-              </div>
+              ))}
             </div>
           </div>
 
           {/* اختيار العمال */}
-          {
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <label className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-                  <User className="inline h-5 w-5 mr-2" />
-                  اختيار العمال ({filteredWorkers.length} متاح)
-                </label>
-                <div className="flex gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={selectAllWorkers}
-                    disabled={filteredWorkers.length === 0}
-                  >
-                    تحديد الكل ({filteredWorkers.length})
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={clearWorkerSelection}
-                  >
-                    إلغاء التحديد
-                  </Button>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <User className="h-5 w-5" />
+                اختيار العمال ({selectedWorkers.length} محدد)
+              </h3>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSelectAllWorkers}
+                className="flex items-center gap-2"
+              >
+                {selectedWorkers.length === workers.length ? 'إلغاء الكل' : 'تحديد الكل'}
+              </Button>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-60 overflow-y-auto">
+              {workers.map((worker) => (
+                <div key={worker.id} className="flex items-center space-x-2 rtl:space-x-reverse p-3 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800">
+                  <Checkbox
+                    id={`worker-${worker.id}`}
+                    checked={selectedWorkers.includes(worker.id)}
+                    onCheckedChange={(checked) => handleWorkerSelection(worker.id, checked as boolean)}
+                  />
+                  <label htmlFor={`worker-${worker.id}`} className="flex-1 cursor-pointer">
+                    <div className="font-medium">{worker.name}</div>
+                    <div className="text-sm text-muted-foreground">
+                      {worker.type} - {Number(worker.dailyWage || 0).toLocaleString()} ريال/يوم
+                    </div>
+                    <div className="text-xs">
+                      {worker.isActive ? '✅ نشط' : '⏸️ غير نشط'}
+                    </div>
+                  </label>
                 </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg min-h-[200px] max-h-[400px] overflow-y-auto">
-                {workersLoading ? (
-                  <div className="col-span-full text-center text-blue-500 py-8">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-2"></div>
-                    <p>جاري تحميل العمال...</p>
-                  </div>
-                ) : workersError ? (
-                  <div className="col-span-full text-center text-red-500 py-8">
-                    <User className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                    <p>خطأ في تحميل العمال</p>
-                    <p className="text-sm mt-1">{workersError.message}</p>
-                  </div>
-                ) : filteredWorkers.length === 0 ? (
-                  <div className="col-span-full text-center text-gray-500 py-8">
-                    <User className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                    <p>لا توجد عمال متاحين</p>
-                    <p className="text-sm mt-1">سجلات الحضور: {workerAttendanceRecords.length} | مفلتر: {filteredWorkers.length}</p>
-                    <p className="text-sm mt-1">اختر المشاريع والتواريخ لعرض العمال الذين عملوا فيها</p>
-                  </div>
-                ) : (
-                  filteredWorkers.map(worker => {
-                    const workerKey = `${worker.workerId}-${worker.projectId}`;
-                    return (
-                      <div key={workerKey} className="flex items-center justify-between p-3 bg-white dark:bg-gray-700 rounded-lg border">
-                        <div className="flex items-center space-x-3">
-                          <Checkbox
-                            id={`worker-${workerKey}`}
-                            checked={selectedWorkers.includes(workerKey)}
-                            onCheckedChange={() => handleWorkerToggle(workerKey)}
-                          />
-                          <div className="flex-1">
-                            <label 
-                              htmlFor={`worker-${workerKey}`}
-                              className="font-medium cursor-pointer text-lg"
-                            >
-                              {worker.workerName}
-                            </label>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">{worker.workerType}</p>
-                            <div className="bg-blue-100 dark:bg-blue-900/30 px-2 py-1 rounded mt-1 text-xs">
-                              <span className="text-blue-700 dark:text-blue-300 font-medium">{worker.projectName}</span>
-                            </div>
-                            <div className="flex gap-4 mt-2 text-xs">
-                              <span className="text-black font-medium">المستحق: {worker.totalEarned.toLocaleString('en')} YER</span>
-                              <span className="text-red-600 font-medium">المستلم: {worker.totalPaid.toLocaleString('en')} YER</span>
-                              <span className="text-green-600 font-medium">المتبقي: {worker.totalRemaining.toLocaleString('en')} YER</span>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="text-left">
-                          <Badge variant="default" className="text-xs bg-green-100 text-green-800">
-                            {worker.workDays.toLocaleString('en')} أيام
-                          </Badge>
-                          <p className="text-xs text-gray-500 mt-1">{worker.dailyWage.toLocaleString('en')} YER/يوم</p>
-                        </div>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-            </div>
-          }
-
-          {/* معلومات الاختيار */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">{selectedProjectsData.length}</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">مشروع محدد</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">{selectedWorkersData.length}</div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">عامل محدد</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-purple-600">
-                {selectedWorkersData.reduce((sum, worker) => sum + worker.dailyWage, 0).toLocaleString('en')} YER
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">إجمالي الأجور اليومية</div>
+              ))}
             </div>
           </div>
 
-          {/* زر إنشاء التقرير */}
-          <div className="flex justify-center">
+          {/* إحصائيات سريعة */}
+          {selectedWorkers.length > 0 && (
+            <Card className="bg-purple-50 dark:bg-purple-900/20">
+              <CardContent className="p-4">
+                <h4 className="font-semibold mb-3">إحصائيات العمال المحددين</h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                  <div>
+                    <div className="text-2xl font-bold text-purple-600">{selectedWorkers.length}</div>
+                    <div className="text-sm text-muted-foreground">إجمالي العمال</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-green-600">
+                      {selectedWorkersData.filter(w => w.isActive).length}
+                    </div>
+                    <div className="text-sm text-muted-foreground">العمال النشطين</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-blue-600">
+                      {totalDailyWages.toLocaleString()}
+                    </div>
+                    <div className="text-sm text-muted-foreground">مجموع الأجور اليومية</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-bold text-indigo-600">
+                      {new Set(selectedWorkersData.map(w => w.type)).size}
+                    </div>
+                    <div className="text-sm text-muted-foreground">أنواع العمل</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* أزرار العمل */}
+          <div className="flex flex-wrap gap-3">
             <Button
               onClick={generateReport}
-              disabled={filteredWorkers.length === 0}
-              className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-8 py-3 text-lg"
-              size="lg"
+              disabled={workers.length === 0}
+              className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white"
             >
-              <CheckCircle2 className="h-5 w-5 mr-2" />
-              إنشاء التقرير
+              <Filter className="h-4 w-4" />
+              إنشاء تقرير التصفية
             </Button>
-          </div>
-        </CardContent>
-      </Card>
 
-      {/* عرض التقرير بالقالب الجديد */}
-      {reportGenerated && (
-        <Card className="shadow-lg border-2 border-green-200">
-          <CardHeader className="bg-gradient-to-r from-green-600 to-emerald-600 text-white">
-            <CardTitle className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <CheckCircle2 className="h-6 w-6" />
-                تقرير تصفية العمال
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  onClick={handleExportExcel}
-                  size="sm"
-                  variant="secondary"
-                  className="bg-white/20 hover:bg-white/30 text-white border-white/20"
-                >
-                  <FileSpreadsheet className="h-4 w-4 mr-2" />
+            {reportGenerated && (
+              <>
+                <Button variant="outline" className="flex items-center gap-2">
+                  <FileSpreadsheet className="h-4 w-4" />
                   تصدير Excel
                 </Button>
-                <Button
-                  onClick={handlePrintReport}
-                  size="sm"
-                  variant="secondary"
-                  className="bg-white/20 hover:bg-white/30 text-white border-white/20"
-                >
-                  <Printer className="h-4 w-4 mr-2" />
+                <Button variant="outline" className="flex items-center gap-2">
+                  <Printer className="h-4 w-4" />
                   طباعة
                 </Button>
-              </div>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div 
-              id="worker-filter-report-preview" 
-              className="bg-white"
-            >
-              <WorkerFilterTemplate data={reportData} />
-            </div>
-          </CardContent>
-        </Card>
-      )}
+              </>
+            )}
+          </div>
+
+          {/* عرض التقرير */}
+          {reportGenerated && (
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle className="text-center">
+                  تقرير شامل للعمال المحددين مع الأجور والأدوار المهنية
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse border border-gray-300 dark:border-gray-600">
+                    <thead>
+                      <tr className="bg-gray-100 dark:bg-gray-800">
+                        <th className="border border-gray-300 dark:border-gray-600 p-3 text-right">م</th>
+                        <th className="border border-gray-300 dark:border-gray-600 p-3 text-right">اسم العامل</th>
+                        <th className="border border-gray-300 dark:border-gray-600 p-3 text-right">نوع العمل</th>
+                        <th className="border border-gray-300 dark:border-gray-600 p-3 text-right">الأجر اليومي</th>
+                        <th className="border border-gray-300 dark:border-gray-600 p-3 text-right">الحالة</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedWorkersData.length > 0 ? (
+                        selectedWorkersData.map((worker, index) => (
+                          <tr key={worker.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                            <td className="border border-gray-300 dark:border-gray-600 p-3">{index + 1}</td>
+                            <td className="border border-gray-300 dark:border-gray-600 p-3 font-medium">{worker.name}</td>
+                            <td className="border border-gray-300 dark:border-gray-600 p-3">{worker.type}</td>
+                            <td className="border border-gray-300 dark:border-gray-600 p-3">
+                              {Number(worker.dailyWage || 0).toLocaleString()} ريال
+                            </td>
+                            <td className="border border-gray-300 dark:border-gray-600 p-3">
+                              <Badge variant={worker.isActive ? "default" : "secondary"}>
+                                {worker.isActive ? "نشط" : "غير نشط"}
+                              </Badge>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={5} className="border border-gray-300 dark:border-gray-600 p-8 text-center text-muted-foreground">
+                            يرجى تحديد العمال لعرض التقرير
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {selectedWorkersData.length > 0 && (
+                  <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                    <h4 className="font-semibold mb-2">ملخص التقرير:</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                      <div>إجمالي العمال: <span className="font-bold">{selectedWorkersData.length}</span></div>
+                      <div>العمال النشطين: <span className="font-bold">{selectedWorkersData.filter(w => w.isActive).length}</span></div>
+                      <div>مجموع الأجور: <span className="font-bold">{totalDailyWages.toLocaleString()} ريال</span></div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
