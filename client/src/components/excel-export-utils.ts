@@ -33,14 +33,15 @@ export const EXCEL_STYLES = {
   },
 };
 
-// معلومات الشركة/المؤسسة
+// معلومات الشركة/المؤسسة - مُحدثة حسب الطلب
 export const COMPANY_INFO = {
-  name: 'نظام إدارة مشاريع البناء',
-  nameEn: 'Construction Management System',
+  name: 'شركة الفتيني للمقاولات والاستشارات الهندسية',
+  nameEn: 'Al-Fatini Construction & Engineering Consultancy Company',
   address: 'المملكة العربية السعودية',
   phone: '+966XXXXXXXXX',
-  email: 'info@construction.com',
-  website: 'www.construction.com',
+  email: 'info@alfatini.com',
+  website: 'www.alfatini.com',
+  logo: '🏗️', // يمكن استبدالها بشعار الشركة لاحقاً
 };
 
 // إضافة رأس موحد للتقرير
@@ -244,13 +245,43 @@ export function saveExcelFile(workbook: any, fileName: string): void {
   });
 }
 
-// تنسيق العملة للعرض في Excel
+// دوال التنسيق المحسنة للاستخدام في التقارير
+
+// تنسيق العملة بالأرقام الإنجليزية
 export function formatCurrency(amount: string | number): string {
   const num = typeof amount === 'string' ? parseFloat(amount) : amount;
-  return num.toLocaleString('ar-SA') + ' ر.ي';
+  if (isNaN(num)) return '0 ريال';
+  return num.toLocaleString('en-US', { useGrouping: true }) + ' ريال';
 }
 
-// تنسيق التاريخ للعرض في Excel
+// تنسيق الأرقام بالإنجليزية
+export function formatNumber(num: string | number): string {
+  const number = typeof num === 'string' ? parseFloat(num) : num;
+  if (isNaN(number)) return '0';
+  return number.toLocaleString('en-US', { useGrouping: true });
+}
+
+// تنسيق التاريخ بالأرقام الإنجليزية
 export function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('ar-SA');
+  if (!dateStr) return '';
+  return new Date(dateStr).toLocaleDateString('en-GB');
+}
+
+// تنسيق الوقت الكامل
+export function formatDateTime(dateStr: string): string {
+  if (!dateStr) return '';
+  return new Date(dateStr).toLocaleString('en-GB', { 
+    timeZone: 'Asia/Riyadh',
+    year: 'numeric',
+    month: '2-digit', 
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+// تنسيق النسب المئوية
+export function formatPercentage(value: number, total: number): string {
+  if (total === 0) return '0%';
+  return ((value / total) * 100).toFixed(1) + '%';
 }

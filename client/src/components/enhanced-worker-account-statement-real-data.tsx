@@ -9,6 +9,16 @@ import { FileSpreadsheet, Printer, FileText } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
+import { 
+  COMPANY_INFO, 
+  EXCEL_STYLES, 
+  formatCurrency, 
+  formatNumber, 
+  formatDate, 
+  addReportHeader, 
+  addReportFooter, 
+  formatDataTable
+} from '@/components/excel-export-utils';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import '@/styles/unified-print-styles.css';
@@ -31,24 +41,8 @@ export const EnhancedWorkerAccountStatementRealData = ({
   dateTo 
 }: EnhancedWorkerAccountStatementRealDataProps) => {
   
-  // دوال التنسيق المحسنة
-  const formatCurrency = (amount: number) => {
-    const validAmount = isNaN(amount) || amount === null || amount === undefined ? 0 : Number(amount);
-    return new Intl.NumberFormat('en-US', {
-      style: 'decimal',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(validAmount) + ' ريال';
-  };
-
-  const formatDate = (dateStr: string) => {
-    if (!dateStr) return '';
-    return new Date(dateStr).toLocaleDateString('en-GB', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    });
-  };
+  // استخدام دوال التنسيق الموحدة من ملف الأدوات
+  // formatCurrency, formatNumber, formatDate تم استيرادها في الأعلى
 
   const formatDay = (dateStr: string) => {
     const days = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
@@ -106,43 +100,19 @@ export const EnhancedWorkerAccountStatementRealData = ({
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('كشف حساب العامل - بيانات حقيقية');
 
-      worksheet.views = [{ rightToLeft: true }];
-
-      // رأس الشركة المطابق للتصميم
-      worksheet.mergeCells('A1:J1');
-      const companyCell = worksheet.getCell('A1');
-      companyCell.value = 'شركة الفتحي للمقاولات والاستشارات الهندسية';
-      companyCell.font = { name: 'Arial Unicode MS', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
-      companyCell.alignment = { horizontal: 'center', vertical: 'middle' };
-      companyCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2563eb' } };
-
-      // عنوان التقرير
-      worksheet.addRow([]);
-      worksheet.mergeCells('A3:J3');
-      const titleCell = worksheet.getCell('A3');
-      titleCell.value = 'كشف حساب العامل التفصيلي (بيانات حقيقية)';
-      titleCell.font = { name: 'Arial Unicode MS', size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
-      titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
-      titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1e40af' } };
-
-      // معلومات العامل والمشروع
-      worksheet.addRow([]);
-      const infoRow1 = worksheet.addRow([
-        'اسم العامل:', worker.name || 'غير محدد', 
-        '', 'المهنة:', worker.type || 'غير محدد', 
-        '', 'المشروع:', selectedProject?.name || 'غير محدد', '', ''
-      ]);
-      infoRow1.font = { name: 'Arial Unicode MS', size: 11, bold: true };
-
-      const infoRow2 = worksheet.addRow([
-        'الأجر اليومي:', formatCurrency(Number(worker.dailyWage) || 0),
-        '', 'الفترة:', `${formatDate(dateFrom)} - ${formatDate(dateTo)}`,
-        '', 'إجمالي أيام العمل:', realStats.totalWorkDays,
-        '', 'إجمالي الساعات:', realStats.totalWorkHours
-      ]);
-      infoRow2.font = { name: 'Arial Unicode MS', size: 10 };
-
-      worksheet.addRow([]);
+      // استخدام الرأس الموحد الاحترافي
+      let currentRow = addReportHeader(
+        worksheet,
+        'كشف حساب العامل التفصيلي - بيانات حقيقية من النظام',
+        `الفترة: من ${formatDate(dateFrom)} إلى ${formatDate(dateTo)}`,
+        [
+          `اسم العامل: ${worker.name || 'غير محدد'} | المهنة: ${worker.type || 'غير محدد'}`,
+          `المشروع: ${selectedProject?.name || 'غير محدد'}`,
+          `الأجر اليومي: ${formatCurrency(Number(worker.dailyWage) || 0)}`,
+          `إجمالي أيام العمل: ${formatNumber(realStats.totalWorkDays)} | إجمالي الساعات: ${formatNumber(realStats.totalWorkHours)}`,
+          `المبلغ المستحق: ${formatCurrency(realStats.totalEarned)} | المدفوع: ${formatCurrency(realStats.totalPaid)} | المتبقي: ${formatCurrency(totalRemaining)}`
+        ]
+      );
 
       // رؤوس الجدول - مطابقة للتصميم المطلوب
       const headers = [
@@ -362,7 +332,7 @@ export const EnhancedWorkerAccountStatementRealData = ({
             margin: '0 0 3mm 0',
             textShadow: '1px 1px 2px rgba(0,0,0,0.1)'
           }}>
-            شركة الفتحي للمقاولات والاستشارات الهندسية
+            شركة الفتيني للمقاولات والاستشارات الهندسية
           </h1>
           <h2 style={{
             fontSize: '16px',

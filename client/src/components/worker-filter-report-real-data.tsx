@@ -27,6 +27,16 @@ import {
 } from 'lucide-react';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
+import { 
+  COMPANY_INFO, 
+  EXCEL_STYLES, 
+  formatCurrency, 
+  formatNumber, 
+  formatDate, 
+  addReportHeader, 
+  addReportFooter, 
+  formatDataTable
+} from '@/components/excel-export-utils';
 import '@/styles/excel-print-styles.css';
 
 // واجهات البيانات المحدثة
@@ -216,10 +226,8 @@ export default function WorkerFilterReportRealData() {
     setReportGenerated(true);
   };
 
-  // دالة تنسيق العملة
-  const formatCurrency = (amount: number) => {
-    return `${Number(amount).toLocaleString('en-US')} ريال`;
-  };
+  // استخدام دوال التنسيق الموحدة من ملف الأدوات
+  // formatCurrency, formatNumber, formatDate تم استيرادها من excel-export-utils
 
   // تصدير إلى Excel بالبيانات الحقيقية
   const exportToExcel = async () => {
@@ -231,23 +239,21 @@ export default function WorkerFilterReportRealData() {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('كشف تصفية العمال - بيانات حقيقية');
     
-    // رأس الشركة
-    worksheet.mergeCells('A1:K1');
-    worksheet.getCell('A1').value = 'شركة الفتحي للمقاولات والاستشارات الهندسية';
-    worksheet.getCell('A1').font = { bold: true, size: 16 };
-    worksheet.getCell('A1').alignment = { horizontal: 'center' };
+    // استخدام الرأس الموحد الاحترافي
+    const grandTotalEarned = workersSummary.reduce((sum, s) => sum + s.totalEarned, 0);
+    const grandTotalPaid = workersSummary.reduce((sum, s) => sum + s.totalPaid, 0);
+    const grandTotalRemaining = workersSummary.reduce((sum, s) => sum + s.totalRemaining, 0);
     
-    // عنوان التقرير
-    worksheet.mergeCells('A2:K2');
-    worksheet.getCell('A2').value = 'كشف تصفية العمال (بيانات حقيقية من النظام)';
-    worksheet.getCell('A2').font = { bold: true, size: 14 };
-    worksheet.getCell('A2').alignment = { horizontal: 'center' };
-    
-    // الفترة
-    worksheet.mergeCells('A3:K3');
-    worksheet.getCell('A3').value = `للفترة: من ${dateFrom} إلى ${dateTo}`;
-    worksheet.getCell('A3').font = { bold: true, size: 12 };
-    worksheet.getCell('A3').alignment = { horizontal: 'center' };
+    let currentRow = addReportHeader(
+      worksheet,
+      'كشف تصفية العمال - بيانات حقيقية من النظام',
+      `الفترة: من ${formatDate(dateFrom)} إلى ${formatDate(dateTo)}`,
+      [
+        `عدد المشاريع المختارة: ${formatNumber(selectedProjectIds.length)}`,
+        `عدد العمال: ${formatNumber(workersSummary.length)}`,
+        `إجمالي الأجور المستحقة: ${formatCurrency(grandTotalEarned)} | المدفوع: ${formatCurrency(grandTotalPaid)} | المتبقي: ${formatCurrency(grandTotalRemaining)}`
+      ]
+    );
     
     // رؤوس الأعمدة - 11 عمود كما هو مطلوب
     const headers = [
