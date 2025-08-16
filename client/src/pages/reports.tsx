@@ -610,18 +610,29 @@ export default function Reports() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-6 space-y-6">
-                {/* نظام تصفية العمال المتقدم */}
-                <UnifiedFilterTemplate
-                  data={workers}
-                  searchFields={WorkerFilterPresets.searchFields}
-                  filterOptions={WorkerFilterPresets.filterOptions}
-                  sortOptions={WorkerFilterPresets.sortOptions}
-                  onFilteredDataChange={setFilteredWorkers}
-                  title="تصفية وترتيب العمال"
-                  subtitle="استخدم الخيارات أدناه للعثور على العامل المطلوب بسرعة"
-                  icon={<Users className="h-6 w-6" />}
-                  className="mb-6"
-                />
+                {/* البحث البسيط في العمال */}
+                <div className="mb-6">
+                  <div className="flex items-center gap-3 mb-4">
+                    <Search className="h-5 w-5 text-blue-600" />
+                    <h3 className="font-semibold">البحث في العمال</h3>
+                  </div>
+                  <Input
+                    placeholder="ابحث عن العامل بالاسم أو نوع العمل..."
+                    onChange={(e) => {
+                      const searchTerm = e.target.value.toLowerCase();
+                      if (searchTerm.trim() === '') {
+                        setFilteredWorkers(workers);
+                      } else {
+                        const filtered = workers.filter(worker => 
+                          worker.name.toLowerCase().includes(searchTerm) ||
+                          worker.type.toLowerCase().includes(searchTerm)
+                        );
+                        setFilteredWorkers(filtered);
+                      }
+                    }}
+                    className="max-w-md"
+                  />
+                </div>
 
                 {/* لوحة إحصائيات العمال المفلترين */}
                 {filteredWorkers.length > 0 && (
