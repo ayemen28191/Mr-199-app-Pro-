@@ -174,10 +174,11 @@ export default function DailyExpensesBulkExport() {
     console.log(`📊 بدء حساب الرصيد ليوم ${dayData.date}`);
     console.log(`📈 الرصيد المرحل: ${dayData.carriedForward}`);
     
-    // صف المبلغ المرحل من سابق (إذا كان هناك رصيد مرحل وأكبر من صفر)
-    if (dayData.carriedForward && dayData.carriedForward !== 0) {
+    // صف المبلغ المرحل من سابق (فقط إذا كان هناك رصيد مرحل حقيقي وأكبر من صفر)
+    // إخفاء الصفوف الصفرية كما هو مطلوب
+    if (dayData.carriedForward && Math.abs(dayData.carriedForward) > 0) {
       currentBalance = parseFloat(dayData.carriedForward.toString()); // إضافة الرصيد المرحل
-      console.log(`📈 بعد إضافة المرحل: ${currentBalance}`);
+      console.log(`📈 بعد إضافة المرحل الفعلي: ${currentBalance}`);
       
       const yesterdayDate = new Date(dayData.date);
       yesterdayDate.setDate(yesterdayDate.getDate() - 1);
@@ -191,7 +192,7 @@ export default function DailyExpensesBulkExport() {
         `مرحل من تاريخ ${formattedYesterday}`
       ]);
       
-      console.log(`✅ تم إضافة صف المرحل: مبلغ=${formatNumber(Math.abs(dayData.carriedForward))}, متبقي=${formatNumber(currentBalance)}`);
+      console.log(`✅ تم إضافة صف المرحل الفعلي: مبلغ=${formatNumber(Math.abs(dayData.carriedForward))}, متبقي=${formatNumber(currentBalance)}`);
       
       carryForwardRow.eachCell((cell) => {
         cell.font = { name: 'Arial Unicode MS', size: 10, bold: true };
@@ -207,8 +208,10 @@ export default function DailyExpensesBulkExport() {
     // الحوالات المرحلة من مشاريع أخرى (الأموال الواردة من مشاريع أخرى) - فقط إذا المبلغ أكبر من صفر
     if (dayData.incomingProjectTransfers && dayData.incomingProjectTransfers.length > 0) {
       dayData.incomingProjectTransfers.forEach((transfer: any) => {
-        if (transfer.amount && transfer.amount > 0) {
-          currentBalance += transfer.amount; // إضافة المبلغ المرحل للرصيد
+        const amount = parseFloat((transfer.amount || 0).toString());
+        if (amount && amount > 0) {
+          currentBalance += amount; // إضافة المبلغ المرحل للرصيد
+          console.log(`📈 تحويل من مشروع آخر: ${amount}, رصيد حالي: ${currentBalance}`);
           
           // تبسيط الملاحظات - فقط اسم المشروع والتاريخ
           const transferDate = transfer.transferDate || transfer.date ? 
@@ -217,7 +220,7 @@ export default function DailyExpensesBulkExport() {
           const projectName = (transfer.fromProjectName || 'مشروع غير محدد').replace('مشروع ', '');
           
           const transferRow = worksheet.addRow([
-            formatNumber(transfer.amount),
+            formatNumber(amount),
             'مرحل من مشروع آخر',
             'ترحيل',
             formatNumber(currentBalance),
@@ -280,10 +283,14 @@ export default function DailyExpensesBulkExport() {
     // مصروفات العمال مع تفاصيل أيام العمل والمعاملات
     if (dayData.workerAttendance && dayData.workerAttendance.length > 0) {
       dayData.workerAttendance.forEach((worker: any) => {
-        const workerAmount = parseFloat((worker.paidAmount || worker.actualWage || worker.totalWage || 0).toString());
-        if (workerAmount > 0) {
-          currentBalance -= workerAmount; // طرح أجرة العامل من الرصيد
-          console.log(`📉 بعد أجرة عامل ${workerAmount}: ${currentBalance}`);
+        // حساب الأجر المدفوع فعلياً والأجر المستحق
+        const paidAmount = parseFloat((worker.paidAmount || 0).toString());
+        const totalWage = parseFloat((worker.actualWage || worker.totalWage || 0).toString());
+        
+        // إظهار المدفوع فقط (استبعاد أجور العمال التي لم تُدفع)
+        if (paidAmount > 0) {
+          currentBalance -= paidAmount; // طرح الأجرة المدفوعة فعلياً من الرصيد
+          console.log(`📉 بعد أجرة عامل مدفوعة ${paidAmount}: ${currentBalance}`);
           
           // تنسيق ملاحظات العامل والمعامل المحسن (مطابق للصورة)
           const multiplier = worker.multiplier || worker.overtimeMultiplier || null;
@@ -334,9 +341,9 @@ export default function DailyExpensesBulkExport() {
           }
           
           // عرض المعامل إذا وجد
-          let amountDisplayWithMultiplier = formatNumber(workerAmount);
+          let amountDisplayWithMultiplier = formatNumber(paidAmount);
           if (multiplier && multiplier !== 1) {
-            amountDisplayWithMultiplier = `${multiplier}\n${formatNumber(workerAmount)}`;
+            amountDisplayWithMultiplier = `${multiplier}\n${formatNumber(paidAmount)}`;
           }
           
           const workerRow = worksheet.addRow([
@@ -356,11 +363,35 @@ export default function DailyExpensesBulkExport() {
               cell.value = { richText: [
                 { text: multiplier.toString(), font: { size: 8, bold: true } },
                 { text: '\n' },
-                { text: formatNumber(workerAmount), font: { size: 10 } }
+                { text: formatNumber(paidAmount), font: { size: 10 } }
               ]};
               cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
             }
             
+            cell.border = {
+              top: { style: 'thin' }, bottom: { style: 'thin' },
+              left: { style: 'thin' }, right: { style: 'thin' }
+            };
+          });
+        }
+        
+        // إضافة أجور العمال التي عملت ولم تسحب أجر (لإظهار الديون المستحقة)
+        if (totalWage > paidAmount && totalWage > 0) {
+          const unWithdrawnAmount = totalWage - paidAmount;
+          console.log(`📋 عامل ${worker.workerName} - أجر مستحق غير مسحوب: ${unWithdrawnAmount}`);
+          
+          const unWithdrawnRow = worksheet.addRow([
+            formatNumber(unWithdrawnAmount),
+            `أجر مستحق ${worker.workerName || worker.worker?.name || 'عامل'}`,
+            'مستحق',
+            formatNumber(currentBalance), // الرصيد لا يتغير لأن الأجر لم يُدفع
+            `عمل ولم يسحب أجر - مستحق له ${formatNumber(unWithdrawnAmount)} ريال`
+          ]);
+          
+          unWithdrawnRow.eachCell((cell) => {
+            cell.font = { name: 'Arial Unicode MS', size: 10, color: { argb: 'FF800000' } };
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFCCCC' } };
             cell.border = {
               top: { style: 'thin' }, bottom: { style: 'thin' },
               left: { style: 'thin' }, right: { style: 'thin' }
@@ -380,10 +411,10 @@ export default function DailyExpensesBulkExport() {
           
           const expenseRow = worksheet.addRow([
             formatNumber(amount),
-            'نقليات', // تغيير من "نثريات" إلى "نقليات"
+            'مواصلات', // تغيير من "نقليات" إلى "مواصلات"
             'منصرف',
             formatNumber(currentBalance),
-            expense.notes || expense.description || expense.destination || `${expense.expenseType || 'مواصلات'}`
+            [expense.notes, expense.description, expense.destination, expense.expenseType].filter(Boolean).join(' - ') || 'مواصلات'
           ]);
           
           expenseRow.eachCell((cell) => {
@@ -521,29 +552,9 @@ export default function DailyExpensesBulkExport() {
       });
     }
 
-    // صف فارغ قبل المبلغ المتبقي
-    const emptyRow = worksheet.addRow(['', '', '', '', '']);
-    emptyRow.eachCell((cell) => {
-      cell.border = {
-        top: { style: 'thin' }, bottom: { style: 'thin' },
-        left: { style: 'thin' }, right: { style: 'thin' }
-      };
-    });
-    
-    // صف عنوان المبلغ المتبقي
-    const balanceTitleRow = worksheet.addRow(['', '', '', 'المبلغ المتبقي النهائي', '']);
-    balanceTitleRow.eachCell((cell) => {
-      cell.font = { name: 'Arial Unicode MS', size: 11, bold: true };
-      cell.alignment = { horizontal: 'center', vertical: 'middle' };
-      cell.border = {
-        top: { style: 'thin' }, bottom: { style: 'thin' },
-        left: { style: 'thin' }, right: { style: 'thin' }
-      };
-    });
-    
-    // صف المبلغ المتبقي النهائي (خلفية برتقالية)
+    // صف المبلغ المتبقي النهائي (خلفية برتقالية) - العنوان والرصيد في نفس الصف
     console.log(`🏁 الرصيد النهائي: ${currentBalance}`);
-    const finalBalanceRow = worksheet.addRow(['', '', '', formatNumber(currentBalance), '']);
+    const finalBalanceRow = worksheet.addRow(['', '', 'المبلغ المتبقي النهائي', formatNumber(currentBalance), '']);
     finalBalanceRow.eachCell((cell, index) => {
       cell.font = { name: 'Arial Unicode MS', size: 12, bold: true };
       cell.alignment = { horizontal: 'center', vertical: 'middle' };
