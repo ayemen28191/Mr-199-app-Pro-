@@ -70,11 +70,16 @@ export default function DailyExpensesBulkExport() {
   };
 
   // دالة تنسيق الأرقام (إنجليزية) - إزالة الأصفار الزائدة وتنسيق صحيح
-  const formatNumber = (num: number) => {
-    if (typeof num !== 'number' || isNaN(num)) return '0';
+  const formatNumber = (num: number | string | null | undefined) => {
+    // تحويل القيمة إلى رقم وفحص صحتها
+    const numValue = Number(num);
+    if (isNaN(numValue) || num === null || num === undefined) return '0';
     
-    // التعامل مع الأرقام العشرية بذكاء - إزالة الأصفار الزائدة
-    let numStr = Number(num).toString();
+    // إذا كان الرقم صفر، ارجع '0' مباشرة
+    if (numValue === 0) return '0';
+    
+    // تحويل إلى نص وإزالة الأصفار الزائدة
+    let numStr = numValue.toString();
     
     // إذا كان العدد عشري، نتحقق من الأصفار الزائدة
     if (numStr.includes('.')) {
@@ -82,7 +87,7 @@ export default function DailyExpensesBulkExport() {
       numStr = parseFloat(numStr).toString();
     }
     
-    // تنسيق الأرقام بفواصل الآلاف فقط للأعداد الكبيرة
+    // تنسيق الأرقام بفواصل الآلاف للأعداد الكبيرة
     const [integerPart, decimalPart] = numStr.split('.');
     const formattedInteger = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
     
@@ -616,15 +621,27 @@ export default function DailyExpensesBulkExport() {
       });
 
       // عرض جميع المشتريات مع نوع الدفع وتنسيق أفضل للكميات والأرقام
-      dayData.materialPurchases.forEach((purchase: any) => {
+      dayData.materialPurchases.forEach((purchase: any, index: number) => {
+        console.log(`🔍 فحص مشترى رقم ${index + 1}:`, {
+          quantity: purchase.quantity,
+          totalAmount: purchase.totalAmount,
+          totalCost: purchase.totalCost,
+          materialName: purchase.materialName,
+          paymentType: purchase.paymentType || purchase.purchaseType
+        });
+        
         const quantity = formatNumber(purchase.quantity || 1); // تنسيق الكمية لإزالة الأصفار الزائدة
+        const amount = formatNumber(purchase.totalAmount || purchase.totalCost || 0);
+        
+        console.log(`✅ بعد التنسيق: الكمية=${quantity}, المبلغ=${amount}`);
+        
         const purchaseDescription = `شراء عدد ${quantity} ${purchase.materialName || purchase.material?.name || 'مادة'} ${purchase.notes || ''}`;
         const paymentType = purchase.purchaseType || purchase.paymentType || 'نقد';
         
         const purchaseRow = worksheet.addRow([
           dayData.projectName,
           purchase.supplierName || purchase.supplier?.name || 'إبراهيم نجم الدين',
-          formatNumber(purchase.totalAmount || purchase.totalCost || 0),
+          amount, // استخدام المتغير المُنسق
           paymentType,
           purchaseDescription
         ]);
