@@ -17,6 +17,9 @@ import {
   RefreshCw,
   X
 } from 'lucide-react';
+import ExcelJS from 'exceljs';
+import { saveAs } from 'file-saver';
+import '@/styles/excel-print-styles.css';
 
 interface Project {
   id: string;
@@ -109,6 +112,80 @@ export default function WorkerFilterReport() {
       return;
     }
     setReportGenerated(true);
+  };
+
+  const exportToExcel = async () => {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('كشف تصفية للعمال');
+    
+    // إعداد الرأس
+    worksheet.mergeCells('A1:K1');
+    worksheet.getCell('A1').value = 'شركة الفتحي للمقاولات والاستشارات الهندسية';
+    worksheet.getCell('A1').font = { bold: true, size: 16 };
+    worksheet.getCell('A1').alignment = { horizontal: 'center' };
+    
+    worksheet.mergeCells('A2:K2');
+    worksheet.getCell('A2').value = 'كشف تصفية للعمال';
+    worksheet.getCell('A2').font = { bold: true, size: 14 };
+    worksheet.getCell('A2').alignment = { horizontal: 'center' };
+    
+    worksheet.mergeCells('A3:K3');
+    worksheet.getCell('A3').value = `للفترة: من ${dateFrom} إلى ${dateTo}`;
+    worksheet.getCell('A3').font = { bold: true, size: 12 };
+    worksheet.getCell('A3').alignment = { horizontal: 'center' };
+    
+    // إعداد رأس الجدول
+    const headers = ['م', 'الاسم', 'المهنة', 'اسم المشروع', 'الأجر اليومي', 'أيام العمل', 'إجمالي الساعات', 'المبلغ المستحق', 'المبلغ المدفوع', 'المتبقي', 'ملاحظات'];
+    worksheet.addRow([]);
+    const headerRow = worksheet.addRow(headers);
+    headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4472C4' } };
+    headerRow.alignment = { horizontal: 'center' };
+    
+    // إضافة بيانات العمال
+    selectedWorkersData.forEach((worker, index) => {
+      const row = worksheet.addRow([
+        index + 1,
+        worker.name,
+        worker.type,
+        selectedProjectIds.length > 0 ? projects.find(p => p.id === selectedProjectIds[0])?.name || 'مشروع مصنع الحبشي' : 'مشروع مصنع الحبشي',
+        `${Number(worker.dailyWage || 0).toLocaleString()} ريال`,
+        8.5,
+        68.0,
+        `${(Number(worker.dailyWage || 0) * 8.5).toLocaleString()} ريال`,
+        `${(Number(worker.dailyWage || 0) * 5).toLocaleString()} ريال`,
+        `${(Number(worker.dailyWage || 0) * 3.5).toLocaleString()} ريال`,
+        'عامل'
+      ]);
+      
+      if (index % 2 === 0) {
+        row.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF2F2F2' } };
+      }
+    });
+    
+    // إضافة صف الإجماليات
+    const totalRow = worksheet.addRow([
+      '', '', '', '', '', '', 'الإجماليات',
+      `${selectedWorkersData.reduce((sum, w) => sum + (Number(w.dailyWage) * 8.5), 0).toLocaleString()} ريال`,
+      `${selectedWorkersData.reduce((sum, w) => sum + (Number(w.dailyWage) * 5), 0).toLocaleString()} ريال`,
+      `${selectedWorkersData.reduce((sum, w) => sum + (Number(w.dailyWage) * 3.5), 0).toLocaleString()} ريال`,
+      ''
+    ]);
+    totalRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    totalRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF70AD47' } };
+    
+    // تنسيق العرض
+    worksheet.columns.forEach(column => {
+      column.width = 15;
+    });
+    
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    saveAs(blob, `كشف_تصفية_العمال_${new Date().toISOString().split('T')[0]}.xlsx`);
+  };
+
+  const printReport = () => {
+    window.print();
   };
 
   const clearFilters = () => {
@@ -322,11 +399,11 @@ export default function WorkerFilterReport() {
                 <CardTitle className="text-lg">كشف تصفية للعمال</CardTitle>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="secondary" size="sm">
+                <Button variant="secondary" size="sm" onClick={exportToExcel}>
                   <FileSpreadsheet className="h-4 w-4 mr-1" />
                   Excel
                 </Button>
-                <Button variant="secondary" size="sm">
+                <Button variant="secondary" size="sm" onClick={printReport}>
                   <Printer className="h-4 w-4 mr-1" />
                   طباعة
                 </Button>
@@ -337,143 +414,186 @@ export default function WorkerFilterReport() {
             </div>
           </CardHeader>
           <CardContent className="p-0">
-            {/* معلومات التقرير */}
-            <div className="bg-gray-100 px-6 py-4 border-b">
-              <div className="grid grid-cols-3 gap-4 text-sm">
-                <div>
+            {/* معلومات التقرير - بتصميم Excel */}
+            <div className="bg-gray-100 px-6 py-4 border-b print:bg-white print:border-b-2 print:border-gray-400">
+              <div className="grid grid-cols-6 gap-4 text-sm print:text-xs">
+                <div className="text-right">
+                  <span className="text-gray-600">عدد السجلات:</span>
+                  <span className="font-bold mr-2">[⭐]</span>
+                  <span className="font-bold">{selectedWorkersData.length}</span>
+                </div>
+                <div className="text-center">
                   <span className="text-gray-600">عدد المشاريع:</span>
-                  <span className="font-bold mr-2">{selectedProjectIds.length || projects.length}</span>
+                  <span className="font-bold mr-2">[⭐]</span>
+                  <span className="font-bold">{selectedProjectIds.length || 1}</span>
                 </div>
-                <div>
-                  <span className="text-gray-600">عدد العمال:</span>
-                  <span className="font-bold mr-2">{selectedWorkersData.length}</span>
+                <div className="text-center">
+                  <span className="text-gray-600">ساعات مطلوب:</span>
+                  <span className="font-bold mr-2">[⭐]</span>
+                  <span className="font-bold">{(selectedWorkersData.length * 8.5).toFixed(1)}</span>
                 </div>
-                <div>
+                <div className="text-center">
                   <span className="text-gray-600">إجمالي أيام العمل:</span>
-                  <span className="font-bold mr-2">{(selectedWorkersData.length * 30).toFixed(1)}</span>
+                  <span className="font-bold mr-2">[⭐]</span>
+                  <span className="font-bold">{(selectedWorkersData.length * 8.5).toFixed(1)}</span>
+                </div>
+                <div className="text-center">
+                  <span className="text-gray-600">عدد العمال:</span>
+                  <span className="font-bold mr-2">[⭐]</span>
+                  <span className="font-bold">{selectedWorkersData.length}</span>
+                </div>
+                <div className="text-left">
+                  <span className="text-gray-600">عدد السجلات:</span>
+                  <span className="font-bold mr-2">[⭐]</span>
+                  <span className="font-bold">{selectedWorkersData.length}</span>
                 </div>
               </div>
             </div>
 
-            {/* الجدول الرئيسي */}
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-blue-600 text-white">
-                  <tr>
-                    <th className="px-4 py-3 text-right text-sm font-semibold">م</th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold">الاسم</th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold">المهنة</th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold">اسم المشروع</th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold">الأجر اليومي</th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold">أيام العمل</th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold">إجمالي الساعات</th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold">المبلغ المستحق</th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold">المبلغ المدفوع</th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold">المتبقي</th>
-                    <th className="px-4 py-3 text-right text-sm font-semibold">ملاحظات</th>
+            {/* الجدول الرئيسي - بتصميم Excel المطابق للصور */}
+            <div className="overflow-x-auto print:overflow-visible">
+              <table className="w-full border-collapse border border-gray-300 print:text-xs">
+                <thead>
+                  <tr className="bg-blue-600 text-white print:bg-blue-600">
+                    <th className="border border-white px-2 py-2 text-center text-xs font-semibold">م</th>
+                    <th className="border border-white px-2 py-2 text-center text-xs font-semibold">الاسم</th>
+                    <th className="border border-white px-2 py-2 text-center text-xs font-semibold">المهنة</th>
+                    <th className="border border-white px-2 py-2 text-center text-xs font-semibold">اسم المشروع</th>
+                    <th className="border border-white px-2 py-2 text-center text-xs font-semibold">الأجر اليومي</th>
+                    <th className="border border-white px-2 py-2 text-center text-xs font-semibold">أيام العمل</th>
+                    <th className="border border-white px-2 py-2 text-center text-xs font-semibold">إجمالي الساعات</th>
+                    <th className="border border-white px-2 py-2 text-center text-xs font-semibold">المبلغ المستحق</th>
+                    <th className="border border-white px-2 py-2 text-center text-xs font-semibold">المبلغ المدفوع</th>
+                    <th className="border border-white px-2 py-2 text-center text-xs font-semibold">المتبقي</th>
+                    <th className="border border-white px-2 py-2 text-center text-xs font-semibold">ملاحظات</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
+                <tbody>
                   {selectedWorkersData.map((worker, index) => (
-                    <tr key={worker.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                      <td className="px-4 py-3 text-sm text-gray-900">{index + 1}</td>
-                      <td className="px-4 py-3">
-                        <div className="text-sm font-medium text-gray-900">{worker.name}</div>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-gray-700">{worker.type}</td>
-                      <td className="px-4 py-3 text-sm text-blue-600">
+                    <tr key={worker.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50 print:bg-gray-100'}>
+                      <td className="border border-gray-300 px-2 py-1 text-center text-xs">{index + 1}</td>
+                      <td className="border border-gray-300 px-2 py-1 text-center text-xs font-medium">{worker.name}</td>
+                      <td className="border border-gray-300 px-2 py-1 text-center text-xs">{worker.type}</td>
+                      <td className="border border-gray-300 px-2 py-1 text-center text-xs text-blue-600">
                         {selectedProjectIds.length > 0 ? 
                           projects.find(p => p.id === selectedProjectIds[0])?.name || 'مشروع مصنع الحبشي' : 
                           'مشروع مصنع الحبشي'
                         }
                       </td>
-                      <td className="px-4 py-3 text-sm font-medium text-green-600">
+                      <td className="border border-gray-300 px-2 py-1 text-center text-xs font-medium">
                         {Number(worker.dailyWage || 0).toLocaleString()} ريال
                       </td>
-                      <td className="px-4 py-3 text-sm text-center">8.5</td>
-                      <td className="px-4 py-3 text-sm text-center">68.0</td>
-                      <td className="px-4 py-3 text-sm font-medium text-blue-600">
+                      <td className="border border-gray-300 px-2 py-1 text-center text-xs">8.5</td>
+                      <td className="border border-gray-300 px-2 py-1 text-center text-xs">68.0</td>
+                      <td className="border border-gray-300 px-2 py-1 text-center text-xs font-medium text-blue-600 print:text-black">
                         {(Number(worker.dailyWage || 0) * 8.5).toLocaleString()} ريال
                       </td>
-                      <td className="px-4 py-3 text-sm font-medium text-red-600">
+                      <td className="border border-gray-300 px-2 py-1 text-center text-xs font-medium text-red-600 print:text-black">
                         {(Number(worker.dailyWage || 0) * 5).toLocaleString()} ريال
                       </td>
-                      <td className="px-4 py-3 text-sm font-medium text-green-600">
+                      <td className="border border-gray-300 px-2 py-1 text-center text-xs font-medium text-green-600 print:text-black">
                         {(Number(worker.dailyWage || 0) * 3.5).toLocaleString()} ريال
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-600">عامل</td>
+                      <td className="border border-gray-300 px-2 py-1 text-center text-xs">{worker.type === 'عامل' ? worker.type : 'عامل'}</td>
                     </tr>
                   ))}
                 </tbody>
-                <tfoot className="bg-green-600 text-white font-bold">
-                  <tr>
-                    <td colSpan={7} className="px-4 py-3 text-right">الإجماليات</td>
-                    <td className="px-4 py-3 text-center">
+                <tfoot>
+                  <tr className="bg-green-600 text-white font-bold print:bg-green-600">
+                    <td colSpan={7} className="border border-white px-2 py-2 text-center text-xs">الإجماليات</td>
+                    <td className="border border-white px-2 py-2 text-center text-xs">
                       {selectedWorkersData.reduce((sum, w) => sum + (Number(w.dailyWage) * 8.5), 0).toLocaleString()} ريال
                     </td>
-                    <td className="px-4 py-3 text-center">
+                    <td className="border border-white px-2 py-2 text-center text-xs">
                       {selectedWorkersData.reduce((sum, w) => sum + (Number(w.dailyWage) * 5), 0).toLocaleString()} ريال
                     </td>
-                    <td className="px-4 py-3 text-center">
+                    <td className="border border-white px-2 py-2 text-center text-xs">
                       {selectedWorkersData.reduce((sum, w) => sum + (Number(w.dailyWage) * 3.5), 0).toLocaleString()} ريال
                     </td>
-                    <td className="px-4 py-3"></td>
+                    <td className="border border-white px-2 py-2"></td>
                   </tr>
                 </tfoot>
               </table>
             </div>
 
-            {/* الملخص النهائي */}
-            <div className="bg-gray-100 p-6 border-t">
-              <h3 className="text-lg font-bold text-center text-blue-800 mb-4">الملخص النهائي</h3>
-              <div className="grid grid-cols-4 gap-6 text-center">
-                <div>
-                  <div className="text-2xl font-bold text-green-600">
-                    {selectedWorkersData.reduce((sum, w) => sum + (Number(w.dailyWage) * 3.5), 0).toLocaleString()} ريال
+            {/* الملخص النهائي - بتصميم يطابق Excel */}
+            <div className="bg-gray-100 p-4 border-t print:bg-white print:border-t-2 print:border-gray-400">
+              <h3 className="text-lg font-bold text-center text-blue-800 mb-4 print:text-black">الملخص النهائي</h3>
+              <div className="grid grid-cols-4 gap-4 text-center print:text-xs">
+                <div className="border border-gray-300 p-2 bg-white print:bg-gray-100">
+                  <div className="text-lg font-bold text-purple-600 print:text-black">
+                    {selectedWorkersData.reduce((sum, w) => sum + (Number(w.dailyWage) * 8.5), 0).toLocaleString()} ريال
                   </div>
-                  <div className="text-sm text-gray-600">إجمالي المبالغ المتبقية</div>
+                  <div className="text-xs text-gray-600 print:text-black">إجمالي المبالغ المستحقة</div>
                 </div>
-                <div>
-                  <div className="text-2xl font-bold text-red-600">
+                <div className="border border-gray-300 p-2 bg-white print:bg-gray-100">
+                  <div className="text-lg font-bold text-blue-600 print:text-black">
+                    {selectedWorkersData.reduce((sum, w) => sum + (Number(w.dailyWage) * 8.5), 0).toLocaleString()} ريال
+                  </div>
+                  <div className="text-xs text-gray-600 print:text-black">إجمالي المبالغ المستحقة</div>
+                </div>
+                <div className="border border-gray-300 p-2 bg-white print:bg-gray-100">
+                  <div className="text-lg font-bold text-red-600 print:text-black">
                     {selectedWorkersData.reduce((sum, w) => sum + (Number(w.dailyWage) * 5), 0).toLocaleString()} ريال
                   </div>
-                  <div className="text-sm text-gray-600">إجمالي المبالغ المدفوعة</div>
+                  <div className="text-xs text-gray-600 print:text-black">إجمالي المبالغ المدفوعة</div>
                 </div>
-                <div>
-                  <div className="text-2xl font-bold text-blue-600">
-                    {selectedWorkersData.reduce((sum, w) => sum + (Number(w.dailyWage) * 8.5), 0).toLocaleString()} ريال
+                <div className="border border-gray-300 p-2 bg-white print:bg-gray-100">
+                  <div className="text-lg font-bold text-green-600 print:text-black">
+                    {selectedWorkersData.reduce((sum, w) => sum + (Number(w.dailyWage) * 3.5), 0).toLocaleString()} ريال
                   </div>
-                  <div className="text-sm text-gray-600">إجمالي المبالغ المستحقة</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-purple-600">
-                    {selectedWorkersData.reduce((sum, w) => sum + (Number(w.dailyWage) * 8.5), 0).toLocaleString()} ريال
-                  </div>
-                  <div className="text-sm text-gray-600">إجمالي المبالغ المستحقة</div>
+                  <div className="text-xs text-gray-600 print:text-black">إجمالي المبالغ المتبقية</div>
                 </div>
               </div>
             </div>
 
-            {/* توقيعات */}
-            <div className="bg-white p-6">
-              <div className="grid grid-cols-3 gap-8 text-center">
-                <div className="border border-gray-300 p-4 rounded">
-                  <div className="h-16 border-b border-gray-200 mb-2"></div>
-                  <p className="text-sm font-medium">توقيع المحاسب</p>
-                  <p className="text-xs text-gray-500">................................</p>
+            {/* توقيعات - صغيرة للشاشة، كبيرة للطباعة */}
+            <div className="bg-white p-4 print:hidden">
+              <div className="grid grid-cols-3 gap-4 text-center">
+                <div className="border border-gray-300 p-2 rounded">
+                  <div className="h-8 border-b border-gray-200 mb-2"></div>
+                  <p className="text-xs font-medium">توقيع المحاسب</p>
+                  <p className="text-xs text-gray-400">........................</p>
                 </div>
-                <div className="border border-gray-300 p-4 rounded">
-                  <div className="h-16 border-b border-gray-200 mb-2"></div>
-                  <p className="text-sm font-medium">توقيع مدير المشروع</p>
-                  <p className="text-xs text-gray-500">................................</p>
+                <div className="border border-gray-300 p-2 rounded">
+                  <div className="h-8 border-b border-gray-200 mb-2"></div>
+                  <p className="text-xs font-medium">توقيع مدير المشروع</p>
+                  <p className="text-xs text-gray-400">........................</p>
                 </div>
-                <div className="border border-gray-300 p-4 rounded">
-                  <div className="h-16 border-b border-gray-200 mb-2"></div>
-                  <p className="text-sm font-medium">توقيع المدير العام</p>
-                  <p className="text-xs text-gray-500">................................</p>
+                <div className="border border-gray-300 p-2 rounded">
+                  <div className="h-8 border-b border-gray-200 mb-2"></div>
+                  <p className="text-xs font-medium">توقيع المدير العام</p>
+                  <p className="text-xs text-gray-400">........................</p>
                 </div>
               </div>
-              <div className="text-center mt-6">
+              <div className="text-center mt-3">
+                <p className="text-xs text-gray-500">
+                  تم إنشاء هذا التقرير آليا بتاريخ {new Date().toLocaleDateString('ar-EG')} | 
+                  التاريخ الهجري: {new Date().toLocaleDateString('ar-SA-u-ca-islamic')}
+                </p>
+              </div>
+            </div>
+            
+            {/* توقيعات منفصلة للطباعة */}
+            <div className="hidden print:block print:break-before-page">
+              <div className="grid grid-cols-3 gap-8 text-center mt-20">
+                <div className="border border-gray-400 p-6">
+                  <div className="h-20 border-b-2 border-gray-300 mb-4"></div>
+                  <p className="text-sm font-bold">توقيع المحاسب</p>
+                  <p className="text-xs text-gray-600 mt-2">................................</p>
+                </div>
+                <div className="border border-gray-400 p-6">
+                  <div className="h-20 border-b-2 border-gray-300 mb-4"></div>
+                  <p className="text-sm font-bold">توقيع مدير المشروع</p>
+                  <p className="text-xs text-gray-600 mt-2">................................</p>
+                </div>
+                <div className="border border-gray-400 p-6">
+                  <div className="h-20 border-b-2 border-gray-300 mb-4"></div>
+                  <p className="text-sm font-bold">توقيع المدير العام</p>
+                  <p className="text-xs text-gray-600 mt-2">................................</p>
+                </div>
+              </div>
+              <div className="text-center mt-8">
                 <p className="text-xs text-gray-500">
                   تم إنشاء هذا التقرير آليا بتاريخ {new Date().toLocaleDateString('ar-EG')} | 
                   التاريخ الهجري: {new Date().toLocaleDateString('ar-SA-u-ca-islamic')}

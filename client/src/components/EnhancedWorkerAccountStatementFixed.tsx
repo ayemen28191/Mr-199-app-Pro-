@@ -8,6 +8,7 @@ import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import '@/styles/unified-print-styles.css';
+import '@/styles/excel-print-styles.css';
 
 // واجهة خصائص المكون
 interface EnhancedWorkerAccountStatementProps {
@@ -26,17 +27,17 @@ export const EnhancedWorkerAccountStatement = ({
   dateTo 
 }: EnhancedWorkerAccountStatementProps) => {
   
-  // دالة تنسيق العملة - تنسيق إنجليزي
+  // دالة تنسيق العملة - تنسيق موحد
   const formatCurrency = (amount: number) => {
     const validAmount = isNaN(amount) || amount === null || amount === undefined ? 0 : Number(amount);
     return new Intl.NumberFormat('en-US', {
       style: 'decimal',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
-    }).format(validAmount) + ' YER';
+    }).format(validAmount) + ' ريال';
   };
 
-  // دالة تنسيق التاريخ - تنسيق إنجليزي
+  // دالة تنسيق التاريخ - تنسيق موحد
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('en-GB', {
       year: 'numeric',
