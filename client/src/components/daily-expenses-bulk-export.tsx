@@ -288,6 +288,7 @@ export default function DailyExpensesBulkExport() {
             notes
           ]);
           
+          transferRow.height = 25; // زيادة ارتفاع الصف لاحتواء النص الملتف
           transferRow.eachCell((cell) => {
             cell.font = { name: 'Arial Unicode MS', size: 10 };
             cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
@@ -353,6 +354,7 @@ export default function DailyExpensesBulkExport() {
             notes + workDaysText // دمج الملاحظات مع أيام العمل
           ]);
           
+          workerRow.height = 25; // زيادة ارتفاع الصف لاحتواء النص الملتف
           workerRow.eachCell((cell, index) => {
             cell.font = { name: 'Arial Unicode MS', size: 10 };
             cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }; // إضافة التفاف النص
@@ -580,9 +582,13 @@ export default function DailyExpensesBulkExport() {
       });
     }
 
-    // صف المبلغ المتبقي النهائي (خلفية برتقالية) - العنوان والرصيد في نفس الصف
+    // صف المبلغ المتبقي النهائي (خلفية برتقالية) - العنوان والرصيد في نفس الصف مع دمج الخلايا
     console.log(`🏁 الرصيد النهائي: ${currentBalance}`);
-    const finalBalanceRow = worksheet.addRow(['', '', 'المبلغ المتبقي النهائي', formatNumber(currentBalance), '']);
+    const finalBalanceRow = worksheet.addRow(['المبلغ المتبقي النهائي', '', '', formatNumber(currentBalance), '']);
+    
+    // دمج الخلايا A إلى C لنص "المبلغ المتبقي النهائي"
+    worksheet.mergeCells(`A${finalBalanceRow.number}:C${finalBalanceRow.number}`);
+    
     finalBalanceRow.eachCell((cell, index) => {
       cell.font = { name: 'Arial Unicode MS', size: 12, bold: true };
       cell.alignment = { horizontal: 'center', vertical: 'middle' };

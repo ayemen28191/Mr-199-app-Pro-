@@ -78,6 +78,11 @@ This is a comprehensive Arabic construction project management system built as a
   - إزالة الأصفار الزائدة من جميع الأرقام في التقرير
   - تطبيق التنسيق المحسن على الكميات في جدول المشتريات
   - تحسين دالة formatNumber() لمعالجة الأرقام العشرية بذكاء
+- **Excel Layout Improvements**: تحسينات تخطيط Excel المطابق للمواصفات
+  - زيادة ارتفاع الصفوف إلى 25 لاحتواء النص الملتف بشكل أفضل
+  - دمج خلايا "المبلغ المتبقي النهائي" من العمود A إلى C
+  - إزالة عبارة "شراء عدد" من ملاحظات جدول المشتريات
+  - تطبيق ارتفاع موحد على جميع الصفوف لتحسين المظهر والقراءة
 
 ### Files Updated ✅
 - `client/src/components/enhanced-worker-account-statement-real-data.tsx` - إصلاح حسابات عدد الأيام
