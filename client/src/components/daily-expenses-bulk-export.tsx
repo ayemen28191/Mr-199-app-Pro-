@@ -202,19 +202,26 @@ export default function DailyExpensesBulkExport() {
       const formattedYesterday = formatDate(yesterdayDate.toISOString().split('T')[0]);
       
       const carryForwardRow = worksheet.addRow([
-        formatNumber(Math.abs(dayData.carriedForward)),
+        formatNumber(dayData.carriedForward), // عرض المبلغ كما هو (سالب أو موجب)
         'مرحلة',
         'ترحيل',
         formatNumber(currentBalance),
         `مرحل من تاريخ ${formattedYesterday}`
       ]);
       
-      console.log(`✅ تم إضافة صف المرحل الفعلي: مبلغ=${formatNumber(Math.abs(dayData.carriedForward))}, متبقي=${formatNumber(currentBalance)}`);
+      console.log(`✅ تم إضافة صف المرحل الفعلي: مبلغ=${formatNumber(dayData.carriedForward)}, متبقي=${formatNumber(currentBalance)}`);
       
       carryForwardRow.eachCell((cell) => {
         cell.font = { name: 'Arial Unicode MS', size: 10, bold: true };
         cell.alignment = { horizontal: 'center', vertical: 'middle' };
-        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFB8E6B8' } }; // أخضر فاتح للمرحلة
+        
+        // تحديد لون الخلفية حسب إشارة المبلغ المرحل
+        if (dayData.carriedForward < 0) {
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFF6B6B' } }; // أحمر فاتح للمرحل السالب
+        } else {
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFB8E6B8' } }; // أخضر فاتح للمرحل الموجب
+        }
+        
         cell.border = {
           top: { style: 'thin' }, bottom: { style: 'thin' },
           left: { style: 'thin' }, right: { style: 'thin' }
