@@ -30,9 +30,19 @@ This is a comprehensive Arabic construction project management system built as a
 - **Responsive Color Schemes**: ألوان تعمل بشكل مثالي في الشاشة والطباعة
 - **Excel-Style Statistics Row**: صف الإحصائيات العلوي يطابق تماماً صور Excel
 
+### Work Days Column & Calculation Fixes ✅ (Latest Update - August 16, 2025)
+- **Fixed Work Days Logic**: إصلاح حساب عدد أيام العمل في جميع التقارير
+  - استبدال `Number(record.workDays) || 1` بـ المنطق الصحيح لتجنب تحويل 0 إلى 1
+  - استخدام: `record.workDays !== undefined && record.workDays !== null ? Number(record.workDays) : (record.isPresent || record.status === 'present' ? 1 : 0)`
+- **Enhanced Excel Export**: تحسين تصدير Excel ليشمل عمود "عدد الأيام" بالحسابات الصحيحة
+- **Accurate Totals**: إصلاح الإجماليات لتعكس أيام العمل الفعلية وليس القيم الافتراضية
+- **Debug Logging**: إضافة console.log لتتبع الحسابات والتأكد من صحتها
+
 ### Files Updated ✅
-- `client/src/components/worker-filter-report.tsx` - تحديث شامل
-- `client/src/components/EnhancedWorkerAccountStatementFixed.tsx` - توحيد التنسيق
+- `client/src/components/enhanced-worker-account-statement-real-data.tsx` - إصلاح حسابات عدد الأيام
+- `client/src/components/worker-filter-report.tsx` - إصلاح حسابات التقرير والإجماليات
+- `client/src/components/worker-filter-report-real-data.tsx` - إصلاح حسابات البيانات الحقيقية
+- `client/src/reports/templates/worker-statement-template.tsx` - إضافة عمود عدد الأيام
 - `client/src/styles/excel-print-styles.css` - ملف CSS جديد للطباعة الاحترافية
 
 # User Preferences

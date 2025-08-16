@@ -72,13 +72,17 @@ export const EnhancedWorkerAccountStatementRealData = ({
     dateRange: `${dateFrom} - ${dateTo}`
   });
 
-  // حساب الإجماليات الحقيقية من البيانات
+  // حساب الإجماليات الحقيقية من البيانات - مع إصلاح حساب أيام العمل
   const realStats = attendance.reduce((acc: any, record: any) => {
     const dailyWage = Number(record.dailyWage) || Number(worker.dailyWage) || 0;
-    const workDays = Number(record.workDays) || 1;
-    const workHours = Number(record.workHours) || 8;
+    // إصلاح حساب أيام العمل - يجب استخدام ?? بدلاً من || لتجنب تحويل 0 إلى 1
+    const workDays = record.workDays !== undefined && record.workDays !== null ? Number(record.workDays) : 
+                     (record.isPresent || record.status === 'present' ? 1 : 0);
+    const workHours = Number(record.workHours) || (workDays * 8); // حساب الساعات بناءً على الأيام
     const earned = dailyWage * workDays;
     const paid = Number(record.paidAmount) || 0;
+    
+    console.log(`📊 سجل حضور: التاريخ=${record.date}, الأيام=${workDays}, الأجر=${dailyWage}, المستحق=${earned}, المدفوع=${paid}`);
     
     return {
       totalWorkDays: acc.totalWorkDays + workDays,
@@ -87,6 +91,8 @@ export const EnhancedWorkerAccountStatementRealData = ({
       totalPaid: acc.totalPaid + paid,
     };
   }, { totalWorkDays: 0, totalWorkHours: 0, totalEarned: 0, totalPaid: 0 });
+  
+  console.log('🧮 الإجماليات المحسوبة:', realStats);
 
   const totalRemaining = realStats.totalEarned - realStats.totalPaid;
   const totalTransferred = transfers.reduce((sum: number, transfer: any) => sum + (Number(transfer.amount) || 0), 0);
@@ -163,12 +169,16 @@ export const EnhancedWorkerAccountStatementRealData = ({
       
       attendance.forEach((record: any, index: number) => {
         const dailyWage = Number(record.dailyWage) || Number(worker?.dailyWage) || 0;
-        const workDays = Number(record.workDays) || 1;
-        const workHours = Number(record.workHours) || 8;
+        // إصلاح حساب أيام العمل في تصدير Excel
+        const workDays = record.workDays !== undefined && record.workDays !== null ? Number(record.workDays) : 
+                         (record.isPresent || record.status === 'present' ? 1 : 0);
+        const workHours = Number(record.workHours) || (workDays * 8);
         const earned = dailyWage * workDays;
         const paid = Number(record.paidAmount) || 0;
         const remaining = earned - paid;
         const status = paid >= earned ? 'مدفوع كامل' : paid > 0 ? 'مدفوع جزئي' : 'غير مدفوع';
+        
+        console.log(`📋 Excel Row ${index + 1}: أيام=${workDays}, مستحق=${earned}, مدفوع=${paid}, متبقي=${remaining}`);
         
         totalEarnedExcel += earned;
         totalPaidExcel += paid;
@@ -439,8 +449,10 @@ export const EnhancedWorkerAccountStatementRealData = ({
               <tbody>
                 {attendance.map((record: any, index: number) => {
                   const dailyWage = Number(record.dailyWage) || Number(worker?.dailyWage) || 0;
-                  const workDays = Number(record.workDays) || 1;
-                  const workHours = Number(record.workHours) || 8;
+                  // إصلاح حساب أيام العمل في عرض الجدول
+                  const workDays = record.workDays !== undefined && record.workDays !== null ? Number(record.workDays) : 
+                                   (record.isPresent || record.status === 'present' ? 1 : 0);
+                  const workHours = Number(record.workHours) || (workDays * 8);
                   const earned = dailyWage * workDays;
                   const paid = Number(record.paidAmount) || 0;
                   const remaining = earned - paid;

@@ -139,11 +139,13 @@ export default function WorkerFilterReportRealData() {
       const summaryData: WorkerSummary[] = workersData.map((workerData: any) => {
         const worker = workers.find(w => w.id === workerData.worker_id);
         
-        // استخدام البيانات من API بدلاً من حسابها يدوياً
+        // استخدام البيانات من API بدلاً من حسابها يدوياً - مع إصلاح حساب الأيام
         const totalWorkDays = Number(workerData.total_work_days) || 0;
-        const totalWorkHours = totalWorkDays * 8; // تقدير الساعات
+        const totalWorkHours = totalWorkDays * 8; // حساب الساعات بناءً على أيام العمل الفعلية
         const totalEarned = Number(workerData.total_earned) || 0;
         const totalPaid = Number(workerData.total_paid) || 0;
+        
+        console.log(`📋 عامل ${workerData.worker_name}: أيام=${totalWorkDays}, مستحق=${totalEarned}, مدفوع=${totalPaid}`);
 
         // الحصول على اسم المشروع
         let projectName = 'جميع المشاريع';
@@ -268,8 +270,8 @@ export default function WorkerFilterReportRealData() {
         summary.workerType,
         summary.projectName,
         formatCurrency(summary.dailyWage),
-        summary.totalWorkDays || 0,
-        summary.totalWorkHours || 0,
+        summary.totalWorkDays,
+        summary.totalWorkHours,
         formatCurrency(summary.totalEarned),
         formatCurrency(summary.totalPaid),
         formatCurrency(summary.totalRemaining),
@@ -581,7 +583,7 @@ export default function WorkerFilterReportRealData() {
                       <td className="border border-gray-300 px-2 py-1 text-center text-xs">{summary.workerType}</td>
                       <td className="border border-gray-300 px-2 py-1 text-center text-xs text-blue-600">{summary.projectName}</td>
                       <td className="border border-gray-300 px-2 py-1 text-center text-xs font-medium">{formatCurrency(summary.dailyWage)}</td>
-                      <td className="border border-gray-300 px-2 py-1 text-center text-xs font-bold text-green-600">{summary.totalWorkDays}</td>
+                      <td className="border border-gray-300 px-2 py-1 text-center text-xs font-bold text-green-600">{summary.totalWorkDays || 0}</td>
                       <td className="border border-gray-300 px-2 py-1 text-center text-xs font-bold text-blue-600">{summary.totalWorkHours}</td>
                       <td className="border border-gray-300 px-2 py-1 text-center text-xs font-medium text-blue-600 print:text-black">
                         {formatCurrency(summary.totalEarned)}
