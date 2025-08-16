@@ -72,7 +72,9 @@ export default function DailyExpensesBulkExport() {
   // دالة تنسيق الأرقام (إنجليزية) - بدون كلمة "ريال" وبدون أرقام عشرية
   const formatNumber = (num: number) => {
     if (typeof num !== 'number' || isNaN(num)) return '0';
-    return Math.round(Number(num)).toLocaleString('en-US', { useGrouping: true });
+    // إزالة الأرقام العشرية وتنسيق الأرقام بدون فواصل عشرية
+    const rounded = Math.round(Number(num));
+    return rounded.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
   };
 
   // دالة تنسيق التاريخ بتنسيق DD-MM-YYYY
@@ -399,13 +401,16 @@ export default function DailyExpensesBulkExport() {
     // مشتريات المواد النقدية فقط (المؤجلة لا تظهر في الجدول الرئيسي)
     if (dayData.materialPurchases && dayData.materialPurchases.length > 0) {
       dayData.materialPurchases.forEach((material: any) => {
-        // إظهار المشتريات النقدية فقط في الجدول الرئيسي
-        const isCashPurchase = !material.paymentType || material.paymentType === 'cash';
+        // إظهار المشتريات النقدية فقط في الجدول الرئيسي - استبعاد الآجلة
+        const paymentType = material.paymentType || material.purchaseType || 'نقد';
+        const isCashPurchase = paymentType === 'cash' || paymentType === 'نقد' || paymentType === 'نقدي';
+        const isDeferredPurchase = paymentType === 'آجل' || paymentType === 'أجل' || paymentType === 'deferred';
         const amount = parseFloat((material.totalAmount || material.totalCost || 0).toString());
         
-        if (amount > 0 && isCashPurchase) {
+        // إظهار فقط المشتريات النقدية وليس الآجلة
+        if (amount > 0 && isCashPurchase && !isDeferredPurchase) {
           currentBalance -= amount; // طرح مشتريات المواد النقدية من الرصيد
-          console.log(`📉 بعد مشتريات ${amount}: ${currentBalance}`);
+          console.log(`📉 بعد مشتريات نقدية ${amount}: ${currentBalance}`);
           
           const materialRow = worksheet.addRow([
             formatNumber(amount),
@@ -427,11 +432,11 @@ export default function DailyExpensesBulkExport() {
       });
     }
 
-    // تحويلات العمال
+    // تحويلات العمال - فقط إذا المبلغ أكبر من صفر
     if (dayData.workerTransfers && dayData.workerTransfers.length > 0) {
       dayData.workerTransfers.forEach((transfer: any) => {
-        const amount = transfer.amount || 0;
-        if (amount > 0) {
+        const amount = parseFloat((transfer.amount || 0).toString());
+        if (amount && amount > 0) {
           currentBalance -= amount; // طرح تحويلات العمال من الرصيد
           
           const transferRow = worksheet.addRow([
@@ -454,11 +459,11 @@ export default function DailyExpensesBulkExport() {
       });
     }
 
-    // مدفوعات الموردين
+    // مدفوعات الموردين - فقط إذا المبلغ أكبر من صفر
     if (dayData.supplierPayments && dayData.supplierPayments.length > 0) {
       dayData.supplierPayments.forEach((payment: any) => {
-        const amount = payment.amount || 0;
-        if (amount > 0) {
+        const amount = parseFloat((payment.amount || 0).toString());
+        if (amount && amount > 0) {
           currentBalance -= amount; // طرح مدفوعات الموردين من الرصيد
           
           const paymentRow = worksheet.addRow([
@@ -481,11 +486,11 @@ export default function DailyExpensesBulkExport() {
       });
     }
 
-    // مصاريف أخرى ومتنوعة وحسابات أخرى
+    // مصاريف أخرى ومتنوعة وحسابات أخرى - فقط إذا المبلغ أكبر من صفر
     if (dayData.miscExpenses && dayData.miscExpenses.length > 0) {
       dayData.miscExpenses.forEach((misc: any) => {
-        const amount = misc.amount || misc.totalAmount || 0;
-        if (amount > 0) {
+        const amount = parseFloat((misc.amount || misc.totalAmount || 0).toString());
+        if (amount && amount > 0) {
           currentBalance -= amount; // طرح المصاريف المتنوعة من الرصيد
           
           // تحديد نوع المصروف
