@@ -635,7 +635,7 @@ export default function DailyExpensesBulkExport() {
         
         console.log(`✅ بعد التنسيق: الكمية=${quantity}, المبلغ=${amount}`);
         
-        const purchaseDescription = `شراء عدد ${quantity} ${purchase.materialName || purchase.material?.name || 'مادة'} ${purchase.notes || ''}`;
+        const purchaseDescription = `${quantity} ${purchase.materialName || purchase.material?.name || 'مادة'} ${purchase.notes || ''}`;
         const paymentType = purchase.purchaseType || purchase.paymentType || 'نقد';
         
         const purchaseRow = worksheet.addRow([
