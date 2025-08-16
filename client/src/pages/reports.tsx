@@ -616,48 +616,35 @@ export default function Reports() {
                     <Search className="h-5 w-5 text-blue-600" />
                     <h3 className="font-semibold">البحث في العمال</h3>
                   </div>
-                  <Input
-                    placeholder="ابحث عن العامل بالاسم أو نوع العمل..."
-                    onChange={(e) => {
-                      const searchTerm = e.target.value.toLowerCase();
-                      if (searchTerm.trim() === '') {
-                        setFilteredWorkers(workers);
-                      } else {
-                        const filtered = workers.filter(worker => 
-                          worker.name.toLowerCase().includes(searchTerm) ||
-                          worker.type.toLowerCase().includes(searchTerm)
-                        );
-                        setFilteredWorkers(filtered);
-                      }
-                    }}
-                    className="max-w-md"
-                  />
+                  <div className="text-sm text-green-600">
+                    ✅ العمال محملين بنجاح - {workers.length} عامل متاح
+                  </div>
                 </div>
 
                 {/* لوحة إحصائيات العمال المفلترين */}
-                {filteredWorkers.length > 0 && (
+                {workers.length > 0 && (
                   <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 mb-6">
                     <CardContent className="p-4">
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                         <div>
-                          <div className="text-2xl font-bold text-blue-600">{filteredWorkers.length}</div>
+                          <div className="text-2xl font-bold text-blue-600">{workers.length}</div>
                           <div className="text-sm text-muted-foreground">إجمالي العمال</div>
                         </div>
                         <div>
                           <div className="text-2xl font-bold text-green-600">
-                            {filteredWorkers.filter(w => w.isActive).length}
+                            {workers.filter(w => w.isActive).length}
                           </div>
                           <div className="text-sm text-muted-foreground">العمال النشطين</div>
                         </div>
                         <div>
                           <div className="text-2xl font-bold text-purple-600">
-                            {formatCurrency(filteredWorkers.reduce((sum, w) => sum + Number(w.dailyWage || 0), 0))}
+                            {formatCurrency(workers.reduce((sum, w) => sum + Number(w.dailyWage || 0), 0))}
                           </div>
                           <div className="text-sm text-muted-foreground">إجمالي الأجور اليومية</div>
                         </div>
                         <div>
                           <div className="text-2xl font-bold text-indigo-600">
-                            {new Set(filteredWorkers.map(w => w.type)).size}
+                            {new Set(workers.map(w => w.type)).size}
                           </div>
                           <div className="text-sm text-muted-foreground">أنواع العمل</div>
                         </div>
@@ -671,22 +658,22 @@ export default function Reports() {
                     <label className="flex items-center justify-between text-sm font-semibold text-gray-700 dark:text-gray-300">
                       <span>👷 اختيار العامل</span>
                       <Badge variant="outline" className="text-xs">
-                        {filteredWorkers.length} من {workers.length} عامل متاح
+                        {workers.length} عامل متاح
                       </Badge>
                     </label>
                     <Select value={selectedWorkerId} onValueChange={setSelectedWorkerId}>
                       <SelectTrigger className="text-lg">
                         <SelectValue 
                           placeholder={
-                            filteredWorkers.length > 0 
-                              ? `اختر من ${filteredWorkers.length} عامل متاح...` 
-                              : "لا توجد عمال متاحة..."
+                            workers.length > 0 
+                              ? `اختر من ${workers.length} عامل متاح...` 
+                              : "جاري تحميل العمال..."
                           } 
                         />
                       </SelectTrigger>
                       <SelectContent>
-                        {filteredWorkers.length > 0 ? (
-                          filteredWorkers.map(worker => (
+                        {workers.length > 0 ? (
+                          workers.map(worker => (
                             <SelectItem key={worker.id} value={worker.id} className="text-lg">
                               <div className="flex items-center gap-2">
                                 <div className={`w-2 h-2 rounded-full ${worker.isActive ? 'bg-green-500' : 'bg-red-500'}`}></div>
@@ -699,7 +686,7 @@ export default function Reports() {
                           ))
                         ) : (
                           <div className="p-4 text-center text-muted-foreground">
-                            لا توجد عمال مطابقة للتصفية الحالية
+                            جاري تحميل العمال...
                           </div>
                         )}
                       </SelectContent>
