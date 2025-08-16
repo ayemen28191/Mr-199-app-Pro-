@@ -354,12 +354,12 @@ export default function DailyExpensesBulkExport() {
     // فراغ قبل الجدول الإضافي
     worksheet.addRow(['']);
 
-    // الجدول الإضافي (إذا كان هناك ملاحظات إضافية)
+    // جدول المشتريات (إذا كان هناك مشتريات)
     if (dayData.materialPurchases && dayData.materialPurchases.length > 0) {
-      const additionalHeaders = ['اسم المشروع', 'محل التوريد', 'الملاحظات'];
-      const additionalHeaderRow = worksheet.addRow(additionalHeaders);
+      const purchasesHeaders = ['اسم المشروع', 'محل التوريد', 'الملاحظات'];
+      const purchasesHeaderRow = worksheet.addRow(purchasesHeaders);
       
-      additionalHeaderRow.eachCell((cell) => {
+      purchasesHeaderRow.eachCell((cell) => {
         cell.font = { name: 'Arial Unicode MS', size: 11, bold: true };
         cell.alignment = { horizontal: 'center', vertical: 'middle' };
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFB8E6E6' } }; // أزرق فاتح
@@ -369,20 +369,24 @@ export default function DailyExpensesBulkExport() {
         };
       });
 
-      // بيانات الجدول الإضافي
-      const additionalRow = worksheet.addRow([
-        dayData.projectName,
-        'إبراهيم نجم الدين',
-        'العمال عمالنا من قلمو بتحميل ونقل وتركيب للمشغل رقم 1 ورقم 2 زين نجم ادين وفر السيارة للنقل فقط'
-      ]);
-      
-      additionalRow.eachCell((cell) => {
-        cell.font = { name: 'Arial Unicode MS', size: 10 };
-        cell.alignment = { horizontal: 'center', vertical: 'middle' };
-        cell.border = {
-          top: { style: 'thin' }, bottom: { style: 'thin' },
-          left: { style: 'thin' }, right: { style: 'thin' }
-        };
+      // عرض كل مشترى في صف منفصل
+      dayData.materialPurchases.forEach((purchase: any) => {
+        const purchaseDescription = `شراء عدد ${purchase.quantity || 1} ${purchase.materialName || purchase.material?.name || 'مادة'} ${purchase.notes || ''}`;
+        
+        const purchaseRow = worksheet.addRow([
+          dayData.projectName,
+          purchase.supplierName || purchase.supplier?.name || 'إبراهيم نجم الدين',
+          purchaseDescription
+        ]);
+        
+        purchaseRow.eachCell((cell) => {
+          cell.font = { name: 'Arial Unicode MS', size: 10 };
+          cell.alignment = { horizontal: 'center', vertical: 'middle' };
+          cell.border = {
+            top: { style: 'thin' }, bottom: { style: 'thin' },
+            left: { style: 'thin' }, right: { style: 'thin' }
+          };
+        });
       });
     }
 
