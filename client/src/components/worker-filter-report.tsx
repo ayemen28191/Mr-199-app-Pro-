@@ -114,10 +114,10 @@ export default function WorkerFilterReport() {
         dateFrom: dateFrom || '',
         dateTo: dateTo || '',
         workerIds: workerIds.join(','),
-        ...(projectIds.length > 0 && { projectIds: projectIds.join(',') })
+        projectIds: projectIds.length > 0 ? projectIds.join(',') : 'all'
       });
 
-      const response = await fetch(`/api/worker-attendance/summary?${queryParams}`);
+      const response = await fetch(`/api/reports/workers-settlement?${queryParams}`);
       
       if (!response.ok) {
         throw new Error(`خطأ في الخادم: ${response.status}`);
@@ -126,34 +126,32 @@ export default function WorkerFilterReport() {
       const data = await response.json();
       console.log('📊 البيانات المستلمة من الخادم:', data);
 
+      // التحقق من أن البيانات في التنسيق المتوقع
+      const workersData = data.workersData || data || [];
+      
       // تحويل البيانات إلى تنسيق ملخص العمال
-      const summaryData: WorkerSummary[] = workerIds.map(workerId => {
-        const worker = workers.find(w => w.id === workerId);
-        const workerAttendance = data.filter((att: any) => att.workerId === workerId);
+      const summaryData: WorkerSummary[] = workersData.map((workerData: any) => {
+        const worker = workers.find(w => w.id === workerData.workerId);
         
-        // حساب الإجماليات الحقيقية من بيانات الحضور
-        const totalWorkDays = workerAttendance.reduce((sum: number, att: any) => sum + (Number(att.workDays) || 0), 0);
-        const totalWorkHours = workerAttendance.reduce((sum: number, att: any) => sum + (Number(att.workHours) || 0), 0);
-        const totalEarned = workerAttendance.reduce((sum: number, att: any) => {
-          const dailyWage = Number(att.dailyWage) || 0;
-          const workDays = Number(att.workDays) || 0;
-          return sum + (dailyWage * workDays);
-        }, 0);
-        const totalPaid = workerAttendance.reduce((sum: number, att: any) => sum + (Number(att.paidAmount) || 0), 0);
+        // استخدام البيانات من API بدلاً من حسابها يدوياً
+        const totalWorkDays = Number(workerData.totalWorkDays) || 0;
+        const totalWorkHours = Number(workerData.totalWorkHours) || 0;
+        const totalEarned = Number(workerData.totalEarned) || 0;
+        const totalPaid = Number(workerData.totalPaid) || 0;
 
         // الحصول على اسم المشروع
-        let projectName = 'جميع المشاريع';
+        let projectName = workerData.projectName || 'جميع المشاريع';
         if (projectIds.length === 1) {
           const project = projects.find(p => p.id === projectIds[0]);
-          projectName = project?.name || 'غير محدد';
+          projectName = project?.name || projectName;
         }
 
         return {
-          workerId,
-          workerName: worker?.name || 'غير معروف',
-          workerType: worker?.type || 'غير محدد',
+          workerId: workerData.workerId,
+          workerName: workerData.workerName || worker?.name || 'غير معروف',
+          workerType: workerData.workerType || worker?.type || 'غير محدد',
           projectName,
-          dailyWage: Number(worker?.dailyWage) || 0,
+          dailyWage: Number(workerData.dailyWage) || Number(worker?.dailyWage) || 0,
           totalWorkDays,
           totalWorkHours,
           totalEarned,
