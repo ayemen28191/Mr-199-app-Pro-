@@ -59,7 +59,8 @@ export default function WorkerAttendance() {
   useEffect(() => {
     const handleFloatingSave = () => {
       // محاكاة كليك زر الحفظ
-      document.querySelector('[type="submit"]')?.click();
+      const submitButton = document.querySelector('[type="submit"]') as HTMLButtonElement;
+      submitButton?.click();
     };
     
     setFloatingAction(handleFloatingSave, "حفظ الحضور");

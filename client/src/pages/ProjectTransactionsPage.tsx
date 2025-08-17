@@ -35,14 +35,9 @@ export default function ProjectTransactionsPage() {
   const [dateTo, setDateTo] = useState<string>('');
   const { setFloatingAction } = useFloatingButton();
 
-  // تعيين إجراء الزر العائم لإضافة معاملة
+  // إزالة الزر العائم من هذه الصفحة لأنها صفحة عرض فقط
   useEffect(() => {
-    const handleAddTransaction = () => {
-      // يمكن إضافة modal أو انتقال لصفحة إضافة المعاملات
-      console.log("إضافة معاملة جديدة");
-    };
-    
-    setFloatingAction(handleAddTransaction, "إضافة معاملة");
+    setFloatingAction(null);
     return () => setFloatingAction(null);
   }, [setFloatingAction]);
 
@@ -215,8 +210,6 @@ export default function ProjectTransactionsPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4" dir="rtl">
       <div className="max-w-7xl mx-auto space-y-6">
-
-
         {/* اختيار المشروع */}
         <Card>
           <CardHeader>

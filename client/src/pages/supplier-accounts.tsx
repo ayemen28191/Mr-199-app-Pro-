@@ -50,17 +50,11 @@ export default function SupplierAccountsPage() {
     enabled: !!selectedSupplierId,
   });
 
-  // تعيين إجراء الزر العائم للتصدير
+  // إزالة الزر العائم من هذه الصفحة لأن التصدير متاح في الواجهة
   useEffect(() => {
-    const handleExportData = () => {
-      if (selectedSupplierId && purchases.length > 0) {
-        exportToExcel();
-      }
-    };
-    
-    setFloatingAction(handleExportData, "تصدير البيانات");
+    setFloatingAction(null);
     return () => setFloatingAction(null);
-  }, [setFloatingAction, selectedSupplierId, purchases]);
+  }, [setFloatingAction]);
 
   const selectedSupplier = suppliers.find(s => s.id === selectedSupplierId);
 
@@ -101,7 +95,7 @@ export default function SupplierAccountsPage() {
         purchase.materialId, // يجب ربطه بجدول المواد لإظهار الاسم
         purchase.quantity,
         formatCurrency(purchase.totalAmount),
-        purchase.paymentType,
+        purchase.purchaseType,
         formatCurrency(purchase.paidAmount || "0"),
         formatCurrency(purchase.remainingAmount || "0")
       ]),
@@ -120,7 +114,6 @@ export default function SupplierAccountsPage() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-
       {/* Filters */}
       <Card>
         <CardHeader>
@@ -316,8 +309,8 @@ export default function SupplierAccountsPage() {
                           {formatCurrency(purchase.totalAmount)}
                         </TableCell>
                         <TableCell>
-                          <Badge variant={getPaymentTypeVariant(purchase.paymentType)}>
-                            {purchase.paymentType}
+                          <Badge variant={getPaymentTypeVariant(purchase.purchaseType)}>
+                            {purchase.purchaseType}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-green-600">

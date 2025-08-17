@@ -368,24 +368,7 @@ export default function WorkerAccountsPage() {
 
   return (
     <div className="min-h-screen bg-background p-4 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">حسابات العمال</h1>
-          <p className="text-muted-foreground">إدارة حوالات وتحويلات العمال</p>
-        </div>
-        <Button 
-          onClick={() => {
-            setEditingTransfer(null);
-            resetForm();
-            setShowTransferDialog(true);
-          }}
-          className="bg-blue-600 hover:bg-blue-700"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          حولة جديدة
-        </Button>
-      </div>
+      {/* Header - تم إزالة العنوان المكرر لأنه موجود في شريط التطبيق */}
 
       {/* Project Filter */}
       <Card>

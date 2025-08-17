@@ -76,23 +76,11 @@ export default function Reports() {
   // حالات عرض التقارير
   const [activeReportType, setActiveReportType] = useState<string | null>(null);
 
-  // تعيين إجراء الزر العائم للتقارير
+  // إزالة الزر العائم من صفحة التقارير لأنها صفحة عرض وإنشاء
   useEffect(() => {
-    const handleCreateReport = () => {
-      if (selectedProjectId) {
-        setActiveReportType('daily-expense');
-      } else {
-        toast({
-          title: "تنبيه",
-          description: "يرجى اختيار مشروع أولاً",
-          variant: "destructive"
-        });
-      }
-    };
-    
-    setFloatingAction(handleCreateReport, "إنشاء تقرير");
+    setFloatingAction(null);
     return () => setFloatingAction(null);
-  }, [setFloatingAction, selectedProjectId, toast]);
+  }, [setFloatingAction]);
   const [reportData, setReportData] = useState<any>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');

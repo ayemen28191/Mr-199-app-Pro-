@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,6 +16,7 @@ import { insertProjectFundTransferSchema } from "@shared/schema";
 import type { InsertProjectFundTransfer, ProjectFundTransfer, Project } from "@shared/schema";
 import { Plus, ArrowRight, Calendar, User, FileText, Edit, Banknote, Building, Trash2 } from "lucide-react";
 import { z } from "zod";
+import { useFloatingButton } from "@/components/layout/floating-button-context";
 
 type TransferFormData = z.infer<typeof insertProjectFundTransferSchema>;
 
@@ -24,6 +25,18 @@ export default function ProjectTransfers() {
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [editingTransfer, setEditingTransfer] = useState<ProjectFundTransfer | null>(null);
+  const { setFloatingAction } = useFloatingButton();
+
+  // تعيين إجراء الزر العائم لإضافة تحويل جديد
+  useEffect(() => {
+    const handleAddTransfer = () => {
+      setShowForm(true);
+      setEditingTransfer(null);
+    };
+    
+    setFloatingAction(handleAddTransfer, "إضافة عملية ترحيل");
+    return () => setFloatingAction(null);
+  }, [setFloatingAction]);
 
   // دالة مساعدة لحفظ القيم في autocomplete_data
   const saveAutocompleteValue = async (category: string, value: string | null | undefined) => {
@@ -192,17 +205,6 @@ export default function ProjectTransfers() {
 
   return (
     <div className="container mx-auto py-6 px-4" dir="rtl">
-      <div className="flex justify-between items-center mb-6">
-
-        <Button
-          onClick={() => setShowForm(!showForm)}
-          className="bg-blue-600 hover:bg-blue-700"
-          data-testid="button-add-transfer"
-        >
-          <Plus className="w-4 h-4 ml-2" />
-          إضافة عملية ترحيل
-        </Button>
-      </div>
 
       {/* نموذج إضافة عملية ترحيل جديدة */}
       {showForm && (
