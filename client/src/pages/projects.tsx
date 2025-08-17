@@ -31,6 +31,8 @@ import type { Project, InsertProject } from "@shared/schema";
 import { insertProjectSchema } from "@shared/schema";
 import { formatDate, formatCurrency } from "@/lib/utils";
 import { AutocompleteInput } from "@/components/ui/autocomplete-input-database";
+import { useFloatingButton } from "@/components/layout/floating-button-context";
+import { useEffect } from "react";
 
 interface ProjectStats {
   totalWorkers: number;
@@ -53,6 +55,7 @@ export default function ProjectsPage() {
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const { setFloatingAction } = useFloatingButton();
 
   // Fetch projects with statistics مع إعادة التحديث المحسنة
   const { data: projects = [], isLoading, refetch: refetchProjects } = useQuery<ProjectWithStats[]>({
@@ -229,7 +232,13 @@ export default function ProjectsPage() {
     }
   };
 
-  // استخدام دالة formatCurrency من utils.ts
+  // تعيين إجراء الزر العائم
+  useEffect(() => {
+    setFloatingAction(() => setIsCreateDialogOpen(true), "إضافة مشروع جديد");
+    
+    // تنظيف الزر عند مغادرة الصفحة
+    return () => setFloatingAction(null);
+  }, [setFloatingAction]);
 
   if (isLoading) {
     return (
@@ -244,19 +253,7 @@ export default function ProjectsPage() {
 
   return (
     <div className="space-y-6 p-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">المشاريع</h1>
-          <p className="text-muted-foreground mt-2">إدارة وعرض جميع المشاريع مع الإحصائيات</p>
-        </div>
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-2">
-              <Plus className="h-4 w-4" />
-              مشروع جديد
-            </Button>
-          </DialogTrigger>
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>إنشاء مشروع جديد</DialogTitle>
@@ -315,7 +312,6 @@ export default function ProjectsPage() {
             </Form>
           </DialogContent>
         </Dialog>
-      </div>
 
       {/* Projects Grid */}
       {projects.length === 0 ? (

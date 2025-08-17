@@ -24,6 +24,8 @@ import AutocompleteAdminPage from "@/pages/autocomplete-admin";
 
 import Header from "@/components/layout/header";
 import BottomNavigation from "@/components/layout/bottom-navigation";
+import FloatingAddButton from "@/components/layout/floating-add-button";
+import { FloatingButtonProvider } from "@/components/layout/floating-button-context";
 
 function Router() {
   return (
@@ -55,14 +57,17 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <div className="min-h-screen bg-background text-foreground" dir="rtl">
-          <Header />
-          <main className="pb-20">
-            <Router />
-          </main>
-          <BottomNavigation />
-          <Toaster />
-        </div>
+        <FloatingButtonProvider>
+          <div className="min-h-screen bg-background text-foreground" dir="rtl">
+            <Header />
+            <main className="pb-20">
+              <Router />
+            </main>
+            <BottomNavigation />
+            <FloatingAddButton />
+            <Toaster />
+          </div>
+        </FloatingButtonProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

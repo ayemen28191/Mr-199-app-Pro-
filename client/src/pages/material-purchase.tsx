@@ -16,6 +16,7 @@ import ProjectSelector from "@/components/project-selector";
 import { getCurrentDate, formatCurrency } from "@/lib/utils";
 import { AutocompleteInput } from "@/components/ui/autocomplete-input-database";
 import { apiRequest } from "@/lib/queryClient";
+import { useFloatingButton } from "@/components/layout/floating-button-context";
 import type { Material, InsertMaterialPurchase, InsertMaterial, Supplier } from "@shared/schema";
 
 export default function MaterialPurchase() {
@@ -43,6 +44,27 @@ export default function MaterialPurchase() {
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { setFloatingAction } = useFloatingButton();
+
+  // إجراء الحفظ لاستخدامه مع الزر العائم
+  const handleFloatingSave = () => {
+    if (!selectedProjectId) {
+      toast({
+        title: "خطأ",
+        description: "يرجى اختيار مشروع أولاً",
+        variant: "destructive",
+      });
+      return;
+    }
+    // محاكاة كليك زر الحفظ
+    document.querySelector('[type="submit"]')?.click();
+  };
+
+  // تعيين إجراء الزر العائم
+  useEffect(() => {
+    setFloatingAction(handleFloatingSave, "حفظ المشتريات");
+    return () => setFloatingAction(null);
+  }, [setFloatingAction, selectedProjectId]);
 
   // دالة مساعدة لحفظ القيم في autocomplete_data
   const saveAutocompleteValue = async (category: string, value: string | null | undefined) => {
@@ -430,7 +452,6 @@ export default function MaterialPurchase() {
 
   return (
     <div className="p-4 slide-in">
-      {/* Header with Back Button */}
       <div className="flex items-center mb-4">
         <Button
           variant="ghost"
@@ -440,7 +461,6 @@ export default function MaterialPurchase() {
         >
           <ArrowRight className="h-5 w-5" />
         </Button>
-        <h2 className="text-xl font-bold text-foreground">شراء مواد</h2>
       </div>
 
       <ProjectSelector

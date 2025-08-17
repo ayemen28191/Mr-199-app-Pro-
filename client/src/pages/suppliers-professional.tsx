@@ -11,6 +11,8 @@ import { StatsCard, StatsGrid } from "@/components/ui/stats-card";
 import { type Supplier } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import AddSupplierForm from "@/components/forms/add-supplier-form";
+import { useFloatingButton } from "@/components/layout/floating-button-context";
+import { useEffect } from "react";
 
 export default function SuppliersPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -18,6 +20,7 @@ export default function SuppliersPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { setFloatingAction } = useFloatingButton();
 
   // Fetch data
   const { data: suppliers = [], isLoading } = useQuery({
@@ -54,6 +57,17 @@ export default function SuppliersPage() {
     setSelectedSupplier(null);
     setIsDialogOpen(false);
   };
+
+  const handleAddSupplier = () => {
+    setSelectedSupplier(null);
+    setIsDialogOpen(true);
+  };
+
+  // تعيين إجراء الزر العائم
+  useEffect(() => {
+    setFloatingAction(handleAddSupplier, "إضافة مورد جديد");
+    return () => setFloatingAction(null);
+  }, [setFloatingAction]);
 
   // Filter suppliers
   const filteredSuppliers = (suppliers as Supplier[]).filter((supplier: Supplier) =>
@@ -137,21 +151,8 @@ export default function SuppliersPage() {
 
   return (
     <div className="container mx-auto p-4 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">إدارة الموردين</h1>
-          <p className="text-sm text-muted-foreground">قم بإدارة بيانات الموردين والمقاولين</p>
-        </div>
-        
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => { resetForm(); setIsDialogOpen(true); }} className="gap-2 w-full sm:w-auto">
-              <Plus className="h-4 w-4" />
-              إضافة مورد جديد
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto">
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="text-lg sm:text-xl">
                 {selectedSupplier ? "تعديل بيانات المورد" : "إضافة مورد جديد"}
@@ -172,7 +173,6 @@ export default function SuppliersPage() {
             />
           </DialogContent>
         </Dialog>
-      </div>
 
       {/* Statistics Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">

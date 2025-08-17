@@ -1,17 +1,38 @@
-import { Bell, UserCircle, HardHat, Settings } from "lucide-react";
+import { Bell, UserCircle, HardHat, Settings, Home, Building2, Users, Truck, UserCheck, DollarSign, Calculator, Package, ArrowLeftRight, FileText, CreditCard, FileSpreadsheet, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 
+// مطابقة الصفحات مع العناوين والأيقونات
+const pageInfo: Record<string, { title: string; icon: any }> = {
+  '/': { title: 'لوحة التحكم', icon: Home },
+  '/projects': { title: 'إدارة المشاريع', icon: Building2 },
+  '/workers': { title: 'إدارة العمال', icon: Users },
+  '/suppliers-pro': { title: 'إدارة الموردين', icon: Truck },
+  '/worker-attendance': { title: 'حضور العمال', icon: UserCheck },
+  '/worker-accounts': { title: 'حسابات العمال', icon: DollarSign },
+  '/daily-expenses': { title: 'المصاريف اليومية', icon: Calculator },
+  '/material-purchase': { title: 'شراء المواد', icon: Package },
+  '/project-transfers': { title: 'تحويلات العهدة', icon: ArrowLeftRight },
+  '/project-transactions': { title: 'سجل العمليات', icon: FileText },
+  '/supplier-accounts': { title: 'حسابات الموردين', icon: CreditCard },
+  '/reports': { title: 'التقارير', icon: FileSpreadsheet },
+  '/autocomplete-admin': { title: 'إعدادات الإكمال التلقائي', icon: Wrench },
+};
+
 export default function Header() {
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
+  
+  // الحصول على معلومات الصفحة الحالية
+  const currentPage = pageInfo[location] || { title: 'إدارة المشاريع الإنشائية', icon: HardHat };
+  const PageIcon = currentPage.icon;
 
   return (
     <header className="bg-primary text-primary-foreground shadow-lg sticky top-0 z-50">
       <div className="px-4 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-reverse space-x-3">
-            <HardHat className="h-6 w-6" />
-            <h1 className="text-lg font-bold">إدارة المشاريع الإنشائية</h1>
+            <PageIcon className="h-6 w-6" />
+            <h1 className="text-lg font-bold">{currentPage.title}</h1>
           </div>
           <div className="flex items-center space-x-reverse space-x-2">
             <Button 

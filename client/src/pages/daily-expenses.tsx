@@ -16,6 +16,7 @@ import WorkerMiscExpenses from "./worker-misc-expenses";
 import { getCurrentDate, formatCurrency, formatDate } from "@/lib/utils";
 import { AutocompleteInput } from "@/components/ui/autocomplete-input-database";
 import { apiRequest } from "@/lib/queryClient";
+import { useFloatingButton } from "@/components/layout/floating-button-context";
 import type { 
   WorkerAttendance, 
   TransportationExpense, 
@@ -52,6 +53,7 @@ export default function DailyExpenses() {
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { setFloatingAction } = useFloatingButton();
 
   // دالة مساعدة لحفظ قيم الإكمال التلقائي
   const saveAutocompleteValue = async (field: string, value: string) => {
