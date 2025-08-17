@@ -78,6 +78,18 @@ The system uses PostgreSQL with a comprehensive schema for:
 
 ## Recent Changes (August 17, 2025)
 
+### Worker Accounts Project Selector Enhancement (August 17, 2025)
+- **Enhanced**: Worker Accounts page project selector to match main dashboard design
+- **Implemented**: Premium variant of ProjectSelector component with professional styling
+- **Added**: Smart "All Projects" toggle button with gradient design and clear visual feedback
+- **Improved**: User experience consistency across all pages using unified ProjectSelector component
+- **Features**: 
+  - Premium card design with gradient backgrounds and shadow effects
+  - Professional icon integration with colored backgrounds
+  - Smart project filtering with intuitive "All Projects" option
+  - Responsive layout matching main dashboard aesthetics
+  - Enhanced Arabic RTL support and proper text alignment
+
 ### Professional Daily Expense Report Improvements
 - **Created**: New professional daily expense report template (ProfessionalDailyExpenseReport.tsx)
 - **Enhanced**: Report formatting to match professional construction industry standards
