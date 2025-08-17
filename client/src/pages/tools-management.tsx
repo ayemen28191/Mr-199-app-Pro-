@@ -1,12 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Search, Filter, Grid, List, Settings, QrCode, Wrench, Package, MapPin } from 'lucide-react';
+import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Plus, Search, Filter, Grid, List, Settings, QrCode, Wrench, Package, MapPin, Eye } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Select,
   SelectContent,
@@ -20,13 +19,11 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 
 import { useToast } from '@/hooks/use-toast';
-import { apiRequest } from '@/lib/queryClient';
 
-// Types
+// Types from schema
 interface ToolCategory {
   id: string;
   name: string;
@@ -67,108 +64,74 @@ interface Tool {
   updatedAt: string;
 }
 
-interface ToolStock {
-  id: string;
-  toolId: string;
-  locationType: string;
-  locationId?: string;
-  quantity: number;
-  availableQuantity: number;
-  reservedQuantity: number;
-  minStockLevel?: number;
-  maxStockLevel?: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
 const ToolsManagementPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [selectedStatus, setSelectedStatus] = useState<string>('');
-  const [selectedCondition, setSelectedCondition] = useState<string>('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedStatus, setSelectedStatus] = useState<string>('all');
+  const [selectedCondition, setSelectedCondition] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
   const { toast } = useToast();
-  const queryClient = useQueryClient();
 
   // Fetch tool categories
   const { data: categories = [], isLoading: categoriesLoading } = useQuery<ToolCategory[]>({
     queryKey: ['/api/tool-categories'],
   });
 
+  // Build filters for tools query
+  const toolFilters = {
+    ...(selectedCategory && selectedCategory !== 'all' && { categoryId: selectedCategory }),
+    ...(selectedStatus && selectedStatus !== 'all' && { status: selectedStatus }),
+    ...(selectedCondition && selectedCondition !== 'all' && { condition: selectedCondition }),
+    ...(searchTerm && { searchTerm: searchTerm }),
+  };
+
   // Fetch tools with filters
-  const { data: tools = [], isLoading: toolsLoading, refetch: refetchTools } = useQuery<Tool[]>({
-    queryKey: ['/api/tools', { 
-      categoryId: selectedCategory || undefined,
-      status: selectedStatus || undefined,
-      condition: selectedCondition || undefined,
-      searchTerm: searchTerm || undefined
-    }],
+  const { data: tools = [], isLoading: toolsLoading } = useQuery<Tool[]>({
+    queryKey: ['/api/tools', toolFilters],
   });
 
-  // Status color mapping
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'available': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      case 'in_use': return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-      case 'maintenance': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
-      case 'damaged': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-      case 'retired': return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
-    }
+  // Status color and text mapping
+  const getStatusInfo = (status: string) => {
+    const statusMap = {
+      available: { color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200', text: 'متاح' },
+      in_use: { color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200', text: 'قيد الاستخدام' },
+      maintenance: { color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200', text: 'صيانة' },
+      damaged: { color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200', text: 'معطل' },
+      retired: { color: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200', text: 'متقاعد' },
+    };
+    return statusMap[status as keyof typeof statusMap] || statusMap.available;
   };
 
-  // Condition color mapping
-  const getConditionColor = (condition: string) => {
-    switch (condition) {
-      case 'excellent': return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200';
-      case 'good': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      case 'fair': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
-      case 'poor': return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
-      case 'damaged': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200';
-    }
+  // Condition color and text mapping
+  const getConditionInfo = (condition: string) => {
+    const conditionMap = {
+      excellent: { color: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200', text: 'ممتاز' },
+      good: { color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200', text: 'جيد' },
+      fair: { color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200', text: 'مقبول' },
+      poor: { color: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200', text: 'ضعيف' },
+      damaged: { color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200', text: 'معطل' },
+    };
+    return conditionMap[condition as keyof typeof conditionMap] || conditionMap.good;
   };
 
-  // Status translation
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'available': return 'متاح';
-      case 'in_use': return 'قيد الاستخدام';
-      case 'maintenance': return 'صيانة';
-      case 'damaged': return 'معطل';
-      case 'retired': return 'متقاعد';
-      default: return status;
-    }
-  };
-
-  // Condition translation
-  const getConditionText = (condition: string) => {
-    switch (condition) {
-      case 'excellent': return 'ممتاز';
-      case 'good': return 'جيد';
-      case 'fair': return 'مقبول';
-      case 'poor': return 'ضعيف';
-      case 'damaged': return 'معطل';
-      default: return condition;
-    }
-  };
-
-  // Clear filters
+  // Clear all filters
   const clearFilters = () => {
     setSearchTerm('');
-    setSelectedCategory('');
-    setSelectedStatus('');
-    setSelectedCondition('');
+    setSelectedCategory('all');
+    setSelectedStatus('all');
+    setSelectedCondition('all');
   };
 
   // Tool card component
   const ToolCard: React.FC<{ tool: Tool }> = ({ tool }) => {
     const category = categories.find(cat => cat.id === tool.categoryId);
+    const statusInfo = getStatusInfo(tool.status);
+    const conditionInfo = getConditionInfo(tool.condition);
     
     return (
-      <Card className="hover:shadow-lg transition-shadow duration-200" data-testid={`tool-card-${tool.id}`}>
+      <Card className="hover:shadow-lg transition-shadow duration-200 cursor-pointer" data-testid={`tool-card-${tool.id}`}>
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
             <div className="flex-1">
@@ -187,6 +150,9 @@ const ToolsManagementPage: React.FC = () => {
                   <QrCode className="h-4 w-4" />
                 </Button>
               )}
+              <Button variant="ghost" size="sm" data-testid={`view-button-${tool.id}`}>
+                <Eye className="h-4 w-4" />
+              </Button>
               <Button variant="ghost" size="sm" data-testid={`settings-button-${tool.id}`}>
                 <Settings className="h-4 w-4" />
               </Button>
@@ -215,11 +181,11 @@ const ToolsManagementPage: React.FC = () => {
 
             {/* Status and Condition */}
             <div className="flex justify-between items-center">
-              <Badge className={getStatusColor(tool.status)} data-testid={`tool-status-${tool.id}`}>
-                {getStatusText(tool.status)}
+              <Badge className={statusInfo.color} data-testid={`tool-status-${tool.id}`}>
+                {statusInfo.text}
               </Badge>
-              <Badge className={getConditionColor(tool.condition)} data-testid={`tool-condition-${tool.id}`}>
-                {getConditionText(tool.condition)}
+              <Badge className={conditionInfo.color} data-testid={`tool-condition-${tool.id}`}>
+                {conditionInfo.text}
               </Badge>
             </div>
 
@@ -251,6 +217,12 @@ const ToolsManagementPage: React.FC = () => {
     );
   };
 
+  // Statistics calculations
+  const totalTools = tools.length;
+  const availableTools = tools.filter(t => t.status === 'available').length;
+  const inUseTools = tools.filter(t => t.status === 'in_use').length;
+  const maintenanceTools = tools.filter(t => t.status === 'maintenance').length;
+
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6" dir="rtl">
       {/* Page Header */}
@@ -279,7 +251,7 @@ const ToolsManagementPage: React.FC = () => {
           <CardContent className="flex items-center p-6">
             <div className="text-center mx-auto">
               <Package className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-              <div className="text-2xl font-bold">{tools.length}</div>
+              <div className="text-2xl font-bold">{totalTools}</div>
               <p className="text-xs text-muted-foreground">إجمالي الأدوات</p>
             </div>
           </CardContent>
@@ -289,9 +261,7 @@ const ToolsManagementPage: React.FC = () => {
           <CardContent className="flex items-center p-6">
             <div className="text-center mx-auto">
               <Package className="h-8 w-8 text-green-600 mx-auto mb-2" />
-              <div className="text-2xl font-bold">
-                {tools.filter(t => t.status === 'available').length}
-              </div>
+              <div className="text-2xl font-bold">{availableTools}</div>
               <p className="text-xs text-muted-foreground">أدوات متاحة</p>
             </div>
           </CardContent>
@@ -301,9 +271,7 @@ const ToolsManagementPage: React.FC = () => {
           <CardContent className="flex items-center p-6">
             <div className="text-center mx-auto">
               <Package className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-              <div className="text-2xl font-bold">
-                {tools.filter(t => t.status === 'in_use').length}
-              </div>
+              <div className="text-2xl font-bold">{inUseTools}</div>
               <p className="text-xs text-muted-foreground">قيد الاستخدام</p>
             </div>
           </CardContent>
@@ -313,9 +281,7 @@ const ToolsManagementPage: React.FC = () => {
           <CardContent className="flex items-center p-6">
             <div className="text-center mx-auto">
               <Wrench className="h-8 w-8 text-yellow-600 mx-auto mb-2" />
-              <div className="text-2xl font-bold">
-                {tools.filter(t => t.status === 'maintenance').length}
-              </div>
+              <div className="text-2xl font-bold">{maintenanceTools}</div>
               <p className="text-xs text-muted-foreground">تحتاج صيانة</p>
             </div>
           </CardContent>
@@ -346,7 +312,7 @@ const ToolsManagementPage: React.FC = () => {
                 <SelectValue placeholder="اختر التصنيف" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">جميع التصنيفات</SelectItem>
+                <SelectItem value="all">جميع التصنيفات</SelectItem>
                 {categories.map((category) => (
                   <SelectItem key={category.id} value={category.id}>
                     {category.name}
@@ -361,7 +327,7 @@ const ToolsManagementPage: React.FC = () => {
                 <SelectValue placeholder="اختر الحالة" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">جميع الحالات</SelectItem>
+                <SelectItem value="all">جميع الحالات</SelectItem>
                 <SelectItem value="available">متاح</SelectItem>
                 <SelectItem value="in_use">قيد الاستخدام</SelectItem>
                 <SelectItem value="maintenance">صيانة</SelectItem>
@@ -376,7 +342,7 @@ const ToolsManagementPage: React.FC = () => {
                 <SelectValue placeholder="اختر الجودة" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">جميع الجودات</SelectItem>
+                <SelectItem value="all">جميع الجودات</SelectItem>
                 <SelectItem value="excellent">ممتاز</SelectItem>
                 <SelectItem value="good">جيد</SelectItem>
                 <SelectItem value="fair">مقبول</SelectItem>
@@ -443,7 +409,7 @@ const ToolsManagementPage: React.FC = () => {
                   لا توجد أدوات
                 </h3>
                 <p className="text-gray-500 dark:text-gray-400 text-center mb-4">
-                  {searchTerm || selectedCategory || selectedStatus || selectedCondition
+                  {searchTerm || (selectedCategory && selectedCategory !== 'all') || (selectedStatus && selectedStatus !== 'all') || (selectedCondition && selectedCondition !== 'all')
                     ? 'لا توجد أدوات تطابق المعايير المحددة'
                     : 'لم يتم إضافة أي أدوات بعد'}
                 </p>
@@ -478,7 +444,7 @@ const ToolsManagementPage: React.FC = () => {
           </DialogHeader>
           <div className="py-4">
             <p className="text-center text-muted-foreground">
-              سيتم تطوير نموذج إضافة الأدوات في المرحلة التالية...
+              سيتم تطوير نموذج إضافة الأدوات في الخطوة التالية...
             </p>
           </div>
         </DialogContent>
