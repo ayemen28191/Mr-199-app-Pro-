@@ -18,7 +18,8 @@ import {
   X,
   RefreshCw,
   Folder,
-  BarChart3
+  BarChart3,
+  Move
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -43,6 +44,8 @@ import QrScanner from '@/components/tools/qr-scanner';
 import ToolMovementsDialog from '@/components/tools/tool-movements-dialog';
 import ToolCategoriesDialog from '@/components/tools/tool-categories-dialog';
 import ToolsReportsDialog from '@/components/tools/tools-reports-dialog';
+import { PurchaseIntegrationDialog } from '@/components/tools/PurchaseIntegrationDialog';
+import { MaintenanceScheduleDialog } from '@/components/tools/MaintenanceScheduleDialog';
 
 // Types from schema
 interface ToolCategory {
@@ -100,6 +103,9 @@ const ToolsManagementPage: React.FC = () => {
   const [selectedToolName, setSelectedToolName] = useState<string>('');
   const [isCategoriesDialogOpen, setIsCategoriesDialogOpen] = useState(false);
   const [isReportsDialogOpen, setIsReportsDialogOpen] = useState(false);
+  const [isPurchaseIntegrationOpen, setIsPurchaseIntegrationOpen] = useState(false);
+  const [selectedPurchaseId, setSelectedPurchaseId] = useState<string>('');
+  const [isMaintenanceScheduleOpen, setIsMaintenanceScheduleOpen] = useState(false);
 
   const { setFloatingAction } = useFloatingButton();
 
@@ -364,7 +370,7 @@ const ToolsManagementPage: React.FC = () => {
               <Filter className="h-5 w-5" />
               البحث والفلترة
             </CardTitle>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <Button 
                 variant="outline" 
                 size="sm"
@@ -380,6 +386,24 @@ const ToolsManagementPage: React.FC = () => {
               >
                 <BarChart3 className="h-4 w-4 ml-1" />
                 التقارير
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setIsPurchaseIntegrationOpen(true)}
+                className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
+              >
+                <Package className="h-4 w-4 ml-1" />
+                تكامل المشتريات
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setIsMaintenanceScheduleOpen(true)}
+                className="bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-200"
+              >
+                <Settings className="h-4 w-4 ml-1" />
+                جدولة الصيانة
               </Button>
             </div>
           </div>
@@ -585,6 +609,20 @@ const ToolsManagementPage: React.FC = () => {
       <ToolsReportsDialog
         open={isReportsDialogOpen}
         onOpenChange={setIsReportsDialogOpen}
+      />
+      
+      {/* Phase 3: New Advanced Features */}
+      <PurchaseIntegrationDialog
+        isOpen={isPurchaseIntegrationOpen}
+        onClose={() => setIsPurchaseIntegrationOpen(false)}
+        purchaseId={selectedPurchaseId}
+        purchaseName="فاتورة المشتريات"
+      />
+      
+      <MaintenanceScheduleDialog
+        isOpen={isMaintenanceScheduleOpen}
+        onClose={() => setIsMaintenanceScheduleOpen(false)}
+        toolId={selectedToolId || undefined}
       />
     </div>
   );

@@ -14,7 +14,9 @@ import {
   insertPrintSettingsSchema, insertProjectFundTransferSchema,
   insertReportTemplateSchema,
   insertToolCategorySchema, insertToolSchema, insertToolStockSchema, insertToolMovementSchema, 
-  insertToolMaintenanceLogSchema, insertToolUsageAnalyticsSchema, insertToolReservationSchema
+  insertToolMaintenanceLogSchema, insertToolUsageAnalyticsSchema, insertToolReservationSchema,
+  // Phase 3 schemas
+  insertToolPurchaseItemSchema, insertMaintenanceScheduleSchema, insertMaintenanceTaskSchema, insertToolCostTrackingSchema
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -4095,6 +4097,376 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ 
         success: false, 
         message: "فشل في إنشاء جداول نظام الأدوات", 
+        error: error instanceof Error ? error.message : "خطأ غير معروف"
+      });
+    }
+  });
+
+  // =====================================
+  // Phase 3: Integration & Advanced Maintenance APIs
+  // =====================================
+
+  // Tool Purchase Items Routes
+  app.get("/api/tool-purchase-items/:purchaseId", async (req, res) => {
+    try {
+      const items = await storage.getToolPurchaseItemsByPurchase(req.params.purchaseId);
+      res.json(items);
+    } catch (error) {
+      console.error("Error fetching tool purchase items:", error);
+      res.status(500).json({ message: "خطأ في جلب بنود شراء الأدوات" });
+    }
+  });
+
+  app.post("/api/tool-purchase-items", async (req, res) => {
+    try {
+      const result = insertToolPurchaseItemSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "بيانات بند شراء الأداة غير صحيحة", 
+          errors: result.error.issues 
+        });
+      }
+
+      const item = await storage.createToolPurchaseItem(result.data);
+      res.status(201).json(item);
+    } catch (error) {
+      console.error("Error creating tool purchase item:", error);
+      res.status(500).json({ message: "خطأ في إنشاء بند شراء الأداة" });
+    }
+  });
+
+  app.post("/api/tool-purchase-items/:itemId/convert-to-tool", async (req, res) => {
+    try {
+      const { itemId } = req.params;
+      const toolData = req.body;
+
+      const result = await storage.convertPurchaseItemToTool(itemId, toolData);
+      res.json({
+        message: "تم تحويل بند الشراء إلى أداة بنجاح",
+        item: result.item,
+        tool: result.tool
+      });
+    } catch (error) {
+      console.error("Error converting purchase item to tool:", error);
+      res.status(500).json({ message: "خطأ في تحويل بند الشراء إلى أداة" });
+    }
+  });
+
+  app.post("/api/tool-purchase-items/classify/:purchaseId", async (req, res) => {
+    try {
+      await storage.classifyPurchaseItems(req.params.purchaseId);
+      res.json({ message: "تم تصنيف بنود الشراء باستخدام الذكاء الاصطناعي" });
+    } catch (error) {
+      console.error("Error classifying purchase items:", error);
+      res.status(500).json({ message: "خطأ في تصنيف بنود الشراء" });
+    }
+  });
+
+  // Maintenance Schedules Routes
+  app.get("/api/maintenance-schedules", async (req, res) => {
+    try {
+      const { toolId, isActive, scheduleType } = req.query;
+      const filters = {
+        toolId: toolId as string,
+        isActive: isActive === "true" ? true : isActive === "false" ? false : undefined,
+        scheduleType: scheduleType as string,
+      };
+
+      const schedules = await storage.getMaintenanceSchedules(filters);
+      res.json(schedules);
+    } catch (error) {
+      console.error("Error fetching maintenance schedules:", error);
+      res.status(500).json({ message: "خطأ في جلب جداول الصيانة" });
+    }
+  });
+
+  app.get("/api/maintenance-schedules/upcoming", async (req, res) => {
+    try {
+      const { daysBefore = 7 } = req.query;
+      const schedules = await storage.getUpcomingMaintenanceSchedules(parseInt(daysBefore as string));
+      res.json(schedules);
+    } catch (error) {
+      console.error("Error fetching upcoming maintenance schedules:", error);
+      res.status(500).json({ message: "خطأ في جلب جداول الصيانة القادمة" });
+    }
+  });
+
+  app.post("/api/maintenance-schedules", async (req, res) => {
+    try {
+      const result = insertMaintenanceScheduleSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "بيانات جدول الصيانة غير صحيحة", 
+          errors: result.error.issues 
+        });
+      }
+
+      const schedule = await storage.createMaintenanceSchedule(result.data);
+      res.status(201).json(schedule);
+    } catch (error) {
+      console.error("Error creating maintenance schedule:", error);
+      res.status(500).json({ message: "خطأ في إنشاء جدول الصيانة" });
+    }
+  });
+
+  // Maintenance Tasks Routes
+  app.get("/api/maintenance-tasks", async (req, res) => {
+    try {
+      const { toolId, scheduleId, status, assignedTo } = req.query;
+      const filters = {
+        toolId: toolId as string,
+        scheduleId: scheduleId as string,
+        status: status as string,
+        assignedTo: assignedTo as string,
+      };
+
+      const tasks = await storage.getMaintenanceTasks(filters);
+      res.json(tasks);
+    } catch (error) {
+      console.error("Error fetching maintenance tasks:", error);
+      res.status(500).json({ message: "خطأ في جلب مهام الصيانة" });
+    }
+  });
+
+  app.post("/api/maintenance-tasks", async (req, res) => {
+    try {
+      const result = insertMaintenanceTaskSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "بيانات مهمة الصيانة غير صحيحة", 
+          errors: result.error.issues 
+        });
+      }
+
+      const task = await storage.createMaintenanceTask(result.data);
+      res.status(201).json(task);
+    } catch (error) {
+      console.error("Error creating maintenance task:", error);
+      res.status(500).json({ message: "خطأ في إنشاء مهمة الصيانة" });
+    }
+  });
+
+  app.put("/api/maintenance-tasks/:taskId/status", async (req, res) => {
+    try {
+      const { taskId } = req.params;
+      const { status, ...updateData } = req.body;
+
+      const updatedTask = await storage.updateMaintenanceTaskStatus(taskId, status, updateData);
+      if (!updatedTask) {
+        return res.status(404).json({ message: "مهمة الصيانة غير موجودة" });
+      }
+
+      res.json(updatedTask);
+    } catch (error) {
+      console.error("Error updating maintenance task status:", error);
+      res.status(500).json({ message: "خطأ في تحديث حالة مهمة الصيانة" });
+    }
+  });
+
+  // Tool Cost Tracking Routes
+  app.get("/api/tool-cost-tracking", async (req, res) => {
+    try {
+      const { toolId, costType, costCategory, projectId, startDate, endDate } = req.query;
+      const filters = {
+        toolId: toolId as string,
+        costType: costType as string,
+        costCategory: costCategory as string,
+        projectId: projectId as string,
+        startDate: startDate as string,
+        endDate: endDate as string,
+      };
+
+      const costs = await storage.getToolCostTracking(filters);
+      res.json(costs);
+    } catch (error) {
+      console.error("Error fetching tool cost tracking:", error);
+      res.status(500).json({ message: "خطأ في جلب تتبع التكاليف" });
+    }
+  });
+
+  app.get("/api/tools/:toolId/total-costs", async (req, res) => {
+    try {
+      const costs = await storage.getToolTotalCosts(req.params.toolId);
+      res.json(costs);
+    } catch (error) {
+      console.error("Error fetching tool total costs:", error);
+      res.status(500).json({ message: "خطأ في جلب إجمالي التكاليف" });
+    }
+  });
+
+  app.post("/api/tool-cost-tracking", async (req, res) => {
+    try {
+      const result = insertToolCostTrackingSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "بيانات تتبع التكاليف غير صحيحة", 
+          errors: result.error.issues 
+        });
+      }
+
+      const cost = await storage.createToolCostTracking(result.data);
+      res.status(201).json(cost);
+    } catch (error) {
+      console.error("Error creating tool cost tracking:", error);
+      res.status(500).json({ message: "خطأ في إنشاء تتبع التكاليف" });
+    }
+  });
+
+  // Phase 3 Migration Endpoint
+  app.post("/api/migrate/tools-phase3", async (req, res) => {
+    try {
+      console.log("🚀 بدء إنشاء جداول المرحلة 3 - التكامل والصيانة المتقدمة...");
+      
+      // حذف الجداول إذا كانت موجودة للبدء من جديد
+      await db.execute(sql`DROP TABLE IF EXISTS tool_cost_tracking CASCADE`);
+      await db.execute(sql`DROP TABLE IF EXISTS maintenance_tasks CASCADE`);
+      await db.execute(sql`DROP TABLE IF EXISTS maintenance_schedules CASCADE`);
+      await db.execute(sql`DROP TABLE IF EXISTS tool_purchase_items CASCADE`);
+      
+      // إنشاء جدول ربط الأدوات بالمشتريات
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS tool_purchase_items (
+          id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+          material_purchase_id TEXT NOT NULL REFERENCES material_purchases(id) ON DELETE CASCADE,
+          item_name TEXT NOT NULL,
+          item_description TEXT,
+          quantity INTEGER NOT NULL DEFAULT 1,
+          unit_price DECIMAL(12,2) NOT NULL,
+          total_price DECIMAL(12,2) NOT NULL,
+          is_tool_item BOOLEAN DEFAULT false NOT NULL,
+          suggested_category_id TEXT REFERENCES tool_categories(id),
+          conversion_status TEXT NOT NULL DEFAULT 'pending',
+          tool_id TEXT REFERENCES tools(id),
+          ai_confidence DECIMAL(5,2),
+          ai_suggestions JSONB,
+          notes TEXT,
+          converted_at TIMESTAMP WITH TIME ZONE,
+          converted_by_name TEXT,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+        )
+      `);
+
+      // إنشاء جدول جداول الصيانة المتقدمة
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS maintenance_schedules (
+          id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+          tool_id TEXT NOT NULL REFERENCES tools(id) ON DELETE CASCADE,
+          schedule_type TEXT NOT NULL,
+          interval_days INTEGER,
+          interval_weeks INTEGER,
+          interval_months INTEGER,
+          usage_hours_interval DECIMAL(10,2),
+          usage_count_interval INTEGER,
+          is_active BOOLEAN DEFAULT true NOT NULL,
+          last_maintenance_date TIMESTAMP WITH TIME ZONE,
+          next_due_date TIMESTAMP WITH TIME ZONE NOT NULL,
+          maintenance_type TEXT NOT NULL DEFAULT 'preventive',
+          priority TEXT NOT NULL DEFAULT 'medium',
+          estimated_duration INTEGER,
+          estimated_cost DECIMAL(12,2),
+          assigned_to_name TEXT,
+          created_by_name TEXT,
+          title TEXT NOT NULL,
+          description TEXT,
+          checklist_items JSONB,
+          enable_notifications BOOLEAN DEFAULT true NOT NULL,
+          notify_days_before INTEGER DEFAULT 3 NOT NULL,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+        )
+      `);
+
+      // إنشاء جدول مهام الصيانة التفصيلية
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS maintenance_tasks (
+          id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+          schedule_id TEXT NOT NULL REFERENCES maintenance_schedules(id) ON DELETE CASCADE,
+          tool_id TEXT NOT NULL REFERENCES tools(id) ON DELETE CASCADE,
+          task_name TEXT NOT NULL,
+          task_description TEXT,
+          task_type TEXT NOT NULL,
+          priority TEXT NOT NULL DEFAULT 'medium',
+          status TEXT NOT NULL DEFAULT 'pending',
+          due_date TIMESTAMP WITH TIME ZONE NOT NULL,
+          started_at TIMESTAMP WITH TIME ZONE,
+          completed_at TIMESTAMP WITH TIME ZONE,
+          estimated_duration INTEGER,
+          actual_duration INTEGER,
+          estimated_cost DECIMAL(12,2),
+          actual_cost DECIMAL(12,2),
+          assigned_to_name TEXT,
+          performed_by_name TEXT,
+          result TEXT,
+          findings TEXT,
+          actions_taken TEXT,
+          recommendations TEXT,
+          before_images TEXT[],
+          after_images TEXT[],
+          document_urls TEXT[],
+          materials_used JSONB,
+          performer_signature TEXT,
+          supervisor_signature TEXT,
+          approved_by_name TEXT,
+          approved_at TIMESTAMP WITH TIME ZONE,
+          notes TEXT,
+          internal_notes TEXT,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+        )
+      `);
+
+      // إنشاء جدول تتبع التكاليف للأدوات
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS tool_cost_tracking (
+          id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+          tool_id TEXT NOT NULL REFERENCES tools(id) ON DELETE CASCADE,
+          cost_type TEXT NOT NULL,
+          cost_category TEXT NOT NULL,
+          amount DECIMAL(12,2) NOT NULL,
+          currency TEXT NOT NULL DEFAULT 'YER',
+          cost_date TEXT NOT NULL,
+          cost_period TEXT,
+          reference_type TEXT,
+          reference_id TEXT,
+          description TEXT NOT NULL,
+          notes TEXT,
+          approved_by_name TEXT,
+          approved_at TIMESTAMP WITH TIME ZONE,
+          project_id TEXT REFERENCES projects(id),
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL,
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW() NOT NULL
+        )
+      `);
+
+      // إنشاء فهارس للأداء
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_tool_purchase_items_purchase_id ON tool_purchase_items(material_purchase_id)`);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_tool_purchase_items_tool_id ON tool_purchase_items(tool_id)`);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_maintenance_schedules_tool_id ON maintenance_schedules(tool_id)`);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_maintenance_schedules_due_date ON maintenance_schedules(next_due_date)`);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_maintenance_tasks_schedule_id ON maintenance_tasks(schedule_id)`);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_maintenance_tasks_tool_id ON maintenance_tasks(tool_id)`);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_maintenance_tasks_status ON maintenance_tasks(status)`);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_tool_cost_tracking_tool_id ON tool_cost_tracking(tool_id)`);
+      await db.execute(sql`CREATE INDEX IF NOT EXISTS idx_tool_cost_tracking_date ON tool_cost_tracking(cost_date)`);
+
+      console.log("✅ تم إنشاء جميع جداول المرحلة 3 بنجاح");
+      
+      res.json({ 
+        success: true, 
+        message: "تم إنشاء جداول المرحلة 3 - التكامل والصيانة المتقدمة بنجاح",
+        tablesCreated: [
+          "tool_purchase_items",
+          "maintenance_schedules", 
+          "maintenance_tasks",
+          "tool_cost_tracking"
+        ]
+      });
+    } catch (error) {
+      console.error("❌ خطأ في إنشاء جداول المرحلة 3:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "فشل في إنشاء جداول المرحلة 3", 
         error: error instanceof Error ? error.message : "خطأ غير معروف"
       });
     }

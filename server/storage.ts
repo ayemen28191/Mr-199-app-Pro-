@@ -11,9 +11,14 @@ import {
   type InsertSupplier, type InsertSupplierPayment, type InsertPrintSettings, type InsertProjectFundTransfer,
   type InsertReportTemplate,
   type InsertToolCategory, type InsertTool, type InsertToolStock, type InsertToolMovement, type InsertToolMaintenanceLog, type InsertToolUsageAnalytics, type InsertToolReservation,
+  // Phase 3 types
+  type ToolPurchaseItem, type MaintenanceSchedule, type MaintenanceTask, type ToolCostTracking,
+  type InsertToolPurchaseItem, type InsertMaintenanceSchedule, type InsertMaintenanceTask, type InsertToolCostTracking,
   projects, workers, fundTransfers, workerAttendance, materials, materialPurchases, transportationExpenses, dailyExpenseSummaries,
   workerTransfers, workerBalances, autocompleteData, workerTypes, workerMiscExpenses, users, suppliers, supplierPayments, printSettings, projectFundTransfers, reportTemplates,
-  toolCategories, tools, toolStock, toolMovements, toolMaintenanceLogs, toolUsageAnalytics, toolReservations
+  toolCategories, tools, toolStock, toolMovements, toolMaintenanceLogs, toolUsageAnalytics, toolReservations,
+  // Phase 3 imports
+  toolPurchaseItems, maintenanceSchedules, maintenanceTasks, toolCostTracking
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, gte, lte, gt, sql, inArray, or } from "drizzle-orm";
@@ -3896,6 +3901,383 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  // =====================================
+  // Phase 3: Integration & Advanced Maintenance Methods
+  // =====================================
+
+  // Tool Purchase Items - ربط الأدوات بالمشتريات
+  async createToolPurchaseItem(item: InsertToolPurchaseItem): Promise<ToolPurchaseItem> {
+    try {
+      const [newItem] = await db
+        .insert(toolPurchaseItems)
+        .values(item)
+        .returning();
+      
+      if (!newItem) {
+        throw new Error('فشل في إنشاء بند شراء الأداة');
+      }
+      
+      return newItem;
+    } catch (error) {
+      console.error('Error creating tool purchase item:', error);
+      throw error;
+    }
+  }
+
+  async getToolPurchaseItemsByPurchase(purchaseId: string): Promise<ToolPurchaseItem[]> {
+    try {
+      return await db.select()
+        .from(toolPurchaseItems)
+        .where(eq(toolPurchaseItems.materialPurchaseId, purchaseId))
+        .orderBy(desc(toolPurchaseItems.createdAt));
+    } catch (error) {
+      console.error('Error getting tool purchase items:', error);
+      return [];
+    }
+  }
+
+  async convertPurchaseItemToTool(itemId: string, toolData: InsertTool): Promise<{ item: ToolPurchaseItem; tool: Tool }> {
+    try {
+      // إنشاء الأداة
+      const tool = await this.createTool(toolData);
+      
+      // تحديث بند الشراء
+      const [updatedItem] = await db
+        .update(toolPurchaseItems)
+        .set({
+          conversionStatus: 'converted',
+          toolId: tool.id,
+          convertedAt: sql`CURRENT_TIMESTAMP`,
+          updatedAt: sql`CURRENT_TIMESTAMP`
+        })
+        .where(eq(toolPurchaseItems.id, itemId))
+        .returning();
+
+      if (!updatedItem) {
+        throw new Error('فشل في تحديث بند الشراء');
+      }
+
+      return { item: updatedItem, tool };
+    } catch (error) {
+      console.error('Error converting purchase item to tool:', error);
+      throw error;
+    }
+  }
+
+  // Maintenance Schedules - جداول الصيانة المتقدمة
+  async createMaintenanceSchedule(schedule: InsertMaintenanceSchedule): Promise<MaintenanceSchedule> {
+    try {
+      const [newSchedule] = await db
+        .insert(maintenanceSchedules)
+        .values(schedule)
+        .returning();
+      
+      if (!newSchedule) {
+        throw new Error('فشل في إنشاء جدول الصيانة');
+      }
+      
+      return newSchedule;
+    } catch (error) {
+      console.error('Error creating maintenance schedule:', error);
+      throw error;
+    }
+  }
+
+  async getMaintenanceSchedules(filters: {
+    toolId?: string;
+    isActive?: boolean;
+    scheduleType?: string;
+  } = {}): Promise<MaintenanceSchedule[]> {
+    try {
+      let query = db.select().from(maintenanceSchedules);
+      const conditions = [];
+
+      if (filters.toolId) {
+        conditions.push(eq(maintenanceSchedules.toolId, filters.toolId));
+      }
+
+      if (filters.isActive !== undefined) {
+        conditions.push(eq(maintenanceSchedules.isActive, filters.isActive));
+      }
+
+      if (filters.scheduleType) {
+        conditions.push(eq(maintenanceSchedules.scheduleType, filters.scheduleType));
+      }
+
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
+
+      return await query.orderBy(desc(maintenanceSchedules.nextDueDate));
+    } catch (error) {
+      console.error('Error getting maintenance schedules:', error);
+      return [];
+    }
+  }
+
+  async getUpcomingMaintenanceSchedules(daysBefore: number = 7): Promise<MaintenanceSchedule[]> {
+    try {
+      const futureDate = new Date();
+      futureDate.setDate(futureDate.getDate() + daysBefore);
+      
+      return await db.select()
+        .from(maintenanceSchedules)
+        .where(
+          and(
+            eq(maintenanceSchedules.isActive, true),
+            sql`${maintenanceSchedules.nextDueDate} <= ${futureDate.toISOString()}`
+          )
+        )
+        .orderBy(asc(maintenanceSchedules.nextDueDate));
+    } catch (error) {
+      console.error('Error getting upcoming maintenance schedules:', error);
+      return [];
+    }
+  }
+
+  // Maintenance Tasks - مهام الصيانة التفصيلية
+  async createMaintenanceTask(task: InsertMaintenanceTask): Promise<MaintenanceTask> {
+    try {
+      const [newTask] = await db
+        .insert(maintenanceTasks)
+        .values(task)
+        .returning();
+      
+      if (!newTask) {
+        throw new Error('فشل في إنشاء مهمة الصيانة');
+      }
+      
+      return newTask;
+    } catch (error) {
+      console.error('Error creating maintenance task:', error);
+      throw error;
+    }
+  }
+
+  async getMaintenanceTasks(filters: {
+    toolId?: string;
+    scheduleId?: string;
+    status?: string;
+    assignedTo?: string;
+  } = {}): Promise<MaintenanceTask[]> {
+    try {
+      let query = db.select().from(maintenanceTasks);
+      const conditions = [];
+
+      if (filters.toolId) {
+        conditions.push(eq(maintenanceTasks.toolId, filters.toolId));
+      }
+
+      if (filters.scheduleId) {
+        conditions.push(eq(maintenanceTasks.scheduleId, filters.scheduleId));
+      }
+
+      if (filters.status) {
+        conditions.push(eq(maintenanceTasks.status, filters.status));
+      }
+
+      if (filters.assignedTo) {
+        conditions.push(eq(maintenanceTasks.assignedTo, filters.assignedTo));
+      }
+
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
+
+      return await query.orderBy(desc(maintenanceTasks.dueDate));
+    } catch (error) {
+      console.error('Error getting maintenance tasks:', error);
+      return [];
+    }
+  }
+
+  async updateMaintenanceTaskStatus(taskId: string, status: string, updateData: Partial<InsertMaintenanceTask> = {}): Promise<MaintenanceTask | undefined> {
+    try {
+      const updateValues = {
+        ...updateData,
+        status,
+        updatedAt: sql`CURRENT_TIMESTAMP`
+      };
+
+      // إضافة timestamps حسب الحالة
+      if (status === 'in_progress' && !updateData.startedAt) {
+        updateValues.startedAt = sql`CURRENT_TIMESTAMP`;
+      } else if (status === 'completed' && !updateData.completedAt) {
+        updateValues.completedAt = sql`CURRENT_TIMESTAMP`;
+      }
+
+      const [updated] = await db
+        .update(maintenanceTasks)
+        .set(updateValues)
+        .where(eq(maintenanceTasks.id, taskId))
+        .returning();
+
+      return updated || undefined;
+    } catch (error) {
+      console.error('Error updating maintenance task status:', error);
+      throw error;
+    }
+  }
+
+  // Tool Cost Tracking - تتبع التكاليف للأدوات
+  async createToolCostTracking(cost: InsertToolCostTracking): Promise<ToolCostTracking> {
+    try {
+      const [newCost] = await db
+        .insert(toolCostTracking)
+        .values(cost)
+        .returning();
+      
+      if (!newCost) {
+        throw new Error('فشل في تسجيل تكلفة الأداة');
+      }
+      
+      return newCost;
+    } catch (error) {
+      console.error('Error creating tool cost tracking:', error);
+      throw error;
+    }
+  }
+
+  async getToolCostTracking(filters: {
+    toolId?: string;
+    costType?: string;
+    costCategory?: string;
+    projectId?: string;
+    startDate?: string;
+    endDate?: string;
+  } = {}): Promise<ToolCostTracking[]> {
+    try {
+      let query = db.select().from(toolCostTracking);
+      const conditions = [];
+
+      if (filters.toolId) {
+        conditions.push(eq(toolCostTracking.toolId, filters.toolId));
+      }
+
+      if (filters.costType) {
+        conditions.push(eq(toolCostTracking.costType, filters.costType));
+      }
+
+      if (filters.costCategory) {
+        conditions.push(eq(toolCostTracking.costCategory, filters.costCategory));
+      }
+
+      if (filters.projectId) {
+        conditions.push(eq(toolCostTracking.projectId, filters.projectId));
+      }
+
+      if (filters.startDate) {
+        conditions.push(sql`${toolCostTracking.costDate} >= ${filters.startDate}`);
+      }
+
+      if (filters.endDate) {
+        conditions.push(sql`${toolCostTracking.costDate} <= ${filters.endDate}`);
+      }
+
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
+
+      return await query.orderBy(desc(toolCostTracking.costDate));
+    } catch (error) {
+      console.error('Error getting tool cost tracking:', error);
+      return [];
+    }
+  }
+
+  async getToolTotalCosts(toolId: string): Promise<{
+    purchaseCost: number;
+    maintenanceCost: number;
+    operationalCost: number;
+    totalCost: number;
+  }> {
+    try {
+      const costs = await db.select()
+        .from(toolCostTracking)
+        .where(eq(toolCostTracking.toolId, toolId));
+
+      const summary = costs.reduce((acc, cost) => {
+        const amount = parseFloat(cost.amount.toString());
+        
+        switch (cost.costType) {
+          case 'purchase':
+            acc.purchaseCost += amount;
+            break;
+          case 'maintenance':
+            acc.maintenanceCost += amount;
+            break;
+          case 'operation':
+            acc.operationalCost += amount;
+            break;
+        }
+        
+        acc.totalCost += amount;
+        return acc;
+      }, {
+        purchaseCost: 0,
+        maintenanceCost: 0,
+        operationalCost: 0,
+        totalCost: 0
+      });
+
+      return summary;
+    } catch (error) {
+      console.error('Error calculating tool total costs:', error);
+      return {
+        purchaseCost: 0,
+        maintenanceCost: 0,
+        operationalCost: 0,
+        totalCost: 0
+      };
+    }
+  }
+
+  // AI-powered purchase item classification
+  async classifyPurchaseItems(purchaseId: string): Promise<void> {
+    try {
+      const items = await this.getToolPurchaseItemsByPurchase(purchaseId);
+      
+      for (const item of items) {
+        // بسيطة AI classification based on keywords
+        const toolKeywords = [
+          'مطرقة', 'منشار', 'مفك', 'مثقب', 'ريقة', 'مقص',
+          'كماشة', 'خردوات', 'أدوات', 'معدات', 'آلة', 'جهاز',
+          'hammer', 'saw', 'drill', 'tool', 'equipment', 'machine'
+        ];
+
+        const itemName = item.itemName.toLowerCase();
+        const isToolItem = toolKeywords.some(keyword => itemName.includes(keyword));
+        
+        if (isToolItem) {
+          // اقتراح تصنيف بناءً على الكلمات المفتاحية
+          let suggestedCategoryId = null;
+          const categories = await this.getToolCategories({ isActive: true });
+          
+          for (const category of categories) {
+            if (itemName.includes(category.name.toLowerCase())) {
+              suggestedCategoryId = category.id;
+              break;
+            }
+          }
+
+          await db.update(toolPurchaseItems)
+            .set({
+              isToolItem: true,
+              suggestedCategoryId,
+              aiConfidence: isToolItem ? 85 : 15,
+              aiSuggestions: {
+                category: suggestedCategoryId ? categories.find(c => c.id === suggestedCategoryId)?.name : null,
+                confidence: isToolItem ? 85 : 15,
+                reason: isToolItem ? 'تم العثور على كلمات مفتاحية متطابقة' : 'لا توجد كلمات مفتاحية متطابقة'
+              }
+            })
+            .where(eq(toolPurchaseItems.id, item.id));
+        }
+      }
+    } catch (error) {
+      console.error('Error classifying purchase items:', error);
+    }
+  }
 
 }
 

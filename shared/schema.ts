@@ -623,9 +623,184 @@ export const toolUsageAnalytics = pgTable("tool_usage_analytics", {
   
   // تنبؤات الذكاء الاصطناعي
   predictedUsage: decimal("predicted_usage", { precision: 10, scale: 2 }),
-  riskScore: decimal("risk_score", { precision: 5, scale: 2 }), // درجة المخاطر
+
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Tool Purchase Integration (ربط الأدوات بالمشتريات) - مرحلة 3
+export const toolPurchaseItems = pgTable("tool_purchase_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  // ربط مع المشتريات
+  materialPurchaseId: varchar("material_purchase_id").notNull().references(() => materialPurchases.id, { onDelete: 'cascade' }),
+  
+  // معلومات الأداة المشتراة
+  itemName: text("item_name").notNull(), // اسم البند كما في الفاتورة
+  itemDescription: text("item_description"),
+  quantity: integer("quantity").notNull().default(1),
+  unitPrice: decimal("unit_price", { precision: 12, scale: 2 }).notNull(),
+  totalPrice: decimal("total_price", { precision: 12, scale: 2 }).notNull(),
+  
+  // تصنيف الأداة
+  isToolItem: boolean("is_tool_item").default(false).notNull(), // هل هذا البند أداة؟
+  suggestedCategoryId: varchar("suggested_category_id").references(() => toolCategories.id), // التصنيف المقترح
+  
+  // حالة التحويل إلى أداة
+  conversionStatus: text("conversion_status").notNull().default("pending"), // pending, converted, skipped, failed
+  toolId: varchar("tool_id").references(() => tools.id), // مرجع الأداة المنشأة
+  
+  // ذكاء اصطناعي للتصنيف
+  aiConfidence: decimal("ai_confidence", { precision: 5, scale: 2 }), // ثقة الذكاء الاصطناعي في التصنيف
+  aiSuggestions: jsonb("ai_suggestions"), // اقتراحات الذكاء الاصطناعي
+  
+  // معلومات إضافية
+  notes: text("notes"),
+  convertedAt: timestamp("converted_at"),
+  convertedBy: varchar("converted_by").references(() => users.id),
   
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Advanced Maintenance Schedules (جداول الصيانة المتقدمة) - مرحلة 3
+export const maintenanceSchedules = pgTable("maintenance_schedules", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  toolId: varchar("tool_id").notNull().references(() => tools.id, { onDelete: 'cascade' }),
+  
+  // نوع الجدولة
+  scheduleType: text("schedule_type").notNull(), // time_based, usage_based, condition_based, custom
+  
+  // إعدادات الجدولة الزمنية
+  intervalDays: integer("interval_days"), // الفترة بالأيام
+  intervalWeeks: integer("interval_weeks"), // الفترة بالأسابيع
+  intervalMonths: integer("interval_months"), // الفترة بالشهور
+  
+  // إعدادات الجدولة بالاستخدام
+  usageHoursInterval: decimal("usage_hours_interval", { precision: 10, scale: 2 }), // فترة بساعات العمل
+  usageCountInterval: integer("usage_count_interval"), // فترة بعدد الاستخدامات
+  
+  // حالة الجدولة
+  isActive: boolean("is_active").default(true).notNull(),
+  
+  // تواريخ مهمة
+  lastMaintenanceDate: timestamp("last_maintenance_date"),
+  nextDueDate: timestamp("next_due_date").notNull(),
+  
+  // تفاصيل الصيانة
+  maintenanceType: text("maintenance_type").notNull().default("preventive"), // preventive, corrective, inspection
+  priority: text("priority").notNull().default("medium"), // low, medium, high, urgent
+  estimatedDuration: integer("estimated_duration"), // المدة المقدرة بالساعات
+  estimatedCost: decimal("estimated_cost", { precision: 12, scale: 2 }),
+  
+  // المسؤوليات
+  assignedTo: varchar("assigned_to").references(() => users.id),
+  createdBy: varchar("created_by").references(() => users.id),
+  
+  // ملاحظات ووصف
+  title: text("title").notNull(),
+  description: text("description"),
+  checklistItems: jsonb("checklist_items"), // قائمة مراجعة JSON
+  
+  // تنبيهات
+  enableNotifications: boolean("enable_notifications").default(true).notNull(),
+  notifyDaysBefore: integer("notify_days_before").default(3).notNull(),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Maintenance Tasks (مهام الصيانة التفصيلية) - مرحلة 3
+export const maintenanceTasks = pgTable("maintenance_tasks", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  scheduleId: varchar("schedule_id").notNull().references(() => maintenanceSchedules.id, { onDelete: 'cascade' }),
+  toolId: varchar("tool_id").notNull().references(() => tools.id, { onDelete: 'cascade' }),
+  
+  // معلومات المهمة
+  taskName: text("task_name").notNull(),
+  taskDescription: text("task_description"),
+  taskType: text("task_type").notNull(), // inspection, cleaning, lubrication, replacement, repair, calibration
+  
+  // الأولوية والحالة
+  priority: text("priority").notNull().default("medium"), // low, medium, high, urgent
+  status: text("status").notNull().default("pending"), // pending, in_progress, completed, cancelled, overdue
+  
+  // التوقيت
+  dueDate: timestamp("due_date").notNull(),
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  estimatedDuration: integer("estimated_duration"), // بالدقائق
+  actualDuration: integer("actual_duration"), // بالدقائق
+  
+  // التكلفة
+  estimatedCost: decimal("estimated_cost", { precision: 12, scale: 2 }),
+  actualCost: decimal("actual_cost", { precision: 12, scale: 2 }),
+  
+  // المسؤوليات
+  assignedTo: varchar("assigned_to").references(() => users.id),
+  performedBy: varchar("performed_by").references(() => users.id),
+  
+  // النتائج
+  result: text("result"), // success, failed, partial, needs_followup
+  findings: text("findings"), // ما تم اكتشافه
+  actionsTaken: text("actions_taken"), // الإجراءات المتخذة
+  recommendations: text("recommendations"), // التوصيات
+  
+  // المرفقات والوثائق
+  beforeImages: text("before_images").array(), // صور قبل الصيانة
+  afterImages: text("after_images").array(), // صور بعد الصيانة
+  documentUrls: text("document_urls").array(), // مستندات
+  
+  // المواد المستخدمة
+  materialsUsed: jsonb("materials_used"), // JSON array of {name, quantity, cost}
+  
+  // التوقيعات والموافقات
+  performerSignature: text("performer_signature"), // توقيع المنفذ
+  supervisorSignature: text("supervisor_signature"), // توقيع المشرف
+  approvedBy: varchar("approved_by").references(() => users.id),
+  approvedAt: timestamp("approved_at"),
+  
+  // ملاحظات
+  notes: text("notes"),
+  internalNotes: text("internal_notes"), // ملاحظات داخلية
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Cost Tracking for Tools (تتبع التكاليف للأدوات) - مرحلة 3
+export const toolCostTracking = pgTable("tool_cost_tracking", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  toolId: varchar("tool_id").notNull().references(() => tools.id, { onDelete: 'cascade' }),
+  
+  // نوع التكلفة
+  costType: text("cost_type").notNull(), // purchase, maintenance, operation, depreciation, insurance, storage
+  costCategory: text("cost_category").notNull(), // capital, operational, unexpected
+  
+  // التكلفة
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  currency: text("currency").notNull().default("YER"), // العملة
+  
+  // التاريخ والفترة
+  costDate: text("cost_date").notNull(), // YYYY-MM-DD
+  costPeriod: text("cost_period"), // monthly, yearly, one-time
+  
+  // المرجع
+  referenceType: text("reference_type"), // purchase_invoice, maintenance_log, manual_entry
+  referenceId: varchar("reference_id"), // مرجع للفاتورة أو سجل الصيانة
+  
+  // تفاصيل إضافية
+  description: text("description").notNull(),
+  notes: text("notes"),
+  
+  // الموافقات
+  approvedBy: varchar("approved_by").references(() => users.id),
+  approvedAt: timestamp("approved_at"),
+  
+  // المشروع المرتبط
+  projectId: varchar("project_id").references(() => projects.id),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => ({
   uniqueToolDate: sql`UNIQUE (tool_id, analysis_date)`
 }));
@@ -727,3 +902,41 @@ export type ToolUsageAnalytics = typeof toolUsageAnalytics.$inferSelect;
 
 export type InsertToolReservation = z.infer<typeof insertToolReservationSchema>;
 export type ToolReservation = typeof toolReservations.$inferSelect;
+
+// New schemas for Phase 3 - Integration & Advanced Maintenance
+export const insertToolPurchaseItemSchema = createInsertSchema(toolPurchaseItems).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertMaintenanceScheduleSchema = createInsertSchema(maintenanceSchedules).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertMaintenanceTaskSchema = createInsertSchema(maintenanceTasks).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertToolCostTrackingSchema = createInsertSchema(toolCostTracking).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+// New types for Phase 3
+export type InsertToolPurchaseItem = z.infer<typeof insertToolPurchaseItemSchema>;
+export type ToolPurchaseItem = typeof toolPurchaseItems.$inferSelect;
+
+export type InsertMaintenanceSchedule = z.infer<typeof insertMaintenanceScheduleSchema>;
+export type MaintenanceSchedule = typeof maintenanceSchedules.$inferSelect;
+
+export type InsertMaintenanceTask = z.infer<typeof insertMaintenanceTaskSchema>;
+export type MaintenanceTask = typeof maintenanceTasks.$inferSelect;
+
+export type InsertToolCostTracking = z.infer<typeof insertToolCostTrackingSchema>;
+export type ToolCostTracking = typeof toolCostTracking.$inferSelect;
