@@ -90,10 +90,12 @@ const ToolsManagementPage: React.FC = () => {
   // Set up floating action button
   useEffect(() => {
     console.log('🔧 تفعيل الزر العائم لإدارة الأدوات...');
-    setFloatingAction(() => () => {
+    const handleAddTool = () => {
       console.log('🔄 فتح نموذج إضافة الأدوات...');
       setIsAddDialogOpen(true);
-    });
+    };
+    
+    setFloatingAction(handleAddTool, "إضافة أداة جديدة");
     
     return () => {
       setFloatingAction(null);

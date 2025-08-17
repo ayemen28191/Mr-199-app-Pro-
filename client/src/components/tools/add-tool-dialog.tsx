@@ -55,6 +55,7 @@ const addToolSchema = z.object({
   condition: z.enum(['excellent', 'good', 'fair', 'poor', 'damaged']),
   locationType: z.string().min(1, 'نوع الموقع مطلوب'),
   locationId: z.string().optional(),
+  projectId: z.string().optional(),
   specifications: z.string().optional(),
 });
 
@@ -94,12 +95,18 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
       condition: 'good',
       locationType: 'مخزن',
       specifications: '',
+      projectId: '',
     },
   });
 
   // Fetch categories
   const { data: categories = [] } = useQuery<ToolCategory[]>({
     queryKey: ['/api/tool-categories'],
+  });
+
+  // Fetch projects for location selection
+  const { data: projects = [] } = useQuery<{id: string, name: string, status: string}[]>({
+    queryKey: ['/api/projects'],
   });
 
   // Create tool mutation
@@ -258,7 +265,24 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                         name="categoryId"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>التصنيف *</FormLabel>
+                            <div className="flex items-center gap-2">
+                              <FormLabel>التصنيف *</FormLabel>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="h-6 w-6 p-0"
+                                onClick={() => {
+                                  // TODO: إضافة نموذج تصنيف جديد
+                                  toast({
+                                    title: 'إضافة تصنيف جديد',
+                                    description: 'سيتم إضافة هذه الميزة قريباً',
+                                  });
+                                }}
+                              >
+                                <Plus className="h-3 w-3" />
+                              </Button>
+                            </div>
                             <Select onValueChange={field.onChange} value={field.value}>
                               <FormControl>
                                 <SelectTrigger data-testid="tool-category-select">
@@ -271,6 +295,22 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                                     {category.name}
                                   </SelectItem>
                                 ))}
+                                <div className="p-2 border-t">
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    className="w-full justify-start text-sm"
+                                    onClick={() => {
+                                      toast({
+                                        title: 'إضافة تصنيف جديد',
+                                        description: 'سيتم إضافة هذه الميزة قريباً',
+                                      });
+                                    }}
+                                  >
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    إضافة تصنيف جديد
+                                  </Button>
+                                </div>
                               </SelectContent>
                             </Select>
                             <FormMessage />
@@ -544,6 +584,66 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="projectId"
+                        render={({ field }) => (
+                          <FormItem>
+                            <div className="flex items-center gap-2">
+                              <FormLabel>المشروع</FormLabel>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="h-6 w-6 p-0"
+                                onClick={() => {
+                                  toast({
+                                    title: 'إضافة مشروع جديد',
+                                    description: 'سيتم إضافة هذه الميزة قريباً',
+                                  });
+                                }}
+                              >
+                                <Plus className="h-3 w-3" />
+                              </Button>
+                            </div>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger data-testid="tool-project-select">
+                                  <SelectValue placeholder="اختر المشروع" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {projects.filter(project => project.status === 'active').map((project) => (
+                                  <SelectItem key={project.id} value={project.id}>
+                                    {project.name}
+                                  </SelectItem>
+                                ))}
+                                <div className="p-2 border-t">
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    className="w-full justify-start text-sm"
+                                    onClick={() => {
+                                      toast({
+                                        title: 'إضافة مشروع جديد',
+                                        description: 'سيتم إضافة هذه الميزة قريباً',
+                                      });
+                                    }}
+                                  >
+                                    <Plus className="h-4 w-4 mr-2" />
+                                    إضافة مشروع جديد
+                                  </Button>
+                                </div>
+                              </SelectContent>
+                            </Select>
+                            <FormDescription>
+                              اختر المشروع الذي ستستخدم فيه هذه الأداة
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
                       <FormField
                         control={form.control}
                         name="locationType"
