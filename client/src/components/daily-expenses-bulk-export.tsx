@@ -158,7 +158,7 @@ export default function DailyExpensesBulkExport() {
     // رأس الشركة
     worksheet.mergeCells('A1:E1');
     const companyHeaderCell = worksheet.getCell('A1');
-    companyHeaderCell.value = 'شركة الفتحي للمقاولات والاستشارات الهندسية';
+    companyHeaderCell.value = 'شركة الفتيني للمقاولات والاستشارات الهندسية';
     companyHeaderCell.font = { name: 'Arial Unicode MS', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
     companyHeaderCell.alignment = { horizontal: 'center', vertical: 'middle' };
     companyHeaderCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF5B9BD5' } }; // أزرق

@@ -78,7 +78,7 @@ The system uses PostgreSQL with a comprehensive schema for:
 - **Excel-Style Integration**: Reports unified to match Excel templates with professional design (blue header, green totals, alternating row colors, 11 columns in worker filter report).
 - **Enhanced Export & Print Functions**: Professional Excel export with ExcelJS and enhanced print layouts with custom CSS and A4 formatting.
 - **Unified Currency & Date Formatting**: Consistent currency display ("ريال"), company branding, and professional headers.
-- **Enhanced Report Headers**: Company header "شركة الفتحي للمقاولات والاستشارات الهندسية", print date display, blue main table headers with white text, and inclusion of zero-payment workers in reports for complete tracking.
+- **Enhanced Report Headers**: Company header "شركة الفتيني للمقاولات والاستشارات الهندسية", print date display, blue main table headers with white text, and inclusion of zero-payment workers in reports for complete tracking.
 
 ### UI/UX Decisions
 - **RTL Support**: Full right-to-left support for Arabic content.

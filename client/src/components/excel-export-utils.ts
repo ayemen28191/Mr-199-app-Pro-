@@ -35,7 +35,7 @@ export const EXCEL_STYLES = {
 
 // معلومات الشركة/المؤسسة - مُحدثة حسب الطلب
 export const COMPANY_INFO = {
-  name: 'شركة الفتحي للمقاولات والاستشارات الهندسية',
+  name: 'شركة الفتيني للمقاولات والاستشارات الهندسية',
   nameEn: 'Al-Fathi Construction & Engineering Consultancy Company',
   address: 'المملكة العربية السعودية',
   phone: '+966XXXXXXXXX',

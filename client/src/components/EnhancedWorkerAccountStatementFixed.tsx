@@ -105,7 +105,7 @@ export const EnhancedWorkerAccountStatement = ({
       // رأس الشركة المطابق للتصميم
       worksheet.mergeCells('A1:J1');
       const companyCell = worksheet.getCell('A1');
-      companyCell.value = 'شركة الفتحي للمقاولات والاستشارات الهندسية';
+      companyCell.value = 'شركة الفتيني للمقاولات والاستشارات الهندسية';
       companyCell.font = { name: 'Arial Unicode MS', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
       companyCell.alignment = { horizontal: 'center', vertical: 'middle' };
       companyCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2563eb' } };
@@ -254,7 +254,7 @@ export const EnhancedWorkerAccountStatement = ({
       };
 
       // إعداد metadata للملف لضمان التوافق
-      workbook.creator = 'شركة الفتحي للمقاولات والاستشارات الهندسية';
+      workbook.creator = 'شركة الفتيني للمقاولات والاستشارات الهندسية';
       workbook.lastModifiedBy = 'نظام إدارة المشاريع';
       workbook.created = new Date();
       workbook.modified = new Date();
@@ -341,7 +341,7 @@ export const EnhancedWorkerAccountStatement = ({
             margin: '0 0 3mm 0',
             textShadow: '1px 1px 2px rgba(0,0,0,0.1)'
           }}>
-            شركة الفتحي للمقاولات والاستشارات الهندسية
+            شركة الفتيني للمقاولات والاستشارات الهندسية
           </h1>
           <h2 style={{
             fontSize: '16px',

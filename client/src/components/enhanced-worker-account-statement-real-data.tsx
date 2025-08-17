@@ -233,7 +233,7 @@ export const EnhancedWorkerAccountStatementRealData = ({
       };
 
       // إعداد metadata للملف لضمان التوافق
-      workbook.creator = 'شركة الفتحي للمقاولات والاستشارات الهندسية';
+      workbook.creator = 'شركة الفتيني للمقاولات والاستشارات الهندسية';
       workbook.lastModifiedBy = 'نظام إدارة المشاريع';
       workbook.created = new Date();
       workbook.modified = new Date();
@@ -393,7 +393,7 @@ export const EnhancedWorkerAccountStatementRealData = ({
             margin: '0 0 3mm 0',
             textShadow: '1px 1px 2px rgba(0,0,0,0.1)'
           }}>
-            شركة الفتحي للمقاولات والاستشارات الهندسية
+            شركة الفتيني للمقاولات والاستشارات الهندسية
           </h1>
           <h2 style={{
             fontSize: '16px',

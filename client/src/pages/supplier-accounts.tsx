@@ -221,7 +221,7 @@ export default function SupplierAccountsPage() {
     // شعار الشركة والعنوان الرئيسي
     worksheet.mergeCells(`A${currentRow}:L${currentRow}`);
     const titleCell = worksheet.getCell(`A${currentRow}`);
-    titleCell.value = 'شركة الفتحي للمقاولات والاستشارات الهندسية';
+    titleCell.value = 'شركة الفتيني للمقاولات والاستشارات الهندسية';
     titleCell.font = { name: 'Arial', size: 14, bold: true, color: { argb: 'FFFFFF' } };
     titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
     titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '1f4e79' } };
@@ -544,7 +544,7 @@ export default function SupplierAccountsPage() {
     // معلومات الشركة في التذييل
     worksheet.mergeCells(`A${currentRow}:K${currentRow}`);
     const footerCell = worksheet.getCell(`A${currentRow}`);
-    footerCell.value = 'شركة الفتحي للمقاولات والاستشارات الهندسية | تقرير مُنشأ تلقائياً بواسطة نظام إدارة المشاريع';
+    footerCell.value = 'شركة الفتيني للمقاولات والاستشارات الهندسية | تقرير مُنشأ تلقائياً بواسطة نظام إدارة المشاريع';
     footerCell.font = { name: 'Arial', size: 9, italic: true, color: { argb: '666666' } };
     footerCell.alignment = { horizontal: 'center', vertical: 'middle' };
     currentRow++;
