@@ -184,11 +184,43 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="basic">المعلومات الأساسية</TabsTrigger>
-                <TabsTrigger value="details">التفاصيل التقنية</TabsTrigger>
-                <TabsTrigger value="financial">المعلومات المالية</TabsTrigger>
-                <TabsTrigger value="location">الموقع والحالة</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-4 bg-muted/50 p-1 rounded-lg mb-6">
+                <TabsTrigger 
+                  value="basic" 
+                  className="text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                >
+                  <div className="flex items-center gap-2">
+                    <Package className="h-4 w-4" />
+                    المعلومات الأساسية
+                  </div>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="details" 
+                  className="text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                >
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    التفاصيل التقنية
+                  </div>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="financial" 
+                  className="text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                >
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="h-4 w-4" />
+                    المعلومات المالية
+                  </div>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="location" 
+                  className="text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                >
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    الموقع والحالة
+                  </div>
+                </TabsTrigger>
               </TabsList>
 
               {/* Basic Information Tab */}

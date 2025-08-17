@@ -111,7 +111,7 @@ const ToolsManagementPage: React.FC = () => {
 
   // Fetch tools with filters
   const { data: tools = [], isLoading: toolsLoading } = useQuery<Tool[]>({
-    queryKey: ['/api/tools', toolFilters],
+    queryKey: ['/api/tools', Object.values(toolFilters).join('-')],
   });
 
   // Calculate statistics
