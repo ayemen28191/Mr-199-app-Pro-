@@ -38,6 +38,9 @@ import {
   printReport 
 } from "@/reports";
 
+// استيراد القالب الجديد المطابق للصورة
+import ExactWorkerStatementTemplate from "@/components/ExactWorkerStatementTemplate";
+
 // استيراد نظام التصفية الموحد
 import { 
   UnifiedFilterTemplate, 
@@ -445,7 +448,7 @@ export default function Reports() {
         <Tabs defaultValue="daily" className="space-y-6">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="bg-white dark:bg-gray-800 rounded-xl p-2 shadow-lg border">
-              <TabsList className="grid grid-cols-4 w-full bg-transparent gap-2">
+              <TabsList className="grid grid-cols-5 w-full bg-transparent gap-2">
                 <TabsTrigger 
                   value="daily" 
                   className="flex items-center gap-2 text-sm md:text-base px-4 py-3 rounded-lg transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white data-[state=active]:shadow-lg hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -469,6 +472,14 @@ export default function Reports() {
                   <Users className="h-4 w-4 md:h-5 md:w-5" />
                   <span className="hidden md:inline">تصفية العمال</span>
                   <span className="md:hidden">عمال</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="exact-worker" 
+                  className="flex items-center gap-2 text-sm md:text-base px-4 py-3 rounded-lg transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-teal-500 data-[state=active]:to-blue-500 data-[state=active]:text-white data-[state=active]:shadow-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  <Target className="h-4 w-4 md:h-5 md:w-5" />
+                  <span className="hidden md:inline">كشف حساب متقدم</span>
+                  <span className="md:hidden">متقدم</span>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="bulk-export" 
@@ -835,6 +846,29 @@ export default function Reports() {
               </CardHeader>
               <CardContent className="p-6">
                 <DailyExpensesBulkExport />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* تبويب كشف الحساب المتقدم - يطابق الصورة بنسبة 100% */}
+          <TabsContent value="exact-worker">
+            <Card className="shadow-lg">
+              <CardHeader className="bg-gradient-to-r from-teal-50 to-blue-50 dark:from-teal-900/20 dark:to-blue-900/20">
+                <CardTitle className="flex items-center gap-3 text-xl">
+                  <div className="bg-teal-600 p-2 rounded-lg">
+                    <Target className="h-6 w-6 text-white" />
+                  </div>
+                  كشف حساب تفصيلي متقدم للعمل
+                  <Badge variant="secondary" className="bg-teal-100 text-teal-800 dark:bg-teal-800 dark:text-teal-100">
+                    مطابق للصورة 100%
+                  </Badge>
+                </CardTitle>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                  قالب محسن يطابق تصميم Excel المرفق مع دمج الحوالات والحضور وترتيبهما حسب التاريخ
+                </p>
+              </CardHeader>
+              <CardContent className="p-6">
+                <ExactWorkerStatementTemplate />
               </CardContent>
             </Card>
           </TabsContent>
