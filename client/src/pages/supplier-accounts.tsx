@@ -184,10 +184,32 @@ export default function SupplierAccountsPage() {
     // إعداد اتجاه النص من اليمين إلى اليسار
     worksheet.views = [{ rightToLeft: true }];
 
-    // تحديد عرض الأعمدة (مع إضافة عمود اسم المشروع)
+    // إعدادات الطباعة المحسنة للورقة A4
+    worksheet.pageSetup = {
+      paperSize: 9, // A4
+      orientation: 'portrait',
+      fitToPage: true,
+      fitToWidth: 1,
+      fitToHeight: 0, // تلقائي حسب المحتوى
+      margins: {
+        left: 0.2,    // تقليل الهوامش إلى أقصى حد
+        right: 0.2,
+        top: 0.3,
+        bottom: 0.3,
+        header: 0.1,
+        footer: 0.1
+      },
+      horizontalCentered: true,
+      verticalCentered: false,
+      scale: 80,  // تصغير المقياس أكثر لاستغلال أفضل للمساحة
+      blackAndWhite: false,     // طباعة ملونة
+      draft: false              // طباعة عالية الجودة
+    };
+
+    // تحديد عرض الأعمدة المحسن للطباعة على A4
     worksheet.columns = [
-      { width: 4 }, { width: 12 }, { width: 15 }, { width: 20 }, { width: 25 }, { width: 8 }, 
-      { width: 12 }, { width: 15 }, { width: 10 }, { width: 12 }, { width: 12 }, { width: 10 }
+      { width: 3 }, { width: 9 }, { width: 12 }, { width: 16 }, { width: 20 }, { width: 6 }, 
+      { width: 9 }, { width: 11 }, { width: 8 }, { width: 9 }, { width: 9 }, { width: 8 }
     ];
 
     let currentRow = 1;
@@ -200,7 +222,7 @@ export default function SupplierAccountsPage() {
     worksheet.mergeCells(`A${currentRow}:L${currentRow}`);
     const titleCell = worksheet.getCell(`A${currentRow}`);
     titleCell.value = 'شركة الفتحي للمقاولات والاستشارات الهندسية';
-    titleCell.font = { name: 'Arial', size: 18, bold: true, color: { argb: 'FFFFFF' } };
+    titleCell.font = { name: 'Arial', size: 14, bold: true, color: { argb: 'FFFFFF' } };
     titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
     titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '1f4e79' } };
     titleCell.border = {
@@ -209,14 +231,14 @@ export default function SupplierAccountsPage() {
       left: { style: 'thick', color: { argb: '1f4e79' } },
       right: { style: 'thick', color: { argb: '1f4e79' } }
     };
-    worksheet.getRow(currentRow).height = 35;
+    worksheet.getRow(currentRow).height = 25;
     currentRow++;
 
     // عنوان فرعي
     worksheet.mergeCells(`A${currentRow}:L${currentRow}`);
     const subtitleCell = worksheet.getCell(`A${currentRow}`);
     subtitleCell.value = 'كشف حساب المورد - تقرير مفصل';
-    subtitleCell.font = { name: 'Arial', size: 14, bold: true, color: { argb: '1f4e79' } };
+    subtitleCell.font = { name: 'Arial', size: 11, bold: true, color: { argb: '1f4e79' } };
     subtitleCell.alignment = { horizontal: 'center', vertical: 'middle' };
     subtitleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'f2f2f2' } };
     subtitleCell.border = {
@@ -225,7 +247,7 @@ export default function SupplierAccountsPage() {
       left: { style: 'thick', color: { argb: '1f4e79' } },
       right: { style: 'thick', color: { argb: '1f4e79' } }
     };
-    worksheet.getRow(currentRow).height = 20;
+    worksheet.getRow(currentRow).height = 16;
     currentRow++;
 
     // تاريخ إنشاء التقرير
@@ -239,7 +261,7 @@ export default function SupplierAccountsPage() {
       left: { style: 'thick', color: { argb: '1f4e79' } },
       right: { style: 'thick', color: { argb: '1f4e79' } }
     };
-    currentRow += 2;
+    currentRow += 1;
 
     // =========================
     // معلومات المورد
@@ -316,7 +338,7 @@ export default function SupplierAccountsPage() {
       currentRow++;
     }
 
-    currentRow += 2;
+    currentRow += 1;
 
     // =========================
     // جدول المشتريات
@@ -329,8 +351,8 @@ export default function SupplierAccountsPage() {
     headers.forEach((header, index) => {
       const cell = headerRow.getCell(index + 1);
       cell.value = header;
-      cell.font = { name: 'Arial', size: 11, bold: true, color: { argb: 'FFFFFF' } };
-      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell.font = { name: 'Arial', size: 9, bold: true, color: { argb: 'FFFFFF' } };
+      cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
       cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '1f4e79' } };
       cell.border = {
         top: { style: 'thin', color: { argb: '1f4e79' } },
@@ -339,7 +361,7 @@ export default function SupplierAccountsPage() {
         right: { style: 'thin', color: { argb: '1f4e79' } }
       };
     });
-    headerRow.height = 30;
+    headerRow.height = 20;
     currentRow++;
 
     // بيانات المشتريات
@@ -372,7 +394,7 @@ export default function SupplierAccountsPage() {
         cell.value = value;
         
         // تنسيق الخط
-        cell.font = { name: 'Arial', size: 10 };
+        cell.font = { name: 'Arial', size: 8 };
         cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
         
         // تنسيق الأرقام والعملة (تحديث الفهارس بعد إضافة عمود المشروع)
@@ -410,12 +432,12 @@ export default function SupplierAccountsPage() {
         };
       });
       
-      // زيادة ارتفاع الصف للسماح بالتفاف النص
-      row.height = 25;
+      // تقليل ارتفاع الصف للطباعة المضغوطة على A4
+      row.height = 15;
       currentRow++;
     });
 
-    currentRow += 2;
+    currentRow += 1;
 
     // =========================
     // ملخص الحساب
