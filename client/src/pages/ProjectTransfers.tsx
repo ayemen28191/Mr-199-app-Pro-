@@ -14,7 +14,10 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { insertProjectFundTransferSchema } from "@shared/schema";
 import type { InsertProjectFundTransfer, ProjectFundTransfer, Project } from "@shared/schema";
-import { Plus, ArrowRight, Calendar, User, FileText, Edit, Banknote, Building, Trash2 } from "lucide-react";
+import { Plus, ArrowRight, Calendar, User, FileText, Edit, Banknote, Building, Trash2, ChartGantt, DollarSign, TrendingUp } from "lucide-react";
+import { StatsCard, StatsGrid } from "@/components/ui/stats-card";
+import ProjectSelector from "@/components/project-selector";
+import { useSelectedProject } from "@/hooks/use-selected-project";
 import { z } from "zod";
 import { useFloatingButton } from "@/components/layout/floating-button-context";
 
@@ -26,6 +29,7 @@ export default function ProjectTransfers() {
   const [showForm, setShowForm] = useState(false);
   const [editingTransfer, setEditingTransfer] = useState<ProjectFundTransfer | null>(null);
   const { setFloatingAction } = useFloatingButton();
+  const { selectedProjectId, selectProject } = useSelectedProject();
 
   // تعيين إجراء الزر العائم لإضافة تحويل جديد
   useEffect(() => {
@@ -203,8 +207,77 @@ export default function ProjectTransfers() {
     return project?.name || "غير محدد";
   };
 
+  // فلترة عمليات الترحيل حسب المشروع المحدد
+  const filteredTransfers = selectedProjectId && selectedProjectId !== 'all' 
+    ? transfers.filter(transfer => 
+        transfer.fromProjectId === selectedProjectId || transfer.toProjectId === selectedProjectId
+      )
+    : transfers;
+
+  // حساب الإحصائيات
+  const transferStats = {
+    totalTransfers: filteredTransfers.length,
+    totalAmount: filteredTransfers.reduce((sum, transfer) => sum + (parseFloat(transfer.amount?.toString() || '0') || 0), 0),
+    outgoingTransfers: filteredTransfers.filter(t => t.fromProjectId === selectedProjectId).length,
+    incomingTransfers: filteredTransfers.filter(t => t.toProjectId === selectedProjectId).length,
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'decimal',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount) + ' ريال';
+  };
+
   return (
     <div className="container mx-auto py-6 px-4" dir="rtl">
+      
+      {/* مكون اختيار المشروع */}
+      <Card className="mb-4">
+        <CardContent className="p-4">
+          <h2 className="text-lg font-bold text-foreground mb-3 flex items-center">
+            <ChartGantt className="ml-2 h-5 w-5 text-primary" />
+            اختر المشروع
+          </h2>
+          <ProjectSelector
+            selectedProjectId={selectedProjectId}
+            onProjectChange={selectProject}
+            showHeader={false}
+            variant="compact"
+          />
+        </CardContent>
+      </Card>
+
+      {/* إحصائيات عمليات الترحيل */}
+      {selectedProjectId && selectedProjectId !== 'all' && (
+        <StatsGrid>
+          <StatsCard
+            title="إجمالي العمليات"
+            value={transferStats.totalTransfers.toString()}
+            icon={ArrowRight}
+            color="blue"
+          />
+          <StatsCard
+            title="إجمالي المبالغ"
+            value={formatCurrency(transferStats.totalAmount)}
+            icon={DollarSign}
+            color="green"
+          />
+          <StatsCard
+            title="العمليات الصادرة"
+            value={transferStats.outgoingTransfers.toString()}
+            icon={TrendingUp}
+            color="orange"
+          />
+          <StatsCard
+            title="العمليات الواردة"
+            value={transferStats.incomingTransfers.toString()}
+            icon={TrendingUp}
+            color="purple"
+          />
+        </StatsGrid>
+      )}
 
       {/* نموذج إضافة عملية ترحيل جديدة */}
       {showForm && (
@@ -394,13 +467,18 @@ export default function ProjectTransfers() {
             <div className="text-center py-8">
               <p>جاري تحميل عمليات الترحيل...</p>
             </div>
-          ) : transfers.length === 0 ? (
+          ) : filteredTransfers.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-gray-500">لا توجد عمليات ترحيل مسجلة</p>
+              <p className="text-gray-500">
+                {selectedProjectId && selectedProjectId !== 'all' 
+                  ? "لا توجد عمليات ترحيل للمشروع المحدد"
+                  : "لا توجد عمليات ترحيل مسجلة"
+                }
+              </p>
             </div>
           ) : (
             <div className="space-y-3">
-              {transfers.map((transfer: ProjectFundTransfer) => (
+              {filteredTransfers.map((transfer: ProjectFundTransfer) => (
                 <Card key={transfer.id} className="relative overflow-hidden bg-gradient-to-r from-green-50 to-green-100 border-r-4 border-green-500 hover:shadow-lg transition-all duration-200" data-testid={`card-transfer-${transfer.id}`}>
                   <CardContent className="p-3">
                     <div className="flex items-start justify-between gap-3">

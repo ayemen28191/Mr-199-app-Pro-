@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { ArrowRight, Save, Plus, Camera, Package } from "lucide-react";
+import { ArrowRight, Save, Plus, Camera, Package, ChartGantt } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -453,10 +453,20 @@ export default function MaterialPurchase() {
   return (
     <div className="p-4 slide-in">
 
-      <ProjectSelector
-        selectedProjectId={selectedProjectId}
-        onProjectChange={selectProject}
-      />
+      <Card className="mb-4">
+        <CardContent className="p-4">
+          <h2 className="text-lg font-bold text-foreground mb-3 flex items-center">
+            <ChartGantt className="ml-2 h-5 w-5 text-primary" />
+            اختر المشروع
+          </h2>
+          <ProjectSelector
+            selectedProjectId={selectedProjectId}
+            onProjectChange={selectProject}
+            showHeader={false}
+            variant="compact"
+          />
+        </CardContent>
+      </Card>
 
       {/* Purchase Form */}
       <Card className="mb-4">

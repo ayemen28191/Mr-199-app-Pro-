@@ -27,6 +27,7 @@ import {
   BarChart3,
   Building2
 } from "lucide-react";
+import { StatsCard, StatsGrid } from "@/components/ui/stats-card";
 import type { Project, InsertProject } from "@shared/schema";
 import { insertProjectSchema } from "@shared/schema";
 import { formatDate, formatCurrency } from "@/lib/utils";
@@ -258,8 +259,65 @@ export default function ProjectsPage() {
     );
   }
 
+  // حساب الإحصائيات العامة
+  const overallStats = projects.reduce((acc, project) => {
+    return {
+      totalProjects: acc.totalProjects + 1,
+      activeProjects: acc.activeProjects + (project.status === 'active' ? 1 : 0),
+      totalIncome: acc.totalIncome + (project.stats?.totalIncome || 0),
+      totalExpenses: acc.totalExpenses + (project.stats?.totalExpenses || 0),
+      totalWorkers: acc.totalWorkers + (project.stats?.activeWorkers || 0),
+      materialPurchases: acc.materialPurchases + (project.stats?.materialPurchases || 0),
+    };
+  }, {
+    totalProjects: 0,
+    activeProjects: 0,
+    totalIncome: 0,
+    totalExpenses: 0,
+    totalWorkers: 0,
+    materialPurchases: 0,
+  });
+
+  const currentBalance = overallStats.totalIncome - overallStats.totalExpenses;
+
+  const formatCurrencyLocal = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'decimal',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount) + ' ريال';
+  };
+
   return (
     <div className="space-y-6 p-6">
+      
+      {/* إحصائيات عامة */}
+      <StatsGrid>
+        <StatsCard
+          title="إجمالي المشاريع"
+          value={overallStats.totalProjects.toString()}
+          icon={Building2}
+          color="blue"
+        />
+        <StatsCard
+          title="المشاريع النشطة"
+          value={overallStats.activeProjects.toString()}
+          icon={TrendingUp}
+          color="green"
+        />
+        <StatsCard
+          title="الرصيد الإجمالي"
+          value={formatCurrencyLocal(currentBalance)}
+          icon={DollarSign}
+          color={currentBalance >= 0 ? "green" : "red"}
+        />
+        <StatsCard
+          title="إجمالي العمال"
+          value={overallStats.totalWorkers.toString()}
+          icon={Users}
+          color="purple"
+        />
+      </StatsGrid>
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogContent>
             <DialogHeader>

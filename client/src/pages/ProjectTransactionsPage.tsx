@@ -5,7 +5,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Search, Filter, Download, TrendingUp, TrendingDown, Building2, Users, Truck } from 'lucide-react';
+import { Calendar, Search, Filter, Download, TrendingUp, TrendingDown, Building2, Users, Truck, ChartGantt } from 'lucide-react';
+import ProjectSelector from '@/components/project-selector';
+import { useSelectedProject } from '@/hooks/use-selected-project';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { useFloatingButton } from '@/components/layout/floating-button-context';
@@ -27,7 +29,7 @@ interface Transaction {
 }
 
 export default function ProjectTransactionsPage() {
-  const [selectedProject, setSelectedProject] = useState<string>('');
+  const { selectedProjectId, selectProject } = useSelectedProject();
   const [filterType, setFilterType] = useState<string>('all');
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -48,32 +50,32 @@ export default function ProjectTransactionsPage() {
 
   // جلب بيانات المشروع مع الإحصائيات بدلاً من التحليل المعطل
   const { data: projectStats, isLoading } = useQuery({
-    queryKey: ['/api/projects', selectedProject, 'stats'],
-    enabled: !!selectedProject,
+    queryKey: ['/api/projects', selectedProjectId, 'stats'],
+    enabled: !!selectedProjectId,
   });
 
   // جلب تحويلات العهدة للمشروع
   const { data: fundTransfers = [] } = useQuery({
-    queryKey: ['/api/projects', selectedProject, 'fund-transfers'],
-    enabled: !!selectedProject,
+    queryKey: ['/api/projects', selectedProjectId, 'fund-transfers'],
+    enabled: !!selectedProjectId,
   });
 
   // جلب حضور العمال للمشروع  
   const { data: workerAttendance = [] } = useQuery({
-    queryKey: ['/api/projects', selectedProject, 'worker-attendance'],
-    enabled: !!selectedProject,
+    queryKey: ['/api/projects', selectedProjectId, 'worker-attendance'],
+    enabled: !!selectedProjectId,
   });
 
   // جلب مشتريات المواد للمشروع
   const { data: materialPurchases = [] } = useQuery({
-    queryKey: ['/api/projects', selectedProject, 'material-purchases'],
-    enabled: !!selectedProject,
+    queryKey: ['/api/projects', selectedProjectId, 'material-purchases'],
+    enabled: !!selectedProjectId,
   });
 
   // جلب مصاريف النقل للمشروع
   const { data: transportExpenses = [] } = useQuery({
-    queryKey: ['/api/projects', selectedProject, 'transportation-expenses'],
-    enabled: !!selectedProject,
+    queryKey: ['/api/projects', selectedProjectId, 'transportation-expenses'],
+    enabled: !!selectedProjectId,
   });
 
   // تحويل البيانات المالية إلى قائمة معاملات موحدة
@@ -211,30 +213,22 @@ export default function ProjectTransactionsPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4" dir="rtl">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* اختيار المشروع */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Filter className="h-5 w-5" />
-              اختيار المشروع
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Select value={selectedProject} onValueChange={setSelectedProject}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="اختر مشروعاً لعرض معاملاته" />
-              </SelectTrigger>
-              <SelectContent>
-                {projects.map(project => (
-                  <SelectItem key={project.id} value={project.id}>
-                    {project.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <Card className="mb-4">
+          <CardContent className="p-4">
+            <h2 className="text-lg font-bold text-foreground mb-3 flex items-center">
+              <ChartGantt className="ml-2 h-5 w-5 text-primary" />
+              اختر المشروع
+            </h2>
+            <ProjectSelector
+              selectedProjectId={selectedProjectId}
+              onProjectChange={selectProject}
+              showHeader={false}
+              variant="compact"
+            />
           </CardContent>
         </Card>
 
-        {selectedProject && (
+        {selectedProjectId && (
           <>
             {/* شريط الفلاتر */}
             <Card>
