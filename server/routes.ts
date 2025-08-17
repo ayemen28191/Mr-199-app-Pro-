@@ -4095,7 +4095,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ 
         success: false, 
         message: "فشل في إنشاء جداول نظام الأدوات", 
-        error: error.message 
+        error: error instanceof Error ? error.message : "خطأ غير معروف"
       });
     }
   });

@@ -16,7 +16,9 @@ import {
   AlertTriangle, 
   Clock, 
   X,
-  RefreshCw 
+  RefreshCw,
+  Folder,
+  BarChart3
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -35,6 +37,12 @@ import { useFloatingButton } from '@/components/layout/floating-button-context';
 
 import { useToast } from '@/hooks/use-toast';
 import AddToolDialog from '@/components/tools/add-tool-dialog';
+import ToolDetailsDialog from '@/components/tools/tool-details-dialog';
+import EditToolDialog from '@/components/tools/edit-tool-dialog';
+import QrScanner from '@/components/tools/qr-scanner';
+import ToolMovementsDialog from '@/components/tools/tool-movements-dialog';
+import ToolCategoriesDialog from '@/components/tools/tool-categories-dialog';
+import ToolsReportsDialog from '@/components/tools/tools-reports-dialog';
 
 // Types from schema
 interface ToolCategory {
@@ -84,6 +92,14 @@ const ToolsManagementPage: React.FC = () => {
   const [selectedCondition, setSelectedCondition] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [selectedToolId, setSelectedToolId] = useState<string | null>(null);
+  const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isQrScannerOpen, setIsQrScannerOpen] = useState(false);
+  const [isMovementsDialogOpen, setIsMovementsDialogOpen] = useState(false);
+  const [selectedToolName, setSelectedToolName] = useState<string>('');
+  const [isCategoriesDialogOpen, setIsCategoriesDialogOpen] = useState(false);
+  const [isReportsDialogOpen, setIsReportsDialogOpen] = useState(false);
 
   const { setFloatingAction } = useFloatingButton();
 
@@ -160,6 +176,30 @@ const ToolsManagementPage: React.FC = () => {
     setSelectedCondition('all');
   };
 
+  // Handle tool actions
+  const handleToolView = (toolId: string) => {
+    setSelectedToolId(toolId);
+    setIsDetailsDialogOpen(true);
+  };
+
+  const handleToolEdit = (toolId: string) => {
+    setSelectedToolId(toolId);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleToolMovements = (toolId: string, toolName: string) => {
+    setSelectedToolId(toolId);
+    setSelectedToolName(toolName);
+    setIsMovementsDialogOpen(true);
+  };
+
+  const handleQrScan = (data: any) => {
+    if (data.valid && data.tool) {
+      setSelectedToolId(data.tool.id);
+      setIsDetailsDialogOpen(true);
+    }
+  };
+
   // Tool card component
   const ToolCard: React.FC<{ tool: Tool }> = ({ tool }) => {
     const category = categories.find(cat => cat.id === tool.categoryId);
@@ -170,7 +210,7 @@ const ToolsManagementPage: React.FC = () => {
       <Card className="hover:shadow-lg transition-shadow duration-200 cursor-pointer" data-testid={`tool-card-${tool.id}`}>
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
-            <div className="flex-1">
+            <div className="flex-1" onClick={() => handleToolView(tool.id)}>
               <CardTitle className="text-lg font-semibold text-right" data-testid={`tool-name-${tool.id}`}>
                 {tool.name}
               </CardTitle>
@@ -181,16 +221,49 @@ const ToolsManagementPage: React.FC = () => {
               )}
             </div>
             <div className="flex gap-2 mr-2">
-              {tool.qrCode && (
-                <Button variant="ghost" size="sm" data-testid={`qr-button-${tool.id}`}>
-                  <QrCode className="h-4 w-4" />
-                </Button>
-              )}
-              <Button variant="ghost" size="sm" data-testid={`view-button-${tool.id}`}>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsQrScannerOpen(true);
+                }}
+                data-testid={`qr-button-${tool.id}`}
+              >
+                <QrCode className="h-4 w-4" />
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleToolView(tool.id);
+                }}
+                data-testid={`view-button-${tool.id}`}
+              >
                 <Eye className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="sm" data-testid={`settings-button-${tool.id}`}>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleToolEdit(tool.id);
+                }}
+                data-testid={`settings-button-${tool.id}`}
+              >
                 <Settings className="h-4 w-4" />
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleToolMovements(tool.id, tool.name);
+                }}
+                data-testid={`movements-button-${tool.id}`}
+              >
+                <Move className="h-4 w-4" />
               </Button>
             </div>
           </div>
@@ -286,10 +359,30 @@ const ToolsManagementPage: React.FC = () => {
       {/* Filters and Search - Enhanced Professional Design */}
       <Card className="bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700">
         <CardHeader className="pb-4">
-          <CardTitle className="text-lg font-semibold flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            البحث والفلترة
-          </CardTitle>
+          <div className="flex justify-between items-center">
+            <CardTitle className="text-lg font-semibold flex items-center gap-2">
+              <Filter className="h-5 w-5" />
+              البحث والفلترة
+            </CardTitle>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setIsCategoriesDialogOpen(true)}
+              >
+                <Folder className="h-4 w-4 ml-1" />
+                إدارة التصنيفات
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setIsReportsDialogOpen(true)}
+              >
+                <BarChart3 className="h-4 w-4 ml-1" />
+                التقارير
+              </Button>
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -439,10 +532,59 @@ const ToolsManagementPage: React.FC = () => {
         )}
       </div>
 
-      {/* Add Tool Dialog */}
+      {/* Dialogs */}
       <AddToolDialog 
         open={isAddDialogOpen} 
         onOpenChange={setIsAddDialogOpen}
+      />
+      
+      {selectedToolId && (
+        <ToolDetailsDialog
+          toolId={selectedToolId}
+          open={isDetailsDialogOpen}
+          onOpenChange={setIsDetailsDialogOpen}
+          onEdit={() => {
+            setIsDetailsDialogOpen(false);
+            setIsEditDialogOpen(true);
+          }}
+        />
+      )}
+      
+      {selectedToolId && (
+        <EditToolDialog
+          toolId={selectedToolId}
+          open={isEditDialogOpen}
+          onOpenChange={setIsEditDialogOpen}
+          onSuccess={() => {
+            setIsEditDialogOpen(false);
+            setIsDetailsDialogOpen(true);
+          }}
+        />
+      )}
+      
+      <QrScanner
+        open={isQrScannerOpen}
+        onOpenChange={setIsQrScannerOpen}
+        onScanResult={handleQrScan}
+      />
+      
+      {selectedToolId && selectedToolName && (
+        <ToolMovementsDialog
+          toolId={selectedToolId}
+          toolName={selectedToolName}
+          open={isMovementsDialogOpen}
+          onOpenChange={setIsMovementsDialogOpen}
+        />
+      )}
+      
+      <ToolCategoriesDialog
+        open={isCategoriesDialogOpen}
+        onOpenChange={setIsCategoriesDialogOpen}
+      />
+      
+      <ToolsReportsDialog
+        open={isReportsDialogOpen}
+        onOpenChange={setIsReportsDialogOpen}
       />
     </div>
   );
