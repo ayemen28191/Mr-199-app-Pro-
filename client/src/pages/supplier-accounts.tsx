@@ -151,7 +151,7 @@ export default function SupplierAccountsPage() {
   };
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('ar-SA', {
+    return new Date(dateStr).toLocaleDateString('en-GB', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit'
@@ -160,7 +160,7 @@ export default function SupplierAccountsPage() {
 
   const formatCurrency = (amount: string | number) => {
     const num = typeof amount === 'string' ? parseFloat(amount) : amount;
-    return num.toLocaleString('ar-YE') + " ريال";
+    return num.toLocaleString('en-US') + " ريال";
   };
 
   const getPaymentStatusBadge = (purchaseType: string, remainingAmount: string) => {
@@ -243,13 +243,13 @@ export default function SupplierAccountsPage() {
       <StatsGrid>
         <StatsCard
           title="إجمالي الموردين"
-          value={overallStats.totalSuppliers.toString()}
+          value={overallStats.totalSuppliers.toLocaleString('en-US')}
           icon={Users}
           color="blue"
         />
         <StatsCard
           title="الموردين النشطين"
-          value={overallStats.activeSuppliers.toString()}
+          value={overallStats.activeSuppliers.toLocaleString('en-US')}
           icon={Building2}
           color="green"
         />
@@ -261,7 +261,7 @@ export default function SupplierAccountsPage() {
         />
         <StatsCard
           title="إجمالي المشتريات"
-          value={overallStats.totalPurchases.toString()}
+          value={overallStats.totalPurchases.toLocaleString('en-US')}
           icon={Package}
           color="orange"
         />
@@ -403,59 +403,59 @@ export default function SupplierAccountsPage() {
         </CardContent>
       </Card>
 
-      {/* معلومات المورد المحدد */}
+      {/* معلومات المورد المحدد - مضغوطة */}
       {selectedSupplier && (
         <Card className="shadow-sm">
-          <CardHeader className="pb-4">
-            <CardTitle className="flex items-center gap-2">
-              <Building2 className="w-5 h-5" />
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Building2 className="w-4 h-4" />
               معلومات المورد
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <CardContent className="py-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <div className="space-y-1">
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Building2 className="w-4 h-4" />
+                <div className="flex items-center gap-1 text-xs text-gray-600">
+                  <Building2 className="w-3 h-3" />
                   اسم المورد
                 </div>
-                <p className="font-semibold text-lg">{selectedSupplier.name}</p>
+                <p className="font-semibold text-sm">{selectedSupplier.name}</p>
               </div>
               
               <div className="space-y-1">
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Users className="w-4 h-4" />
-                  الشخص المسؤول
+                <div className="flex items-center gap-1 text-xs text-gray-600">
+                  <Users className="w-3 h-3" />
+                  المسؤول
                 </div>
-                <p className="font-medium">{selectedSupplier.contactPerson || "غير محدد"}</p>
+                <p className="font-medium text-sm">{selectedSupplier.contactPerson || "غير محدد"}</p>
               </div>
               
               <div className="space-y-1">
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Phone className="w-4 h-4" />
-                  رقم الهاتف
+                <div className="flex items-center gap-1 text-xs text-gray-600">
+                  <Phone className="w-3 h-3" />
+                  الهاتف
                 </div>
-                <p className="font-medium">{selectedSupplier.phone || "غير محدد"}</p>
+                <p className="font-medium text-sm" dir="ltr">{selectedSupplier.phone || "غير محدد"}</p>
               </div>
               
               <div className="space-y-1">
-                <div className="flex items-center gap-2 text-sm text-gray-600">
-                  <Wallet className="w-4 h-4" />
-                  إجمالي المديونية
+                <div className="flex items-center gap-1 text-xs text-gray-600">
+                  <Wallet className="w-3 h-3" />
+                  المديونية
                 </div>
-                <p className="font-bold text-red-600 text-lg">
+                <p className="font-bold text-red-600 text-sm">
                   {formatCurrency(selectedSupplier.totalDebt)}
                 </p>
               </div>
             </div>
 
             {selectedSupplier.address && (
-              <div className="mt-4 pt-4 border-t">
-                <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
-                  <MapPin className="w-4 h-4" />
+              <div className="mt-3 pt-2 border-t border-gray-100">
+                <div className="flex items-center gap-1 text-xs text-gray-600 mb-1">
+                  <MapPin className="w-3 h-3" />
                   العنوان
                 </div>
-                <p className="text-gray-800">{selectedSupplier.address}</p>
+                <p className="text-gray-800 text-sm">{selectedSupplier.address}</p>
               </div>
             )}
           </CardContent>
@@ -485,7 +485,7 @@ export default function SupplierAccountsPage() {
           />
           <StatsCard
             title="عدد الفواتير"
-            value={purchases.length.toString()}
+            value={purchases.length.toLocaleString('en-US')}
             icon={Receipt}
             color="orange"
           />
@@ -532,7 +532,7 @@ export default function SupplierAccountsPage() {
                         <div className="flex flex-col">
                           <div className="flex items-center gap-2">
                             <Calendar className="w-4 h-4 text-gray-500" />
-                            <span className="text-sm font-medium text-gray-900">
+                            <span className="text-sm font-medium text-gray-900" dir="ltr">
                               {formatDate(purchase.invoiceDate)}
                             </span>
                           </div>
@@ -563,7 +563,7 @@ export default function SupplierAccountsPage() {
                           <span className="text-sm font-medium text-gray-900">
                             {(purchase as any).material?.name || purchase.materialId}
                           </span>
-                          <div className="text-xs text-gray-600 mt-1">
+                          <div className="text-xs text-gray-600 mt-1" dir="ltr">
                             الكمية: {purchase.quantity} | سعر الوحدة: {formatCurrency(purchase.unitPrice)}
                           </div>
                         </div>
@@ -573,19 +573,19 @@ export default function SupplierAccountsPage() {
                       <div className="grid grid-cols-3 gap-3 pt-2 border-t border-gray-100">
                         <div className="text-center">
                           <div className="text-xs text-gray-500 mb-1">المبلغ الإجمالي</div>
-                          <div className="text-sm font-bold text-blue-600">
+                          <div className="text-sm font-bold text-blue-600" dir="ltr">
                             {formatCurrency(purchase.totalAmount)}
                           </div>
                         </div>
                         <div className="text-center">
                           <div className="text-xs text-gray-500 mb-1">المدفوع</div>
-                          <div className="text-sm font-bold text-green-600">
+                          <div className="text-sm font-bold text-green-600" dir="ltr">
                             {formatCurrency(purchase.paidAmount || "0")}
                           </div>
                         </div>
                         <div className="text-center">
                           <div className="text-xs text-gray-500 mb-1">المتبقي</div>
-                          <div className="text-sm font-bold text-red-600">
+                          <div className="text-sm font-bold text-red-600" dir="ltr">
                             {formatCurrency(purchase.remainingAmount || "0")}
                           </div>
                         </div>
@@ -613,19 +613,19 @@ export default function SupplierAccountsPage() {
                   <div className="grid grid-cols-2 gap-3">
                     <div className="text-center p-3 bg-white rounded-lg shadow-sm">
                       <p className="text-xs text-gray-600">إجمالي المشتريات</p>
-                      <p className="text-base font-bold text-blue-600">{formatCurrency(totals.totalAmount)}</p>
+                      <p className="text-base font-bold text-blue-600" dir="ltr">{formatCurrency(totals.totalAmount)}</p>
                     </div>
                     <div className="text-center p-3 bg-white rounded-lg shadow-sm">
                       <p className="text-xs text-gray-600">عدد الفواتير</p>
-                      <p className="text-base font-bold text-gray-800">{purchases.length}</p>
+                      <p className="text-base font-bold text-gray-800" dir="ltr">{purchases.length.toLocaleString('en-US')}</p>
                     </div>
                     <div className="text-center p-3 bg-white rounded-lg shadow-sm">
                       <p className="text-xs text-gray-600">إجمالي المدفوع</p>
-                      <p className="text-base font-bold text-green-600">{formatCurrency(totals.paidAmount)}</p>
+                      <p className="text-base font-bold text-green-600" dir="ltr">{formatCurrency(totals.paidAmount)}</p>
                     </div>
                     <div className="text-center p-3 bg-white rounded-lg shadow-sm">
                       <p className="text-xs text-gray-600">إجمالي المتبقي</p>
-                      <p className="text-base font-bold text-red-600">{formatCurrency(totals.remainingAmount)}</p>
+                      <p className="text-base font-bold text-red-600" dir="ltr">{formatCurrency(totals.remainingAmount)}</p>
                     </div>
                   </div>
                 </div>
