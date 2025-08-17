@@ -1,10 +1,14 @@
 import { useState, useCallback } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
 import { Clock, Receipt, ShoppingCart, BarChart, ArrowRight, Settings, DollarSign, TrendingDown, TrendingUp, Calendar, Package, UserCheck, Plus, User, FolderPlus } from "lucide-react";
 import { StatsCard, StatsGrid } from "@/components/ui/stats-card";
 import { useSelectedProject } from "@/hooks/use-selected-project";
@@ -14,7 +18,8 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 import { LoadingCard, LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useFloatingButton } from "@/components/layout/floating-button-context";
 import { useEffect } from "react";
-import type { Project, DailyExpenseSummary } from "@shared/schema";
+import type { Project, DailyExpenseSummary, Worker, insertProjectSchema, insertWorkerSchema } from "@shared/schema";
+import { apiRequest } from "@/lib/queryClient";
 
 interface ProjectStats {
   totalWorkers: string;
@@ -35,15 +40,78 @@ export default function Dashboard() {
   const [, setLocation] = useLocation();
   const { selectedProjectId, selectProject } = useSelectedProject();
   const [showFloatingMenu, setShowFloatingMenu] = useState(false);
+  const [showWorkerModal, setShowWorkerModal] = useState(false);
+  const [showProjectModal, setShowProjectModal] = useState(false);
+
+  // نماذج بيانات العامل والمشروع
+  const [workerData, setWorkerData] = useState({
+    name: '',
+    phone: '',
+    type: '',
+    dailyWage: ''
+  });
+
+  const [projectData, setProjectData] = useState({
+    name: '',
+    status: 'active',
+    description: ''
+  });
 
   const queryClient = useQueryClient();
   const { setFloatingAction } = useFloatingButton();
+  const { toast } = useToast();
 
   // تحميل المشاريع مع الإحصائيات بشكل محسن
   const { data: projects = [], isLoading: projectsLoading } = useQuery<ProjectWithStats[]>({
     queryKey: ["/api/projects/with-stats"],
     staleTime: 1000 * 30, // 30 ثانية فقط للإحصائيات لضمان الحصول على البيانات المحدثة
     refetchInterval: 1000 * 60, // إعادة التحديث كل دقيقة
+  });
+
+  // متحولات لإضافة العامل والمشروع
+  const addWorkerMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return apiRequest("POST", "/api/workers", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/workers"] });
+      toast({
+        title: "نجح الحفظ",
+        description: "تم إضافة العامل بنجاح",
+      });
+      setShowWorkerModal(false);
+      setWorkerData({ name: '', phone: '', type: '', dailyWage: '' });
+    },
+    onError: (error) => {
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء إضافة العامل",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const addProjectMutation = useMutation({
+    mutationFn: async (data: any) => {
+      return apiRequest("POST", "/api/projects", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/projects/with-stats"] });
+      toast({
+        title: "نجح الحفظ",
+        description: "تم إضافة المشروع بنجاح",
+      });
+      setShowProjectModal(false);
+      setProjectData({ name: '', status: 'active', description: '' });
+    },
+    onError: (error) => {
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء إضافة المشروع",
+        variant: "destructive",
+      });
+    },
   });
 
   const { data: todaySummary } = useQuery<DailyExpenseSummary>({
@@ -251,7 +319,7 @@ export default function Dashboard() {
         <div className="fixed bottom-20 right-4 z-50 space-y-2">
           <Button
             onClick={() => {
-              setLocation("/workers");
+              setShowWorkerModal(true);
               setShowFloatingMenu(false);
             }}
             className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-lg rounded-full px-4 py-3"
@@ -262,7 +330,7 @@ export default function Dashboard() {
           </Button>
           <Button
             onClick={() => {
-              setLocation("/projects");
+              setShowProjectModal(true);
               setShowFloatingMenu(false);
             }}
             className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white shadow-lg rounded-full px-4 py-3"
@@ -281,6 +349,142 @@ export default function Dashboard() {
           onClick={() => setShowFloatingMenu(false)}
         />
       )}
+
+      {/* نموذج إضافة عامل */}
+      <Dialog open={showWorkerModal} onOpenChange={setShowWorkerModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>إضافة عامل جديد</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="worker-name">اسم العامل</Label>
+              <Input
+                id="worker-name"
+                value={workerData.name}
+                onChange={(e) => setWorkerData({...workerData, name: e.target.value})}
+                placeholder="أدخل اسم العامل"
+              />
+            </div>
+            <div>
+              <Label htmlFor="worker-phone">رقم الهاتف</Label>
+              <Input
+                id="worker-phone"
+                value={workerData.phone}
+                onChange={(e) => setWorkerData({...workerData, phone: e.target.value})}
+                placeholder="أدخل رقم الهاتف"
+              />
+            </div>
+            <div>
+              <Label htmlFor="worker-type">نوع العامل</Label>
+              <Select value={workerData.type} onValueChange={(value) => setWorkerData({...workerData, type: value})}>
+                <SelectTrigger>
+                  <SelectValue placeholder="اختر نوع العامل" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="عامل عادي">عامل عادي</SelectItem>
+                  <SelectItem value="معلم">معلم</SelectItem>
+                  <SelectItem value="مساعد">مساعد</SelectItem>
+                  <SelectItem value="سائق">سائق</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="worker-wage">الأجر اليومي</Label>
+              <Input
+                id="worker-wage"
+                type="number"
+                value={workerData.dailyWage}
+                onChange={(e) => setWorkerData({...workerData, dailyWage: e.target.value})}
+                placeholder="أدخل الأجر اليومي"
+              />
+            </div>
+            <div className="flex gap-3 pt-4">
+              <Button
+                onClick={() => {
+                  if (workerData.name && workerData.type && workerData.dailyWage) {
+                    addWorkerMutation.mutate({
+                      name: workerData.name,
+                      phone: workerData.phone || null,
+                      type: workerData.type,
+                      dailyWage: parseFloat(workerData.dailyWage)
+                    });
+                  }
+                }}
+                disabled={!workerData.name || !workerData.type || !workerData.dailyWage || addWorkerMutation.isPending}
+                className="flex-1"
+              >
+                {addWorkerMutation.isPending ? "جاري الحفظ..." : "حفظ"}
+              </Button>
+              <Button variant="outline" onClick={() => setShowWorkerModal(false)} className="flex-1">
+                إلغاء
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* نموذج إضافة مشروع */}
+      <Dialog open={showProjectModal} onOpenChange={setShowProjectModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>إضافة مشروع جديد</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="project-name">اسم المشروع</Label>
+              <Input
+                id="project-name"
+                value={projectData.name}
+                onChange={(e) => setProjectData({...projectData, name: e.target.value})}
+                placeholder="أدخل اسم المشروع"
+              />
+            </div>
+            <div>
+              <Label htmlFor="project-status">حالة المشروع</Label>
+              <Select value={projectData.status} onValueChange={(value) => setProjectData({...projectData, status: value})}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">نشط</SelectItem>
+                  <SelectItem value="completed">مكتمل</SelectItem>
+                  <SelectItem value="paused">متوقف</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="project-description">وصف المشروع</Label>
+              <Input
+                id="project-description"
+                value={projectData.description}
+                onChange={(e) => setProjectData({...projectData, description: e.target.value})}
+                placeholder="أدخل وصف المشروع (اختياري)"
+              />
+            </div>
+            <div className="flex gap-3 pt-4">
+              <Button
+                onClick={() => {
+                  if (projectData.name) {
+                    addProjectMutation.mutate({
+                      name: projectData.name,
+                      status: projectData.status,
+                      description: projectData.description || null
+                    });
+                  }
+                }}
+                disabled={!projectData.name || addProjectMutation.isPending}
+                className="flex-1"
+              >
+                {addProjectMutation.isPending ? "جاري الحفظ..." : "حفظ"}
+              </Button>
+              <Button variant="outline" onClick={() => setShowProjectModal(false)} className="flex-1">
+                إلغاء
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
