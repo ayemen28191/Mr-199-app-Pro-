@@ -25,8 +25,8 @@ async function throwIfResNotOk(res: Response) {
 }
 
 export async function apiRequest(
-  method: string,
   url: string,
+  method: string,
   data?: unknown | undefined,
 ): Promise<any> {
   // إضافة timeout 30 ثانية للطلبات
