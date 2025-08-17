@@ -43,7 +43,7 @@ export class UnifiedExcelExporter {
     let currentRow = addReportHeader(
       worksheet,
       'كشف المصروفات اليومية',
-      `تاريخ: ${data.date || new Date().toLocaleDateString('ar-SA')}`,
+      `تاريخ: ${data.date || new Date().toLocaleDateString('en-GB')}`,
       [`المشروع: ${data.projectName || 'غير محدد'}`]
     );
 

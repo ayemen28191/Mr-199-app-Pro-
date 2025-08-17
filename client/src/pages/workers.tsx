@@ -182,7 +182,7 @@ export default function WorkersPage() {
 
   // دالة تنسيق العملة
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('ar-YE', {
+    return new Intl.NumberFormat('en-US', {
       style: 'decimal',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,

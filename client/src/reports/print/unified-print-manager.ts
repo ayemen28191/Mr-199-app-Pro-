@@ -278,7 +278,7 @@ export class UnifiedPrintManager {
     printDate.className = 'print-date-footer';
     printDate.innerHTML = `
       <div style="text-align: center; font-size: 10px; color: #666; margin-top: 20px; padding-top: 10px; border-top: 1px solid #eee;">
-        طُبع في: ${new Date().toLocaleDateString('ar-SA')} - ${new Date().toLocaleTimeString('ar-SA')}
+        طُبع في: ${new Date().toLocaleDateString('en-GB')} - ${new Date().toLocaleTimeString('en-GB', { hour12: false })}
       </div>
     `;
     document.body.appendChild(printDate);

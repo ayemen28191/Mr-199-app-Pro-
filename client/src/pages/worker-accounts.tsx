@@ -471,7 +471,7 @@ export default function WorkerAccountsPage() {
                           </div>
                           <div className="flex items-center gap-1">
                             <Calendar className="h-3 w-3 text-gray-600" />
-                            <span>{new Date(transfer.transferDate).toLocaleDateString('ar-SA')}</span>
+                            <span>{new Date(transfer.transferDate).toLocaleDateString('en-GB')}</span>
                           </div>
                         </div>
                       </div>

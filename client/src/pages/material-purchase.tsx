@@ -723,7 +723,7 @@ export default function MaterialPurchase() {
           <CardContent className="p-4">
             <div className="text-center text-muted-foreground">
               <Package className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
-              <h3 className="text-lg font-medium mb-2">لا توجد مشتريات في {new Date(purchaseDate).toLocaleDateString('ar-YE')}</h3>
+              <h3 className="text-lg font-medium mb-2">لا توجد مشتريات في {new Date(purchaseDate).toLocaleDateString('en-GB')}</h3>
               <p className="text-sm">غيّر تاريخ الشراء أعلاه لعرض مشتريات تواريخ أخرى</p>
               <p className="text-sm mt-1">إجمالي المشتريات المسجلة: {allMaterialPurchases.length}</p>
             </div>
@@ -736,7 +736,7 @@ export default function MaterialPurchase() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-foreground">
-                المشتريات في {new Date(purchaseDate).toLocaleDateString('ar-YE')} ({materialPurchases.length})
+                المشتريات في {new Date(purchaseDate).toLocaleDateString('en-GB')} ({materialPurchases.length})
               </h3>
               <p className="text-sm text-muted-foreground">
                 غيّر تاريخ الشراء أعلاه لعرض مشتريات تواريخ أخرى
@@ -757,7 +757,7 @@ export default function MaterialPurchase() {
                         {purchase.supplierName && <p>المورد: {purchase.supplierName}</p>}
                         {purchase.purchaseType && <p>نوع الدفع: {purchase.purchaseType}</p>}
                         {purchase.purchaseDate && (
-                          <p>تاريخ الشراء: {new Date(purchase.purchaseDate).toLocaleDateString('ar-YE')}</p>
+                          <p>تاريخ الشراء: {new Date(purchase.purchaseDate).toLocaleDateString('en-GB')}</p>
                         )}
                       </div>
                     </div>

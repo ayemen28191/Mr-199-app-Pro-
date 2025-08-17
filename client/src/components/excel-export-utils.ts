@@ -116,7 +116,7 @@ export function addReportHeader(
 
 // إضافة ذيل موحد للتقرير
 export function addReportFooter(worksheet: ExcelJS.Worksheet, startRow: number): void {
-  const currentDate = new Date().toLocaleDateString('ar-SA', {
+  const currentDate = new Date().toLocaleDateString('en-GB', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
