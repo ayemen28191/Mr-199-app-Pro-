@@ -352,6 +352,74 @@ export type InsertSupplierPayment = z.infer<typeof insertSupplierPaymentSchema>;
 export type InsertPrintSettings = z.infer<typeof insertPrintSettingsSchema>;
 export type InsertProjectFundTransfer = z.infer<typeof insertProjectFundTransferSchema>;
 
+// Export Settings Table - إعدادات التصدير المخصصة للمصاريف اليومية
+export const exportSettings = pgTable('export_settings', {
+  id: text('id').primaryKey().default(sql`gen_random_uuid()`),
+  name: text('name').notNull().default('إعدادات افتراضية'),
+  isDefault: boolean('is_default').notNull().default(false),
+  
+  // إعدادات الألوان
+  headerBackgroundColor: text('header_background_color').notNull().default('#F3F4F6'), // رمادي فاتح
+  headerTextColor: text('header_text_color').notNull().default('#000000'), // أسود
+  tableHeaderBackgroundColor: text('table_header_background_color').notNull().default('#3B82F6'), // أزرق
+  tableHeaderTextColor: text('table_header_text_color').notNull().default('#FFFFFF'), // أبيض
+  transferRowColor: text('transfer_row_color').notNull().default('#B8E6B8'), // أخضر فاتح
+  workerRowColor: text('worker_row_color').notNull().default('#E6F3FF'), // أزرق فاتح
+  evenRowColor: text('even_row_color').notNull().default('#F9FAFB'), // رمادي فاتح جداً
+  oddRowColor: text('odd_row_color').notNull().default('#FFFFFF'), // أبيض
+  borderColor: text('border_color').notNull().default('#000000'), // أسود
+  negativeBalanceColor: text('negative_balance_color').notNull().default('#EF4444'), // أحمر
+  
+  // إعدادات النصوص
+  companyName: text('company_name').notNull().default('شركة الفتحي للمقاولات والاستشارات الهندسية'),
+  reportTitle: text('report_title').notNull().default('كشف حساب المشروع'),
+  dateLabel: text('date_label').notNull().default('التاريخ:'),
+  projectLabel: text('project_label').notNull().default('المشروع:'),
+  printDateLabel: text('print_date_label').notNull().default('تاريخ الطباعة:'),
+  
+  // عناوين الأعمدة
+  serialColumnHeader: text('serial_column_header').notNull().default('م'),
+  dateColumnHeader: text('date_column_header').notNull().default('التاريخ'),
+  accountColumnHeader: text('account_column_header').notNull().default('اسم الحساب'),
+  creditColumnHeader: text('credit_column_header').notNull().default('دائن'),
+  debitColumnHeader: text('debit_column_header').notNull().default('مدين'),
+  balanceColumnHeader: text('balance_column_header').notNull().default('الرصيد'),
+  notesColumnHeader: text('notes_column_header').notNull().default('البيان'),
+  currencyUnit: text('currency_unit').notNull().default('ريال'),
+  
+  // إعدادات أعرض الأعمدة (بالبكسل)
+  serialColumnWidth: integer('serial_column_width').notNull().default(40),
+  dateColumnWidth: integer('date_column_width').notNull().default(80),
+  accountColumnWidth: integer('account_column_width').notNull().default(200),
+  creditColumnWidth: integer('credit_column_width').notNull().default(80),
+  debitColumnWidth: integer('debit_column_width').notNull().default(80),
+  balanceColumnWidth: integer('balance_column_width').notNull().default(80),
+  notesColumnWidth: integer('notes_column_width').notNull().default(250),
+  
+  // إعدادات الصفوف
+  autoRowHeight: boolean('auto_row_height').notNull().default(true),
+  minRowHeight: integer('min_row_height').notNull().default(18),
+  maxRowHeight: integer('max_row_height').notNull().default(100),
+  
+  // إعدادات الخط
+  fontFamily: text('font_family').notNull().default('Arial Unicode MS'),
+  fontSize: integer('font_size').notNull().default(10),
+  headerFontSize: integer('header_font_size').notNull().default(12),
+  tableFontSize: integer('table_font_size').notNull().default(10),
+  
+  // إعدادات إضافية
+  enableTextWrapping: boolean('enable_text_wrapping').notNull().default(true),
+  borderWidth: integer('border_width').notNull().default(1),
+  
+  // Timestamps
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+export const insertExportSettingsSchema = createInsertSchema(exportSettings).omit({ id: true, createdAt: true, updatedAt: true });
+export type ExportSettings = typeof exportSettings.$inferSelect;
+export type InsertExportSettings = z.infer<typeof insertExportSettingsSchema>;
+
 // Report Templates Schema - إعدادات تصميم التقارير
 export const reportTemplates = pgTable('report_templates', {
   id: text('id').primaryKey().default(sql`gen_random_uuid()`),

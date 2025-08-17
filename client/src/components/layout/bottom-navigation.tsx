@@ -60,7 +60,8 @@ const allPages = [
   {
     category: "الإعدادات والإدارة",
     pages: [
-      { path: "/autocomplete-admin", icon: Settings, label: "إعدادات الإكمال التلقائي", description: "إدارة بيانات الإكمال التلقائي" },
+      { path: "/settings", icon: Settings, label: "إعدادات التصدير", description: "تخصيص إعدادات التصدير والتقارير" },
+      { path: "/autocomplete-admin", icon: Wrench, label: "إعدادات الإكمال التلقائي", description: "إدارة بيانات الإكمال التلقائي" },
     ]
   }
 ];
