@@ -3098,12 +3098,12 @@ export class DatabaseStorage implements IStorage {
             sql`${tools.description} ILIKE ${searchTerm}`,
             sql`${tools.sku} ILIKE ${searchTerm}`,
             sql`${tools.serialNumber} ILIKE ${searchTerm}`
-          )
+          )!
         );
       }
 
-      if (conditions.length > 1) {
-        query = query.where(and(...conditions));
+      if (conditions.length > 0) {
+        query = db.select().from(tools).where(and(...conditions));
       }
 
       return await query.orderBy(tools.name);
@@ -3226,7 +3226,7 @@ export class DatabaseStorage implements IStorage {
       let query = db.select().from(toolStock);
 
       if (conditions.length > 0) {
-        query = query.where(and(...conditions));
+        query = db.select().from(toolStock).where(and(...conditions));
       }
 
       return await query.orderBy(toolStock.createdAt);
@@ -3266,7 +3266,7 @@ export class DatabaseStorage implements IStorage {
         .where(and(
           eq(toolStock.toolId, toolId),
           eq(toolStock.locationType, locationType),
-          locationId ? eq(toolStock.locationId, locationId) : sql`${toolStock.locationId} IS NULL`
+          locationId ? eq(toolStock.locationId, locationId!) : sql`${toolStock.locationId} IS NULL`
         ))
         .returning();
 
@@ -3368,7 +3368,7 @@ export class DatabaseStorage implements IStorage {
       let query = db.select().from(toolMovements);
 
       if (conditions.length > 0) {
-        query = query.where(and(...conditions));
+        query = db.select().from(toolMovements).where(and(...conditions));
       }
 
       return await query.orderBy(sql`${toolMovements.performedAt} DESC`);
@@ -3448,7 +3448,7 @@ export class DatabaseStorage implements IStorage {
       let query = db.select().from(toolMaintenanceLogs);
 
       if (conditions.length > 0) {
-        query = query.where(and(...conditions));
+        query = db.select().from(toolMaintenanceLogs).where(and(...conditions));
       }
 
       return await query.orderBy(sql`${toolMaintenanceLogs.scheduledDate} DESC`);
@@ -3553,7 +3553,7 @@ export class DatabaseStorage implements IStorage {
       let query = db.select().from(toolUsageAnalytics);
 
       if (conditions.length > 0) {
-        query = query.where(and(...conditions));
+        query = db.select().from(toolUsageAnalytics).where(and(...conditions));
       }
 
       return await query.orderBy(sql`${toolUsageAnalytics.analysisDate} DESC`);
@@ -3569,7 +3569,7 @@ export class DatabaseStorage implements IStorage {
         .where(and(
           eq(toolUsageAnalytics.toolId, analytics.toolId),
           eq(toolUsageAnalytics.analysisDate, analytics.analysisDate),
-          analytics.projectId ? eq(toolUsageAnalytics.projectId, analytics.projectId) : sql`${toolUsageAnalytics.projectId} IS NULL`
+          analytics.projectId ? eq(toolUsageAnalytics.projectId, analytics.projectId!) : sql`${toolUsageAnalytics.projectId} IS NULL`
         ));
 
       if (existing) {
@@ -3659,7 +3659,7 @@ export class DatabaseStorage implements IStorage {
       let query = db.select().from(toolReservations);
 
       if (conditions.length > 0) {
-        query = query.where(and(...conditions));
+        query = db.select().from(toolReservations).where(and(...conditions));
       }
 
       return await query.orderBy(sql`${toolReservations.requestedDate} DESC`);
