@@ -338,20 +338,15 @@ export default function Reports() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-      {/* شريط علوي احترافي */}
+      {/* شريط اختيار المشروع */}
       <div className="bg-white dark:bg-gray-800 shadow-lg border-b">
-        <div className="container mx-auto px-4 py-6">
+        <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-center gap-4">
-              <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-3 rounded-xl">
-                <BarChart3 className="h-8 w-8 text-white" />
+            <div className="flex items-center gap-3">
+              <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-2 rounded-lg">
+                <BarChart3 className="h-6 w-6 text-white" />
               </div>
-              <div>
-                <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  نظام التقارير الاحترافي
-                </h1>
-                <p className="text-muted-foreground mt-1">إنشاء وإدارة تقارير المشروع بطريقة احترافية ومتقدمة</p>
-              </div>
+              <span className="text-lg font-medium text-gray-700 dark:text-gray-300">اختيار المشروع</span>
             </div>
             <div className="flex items-center gap-3 flex-wrap">
               <div className="flex-1 min-w-[300px] max-w-[400px]">
