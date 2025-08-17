@@ -350,7 +350,7 @@ export default function SupplierAccountsPage() {
       const projectName = projects.find(p => p.id === purchase.projectId)?.name || 'غير محدد';
       
       // العثور على اسم المادة (استخدام اسم المادة إذا كان متوفراً، وإلا اسم المادة المخزن في النظام)
-      const materialName = purchase.materialId || 'غير محدد';
+      const materialName = (purchase as any).materialName || (purchase as any).material?.name || purchase.materialId || 'غير محدد';
       
       const rowData = [
         index + 1,
@@ -865,7 +865,7 @@ export default function SupplierAccountsPage() {
                           <Package className="w-4 h-4 text-blue-500" />
                           <div className="flex-1">
                             <span className="text-sm font-medium text-gray-900">
-                              {(purchase as any).material?.name || purchase.materialId}
+                              {(purchase as any).materialName || (purchase as any).material?.name || purchase.materialId}
                             </span>
                             <div className="text-xs text-gray-600 mt-1" dir="ltr">
                               الكمية: {purchase.quantity} | سعر الوحدة: {formatCurrency(purchase.unitPrice)}
