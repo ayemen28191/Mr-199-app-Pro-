@@ -46,6 +46,9 @@ import ToolCategoriesDialog from '@/components/tools/tool-categories-dialog';
 import ToolsReportsDialog from '@/components/tools/tools-reports-dialog';
 import { PurchaseIntegrationDialog } from '@/components/tools/PurchaseIntegrationDialog';
 import { MaintenanceScheduleDialog } from '@/components/tools/MaintenanceScheduleDialog';
+import EnhancedSearchFilter from '@/components/tools/enhanced-search-filter';
+import ToolsNotificationSystem from '@/components/tools/tools-notification-system';
+import LocationTrackingSystem from '@/components/tools/location-tracking-system';
 
 // Types from schema
 interface ToolCategory {
@@ -104,8 +107,9 @@ const ToolsManagementPage: React.FC = () => {
   const [isCategoriesDialogOpen, setIsCategoriesDialogOpen] = useState(false);
   const [isReportsDialogOpen, setIsReportsDialogOpen] = useState(false);
   const [isPurchaseIntegrationOpen, setIsPurchaseIntegrationOpen] = useState(false);
-  const [selectedPurchaseId, setSelectedPurchaseId] = useState<string>('');
   const [isMaintenanceScheduleOpen, setIsMaintenanceScheduleOpen] = useState(false);
+  const [selectedPurchaseId, setSelectedPurchaseId] = useState<string>('');
+  const [currentView, setCurrentView] = useState<'tools' | 'locations'>('tools');
 
   const { setFloatingAction } = useFloatingButton();
 
@@ -350,231 +354,204 @@ const ToolsManagementPage: React.FC = () => {
 
   return (
     <div className="container mx-auto p-4 space-y-6" dir="rtl">
-      {/* Statistics Cards - Using Unified Component */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatsCard
-          title="إجمالي الأدوات"
-          value={stats.total}
-          icon={Package}
-          color="blue"
-          data-testid="total-tools-stat"
-        />
-        <StatsCard
-          title="متاح"
-          value={stats.available}
-          icon={CheckCircle}
-          color="green"
-          data-testid="available-tools-stat"
-        />
-        <StatsCard
-          title="قيد الاستخدام"
-          value={stats.inUse}
-          icon={Wrench}
-          color="orange"
-          data-testid="in-use-tools-stat"
-        />
-        <StatsCard
-          title="صيانة"
-          value={stats.maintenance}
-          icon={AlertTriangle}
-          color="red"
-          data-testid="maintenance-tools-stat"
-        />
+      {/* Enhanced Header with Navigation Tabs */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div className="flex justify-between items-center mb-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              إدارة الأدوات والمعدات
+            </h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-1">
+              نظام شامل لتتبع وإدارة الأدوات والمعدات في المشاريع
+            </p>
+          </div>
+          
+          <div className="flex gap-2">
+            <ToolsNotificationSystem />
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setIsQrScannerOpen(true)}
+              className="flex items-center gap-2"
+            >
+              <QrCode className="h-4 w-4" />
+              ماسح QR
+            </Button>
+          </div>
+        </div>
+
+        {/* Navigation Tabs */}
+        <div className="flex gap-4 border-b border-gray-200 dark:border-gray-700">
+          <Button
+            variant={currentView === 'tools' ? 'default' : 'ghost'}
+            onClick={() => setCurrentView('tools')}
+            className="rounded-none border-b-2 border-transparent data-[active=true]:border-blue-500 px-4 py-2"
+          >
+            <Package className="h-4 w-4 ml-1" />
+            إدارة الأدوات
+          </Button>
+          <Button
+            variant={currentView === 'locations' ? 'default' : 'ghost'}
+            onClick={() => setCurrentView('locations')}
+            className="rounded-none border-b-2 border-transparent data-[active=true]:border-blue-500 px-4 py-2"
+          >
+            <MapPin className="h-4 w-4 ml-1" />
+            تتبع المواقع
+          </Button>
+        </div>
       </div>
 
-      {/* Filters and Search - Enhanced Professional Design */}
-      <Card className="bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700">
-        <CardHeader className="pb-4">
-          <div className="flex justify-between items-center">
-            <CardTitle className="text-lg font-semibold flex items-center gap-2">
-              <Filter className="h-5 w-5" />
-              البحث والفلترة
-            </CardTitle>
-            <div className="flex gap-2 flex-wrap">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setIsCategoriesDialogOpen(true)}
-              >
-                <Folder className="h-4 w-4 ml-1" />
-                إدارة التصنيفات
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setIsReportsDialogOpen(true)}
-              >
-                <BarChart3 className="h-4 w-4 ml-1" />
-                التقارير
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setIsPurchaseIntegrationOpen(true)}
-                className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
-              >
-                <Package className="h-4 w-4 ml-1" />
-                تكامل المشتريات
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setIsMaintenanceScheduleOpen(true)}
-                className="bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-200"
-              >
-                <Settings className="h-4 w-4 ml-1" />
-                جدولة الصيانة
-              </Button>
-            </div>
+      {/* Content based on current view */}
+      {currentView === 'locations' ? (
+        <LocationTrackingSystem />
+      ) : (
+        <>
+          {/* Statistics Cards - Using Unified Component */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <StatsCard
+              title="إجمالي الأدوات"
+              value={stats.total}
+              icon={Package}
+              color="blue"
+              data-testid="total-tools-stat"
+            />
+            <StatsCard
+              title="متاح"
+              value={stats.available}
+              icon={CheckCircle}
+              color="green"
+              data-testid="available-tools-stat"
+            />
+            <StatsCard
+              title="قيد الاستخدام"
+              value={stats.inUse}
+              icon={Wrench}
+              color="orange"
+              data-testid="in-use-tools-stat"
+            />
+            <StatsCard
+              title="صيانة"
+              value={stats.maintenance}
+              icon={AlertTriangle}
+              color="red"
+              data-testid="maintenance-tools-stat"
+            />
           </div>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {/* Search Bar */}
-            <div className="relative">
-              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="ابحث عن الأدوات حسب الاسم، الوصف، SKU أو الرقم التسلسلي..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pr-10 bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                data-testid="search-input"
-              />
-            </div>
 
-            {/* Filter Controls */}
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {/* Category Filter */}
-              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-600" data-testid="category-filter">
-                  <SelectValue placeholder="اختر التصنيف" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">جميع التصنيفات</SelectItem>
-                  {categories.map((category) => (
-                    <SelectItem key={category.id} value={category.id}>
-                      {category.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {/* Enhanced Search Filter Component */}
+          <EnhancedSearchFilter
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            selectedCategory={selectedCategory}
+            onCategoryChange={setSelectedCategory}
+            selectedStatus={selectedStatus}
+            onStatusChange={setSelectedStatus}
+            selectedCondition={selectedCondition}
+            onConditionChange={setSelectedCondition}
+            categories={categories}
+            onClearFilters={clearFilters}
+            toolStats={{
+              total: stats.total,
+              available: stats.available,
+              inUse: stats.inUse,
+              maintenance: stats.maintenance,
+              damaged: 0,
+              maintenanceOverdue: 0
+            }}
+          />
 
-              {/* Status Filter */}
-              <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                <SelectTrigger className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-600" data-testid="status-filter">
-                  <SelectValue placeholder="اختر الحالة" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">جميع الحالات</SelectItem>
-                  <SelectItem value="available">متاح</SelectItem>
-                  <SelectItem value="in_use">قيد الاستخدام</SelectItem>
-                  <SelectItem value="maintenance">صيانة</SelectItem>
-                  <SelectItem value="damaged">معطل</SelectItem>
-                  <SelectItem value="retired">متقاعد</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {/* Condition Filter */}
-              <Select value={selectedCondition} onValueChange={setSelectedCondition}>
-                <SelectTrigger className="bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-600" data-testid="condition-filter">
-                  <SelectValue placeholder="اختر الجودة" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">جميع الجودات</SelectItem>
-                  <SelectItem value="excellent">ممتاز</SelectItem>
-                  <SelectItem value="good">جيد</SelectItem>
-                  <SelectItem value="fair">مقبول</SelectItem>
-                  <SelectItem value="poor">ضعيف</SelectItem>
-                  <SelectItem value="damaged">معطل</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {/* Clear Filters and View Mode */}
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
+          {/* Action Buttons Bar */}
+          <Card className="bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700">
+            <CardContent className="p-4">
+              <div className="flex gap-2 flex-wrap justify-center">
+                <Button 
+                  variant="outline" 
                   size="sm"
-                  onClick={clearFilters}
-                  className="flex-1 border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800"
-                  data-testid="clear-filters-button"
+                  onClick={() => setIsCategoriesDialogOpen(true)}
                 >
-                  <X className="h-4 w-4 mr-1" />
-                  مسح
+                  <Folder className="h-4 w-4 ml-1" />
+                  إدارة التصنيفات
                 </Button>
-                <div className="flex border border-gray-200 dark:border-gray-600 rounded-md overflow-hidden">
-                  <Button
-                    variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => setViewMode('grid')}
-                    className="rounded-none border-0"
-                    data-testid="grid-view-button"
-                  >
-                    <Grid className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant={viewMode === 'list' ? 'default' : 'ghost'}
-                    size="sm"
-                    onClick={() => setViewMode('list')}
-                    className="rounded-none border-0 border-r border-gray-200 dark:border-gray-600"
-                    data-testid="list-view-button"
-                  >
-                    <List className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Tools Grid/List */}
-      <div className="space-y-4">
-        {toolsLoading || categoriesLoading ? (
-          <div className="flex justify-center items-center py-12">
-            <div className="flex items-center gap-3">
-              <RefreshCw className="h-5 w-5 animate-spin" />
-              <span className="text-muted-foreground">جاري تحميل الأدوات...</span>
-            </div>
-          </div>
-        ) : tools.length === 0 ? (
-          <Card className="py-12">
-            <CardContent className="text-center space-y-4">
-              <div className="flex justify-center">
-                <Package className="h-16 w-16 text-gray-400 mb-4" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                  لا توجد أدوات
-                </h3>
-                <p className="text-gray-500 dark:text-gray-400 text-center mb-4">
-                  {searchTerm || (selectedCategory && selectedCategory !== 'all') || (selectedStatus && selectedStatus !== 'all') || (selectedCondition && selectedCondition !== 'all')
-                    ? 'لا توجد أدوات تطابق المعايير المحددة'
-                    : 'لم يتم إضافة أي أدوات بعد'}
-                </p>
-                {!searchTerm && selectedCategory === 'all' && selectedStatus === 'all' && selectedCondition === 'all' && (
-                  <Button 
-                    onClick={() => setIsAddDialogOpen(true)}
-                    className="bg-primary hover:bg-primary/90"
-                    data-testid="add-first-tool-button"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    إضافة أول أداة
-                  </Button>
-                )}
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setIsReportsDialogOpen(true)}
+                >
+                  <BarChart3 className="h-4 w-4 ml-1" />
+                  التقارير
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setIsPurchaseIntegrationOpen(true)}
+                  className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
+                >
+                  <Package className="h-4 w-4 ml-1" />
+                  تكامل المشتريات
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setIsMaintenanceScheduleOpen(true)}
+                  className="bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-200"
+                >
+                  <Settings className="h-4 w-4 ml-1" />
+                  جدولة الصيانة
+                </Button>
               </div>
             </CardContent>
           </Card>
-        ) : (
-          <div className={viewMode === 'grid' 
-            ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" 
-            : "space-y-4"
-          }>
-            {tools.map((tool) => (
-              <ToolCard key={tool.id} tool={tool} />
-            ))}
+
+          {/* Tools Grid/List */}
+          <div className="space-y-4">
+            {toolsLoading || categoriesLoading ? (
+              <div className="flex justify-center items-center py-12">
+                <div className="flex items-center gap-3">
+                  <RefreshCw className="h-5 w-5 animate-spin" />
+                  <span className="text-muted-foreground">جاري تحميل الأدوات...</span>
+                </div>
+              </div>
+            ) : tools.length === 0 ? (
+              <Card className="py-12">
+                <CardContent className="text-center space-y-4">
+                  <div className="flex justify-center">
+                    <Package className="h-16 w-16 text-gray-400 mb-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                      لا توجد أدوات
+                    </h3>
+                    <p className="text-gray-500 dark:text-gray-400 text-center mb-4">
+                      {searchTerm || (selectedCategory && selectedCategory !== 'all') || (selectedStatus && selectedStatus !== 'all') || (selectedCondition && selectedCondition !== 'all')
+                        ? 'لا توجد أدوات تطابق المعايير المحددة'
+                        : 'لم يتم إضافة أي أدوات بعد'}
+                    </p>
+                    {!searchTerm && selectedCategory === 'all' && selectedStatus === 'all' && selectedCondition === 'all' && (
+                      <Button 
+                        onClick={() => setIsAddDialogOpen(true)}
+                        className="bg-primary hover:bg-primary/90"
+                        data-testid="add-first-tool-button"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        إضافة أول أداة
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className={viewMode === 'grid' 
+                ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" 
+                : "space-y-4"
+              }>
+                {tools.map((tool) => (
+                  <ToolCard key={tool.id} tool={tool} />
+                ))}
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </>
+      )}
 
       {/* Dialogs */}
       <AddToolDialog 

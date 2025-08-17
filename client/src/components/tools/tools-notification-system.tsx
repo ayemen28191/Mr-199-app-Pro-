@@ -1,0 +1,428 @@
+import React, { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { 
+  Bell, 
+  AlertTriangle, 
+  Calendar, 
+  Wrench, 
+  Package, 
+  Clock,
+  CheckCircle,
+  X,
+  Settings,
+  Zap
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from '@/components/ui/collapsible';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { apiRequest } from '@/lib/queryClient';
+import { formatDistanceToNow } from 'date-fns';
+import { ar } from 'date-fns/locale';
+
+interface NotificationSettings {
+  maintenanceAlerts: boolean;
+  warrantyExpiry: boolean;
+  stockLevels: boolean;
+  unusedTools: boolean;
+  damagedReports: boolean;
+}
+
+interface ToolNotification {
+  id: string;
+  type: 'maintenance' | 'warranty' | 'stock' | 'unused' | 'damaged';
+  title: string;
+  message: string;
+  toolId: string;
+  toolName: string;
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  timestamp: string;
+  isRead: boolean;
+  actionRequired: boolean;
+}
+
+const ToolsNotificationSystem: React.FC = () => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [selectedType, setSelectedType] = useState<string>('all');
+  const [settings, setSettings] = useState<NotificationSettings>({
+    maintenanceAlerts: true,
+    warrantyExpiry: true,
+    stockLevels: true,
+    unusedTools: false,
+    damagedReports: true,
+  });
+
+  // جلب الإشعارات من الخادم
+  const { data: notifications = [], refetch } = useQuery({
+    queryKey: ['/api/tools/notifications'],
+    queryFn: async () => {
+      // محاكاة البيانات - في التطبيق الحقيقي سيتم جلبها من الخادم
+      const tools = await apiRequest('/api/tools', 'GET');
+      const mockNotifications: ToolNotification[] = [];
+
+      // فحص الصيانة المتأخرة
+      tools.forEach((tool: any) => {
+        if (tool.nextMaintenanceDate) {
+          const maintenanceDate = new Date(tool.nextMaintenanceDate);
+          const today = new Date();
+          const daysDiff = Math.ceil((maintenanceDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+          
+          if (daysDiff < 0) {
+            mockNotifications.push({
+              id: `maintenance-${tool.id}`,
+              type: 'maintenance',
+              title: 'صيانة متأخرة',
+              message: `الأداة "${tool.name}" متأخرة عن موعد الصيانة بـ ${Math.abs(daysDiff)} يوم`,
+              toolId: tool.id,
+              toolName: tool.name,
+              priority: 'critical',
+              timestamp: new Date().toISOString(),
+              isRead: false,
+              actionRequired: true,
+            });
+          } else if (daysDiff <= 3) {
+            mockNotifications.push({
+              id: `maintenance-soon-${tool.id}`,
+              type: 'maintenance',
+              title: 'صيانة قريبة',
+              message: `الأداة "${tool.name}" تحتاج صيانة خلال ${daysDiff} أيام`,
+              toolId: tool.id,
+              toolName: tool.name,
+              priority: 'high',
+              timestamp: new Date().toISOString(),
+              isRead: false,
+              actionRequired: true,
+            });
+          }
+        }
+
+        // فحص انتهاء الضمان
+        if (tool.warrantyExpiry) {
+          const warrantyDate = new Date(tool.warrantyExpiry);
+          const today = new Date();
+          const daysDiff = Math.ceil((warrantyDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+          
+          if (daysDiff <= 30 && daysDiff > 0) {
+            mockNotifications.push({
+              id: `warranty-${tool.id}`,
+              type: 'warranty',
+              title: 'انتهاء الضمان قريباً',
+              message: `ضمان الأداة "${tool.name}" ينتهي خلال ${daysDiff} يوم`,
+              toolId: tool.id,
+              toolName: tool.name,
+              priority: 'medium',
+              timestamp: new Date().toISOString(),
+              isRead: false,
+              actionRequired: false,
+            });
+          } else if (daysDiff <= 0) {
+            mockNotifications.push({
+              id: `warranty-expired-${tool.id}`,
+              type: 'warranty',
+              title: 'انتهى الضمان',
+              message: `انتهى ضمان الأداة "${tool.name}"`,
+              toolId: tool.id,
+              toolName: tool.name,
+              priority: 'low',
+              timestamp: new Date().toISOString(),
+              isRead: false,
+              actionRequired: false,
+            });
+          }
+        }
+
+        // فحص الأدوات المعطلة
+        if (tool.status === 'damaged') {
+          mockNotifications.push({
+            id: `damaged-${tool.id}`,
+            type: 'damaged',
+            title: 'أداة معطلة',
+            message: `الأداة "${tool.name}" بحالة تالفة وتحتاج إصلاح أو استبدال`,
+            toolId: tool.id,
+            toolName: tool.name,
+            priority: 'high',
+            timestamp: new Date().toISOString(),
+            isRead: false,
+            actionRequired: true,
+          });
+        }
+      });
+
+      return mockNotifications;
+    },
+    refetchInterval: 300000, // كل 5 دقائق
+  });
+
+  const unreadCount = notifications.filter(n => !n.isRead).length;
+  const criticalCount = notifications.filter(n => n.priority === 'critical').length;
+
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case 'maintenance': return <Wrench className="h-4 w-4" />;
+      case 'warranty': return <Calendar className="h-4 w-4" />;
+      case 'stock': return <Package className="h-4 w-4" />;
+      case 'unused': return <Clock className="h-4 w-4" />;
+      case 'damaged': return <AlertTriangle className="h-4 w-4" />;
+      default: return <Bell className="h-4 w-4" />;
+    }
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'critical': return 'bg-red-100 border-red-300 text-red-800 dark:bg-red-900/20 dark:border-red-800 dark:text-red-200';
+      case 'high': return 'bg-orange-100 border-orange-300 text-orange-800 dark:bg-orange-900/20 dark:border-orange-800 dark:text-orange-200';
+      case 'medium': return 'bg-yellow-100 border-yellow-300 text-yellow-800 dark:bg-yellow-900/20 dark:border-yellow-800 dark:text-yellow-200';
+      case 'low': return 'bg-blue-100 border-blue-300 text-blue-800 dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-200';
+      default: return 'bg-gray-100 border-gray-300 text-gray-800 dark:bg-gray-900/20 dark:border-gray-800 dark:text-gray-200';
+    }
+  };
+
+  const filteredNotifications = notifications.filter(notification => 
+    selectedType === 'all' || notification.type === selectedType
+  );
+
+  const markAsRead = async (notificationId: string) => {
+    // في التطبيق الحقيقي، سيتم إرسال طلب للخادم
+    console.log(`Marking notification ${notificationId} as read`);
+    refetch();
+  };
+
+  const markAllAsRead = async () => {
+    // في التطبيق الحقيقي، سيتم إرسال طلب للخادم
+    console.log('Marking all notifications as read');
+    refetch();
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button 
+          variant="outline" 
+          size="sm"
+          className="relative"
+          data-testid="notifications-button"
+        >
+          <Bell className="h-4 w-4" />
+          {unreadCount > 0 && (
+            <Badge 
+              variant="destructive" 
+              className="absolute -top-2 -left-2 h-5 w-5 flex items-center justify-center text-xs p-0 min-w-0"
+            >
+              {unreadCount > 99 ? '99+' : unreadCount}
+            </Badge>
+          )}
+          إشعارات الأدوات
+        </Button>
+      </DialogTrigger>
+
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Bell className="h-5 w-5" />
+            إشعارات إدارة الأدوات
+            {criticalCount > 0 && (
+              <Badge variant="destructive" className="flex items-center gap-1">
+                <Zap className="h-3 w-3" />
+                {criticalCount} عاجل
+              </Badge>
+            )}
+          </DialogTitle>
+          <DialogDescription>
+            تتبع حالة الأدوات والصيانة والتنبيهات المهمة
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="flex flex-col h-full">
+          {/* Filter Tabs */}
+          <div className="flex gap-2 mb-4 flex-wrap">
+            <Button
+              variant={selectedType === 'all' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setSelectedType('all')}
+            >
+              الكل ({notifications.length})
+            </Button>
+            <Button
+              variant={selectedType === 'maintenance' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setSelectedType('maintenance')}
+            >
+              <Wrench className="h-3 w-3 ml-1" />
+              صيانة ({notifications.filter(n => n.type === 'maintenance').length})
+            </Button>
+            <Button
+              variant={selectedType === 'warranty' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setSelectedType('warranty')}
+            >
+              <Calendar className="h-3 w-3 ml-1" />
+              ضمان ({notifications.filter(n => n.type === 'warranty').length})
+            </Button>
+            <Button
+              variant={selectedType === 'damaged' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setSelectedType('damaged')}
+            >
+              <AlertTriangle className="h-3 w-3 ml-1" />
+              معطل ({notifications.filter(n => n.type === 'damaged').length})
+            </Button>
+          </div>
+
+          {/* Action Bar */}
+          <div className="flex justify-between items-center mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={markAllAsRead}
+              disabled={unreadCount === 0}
+            >
+              <CheckCircle className="h-4 w-4 ml-1" />
+              تحديد الكل كمقروء
+            </Button>
+            
+            <Collapsible>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" size="sm">
+                  <Settings className="h-4 w-4 ml-1" />
+                  إعدادات الإشعارات
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="mt-2 p-3 border rounded-md bg-gray-50 dark:bg-gray-900">
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2 space-x-reverse">
+                    <Switch
+                      id="maintenance-alerts"
+                      checked={settings.maintenanceAlerts}
+                      onCheckedChange={(checked) => 
+                        setSettings(prev => ({ ...prev, maintenanceAlerts: checked }))
+                      }
+                    />
+                    <Label htmlFor="maintenance-alerts" className="text-sm">
+                      تنبيهات الصيانة
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2 space-x-reverse">
+                    <Switch
+                      id="warranty-expiry"
+                      checked={settings.warrantyExpiry}
+                      onCheckedChange={(checked) => 
+                        setSettings(prev => ({ ...prev, warrantyExpiry: checked }))
+                      }
+                    />
+                    <Label htmlFor="warranty-expiry" className="text-sm">
+                      انتهاء الضمان
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2 space-x-reverse">
+                    <Switch
+                      id="damaged-reports"
+                      checked={settings.damagedReports}
+                      onCheckedChange={(checked) => 
+                        setSettings(prev => ({ ...prev, damagedReports: checked }))
+                      }
+                    />
+                    <Label htmlFor="damaged-reports" className="text-sm">
+                      تقارير الأعطال
+                    </Label>
+                  </div>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+          </div>
+
+          {/* Notifications List */}
+          <div className="flex-1 overflow-y-auto space-y-3">
+            {filteredNotifications.length === 0 ? (
+              <div className="text-center py-8">
+                <Bell className="h-12 w-12 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500 dark:text-gray-400">
+                  {selectedType === 'all' ? 'لا توجد إشعارات' : 'لا توجد إشعارات من هذا النوع'}
+                </p>
+              </div>
+            ) : (
+              filteredNotifications.map((notification) => (
+                <Card
+                  key={notification.id}
+                  className={`${getPriorityColor(notification.priority)} ${
+                    !notification.isRead ? 'shadow-md' : 'opacity-75'
+                  } transition-all hover:shadow-lg`}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-start gap-3">
+                        <div className="flex-shrink-0 mt-0.5">
+                          {getNotificationIcon(notification.type)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h4 className="font-medium text-sm">
+                              {notification.title}
+                            </h4>
+                            {!notification.isRead && (
+                              <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
+                            )}
+                            {notification.actionRequired && (
+                              <Badge variant="outline" className="text-xs">
+                                يتطلب إجراء
+                              </Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                            {notification.message}
+                          </p>
+                          <div className="flex items-center gap-2 text-xs text-gray-500">
+                            <span>الأداة: {notification.toolName}</span>
+                            <span>•</span>
+                            <span>
+                              {formatDistanceToNow(new Date(notification.timestamp), {
+                                addSuffix: true,
+                                locale: ar
+                              })}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex gap-1">
+                        {!notification.isRead && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => markAsRead(notification.id)}
+                          >
+                            <CheckCircle className="h-3 w-3" />
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export default ToolsNotificationSystem;

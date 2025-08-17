@@ -128,9 +128,20 @@ const QrScanner: React.FC<QrScannerProps> = ({ open, onOpenChange, onScanResult 
     
     if (!ctx) return;
 
+    // Check if video dimensions are available
+    if (video.videoWidth === 0 || video.videoHeight === 0) {
+      // Video not ready yet
+      return;
+    }
+
     // Set canvas size to match video
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
+    
+    // Verify canvas has valid dimensions before proceeding
+    if (canvas.width === 0 || canvas.height === 0) {
+      return;
+    }
     
     // Draw current video frame to canvas
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
