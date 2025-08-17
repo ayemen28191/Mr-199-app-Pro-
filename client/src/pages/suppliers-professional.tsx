@@ -175,7 +175,7 @@ export default function SuppliersPage() {
       </div>
 
       {/* Statistics Cards */}
-      <StatsGrid>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         <StatsCard
           title="إجمالي الموردين"
           value={stats.total}
@@ -201,7 +201,7 @@ export default function SuppliersPage() {
           color="red"
           formatter={formatCurrency}
         />
-      </StatsGrid>
+      </div>
 
       {/* Search */}
       <Card>

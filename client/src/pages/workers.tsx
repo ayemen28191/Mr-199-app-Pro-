@@ -323,7 +323,7 @@ export default function WorkersPage() {
       </div>
 
       {/* Statistics Cards */}
-      <StatsGrid>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         <StatsCard
           title="إجمالي العمال"
           value={stats.total}
@@ -349,7 +349,7 @@ export default function WorkersPage() {
           color="purple"
           formatter={(value: number) => formatCurrency(value)}
         />
-      </StatsGrid>
+      </div>
 
       {/* Filters */}
       <Card>

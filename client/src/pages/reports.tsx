@@ -393,7 +393,7 @@ export default function Reports() {
         )}
         {/* لوحة الإحصائيات الذكية */}
         {selectedProjectId && (
-          <StatsGrid className="mb-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
             <StatsCard
               title="إجمالي الدخل"
               value={totalFundTransfers}
@@ -422,7 +422,7 @@ export default function Reports() {
               color="purple"
               formatter={(value: number) => `${value} عامل`}
             />
-          </StatsGrid>
+          </div>
         )}
 
         {/* واجهة إنشاء التقارير المحسنة */}

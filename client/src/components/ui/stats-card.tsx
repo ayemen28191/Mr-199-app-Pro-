@@ -67,16 +67,16 @@ export function StatsCard({ title, value, icon: Icon, color, formatter }: StatsC
   
   return (
     <Card className={`${colors.border} ${colors.bg} border-l-4 hover:shadow-md transition-shadow duration-200`}>
-      <CardContent className="p-6">
+      <CardContent className="p-4">
         <div className="flex items-center justify-between">
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-muted-foreground">{title}</p>
-            <p className={`text-2xl md:text-3xl font-bold ${colors.text}`}>
+          <div className="space-y-1">
+            <p className="text-xs font-medium text-muted-foreground">{title}</p>
+            <p className={`text-lg font-bold ${colors.text}`}>
               {displayValue}
             </p>
           </div>
-          <div className={`h-12 w-12 ${colors.iconBg} rounded-full flex items-center justify-center`}>
-            <Icon className={`h-6 w-6 ${colors.iconColor}`} />
+          <div className={`h-10 w-10 ${colors.iconBg} rounded-full flex items-center justify-center`}>
+            <Icon className={`h-5 w-5 ${colors.iconColor}`} />
           </div>
         </div>
       </CardContent>
@@ -86,7 +86,7 @@ export function StatsCard({ title, value, icon: Icon, color, formatter }: StatsC
 
 export function StatsGrid({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 ${className}`}>
+    <div className={`grid grid-cols-2 lg:grid-cols-4 gap-3 ${className}`}>
       {children}
     </div>
   );
