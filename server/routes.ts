@@ -11,7 +11,8 @@ import {
   insertTransportationExpenseSchema, insertDailyExpenseSummarySchema, insertWorkerTransferSchema,
   insertWorkerBalanceSchema, insertAutocompleteDataSchema, insertWorkerTypeSchema,
   insertWorkerMiscExpenseSchema, insertUserSchema, insertSupplierSchema, insertSupplierPaymentSchema,
-  insertPrintSettingsSchema, insertProjectFundTransferSchema, insertExportSettingsSchema
+  insertPrintSettingsSchema, insertProjectFundTransferSchema, insertExportSettingsSchema,
+  insertReportTemplateSchema
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
