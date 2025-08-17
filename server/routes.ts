@@ -4484,7 +4484,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         WHERE table_name='tools' AND column_name='project_id'
       `);
 
-      if (columnCheck.length === 0) {
+      if (Array.isArray(columnCheck) && columnCheck.length === 0) {
         // إضافة العمود إذا لم يكن موجوداً
         console.log("العمود غير موجود - جاري الإضافة...");
         await db.execute(sql`
@@ -4602,6 +4602,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ 
         success: false, 
         message: "فشل في تحديث schema", 
+        error: error instanceof Error ? error.message : "خطأ غير معروف"
+      });
+    }
+  });
+
+  // إضافة العمود notes المفقود
+  app.post("/api/migrate/add-notes-column", async (req, res) => {
+    try {
+      console.log("🔧 إضافة العمود notes لجدول tools...");
+      
+      await db.execute(sql`
+        ALTER TABLE tools 
+        ADD COLUMN IF NOT EXISTS notes TEXT
+      `);
+      
+      console.log("✅ تم إضافة العمود notes بنجاح");
+      
+      res.json({ 
+        success: true, 
+        message: "تم إضافة العمود notes بنجاح"
+      });
+      
+    } catch (error) {
+      console.error("❌ خطأ في إضافة العمود notes:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "فشل في إضافة العمود notes", 
         error: error instanceof Error ? error.message : "خطأ غير معروف"
       });
     }
