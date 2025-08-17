@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   Plus, 
   Search, 
@@ -20,7 +20,10 @@ import {
   Folder,
   BarChart3,
   Move,
-  ShoppingCart
+  ShoppingCart,
+  Edit,
+  Trash2,
+  MoreVertical
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -34,10 +37,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { StatsCard } from '@/components/ui/stats-card';
 import { useFloatingButton } from '@/components/layout/floating-button-context';
 
 import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
 import AddToolDialog from '@/components/tools/add-tool-dialog';
 import ToolDetailsDialog from '@/components/tools/tool-details-dialog';
 import EditToolDialog from '@/components/tools/edit-tool-dialog';
@@ -111,9 +132,12 @@ const ToolsManagementPage: React.FC = () => {
   const [isMaintenanceScheduleOpen, setIsMaintenanceScheduleOpen] = useState(false);
   const [selectedPurchaseId, setSelectedPurchaseId] = useState<string>('');
   const [currentView, setCurrentView] = useState<'tools' | 'locations'>('tools');
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [toolToDelete, setToolToDelete] = useState<Tool | null>(null);
 
   const { setFloatingAction } = useFloatingButton();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // Set up floating action button
   useEffect(() => {
@@ -192,6 +216,42 @@ const ToolsManagementPage: React.FC = () => {
     setSelectedCondition('all');
   };
 
+  // Delete tool mutation
+  const deleteToolMutation = useMutation({
+    mutationFn: async (toolId: string) => {
+      return apiRequest(`/api/tools/${toolId}`, 'DELETE');
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/tools'] });
+      toast({
+        title: 'تم حذف الأداة بنجاح',
+        description: `تم حذف ${toolToDelete?.name} من النظام`,
+      });
+      setToolToDelete(null);
+      setIsDeleteDialogOpen(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'خطأ في حذف الأداة',
+        description: error.message || 'حدث خطأ أثناء حذف الأداة',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Handle delete tool
+  const handleDeleteTool = (tool: Tool) => {
+    setToolToDelete(tool);
+    setIsDeleteDialogOpen(true);
+  };
+
+  // Confirm delete
+  const confirmDelete = () => {
+    if (toolToDelete) {
+      deleteToolMutation.mutate(toolToDelete.id);
+    }
+  };
+
   // Get status badge variant
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
@@ -216,14 +276,14 @@ const ToolsManagementPage: React.FC = () => {
     }
   };
 
-  // Compact Tool Card Component
+  // Enhanced Tool Card Component
   const ToolCard: React.FC<{ tool: Tool }> = ({ tool }) => {
     const category = categories.find(c => c.id === tool.categoryId);
     
     return (
-      <Card className="hover:shadow-lg transition-all duration-200 cursor-pointer border-l-4 border-l-blue-500" data-testid={`tool-card-${tool.id}`}>
+      <Card className="hover:shadow-lg transition-all duration-200 border-l-4 border-l-blue-500 group" data-testid={`tool-card-${tool.id}`}>
         <CardContent className="p-4">
-          {/* Header Row */}
+          {/* Header Row with Actions Menu */}
           <div className="flex items-start justify-between mb-3">
             <div className="flex-1 min-w-0">
               <h3 className="font-semibold text-sm truncate text-gray-900 dark:text-gray-100">
@@ -235,15 +295,73 @@ const ToolsManagementPage: React.FC = () => {
                 </p>
               )}
             </div>
-            <Badge 
-              variant={getStatusBadgeVariant(tool.status)} 
-              className="text-xs h-5 px-2 ml-2"
-            >
-              {tool.status === 'available' ? 'متاح' :
-               tool.status === 'in_use' ? 'مستخدم' :
-               tool.status === 'maintenance' ? 'صيانة' :
-               tool.status === 'damaged' ? 'معطل' : 'متقاعد'}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge 
+                variant={getStatusBadgeVariant(tool.status)} 
+                className="text-xs h-5 px-2"
+              >
+                {tool.status === 'available' ? 'متاح' :
+                 tool.status === 'in_use' ? 'مستخدم' :
+                 tool.status === 'maintenance' ? 'صيانة' :
+                 tool.status === 'damaged' ? 'معطل' : 'متقاعد'}
+              </Badge>
+              
+              {/* Actions Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                    data-testid={`tool-actions-${tool.id}`}
+                  >
+                    <MoreVertical className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem 
+                    onClick={() => {
+                      setSelectedToolId(tool.id);
+                      setIsDetailsDialogOpen(true);
+                    }}
+                    data-testid={`view-details-${tool.id}`}
+                  >
+                    <Eye className="h-4 w-4 ml-2" />
+                    عرض التفاصيل
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => {
+                      setSelectedToolId(tool.id);
+                      setIsEditDialogOpen(true);
+                    }}
+                    data-testid={`edit-tool-${tool.id}`}
+                  >
+                    <Edit className="h-4 w-4 ml-2" />
+                    تعديل
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => {
+                      setSelectedToolId(tool.id);
+                      setSelectedToolName(tool.name);
+                      setIsMovementsDialogOpen(true);
+                    }}
+                    data-testid={`move-tool-${tool.id}`}
+                  >
+                    <Move className="h-4 w-4 ml-2" />
+                    نقل
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={() => handleDeleteTool(tool)}
+                    className="text-red-600 dark:text-red-400 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950"
+                    data-testid={`delete-tool-${tool.id}`}
+                  >
+                    <Trash2 className="h-4 w-4 ml-2" />
+                    حذف
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </div>
 
           {/* Info Row */}
@@ -259,24 +377,29 @@ const ToolsManagementPage: React.FC = () => {
                 <span>{tool.purchasePrice.toLocaleString()} ر.س</span>
               </div>
             )}
-            <div className="flex items-center text-xs text-gray-600 dark:text-gray-400">
-              <span className={`w-2 h-2 rounded-full ml-1 ${
-                tool.condition === 'excellent' ? 'bg-green-500' :
-                tool.condition === 'good' ? 'bg-blue-500' :
-                tool.condition === 'fair' ? 'bg-yellow-500' :
-                tool.condition === 'poor' ? 'bg-orange-500' : 'bg-red-500'
-              }`}></span>
-              <span>
-                {tool.condition === 'excellent' ? 'ممتاز' :
-                 tool.condition === 'good' ? 'جيد' :
-                 tool.condition === 'fair' ? 'مقبول' :
-                 tool.condition === 'poor' ? 'ضعيف' : 'معطل'}
+            <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
+              <div className="flex items-center">
+                <span className={`w-2 h-2 rounded-full ml-1 ${
+                  tool.condition === 'excellent' ? 'bg-green-500' :
+                  tool.condition === 'good' ? 'bg-blue-500' :
+                  tool.condition === 'fair' ? 'bg-yellow-500' :
+                  tool.condition === 'poor' ? 'bg-orange-500' : 'bg-red-500'
+                }`}></span>
+                <span>
+                  {tool.condition === 'excellent' ? 'ممتاز' :
+                   tool.condition === 'good' ? 'جيد' :
+                   tool.condition === 'fair' ? 'مقبول' :
+                   tool.condition === 'poor' ? 'ضعيف' : 'معطل'}
+                </span>
+              </div>
+              <span className="text-xs text-gray-400">
+                {tool.locationType}
               </span>
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-1">
+          {/* Quick Action Buttons */}
+          <div className="flex gap-2">
             <Button
               size="sm"
               variant="outline"
@@ -285,7 +408,7 @@ const ToolsManagementPage: React.FC = () => {
                 setIsDetailsDialogOpen(true);
               }}
               className="flex-1 h-7 text-xs"
-              data-testid={`view-tool-${tool.id}`}
+              data-testid={`quick-view-${tool.id}`}
             >
               <Eye className="h-3 w-3 ml-1" />
               عرض
@@ -295,14 +418,13 @@ const ToolsManagementPage: React.FC = () => {
               variant="outline"
               onClick={() => {
                 setSelectedToolId(tool.id);
-                setSelectedToolName(tool.name);
-                setIsMovementsDialogOpen(true);
+                setIsEditDialogOpen(true);
               }}
               className="flex-1 h-7 text-xs"
-              data-testid={`move-tool-${tool.id}`}
+              data-testid={`quick-edit-${tool.id}`}
             >
-              <Move className="h-3 w-3 ml-1" />
-              نقل
+              <Edit className="h-3 w-3 ml-1" />
+              تعديل
             </Button>
           </div>
         </CardContent>
@@ -595,6 +717,51 @@ const ToolsManagementPage: React.FC = () => {
         onClose={() => setIsMaintenanceScheduleOpen(false)}
         toolId={selectedToolId || undefined}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent dir="rtl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-red-600">
+              <AlertTriangle className="h-5 w-5" />
+              تأكيد حذف الأداة
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-right">
+              هل أنت متأكد من حذف الأداة "{toolToDelete?.name}"؟ 
+              <br />
+              <span className="text-red-600 font-medium">
+                لا يمكن التراجع عن هذا الإجراء وستفقد جميع البيانات المرتبطة بهذه الأداة.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel 
+              onClick={() => setIsDeleteDialogOpen(false)}
+              data-testid="cancel-delete"
+            >
+              إلغاء
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              disabled={deleteToolMutation.isPending}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+              data-testid="confirm-delete"
+            >
+              {deleteToolMutation.isPending ? (
+                <>
+                  <RefreshCw className="h-4 w-4 animate-spin ml-2" />
+                  جاري الحذف...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 ml-2" />
+                  حذف الأداة
+                </>
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
