@@ -433,6 +433,7 @@ export const tools = pgTable("tools", {
   name: text("name").notNull(),
   description: text("description"),
   categoryId: varchar("category_id").references(() => toolCategories.id),
+  projectId: varchar("project_id").references(() => projects.id), // المشروع المرتبط
   unit: text("unit").notNull().default("قطعة"), // الوحدة
   
   // خصائص الأداة

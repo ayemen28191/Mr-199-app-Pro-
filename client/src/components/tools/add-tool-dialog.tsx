@@ -586,23 +586,7 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                         name="projectId"
                         render={({ field }) => (
                           <FormItem>
-                            <div className="flex items-center gap-2">
-                              <FormLabel>المشروع</FormLabel>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                className="h-6 w-6 p-0"
-                                onClick={() => {
-                                  toast({
-                                    title: 'إضافة مشروع جديد',
-                                    description: 'سيتم إضافة هذه الميزة قريباً',
-                                  });
-                                }}
-                              >
-                                <Plus className="h-3 w-3" />
-                              </Button>
-                            </div>
+                            <FormLabel>المشروع</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value}>
                               <FormControl>
                                 <SelectTrigger data-testid="tool-project-select">
@@ -615,22 +599,6 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                                     {project.name}
                                   </SelectItem>
                                 ))}
-                                <div className="p-2 border-t">
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    className="w-full justify-start text-sm"
-                                    onClick={() => {
-                                      toast({
-                                        title: 'إضافة مشروع جديد',
-                                        description: 'سيتم إضافة هذه الميزة قريباً',
-                                      });
-                                    }}
-                                  >
-                                    <Plus className="h-4 w-4 mr-2" />
-                                    إضافة مشروع جديد
-                                  </Button>
-                                </div>
                               </SelectContent>
                             </Select>
                             <FormDescription>
