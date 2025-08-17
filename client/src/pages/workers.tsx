@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Edit2, Trash2, Users, Clock, DollarSign, Calendar, Search, Filter, User, Activity } from 'lucide-react';
+import { StatsCard, StatsGrid } from "@/components/ui/stats-card";
 import { apiRequest } from '@/lib/queryClient';
 import AddWorkerForm from '@/components/forms/add-worker-form';
 
@@ -179,6 +180,15 @@ export default function WorkersPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // دالة تنسيق العملة
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('ar-YE', {
+      style: 'decimal',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount) + ' ر.ي';
+  };
+
   const { data: workers = [], isLoading } = useQuery<Worker[]>({
     queryKey: ['/api/workers'],
   });
@@ -313,55 +323,33 @@ export default function WorkersPage() {
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-blue-100 text-sm">إجمالي العمال</p>
-                <p className="text-2xl font-bold">{stats.total}</p>
-              </div>
-              <Users className="h-8 w-8 text-blue-200" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-green-100 text-sm">العمال النشطون</p>
-                <p className="text-2xl font-bold">{stats.active}</p>
-              </div>
-              <Activity className="h-8 w-8 text-green-200" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-r from-red-500 to-red-600 text-white">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-red-100 text-sm">العمال غير النشطين</p>
-                <p className="text-2xl font-bold">{stats.inactive}</p>
-              </div>
-              <Clock className="h-8 w-8 text-red-200" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-purple-100 text-sm">متوسط الأجر</p>
-                <p className="text-2xl font-bold">{stats.avgWage.toFixed(0)} ر.ي</p>
-              </div>
-              <DollarSign className="h-8 w-8 text-purple-200" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <StatsGrid>
+        <StatsCard
+          title="إجمالي العمال"
+          value={stats.total}
+          icon={Users}
+          color="blue"
+        />
+        <StatsCard
+          title="العمال النشطون"
+          value={stats.active}
+          icon={Activity}
+          color="green"
+        />
+        <StatsCard
+          title="العمال غير النشطين"
+          value={stats.inactive}
+          icon={Clock}
+          color="orange"
+        />
+        <StatsCard
+          title="متوسط الأجر"
+          value={stats.avgWage}
+          icon={DollarSign}
+          color="purple"
+          formatter={(value: number) => formatCurrency(value)}
+        />
+      </StatsGrid>
 
       {/* Filters */}
       <Card>

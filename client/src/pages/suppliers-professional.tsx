@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Search, Edit2, Trash2, Building, Phone, MapPin, User, CreditCard, Calendar, TrendingUp, AlertCircle } from "lucide-react";
+import { StatsCard, StatsGrid } from "@/components/ui/stats-card";
 import { type Supplier } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import AddSupplierForm from "@/components/forms/add-supplier-form";
@@ -174,65 +175,33 @@ export default function SuppliersPage() {
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-l-4 border-l-blue-500">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">إجمالي الموردين</p>
-                <p className="text-2xl font-bold text-blue-600">{stats.total}</p>
-              </div>
-              <div className="h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Building className="h-5 w-5 text-blue-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-green-500">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">الموردين النشطين</p>
-                <p className="text-2xl font-bold text-green-600">{stats.active}</p>
-              </div>
-              <div className="h-10 w-10 bg-green-100 rounded-lg flex items-center justify-center">
-                <TrendingUp className="h-5 w-5 text-green-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-orange-500">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">غير النشطين</p>
-                <p className="text-2xl font-bold text-orange-600">{stats.inactive}</p>
-              </div>
-              <div className="h-10 w-10 bg-orange-100 rounded-lg flex items-center justify-center">
-                <AlertCircle className="h-5 w-5 text-orange-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-red-500">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">إجمالي المديونية</p>
-                <p className="text-xl font-bold text-red-600 text-xs sm:text-xl">
-                  {formatCurrency(stats.totalDebt)}
-                </p>
-              </div>
-              <div className="h-10 w-10 bg-red-100 rounded-lg flex items-center justify-center">
-                <CreditCard className="h-5 w-5 text-red-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <StatsGrid>
+        <StatsCard
+          title="إجمالي الموردين"
+          value={stats.total}
+          icon={Building}
+          color="blue"
+        />
+        <StatsCard
+          title="الموردين النشطين"
+          value={stats.active}
+          icon={TrendingUp}
+          color="green"
+        />
+        <StatsCard
+          title="غير النشطين"
+          value={stats.inactive}
+          icon={AlertCircle}
+          color="orange"
+        />
+        <StatsCard
+          title="إجمالي المديونية"
+          value={stats.totalDebt}
+          icon={CreditCard}
+          color="red"
+          formatter={formatCurrency}
+        />
+      </StatsGrid>
 
       {/* Search */}
       <Card>

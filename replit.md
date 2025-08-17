@@ -85,11 +85,14 @@ The system uses PostgreSQL with a comprehensive schema for:
 - **Improved**: Table layout with proper Arabic formatting and currency display
 - **Organized**: Clear expense categorization with summary sections
 
-### UI/UX Enhancements
-- **Removed**: Duplicate buttons from reports page to reduce clutter
-- **Streamlined**: Button placement for better user experience
-- **Centralized**: Export and print functions in the main action bar
-- **Improved**: Visual hierarchy and information flow
+### UI/UX Enhancements - Unified Statistics Design
+- **Created**: New unified StatsCard component (client/src/components/ui/stats-card.tsx)
+- **Implemented**: Consistent statistics design across all pages matching attached reference image
+- **Features**: Circular colored icons, left border accents, professional card layout
+- **Updated Pages**: Dashboard, Suppliers, Workers, Reports pages now use unified design
+- **Standardized**: Color scheme (blue, green, orange, red, purple, teal, indigo) for different metrics
+- **Enhanced**: User experience with consistent visual design language
+- **Improved**: Information hierarchy and readability
 
 ### Advanced Data Export System (August 17, 2025)
 - **Created**: New AdvancedDataExport.tsx component with comprehensive export capabilities

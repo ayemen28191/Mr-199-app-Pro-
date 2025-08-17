@@ -50,6 +50,7 @@ import {
 import WorkerFilterReport from "@/components/worker-filter-report";
 import DailyExpensesBulkExport from "@/components/daily-expenses-bulk-export";
 import AdvancedDataExport from "@/components/AdvancedDataExport";
+import { StatsCard, StatsGrid } from "@/components/ui/stats-card";
 
 // أنواع بيانات التقارير
 interface ReportStats {
@@ -392,58 +393,36 @@ export default function Reports() {
         )}
         {/* لوحة الإحصائيات الذكية */}
         {selectedProjectId && (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              {
-                title: "إجمالي الدخل",
-                value: formatCurrency(totalFundTransfers),
-                icon: <TrendingUp className="h-6 w-6" />,
-                color: "from-green-500 to-emerald-600",
-                bgColor: "bg-green-50 dark:bg-green-900/20",
-                textColor: "text-green-700 dark:text-green-300"
-              },
-              {
-                title: "إجمالي المصاريف",
-                value: formatCurrency(totalExpenses),
-                icon: <TrendingDown className="h-6 w-6" />,
-                color: "from-red-500 to-rose-600",
-                bgColor: "bg-red-50 dark:bg-red-900/20",
-                textColor: "text-red-700 dark:text-red-300"
-              },
-              {
-                title: "الرصيد الحالي",
-                value: formatCurrency(currentBalance),
-                icon: <DollarSign className="h-6 w-6" />,
-                color: currentBalance >= 0 ? "from-blue-500 to-cyan-600" : "from-red-500 to-rose-600",
-                bgColor: currentBalance >= 0 ? "bg-blue-50 dark:bg-blue-900/20" : "bg-red-50 dark:bg-red-900/20",
-                textColor: currentBalance >= 0 ? "text-blue-700 dark:text-blue-300" : "text-red-700 dark:text-red-300"
-              },
-              {
-                title: "عدد العمال",
-                value: `${totalWorkers} عامل`,
-                icon: <Users className="h-6 w-6" />,
-                color: "from-purple-500 to-indigo-600",
-                bgColor: "bg-purple-50 dark:bg-purple-900/20",
-                textColor: "text-purple-700 dark:text-purple-300"
-              }
-            ].map((stat, index) => (
-              <Card key={index} className="overflow-hidden hover:shadow-lg transition-all duration-300 group">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="space-y-2">
-                      <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
-                      <p className={`text-2xl font-bold ${stat.textColor}`}>{stat.value}</p>
-                    </div>
-                    <div className={`p-3 rounded-full ${stat.bgColor} group-hover:scale-110 transition-transform duration-300`}>
-                      <div className={`bg-gradient-to-r ${stat.color} text-white p-2 rounded-full`}>
-                        {stat.icon}
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <StatsGrid className="mb-6">
+            <StatsCard
+              title="إجمالي الدخل"
+              value={totalFundTransfers}
+              icon={TrendingUp}
+              color="green"
+              formatter={formatCurrency}
+            />
+            <StatsCard
+              title="إجمالي المصاريف"
+              value={totalExpenses}
+              icon={TrendingDown}
+              color="red"
+              formatter={formatCurrency}
+            />
+            <StatsCard
+              title="الرصيد الحالي"
+              value={currentBalance}
+              icon={DollarSign}
+              color={currentBalance >= 0 ? "blue" : "red"}
+              formatter={formatCurrency}
+            />
+            <StatsCard
+              title="عدد العمال"
+              value={totalWorkers}
+              icon={Users}
+              color="purple"
+              formatter={(value: number) => `${value} عامل`}
+            />
+          </StatsGrid>
         )}
 
         {/* واجهة إنشاء التقارير المحسنة */}

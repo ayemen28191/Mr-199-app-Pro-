@@ -5,7 +5,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Clock, Receipt, ShoppingCart, BarChart, Plus, Users, ArrowRight, RefreshCw, Settings } from "lucide-react";
+import { Clock, Receipt, ShoppingCart, BarChart, Plus, Users, ArrowRight, RefreshCw, Settings, DollarSign, TrendingDown, TrendingUp, Calendar, Package, UserCheck } from "lucide-react";
+import { StatsCard, StatsGrid } from "@/components/ui/stats-card";
 import { useSelectedProject } from "@/hooks/use-selected-project";
 import ProjectSelector from "@/components/project-selector";
 import AddProjectForm from "@/components/forms/add-project-form";
@@ -68,6 +69,15 @@ export default function Dashboard() {
   };
 
   const selectedProject = projects.find((p: ProjectWithStats) => p.id === selectedProjectId);
+
+  // دالة تنسيق العملة
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('ar-YE', {
+      style: 'decimal',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount) + ' ر.ي';
+  };
   
   // إضافة تسجيل للتحقق من البيانات في Frontend
   if (selectedProject) {
@@ -212,48 +222,51 @@ export default function Dashboard() {
               </Badge>
             </div>
 
-            {/* Project Statistics */}
-            <div className="grid grid-cols-3 gap-3 mb-4">
-              <div className="bg-blue-50 dark:bg-blue-950/20 p-3 rounded-lg text-center">
-                <div className="text-sm text-muted-foreground mb-1">إجمالي التوريد</div>
-                <div className="text-lg font-bold text-primary arabic-numbers">
-                  {projectsLoading ? <LoadingSpinner size="sm" className="mx-auto" /> : formatCurrency(selectedProject?.stats?.totalIncome || 0)}
-                </div>
-              </div>
-              <div className="bg-red-50 dark:bg-red-950/20 p-3 rounded-lg text-center">
-                <div className="text-sm text-muted-foreground mb-1">إجمالي المنصرف</div>
-                <div className="text-lg font-bold text-destructive arabic-numbers">
-                  {projectsLoading ? <LoadingSpinner size="sm" className="mx-auto" /> : formatCurrency(selectedProject?.stats?.totalExpenses || 0)}
-                </div>
-              </div>
-              <div className="bg-green-50 dark:bg-green-950/20 p-3 rounded-lg text-center">
-                <div className="text-sm text-muted-foreground mb-1">المتبقي الحالي</div>
-                <div className="text-lg font-bold text-success arabic-numbers">
-                  {projectsLoading ? <LoadingSpinner size="sm" className="mx-auto" /> : formatCurrency(selectedProject?.stats?.currentBalance || 0)}
-                </div>
-              </div>
-            </div>
+            {/* Project Statistics - Financial */}
+            <StatsGrid className="mb-6">
+              <StatsCard
+                title="إجمالي التوريد"
+                value={selectedProject?.stats?.totalIncome || 0}
+                icon={TrendingUp}
+                color="blue"
+                formatter={formatCurrency}
+              />
+              <StatsCard
+                title="إجمالي المنصرف"
+                value={selectedProject?.stats?.totalExpenses || 0}
+                icon={TrendingDown}
+                color="red"
+                formatter={formatCurrency}
+              />
+              <StatsCard
+                title="المتبقي الحالي"
+                value={selectedProject?.stats?.currentBalance || 0}
+                icon={DollarSign}
+                color="green"
+                formatter={formatCurrency}
+              />
+              <StatsCard
+                title="العمال النشطين"
+                value={selectedProject?.stats?.activeWorkers || "0"}
+                icon={UserCheck}
+                color="purple"
+              />
+            </StatsGrid>
 
             {/* Project Activity Stats */}
-            <div className="grid grid-cols-3 gap-3">
-              <div className="bg-muted p-3 rounded-lg text-center">
-                <div className="text-sm text-muted-foreground mb-1">أيام العمل</div>
-                <div className="text-lg font-bold text-foreground arabic-numbers">
-                  {projectsLoading ? <LoadingSpinner size="sm" className="mx-auto" /> : (selectedProject?.stats?.completedDays || "0")}
-                </div>
-              </div>
-              <div className="bg-muted p-3 rounded-lg text-center">
-                <div className="text-sm text-muted-foreground mb-1">المشتريات</div>
-                <div className="text-lg font-bold text-foreground arabic-numbers">
-                  {projectsLoading ? <LoadingSpinner size="sm" className="mx-auto" /> : (selectedProject?.stats?.materialPurchases || "0")}
-                </div>
-              </div>
-              <div className="bg-muted p-3 rounded-lg text-center">
-                <div className="text-sm text-muted-foreground mb-1">العمال</div>
-                <div className="text-lg font-bold text-foreground arabic-numbers">
-                  {projectsLoading ? <LoadingSpinner size="sm" className="mx-auto" /> : (selectedProject?.stats?.activeWorkers || "0")}
-                </div>
-              </div>
+            <div className="grid grid-cols-2 gap-4">
+              <StatsCard
+                title="أيام العمل المكتملة"
+                value={selectedProject?.stats?.completedDays || "0"}
+                icon={Calendar}
+                color="teal"
+              />
+              <StatsCard
+                title="مشتريات المواد"
+                value={selectedProject?.stats?.materialPurchases || "0"}
+                icon={Package}
+                color="indigo"
+              />
             </div>
           </CardContent>
         </Card>
