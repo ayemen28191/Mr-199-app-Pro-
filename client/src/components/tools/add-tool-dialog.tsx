@@ -312,7 +312,7 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                         name="name"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>اسم الأداة *</FormLabel>
+                            <FormLabel>اسم الأداة <span className="text-red-500">*</span></FormLabel>
                             <FormControl>
                               <div className="relative">
                                 <Input
@@ -361,7 +361,7 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                         name="categoryId"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>التصنيف *</FormLabel>
+                            <FormLabel>التصنيف <span className="text-red-500">*</span></FormLabel>
                             <div className="flex gap-2">
                               <Select onValueChange={field.onChange} value={field.value}>
                                 <FormControl>
@@ -403,7 +403,7 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                       name="description"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>الوصف</FormLabel>
+                          <FormLabel>الوصف <span className="text-xs text-gray-500">(اختياري)</span></FormLabel>
                           <FormControl>
                             <Textarea
                               placeholder="وصف مفصل للأداة ومواصفاتها..."
@@ -424,7 +424,7 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                       name="unit"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>وحدة القياس *</FormLabel>
+                          <FormLabel>وحدة القياس <span className="text-red-500">*</span></FormLabel>
                           <div className="flex gap-2">
                             <Select onValueChange={field.onChange} value={field.value}>
                               <FormControl>
@@ -477,7 +477,7 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                         name="sku"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>رمز المنتج (SKU)</FormLabel>
+                            <FormLabel>رمز المنتج (SKU) <span className="text-xs text-gray-500">(اختياري)</span></FormLabel>
                             <div className="flex gap-2">
                               <div className="relative flex-1">
                                 <FormControl>
@@ -537,7 +537,7 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                         name="serialNumber"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>الرقم التسلسلي</FormLabel>
+                            <FormLabel>الرقم التسلسلي <span className="text-xs text-gray-500">(اختياري)</span></FormLabel>
                             <FormControl>
                               <Input
                                 placeholder="الرقم التسلسلي للأداة"
@@ -556,7 +556,7 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                       name="barcode"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>رمز QR / الباركود</FormLabel>
+                          <FormLabel>رمز QR / الباركود <span className="text-xs text-gray-500">(اختياري)</span></FormLabel>
                           <div className="flex gap-2">
                             <FormControl>
                               <Input
@@ -586,7 +586,7 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                       name="specifications"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>المواصفات التقنية</FormLabel>
+                          <FormLabel>المواصفات التقنية <span className="text-xs text-gray-500">(اختياري)</span></FormLabel>
                           <FormControl>
                             <Textarea
                               placeholder='مثال: {"القوة": "750 واط", "السرعة": "3000 دورة/دقيقة", "الوزن": "2.5 كجم"}'
@@ -621,7 +621,7 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                         name="purchasePrice"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>سعر الشراء (ريال سعودي)</FormLabel>
+                            <FormLabel>سعر الشراء <span className="text-xs text-gray-500">(اختياري)</span></FormLabel>
                             <FormControl>
                               <Input
                                 type="number"
@@ -640,7 +640,7 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                         name="purchaseDate"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>تاريخ الشراء</FormLabel>
+                            <FormLabel>تاريخ الشراء <span className="text-xs text-gray-500">(اختياري)</span></FormLabel>
                             <FormControl>
                               <Input
                                 type="date"
@@ -660,7 +660,7 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                         name="warrantyExpiry"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>انتهاء الضمان</FormLabel>
+                            <FormLabel>انتهاء الضمان <span className="text-xs text-gray-500">(اختياري)</span></FormLabel>
                             <FormControl>
                               <Input
                                 type="date"
@@ -678,7 +678,7 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                         name="maintenanceInterval"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>فترة الصيانة (بالأيام)</FormLabel>
+                            <FormLabel>فترة الصيانة (بالأيام) <span className="text-xs text-gray-500">(اختياري)</span></FormLabel>
                             <FormControl>
                               <Input
                                 type="number"
@@ -715,7 +715,7 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                         name="projectId"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>المشروع</FormLabel>
+                            <FormLabel>المشروع <span className="text-xs text-gray-500">(اختياري)</span></FormLabel>
                             <Select onValueChange={field.onChange} value={field.value}>
                               <FormControl>
                                 <SelectTrigger data-testid="tool-project-select">
@@ -747,7 +747,7 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                         name="locationType"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>نوع الموقع *</FormLabel>
+                            <FormLabel>نوع الموقع <span className="text-red-500">*</span></FormLabel>
                             <Select onValueChange={field.onChange} value={field.value}>
                               <FormControl>
                                 <SelectTrigger data-testid="tool-location-type-select">
@@ -772,7 +772,7 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                         name="locationId"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>تحديد الموقع</FormLabel>
+                            <FormLabel>تحديد الموقع <span className="text-xs text-gray-500">(اختياري)</span></FormLabel>
                             <FormControl>
                               <div className="relative">
                                 <Input
@@ -826,7 +826,7 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                         name="status"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>حالة الأداة *</FormLabel>
+                            <FormLabel>حالة الأداة <span className="text-red-500">*</span></FormLabel>
                             <Select onValueChange={field.onChange} value={field.value}>
                               <FormControl>
                                 <SelectTrigger data-testid="tool-status-select">
@@ -851,7 +851,7 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                         name="condition"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>حالة الجودة *</FormLabel>
+                            <FormLabel>حالة الجودة <span className="text-red-500">*</span></FormLabel>
                             <Select onValueChange={field.onChange} value={field.value}>
                               <FormControl>
                                 <SelectTrigger data-testid="tool-condition-select">
