@@ -168,50 +168,35 @@ export default function DailyExpensesBulkExport() {
     };
     worksheet.getRow(1).height = 30;
 
-    // تاريخ طباعة الكشف
-    worksheet.mergeCells('A2:E2');
-    const printDateCell = worksheet.getCell('A2');
-    const currentDate = new Date();
-    const printDate = `${currentDate.getDate().toString().padStart(2, '0')}/${(currentDate.getMonth() + 1).toString().padStart(2, '0')}/${currentDate.getFullYear()}`;
-    printDateCell.value = `تاريخ طباعة الكشف: ${printDate}`;
-    printDateCell.font = { name: 'Arial Unicode MS', size: 12, bold: true };
-    printDateCell.alignment = { horizontal: 'center', vertical: 'middle' };
-    printDateCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE7E6E6' } }; // رمادي فاتح
-    printDateCell.border = {
-      top: { style: 'thin' }, bottom: { style: 'thin' },
-      left: { style: 'medium' }, right: { style: 'medium' }
-    };
-    worksheet.getRow(2).height = 25;
-
     // رأس التقرير مطابق للصور المرجعية
-    worksheet.mergeCells('A3:E3');
-    const headerCell = worksheet.getCell('A3');
+    worksheet.mergeCells('A2:E2');
+    const headerCell = worksheet.getCell('A2');
     const dayName = getDayName(dayData.date);
     const formattedDate = formatDate(dayData.date);
     headerCell.value = `كشف مصروفات ${dayData.projectName} يوم ${dayName} تاريخ ${formattedDate}`;
-    headerCell.font = { name: 'Arial Unicode MS', size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
+    headerCell.font = { name: 'Arial Unicode MS', size: 14, bold: true, color: { argb: 'FF000000' } };
     headerCell.alignment = { horizontal: 'center', vertical: 'middle' };
-    headerCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF5B9BD5' } }; // أزرق مطابق للمرجع
+    headerCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD5E3F0' } }; // أزرق فاتح جداً
     headerCell.border = {
       top: { style: 'medium' }, bottom: { style: 'medium' },
       left: { style: 'medium' }, right: { style: 'medium' }
     };
-    worksheet.getRow(3).height = 30;
+    worksheet.getRow(2).height = 30;
 
     // رؤوس الجدول الرئيسي مطابقة للصور المرجعية (5 أعمدة فقط)
     const headers = ['المبلغ', 'نوع الحساب', 'نوع', 'المتبقي', 'ملاحظات'];
     const headerRow = worksheet.addRow(headers);
     
     headerRow.eachCell((cell, index) => {
-      cell.font = { name: 'Arial Unicode MS', size: 11, bold: true, color: { argb: 'FFFFFFFF' } }; // نص أبيض
+      cell.font = { name: 'Arial Unicode MS', size: 11, bold: true, color: { argb: 'FF000000' } }; // نص أسود
       cell.alignment = { horizontal: 'center', vertical: 'middle' };
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4F81BD' } }; // أزرق مطابق للصورة
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEAF4F8' } }; // أزرق فاتح جداً
       cell.border = {
         top: { style: 'thin' }, bottom: { style: 'thin' },
         left: { style: 'thin' }, right: { style: 'thin' }
       };
     });
-    worksheet.getRow(4).height = 25;
+    worksheet.getRow(3).height = 25;
 
     // حساب الرصيد الجاري - البداية بصفر أو بالرصيد المرحل
     let currentBalance = 0;
