@@ -452,16 +452,6 @@ export default function MaterialPurchase() {
 
   return (
     <div className="p-4 slide-in">
-      <div className="flex items-center mb-4">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setLocation("/daily-expenses")}
-          className="ml-3 p-2"
-        >
-          <ArrowRight className="h-5 w-5" />
-        </Button>
-      </div>
 
       <ProjectSelector
         selectedProjectId={selectedProjectId}

@@ -215,10 +215,7 @@ export default function ProjectTransfers() {
       {showForm && (
         <Card className="mb-6">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ArrowRight className="w-5 h-5" />
-              إضافة عملية ترحيل جديدة
-            </CardTitle>
+            <CardTitle>إضافة عملية ترحيل جديدة</CardTitle>
           </CardHeader>
           <CardContent>
             <Form {...form}>

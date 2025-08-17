@@ -14,6 +14,7 @@ const pageInfo: Record<string, { title: string; icon: any }> = {
   '/material-purchase': { title: 'شراء المواد', icon: Package },
   '/project-transfers': { title: 'تحويلات العهدة', icon: ArrowLeftRight },
   '/project-transactions': { title: 'سجل العمليات', icon: FileText },
+  '/project-transactions-simple': { title: 'سجل العمليات المبسط', icon: FileText },
   '/supplier-accounts': { title: 'حسابات الموردين', icon: CreditCard },
   '/reports': { title: 'التقارير', icon: FileSpreadsheet },
   '/autocomplete-admin': { title: 'إعدادات الإكمال التلقائي', icon: Wrench },

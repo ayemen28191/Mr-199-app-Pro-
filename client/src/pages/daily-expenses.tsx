@@ -710,18 +710,6 @@ export default function DailyExpenses() {
 
   return (
     <div className="p-4 slide-in">
-      {/* Header with Back Button */}
-      <div className="flex items-center mb-4">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setLocation("/")}
-          className="ml-3 p-2"
-        >
-          <ArrowRight className="h-5 w-5" />
-        </Button>
-        <h2 className="text-xl font-bold text-foreground">المصروفات اليومية</h2>
-      </div>
 
       <ProjectSelector
         selectedProjectId={selectedProjectId}
