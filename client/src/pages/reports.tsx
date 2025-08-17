@@ -338,35 +338,18 @@ export default function Reports() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-      {/* شريط اختيار المشروع */}
-      <div className="bg-white dark:bg-gray-800 shadow-lg border-b">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div className="flex items-center gap-3">
-              <div className="bg-gradient-to-r from-blue-600 to-purple-600 p-2 rounded-lg">
-                <BarChart3 className="h-6 w-6 text-white" />
-              </div>
-              <span className="text-lg font-medium text-gray-700 dark:text-gray-300">اختيار المشروع</span>
-            </div>
-            <div className="flex items-center gap-3 flex-wrap">
-              <div className="flex-1 min-w-[300px] max-w-[400px]">
-                <ProjectSelector onProjectChange={selectProject} />
-              </div>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => window.location.reload()}
-                className="hidden md:flex items-center gap-2"
-              >
-                <RefreshCw className="h-4 w-4" />
-                تحديث
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
+
 
       <div className="container mx-auto p-4 space-y-6">
+        {/* مكون اختيار المشروع - مطابق للصفحة الرئيسية */}
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border">
+          <div className="flex items-center gap-3 mb-3">
+            <Filter className="h-5 w-5 text-blue-600" />
+            <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">اختر المشروع</h2>
+          </div>
+          <ProjectSelector onProjectChange={selectProject} />
+        </div>
+
         {/* رسالة التنبيه عند عدم اختيار مشروع */}
         {!selectedProjectId && (
           <Card className="border-amber-200 bg-amber-50 dark:bg-amber-900/20">
