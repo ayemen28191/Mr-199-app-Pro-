@@ -76,6 +76,8 @@ interface AddToolDialogProps {
 const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => {
   const [activeTab, setActiveTab] = useState('basic');
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
+  const [showAddCategoryDialog, setShowAddCategoryDialog] = useState(false);
+  const [showAddUnitDialog, setShowAddUnitDialog] = useState(false);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -265,54 +267,33 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                         name="categoryId"
                         render={({ field }) => (
                           <FormItem>
-                            <div className="flex items-center gap-2">
-                              <FormLabel>التصنيف *</FormLabel>
+                            <FormLabel>التصنيف *</FormLabel>
+                            <div className="flex gap-2">
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                  <SelectTrigger data-testid="tool-category-select">
+                                    <SelectValue placeholder="اختر تصنيف الأداة" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {categories.map((category) => (
+                                    <SelectItem key={category.id} value={category.id}>
+                                      {category.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                               <Button
                                 type="button"
                                 variant="outline"
                                 size="sm"
-                                className="h-6 w-6 p-0"
-                                onClick={() => {
-                                  // TODO: إضافة نموذج تصنيف جديد
-                                  toast({
-                                    title: 'إضافة تصنيف جديد',
-                                    description: 'سيتم إضافة هذه الميزة قريباً',
-                                  });
-                                }}
+                                className="px-3"
+                                onClick={() => setShowAddCategoryDialog(true)}
+                                data-testid="add-category-button"
                               >
-                                <Plus className="h-3 w-3" />
+                                <Plus className="h-4 w-4" />
                               </Button>
                             </div>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl>
-                                <SelectTrigger data-testid="tool-category-select">
-                                  <SelectValue placeholder="اختر تصنيف الأداة" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {categories.map((category) => (
-                                  <SelectItem key={category.id} value={category.id}>
-                                    {category.name}
-                                  </SelectItem>
-                                ))}
-                                <div className="p-2 border-t">
-                                  <Button
-                                    type="button"
-                                    variant="ghost"
-                                    className="w-full justify-start text-sm"
-                                    onClick={() => {
-                                      toast({
-                                        title: 'إضافة تصنيف جديد',
-                                        description: 'سيتم إضافة هذه الميزة قريباً',
-                                      });
-                                    }}
-                                  >
-                                    <Plus className="h-4 w-4 mr-2" />
-                                    إضافة تصنيف جديد
-                                  </Button>
-                                </div>
-                              </SelectContent>
-                            </Select>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -346,21 +327,37 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>وحدة القياس *</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                            <FormControl>
-                              <SelectTrigger data-testid="tool-unit-select">
-                                <SelectValue placeholder="اختر وحدة القياس" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value="قطعة">قطعة</SelectItem>
-                              <SelectItem value="مجموعة">مجموعة</SelectItem>
-                              <SelectItem value="كيلوغرام">كيلوغرام</SelectItem>
-                              <SelectItem value="متر">متر</SelectItem>
-                              <SelectItem value="لتر">لتر</SelectItem>
-                              <SelectItem value="عبوة">عبوة</SelectItem>
-                            </SelectContent>
-                          </Select>
+                          <div className="flex gap-2">
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger data-testid="tool-unit-select">
+                                  <SelectValue placeholder="اختر وحدة القياس" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="قطعة">قطعة</SelectItem>
+                                <SelectItem value="مجموعة">مجموعة</SelectItem>
+                                <SelectItem value="كيلوغرام">كيلوغرام</SelectItem>
+                                <SelectItem value="متر">متر</SelectItem>
+                                <SelectItem value="لتر">لتر</SelectItem>
+                                <SelectItem value="عبوة">عبوة</SelectItem>
+                                <SelectItem value="صندوق">صندوق</SelectItem>
+                                <SelectItem value="طن">طن</SelectItem>
+                                <SelectItem value="حقيبة">حقيبة</SelectItem>
+                                <SelectItem value="دلو">دلو</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="px-3"
+                              onClick={() => setShowAddUnitDialog(true)}
+                              data-testid="add-unit-button"
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </div>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -778,6 +775,108 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
           </form>
         </Form>
       </DialogContent>
+
+      {/* Add Category Dialog */}
+      <Dialog open={showAddCategoryDialog} onOpenChange={setShowAddCategoryDialog}>
+        <DialogContent className="max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>إضافة تصنيف جديد</DialogTitle>
+            <DialogDescription>
+              أضف تصنيفاً جديداً للأدوات والمعدات
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">اسم التصنيف</label>
+              <Input 
+                placeholder="مثال: أدوات كهربائية" 
+                className="mt-1"
+                data-testid="new-category-name-input"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">الوصف (اختياري)</label>
+              <Textarea 
+                placeholder="وصف مختصر للتصنيف..."
+                className="mt-1"
+                data-testid="new-category-description-input"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 pt-4">
+            <Button 
+              type="button" 
+              variant="outline"
+              onClick={() => setShowAddCategoryDialog(false)}
+            >
+              إلغاء
+            </Button>
+            <Button 
+              type="button"
+              onClick={() => {
+                toast({
+                  title: 'إضافة تصنيف',
+                  description: 'سيتم إضافة هذه الميزة قريباً',
+                });
+                setShowAddCategoryDialog(false);
+              }}
+            >
+              إضافة التصنيف
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Unit Dialog */}
+      <Dialog open={showAddUnitDialog} onOpenChange={setShowAddUnitDialog}>
+        <DialogContent className="max-w-md" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>إضافة وحدة قياس جديدة</DialogTitle>
+            <DialogDescription>
+              أضف وحدة قياس جديدة للأدوات والمواد
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">اسم الوحدة</label>
+              <Input 
+                placeholder="مثال: بوصة، باوند، جالون" 
+                className="mt-1"
+                data-testid="new-unit-name-input"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">الرمز المختصر (اختياري)</label>
+              <Input 
+                placeholder="مثال: كغ، م، ل"
+                className="mt-1"
+                data-testid="new-unit-symbol-input"
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-2 pt-4">
+            <Button 
+              type="button" 
+              variant="outline"
+              onClick={() => setShowAddUnitDialog(false)}
+            >
+              إلغاء
+            </Button>
+            <Button 
+              type="button"
+              onClick={() => {
+                toast({
+                  title: 'إضافة وحدة قياس',
+                  description: 'سيتم إضافة هذه الميزة قريباً',
+                });
+                setShowAddUnitDialog(false);
+              }}
+            >
+              إضافة الوحدة
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 };
