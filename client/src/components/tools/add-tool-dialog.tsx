@@ -38,22 +38,35 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 
-// Form validation schema
+// Form validation schema with enhanced validation and autocomplete
 const addToolSchema = z.object({
-  name: z.string().min(2, 'اسم الأداة مطلوب ويجب أن يكون أكثر من حرفين'),
+  name: z.string()
+    .min(2, 'اسم الأداة مطلوب ويجب أن يكون أكثر من حرفين')
+    .max(100, 'اسم الأداة يجب أن يكون أقل من 100 حرف')
+    .regex(/^[\u0621-\u064Aa-zA-Z0-9\s\-_.]+$/, 'اسم الأداة يحتوي على أحرف غير مسموحة'),
   description: z.string().optional(),
-  categoryId: z.string().min(1, 'تصنيف الأداة مطلوب'),
+  categoryId: z.string().min(1, 'يجب اختيار تصنيف الأداة من القائمة'),
   sku: z.string().optional(),
   serialNumber: z.string().optional(),
   barcode: z.string().optional(),
-  unit: z.string().min(1, 'وحدة القياس مطلوبة'),
-  purchasePrice: z.coerce.number().optional(),
+  unit: z.string().min(1, 'يجب اختيار وحدة القياس'),
+  purchasePrice: z.coerce.number()
+    .min(0, 'سعر الشراء لا يمكن أن يكون سالباً')
+    .max(999999, 'سعر الشراء مرتفع جداً')
+    .optional(),
   purchaseDate: z.string().optional(),
   warrantyExpiry: z.string().optional(),
-  maintenanceInterval: z.coerce.number().optional(),
-  status: z.enum(['available', 'in_use', 'maintenance', 'damaged', 'retired']),
-  condition: z.enum(['excellent', 'good', 'fair', 'poor', 'damaged']),
-  locationType: z.string().min(1, 'نوع الموقع مطلوب'),
+  maintenanceInterval: z.coerce.number()
+    .min(1, 'فترة الصيانة يجب أن تكون يوم واحد على الأقل')
+    .max(3650, 'فترة الصيانة طويلة جداً (أكثر من 10 سنوات)')
+    .optional(),
+  status: z.enum(['available', 'in_use', 'maintenance', 'damaged', 'retired'], {
+    errorMap: () => ({ message: 'يجب اختيار حالة الأداة من القائمة' })
+  }),
+  condition: z.enum(['excellent', 'good', 'fair', 'poor', 'damaged'], {
+    errorMap: () => ({ message: 'يجب اختيار حالة الجودة من القائمة' })
+  }),
+  locationType: z.string().min(1, 'يجب اختيار نوع الموقع'),
   locationId: z.string().optional(),
   projectId: z.string().optional(),
   specifications: z.string().optional(),
@@ -78,6 +91,14 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const [showAddCategoryDialog, setShowAddCategoryDialog] = useState(false);
   const [showAddUnitDialog, setShowAddUnitDialog] = useState(false);
+  
+  // Autocomplete data states
+  const [toolNameSuggestions, setToolNameSuggestions] = useState<string[]>([]);
+  const [skuSuggestions, setSkuSuggestions] = useState<string[]>([]);
+  const [locationSuggestions, setLocationSuggestions] = useState<string[]>([]);
+  const [showNameSuggestions, setShowNameSuggestions] = useState(false);
+  const [showSkuSuggestions, setShowSkuSuggestions] = useState(false);
+  const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -110,6 +131,51 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
   const { data: projects = [] } = useQuery<{id: string, name: string, status: string}[]>({
     queryKey: ['/api/projects'],
   });
+
+  // Autocomplete functions
+  const fetchAutocomplete = async (type: string, query: string) => {
+    if (query.length < 2) return [];
+    try {
+      const response = await fetch(`/api/autocomplete/${type}?query=${encodeURIComponent(query)}`);
+      if (response.ok) {
+        const data = await response.json();
+        return data.suggestions || [];
+      }
+    } catch (error) {
+      console.error('Autocomplete error:', error);
+    }
+    return [];
+  };
+
+  const handleNameChange = async (value: string) => {
+    if (value.length >= 2) {
+      const suggestions = await fetchAutocomplete('tool-names', value);
+      setToolNameSuggestions(suggestions);
+      setShowNameSuggestions(suggestions.length > 0);
+    } else {
+      setShowNameSuggestions(false);
+    }
+  };
+
+  const handleSkuChange = async (value: string) => {
+    if (value.length >= 2) {
+      const suggestions = await fetchAutocomplete('tool-skus', value);
+      setSkuSuggestions(suggestions);
+      setShowSkuSuggestions(suggestions.length > 0);
+    } else {
+      setShowSkuSuggestions(false);
+    }
+  };
+
+  const handleLocationChange = async (value: string) => {
+    if (value.length >= 2) {
+      const suggestions = await fetchAutocomplete('locations', value);
+      setLocationSuggestions(suggestions);
+      setShowLocationSuggestions(suggestions.length > 0);
+    } else {
+      setShowLocationSuggestions(false);
+    }
+  };
 
   // Create tool mutation
   const createToolMutation = useMutation({
@@ -251,11 +317,42 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                           <FormItem>
                             <FormLabel>اسم الأداة *</FormLabel>
                             <FormControl>
-                              <Input
-                                placeholder="مثال: مثقاب كهربائي"
-                                {...field}
-                                data-testid="tool-name-input"
-                              />
+                              <div className="relative">
+                                <Input
+                                  placeholder="مثال: مثقاب كهربائي"
+                                  {...field}
+                                  data-testid="tool-name-input"
+                                  onChange={(e) => {
+                                    field.onChange(e);
+                                    handleNameChange(e.target.value);
+                                  }}
+                                  onFocus={() => {
+                                    if (field.value && field.value.length >= 2) {
+                                      handleNameChange(field.value);
+                                    }
+                                  }}
+                                  onBlur={() => {
+                                    setTimeout(() => setShowNameSuggestions(false), 200);
+                                  }}
+                                />
+                                {showNameSuggestions && toolNameSuggestions.length > 0 && (
+                                  <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                                    {toolNameSuggestions.map((suggestion, index) => (
+                                      <button
+                                        key={index}
+                                        type="button"
+                                        className="w-full px-3 py-2 text-right hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+                                        onClick={() => {
+                                          field.onChange(suggestion);
+                                          setShowNameSuggestions(false);
+                                        }}
+                                      >
+                                        {suggestion}
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -381,13 +478,44 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                           <FormItem>
                             <FormLabel>رمز المنتج (SKU)</FormLabel>
                             <div className="flex gap-2">
-                              <FormControl>
-                                <Input
-                                  placeholder="مثال: TOOL-123456"
-                                  {...field}
-                                  data-testid="tool-sku-input"
-                                />
-                              </FormControl>
+                              <div className="relative flex-1">
+                                <FormControl>
+                                  <Input
+                                    placeholder="مثال: TOOL-123456"
+                                    {...field}
+                                    data-testid="tool-sku-input"
+                                    onChange={(e) => {
+                                      field.onChange(e);
+                                      handleSkuChange(e.target.value);
+                                    }}
+                                    onFocus={() => {
+                                      if (field.value && field.value.length >= 2) {
+                                        handleSkuChange(field.value);
+                                      }
+                                    }}
+                                    onBlur={() => {
+                                      setTimeout(() => setShowSkuSuggestions(false), 200);
+                                    }}
+                                  />
+                                </FormControl>
+                                {showSkuSuggestions && skuSuggestions.length > 0 && (
+                                  <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                                    {skuSuggestions.map((suggestion, index) => (
+                                      <button
+                                        key={index}
+                                        type="button"
+                                        className="w-full px-3 py-2 text-right hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+                                        onClick={() => {
+                                          field.onChange(suggestion);
+                                          setShowSkuSuggestions(false);
+                                        }}
+                                      >
+                                        {suggestion}
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
                               <Button
                                 type="button"
                                 variant="outline"
@@ -641,11 +769,42 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                           <FormItem>
                             <FormLabel>تحديد الموقع</FormLabel>
                             <FormControl>
-                              <Input
-                                placeholder="رقم أو اسم الموقع المحدد"
-                                {...field}
-                                data-testid="tool-location-id-input"
-                              />
+                              <div className="relative">
+                                <Input
+                                  placeholder="رقم أو اسم الموقع المحدد"
+                                  {...field}
+                                  data-testid="tool-location-id-input"
+                                  onChange={(e) => {
+                                    field.onChange(e);
+                                    handleLocationChange(e.target.value);
+                                  }}
+                                  onFocus={() => {
+                                    if (field.value && field.value.length >= 2) {
+                                      handleLocationChange(field.value);
+                                    }
+                                  }}
+                                  onBlur={() => {
+                                    setTimeout(() => setShowLocationSuggestions(false), 200);
+                                  }}
+                                />
+                                {showLocationSuggestions && locationSuggestions.length > 0 && (
+                                  <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+                                    {locationSuggestions.map((suggestion, index) => (
+                                      <button
+                                        key={index}
+                                        type="button"
+                                        className="w-full px-3 py-2 text-right hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
+                                        onClick={() => {
+                                          field.onChange(suggestion);
+                                          setShowLocationSuggestions(false);
+                                        }}
+                                      >
+                                        {suggestion}
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
                             </FormControl>
                             <FormDescription>
                               مثال: مخزن رقم 1، مشروع الرياض، إلخ

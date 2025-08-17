@@ -94,6 +94,7 @@ app.use((req, res, next) => {
           await sql`ALTER TABLE tools ADD COLUMN IF NOT EXISTS ai_rating DECIMAL(3,2)`;
           await sql`ALTER TABLE tools ADD COLUMN IF NOT EXISTS ai_notes TEXT`;
           await sql`ALTER TABLE tools ADD COLUMN IF NOT EXISTS image_urls TEXT[]`;
+          await sql`ALTER TABLE tools ADD COLUMN IF NOT EXISTS project_id VARCHAR`;
           log("✅ تم التأكد من وجود جميع أعمدة جدول tools");
         } catch (error) {
           log("ℹ️  أعمدة tools موجودة مسبقاً أو تم إنشاؤها");
