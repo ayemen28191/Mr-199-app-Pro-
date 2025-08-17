@@ -28,13 +28,6 @@ import { saveAs } from 'file-saver';
 import html2canvas from 'html2canvas';
 import type { Project } from '@shared/schema';
 
-// إعلان النوع للـ garbage collector
-declare global {
-  interface Window {
-    gc?: () => void;
-  }
-}
-
 interface DailyExpenseData {
   date: string;
   projectName: string;
@@ -110,13 +103,11 @@ export default function DailyExpensesBulkExport() {
     return `${day}-${month}-${year}`;
   };
 
-  // دالة جلب بيانات المصروفات اليومية لفترة مع معالجة أفضل للأخطاء
+  // دالة جلب بيانات المصروفات اليومية لفترة
   const fetchDailyExpensesForPeriod = async (projectId: string, fromDate: string, toDate: string) => {
     const expenses: DailyExpenseData[] = [];
     const startDate = new Date(fromDate);
     const endDate = new Date(toDate);
-    let successfulRequests = 0;
-    let failedRequests = 0;
     
     console.log(`📅 جلب المصروفات اليومية من ${fromDate} إلى ${toDate} للمشروع ${projectId}`);
     
@@ -124,16 +115,7 @@ export default function DailyExpensesBulkExport() {
       const dateStr = date.toISOString().split('T')[0];
       
       try {
-        // إضافة timeout للطلبات لتجنب التعليق
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 ثواني timeout
-        
-        const response = await fetch(`/api/reports/daily-expenses/${projectId}/${dateStr}`, {
-          signal: controller.signal
-        });
-        
-        clearTimeout(timeoutId);
-        
+        const response = await fetch(`/api/reports/daily-expenses/${projectId}/${dateStr}`);
         if (response.ok) {
           const data = await response.json();
           if (data && Object.keys(data).length > 0) {
@@ -142,11 +124,7 @@ export default function DailyExpensesBulkExport() {
               date: dateStr,
               projectName: selectedProject?.name || 'مشروع غير محدد'
             });
-            successfulRequests++;
           }
-        } else {
-          console.warn(`⚠️ استجابة غير صحيحة لتاريخ ${dateStr}: ${response.status}`);
-          failedRequests++;
         }
         
         // تحديث progress
@@ -154,30 +132,12 @@ export default function DailyExpensesBulkExport() {
         const total = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
         setExportProgress({ current, total });
         
-        // استراحة قصيرة بين الطلبات لتجنب إرهاق الخادم
-        await new Promise(resolve => setTimeout(resolve, 50));
-        
-      } catch (error: any) {
-        failedRequests++;
-        if (error.name === 'AbortError') {
-          console.error(`⏰ انتهت مهلة الطلب لتاريخ ${dateStr}`);
-        } else {
-          console.error(`❌ خطأ في جلب بيانات ${dateStr}:`, error);
-        }
+      } catch (error) {
+        console.error(`خطأ في جلب بيانات ${dateStr}:`, error);
       }
     }
     
-    console.log(`📊 انتهى جلب البيانات - نجح: ${successfulRequests}, فشل: ${failedRequests}`);
     return expenses;
-  };
-
-  // دالة للتحقق من صحة القيم قبل إدخالها إلى Excel
-  const safeValue = (value: any, defaultValue: any = '') => {
-    if (value == null || typeof value === 'undefined') return defaultValue;
-    if (typeof value === 'number' && (isNaN(value) || !isFinite(value))) return defaultValue;
-    if (typeof value === 'string' && value.includes('#DIV/0!')) return defaultValue;
-    if (typeof value === 'string' && value.trim() === '') return defaultValue;
-    return value;
   };
 
   // دالة الحصول على اسم اليوم بالعربي
@@ -187,7 +147,7 @@ export default function DailyExpensesBulkExport() {
     return dayNames[date.getDay()];
   };
 
-  // دالة إنشاء ورقة Excel ليوم واحد (مع استخدام إعدادات التصدير)
+  // دالة إنشاء ورقة Excel ليوم واحد (مطابقة للصور المرجعية 100%)
   const createDayWorksheet = (workbook: ExcelJS.Workbook, dayData: DailyExpenseData) => {
     const worksheetName = `${formatDate(dayData.date)}`.replace(/\//g, '-');
     const worksheet = workbook.addWorksheet(worksheetName);
@@ -195,67 +155,50 @@ export default function DailyExpensesBulkExport() {
     // إعداد اتجاه النص من اليمين لليسار
     worksheet.views = [{ rightToLeft: true }];
 
-    // إعدادات ثابتة بدلاً من الإعدادات القابلة للتخصيص
-    const companyName = 'شركة الفتحي للمقاولات والاستشارات الهندسية';
-    const headerBgColor = '5B9BD5';
-    const headerTextColor = 'FFFFFF';
-    const fontFamily = 'Arial';
-
     // رأس الشركة
     worksheet.mergeCells('A1:E1');
     const companyHeaderCell = worksheet.getCell('A1');
-    companyHeaderCell.value = companyName;
-    companyHeaderCell.font = { name: fontFamily, size: 16, bold: true, color: { argb: `FF${headerTextColor}` } };
+    companyHeaderCell.value = 'شركة الفتحي للمقاولات والاستشارات الهندسية';
+    companyHeaderCell.font = { name: 'Arial Unicode MS', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
     companyHeaderCell.alignment = { horizontal: 'center', vertical: 'middle' };
-    companyHeaderCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: `FF${headerBgColor}` } };
+    companyHeaderCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF5B9BD5' } }; // أزرق
     companyHeaderCell.border = {
       top: { style: 'medium' }, bottom: { style: 'medium' },
       left: { style: 'medium' }, right: { style: 'medium' }
     };
     worksheet.getRow(1).height = 30;
 
-    // إعدادات ألوان ثابتة
-    const tableHeaderBgColor = 'EAEEF5';
-    const tableHeaderTextColor = '000000';
-    const transferRowColor = 'B8E6B8';
-    const workerRowColor = 'E6F3FF';
-    const reportTitle = 'كشف مصروفات المشروع';
 
-    // رأس التقرير
+
+    // رأس التقرير مطابق للصور المرجعية
     worksheet.mergeCells('A2:E2');
     const headerCell = worksheet.getCell('A2');
     const dayName = getDayName(dayData.date);
     const formattedDate = formatDate(dayData.date);
-    headerCell.value = `${reportTitle} ${dayData.projectName} يوم ${dayName} تاريخ ${formattedDate}`;
-    headerCell.font = { name: fontFamily, size: 14, bold: true, color: { argb: `FF${tableHeaderTextColor}` } };
+    headerCell.value = `كشف مصروفات ${dayData.projectName} يوم ${dayName} تاريخ ${formattedDate}`;
+    headerCell.font = { name: 'Arial Unicode MS', size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
     headerCell.alignment = { horizontal: 'center', vertical: 'middle' };
-    headerCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: `FF${tableHeaderBgColor}` } };
+    headerCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF5B9BD5' } }; // أزرق مطابق للمرجع
     headerCell.border = {
       top: { style: 'medium' }, bottom: { style: 'medium' },
       left: { style: 'medium' }, right: { style: 'medium' }
     };
     worksheet.getRow(2).height = 30;
 
-    // رؤوس الجدول الرئيسي
-    const headers = [
-      'المبلغ',
-      'نوع الحساب',
-      'نوع',
-      'المتبقي',
-      'ملاحظات'
-    ];
+    // رؤوس الجدول الرئيسي مطابقة للصور المرجعية (5 أعمدة فقط)
+    const headers = ['المبلغ', 'نوع الحساب', 'نوع', 'المتبقي', 'ملاحظات'];
     const headerRow = worksheet.addRow(headers);
     
     headerRow.eachCell((cell, index) => {
-      cell.font = { name: fontFamily, size: 11, bold: true, color: { argb: `FF${tableHeaderTextColor}` } };
+      cell.font = { name: 'Arial Unicode MS', size: 11, bold: true, color: { argb: 'FFFFFFFF' } }; // نص أبيض
       cell.alignment = { horizontal: 'center', vertical: 'middle' };
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: `FF${tableHeaderBgColor}` } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4F81BD' } }; // أزرق مطابق للصورة
       cell.border = {
         top: { style: 'thin' }, bottom: { style: 'thin' },
         left: { style: 'thin' }, right: { style: 'thin' }
       };
     });
-    worksheet.getRow(3).height = 25;
+    worksheet.getRow(4).height = 25;
 
     // حساب الرصيد الجاري - البداية بصفر أو بالرصيد المرحل
     let currentBalance = 0;
@@ -284,14 +227,14 @@ export default function DailyExpensesBulkExport() {
       console.log(`✅ تم إضافة صف المرحل الفعلي: مبلغ=${formatNumber(dayData.carriedForward)}, متبقي=${formatNumber(currentBalance)}`);
       
       carryForwardRow.eachCell((cell) => {
-        cell.font = { name: fontFamily, size: 10, bold: true };
+        cell.font = { name: 'Arial Unicode MS', size: 10, bold: true };
         cell.alignment = { horizontal: 'center', vertical: 'middle' };
         
         // تحديد لون الخلفية حسب إشارة المبلغ المرحل
         if (dayData.carriedForward < 0) {
-          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFF6B6B' } };
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFF6B6B' } }; // أحمر فاتح للمرحل السالب
         } else {
-          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: `FF${transferRowColor}` } };
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFB8E6B8' } }; // أخضر فاتح للمرحل الموجب
         }
         
         cell.border = {
@@ -324,9 +267,9 @@ export default function DailyExpensesBulkExport() {
           ]);
           
           transferRow.eachCell((cell) => {
-            cell.font = { name: fontFamily, size: 10, bold: true };
+            cell.font = { name: 'Arial Unicode MS', size: 10, bold: true };
             cell.alignment = { horizontal: 'center', vertical: 'middle' };
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: `FF${transferRowColor}` } };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFCC99' } }; // لون مميز للمبالغ المرحلة من مشاريع أخرى
             cell.border = {
               top: { style: 'thin' }, bottom: { style: 'thin' },
               left: { style: 'thin' }, right: { style: 'thin' }
@@ -367,10 +310,11 @@ export default function DailyExpensesBulkExport() {
             notes
           ]);
           
+          transferRow.height = 25; // زيادة ارتفاع الصف لاحتواء النص الملتف
           transferRow.eachCell((cell) => {
-            cell.font = { name: fontFamily, size: 10 };
+            cell.font = { name: 'Arial Unicode MS', size: 10 };
             cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: `FF${transferRowColor}` } };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFB8E6B8' } }; // أخضر فاتح للحوالات
             cell.border = {
               top: { style: 'thin' }, bottom: { style: 'thin' },
               left: { style: 'thin' }, right: { style: 'thin' }
@@ -437,12 +381,10 @@ export default function DailyExpensesBulkExport() {
             notes + workDaysText // دمج الملاحظات مع أيام العمل
           ]);
           
+          workerRow.height = 25; // زيادة ارتفاع الصف لاحتواء النص الملتف
           workerRow.eachCell((cell, index) => {
-            cell.font = { name: fontFamily, size: 10 };
-            cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
-            
-            // إضافة لون خلفية للعمال حسب إعدادات التصدير
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: `FF${workerRowColor}` } };
+            cell.font = { name: 'Arial Unicode MS', size: 10 };
+            cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }; // إضافة التفاف النص
             
             // إضافة المعامل في عمود المبلغ إذا وجد
             if (index === 1 && multiplier && multiplier !== 1) {
@@ -460,14 +402,14 @@ export default function DailyExpensesBulkExport() {
               
               // النص العادي
               if (notes) {
-                richTextArray.push({ text: notes, font: { name: fontFamily, size: 10 } });
+                richTextArray.push({ text: notes, font: { name: 'Arial Unicode MS', size: 10 } });
               }
               
               // أيام العمل بلون مختلف (أزرق)
               if (workDaysText) {
                 richTextArray.push({ 
                   text: workDaysText, 
-                  font: { name: fontFamily, size: 10, bold: true, color: { argb: 'FF0066CC' } } 
+                  font: { name: 'Arial Unicode MS', size: 10, bold: true, color: { argb: 'FF0066CC' } } 
                 });
               }
               
@@ -504,9 +446,8 @@ export default function DailyExpensesBulkExport() {
           ]);
           
           expenseRow.eachCell((cell) => {
-            cell.font = { name: fontFamily, size: 10 };
+            cell.font = { name: 'Arial Unicode MS', size: 10 };
             cell.alignment = { horizontal: 'center', vertical: 'middle' };
-            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: `FF${workerRowColor}` } };
             cell.border = {
               top: { style: 'thin' }, bottom: { style: 'thin' },
               left: { style: 'thin' }, right: { style: 'thin' }
@@ -559,37 +500,23 @@ export default function DailyExpensesBulkExport() {
           
           // تحسين اسم الحساب ليظهر تفاصيل التحويل
           const workerName = transfer.workerName || transfer.worker?.name || 'عامل';
-          const accountName = `حولة من حساب ${workerName}`;
+          const fromAccount = transfer.fromAccount || transfer.sourceAccount || 'المشروع';
+          const accountName = `حولة من حساب ${fromAccount} ${workerName}`;
           
-          // تحسين الملاحظات لتظهر بيانات التحويل كاملة بالترتيب المطلوب
+          // تحسين الملاحظات لتظهر بيانات التحويل كاملة
           let transferNotes = '';
-          const systemNotes = transfer.notes || transfer.description || '';
           const recipientName = transfer.recipientName || transfer.receiverName || workerName;
-          const transferNumber = transfer.transferNumber || transfer.referenceNumber || transfer.transactionId || '';
+          const transferNumber = transfer.transferNumber || transfer.referenceNumber || transfer.transactionId;
           
-          // بناء الملاحظات بالترتيب: ملاحظات النظام + اسم المستلم + رقم الحوالة
-          const noteParts = [];
-          
-          // أولاً: ملاحظات النظام
-          if (systemNotes && systemNotes.trim()) {
-            noteParts.push(systemNotes.trim());
-          }
-          
-          // ثانياً: اسم المستلم
-          if (recipientName && recipientName !== workerName) {
-            noteParts.push(`اسم المستلم: ${recipientName}`);
+          // بناء الملاحظات بالتفاصيل المطلوبة
+          if (recipientName && transferNumber) {
+            transferNotes = `اسم المستلم: ${recipientName} - رقم الحوالة: ${transferNumber}`;
           } else if (recipientName) {
-            noteParts.push(`المستلم: ${recipientName}`);
-          }
-          
-          // ثالثاً: رقم الحوالة
-          if (transferNumber) {
-            noteParts.push(`رقم الحوالة: ${transferNumber}`);
-          }
-          
-          // دمج الأجزاء مع فاصل مناسب
-          if (noteParts.length > 0) {
-            transferNotes = noteParts.join(' - ');
+            transferNotes = `اسم المستلم: ${recipientName}`;
+          } else if (transferNumber) {
+            transferNotes = `رقم الحوالة: ${transferNumber}`;
+          } else if (transfer.notes || transfer.description) {
+            transferNotes = transfer.notes || transfer.description;
           } else {
             transferNotes = `تحويل إلى ${workerName}`;
           }
@@ -655,13 +582,11 @@ export default function DailyExpensesBulkExport() {
           currentBalance -= amount; // طرح المصاريف المتنوعة من الرصيد
           
           // تحديد نوع المصروف
-          let expenseType = misc.expenseType || 'نثريات';
+          let expenseType = misc.expenseType || 'مصروف متنوع';
           if (expenseType.includes('نثريات') && misc.description && misc.description.includes('نقليات')) {
             expenseType = 'نقليات';
           } else if (misc.category && misc.category.includes('حسابات أخرى')) {
             expenseType = 'منصرف - حسابات أخرى';
-          } else if (expenseType === 'مصروف متنوع') {
-            expenseType = 'نثريات';
           }
           
           const miscRow = worksheet.addRow([
@@ -669,12 +594,12 @@ export default function DailyExpensesBulkExport() {
             expenseType,
             'منصرف',
             formatNumber(currentBalance),
-            misc.notes || misc.description || 'نثريات'
+            misc.notes || misc.description || 'مصروف متنوع'
           ]);
           
           miscRow.eachCell((cell) => {
             cell.font = { name: 'Arial Unicode MS', size: 10 };
-            cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
             cell.border = {
               top: { style: 'thin' }, bottom: { style: 'thin' },
               left: { style: 'thin' }, right: { style: 'thin' }
@@ -705,6 +630,7 @@ export default function DailyExpensesBulkExport() {
         cell.font = { ...cell.font, color: { argb: 'FFFF0000' } };
       }
     });
+    finalBalanceRow.height = 25;
 
     // فراغ قبل الجدول الإضافي
     worksheet.addRow(['']);
@@ -755,7 +681,7 @@ export default function DailyExpensesBulkExport() {
         
         purchaseRow.eachCell((cell, index) => {
           cell.font = { name: 'Arial Unicode MS', size: 10 };
-          cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+          cell.alignment = { horizontal: 'center', vertical: 'middle' };
           
           // تمييز المشتريات الآجلة بلون مختلف (في عمود نوع الدفع)
           if (index === 4 && (paymentType === 'آجل' || paymentType === 'أجل')) {
@@ -786,15 +712,11 @@ export default function DailyExpensesBulkExport() {
       }
     }
     
-    // إعداد ارتفاع تلقائي لجميع الصفوف بعد الرأس للتناسب مع التفاف النص
-    // تمكين الارتفاع التلقائي لجميع الصفوف
-    (worksheet.properties as any).defaultRowHeight = undefined;
-    
+    // زيادة ارتفاع جميع الصفوف بعد الرأس للتناسب مع التفاف النص وتوسيط المحتوى
     for (let rowIndex = 3; rowIndex <= worksheet.rowCount; rowIndex++) {
       const row = worksheet.getRow(rowIndex);
       if (row && row.hasValues) {
-        // السماح بالارتفاع التلقائي - حذف تحديد الارتفاع
-        delete (row as any).height;
+        row.height = 22; // زيادة الارتفاع إلى 22 لراحة أكبر
         
         // تطبيق التفاف النص وتوسيط المحتوى على جميع الخلايا
         row.eachCell((cell) => {
@@ -885,8 +807,6 @@ export default function DailyExpensesBulkExport() {
       return;
     }
 
-
-
     if (new Date(dateFrom) > new Date(dateTo)) {
       toast({
         title: "خطأ في التواريخ",
@@ -901,7 +821,6 @@ export default function DailyExpensesBulkExport() {
 
     try {
       console.log('🚀 بدء تصدير المصروفات اليومية المجمعة...');
-      console.log('⚠️ سيتم استخدام القيم الافتراضية للتصدير');
       
       // جلب البيانات
       const dailyExpenses = await fetchDailyExpensesForPeriod(selectedProjectId, dateFrom, dateTo);
@@ -917,18 +836,9 @@ export default function DailyExpensesBulkExport() {
 
       console.log(`📊 تم جلب ${dailyExpenses.length} يوم من البيانات`);
 
-      // إنشاء ملف Excel مع إعدادات محسنة
+      // إنشاء ملف Excel
       const workbook = new ExcelJS.Workbook();
-      
-      // إعداد metadata آمن
-      workbook.creator = 'نظام إدارة المشاريع';
-      workbook.created = new Date();
-      workbook.modified = new Date();
-      
-      const companyName = 'شركة الفتحي للمقاولات والاستشارات الهندسية';
-      
-      // إعداد خصائص الملف الأساسية فقط
-      workbook.creator = 'نظام إدارة المشاريع';
+      workbook.creator = 'شركة الفتيني للمقاولات والاستشارات الهندسية';
       workbook.created = new Date();
 
       // إنشاء ورقة لكل يوم
@@ -936,64 +846,27 @@ export default function DailyExpensesBulkExport() {
         createDayWorksheet(workbook, dayData);
       });
 
-      // تصدير الملف مع إدارة آمنة للذاكرة
-      try {
-        console.log('📝 بدء كتابة ملف Excel...');
-        
-        // كتابة الملف بطريقة آمنة مع إدارة أفضل للذاكرة
-        const buffer = await workbook.xlsx.writeBuffer();
-        console.log(`💾 تم إنشاء Buffer بحجم: ${(buffer.byteLength / 1024 / 1024).toFixed(2)} MB`);
-        
-        // إنشاء Blob بالترميز الصحيح
-        const blob = new Blob([buffer], { 
-          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-        });
-        
-        // تنظيف اسم الملف من الأحرف المحظورة
-        const projectName = selectedProject?.name?.replace(/[\\/:*?"<>|]/g, '-') || 'مشروع';
-        const cleanDateFrom = dateFrom.replace(/-/g, '_');
-        const cleanDateTo = dateTo.replace(/-/g, '_');
-        const fileName = `تقرير_المصروفات_اليومية_${projectName}_من_${cleanDateFrom}_إلى_${cleanDateTo}.xlsx`;
-        
-        console.log(`📁 اسم الملف: ${fileName}`);
-        console.log(`📊 عدد الأوراق: ${dailyExpenses.length}`);
-        
-        // حفظ الملف باستخدام timeout للتأكد من عدم التعليق
-        await new Promise<void>((resolve, reject) => {
-          const timeoutId = setTimeout(() => {
-            reject(new Error('انتهت مهلة حفظ الملف'));
-          }, 30000); // 30 ثانية timeout
-          
-          try {
-            saveAs(blob, fileName);
-            clearTimeout(timeoutId);
-            resolve();
-          } catch (saveError) {
-            clearTimeout(timeoutId);
-            reject(saveError);
-          }
-        });
-        
-        // تنظيف البيانات من الذاكرة
-        workbook.removeWorksheet(0); // تنظيف أولي
-        
-        console.log('✅ تم حفظ الملف بنجاح');
-        
-      } catch (writeError: any) {
-        console.error('❌ خطأ في كتابة ملف Excel:', writeError);
-        throw new Error(`فشل في إنشاء ملف Excel: ${writeError?.message || 'خطأ غير محدد'}`);
-      }
+      // تصدير الملف
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { 
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+      });
+      
+      const projectName = selectedProject?.name?.replace(/[\\/:*?"<>|]/g, '-') || 'مشروع';
+      const fileName = `تقرير_المصروفات_اليومية_${projectName}_من_${dateFrom}_إلى_${dateTo}.xlsx`;
+      saveAs(blob, fileName);
+
+      console.log('📄 تفاصيل الملف المُصدّر:');
+      console.log(`   📁 اسم الملف: ${fileName}`);
+      console.log(`   📊 عدد الأوراق: ${dailyExpenses.length}`);
       console.log(`   📋 البيانات المُضمّنة:`);
 
+      toast({
+        title: "تم التصدير بنجاح! 🎉",
+        description: `تم تصدير ${dailyExpenses.length} يوم من المصروفات اليومية`,
+      });
+
       console.log('✅ تم إنتهاء التصدير بنجاح');
-      
-      // إعطاء وقت للملف لينتهي من التحميل قبل إظهار الرسالة
-      setTimeout(() => {
-        toast({
-          title: "تم التصدير بنجاح! 🎉",
-          description: `تم تصدير ${dailyExpenses.length} يوم من المصروفات اليومية`,
-        });
-      }, 500);
 
     } catch (error) {
       console.error('❌ خطأ في التصدير:', error);
@@ -1003,21 +876,8 @@ export default function DailyExpensesBulkExport() {
         variant: "destructive"
       });
     } finally {
-      // تنظيف شامل للذاكرة والمتغيرات
       setIsExporting(false);
       setExportProgress({ current: 0, total: 0 });
-      
-      // تنظيف إضافي للذاكرة إذا كان JavaScript GC بطيئاً
-      setTimeout(() => {
-        if (window.gc && typeof window.gc === 'function') {
-          try {
-            window.gc();
-            console.log('🧹 تم تشغيل garbage collection يدوياً');
-          } catch (gcError) {
-            console.log('⚠️ لا يمكن تشغيل garbage collection');
-          }
-        }
-      }, 1000);
     }
   };
 
@@ -1160,14 +1020,12 @@ export default function DailyExpensesBulkExport() {
         </div>
 
         {/* معلومات إضافية */}
-        <div className="mt-6 space-y-4">
-
-          <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-            <div className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-green-600" />
-              <h4 className="font-semibold text-green-800">ما سيتم تضمينه في التقرير:</h4>
-            </div>
-            <ul className="text-sm text-green-700 mt-2 space-y-1">
+        <div className="mt-6 p-4 bg-green-50 border border-green-200 rounded-lg">
+          <div className="flex items-center gap-2">
+            <CheckCircle className="h-5 w-5 text-green-600" />
+            <h4 className="font-semibold text-green-800">ما سيتم تضمينه في التقرير:</h4>
+          </div>
+          <ul className="text-sm text-green-700 mt-2 space-y-1">
             <li>• ملخص الدخل والمصاريف لكل يوم (أرقام وتواريخ إنجليزية)</li>
             <li>• تفاصيل أجور العمال مع أيام وساعات العمل</li>
             <li>• مشتريات المواد والأدوات مع تفاصيل الموردين</li>
@@ -1176,8 +1034,7 @@ export default function DailyExpensesBulkExport() {
             <li>• الحوالات والتحويلات المالية</li>
             <li>• الرصيد المرحل من المشاريع الأخرى</li>
             <li>• جميع البيانات حقيقية من قاعدة البيانات</li>
-            </ul>
-          </div>
+          </ul>
         </div>
       </CardContent>
     </Card>
