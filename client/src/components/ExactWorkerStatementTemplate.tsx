@@ -77,7 +77,7 @@ const ExactWorkerStatementTemplate: React.FC = () => {
 
     let filteredAttendance = attendanceData.filter((record: any) => 
       record.workerId === selectedWorker &&
-      (!selectedProject || record.projectId === selectedProject) &&
+      (!selectedProject || selectedProject === 'all' || record.projectId === selectedProject) &&
       (!fromDate || record.date >= fromDate) &&
       (!toDate || record.date <= toDate)
     );
@@ -467,7 +467,7 @@ const ExactWorkerStatementTemplate: React.FC = () => {
                     <SelectValue placeholder="جميع المشاريع" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">جميع المشاريع</SelectItem>
+                    <SelectItem value="all">جميع المشاريع</SelectItem>
                     {projectsData.map((project: any) => (
                       <SelectItem key={project.id} value={project.id}>
                         {project.name}
