@@ -1,16 +1,68 @@
-import React from "react"; import ExcelJS from "exceljs"; import { saveAs } from "file-saver";
+import React from "react";
+import ExcelJS from "exceljs";
+import { saveAs } from "file-saver";
 
-// مكوّن React/TSX لتصدير ملف Excel مطابق للصورة بنسبة عالية // كيفية الاستخدام: <ExactWorkerStatementTemplate data={data} workerName="عبدالله عمر" periodFrom="25/07/2025" periodTo="11/08/2025" />
+// مكوّن React/TSX لتصدير ملف Excel مطابق للصورة بنسبة عالية
+// كيفية الاستخدام: <ExactWorkerStatementTemplate data={data} workerName="عبدالله عمر" periodFrom="25/07/2025" periodTo="11/08/2025" />
 
-export type RowItem = { no: number; date: string; // مثال: "25/07/2025" day: string; // "السبت" project: string; daily: number; // الأجر اليومي كقيمة عددية days: number; // أيام العمل hours: number; // إجمالي الساعات totalDue: number; // إجمالي المستحق received: number; // المبلغ المستلم net: number; // المتبقي (totalDue - received) notes?: string; };
+export type RowItem = {
+  no: number;
+  date: string; // مثال: "25/07/2025"
+  day: string; // "السبت"
+  project: string;
+  daily: number; // الأجر اليومي كقيمة عددية
+  days: number; // أيام العمل
+  hours: number; // إجمالي الساعات
+  totalDue: number; // إجمالي المستحق
+  received: number; // المبلغ المستلم
+  net: number; // المتبقي (totalDue - received)
+  notes?: string;
+};
 
-const defaultData: RowItem[] = [ { no: 1, date: "25/07/2025", day: "السبت", project: "مشروع مصنع النجمي", daily: 8000, days: 0.5, hours: 4, totalDue: 8000, received: 5000, net: -1000, notes: "" }, { no: 2, date: "26/07/2025", day: "الأحد", project: "مشروع مصنع النجمي", daily: 8000, days: 1, hours: 8, totalDue: 8000, received: 5000, net: 3000, notes: "" }, { no: 3, date: "27/07/2025", day: "الإثنين", project: "مشروع مصنع النجمي", daily: 8000, days: 1, hours: 8, totalDue: 8000, received: 5000, net: 3000, notes: "" }, { no: 4, date: "28/07/2025", day: "الثلاثاء", project: "مشروع إبر التحيا", daily: 8000, days: 1, hours: 8, totalDue: 8000, received: 5000, net: 3000, notes: "" }, { no: 5, date: "29/07/2025", day: "الأربعاء", project: "مشروع مصنع النجمي", daily: 8000, days: 1, hours: 8, totalDue: 8000, received: 5000, net: 3000, notes: "" }, { no: 6, date: "30/07/2025", day: "الخميس", project: "مشروع مصنع النجمي", daily: 8000, days: 1, hours: 8, totalDue: 8000, received: 10000, net: -2000, notes: "" }, { no: 7, date: "31/07/2025", day: "الجمعة", project: "مشروع مصنع النجمي", daily: 8000, days: 0, hours: 0, totalDue: 0, received: 0, net: 0, notes: "" }, { no: 8, date: "01/08/2025", day: "السبت", project: "مشروع مصنع النجمي", daily: 8000, days: 1, hours: 8, totalDue: 8000, received: 5000, net: 3000, notes: "" }, { no: 9, date: "02/08/2025", day: "الأحد", project: "مشروع مصنع النجمي", daily: 8000, days: 1, hours: 8, totalDue: 8000, received: 5000, net: 3000, notes: "" }, { no: 10, date: "03/08/2025", day: "الإثنين", project: "مشروع مصنع النجمي", daily: 8000, days: 1, hours: 8, totalDue: 8000, received: 5000, net: 3000, notes: "" }, { no: 11, date: "04/08/2025", day: "الثلاثاء", project: "مشروع مصنع النجمي", daily: 8000, days: 1, hours: 8, totalDue: 8000, received: 5000, net: 3000, notes: "" }, // سطر الملخص الموجود بالصورة (سطر اجمالي تحويل) - نضعه كملاحظة/صف مستقل بعدها { no: 12, date: "04/08/2025", day: "الثلاثاء", project: "مشروع مصنع النجمي", daily: 8000, days: 0, hours: 0, totalDue: 21000, received: 21000, net: 0, notes: "قيد التحويل رقم الحوالة: 3736" }, ];
+const defaultData: RowItem[] = [
+  { no: 1, date: "25/07/2025", day: "السبت", project: "مشروع مصنع النجمي", daily: 8000, days: 0.5, hours: 4, totalDue: 8000, received: 5000, net: -1000, notes: "" },
+  { no: 2, date: "26/07/2025", day: "الأحد", project: "مشروع مصنع النجمي", daily: 8000, days: 1, hours: 8, totalDue: 8000, received: 5000, net: 3000, notes: "" },
+  { no: 3, date: "27/07/2025", day: "الإثنين", project: "مشروع مصنع النجمي", daily: 8000, days: 1, hours: 8, totalDue: 8000, received: 5000, net: 3000, notes: "" },
+  { no: 4, date: "28/07/2025", day: "الثلاثاء", project: "مشروع إبر التحيا", daily: 8000, days: 1, hours: 8, totalDue: 8000, received: 5000, net: 3000, notes: "" },
+  { no: 5, date: "29/07/2025", day: "الأربعاء", project: "مشروع مصنع النجمي", daily: 8000, days: 1, hours: 8, totalDue: 8000, received: 5000, net: 3000, notes: "" },
+  { no: 6, date: "30/07/2025", day: "الخميس", project: "مشروع مصنع النجمي", daily: 8000, days: 1, hours: 8, totalDue: 8000, received: 10000, net: -2000, notes: "" },
+  { no: 7, date: "31/07/2025", day: "الجمعة", project: "مشروع مصنع النجمي", daily: 8000, days: 0, hours: 0, totalDue: 0, received: 0, net: 0, notes: "" },
+  { no: 8, date: "01/08/2025", day: "السبت", project: "مشروع مصنع النجمي", daily: 8000, days: 1, hours: 8, totalDue: 8000, received: 5000, net: 3000, notes: "" },
+  { no: 9, date: "02/08/2025", day: "الأحد", project: "مشروع مصنع النجمي", daily: 8000, days: 1, hours: 8, totalDue: 8000, received: 5000, net: 3000, notes: "" },
+  { no: 10, date: "03/08/2025", day: "الإثنين", project: "مشروع مصنع النجمي", daily: 8000, days: 1, hours: 8, totalDue: 8000, received: 5000, net: 3000, notes: "" },
+  { no: 11, date: "04/08/2025", day: "الثلاثاء", project: "مشروع مصنع النجمي", daily: 8000, days: 1, hours: 8, totalDue: 8000, received: 5000, net: 3000, notes: "" },
+  // سطر الملخص الموجود بالصورة (سطر اجمالي تحويل) - نضعه كملاحظة/صف مستقل بعدها
+  { no: 12, date: "04/08/2025", day: "الثلاثاء", project: "مشروع مصنع النجمي", daily: 8000, days: 0, hours: 0, totalDue: 21000, received: 21000, net: 0, notes: "قيد التحويل رقم الحوالة: 3736" }
+];
 
-function formatCurrency(n: number) { // صيغة مع فاصلة آلاف و علامة العملة ر.ي const abs = Math.abs(n); const parts = abs.toLocaleString("en-US"); return (n < 0 ? "-" : "") + parts + " ر.ي"; }
+function formatCurrency(n: number) {
+  // صيغة مع فاصلة آلاف و علامة العملة ر.ي
+  const abs = Math.abs(n);
+  const parts = abs.toLocaleString("en-US");
+  return (n < 0 ? "-" : "") + parts + " ر.ي";
+}
 
-type Props = { data?: RowItem[]; workerName?: string; jobTitle?: string; totalWorkDays?: number; // اجمالي أيام العمل في الصورة يظهر 9.5 periodFrom?: string; periodTo?: string; };
+type Props = {
+  data?: RowItem[];
+  workerName?: string;
+  jobTitle?: string;
+  totalWorkDays?: number; // اجمالي أيام العمل في الصورة يظهر 9.5
+  periodFrom?: string;
+  periodTo?: string;
+};
 
-export default function ExactWorkerStatementTemplate({ data = defaultData, workerName = "عبدالله عمر", jobTitle = "مساعد ملحّم", totalWorkDays = 9.5, periodFrom = "25/07/2025", periodTo = "11/08/2025", }: Props) { const exportExcel = async () => { const workbook = new ExcelJS.Workbook(); workbook.creator = "شركة الفني"; workbook.created = new Date();
+export default function ExactWorkerStatementTemplate({
+  data = defaultData,
+  workerName = "عبدالله عمر",
+  jobTitle = "مساعد ملحّم",
+  totalWorkDays = 9.5,
+  periodFrom = "25/07/2025",
+  periodTo = "11/08/2025",
+}: Props) {
+  const exportExcel = async () => {
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = "شركة الفني";
+    workbook.created = new Date();
 
 const sheet = workbook.addWorksheet("كشف حساب");
 
@@ -247,25 +299,34 @@ saveAs(new Blob([buffer]), `كشف_تفصيلي_${workerName.replace(/\s+/g, "_"
 
 };
 
-return ( <div style={{ textAlign: "center", direction: "rtl" }}> <p style={{ fontWeight: 700 }}>تصدير ملف Excel مطابق للتصميم</p> <button onClick={exportExcel} style={{ padding: "10px 16px", borderRadius: 6, background: "#1976d2", color: "white", border: "none", cursor: "pointer" }} > تنزيل كشف (Excel) </button>
+  return (
+    <div style={{ textAlign: "center", direction: "rtl" }}>
+      <p style={{ fontWeight: 700 }}>تصدير ملف Excel مطابق للتصميم</p>
+      <button 
+        onClick={exportExcel} 
+        style={{ 
+          padding: "10px 16px", 
+          borderRadius: 6, 
+          background: "#1976d2", 
+          color: "white", 
+          border: "none", 
+          cursor: "pointer" 
+        }}
+      >
+        تنزيل كشف (Excel)
+      </button>
 
-<details style={{ marginTop: 12, textAlign: "right" }}>
-    <summary>نقطة مهمة</summary>
-    <ul>
-      <li>يمكنك تمرير بيانات حقيقية عبر خاصية <code>data</code> للمكوّن.</li>
-      <li>مكتبة ExcelJS تدعم المزيد من الضبط الدقيق (أحجام الخط، تنسيقات رقمية، دمج خلايا إضافي).</li>
-      <li>إذا أردت أن أقوم بربط هذا الكود مباشرة مع ملفك الحالي الذي رفعتَه، أخبرني لأقوم بتعديل الملف الموجود في المشروع.</li>
-    </ul>
-  </details>
-</div>
+      <details style={{ marginTop: 12, textAlign: "right" }}>
+        <summary>نقطة مهمة</summary>
+        <ul>
+          <li>يمكنك تمرير بيانات حقيقية عبر خاصية <code>data</code> للمكوّن.</li>
+          <li>مكتبة ExcelJS تدعم المزيد من الضبط الدقيق (أحجام الخط، تنسيقات رقمية، دمج خلايا إضافي).</li>
+          <li>إذا أردت أن أقوم بربط هذا الكود مباشرة مع ملفك الحالي الذي رفعتَه، أخبرني لأقوم بتعديل الملف الموجود في المشروع.</li>
+        </ul>
+      </details>
+    </div>
+  );
+}
 
-); }
 
-// === Integration Instructions (كيفية الربط مع ملفك الموجود) === // خيار 1 — استبدال الملف الموجود مباشرة // 1) افتح الملف الموجود على جهازك: /mnt/data/ExactWorkerStatementTemplate.tsx // 2) استبدل محتواه بالكامل بالمحتوى الموجود في هذا المستند (Exact Worker Statement Template Full). //    بعد الاستبدال ستصبح المكوّن جاهزًا للاستخدام فورًا. // 3) ثبّت الحزم المطلوبة إن لم تكن مثبتة: //    npm install exceljs file-saver //    أو //    yarn add exceljs file-saver // 4) شغّل المشروع وادخل الصفحة التي تستدعي المكوّن. اضغط زر "تنزيل كشف (Excel)" لتصدير الملف.
-
-// خيار 2 — استيراد المكوّن من ملف جديد (لا تستبدل ملفك الحالي) // 1) احفظ هذا الملف الموجود في الـ Canvas باسم: src/components/ExactWorkerStatementTemplate_Full.tsx // 2) في ملفك الحالي /mnt/data/ExactWorkerStatementTemplate.tsx (أو أي ملف صفحة) أضف: //    import ExactWorkerStatementTemplate from "./components/ExactWorkerStatementTemplate_Full"; //    // ثم استخدم المكوّن في الـ JSX: //    <ExactWorkerStatementTemplate data={yourData} workerName={"اسم العامل"} periodFrom={"25/07/2025"} periodTo={"11/08/2025"} /> // 3) ثبّت الحزم المطلوبة كما في الخطوة أعلاه.
-
-// ملاحظات مهمة: // - المشروع ينبغي أن يكون React/TypeScript بحيث يدعم استيراد ملفات .tsx. // - إن واجهت مشكلة 'rightToLeft' في Excel (RTL view) يمكنك حذف أو تعديل السطر: sheet.views = [{ rightToLeft: true }]; // - إذا تريد أن أُنشئ ملف الجاهز للاستبدال مباشرة داخل /mnt/data/ على جهازك، أخبرني وسأعرض لك نص الملف الذي يمكنك نسخه ولصقه (لا يمكنني تعديل الملفات على جهازك دون أمر صريح منك لنسخ/لصق المحتوى).
-
-// انتهى قسم التكامل — افتح المستند وانسخ/الصق وفق الخيار الذي تفضّله.
 
