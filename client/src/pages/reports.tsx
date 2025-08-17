@@ -49,6 +49,7 @@ import {
 } from "@/components/unified-filter-template";
 import WorkerFilterReport from "@/components/worker-filter-report";
 import DailyExpensesBulkExport from "@/components/daily-expenses-bulk-export";
+import AdvancedDataExport from "@/components/AdvancedDataExport";
 
 // أنواع بيانات التقارير
 interface ReportStats {
@@ -449,7 +450,7 @@ export default function Reports() {
         <Tabs defaultValue="daily" className="space-y-6">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="bg-white dark:bg-gray-800 rounded-xl p-2 shadow-lg border">
-              <TabsList className="grid grid-cols-5 w-full bg-transparent gap-2">
+              <TabsList className="grid grid-cols-6 w-full bg-transparent gap-2">
                 <TabsTrigger 
                   value="daily" 
                   className="flex items-center gap-2 text-sm md:text-base px-4 py-3 rounded-lg transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-cyan-500 data-[state=active]:text-white data-[state=active]:shadow-lg hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -489,6 +490,14 @@ export default function Reports() {
                   <FileSpreadsheet className="h-4 w-4 md:h-5 md:w-5" />
                   <span className="hidden md:inline">تصدير مجمع</span>
                   <span className="md:hidden">تصدير</span>
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="advanced-export" 
+                  className="flex items-center gap-2 text-sm md:text-base px-4 py-3 rounded-lg transition-all duration-300 data-[state=active]:bg-gradient-to-r data-[state=active]:from-indigo-500 data-[state=active]:to-purple-500 data-[state=active]:text-white data-[state=active]:shadow-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                >
+                  <Download className="h-4 w-4 md:h-5 md:w-5" />
+                  <span className="hidden md:inline">تصدير متقدم</span>
+                  <span className="md:hidden">متقدم</span>
                 </TabsTrigger>
               </TabsList>
             </div>
@@ -811,6 +820,29 @@ export default function Reports() {
               </CardHeader>
               <CardContent className="p-6">
                 <DailyExpensesBulkExport />
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* تبويب التصدير المتقدم - جديد */}
+          <TabsContent value="advanced-export">
+            <Card className="shadow-lg">
+              <CardHeader className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20">
+                <CardTitle className="flex items-center gap-3 text-xl">
+                  <div className="bg-indigo-600 p-2 rounded-lg">
+                    <Download className="h-6 w-6 text-white" />
+                  </div>
+                  تصدير البيانات المتقدم
+                  <Badge variant="secondary" className="bg-indigo-100 text-indigo-800 dark:bg-indigo-800 dark:text-indigo-100">
+                    جديد
+                  </Badge>
+                </CardTitle>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                  اختيار مشاريع متعددة وفترات زمنية مع تصدير Excel و PDF والطباعة
+                </p>
+              </CardHeader>
+              <CardContent className="p-6">
+                <AdvancedDataExport />
               </CardContent>
             </Card>
           </TabsContent>
