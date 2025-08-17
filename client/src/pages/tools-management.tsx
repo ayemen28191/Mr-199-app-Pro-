@@ -137,9 +137,29 @@ const ToolsManagementPage: React.FC = () => {
     ...(searchTerm && { searchTerm: searchTerm }),
   };
 
-  // Fetch tools with filters
+  // Fetch tools with filters  
+  const toolsQueryKey = ['/api/tools'];
+  const toolsQueryParams = new URLSearchParams();
+  
+  if (selectedCategory && selectedCategory !== 'all') {
+    toolsQueryParams.append('categoryId', selectedCategory);
+  }
+  if (selectedStatus && selectedStatus !== 'all') {
+    toolsQueryParams.append('status', selectedStatus);
+  }
+  if (selectedCondition && selectedCondition !== 'all') {
+    toolsQueryParams.append('condition', selectedCondition);
+  }
+  if (searchTerm) {
+    toolsQueryParams.append('searchTerm', searchTerm);
+  }
+  
+  const toolsUrl = toolsQueryParams.toString() 
+    ? `/api/tools?${toolsQueryParams.toString()}`
+    : '/api/tools';
+    
   const { data: tools = [], isLoading: toolsLoading } = useQuery<Tool[]>({
-    queryKey: ['/api/tools', Object.values(toolFilters).join('-')],
+    queryKey: [toolsUrl],
   });
 
   // Calculate statistics
