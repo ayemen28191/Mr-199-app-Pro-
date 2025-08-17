@@ -520,88 +520,112 @@ export default function SupplierAccountsPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="overflow-x-auto rounded-lg border">
-                  <Table>
-                    <TableHeader>
-                      <TableRow className="bg-blue-50">
-                        <TableHead className="text-center font-bold">التاريخ</TableHead>
-                        <TableHead className="text-center font-bold">رقم الفاتورة</TableHead>
-                        <TableHead className="text-center font-bold">المادة</TableHead>
-                        <TableHead className="text-center font-bold">الكمية</TableHead>
-                        <TableHead className="text-center font-bold">سعر الوحدة</TableHead>
-                        <TableHead className="text-center font-bold">المبلغ الإجمالي</TableHead>
-                        <TableHead className="text-center font-bold">نوع الدفع</TableHead>
-                        <TableHead className="text-center font-bold">المدفوع</TableHead>
-                        <TableHead className="text-center font-bold">المتبقي</TableHead>
-                        <TableHead className="text-center font-bold">الحالة</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {purchases.map((purchase, index) => (
-                        <TableRow 
-                          key={purchase.id} 
-                          className={index % 2 === 0 ? "bg-gray-50" : "bg-white"}
-                        >
-                          <TableCell className="text-center">
-                            {formatDate(purchase.invoiceDate)}
-                          </TableCell>
-                          <TableCell className="text-center font-medium">
-                            {purchase.invoiceNumber || "غير محدد"}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {purchase.materialId}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {purchase.quantity}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {formatCurrency(purchase.unitPrice)}
-                          </TableCell>
-                          <TableCell className="text-center font-bold">
+                {/* عرض البطاقات المضغوطة */}
+                <div className="grid gap-3">
+                  {purchases.map((purchase, index) => (
+                    <div 
+                      key={purchase.id}
+                      className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow"
+                    >
+                      {/* الصف الأول: التاريخ ورقم الفاتورة والحالة */}
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="flex flex-col">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="w-4 h-4 text-gray-500" />
+                            <span className="text-sm font-medium text-gray-900">
+                              {formatDate(purchase.invoiceDate)}
+                            </span>
+                          </div>
+                          {purchase.invoiceNumber && (
+                            <div className="flex items-center gap-2 mt-1">
+                              <Receipt className="w-4 h-4 text-gray-500" />
+                              <span className="text-xs text-gray-600">
+                                فاتورة: {purchase.invoiceNumber}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex flex-col items-end gap-1">
+                          {getPaymentStatusBadge(purchase.purchaseType, purchase.remainingAmount || "0")}
+                          <Badge 
+                            variant={purchase.purchaseType === "نقد" ? "default" : "secondary"}
+                            className="text-xs"
+                          >
+                            {purchase.purchaseType}
+                          </Badge>
+                        </div>
+                      </div>
+
+                      {/* الصف الثاني: معلومات المادة */}
+                      <div className="flex items-center gap-2 mb-3 p-2 bg-gray-50 rounded-md">
+                        <Package className="w-4 h-4 text-blue-500" />
+                        <div className="flex-1">
+                          <span className="text-sm font-medium text-gray-900">
+                            {(purchase as any).material?.name || purchase.materialId}
+                          </span>
+                          <div className="text-xs text-gray-600 mt-1">
+                            الكمية: {purchase.quantity} | سعر الوحدة: {formatCurrency(purchase.unitPrice)}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* الصف الثالث: المبالغ المالية */}
+                      <div className="grid grid-cols-3 gap-3 pt-2 border-t border-gray-100">
+                        <div className="text-center">
+                          <div className="text-xs text-gray-500 mb-1">المبلغ الإجمالي</div>
+                          <div className="text-sm font-bold text-blue-600">
                             {formatCurrency(purchase.totalAmount)}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <Badge 
-                              variant={purchase.purchaseType === "نقد" ? "default" : "secondary"}
-                              className="text-xs"
-                            >
-                              {purchase.purchaseType}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-center text-green-600 font-semibold">
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-xs text-gray-500 mb-1">المدفوع</div>
+                          <div className="text-sm font-bold text-green-600">
                             {formatCurrency(purchase.paidAmount || "0")}
-                          </TableCell>
-                          <TableCell className="text-center text-red-600 font-semibold">
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-xs text-gray-500 mb-1">المتبقي</div>
+                          <div className="text-sm font-bold text-red-600">
                             {formatCurrency(purchase.remainingAmount || "0")}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {getPaymentStatusBadge(purchase.purchaseType, purchase.remainingAmount || "0")}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* ملاحظات إضافية إذا وجدت */}
+                      {purchase.notes && (
+                        <div className="mt-3 pt-2 border-t border-gray-100">
+                          <div className="text-xs text-gray-500 mb-1">ملاحظات:</div>
+                          <div className="text-xs text-gray-700 bg-yellow-50 p-2 rounded">
+                            {purchase.notes}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
 
-                {/* ملخص الإجماليات */}
-                <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-6 rounded-lg border border-blue-200">
-                  <h3 className="text-lg font-bold text-blue-900 mb-4 text-center">ملخص الحساب</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-                      <p className="text-sm text-gray-600">إجمالي المشتريات</p>
-                      <p className="text-xl font-bold text-blue-600">{formatCurrency(totals.totalAmount)}</p>
+                {/* ملخص الإجماليات - محسن للهواتف */}
+                <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200 mt-4">
+                  <h3 className="text-base font-bold text-blue-900 mb-3 text-center flex items-center justify-center gap-2">
+                    <Wallet className="w-5 h-5" />
+                    ملخص الحساب
+                  </h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="text-center p-3 bg-white rounded-lg shadow-sm">
+                      <p className="text-xs text-gray-600">إجمالي المشتريات</p>
+                      <p className="text-base font-bold text-blue-600">{formatCurrency(totals.totalAmount)}</p>
                     </div>
-                    <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-                      <p className="text-sm text-gray-600">إجمالي المدفوع</p>
-                      <p className="text-xl font-bold text-green-600">{formatCurrency(totals.paidAmount)}</p>
+                    <div className="text-center p-3 bg-white rounded-lg shadow-sm">
+                      <p className="text-xs text-gray-600">عدد الفواتير</p>
+                      <p className="text-base font-bold text-gray-800">{purchases.length}</p>
                     </div>
-                    <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-                      <p className="text-sm text-gray-600">إجمالي المتبقي</p>
-                      <p className="text-xl font-bold text-red-600">{formatCurrency(totals.remainingAmount)}</p>
+                    <div className="text-center p-3 bg-white rounded-lg shadow-sm">
+                      <p className="text-xs text-gray-600">إجمالي المدفوع</p>
+                      <p className="text-base font-bold text-green-600">{formatCurrency(totals.paidAmount)}</p>
                     </div>
-                    <div className="text-center p-4 bg-white rounded-lg shadow-sm">
-                      <p className="text-sm text-gray-600">عدد الفواتير</p>
-                      <p className="text-xl font-bold text-gray-800">{purchases.length}</p>
+                    <div className="text-center p-3 bg-white rounded-lg shadow-sm">
+                      <p className="text-xs text-gray-600">إجمالي المتبقي</p>
+                      <p className="text-base font-bold text-red-600">{formatCurrency(totals.remainingAmount)}</p>
                     </div>
                   </div>
                 </div>
