@@ -184,41 +184,45 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-4 bg-muted/50 p-1 rounded-lg mb-6">
+              <TabsList className="flex flex-wrap w-full bg-muted/30 p-2 rounded-lg mb-6 gap-1">
                 <TabsTrigger 
                   value="basic" 
-                  className="text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                  className="flex-1 min-w-0 text-xs sm:text-sm font-medium px-3 py-2 rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm transition-all"
+                  data-testid="tab-basic"
                 >
-                  <div className="flex items-center gap-2">
-                    <Package className="h-4 w-4" />
-                    المعلومات الأساسية
+                  <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2">
+                    <Package className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                    <span className="truncate">الأساسية</span>
                   </div>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="details" 
-                  className="text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                  className="flex-1 min-w-0 text-xs sm:text-sm font-medium px-3 py-2 rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm transition-all"
+                  data-testid="tab-details"
                 >
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
-                    التفاصيل التقنية
+                  <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2">
+                    <FileText className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                    <span className="truncate">التقنية</span>
                   </div>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="financial" 
-                  className="text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                  className="flex-1 min-w-0 text-xs sm:text-sm font-medium px-3 py-2 rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm transition-all"
+                  data-testid="tab-financial"
                 >
-                  <div className="flex items-center gap-2">
-                    <DollarSign className="h-4 w-4" />
-                    المعلومات المالية
+                  <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2">
+                    <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                    <span className="truncate">المالية</span>
                   </div>
                 </TabsTrigger>
                 <TabsTrigger 
                   value="location" 
-                  className="text-sm font-medium data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                  className="flex-1 min-w-0 text-xs sm:text-sm font-medium px-3 py-2 rounded-md data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm transition-all"
+                  data-testid="tab-location"
                 >
-                  <div className="flex items-center gap-2">
-                    <MapPin className="h-4 w-4" />
-                    الموقع والحالة
+                  <div className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2">
+                    <MapPin className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                    <span className="truncate">الموقع</span>
                   </div>
                 </TabsTrigger>
               </TabsList>

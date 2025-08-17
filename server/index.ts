@@ -83,6 +83,22 @@ app.use((req, res, next) => {
         // التحقق من سلامة ملخصات المصاريف اليومية
         log("✅ جميع جداول قاعدة البيانات جاهزة وتعمل بكفاءة عالية");
         
+        // إضافة الأعمدة المفقودة لجدول tools
+        try {
+          log("🔧 فحص وإضافة الأعمدة المفقودة لجدول tools...");
+          await sql`ALTER TABLE tools ADD COLUMN IF NOT EXISTS is_tool BOOLEAN DEFAULT true NOT NULL`;
+          await sql`ALTER TABLE tools ADD COLUMN IF NOT EXISTS is_consumable BOOLEAN DEFAULT false NOT NULL`;
+          await sql`ALTER TABLE tools ADD COLUMN IF NOT EXISTS is_serial BOOLEAN DEFAULT false NOT NULL`;
+          await sql`ALTER TABLE tools ADD COLUMN IF NOT EXISTS total_usage_hours DECIMAL(10,2) DEFAULT 0`;
+          await sql`ALTER TABLE tools ADD COLUMN IF NOT EXISTS usage_count INTEGER DEFAULT 0`;
+          await sql`ALTER TABLE tools ADD COLUMN IF NOT EXISTS ai_rating DECIMAL(3,2)`;
+          await sql`ALTER TABLE tools ADD COLUMN IF NOT EXISTS ai_notes TEXT`;
+          await sql`ALTER TABLE tools ADD COLUMN IF NOT EXISTS image_urls TEXT[]`;
+          log("✅ تم التأكد من وجود جميع أعمدة جدول tools");
+        } catch (error) {
+          log("ℹ️  أعمدة tools موجودة مسبقاً أو تم إنشاؤها");
+        }
+        
         // تشغيل الاختبار الشامل لجميع الوظائف
         log("🧪 بدء الاختبار الشامل لجميع وظائف التطبيق...");
 
