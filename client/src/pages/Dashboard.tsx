@@ -65,10 +65,17 @@ export default function Dashboard() {
 
   // mutation لحفظ الإعدادات
   const saveSettingsMutation = useMutation({
-    mutationFn: (data: Partial<InsertExportSettings>) => 
-      settings?.id 
-        ? apiRequest(`/api/export-settings/${settings.id}`, { method: 'PUT', body: data })
-        : apiRequest('/api/export-settings', { method: 'POST', body: { ...data, isDefault: true } }),
+    mutationFn: async (data: Partial<InsertExportSettings>) => {
+      const url = settings?.id ? `/api/export-settings/${settings.id}` : '/api/export-settings';
+      const method = settings?.id ? 'PUT' : 'POST';
+      const body = settings?.id ? data : { ...data, isDefault: true };
+      
+      return fetch(url, { 
+        method, 
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body) 
+      }).then(res => res.json());
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/export-settings'] });
       toast({
@@ -112,8 +119,23 @@ export default function Dashboard() {
   };
 
   // الحصول على القيم الحالية (الإعدادات المحفوظة + التغييرات المحلية)
-  const getCurrentValue = (key: keyof ExportSettings) => {
-    return localSettings?.[key] ?? settings?.[key];
+  const getCurrentValue = (key: keyof ExportSettings): string | number | boolean => {
+    const value = localSettings?.[key] ?? settings?.[key];
+    
+    // التحويل إلى النوع المناسب حسب الحقل
+    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+      return value;
+    }
+    
+    // القيم الافتراضية حسب نوع الحقل
+    if (key.includes('Width') || key.includes('Height') || key.includes('Size')) {
+      return 0;
+    }
+    if (key === 'isDefault' || key.includes('show') || key.includes('Show')) {
+      return false;
+    }
+    
+    return '';
   };
 
   if (isLoading) {
@@ -213,52 +235,52 @@ export default function Dashboard() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <ColorPicker
                   label="لون خلفية الرأس"
-                  value={getCurrentValue('headerBackgroundColor') || '#F3F4F6'}
+                  value={String(getCurrentValue('headerBackgroundColor') || '#F3F4F6')}
                   onChange={(value) => updateSetting('headerBackgroundColor', value)}
                 />
                 <ColorPicker
                   label="لون نص الرأس"
-                  value={getCurrentValue('headerTextColor') || '#000000'}
+                  value={String(getCurrentValue('headerTextColor') || '#000000')}
                   onChange={(value) => updateSetting('headerTextColor', value)}
                 />
                 <ColorPicker
                   label="لون خلفية رأس الجدول"
-                  value={getCurrentValue('tableHeaderBackgroundColor') || '#3B82F6'}
+                  value={String(getCurrentValue('tableHeaderBackgroundColor') || '#3B82F6')}
                   onChange={(value) => updateSetting('tableHeaderBackgroundColor', value)}
                 />
                 <ColorPicker
                   label="لون نص رأس الجدول"
-                  value={getCurrentValue('tableHeaderTextColor') || '#FFFFFF'}
+                  value={String(getCurrentValue('tableHeaderTextColor') || '#FFFFFF')}
                   onChange={(value) => updateSetting('tableHeaderTextColor', value)}
                 />
                 <ColorPicker
                   label="لون صفوف التحويلات"
-                  value={getCurrentValue('transferRowColor') || '#B8E6B8'}
+                  value={String(getCurrentValue('transferRowColor') || '#B8E6B8')}
                   onChange={(value) => updateSetting('transferRowColor', value)}
                 />
                 <ColorPicker
                   label="لون صفوف العمال"
-                  value={getCurrentValue('workerRowColor') || '#E6F3FF'}
+                  value={String(getCurrentValue('workerRowColor') || '#E6F3FF')}
                   onChange={(value) => updateSetting('workerRowColor', value)}
                 />
                 <ColorPicker
                   label="لون الصفوف الزوجية"
-                  value={getCurrentValue('evenRowColor') || '#F9FAFB'}
+                  value={String(getCurrentValue('evenRowColor') || '#F9FAFB')}
                   onChange={(value) => updateSetting('evenRowColor', value)}
                 />
                 <ColorPicker
                   label="لون الصفوف الفردية"
-                  value={getCurrentValue('oddRowColor') || '#FFFFFF'}
+                  value={String(getCurrentValue('oddRowColor') || '#FFFFFF')}
                   onChange={(value) => updateSetting('oddRowColor', value)}
                 />
                 <ColorPicker
                   label="لون الحدود"
-                  value={getCurrentValue('borderColor') || '#000000'}
+                  value={String(getCurrentValue('borderColor') || '#000000')}
                   onChange={(value) => updateSetting('borderColor', value)}
                 />
                 <ColorPicker
                   label="لون الرصيد السالب"
-                  value={getCurrentValue('negativeBalanceColor') || '#EF4444'}
+                  value={String(getCurrentValue('negativeBalanceColor') || '#EF4444')}
                   onChange={(value) => updateSetting('negativeBalanceColor', value)}
                 />
               </div>
@@ -280,7 +302,7 @@ export default function Dashboard() {
                 <div className="space-y-2">
                   <Label>اسم الشركة</Label>
                   <Input
-                    value={getCurrentValue('companyName') || ''}
+                    value={String(getCurrentValue('companyName') || '')}
                     onChange={(e) => updateSetting('companyName', e.target.value)}
                     placeholder="شركة الفتحي للمقاولات والاستشارات الهندسية"
                   />
@@ -288,7 +310,7 @@ export default function Dashboard() {
                 <div className="space-y-2">
                   <Label>عنوان التقرير</Label>
                   <Input
-                    value={getCurrentValue('reportTitle') || ''}
+                    value={String(getCurrentValue('reportTitle') || '')}
                     onChange={(e) => updateSetting('reportTitle', e.target.value)}
                     placeholder="كشف حساب المشروع"
                   />
@@ -296,7 +318,7 @@ export default function Dashboard() {
                 <div className="space-y-2">
                   <Label>تسمية التاريخ</Label>
                   <Input
-                    value={getCurrentValue('dateLabel') || ''}
+                    value={String(getCurrentValue('dateLabel') || '')}
                     onChange={(e) => updateSetting('dateLabel', e.target.value)}
                     placeholder="التاريخ:"
                   />
@@ -304,7 +326,7 @@ export default function Dashboard() {
                 <div className="space-y-2">
                   <Label>تسمية المشروع</Label>
                   <Input
-                    value={getCurrentValue('projectLabel') || ''}
+                    value={String(getCurrentValue('projectLabel') || '')}
                     onChange={(e) => updateSetting('projectLabel', e.target.value)}
                     placeholder="المشروع:"
                   />
@@ -312,7 +334,7 @@ export default function Dashboard() {
                 <div className="space-y-2">
                   <Label>تسمية تاريخ الطباعة</Label>
                   <Input
-                    value={getCurrentValue('printDateLabel') || ''}
+                    value={String(getCurrentValue('printDateLabel') || '')}
                     onChange={(e) => updateSetting('printDateLabel', e.target.value)}
                     placeholder="تاريخ الطباعة:"
                   />
@@ -320,7 +342,7 @@ export default function Dashboard() {
                 <div className="space-y-2">
                   <Label>وحدة العملة</Label>
                   <Input
-                    value={getCurrentValue('currencyUnit') || ''}
+                    value={String(getCurrentValue('currencyUnit') || '')}
                     onChange={(e) => updateSetting('currencyUnit', e.target.value)}
                     placeholder="ريال"
                   />
@@ -335,7 +357,7 @@ export default function Dashboard() {
                   <div className="space-y-2">
                     <Label>عمود الرقم المسلسل</Label>
                     <Input
-                      value={getCurrentValue('serialColumnHeader') || ''}
+                      value={String(getCurrentValue('serialColumnHeader') || '')}
                       onChange={(e) => updateSetting('serialColumnHeader', e.target.value)}
                       placeholder="م"
                     />
@@ -343,7 +365,7 @@ export default function Dashboard() {
                   <div className="space-y-2">
                     <Label>عمود التاريخ</Label>
                     <Input
-                      value={getCurrentValue('dateColumnHeader') || ''}
+                      value={String(getCurrentValue('dateColumnHeader') || '')}
                       onChange={(e) => updateSetting('dateColumnHeader', e.target.value)}
                       placeholder="التاريخ"
                     />
@@ -351,7 +373,7 @@ export default function Dashboard() {
                   <div className="space-y-2">
                     <Label>عمود اسم الحساب</Label>
                     <Input
-                      value={getCurrentValue('accountColumnHeader') || ''}
+                      value={String(getCurrentValue('accountColumnHeader') || '')}
                       onChange={(e) => updateSetting('accountColumnHeader', e.target.value)}
                       placeholder="اسم الحساب"
                     />
@@ -359,7 +381,7 @@ export default function Dashboard() {
                   <div className="space-y-2">
                     <Label>عمود الدائن</Label>
                     <Input
-                      value={getCurrentValue('creditColumnHeader') || ''}
+                      value={String(getCurrentValue('creditColumnHeader') || '')}
                       onChange={(e) => updateSetting('creditColumnHeader', e.target.value)}
                       placeholder="دائن"
                     />
@@ -367,7 +389,7 @@ export default function Dashboard() {
                   <div className="space-y-2">
                     <Label>عمود المدين</Label>
                     <Input
-                      value={getCurrentValue('debitColumnHeader') || ''}
+                      value={String(getCurrentValue('debitColumnHeader') || '')}
                       onChange={(e) => updateSetting('debitColumnHeader', e.target.value)}
                       placeholder="مدين"
                     />
@@ -375,7 +397,7 @@ export default function Dashboard() {
                   <div className="space-y-2">
                     <Label>عمود الرصيد</Label>
                     <Input
-                      value={getCurrentValue('balanceColumnHeader') || ''}
+                      value={String(getCurrentValue('balanceColumnHeader') || '')}
                       onChange={(e) => updateSetting('balanceColumnHeader', e.target.value)}
                       placeholder="الرصيد"
                     />
@@ -383,7 +405,7 @@ export default function Dashboard() {
                   <div className="space-y-2">
                     <Label>عمود البيان</Label>
                     <Input
-                      value={getCurrentValue('notesColumnHeader') || ''}
+                      value={String(getCurrentValue('notesColumnHeader') || '')}
                       onChange={(e) => updateSetting('notesColumnHeader', e.target.value)}
                       placeholder="البيان"
                     />
@@ -411,7 +433,7 @@ export default function Dashboard() {
                     <Label>عرض عمود الرقم المسلسل</Label>
                     <Input
                       type="number"
-                      value={getCurrentValue('serialColumnWidth') || 40}
+                      value={Number(getCurrentValue('serialColumnWidth') || 40)}
                       onChange={(e) => updateSetting('serialColumnWidth', parseInt(e.target.value))}
                       min="20"
                       max="200"
@@ -421,7 +443,7 @@ export default function Dashboard() {
                     <Label>عرض عمود التاريخ</Label>
                     <Input
                       type="number"
-                      value={getCurrentValue('dateColumnWidth') || 80}
+                      value={Number(getCurrentValue('dateColumnWidth') || 80)}
                       onChange={(e) => updateSetting('dateColumnWidth', parseInt(e.target.value))}
                       min="50"
                       max="300"
@@ -431,7 +453,7 @@ export default function Dashboard() {
                     <Label>عرض عمود اسم الحساب</Label>
                     <Input
                       type="number"
-                      value={getCurrentValue('accountColumnWidth') || 200}
+                      value={Number(getCurrentValue('accountColumnWidth') || 200)}
                       onChange={(e) => updateSetting('accountColumnWidth', parseInt(e.target.value))}
                       min="100"
                       max="500"
@@ -441,7 +463,7 @@ export default function Dashboard() {
                     <Label>عرض عمود الدائن</Label>
                     <Input
                       type="number"
-                      value={getCurrentValue('creditColumnWidth') || 80}
+                      value={Number(getCurrentValue('creditColumnWidth') || 80)}
                       onChange={(e) => updateSetting('creditColumnWidth', parseInt(e.target.value))}
                       min="50"
                       max="200"
@@ -451,7 +473,7 @@ export default function Dashboard() {
                     <Label>عرض عمود المدين</Label>
                     <Input
                       type="number"
-                      value={getCurrentValue('debitColumnWidth') || 80}
+                      value={Number(getCurrentValue('debitColumnWidth') || 80)}
                       onChange={(e) => updateSetting('debitColumnWidth', parseInt(e.target.value))}
                       min="50"
                       max="200"
@@ -461,7 +483,7 @@ export default function Dashboard() {
                     <Label>عرض عمود الرصيد</Label>
                     <Input
                       type="number"
-                      value={getCurrentValue('balanceColumnWidth') || 80}
+                      value={Number(getCurrentValue('balanceColumnWidth') || 80)}
                       onChange={(e) => updateSetting('balanceColumnWidth', parseInt(e.target.value))}
                       min="50"
                       max="200"
@@ -471,7 +493,7 @@ export default function Dashboard() {
                     <Label>عرض عمود البيان</Label>
                     <Input
                       type="number"
-                      value={getCurrentValue('notesColumnWidth') || 250}
+                      value={Number(getCurrentValue('notesColumnWidth') || 250)}
                       onChange={(e) => updateSetting('notesColumnWidth', parseInt(e.target.value))}
                       min="100"
                       max="500"
@@ -488,7 +510,7 @@ export default function Dashboard() {
                   <div className="space-y-2">
                     <div className="flex items-center space-x-2">
                       <Switch
-                        checked={getCurrentValue('autoRowHeight') || true}
+                        checked={Boolean(getCurrentValue('autoRowHeight') ?? true)}
                         onCheckedChange={(checked) => updateSetting('autoRowHeight', checked)}
                       />
                       <Label>ارتفاع تلقائي للصفوف</Label>
@@ -498,22 +520,22 @@ export default function Dashboard() {
                     <Label>الحد الأدنى لارتفاع الصف</Label>
                     <Input
                       type="number"
-                      value={getCurrentValue('minRowHeight') || 18}
+                      value={Number(getCurrentValue('minRowHeight') || 18)}
                       onChange={(e) => updateSetting('minRowHeight', parseInt(e.target.value))}
                       min="15"
                       max="50"
-                      disabled={getCurrentValue('autoRowHeight')}
+                      disabled={Boolean(getCurrentValue('autoRowHeight') ?? true)}
                     />
                   </div>
                   <div className="space-y-2">
                     <Label>الحد الأقصى لارتفاع الصف</Label>
                     <Input
                       type="number"
-                      value={getCurrentValue('maxRowHeight') || 100}
+                      value={Number(getCurrentValue('maxRowHeight') || 100)}
                       onChange={(e) => updateSetting('maxRowHeight', parseInt(e.target.value))}
                       min="50"
                       max="200"
-                      disabled={getCurrentValue('autoRowHeight')}
+                      disabled={Boolean(getCurrentValue('autoRowHeight') ?? true)}
                     />
                   </div>
                 </div>
@@ -527,7 +549,7 @@ export default function Dashboard() {
                   <div className="space-y-2">
                     <Label>نوع الخط</Label>
                     <Input
-                      value={getCurrentValue('fontFamily') || 'Arial Unicode MS'}
+                      value={String(getCurrentValue('fontFamily') || 'Arial Unicode MS')}
                       onChange={(e) => updateSetting('fontFamily', e.target.value)}
                     />
                   </div>
@@ -535,7 +557,7 @@ export default function Dashboard() {
                     <Label>حجم الخط العام</Label>
                     <Input
                       type="number"
-                      value={getCurrentValue('fontSize') || 10}
+                      value={Number(getCurrentValue('fontSize') || 10)}
                       onChange={(e) => updateSetting('fontSize', parseInt(e.target.value))}
                       min="8"
                       max="20"
@@ -545,7 +567,7 @@ export default function Dashboard() {
                     <Label>حجم خط الرأس</Label>
                     <Input
                       type="number"
-                      value={getCurrentValue('headerFontSize') || 12}
+                      value={Number(getCurrentValue('headerFontSize') || 12)}
                       onChange={(e) => updateSetting('headerFontSize', parseInt(e.target.value))}
                       min="10"
                       max="24"
@@ -555,7 +577,7 @@ export default function Dashboard() {
                     <Label>حجم خط الجدول</Label>
                     <Input
                       type="number"
-                      value={getCurrentValue('tableFontSize') || 10}
+                      value={Number(getCurrentValue('tableFontSize') || 10)}
                       onChange={(e) => updateSetting('tableFontSize', parseInt(e.target.value))}
                       min="8"
                       max="16"
@@ -581,7 +603,7 @@ export default function Dashboard() {
                 <div className="space-y-2">
                   <div className="flex items-center space-x-2">
                     <Switch
-                      checked={getCurrentValue('enableTextWrapping') || true}
+                      checked={Boolean(getCurrentValue('enableTextWrapping') ?? true)}
                       onCheckedChange={(checked) => updateSetting('enableTextWrapping', checked)}
                     />
                     <Label>تفعيل التفاف النص</Label>
@@ -591,7 +613,7 @@ export default function Dashboard() {
                   <Label>سماكة الحدود</Label>
                   <Input
                     type="number"
-                    value={getCurrentValue('borderWidth') || 1}
+                    value={Number(getCurrentValue('borderWidth') || 1)}
                     onChange={(e) => updateSetting('borderWidth', parseInt(e.target.value))}
                     min="1"
                     max="5"
