@@ -8,6 +8,8 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { AutocompleteInput } from "@/components/ui/autocomplete-input-database";
 import { formatCurrency } from "@/lib/utils";
+import { useFloatingButton } from "@/components/layout/floating-button-context";
+import { useEffect } from "react";
 
 interface WorkerMiscExpense {
   id: string;
@@ -30,6 +32,20 @@ export default function WorkerMiscExpenses({ projectId, selectedDate }: WorkerMi
   const [editingMiscId, setEditingMiscId] = useState<string | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { setFloatingAction } = useFloatingButton();
+
+  // تعيين إجراء الزر العائم لإضافة مصروف جديد
+  useEffect(() => {
+    const handleAddExpense = () => {
+      const addButton = document.querySelector('[aria-label="إضافة نثريات جديدة"]') as HTMLButtonElement;
+      if (addButton) {
+        addButton.click();
+      }
+    };
+    
+    setFloatingAction(handleAddExpense, "إضافة مصروف جديد");
+    return () => setFloatingAction(null);
+  }, [setFloatingAction]);
 
   // دالة مساعدة لحفظ قيم الإكمال التلقائي
   const saveAutocompleteValue = async (field: string, value: string) => {

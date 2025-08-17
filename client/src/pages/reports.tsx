@@ -51,6 +51,7 @@ import WorkerFilterReport from "@/components/worker-filter-report";
 import DailyExpensesBulkExport from "@/components/daily-expenses-bulk-export";
 import AdvancedDataExport from "@/components/AdvancedDataExport";
 import { StatsCard, StatsGrid } from "@/components/ui/stats-card";
+import { useFloatingButton } from "@/components/layout/floating-button-context";
 
 // أنواع بيانات التقارير
 interface ReportStats {
@@ -64,6 +65,26 @@ export default function Reports() {
   const [, setLocation] = useLocation();
   const { selectedProjectId, selectProject } = useSelectedProject();
   const { toast } = useToast();
+  const { setFloatingAction } = useFloatingButton();
+
+  // تعيين إجراء الزر العائم لتصدير سريع
+  useEffect(() => {
+    const handleQuickExport = () => {
+      // إنشاء تقرير سريع للمشروع المحدد
+      if (selectedProjectId) {
+        quickExport(dailyReportDate, selectedProjectId);
+      } else {
+        toast({
+          title: "تنبيه",
+          description: "يرجى اختيار مشروع أولاً",
+          variant: "default",
+        });
+      }
+    };
+    
+    setFloatingAction(handleQuickExport, "تصدير سريع");
+    return () => setFloatingAction(null);
+  }, [setFloatingAction, selectedProjectId, dailyReportDate]);
 
   // حالات التقارير المختلفة
   const [dailyReportDate, setDailyReportDate] = useState(getCurrentDate());
@@ -73,6 +94,24 @@ export default function Reports() {
   
   // حالات عرض التقارير
   const [activeReportType, setActiveReportType] = useState<string | null>(null);
+
+  // تعيين إجراء الزر العائم للتقارير
+  useEffect(() => {
+    const handleCreateReport = () => {
+      if (selectedProjectId) {
+        setActiveReportType('daily-expense');
+      } else {
+        toast({
+          title: "تنبيه",
+          description: "يرجى اختيار مشروع أولاً",
+          variant: "destructive"
+        });
+      }
+    };
+    
+    setFloatingAction(handleCreateReport, "إنشاء تقرير");
+    return () => setFloatingAction(null);
+  }, [setFloatingAction, selectedProjectId, toast]);
   const [reportData, setReportData] = useState<any>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');

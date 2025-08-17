@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar, Search, Filter, Download, TrendingUp, TrendingDown, Building2, Users, Truck } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
+import { useFloatingButton } from '@/components/layout/floating-button-context';
+import { useEffect } from 'react';
 
 interface Project {
   id: string;
@@ -31,6 +33,18 @@ export default function ProjectTransactionsPage() {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [dateFrom, setDateFrom] = useState<string>('');
   const [dateTo, setDateTo] = useState<string>('');
+  const { setFloatingAction } = useFloatingButton();
+
+  // تعيين إجراء الزر العائم لإضافة معاملة
+  useEffect(() => {
+    const handleAddTransaction = () => {
+      // يمكن إضافة modal أو انتقال لصفحة إضافة المعاملات
+      console.log("إضافة معاملة جديدة");
+    };
+    
+    setFloatingAction(handleAddTransaction, "إضافة معاملة");
+    return () => setFloatingAction(null);
+  }, [setFloatingAction]);
 
   // جلب المشاريع
   const { data: projects = [] } = useQuery<Project[]>({

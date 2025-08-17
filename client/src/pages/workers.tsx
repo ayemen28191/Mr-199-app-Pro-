@@ -183,6 +183,16 @@ export default function WorkersPage() {
   const queryClient = useQueryClient();
   const { setFloatingAction } = useFloatingButton();
 
+  // تعيين إجراء الزر العائم لإضافة عامل جديد
+  useEffect(() => {
+    const handleAddWorker = () => {
+      setEditingWorker(undefined);
+      setShowDialog(true);
+    };
+    setFloatingAction(handleAddWorker, "إضافة عامل جديد");
+    return () => setFloatingAction(null);
+  }, [setFloatingAction]);
+
   // دالة تنسيق العملة
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-US', {

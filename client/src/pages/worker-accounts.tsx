@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { AutocompleteInput } from '@/components/ui/autocomplete-input-database';
+import { useFloatingButton } from '@/components/layout/floating-button-context';
 import '@/styles/unified-print-styles.css';
 
 interface Worker {
@@ -73,6 +74,18 @@ export default function WorkerAccountsPage() {
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { setFloatingAction } = useFloatingButton();
+
+  // تعيين إجراء الزر العائم لإضافة تحويل جديد
+  useEffect(() => {
+    const handleAddTransfer = () => {
+      setEditingTransfer(null);
+      setShowTransferDialog(true);
+    };
+    
+    setFloatingAction(handleAddTransfer, "إضافة تحويل جديد");
+    return () => setFloatingAction(null);
+  }, [setFloatingAction]);
 
   // دالة مساعدة لحفظ قيم الإكمال التلقائي
   const saveAutocompleteValue = async (field: string, value: string) => {

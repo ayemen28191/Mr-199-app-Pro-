@@ -13,7 +13,7 @@ export function FloatingButtonProvider({ children }: { children: ReactNode }) {
   const [floatingLabel, setLabel] = useState<string>('إضافة جديد');
 
   const setFloatingAction = (action: (() => void) | null, label: string = 'إضافة جديد') => {
-    setAction(() => action);
+    setAction(action);
     setLabel(label);
   };
 

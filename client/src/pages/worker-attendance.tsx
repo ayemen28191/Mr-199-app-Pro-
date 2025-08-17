@@ -14,6 +14,7 @@ import ProjectSelector from "@/components/project-selector";
 import EnhancedWorkerCard from "@/components/enhanced-worker-card";
 import { getCurrentDate, formatCurrency } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
+import { useFloatingButton } from "@/components/layout/floating-button-context";
 import type { Worker, InsertWorkerAttendance } from "@shared/schema";
 
 interface AttendanceData {
@@ -52,6 +53,18 @@ export default function WorkerAttendance() {
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { setFloatingAction } = useFloatingButton();
+
+  // تعيين إجراء الزر العائم لحفظ الحضور
+  useEffect(() => {
+    const handleFloatingSave = () => {
+      // محاكاة كليك زر الحفظ
+      document.querySelector('[type="submit"]')?.click();
+    };
+    
+    setFloatingAction(handleFloatingSave, "حفظ الحضور");
+    return () => setFloatingAction(null);
+  }, [setFloatingAction]);
 
   // دالة مساعدة لحفظ قيم الإكمال التلقائي
   const saveAutocompleteValue = async (category: string, value: string | null | undefined) => {

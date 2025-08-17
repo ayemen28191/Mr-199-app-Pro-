@@ -57,6 +57,13 @@ export default function ProjectsPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const { setFloatingAction } = useFloatingButton();
 
+  // تعيين إجراء الزر العائم لإضافة مشروع جديد
+  useEffect(() => {
+    const handleAddProject = () => setIsCreateDialogOpen(true);
+    setFloatingAction(handleAddProject, "إضافة مشروع جديد");
+    return () => setFloatingAction(null);
+  }, [setFloatingAction]);
+
   // Fetch projects with statistics مع إعادة التحديث المحسنة
   const { data: projects = [], isLoading, refetch: refetchProjects } = useQuery<ProjectWithStats[]>({
     queryKey: ["/api/projects/with-stats"],

@@ -13,6 +13,8 @@ import AddProjectForm from "@/components/forms/add-project-form";
 import EnhancedAddWorkerForm from "@/components/forms/enhanced-add-worker-form";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { LoadingCard, LoadingSpinner } from "@/components/ui/loading-spinner";
+import { useFloatingButton } from "@/components/layout/floating-button-context";
+import { useEffect } from "react";
 import type { Project, DailyExpenseSummary } from "@shared/schema";
 
 interface ProjectStats {
@@ -36,6 +38,7 @@ export default function Dashboard() {
   const [showAddProject, setShowAddProject] = useState(false);
   const [showAddWorker, setShowAddWorker] = useState(false);
   const queryClient = useQueryClient();
+  const { setFloatingAction } = useFloatingButton();
 
   // تحميل المشاريع مع الإحصائيات بشكل محسن
   const { data: projects = [], isLoading: projectsLoading } = useQuery<ProjectWithStats[]>({
@@ -69,6 +72,13 @@ export default function Dashboard() {
   };
 
   const selectedProject = projects.find((p: ProjectWithStats) => p.id === selectedProjectId);
+
+  // تعيين إجراء الزر العائم
+  useEffect(() => {
+    const handleAddProject = () => setShowAddProject(true);
+    setFloatingAction(handleAddProject, "إضافة مشروع جديد");
+    return () => setFloatingAction(null);
+  }, [setFloatingAction]);
 
   // دالة تنسيق العملة
   const formatCurrency = (amount: number) => {

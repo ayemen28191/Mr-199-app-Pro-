@@ -71,6 +71,20 @@ export default function DailyExpenses() {
     }
   };
 
+  // تعيين إجراء الزر العائم لحفظ المصاريف
+  useEffect(() => {
+    const handleSaveExpenses = () => {
+      // محاكاة كليك زر الحفظ
+      const saveButton = document.querySelector('[type="submit"]') as HTMLButtonElement;
+      if (saveButton) {
+        saveButton.click();
+      }
+    };
+    
+    setFloatingAction(handleSaveExpenses, "حفظ المصاريف");
+    return () => setFloatingAction(null);
+  }, [setFloatingAction]);
+
   // دالة لحفظ جميع قيم الإكمال التلقائي للحولة
   const saveAllFundTransferAutocompleteValues = async () => {
     const promises = [];
