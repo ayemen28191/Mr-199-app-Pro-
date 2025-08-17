@@ -18,6 +18,7 @@ const pageInfo: Record<string, { title: string; icon: any }> = {
   '/supplier-accounts': { title: 'حسابات الموردين', icon: CreditCard },
   '/reports': { title: 'التقارير', icon: FileSpreadsheet },
   '/autocomplete-admin': { title: 'إعدادات الإكمال التلقائي', icon: Wrench },
+  '/tools-management': { title: 'إدارة الأدوات والمعدات', icon: Wrench },
 };
 
 export default function Header() {
