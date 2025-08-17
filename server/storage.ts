@@ -70,6 +70,7 @@ export interface IStorage {
     dateTo?: string;
     purchaseType?: string;
   }): Promise<MaterialPurchase[]>;
+  getMaterialPurchasesDateRange(): Promise<{ minDate: string; maxDate: string }>;
   getMaterialPurchaseById(id: string): Promise<MaterialPurchase | null>;
   createMaterialPurchase(purchase: InsertMaterialPurchase): Promise<MaterialPurchase>;
   updateMaterialPurchase(id: string, purchase: Partial<InsertMaterialPurchase>): Promise<MaterialPurchase | undefined>;
@@ -828,7 +829,24 @@ export class DatabaseStorage implements IStorage {
     const conditions = [];
     
     if (supplierId) {
-      conditions.push(eq(materialPurchases.supplierId, supplierId));
+      // جلب اسم المورد أولاً
+      const supplierData = await db.select({ name: suppliers.name })
+        .from(suppliers)
+        .where(eq(suppliers.id, supplierId));
+      
+      const supplierName = supplierData[0]?.name;
+      
+      if (supplierName) {
+        // البحث بـ supplierId أو supplierName
+        conditions.push(
+          or(
+            eq(materialPurchases.supplierId, supplierId),
+            eq(materialPurchases.supplierName, supplierName)
+          )
+        );
+      } else {
+        conditions.push(eq(materialPurchases.supplierId, supplierId));
+      }
     }
     
     if (projectId && projectId !== 'all') {
@@ -904,6 +922,20 @@ export class DatabaseStorage implements IStorage {
         name: purchase.projectName
       }
     }));
+  }
+
+  async getMaterialPurchasesDateRange(): Promise<{ minDate: string; maxDate: string }> {
+    const result = await db
+      .select({
+        minDate: sql<string>`MIN(${materialPurchases.purchaseDate})`,
+        maxDate: sql<string>`MAX(${materialPurchases.purchaseDate})`
+      })
+      .from(materialPurchases);
+
+    return {
+      minDate: result[0]?.minDate || new Date().toISOString().split('T')[0],
+      maxDate: result[0]?.maxDate || new Date().toISOString().split('T')[0]
+    };
   }
 
   async getMaterialPurchaseById(id: string): Promise<MaterialPurchase | null> {

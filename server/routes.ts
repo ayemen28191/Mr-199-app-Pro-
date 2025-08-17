@@ -1085,6 +1085,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { supplierId, projectId, dateFrom, dateTo, purchaseType } = req.query;
       console.log("Material purchases filter request:", { supplierId, projectId, dateFrom, dateTo, purchaseType });
       
+      // أولاً: فحص إجمالي المشتريات في قاعدة البيانات
+      const { materialPurchases } = await import("@shared/schema");
+      const allPurchases = await db.select().from(materialPurchases).limit(5);
+      console.log(`📊 Total material purchases in DB: ${allPurchases.length}`);
+      if (allPurchases.length > 0) {
+        console.log("Sample purchase:", {
+          id: allPurchases[0].id,
+          supplierId: allPurchases[0].supplierId,
+          supplierName: allPurchases[0].supplierName,
+          projectId: allPurchases[0].projectId
+        });
+      }
+      
       // استخدام دالة storage للحصول على جميع المشتريات مع الفلاتر
       const purchases = await storage.getMaterialPurchasesWithFilters({
         supplierId: supplierId as string,
@@ -1103,6 +1116,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.get("/api/material-purchases/:id", async (req, res) => {
+    // التحقق إذا كان المسار هو date-range
+    if (req.params.id === 'date-range') {
+      try {
+        const dateRange = await storage.getMaterialPurchasesDateRange();
+        res.json(dateRange);
+        return;
+      } catch (error) {
+        console.error("Error fetching material purchases date range:", error);
+        res.status(500).json({ message: "Error fetching date range" });
+        return;
+      }
+    }
+    
+    // إذا لم يكن date-range، فهو ID عادي
     try {
       const purchase = await storage.getMaterialPurchaseById(req.params.id);
       if (!purchase) {

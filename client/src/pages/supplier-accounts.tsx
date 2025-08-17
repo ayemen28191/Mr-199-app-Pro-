@@ -82,6 +82,12 @@ export default function SupplierAccountsPage() {
     refetchOnWindowFocus: false,
   });
 
+  // جلب نطاق التواريخ المتاحة في قاعدة البيانات
+  const { data: dateRange } = useQuery<{ minDate: string; maxDate: string }>({
+    queryKey: ["/api/material-purchases/date-range"],
+    staleTime: 300000, // 5 minutes
+  });
+
   // فلترة الموردين حسب البحث
   const filteredSuppliers = suppliers.filter(supplier =>
     supplier.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -213,6 +219,14 @@ export default function SupplierAccountsPage() {
     setPaymentTypeFilter("all");
     setSearchTerm("");
   };
+
+  // تحديد التواريخ تلقائياً عند اختيار مورد
+  useEffect(() => {
+    if (selectedSupplierId && dateRange) {
+      setDateFrom(dateRange.minDate);
+      setDateTo(dateRange.maxDate);
+    }
+  }, [selectedSupplierId, dateRange]);
 
   return (
     <div className="container mx-auto p-6 space-y-6" dir="rtl">
