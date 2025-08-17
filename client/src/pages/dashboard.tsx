@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
@@ -35,8 +35,9 @@ interface ProjectWithStats extends Project {
 export default function Dashboard() {
   const [, setLocation] = useLocation();
   const { selectedProjectId, selectProject } = useSelectedProject();
-  const [showAddProject, setShowAddProject] = useState(false);
+  const [showAddProject, _setShowAddProject] = useState(false);
   const [showAddWorker, setShowAddWorker] = useState(false);
+
   const queryClient = useQueryClient();
   const { setFloatingAction } = useFloatingButton();
 
@@ -63,22 +64,12 @@ export default function Dashboard() {
 
   const selectedProject = projects.find((p: ProjectWithStats) => p.id === selectedProjectId);
 
-  // تسجيل البيانات عند تحميلها - داخل useEffect لتجنب التحديثات أثناء الرسم
-  useEffect(() => {
-    if (projects && projects.length > 0) {
-      console.log('📋 جميع المشاريع المحملة:', projects.map((p: ProjectWithStats) => ({
-        name: p.name,
-        totalIncome: p.stats?.totalIncome,
-        totalExpenses: p.stats?.totalExpenses,
-        isEqual: p.stats?.totalIncome === p.stats?.totalExpenses
-      })));
-    }
-  }, [projects]);
+
 
   // تعيين إجراء الزر العائم
   useEffect(() => {
-    const handleAddProject = () => setShowAddProject(true);
-    setFloatingAction(handleAddProject, "إضافة مشروع جديد");
+    const handleOpenAddProject = () => _setShowAddProject(true);
+    setFloatingAction(handleOpenAddProject, "إضافة مشروع جديد");
     return () => setFloatingAction(null);
   }, [setFloatingAction]);
 
@@ -188,7 +179,7 @@ export default function Dashboard() {
 
       {/* Management Buttons */}
       <div className="grid grid-cols-2 gap-3 mb-4">
-        <Dialog open={showAddProject} onOpenChange={setShowAddProject}>
+        <Dialog open={showAddProject} onOpenChange={_setShowAddProject}>
           <DialogTrigger asChild>
             <Button variant="outline" className="h-12 border-2 border-dashed">
               <Plus className="ml-2 h-4 w-4" />
@@ -199,7 +190,7 @@ export default function Dashboard() {
             <DialogHeader>
               <DialogTitle>إضافة مشروع جديد</DialogTitle>
             </DialogHeader>
-            <AddProjectForm onSuccess={() => setShowAddProject(false)} />
+            <AddProjectForm onSuccess={() => _setShowAddProject(false)} />
           </DialogContent>
         </Dialog>
 

@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, ReactNode, useCallback } from 'react';
 
 interface FloatingButtonContextType {
   setFloatingAction: (action: (() => void) | null, label?: string) => void;
@@ -12,10 +12,10 @@ export function FloatingButtonProvider({ children }: { children: ReactNode }) {
   const [floatingAction, setAction] = useState<(() => void) | null>(null);
   const [floatingLabel, setLabel] = useState<string>('إضافة جديد');
 
-  const setFloatingAction = (action: (() => void) | null, label: string = 'إضافة جديد') => {
+  const setFloatingAction = useCallback((action: (() => void) | null, label: string = 'إضافة جديد') => {
     setAction(action);
     setLabel(label);
-  };
+  }, []);
 
   return (
     <FloatingButtonContext.Provider value={{
