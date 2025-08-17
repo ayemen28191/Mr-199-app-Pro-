@@ -21,6 +21,14 @@ import { useEffect } from "react";
 import type { Project, DailyExpenseSummary, Worker, insertProjectSchema, insertWorkerSchema } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 
+interface WorkerType {
+  id: string;
+  name: string;
+  usageCount: number;
+  lastUsed: string;
+  createdAt: string;
+}
+
 interface ProjectStats {
   totalWorkers: string;
   totalExpenses: number;
@@ -51,6 +59,10 @@ export default function Dashboard() {
     dailyWage: ''
   });
 
+  // نموذج إضافة مهنة جديدة
+  const [showAddTypeDialog, setShowAddTypeDialog] = useState(false);
+  const [newTypeName, setNewTypeName] = useState("");
+
   const [projectData, setProjectData] = useState({
     name: '',
     status: 'active',
@@ -66,6 +78,11 @@ export default function Dashboard() {
     queryKey: ["/api/projects/with-stats"],
     staleTime: 1000 * 30, // 30 ثانية فقط للإحصائيات لضمان الحصول على البيانات المحدثة
     refetchInterval: 1000 * 60, // إعادة التحديث كل دقيقة
+  });
+
+  // جلب أنواع العمال من قاعدة البيانات
+  const { data: workerTypes = [] } = useQuery<WorkerType[]>({
+    queryKey: ["/api/worker-types"],
   });
 
   // متحولات لإضافة العامل والمشروع
@@ -109,6 +126,30 @@ export default function Dashboard() {
       toast({
         title: "خطأ",
         description: "حدث خطأ أثناء إضافة المشروع",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // إضافة نوع عامل جديد
+  const addWorkerTypeMutation = useMutation({
+    mutationFn: async (data: { name: string }) => {
+      return apiRequest("POST", "/api/worker-types", data);
+    },
+    onSuccess: (newType) => {
+      toast({
+        title: "تم الحفظ",
+        description: "تم إضافة نوع العامل بنجاح",
+      });
+      setWorkerData({...workerData, type: newType.name});
+      setNewTypeName("");
+      setShowAddTypeDialog(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/worker-types"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء إضافة نوع العامل",
         variant: "destructive",
       });
     },
@@ -377,41 +418,128 @@ export default function Dashboard() {
             </div>
             <div>
               <Label htmlFor="worker-type">نوع العامل</Label>
-              <Select value={workerData.type} onValueChange={(value) => setWorkerData({...workerData, type: value})}>
-                <SelectTrigger>
-                  <SelectValue placeholder="اختر نوع العامل" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="عامل عادي">عامل عادي</SelectItem>
-                  <SelectItem value="معلم">معلم</SelectItem>
-                  <SelectItem value="مساعد">مساعد</SelectItem>
-                  <SelectItem value="سائق">سائق</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex gap-2">
+                <Select value={workerData.type} onValueChange={(value) => setWorkerData({...workerData, type: value})}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="اختر نوع العامل..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {workerTypes.map((workerType) => (
+                      <SelectItem key={workerType.id} value={workerType.name}>
+                        {workerType.name}
+                      </SelectItem>
+                    ))}
+                    {workerTypes.length === 0 && (
+                      <>
+                        <SelectItem value="معلم">معلم</SelectItem>
+                        <SelectItem value="عامل">عامل</SelectItem>
+                        <SelectItem value="حداد">حداد</SelectItem>
+                        <SelectItem value="نجار">نجار</SelectItem>
+                        <SelectItem value="سائق">سائق</SelectItem>
+                        <SelectItem value="كهربائي">كهربائي</SelectItem>
+                        <SelectItem value="سباك">سباك</SelectItem>
+                      </>
+                    )}
+                  </SelectContent>
+                </Select>
+                
+                <Dialog open={showAddTypeDialog} onOpenChange={setShowAddTypeDialog}>
+                  <DialogTrigger asChild>
+                    <Button type="button" variant="outline" size="icon" className="shrink-0" title="إضافة نوع جديد">
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>إضافة نوع عامل جديد</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="new-type-name">اسم نوع العامل</Label>
+                        <Input
+                          id="new-type-name"
+                          type="text"
+                          value={newTypeName}
+                          onChange={(e) => setNewTypeName(e.target.value)}
+                          placeholder="مثال: كهربائي، سباك، حداد..."
+                          required
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          onClick={() => {
+                            if (newTypeName.trim()) {
+                              addWorkerTypeMutation.mutate({ name: newTypeName.trim() });
+                            }
+                          }}
+                          disabled={!newTypeName.trim() || addWorkerTypeMutation.isPending}
+                          className="flex-1"
+                        >
+                          {addWorkerTypeMutation.isPending ? "جاري الإضافة..." : "إضافة"}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            setShowAddTypeDialog(false);
+                            setNewTypeName("");
+                          }}
+                          className="flex-1"
+                        >
+                          إلغاء
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
             </div>
             <div>
-              <Label htmlFor="worker-wage">الأجر اليومي</Label>
+              <Label htmlFor="worker-wage">الأجر اليومي (ر.ي)</Label>
               <Input
                 id="worker-wage"
                 type="number"
+                inputMode="decimal"
                 value={workerData.dailyWage}
                 onChange={(e) => setWorkerData({...workerData, dailyWage: e.target.value})}
-                placeholder="أدخل الأجر اليومي"
+                placeholder="0"
+                className="text-center arabic-numbers"
+                required
               />
             </div>
             <div className="flex gap-3 pt-4">
               <Button
                 onClick={() => {
-                  if (workerData.name && workerData.type && workerData.dailyWage) {
-                    addWorkerMutation.mutate({
-                      name: workerData.name,
-                      phone: workerData.phone || null,
-                      type: workerData.type,
-                      dailyWage: parseFloat(workerData.dailyWage)
+                  if (!workerData.name.trim() || !workerData.type || !workerData.dailyWage) {
+                    toast({
+                      title: "خطأ",
+                      description: "يرجى ملء جميع البيانات المطلوبة",
+                      variant: "destructive",
                     });
+                    return;
                   }
+
+                  const parsedWage = parseFloat(workerData.dailyWage);
+                  
+                  if (isNaN(parsedWage) || parsedWage <= 0) {
+                    toast({
+                      title: "خطأ",
+                      description: "يرجى إدخال مبلغ صحيح للأجر اليومي",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+
+                  addWorkerMutation.mutate({
+                    name: workerData.name.trim(),
+                    phone: workerData.phone || null,
+                    type: workerData.type,
+                    dailyWage: parsedWage.toString(),
+                    isActive: true,
+                  });
                 }}
-                disabled={!workerData.name || !workerData.type || !workerData.dailyWage || addWorkerMutation.isPending}
+                disabled={addWorkerMutation.isPending}
                 className="flex-1"
               >
                 {addWorkerMutation.isPending ? "جاري الحفظ..." : "حفظ"}
