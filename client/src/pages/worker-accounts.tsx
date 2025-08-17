@@ -25,6 +25,7 @@ import {
 import { apiRequest } from '@/lib/queryClient';
 import { AutocompleteInput } from '@/components/ui/autocomplete-input-database';
 import { useFloatingButton } from '@/components/layout/floating-button-context';
+import ProjectSelector from '@/components/project-selector';
 import '@/styles/unified-print-styles.css';
 
 interface Worker {
@@ -370,8 +371,8 @@ export default function WorkerAccountsPage() {
     <div className="min-h-screen bg-background p-4 space-y-6">
       {/* Header - تم إزالة العنوان المكرر لأنه موجود في شريط التطبيق */}
 
-      {/* مكون اختيار المشروع - مطابق للصفحة الرئيسية تماماً */}
-      <div className="max-w-md">
+      {/* مكون اختيار المشروع - مطابق للصفحة الرئيسية تماماً مع إضافة خيار جميع المشاريع */}
+      <div className="space-y-4">
         <Select value={selectedProject} onValueChange={setSelectedProject}>
           <SelectTrigger>
             <SelectValue placeholder="جميع المشاريع" />

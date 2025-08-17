@@ -111,6 +111,13 @@ The system uses PostgreSQL with a comprehensive schema for:
 - **Cleaned**: Removed floating buttons from view-only pages (Project Transactions, Supplier Accounts, Reports)
 - **Improved**: Overall user experience by reducing visual clutter and redundancy
 
+### Project Selector Unification (August 17, 2025)
+- **Standardized**: Project selector component across all pages to match main dashboard design
+- **Updated**: Reports page now uses default ProjectSelector component with proper card styling
+- **Enhanced**: Worker Accounts page maintains custom functionality for "All Projects" option while using standard styling
+- **Achieved**: 100% visual consistency of project selection interface across the entire application
+- **Removed**: Custom inline Select components in favor of unified ProjectSelector component
+
 ### System Status
 - **Status**: All systems operational with 21 database tables
 - **Performance**: No LSP errors, clean codebase
