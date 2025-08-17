@@ -28,6 +28,13 @@ import { saveAs } from 'file-saver';
 import html2canvas from 'html2canvas';
 import type { Project, ExportSettings } from '@shared/schema';
 
+// إعلان النوع للـ garbage collector
+declare global {
+  interface Window {
+    gc?: () => void;
+  }
+}
+
 interface DailyExpenseData {
   date: string;
   projectName: string;
@@ -109,11 +116,13 @@ export default function DailyExpensesBulkExport() {
     return `${day}-${month}-${year}`;
   };
 
-  // دالة جلب بيانات المصروفات اليومية لفترة
+  // دالة جلب بيانات المصروفات اليومية لفترة مع معالجة أفضل للأخطاء
   const fetchDailyExpensesForPeriod = async (projectId: string, fromDate: string, toDate: string) => {
     const expenses: DailyExpenseData[] = [];
     const startDate = new Date(fromDate);
     const endDate = new Date(toDate);
+    let successfulRequests = 0;
+    let failedRequests = 0;
     
     console.log(`📅 جلب المصروفات اليومية من ${fromDate} إلى ${toDate} للمشروع ${projectId}`);
     
@@ -121,7 +130,16 @@ export default function DailyExpensesBulkExport() {
       const dateStr = date.toISOString().split('T')[0];
       
       try {
-        const response = await fetch(`/api/reports/daily-expenses/${projectId}/${dateStr}`);
+        // إضافة timeout للطلبات لتجنب التعليق
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 ثواني timeout
+        
+        const response = await fetch(`/api/reports/daily-expenses/${projectId}/${dateStr}`, {
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
         if (response.ok) {
           const data = await response.json();
           if (data && Object.keys(data).length > 0) {
@@ -130,7 +148,11 @@ export default function DailyExpensesBulkExport() {
               date: dateStr,
               projectName: selectedProject?.name || 'مشروع غير محدد'
             });
+            successfulRequests++;
           }
+        } else {
+          console.warn(`⚠️ استجابة غير صحيحة لتاريخ ${dateStr}: ${response.status}`);
+          failedRequests++;
         }
         
         // تحديث progress
@@ -138,20 +160,41 @@ export default function DailyExpensesBulkExport() {
         const total = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
         setExportProgress({ current, total });
         
-      } catch (error) {
-        console.error(`خطأ في جلب بيانات ${dateStr}:`, error);
+        // استراحة قصيرة بين الطلبات لتجنب إرهاق الخادم
+        await new Promise(resolve => setTimeout(resolve, 50));
+        
+      } catch (error: any) {
+        failedRequests++;
+        if (error.name === 'AbortError') {
+          console.error(`⏰ انتهت مهلة الطلب لتاريخ ${dateStr}`);
+        } else {
+          console.error(`❌ خطأ في جلب بيانات ${dateStr}:`, error);
+        }
       }
     }
     
+    console.log(`📊 انتهى جلب البيانات - نجح: ${successfulRequests}, فشل: ${failedRequests}`);
     return expenses;
   };
 
   // دالة للتحقق من صحة القيم قبل إدخالها إلى Excel
-  const safeValue = (value: any) => {
-    if (value == null || typeof value === 'undefined') return '';
-    if (typeof value === 'number' && (isNaN(value) || !isFinite(value))) return 0;
-    if (typeof value === 'string' && value.includes('#DIV/0!')) return '';
+  const safeValue = (value: any, defaultValue: any = '') => {
+    if (value == null || typeof value === 'undefined') return defaultValue;
+    if (typeof value === 'number' && (isNaN(value) || !isFinite(value))) return defaultValue;
+    if (typeof value === 'string' && value.includes('#DIV/0!')) return defaultValue;
+    if (typeof value === 'string' && value.trim() === '') return defaultValue;
     return value;
+  };
+
+  // دالة آمنة لمعالجة الألوان
+  const safeColor = (color: string | undefined | null, defaultColor: string): string => {
+    if (!color || typeof color !== 'string') return defaultColor.replace('#', '');
+    const cleanColor = color.trim().replace('#', '');
+    // التحقق من صحة اللون (يجب أن يكون 6 أحرف hex)
+    if (/^[0-9A-Fa-f]{6}$/.test(cleanColor)) {
+      return cleanColor;
+    }
+    return defaultColor.replace('#', '');
   };
 
   // دالة الحصول على اسم اليوم بالعربي
@@ -170,10 +213,10 @@ export default function DailyExpensesBulkExport() {
     worksheet.views = [{ rightToLeft: true }];
 
     // استخدام إعدادات التصدير مع قيم افتراضية آمنة والتحقق من صحتها
-    const companyName = safeValue(currentSettings?.companyName) || 'شركة الفتحي للمقاولات والاستشارات الهندسية';
-    const headerBgColor = safeValue(currentSettings?.headerBackgroundColor?.replace('#', '')) || '5B9BD5';
-    const headerTextColor = safeValue(currentSettings?.headerTextColor?.replace('#', '')) || 'FFFFFF';
-    const fontFamily = safeValue(currentSettings?.fontFamily) || 'Arial';
+    const companyName = safeValue(currentSettings?.companyName, 'شركة الفتحي للمقاولات والاستشارات الهندسية');
+    const headerBgColor = safeColor(currentSettings?.headerBackgroundColor, '5B9BD5');
+    const headerTextColor = safeColor(currentSettings?.headerTextColor, 'FFFFFF');
+    const fontFamily = safeValue(currentSettings?.fontFamily, 'Arial');
 
     // رأس الشركة
     worksheet.mergeCells('A1:E1');
@@ -189,11 +232,11 @@ export default function DailyExpensesBulkExport() {
     worksheet.getRow(1).height = 30;
 
     // استخدام إعدادات الألوان مع قيم افتراضية آمنة والتحقق من صحتها
-    const tableHeaderBgColor = safeValue(currentSettings?.tableHeaderBackgroundColor?.replace('#', '')) || 'EAEEF5';
-    const tableHeaderTextColor = safeValue(currentSettings?.tableHeaderTextColor?.replace('#', '')) || '000000';
-    const transferRowColor = safeValue(currentSettings?.transferRowColor?.replace('#', '')) || 'B8E6B8';
-    const workerRowColor = safeValue(currentSettings?.workerRowColor?.replace('#', '')) || 'E6F3FF';
-    const reportTitle = safeValue(currentSettings?.reportTitle) || 'كشف مصروفات المشروع';
+    const tableHeaderBgColor = safeColor(currentSettings?.tableHeaderBackgroundColor, 'EAEEF5');
+    const tableHeaderTextColor = safeColor(currentSettings?.tableHeaderTextColor, '000000');
+    const transferRowColor = safeColor(currentSettings?.transferRowColor, 'B8E6B8');
+    const workerRowColor = safeColor(currentSettings?.workerRowColor, 'E6F3FF');
+    const reportTitle = safeValue(currentSettings?.reportTitle, 'كشف مصروفات المشروع');
 
     // رأس التقرير
     worksheet.mergeCells('A2:E2');
@@ -262,7 +305,7 @@ export default function DailyExpensesBulkExport() {
         cell.alignment = { horizontal: 'center', vertical: 'middle' };
         
         // تحديد لون الخلفية حسب إشارة المبلغ المرحل
-        const negativeBalanceColor = safeValue(currentSettings?.negativeBalanceColor?.replace('#', '')) || 'FF6B6B';
+        const negativeBalanceColor = safeColor(currentSettings?.negativeBalanceColor, 'FF6B6B');
         if (dayData.carriedForward < 0) {
           cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: `FF${negativeBalanceColor}` } };
         } else {
@@ -924,13 +967,13 @@ export default function DailyExpensesBulkExport() {
         createDayWorksheet(workbook, dayData);
       });
 
-      // تصدير الملف مع إصلاح التشفير والترميز
+      // تصدير الملف مع إدارة آمنة للذاكرة
       try {
-        // تبسيط metadata للملف
-        workbook.creator = 'نظام إدارة المشاريع';
-
-        // كتابة الملف بطريقة آمنة
+        console.log('📝 بدء كتابة ملف Excel...');
+        
+        // كتابة الملف بطريقة آمنة مع إدارة أفضل للذاكرة
         const buffer = await workbook.xlsx.writeBuffer();
+        console.log(`💾 تم إنشاء Buffer بحجم: ${(buffer.byteLength / 1024 / 1024).toFixed(2)} MB`);
         
         // إنشاء Blob بالترميز الصحيح
         const blob = new Blob([buffer], { 
@@ -943,12 +986,29 @@ export default function DailyExpensesBulkExport() {
         const cleanDateTo = dateTo.replace(/-/g, '_');
         const fileName = `تقرير_المصروفات_اليومية_${projectName}_من_${cleanDateFrom}_إلى_${cleanDateTo}.xlsx`;
         
-        // حفظ الملف
-        saveAs(blob, fileName);
+        console.log(`📁 اسم الملف: ${fileName}`);
+        console.log(`📊 عدد الأوراق: ${dailyExpenses.length}`);
         
-        console.log('📄 تفاصيل الملف المُصدّر:');
-        console.log(`   📁 اسم الملف: ${fileName}`);
-        console.log(`   📊 عدد الأوراق: ${dailyExpenses.length}`);
+        // حفظ الملف باستخدام timeout للتأكد من عدم التعليق
+        await new Promise<void>((resolve, reject) => {
+          const timeoutId = setTimeout(() => {
+            reject(new Error('انتهت مهلة حفظ الملف'));
+          }, 30000); // 30 ثانية timeout
+          
+          try {
+            saveAs(blob, fileName);
+            clearTimeout(timeoutId);
+            resolve();
+          } catch (saveError) {
+            clearTimeout(timeoutId);
+            reject(saveError);
+          }
+        });
+        
+        // تنظيف البيانات من الذاكرة
+        workbook.removeWorksheet(0); // تنظيف أولي
+        
+        console.log('✅ تم حفظ الملف بنجاح');
         
       } catch (writeError: any) {
         console.error('❌ خطأ في كتابة ملف Excel:', writeError);
@@ -956,12 +1016,15 @@ export default function DailyExpensesBulkExport() {
       }
       console.log(`   📋 البيانات المُضمّنة:`);
 
-      toast({
-        title: "تم التصدير بنجاح! 🎉",
-        description: `تم تصدير ${dailyExpenses.length} يوم من المصروفات اليومية`,
-      });
-
       console.log('✅ تم إنتهاء التصدير بنجاح');
+      
+      // إعطاء وقت للملف لينتهي من التحميل قبل إظهار الرسالة
+      setTimeout(() => {
+        toast({
+          title: "تم التصدير بنجاح! 🎉",
+          description: `تم تصدير ${dailyExpenses.length} يوم من المصروفات اليومية`,
+        });
+      }, 500);
 
     } catch (error) {
       console.error('❌ خطأ في التصدير:', error);
@@ -971,8 +1034,21 @@ export default function DailyExpensesBulkExport() {
         variant: "destructive"
       });
     } finally {
+      // تنظيف شامل للذاكرة والمتغيرات
       setIsExporting(false);
       setExportProgress({ current: 0, total: 0 });
+      
+      // تنظيف إضافي للذاكرة إذا كان JavaScript GC بطيئاً
+      setTimeout(() => {
+        if (window.gc && typeof window.gc === 'function') {
+          try {
+            window.gc();
+            console.log('🧹 تم تشغيل garbage collection يدوياً');
+          } catch (gcError) {
+            console.log('⚠️ لا يمكن تشغيل garbage collection');
+          }
+        }
+      }, 1000);
     }
   };
 
