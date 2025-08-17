@@ -193,14 +193,7 @@ export default function ProjectTransfers() {
   return (
     <div className="container mx-auto py-6 px-4" dir="rtl">
       <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            ترحيل الأموال بين المشاريع
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">
-            إدارة عمليات ترحيل الأموال بين مشاريع البناء المختلفة
-          </p>
-        </div>
+
         <Button
           onClick={() => setShowForm(!showForm)}
           className="bg-blue-600 hover:bg-blue-700"

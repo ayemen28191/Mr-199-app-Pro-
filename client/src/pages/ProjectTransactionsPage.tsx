@@ -215,15 +215,7 @@ export default function ProjectTransactionsPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4" dir="rtl">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* العنوان */}
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            سجل العمليات المالية
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            عرض وتحليل جميع المعاملات المالية للمشاريع
-          </p>
-        </div>
+
 
         {/* اختيار المشروع */}
         <Card>

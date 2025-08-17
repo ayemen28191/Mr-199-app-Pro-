@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Building2, Filter, FileText, Calendar, Calculator, Download, Search } from "lucide-react";
+import { useFloatingButton } from "@/components/layout/floating-button-context";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -29,6 +31,7 @@ export default function SupplierAccountsPage() {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [paymentTypeFilter, setPaymentTypeFilter] = useState<string>("all");
+  const { setFloatingAction } = useFloatingButton();
 
   // Get suppliers list
   const { data: suppliers = [] } = useQuery<Supplier[]>({
@@ -46,6 +49,18 @@ export default function SupplierAccountsPage() {
     queryKey: ["/api/suppliers", selectedSupplierId, "purchases", { dateFrom, dateTo, paymentType: paymentTypeFilter }],
     enabled: !!selectedSupplierId,
   });
+
+  // تعيين إجراء الزر العائم للتصدير
+  useEffect(() => {
+    const handleExportData = () => {
+      if (selectedSupplierId && purchases.length > 0) {
+        exportToExcel();
+      }
+    };
+    
+    setFloatingAction(handleExportData, "تصدير البيانات");
+    return () => setFloatingAction(null);
+  }, [setFloatingAction, selectedSupplierId, purchases]);
 
   const selectedSupplier = suppliers.find(s => s.id === selectedSupplierId);
 
@@ -105,15 +120,6 @@ export default function SupplierAccountsPage() {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold">كشوف حسابات الموردين</h1>
-          <p className="text-muted-foreground">
-            عرض وإدارة كشوف حسابات الموردين والمشتريات الآجلة
-          </p>
-        </div>
-      </div>
 
       {/* Filters */}
       <Card>

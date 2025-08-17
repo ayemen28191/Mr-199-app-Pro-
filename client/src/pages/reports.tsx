@@ -67,25 +67,6 @@ export default function Reports() {
   const { toast } = useToast();
   const { setFloatingAction } = useFloatingButton();
 
-  // تعيين إجراء الزر العائم لتصدير سريع
-  useEffect(() => {
-    const handleQuickExport = () => {
-      // إنشاء تقرير سريع للمشروع المحدد
-      if (selectedProjectId) {
-        quickExport(dailyReportDate, selectedProjectId);
-      } else {
-        toast({
-          title: "تنبيه",
-          description: "يرجى اختيار مشروع أولاً",
-          variant: "default",
-        });
-      }
-    };
-    
-    setFloatingAction(handleQuickExport, "تصدير سريع");
-    return () => setFloatingAction(null);
-  }, [setFloatingAction, selectedProjectId, dailyReportDate]);
-
   // حالات التقارير المختلفة
   const [dailyReportDate, setDailyReportDate] = useState(getCurrentDate());
   const [workerAccountDate1, setWorkerAccountDate1] = useState("");

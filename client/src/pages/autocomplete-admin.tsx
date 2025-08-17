@@ -6,6 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertCircle, BarChart3, Settings, Trash2, RefreshCw, Database, Clock } from 'lucide-react';
+import { useFloatingButton } from '@/components/layout/floating-button-context';
+import { useEffect } from 'react';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 
@@ -31,6 +33,20 @@ export default function AutocompleteAdminPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isMaintenanceRunning, setIsMaintenanceRunning] = useState(false);
+  const { setFloatingAction } = useFloatingButton();
+
+  // تعيين إجراء الزر العائم لتشغيل الصيانة
+  useEffect(() => {
+    const handleRunMaintenance = () => {
+      if (!isMaintenanceRunning) {
+        setIsMaintenanceRunning(true);
+        maintenanceMutation.mutate();
+      }
+    };
+    
+    setFloatingAction(handleRunMaintenance, "تشغيل الصيانة");
+    return () => setFloatingAction(null);
+  }, [setFloatingAction, isMaintenanceRunning]);
 
   // جلب الإحصائيات
   const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useQuery({
@@ -119,24 +135,6 @@ export default function AutocompleteAdminPage() {
 
   return (
     <div className="container mx-auto p-6 space-y-6" dir="rtl">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            إدارة نظام الإكمال التلقائي
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">
-            صيانة وتحسين أداء نظام الاقتراحات التلقائية
-          </p>
-        </div>
-        <Button 
-          onClick={() => refetchStats()} 
-          variant="outline"
-          disabled={statsLoading}
-        >
-          <RefreshCw className="w-4 h-4 ml-2" />
-          تحديث البيانات
-        </Button>
-      </div>
 
       {/* بطاقات الإحصائيات الرئيسية */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
