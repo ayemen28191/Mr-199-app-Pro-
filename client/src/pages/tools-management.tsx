@@ -48,7 +48,7 @@ import { PurchaseIntegrationDialog } from '@/components/tools/PurchaseIntegratio
 import { MaintenanceScheduleDialog } from '@/components/tools/MaintenanceScheduleDialog';
 import EnhancedSearchFilter from '@/components/tools/enhanced-search-filter';
 import ToolsNotificationSystem from '@/components/tools/tools-notification-system';
-import LocationTrackingSystem from '@/components/tools/location-tracking-system';
+import ProjectLocationTracking from '@/components/tools/project-location-tracking';
 
 // Types from schema
 interface ToolCategory {
@@ -403,7 +403,7 @@ const ToolsManagementPage: React.FC = () => {
 
       {/* Content based on current view */}
       {currentView === 'locations' ? (
-        <LocationTrackingSystem />
+        <ProjectLocationTracking />
       ) : (
         <>
           {/* Statistics Cards - Using Unified Component */}
