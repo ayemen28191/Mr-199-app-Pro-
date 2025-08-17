@@ -713,7 +713,7 @@ export default function DailyExpenses() {
 
       <ProjectSelector
         selectedProjectId={selectedProjectId}
-        onProjectChange={selectProject}
+        onProjectChange={(projectId, projectName) => selectProject(projectId, projectName)}
       />
 
       {/* Date and Balance Info */}

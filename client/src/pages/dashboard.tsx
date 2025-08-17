@@ -161,7 +161,7 @@ export default function Dashboard() {
 
       <ProjectSelector
         selectedProjectId={selectedProjectId}
-        onProjectChange={selectProject}
+        onProjectChange={(projectId, projectName) => selectProject(projectId, projectName)}
       />
 
       {selectedProject && (

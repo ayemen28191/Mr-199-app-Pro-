@@ -171,7 +171,13 @@ export default function DailyExpensesPage() {
                 />
               </div>
 
-              <ProjectSelector onProjectChange={() => {}} />
+              <ProjectSelector 
+                selectedProjectId={selectedProject?.id || ""}
+                onProjectChange={(projectId, projectName) => {
+                  // يمكن إضافة منطق إضافي هنا إذا لزم الأمر
+                  console.log('مشروع محدد:', projectName);
+                }}
+              />
 
               <Button
                 onClick={handleExportExcel}

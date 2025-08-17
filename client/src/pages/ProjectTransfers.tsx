@@ -242,7 +242,7 @@ export default function ProjectTransfers() {
           </h2>
           <ProjectSelector
             selectedProjectId={selectedProjectId}
-            onProjectChange={selectProject}
+            onProjectChange={(projectId, projectName) => selectProject(projectId, projectName)}
             showHeader={false}
             variant="compact"
           />

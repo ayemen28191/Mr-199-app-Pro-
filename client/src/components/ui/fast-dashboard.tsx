@@ -83,7 +83,7 @@ export default function FastDashboard() {
       {/* اختيار المشروع */}
       <ProjectSelector
         selectedProjectId={selectedProjectId}
-        onProjectChange={selectProject}
+        onProjectChange={(projectId, projectName) => selectProject(projectId, projectName)}
       />
 
       {/* معلومات المشروع المبسطة */}

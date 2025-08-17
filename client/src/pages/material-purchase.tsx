@@ -57,7 +57,7 @@ export default function MaterialPurchase() {
       return;
     }
     // محاكاة كليك زر الحفظ
-    document.querySelector('[type="submit"]')?.click();
+    (document.querySelector('[type="submit"]') as HTMLElement)?.click();
   };
 
   // تعيين إجراء الزر العائم
@@ -461,7 +461,7 @@ export default function MaterialPurchase() {
           </h2>
           <ProjectSelector
             selectedProjectId={selectedProjectId}
-            onProjectChange={selectProject}
+            onProjectChange={(projectId, projectName) => selectProject(projectId, projectName)}
             showHeader={false}
             variant="compact"
           />

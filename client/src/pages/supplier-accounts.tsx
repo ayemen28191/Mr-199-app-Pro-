@@ -154,7 +154,7 @@ export default function SupplierAccountsPage() {
         <CardContent className="pt-0">
           <ProjectSelector
             selectedProjectId={selectedProjectId}
-            onProjectChange={setSelectedProjectId}
+            onProjectChange={(projectId, projectName) => setSelectedProjectId(projectId)}
             showHeader={false}
             variant="default"
           />

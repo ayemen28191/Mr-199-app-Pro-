@@ -344,7 +344,7 @@ export default function Reports() {
         {/* مكون اختيار المشروع - مطابق للصفحة الرئيسية تماماً */}
         <ProjectSelector
           selectedProjectId={selectedProjectId}
-          onProjectChange={selectProject}
+          onProjectChange={(projectId, projectName) => selectProject(projectId, projectName)}
         />
 
         {/* رسالة التنبيه عند عدم اختيار مشروع */}

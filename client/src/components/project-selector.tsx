@@ -8,7 +8,7 @@ import type { Project } from "@shared/schema";
 
 interface ProjectSelectorProps {
   selectedProjectId?: string;
-  onProjectChange: (projectId: string) => void;
+  onProjectChange: (projectId: string, projectName?: string) => void;
   showHeader?: boolean;
   variant?: "default" | "compact" | "premium";
   className?: string;
@@ -26,11 +26,18 @@ export default function ProjectSelector({
   });
 
   const selectedProject = projects.find(p => p.id === selectedProjectId);
+  
+  // دالة معالجة تغيير المشروع مع تمرير اسم المشروع
+  const handleProjectChange = (projectId: string) => {
+    const project = projects.find(p => p.id === projectId);
+    console.log('🔄 تغيير المشروع في ProjectSelector:', { projectId, projectName: project?.name });
+    onProjectChange(projectId, project?.name);
+  };
 
   if (variant === "compact") {
     return (
       <div className={`space-y-2 ${className}`}>
-        <Select value={selectedProjectId} onValueChange={onProjectChange} disabled={isLoading}>
+        <Select value={selectedProjectId} onValueChange={handleProjectChange} disabled={isLoading}>
           <SelectTrigger className="w-full h-12 bg-white/90 backdrop-blur-sm border-white/30 text-gray-800 font-medium">
             <SelectValue placeholder="اختر المشروع..." />
           </SelectTrigger>
@@ -82,7 +89,7 @@ export default function ProjectSelector({
         
         <CardContent className="p-6 pt-2 relative">
           <div className="space-y-4">
-            <Select value={selectedProjectId} onValueChange={onProjectChange} disabled={isLoading}>
+            <Select value={selectedProjectId} onValueChange={handleProjectChange} disabled={isLoading}>
               <SelectTrigger className="w-full h-14 bg-white border-2 border-gray-200 hover:border-blue-400 transition-all duration-300 text-gray-800 font-medium rounded-xl shadow-sm">
                 <div className="flex items-center gap-3 w-full">
                   <Building2 className="h-5 w-5 text-blue-600" />
@@ -158,7 +165,7 @@ export default function ProjectSelector({
             اختر المشروع
           </h2>
         )}
-        <Select value={selectedProjectId} onValueChange={onProjectChange} disabled={isLoading}>
+        <Select value={selectedProjectId} onValueChange={handleProjectChange} disabled={isLoading}>
           <SelectTrigger className="w-full">
             <SelectValue placeholder="اختر المشروع..." />
           </SelectTrigger>
