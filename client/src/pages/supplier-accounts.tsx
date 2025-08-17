@@ -184,9 +184,9 @@ export default function SupplierAccountsPage() {
     // إعداد اتجاه النص من اليمين إلى اليسار
     worksheet.views = [{ rightToLeft: true }];
 
-    // تحديد عرض الأعمدة
+    // تحديد عرض الأعمدة (مع إضافة عمود اسم المشروع)
     worksheet.columns = [
-      { width: 4 }, { width: 12 }, { width: 15 }, { width: 25 }, { width: 8 }, 
+      { width: 4 }, { width: 12 }, { width: 15 }, { width: 20 }, { width: 25 }, { width: 8 }, 
       { width: 12 }, { width: 15 }, { width: 10 }, { width: 12 }, { width: 12 }, { width: 10 }
     ];
 
@@ -197,7 +197,7 @@ export default function SupplierAccountsPage() {
     // =========================
     
     // شعار الشركة والعنوان الرئيسي
-    worksheet.mergeCells(`A${currentRow}:K${currentRow}`);
+    worksheet.mergeCells(`A${currentRow}:L${currentRow}`);
     const titleCell = worksheet.getCell(`A${currentRow}`);
     titleCell.value = 'شركة الفتحي للمقاولات والاستشارات الهندسية';
     titleCell.font = { name: 'Arial', size: 18, bold: true, color: { argb: 'FFFFFF' } };
@@ -209,11 +209,11 @@ export default function SupplierAccountsPage() {
       left: { style: 'thick', color: { argb: '1f4e79' } },
       right: { style: 'thick', color: { argb: '1f4e79' } }
     };
-    worksheet.getRow(currentRow).height = 25;
+    worksheet.getRow(currentRow).height = 35;
     currentRow++;
 
     // عنوان فرعي
-    worksheet.mergeCells(`A${currentRow}:K${currentRow}`);
+    worksheet.mergeCells(`A${currentRow}:L${currentRow}`);
     const subtitleCell = worksheet.getCell(`A${currentRow}`);
     subtitleCell.value = 'كشف حساب المورد - تقرير مفصل';
     subtitleCell.font = { name: 'Arial', size: 14, bold: true, color: { argb: '1f4e79' } };
@@ -229,7 +229,7 @@ export default function SupplierAccountsPage() {
     currentRow++;
 
     // تاريخ إنشاء التقرير
-    worksheet.mergeCells(`A${currentRow}:K${currentRow}`);
+    worksheet.mergeCells(`A${currentRow}:L${currentRow}`);
     const dateCell = worksheet.getCell(`A${currentRow}`);
     dateCell.value = `تاريخ إنشاء التقرير: ${formatDate(new Date().toISOString())} - ${new Date().toLocaleTimeString('ar-SA')}`;
     dateCell.font = { name: 'Arial', size: 10, italic: true, color: { argb: '666666' } };
@@ -246,7 +246,7 @@ export default function SupplierAccountsPage() {
     // =========================
     
     // عنوان قسم معلومات المورد
-    worksheet.mergeCells(`A${currentRow}:K${currentRow}`);
+    worksheet.mergeCells(`A${currentRow}:L${currentRow}`);
     const supplierHeaderCell = worksheet.getCell(`A${currentRow}`);
     supplierHeaderCell.value = 'معلومات المورد';
     supplierHeaderCell.font = { name: 'Arial', size: 12, bold: true, color: { argb: 'FFFFFF' } };
@@ -307,7 +307,7 @@ export default function SupplierAccountsPage() {
         infoText += `الفترة: من ${dateFrom || 'البداية'} إلى ${dateTo || 'النهاية'}`;
       }
       
-      worksheet.mergeCells(`A${currentRow}:K${currentRow}`);
+      worksheet.mergeCells(`A${currentRow}:L${currentRow}`);
       const infoCell = worksheet.getCell(`A${currentRow}`);
       infoCell.value = infoText;
       infoCell.font = { name: 'Arial', size: 10, italic: true, color: { argb: '666666' } };
@@ -322,8 +322,8 @@ export default function SupplierAccountsPage() {
     // جدول المشتريات
     // =========================
 
-    // رأس الجدول
-    const headers = ['#', 'التاريخ', 'رقم الفاتورة', 'المادة', 'الكمية', 'سعر الوحدة', 'المبلغ الإجمالي', 'نوع الدفع', 'المدفوع', 'المتبقي', 'الحالة'];
+    // رأس الجدول (مع إضافة عمود اسم المشروع)
+    const headers = ['#', 'التاريخ', 'رقم الفاتورة', 'اسم المشروع', 'المادة', 'الكمية', 'سعر الوحدة', 'المبلغ الإجمالي', 'نوع الدفع', 'المدفوع', 'المتبقي', 'الحالة'];
     const headerRow = worksheet.getRow(currentRow);
     
     headers.forEach((header, index) => {
@@ -339,17 +339,25 @@ export default function SupplierAccountsPage() {
         right: { style: 'thin', color: { argb: '1f4e79' } }
       };
     });
-    headerRow.height = 20;
+    headerRow.height = 30;
     currentRow++;
 
     // بيانات المشتريات
     purchases.forEach((purchase, index) => {
       const row = worksheet.getRow(currentRow);
+      
+      // العثور على اسم المشروع
+      const projectName = projects.find(p => p.id === purchase.projectId)?.name || 'غير محدد';
+      
+      // العثور على اسم المادة (استخدام اسم المادة إذا كان متوفراً، وإلا اسم المادة المخزن في النظام)
+      const materialName = purchase.materialId || 'غير محدد';
+      
       const rowData = [
         index + 1,
         formatDate(purchase.invoiceDate),
         purchase.invoiceNumber || '-',
-        purchase.materialId,
+        projectName,
+        materialName,
         purchase.quantity,
         parseFloat(purchase.unitPrice),
         parseFloat(purchase.totalAmount),
@@ -365,22 +373,27 @@ export default function SupplierAccountsPage() {
         
         // تنسيق الخط
         cell.font = { name: 'Arial', size: 10 };
-        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
         
-        // تنسيق الأرقام والعملة
-        if ([5, 6, 7, 9, 10].includes(colIndex)) {
+        // تنسيق الأرقام والعملة (تحديث الفهارس بعد إضافة عمود المشروع)
+        if ([5, 6, 7, 9, 10, 11].includes(colIndex)) {
           cell.numFmt = '#,##0';
-          if ([6, 7, 9, 10].includes(colIndex)) {
-            cell.alignment = { horizontal: 'right', vertical: 'middle' };
+          if ([7, 9, 10, 11].includes(colIndex)) {
+            cell.alignment = { horizontal: 'right', vertical: 'middle', wrapText: true };
           }
+        }
+        
+        // محاذاة النصوص للعمودين الجديدين
+        if (colIndex === 3 || colIndex === 4) { // اسم المشروع واسم المادة
+          cell.alignment = { horizontal: 'right', vertical: 'middle', wrapText: true };
         }
 
         // تلوين الصفوف
         const bgColor = index % 2 === 0 ? 'f8f9fa' : 'ffffff';
         cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: bgColor } };
 
-        // تلوين حالة الدفع
-        if (colIndex === 10) {
+        // تلوين حالة الدفع (تحديث الفهرس بعد إضافة عمود المشروع)
+        if (colIndex === 11) {
           if (value === 'مسدد') {
             cell.font = { ...cell.font, color: { argb: '228b22' }, bold: true };
           } else {
@@ -396,6 +409,9 @@ export default function SupplierAccountsPage() {
           right: { style: 'thin', color: { argb: 'cccccc' } }
         };
       });
+      
+      // زيادة ارتفاع الصف للسماح بالتفاف النص
+      row.height = 25;
       currentRow++;
     });
 
@@ -406,7 +422,7 @@ export default function SupplierAccountsPage() {
     // =========================
 
     // عنوان الملخص
-    worksheet.mergeCells(`A${currentRow}:K${currentRow}`);
+    worksheet.mergeCells(`A${currentRow}:L${currentRow}`);
     const summaryHeaderCell = worksheet.getCell(`A${currentRow}`);
     summaryHeaderCell.value = 'ملخص الحساب';
     summaryHeaderCell.font = { name: 'Arial', size: 12, bold: true, color: { argb: 'FFFFFF' } };
@@ -834,15 +850,26 @@ export default function SupplierAccountsPage() {
                         </div>
                       </div>
 
-                      {/* الصف الثاني: معلومات المادة */}
-                      <div className="flex items-center gap-2 mb-3 p-2 bg-gray-50 rounded-md">
-                        <Package className="w-4 h-4 text-blue-500" />
-                        <div className="flex-1">
-                          <span className="text-sm font-medium text-gray-900">
-                            {(purchase as any).material?.name || purchase.materialId}
+                      {/* الصف الثاني: معلومات المشروع والمادة */}
+                      <div className="space-y-2 mb-3">
+                        {/* معلومات المشروع */}
+                        <div className="flex items-center gap-2 p-2 bg-blue-50 rounded-md">
+                          <Building2 className="w-4 h-4 text-blue-600" />
+                          <span className="text-sm font-medium text-blue-800">
+                            {projects.find(p => p.id === purchase.projectId)?.name || 'غير محدد'}
                           </span>
-                          <div className="text-xs text-gray-600 mt-1" dir="ltr">
-                            الكمية: {purchase.quantity} | سعر الوحدة: {formatCurrency(purchase.unitPrice)}
+                        </div>
+
+                        {/* معلومات المادة */}
+                        <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-md">
+                          <Package className="w-4 h-4 text-blue-500" />
+                          <div className="flex-1">
+                            <span className="text-sm font-medium text-gray-900">
+                              {(purchase as any).material?.name || purchase.materialId}
+                            </span>
+                            <div className="text-xs text-gray-600 mt-1" dir="ltr">
+                              الكمية: {purchase.quantity} | سعر الوحدة: {formatCurrency(purchase.unitPrice)}
+                            </div>
                           </div>
                         </div>
                       </div>
