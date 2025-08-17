@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Clock, Receipt, ShoppingCart, BarChart, ArrowRight, Settings, DollarSign, TrendingDown, TrendingUp, Calendar, Package, UserCheck } from "lucide-react";
+import { Clock, Receipt, ShoppingCart, BarChart, ArrowRight, Settings, DollarSign, TrendingDown, TrendingUp, Calendar, Package, UserCheck, Plus, User, FolderPlus } from "lucide-react";
 import { StatsCard, StatsGrid } from "@/components/ui/stats-card";
 import { useSelectedProject } from "@/hooks/use-selected-project";
 import ProjectSelector from "@/components/project-selector";
@@ -34,7 +34,7 @@ interface ProjectWithStats extends Project {
 export default function Dashboard() {
   const [, setLocation] = useLocation();
   const { selectedProjectId, selectProject } = useSelectedProject();
-
+  const [showFloatingMenu, setShowFloatingMenu] = useState(false);
 
   const queryClient = useQueryClient();
   const { setFloatingAction } = useFloatingButton();
@@ -58,11 +58,15 @@ export default function Dashboard() {
 
 
 
-  // تعيين إجراء الزر العائم
+  // إعداد الزر العائم مع قائمة الخيارات
   useEffect(() => {
-    setFloatingAction(null);
+    const handleFloatingAction = () => {
+      setShowFloatingMenu(!showFloatingMenu);
+    };
+    
+    setFloatingAction(handleFloatingAction, "إضافة");
     return () => setFloatingAction(null);
-  }, [setFloatingAction]);
+  }, [setFloatingAction, showFloatingMenu]);
 
   // تسجيل بيانات المشروع المحدد - داخل useEffect لتجنب التحديثات أثناء الرسم
   useEffect(() => {
@@ -241,6 +245,42 @@ export default function Dashboard() {
           </div>
         </CardContent>
       </Card>
+
+      {/* قائمة الخيارات العائمة */}
+      {showFloatingMenu && (
+        <div className="fixed bottom-20 right-4 z-50 space-y-2">
+          <Button
+            onClick={() => {
+              setLocation("/workers");
+              setShowFloatingMenu(false);
+            }}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-lg rounded-full px-4 py-3"
+            size="sm"
+          >
+            <User className="h-4 w-4" />
+            <span>إضافة عامل</span>
+          </Button>
+          <Button
+            onClick={() => {
+              setLocation("/projects");
+              setShowFloatingMenu(false);
+            }}
+            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white shadow-lg rounded-full px-4 py-3"
+            size="sm"
+          >
+            <FolderPlus className="h-4 w-4" />
+            <span>إضافة مشروع</span>
+          </Button>
+        </div>
+      )}
+
+      {/* خلفية شفافة لإغلاق القائمة */}
+      {showFloatingMenu && (
+        <div 
+          className="fixed inset-0 z-40 bg-black bg-opacity-20"
+          onClick={() => setShowFloatingMenu(false)}
+        />
+      )}
     </div>
   );
 }
