@@ -11,7 +11,7 @@ import {
   insertTransportationExpenseSchema, insertDailyExpenseSummarySchema, insertWorkerTransferSchema,
   insertWorkerBalanceSchema, insertAutocompleteDataSchema, insertWorkerTypeSchema,
   insertWorkerMiscExpenseSchema, insertUserSchema, insertSupplierSchema, insertSupplierPaymentSchema,
-  insertPrintSettingsSchema, insertProjectFundTransferSchema, insertExportSettingsSchema,
+  insertPrintSettingsSchema, insertProjectFundTransferSchema,
   insertReportTemplateSchema
 } from "@shared/schema";
 
@@ -3346,83 +3346,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Export Settings API Routes - إعدادات التصدير
-  app.get("/api/export-settings", async (req, res) => {
-    try {
-      const settings = await storage.getExportSettings();
-      res.json(settings);
-    } catch (error) {
-      console.error("Error fetching export settings:", error);
-      res.status(500).json({ message: "خطأ في جلب إعدادات التصدير" });
-    }
-  });
 
-  app.get("/api/export-settings/:id", async (req, res) => {
-    try {
-      const setting = await storage.getExportSetting(req.params.id);
-      if (!setting) {
-        return res.status(404).json({ message: "إعدادات التصدير غير موجودة" });
-      }
-      res.json(setting);
-    } catch (error) {
-      console.error("Error fetching export setting:", error);
-      res.status(500).json({ message: "خطأ في جلب إعدادات التصدير" });
-    }
-  });
-
-  app.post("/api/export-settings", async (req, res) => {
-    try {
-      const result = insertExportSettingsSchema.safeParse(req.body);
-      if (!result.success) {
-        return res.status(400).json({ 
-          message: "بيانات إعدادات التصدير غير صحيحة", 
-          errors: result.error.issues 
-        });
-      }
-      
-      const setting = await storage.createExportSettings(result.data);
-      res.status(201).json(setting);
-    } catch (error) {
-      console.error("Error creating export settings:", error);
-      res.status(500).json({ message: "خطأ في إنشاء إعدادات التصدير" });
-    }
-  });
-
-  app.put("/api/export-settings/:id", async (req, res) => {
-    try {
-      const result = insertExportSettingsSchema.partial().safeParse(req.body);
-      if (!result.success) {
-        return res.status(400).json({ 
-          message: "بيانات إعدادات التصدير غير صحيحة", 
-          errors: result.error.issues 
-        });
-      }
-      
-      const setting = await storage.updateExportSettings(req.params.id, result.data);
-      if (!setting) {
-        return res.status(404).json({ message: "إعدادات التصدير غير موجودة" });
-      }
-      res.json(setting);
-    } catch (error) {
-      console.error("Error updating export settings:", error);
-      res.status(500).json({ message: "خطأ في تحديث إعدادات التصدير" });
-    }
-  });
-
-  app.delete("/api/export-settings/:id", async (req, res) => {
-    try {
-      const setting = await storage.getExportSetting(req.params.id);
-      if (!setting) {
-        return res.status(404).json({ message: "إعدادات التصدير غير موجودة" });
-      }
-      
-      await storage.deleteExportSettings(req.params.id);
-      res.status(204).send();
-    } catch (error) {
-      console.error("Error deleting export settings:", error);
-      res.status(500).json({ message: "خطأ في حذف إعدادات التصدير" });
-    }
-  });
 
   const httpServer = createServer(app);
   return httpServer;

@@ -2,15 +2,15 @@ import {
   type Project, type Worker, type FundTransfer, type WorkerAttendance, 
   type Material, type MaterialPurchase, type TransportationExpense, type DailyExpenseSummary,
   type WorkerTransfer, type WorkerBalance, type AutocompleteData, type WorkerType, type WorkerMiscExpense, type User,
-  type Supplier, type SupplierPayment, type PrintSettings, type ProjectFundTransfer, type ExportSettings,
+  type Supplier, type SupplierPayment, type PrintSettings, type ProjectFundTransfer,
   type ReportTemplate,
   type InsertProject, type InsertWorker, type InsertFundTransfer, type InsertWorkerAttendance,
   type InsertMaterial, type InsertMaterialPurchase, type InsertTransportationExpense, type InsertDailyExpenseSummary,
   type InsertWorkerTransfer, type InsertWorkerBalance, type InsertAutocompleteData, type InsertWorkerType, type InsertWorkerMiscExpense, type InsertUser,
-  type InsertSupplier, type InsertSupplierPayment, type InsertPrintSettings, type InsertProjectFundTransfer, type InsertExportSettings,
+  type InsertSupplier, type InsertSupplierPayment, type InsertPrintSettings, type InsertProjectFundTransfer,
   type InsertReportTemplate,
   projects, workers, fundTransfers, workerAttendance, materials, materialPurchases, transportationExpenses, dailyExpenseSummaries,
-  workerTransfers, workerBalances, autocompleteData, workerTypes, workerMiscExpenses, users, suppliers, supplierPayments, printSettings, projectFundTransfers, exportSettings, reportTemplates
+  workerTransfers, workerBalances, autocompleteData, workerTypes, workerMiscExpenses, users, suppliers, supplierPayments, printSettings, projectFundTransfers, reportTemplates
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, gte, lte, gt, sql, inArray, or } from "drizzle-orm";
@@ -185,13 +185,7 @@ export interface IStorage {
   deletePrintSettings(id: string): Promise<void>;
   getDefaultPrintSettings(reportType: string): Promise<PrintSettings | undefined>;
   
-  // Export Settings
-  getExportSettings(): Promise<ExportSettings[]>;
-  getExportSetting(id: string): Promise<ExportSettings | undefined>;
-  createExportSettings(settings: InsertExportSettings): Promise<ExportSettings>;
-  updateExportSettings(id: string, settings: Partial<InsertExportSettings>): Promise<ExportSettings | undefined>;
-  deleteExportSettings(id: string): Promise<void>;
-  getDefaultExportSettings(): Promise<ExportSettings | undefined>;
+
   
   // Report Templates
   getReportTemplates(): Promise<ReportTemplate[]>;
@@ -2764,87 +2758,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  // Export Settings Methods
-  async getExportSettings(): Promise<ExportSettings[]> {
-    try {
-      return await db.select().from(exportSettings).orderBy(exportSettings.createdAt);
-    } catch (error) {
-      console.error('Error getting export settings:', error);
-      return [];
-    }
-  }
 
-  async getExportSetting(id: string): Promise<ExportSettings | undefined> {
-    try {
-      const [settings] = await db.select().from(exportSettings).where(eq(exportSettings.id, id));
-      return settings || undefined;
-    } catch (error) {
-      console.error('Error getting export setting by id:', error);
-      return undefined;
-    }
-  }
-
-  async createExportSettings(settings: InsertExportSettings): Promise<ExportSettings> {
-    try {
-      // إذا كان هذا الإعداد سيكون افتراضياً، إلغاء تفعيل الإعدادات الأخرى
-      if (settings.isDefault) {
-        await db.update(exportSettings)
-          .set({ isDefault: false })
-          .where(eq(exportSettings.isDefault, true));
-      }
-
-      const [newSettings] = await db
-        .insert(exportSettings)
-        .values(settings)
-        .returning();
-      return newSettings;
-    } catch (error) {
-      console.error('Error creating export settings:', error);
-      throw error;
-    }
-  }
-
-  async updateExportSettings(id: string, settings: Partial<InsertExportSettings>): Promise<ExportSettings | undefined> {
-    try {
-      // إذا كان سيتم تفعيل هذا الإعداد كافتراضي، إلغاء تفعيل الإعدادات الأخرى
-      if (settings.isDefault) {
-        await db.update(exportSettings)
-          .set({ isDefault: false })
-          .where(eq(exportSettings.isDefault, true));
-      }
-
-      const [updated] = await db
-        .update(exportSettings)
-        .set({ ...settings, updatedAt: sql`CURRENT_TIMESTAMP` })
-        .where(eq(exportSettings.id, id))
-        .returning();
-      return updated || undefined;
-    } catch (error) {
-      console.error('Error updating export settings:', error);
-      throw error;
-    }
-  }
-
-  async deleteExportSettings(id: string): Promise<void> {
-    try {
-      await db.delete(exportSettings).where(eq(exportSettings.id, id));
-    } catch (error) {
-      console.error('Error deleting export settings:', error);
-      throw error;
-    }
-  }
-
-  async getDefaultExportSettings(): Promise<ExportSettings | undefined> {
-    try {
-      const [settings] = await db.select().from(exportSettings)
-        .where(eq(exportSettings.isDefault, true))
-        .limit(1);
-      return settings || undefined;
-    } catch (error) {
-      console.error('Error getting default export settings:', error);
-      return undefined;
-    }
-  }
 }
 
 export const storage = new DatabaseStorage();
