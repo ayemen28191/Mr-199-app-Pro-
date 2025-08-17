@@ -5,7 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
-import ReportTemplateSettingsEnhanced from "@/pages/report-template-settings-enhanced";
+import DashboardSettings from "@/pages/Dashboard";
 import WorkerAttendance from "@/pages/worker-attendance";
 
 import DailyExpenses from "@/pages/daily-expenses";
@@ -29,7 +29,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/" component={Dashboard} />
-      <Route path="/report-template-settings-enhanced" component={ReportTemplateSettingsEnhanced} />
+      <Route path="/settings" component={DashboardSettings} />
       <Route path="/projects" component={ProjectsPage} />
       <Route path="/workers" component={WorkersPage} />
       <Route path="/worker-accounts" component={WorkerAccountsPage} />
