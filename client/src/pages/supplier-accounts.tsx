@@ -68,12 +68,12 @@ export default function SupplierAccountsPage() {
   }, { totalAmount: 0, paidAmount: 0, remainingAmount: 0 });
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-GB');
+    return new Date(dateStr).toLocaleDateString('ar-SA');
   };
 
   const formatCurrency = (amount: string | number) => {
     const num = typeof amount === 'string' ? parseFloat(amount) : amount;
-    return num.toLocaleString('en-GB') + " ر.ي";
+    return num.toLocaleString('ar-SA') + " ر.ي";
   };
 
   const getPaymentTypeVariant = (paymentType: string) => {
@@ -226,7 +226,7 @@ export default function SupplierAccountsPage() {
       )}
 
       {/* إحصائيات الحساب - تصميم موحد ومضغوط */}
-      {selectedSupplierId && purchases.length > 0 && (
+      {selectedSupplierId && (
         <StatsGrid>
           <StatsCard
             title="إجمالي المشتريات"
@@ -260,11 +260,15 @@ export default function SupplierAccountsPage() {
           </CardHeader>
           <CardContent className="pt-0">
             {isLoadingPurchases ? (
-              <div className="text-center py-6 text-sm">جاري تحميل البيانات...</div>
+              <div className="text-center py-4">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                <p className="text-sm text-gray-600">جاري تحميل البيانات...</p>
+              </div>
             ) : purchases.length === 0 ? (
-              <div className="text-center py-6">
-                <Search className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+              <div className="text-center py-4">
+                <Search className="w-6 h-6 text-gray-400 mx-auto mb-2" />
                 <p className="text-gray-500 text-sm">لا توجد مشتريات للمورد المحدد</p>
+                <p className="text-gray-400 text-xs mt-1">جرب تغيير فلاتر البحث أو التواريخ</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -327,15 +331,20 @@ export default function SupplierAccountsPage() {
         </Card>
       )}
 
-      {/* حالة فارغة - مضغوطة */}
+      {/* حالة فارغة - مضغوطة ومحسنة */}
       {!selectedSupplierId && (
         <Card>
-          <CardContent className="text-center py-8">
-            <Building2 className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-            <h3 className="text-base font-semibold mb-1">اختر مورداً لعرض كشف الحساب</h3>
+          <CardContent className="text-center py-6">
+            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+              <Building2 className="w-8 h-8 text-blue-600" />
+            </div>
+            <h3 className="text-base font-semibold mb-1 text-gray-800">اختر مورداً لعرض كشف الحساب</h3>
             <p className="text-gray-500 text-sm">
-              اختر مورداً من القائمة أعلاه لعرض تفاصيل حسابه ومشترياته
+              اختر مورداً من القائمة أعلاه لعرض تفاصيل حسابه ومشترياته والإحصائيات
             </p>
+            <div className="mt-3 text-xs text-gray-400">
+              💡 نصيحة: يمكنك تطبيق فلاتر التاريخ ونوع الدفع لتخصيص النتائج
+            </div>
           </CardContent>
         </Card>
       )}
