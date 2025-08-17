@@ -109,7 +109,7 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
     defaultValues: {
       name: '',
       description: '',
-      categoryId: '',
+      categoryId: undefined,
       sku: '',
       serialNumber: '',
       barcode: '',
@@ -118,7 +118,7 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
       condition: 'good',
       locationType: 'مخزن',
       specifications: '',
-      projectId: '',
+      projectId: undefined,
     },
   });
 
@@ -363,7 +363,7 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                           <FormItem>
                             <FormLabel>التصنيف <span className="text-red-500">*</span></FormLabel>
                             <div className="flex gap-2">
-                              <Select onValueChange={field.onChange} value={field.value}>
+                              <Select onValueChange={field.onChange} value={field.value || ""}>
                                 <FormControl>
                                   <SelectTrigger data-testid="tool-category-select">
                                     <SelectValue placeholder="اختر تصنيف الأداة" />
@@ -377,7 +377,7 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                                       </SelectItem>
                                     ))
                                   ) : (
-                                    <SelectItem value="no-categories">لا توجد تصنيفات</SelectItem>
+                                    <SelectItem value="no-categories" disabled>لا توجد تصنيفات</SelectItem>
                                   )}
                                 </SelectContent>
                               </Select>
@@ -426,7 +426,7 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                         <FormItem>
                           <FormLabel>وحدة القياس <span className="text-red-500">*</span></FormLabel>
                           <div className="flex gap-2">
-                            <Select onValueChange={field.onChange} value={field.value}>
+                            <Select onValueChange={field.onChange} value={field.value || ""}>
                               <FormControl>
                                 <SelectTrigger data-testid="tool-unit-select">
                                   <SelectValue placeholder="اختر وحدة القياس" />
@@ -716,7 +716,7 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>المشروع <span className="text-xs text-gray-500">(اختياري)</span></FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
+                            <Select onValueChange={field.onChange} value={field.value || ""}>
                               <FormControl>
                                 <SelectTrigger data-testid="tool-project-select">
                                   <SelectValue placeholder="اختر المشروع" />
@@ -730,7 +730,7 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                                     </SelectItem>
                                   ))
                                 ) : (
-                                  <SelectItem value="no-projects">لا توجد مشاريع نشطة</SelectItem>
+                                  <SelectItem value="no-projects" disabled>لا توجد مشاريع نشطة</SelectItem>
                                 )}
                               </SelectContent>
                             </Select>
@@ -748,7 +748,7 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>نوع الموقع <span className="text-red-500">*</span></FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
+                            <Select onValueChange={field.onChange} value={field.value || ""}>
                               <FormControl>
                                 <SelectTrigger data-testid="tool-location-type-select">
                                   <SelectValue placeholder="اختر نوع الموقع" />
@@ -827,7 +827,7 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>حالة الأداة <span className="text-red-500">*</span></FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
+                            <Select onValueChange={field.onChange} value={field.value || ""}>
                               <FormControl>
                                 <SelectTrigger data-testid="tool-status-select">
                                   <SelectValue placeholder="اختر حالة الأداة" />
@@ -852,7 +852,7 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>حالة الجودة <span className="text-red-500">*</span></FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
+                            <Select onValueChange={field.onChange} value={field.value || ""}>
                               <FormControl>
                                 <SelectTrigger data-testid="tool-condition-select">
                                   <SelectValue placeholder="اختر حالة الجودة" />
