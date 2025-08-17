@@ -20,7 +20,8 @@ import {
   Plus,
   Edit2,
   Trash2,
-  AlertCircle
+  AlertCircle,
+  ChartGantt
 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { AutocompleteInput } from '@/components/ui/autocomplete-input-database';
@@ -372,21 +373,27 @@ export default function WorkerAccountsPage() {
       {/* Header - تم إزالة العنوان المكرر لأنه موجود في شريط التطبيق */}
 
       {/* Project Filter */}
-      <div className="space-y-4">
-        <Select value={selectedProject} onValueChange={setSelectedProject}>
-          <SelectTrigger>
-            <SelectValue placeholder="جميع المشاريع" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">جميع المشاريع</SelectItem>
-            {projects.map((project: Project) => (
-              <SelectItem key={project.id} value={project.id}>
-                {project.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <Card className="mb-4">
+        <CardContent className="p-4">
+          <h2 className="text-lg font-bold text-foreground mb-3 flex items-center">
+            <ChartGantt className="ml-2 h-5 w-5 text-primary" />
+            اختر المشروع
+          </h2>
+          <Select value={selectedProject} onValueChange={setSelectedProject}>
+            <SelectTrigger>
+              <SelectValue placeholder="جميع المشاريع" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">جميع المشاريع</SelectItem>
+              {projects.map((project: Project) => (
+                <SelectItem key={project.id} value={project.id}>
+                  {project.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </CardContent>
+      </Card>
 
       {/* Transfers List */}
       <div className="space-y-4">
