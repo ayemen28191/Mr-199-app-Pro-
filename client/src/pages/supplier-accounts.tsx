@@ -250,64 +250,72 @@ export default function SupplierAccountsPage() {
     worksheet.getRow(currentRow).height = 16;
     currentRow++;
 
-    // تاريخ إنشاء التقرير
-    worksheet.mergeCells(`A${currentRow}:L${currentRow}`);
-    const dateCell = worksheet.getCell(`A${currentRow}`);
-    dateCell.value = `تاريخ إنشاء التقرير: ${formatDate(new Date().toISOString())} - ${new Date().toLocaleTimeString('ar-SA')}`;
-    dateCell.font = { name: 'Arial', size: 10, italic: true, color: { argb: '666666' } };
-    dateCell.alignment = { horizontal: 'center', vertical: 'middle' };
-    dateCell.border = {
-      bottom: { style: 'thin', color: { argb: 'cccccc' } },
-      left: { style: 'thick', color: { argb: '1f4e79' } },
-      right: { style: 'thick', color: { argb: '1f4e79' } }
-    };
     currentRow += 1;
 
     // =========================
     // معلومات المورد
     // =========================
     
-    // عنوان قسم معلومات المورد
+    // عنوان قسم معلومات المورد - تصميم احترافي
     worksheet.mergeCells(`A${currentRow}:L${currentRow}`);
     const supplierHeaderCell = worksheet.getCell(`A${currentRow}`);
-    supplierHeaderCell.value = 'معلومات المورد';
-    supplierHeaderCell.font = { name: 'Arial', size: 12, bold: true, color: { argb: 'FFFFFF' } };
+    supplierHeaderCell.value = '📋 بيانات المورد';
+    supplierHeaderCell.font = { name: 'Arial', size: 11, bold: true, color: { argb: 'FFFFFF' } };
     supplierHeaderCell.alignment = { horizontal: 'center', vertical: 'middle' };
     supplierHeaderCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '2e75b6' } };
     supplierHeaderCell.border = {
-      top: { style: 'thin', color: { argb: '2e75b6' } },
-      bottom: { style: 'thin', color: { argb: '2e75b6' } },
-      left: { style: 'thin', color: { argb: '2e75b6' } },
-      right: { style: 'thin', color: { argb: '2e75b6' } }
+      top: { style: 'medium', color: { argb: '2e75b6' } },
+      bottom: { style: 'medium', color: { argb: '2e75b6' } },
+      left: { style: 'thick', color: { argb: '1f4e79' } },
+      right: { style: 'thick', color: { argb: '1f4e79' } }
     };
+    worksheet.getRow(currentRow).height = 22;
     currentRow++;
 
-    // معلومات المورد في شبكة
-    const supplierInfo = [
-      ['اسم المورد:', selectedSupplier.name, 'رقم الهاتف:', selectedSupplier.phone || 'غير محدد'],
-      ['الشخص المسؤول:', selectedSupplier.contactPerson || 'غير محدد', 'إجمالي المديونية:', formatCurrency(selectedSupplier.totalDebt)],
-      ['العنوان:', selectedSupplier.address || 'غير محدد', '', '']
+    // بيانات المورد في جدول احترافي مُنسق
+    const supplierData = [
+      ['اسم المورد', selectedSupplier.name, 'رقم الهاتف', selectedSupplier.phone || 'غير محدد'],
+      ['شخص الاتصال', selectedSupplier.contactPerson || 'غير محدد', 'العنوان', selectedSupplier.address || 'غير محدد']
     ];
 
-    supplierInfo.forEach(row => {
-      const excelRow = worksheet.getRow(currentRow);
-      row.forEach((value, index) => {
-        const cell = excelRow.getCell(index * 3 + 1); // A, D, G, J
-        if (index % 2 === 0) {
-          // عناوين
-          cell.value = value;
-          cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: '1f4e79' } };
-          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'e8f3ff' } };
-        } else {
-          // القيم
-          cell.value = value;
-          cell.font = { name: 'Arial', size: 10 };
-          if (index === 3 && row === supplierInfo[1]) {
-            // تلوين المديونية بالأحمر
-            cell.font = { ...cell.font, color: { argb: 'cc0000' }, bold: true };
-          }
-        }
-        cell.alignment = { horizontal: 'right', vertical: 'middle' };
+    supplierData.forEach((dataRow, rowIndex) => {
+      const row = worksheet.getRow(currentRow);
+      
+      // العمود الأول: التسمية
+      const labelCell1 = row.getCell(1);
+      labelCell1.value = dataRow[0];
+      labelCell1.font = { name: 'Arial', size: 9, bold: true, color: { argb: '1f4e79' } };
+      labelCell1.alignment = { horizontal: 'center', vertical: 'middle' };
+      labelCell1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'e8f4fd' } };
+      worksheet.mergeCells(`A${currentRow}:B${currentRow}`);
+      
+      // العمود الثاني: القيمة
+      const valueCell1 = row.getCell(3);
+      valueCell1.value = dataRow[1];
+      valueCell1.font = { name: 'Arial', size: 9 };
+      valueCell1.alignment = { horizontal: 'center', vertical: 'middle' };
+      valueCell1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'ffffff' } };
+      worksheet.mergeCells(`C${currentRow}:F${currentRow}`);
+      
+      // العمود الثالث: التسمية الثانية
+      const labelCell2 = row.getCell(7);
+      labelCell2.value = dataRow[2];
+      labelCell2.font = { name: 'Arial', size: 9, bold: true, color: { argb: '1f4e79' } };
+      labelCell2.alignment = { horizontal: 'center', vertical: 'middle' };
+      labelCell2.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'e8f4fd' } };
+      worksheet.mergeCells(`G${currentRow}:H${currentRow}`);
+      
+      // العمود الرابع: القيمة الثانية
+      const valueCell2 = row.getCell(9);
+      valueCell2.value = dataRow[3];
+      valueCell2.font = { name: 'Arial', size: 9 };
+      valueCell2.alignment = { horizontal: 'center', vertical: 'middle' };
+      valueCell2.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'ffffff' } };
+      worksheet.mergeCells(`I${currentRow}:L${currentRow}`);
+      
+      // إضافة حدود لجميع الخلايا
+      [1, 3, 7, 9].forEach(col => {
+        const cell = row.getCell(col);
         cell.border = {
           top: { style: 'thin', color: { argb: 'cccccc' } },
           bottom: { style: 'thin', color: { argb: 'cccccc' } },
@@ -315,6 +323,8 @@ export default function SupplierAccountsPage() {
           right: { style: 'thin', color: { argb: 'cccccc' } }
         };
       });
+      
+      worksheet.getRow(currentRow).height = 18;
       currentRow++;
     });
 
@@ -395,19 +405,28 @@ export default function SupplierAccountsPage() {
         
         // تنسيق الخط
         cell.font = { name: 'Arial', size: 8 };
-        cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
         
-        // تنسيق الأرقام والعملة (تحديث الفهارس بعد إضافة عمود المشروع)
-        if ([5, 6, 7, 9, 10, 11].includes(colIndex)) {
-          cell.numFmt = '#,##0';
-          if ([7, 9, 10, 11].includes(colIndex)) {
-            cell.alignment = { horizontal: 'right', vertical: 'middle', wrapText: true };
-          }
+        // تحسين التوسيط والمحاذاة حسب نوع البيانات
+        if (colIndex === 0) {
+          // رقم التسلسل - توسيط
+          cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+        } else if ([1, 2].includes(colIndex)) {
+          // التاريخ ورقم الفاتورة - توسيط
+          cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+        } else if ([3, 4].includes(colIndex)) {
+          // اسم المشروع واسم المادة - محاذاة يمين
+          cell.alignment = { horizontal: 'right', vertical: 'middle', wrapText: true };
+        } else if ([5, 6, 7, 8, 9, 10, 11].includes(colIndex)) {
+          // الأرقام والحالة - توسيط
+          cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+        } else {
+          // افتراضي - توسيط
+          cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
         }
         
-        // محاذاة النصوص للعمودين الجديدين
-        if (colIndex === 3 || colIndex === 4) { // اسم المشروع واسم المادة
-          cell.alignment = { horizontal: 'right', vertical: 'middle', wrapText: true };
+        // تنسيق الأرقام والعملة
+        if ([5, 6, 7, 9, 10, 11].includes(colIndex)) {
+          cell.numFmt = '#,##0';
         }
 
         // تلوين الصفوف
@@ -432,8 +451,8 @@ export default function SupplierAccountsPage() {
         };
       });
       
-      // تقليل ارتفاع الصف للطباعة المضغوطة على A4
-      row.height = 15;
+      // ارتفاع تلقائي للصف ليتناسب مع النص الملتف
+      row.height = null; // ارتفاع تلقائي
       currentRow++;
     });
 
@@ -443,58 +462,70 @@ export default function SupplierAccountsPage() {
     // ملخص الحساب
     // =========================
 
-    // عنوان الملخص
+    // عنوان الملخص احترافي
     worksheet.mergeCells(`A${currentRow}:L${currentRow}`);
     const summaryHeaderCell = worksheet.getCell(`A${currentRow}`);
-    summaryHeaderCell.value = 'ملخص الحساب';
-    summaryHeaderCell.font = { name: 'Arial', size: 12, bold: true, color: { argb: 'FFFFFF' } };
+    summaryHeaderCell.value = '💰 ملخص الحساب المالي';
+    summaryHeaderCell.font = { name: 'Arial', size: 11, bold: true, color: { argb: 'FFFFFF' } };
     summaryHeaderCell.alignment = { horizontal: 'center', vertical: 'middle' };
     summaryHeaderCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '70ad47' } };
     summaryHeaderCell.border = {
-      top: { style: 'thin', color: { argb: '70ad47' } },
-      bottom: { style: 'thin', color: { argb: '70ad47' } },
-      left: { style: 'thin', color: { argb: '70ad47' } },
-      right: { style: 'thin', color: { argb: '70ad47' } }
+      top: { style: 'medium', color: { argb: '70ad47' } },
+      bottom: { style: 'medium', color: { argb: '70ad47' } },
+      left: { style: 'thick', color: { argb: '1f4e79' } },
+      right: { style: 'thick', color: { argb: '1f4e79' } }
     };
+    worksheet.getRow(currentRow).height = 22;
     currentRow++;
 
-    // إحصائيات الملخص
-    const summaryData = [
-      ['إجمالي المشتريات:', formatCurrency(totals.totalAmount), 'إجمالي المدفوع:', formatCurrency(totals.paidAmount)],
-      ['إجمالي المتبقي:', formatCurrency(totals.remainingAmount), 'عدد الفواتير:', purchases.length.toLocaleString('en-US')]
+    // إحصائيات الملخص في جدول احترافي
+    const summaryItems = [
+      { label: 'إجمالي المشتريات', value: formatCurrency(totals.totalAmount), color: '1f4e79' },
+      { label: 'إجمالي المدفوع', value: formatCurrency(totals.paidAmount), color: '228b22' },
+      { label: 'إجمالي المتبقي', value: formatCurrency(totals.remainingAmount), color: 'cc0000' },
+      { label: 'عدد الفواتير', value: purchases.length.toLocaleString('ar-SA'), color: '1f4e79' }
     ];
 
-    summaryData.forEach(row => {
+    // إنشاء جدول احترافي للملخص
+    const summaryRows = [
+      [summaryItems[0], summaryItems[1]],
+      [summaryItems[2], summaryItems[3]]
+    ];
+
+    summaryRows.forEach(row => {
       const excelRow = worksheet.getRow(currentRow);
-      row.forEach((value, index) => {
-        const cell = excelRow.getCell(index * 3 + 1);
-        if (index % 2 === 0) {
-          // عناوين
-          cell.value = value;
-          cell.font = { name: 'Arial', size: 11, bold: true, color: { argb: '1f4e79' } };
-          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'e8f5e8' } };
-        } else {
-          // القيم
-          cell.value = value;
-          cell.font = { name: 'Arial', size: 11, bold: true };
-          
-          // تلوين حسب النوع
-          if (value.includes('المتبقي') || (typeof value === 'string' && value.includes('ريال') && index === 1 && row === summaryData[1])) {
-            cell.font = { ...cell.font, color: { argb: 'cc0000' } };
-          } else if (value.includes('المدفوع')) {
-            cell.font = { ...cell.font, color: { argb: '228b22' } };
-          } else {
-            cell.font = { ...cell.font, color: { argb: '1f4e79' } };
-          }
-        }
-        cell.alignment = { horizontal: 'right', vertical: 'middle' };
-        cell.border = {
-          top: { style: 'thin', color: { argb: 'cccccc' } },
-          bottom: { style: 'thin', color: { argb: 'cccccc' } },
-          left: { style: 'thin', color: { argb: 'cccccc' } },
-          right: { style: 'thin', color: { argb: 'cccccc' } }
-        };
+      
+      row.forEach((item, index) => {
+        const startCol = index * 6 + 1; // A=1, G=7
+        
+        // خلية التسمية
+        const labelCell = excelRow.getCell(startCol);
+        labelCell.value = item.label;
+        labelCell.font = { name: 'Arial', size: 9, bold: true, color: { argb: '1f4e79' } };
+        labelCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        labelCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'e8f5e8' } };
+        worksheet.mergeCells(`${String.fromCharCode(64 + startCol)}${currentRow}:${String.fromCharCode(64 + startCol + 2)}${currentRow}`);
+        
+        // خلية القيمة
+        const valueCell = excelRow.getCell(startCol + 3);
+        valueCell.value = item.value;
+        valueCell.font = { name: 'Arial', size: 9, bold: true, color: { argb: item.color } };
+        valueCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        valueCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'ffffff' } };
+        worksheet.mergeCells(`${String.fromCharCode(64 + startCol + 3)}${currentRow}:${String.fromCharCode(64 + startCol + 5)}${currentRow}`);
+        
+        // إضافة حدود
+        [labelCell, valueCell].forEach(cell => {
+          cell.border = {
+            top: { style: 'thin', color: { argb: 'cccccc' } },
+            bottom: { style: 'thin', color: { argb: 'cccccc' } },
+            left: { style: 'thin', color: { argb: 'cccccc' } },
+            right: { style: 'thin', color: { argb: 'cccccc' } }
+          };
+        });
       });
+      
+      worksheet.getRow(currentRow).height = 20;
       currentRow++;
     });
 
