@@ -4,7 +4,7 @@ This is a comprehensive Arabic construction project management system built as a
 
 # User Preferences
 
-Preferred communication style: Simple, everyday language in Arabic. All responses and communication must be in Arabic - confirmed August 17, 2025. User explicitly requested all interactions to be in Arabic language.
+Preferred communication style: Simple, everyday language in Arabic. All responses and communication must be in Arabic - confirmed August 17, 2025. User explicitly requested all interactions to be in Arabic language. CONFIRMED: All AI responses and notes must be in Arabic.
 Project management approach: Systematic organization with clear documentation.
 Code organization: DRY principle (Don't Repeat Yourself) with unified components.
 Architecture philosophy: Beginner-friendly structure with centralized control points.
