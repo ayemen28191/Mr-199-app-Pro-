@@ -41,13 +41,35 @@ export default function SupplierAccountsPage() {
 
   // Get supplier account statement
   const { data: accountStatement, isLoading: isLoadingStatement } = useQuery({
-    queryKey: ["/api/suppliers", selectedSupplierId, "account", { dateFrom, dateTo, paymentType: paymentTypeFilter }],
+    queryKey: ["/api/suppliers", selectedSupplierId, "account", dateFrom, dateTo, paymentTypeFilter],
+    queryFn: async () => {
+      if (!selectedSupplierId) return null;
+      const params = new URLSearchParams();
+      if (dateFrom) params.append('dateFrom', dateFrom);
+      if (dateTo) params.append('dateTo', dateTo);
+      if (paymentTypeFilter && paymentTypeFilter !== 'all') params.append('paymentType', paymentTypeFilter);
+      
+      const response = await fetch(`/api/suppliers/${selectedSupplierId}/account?${params.toString()}`);
+      if (!response.ok) throw new Error('Failed to fetch account statement');
+      return response.json();
+    },
     enabled: !!selectedSupplierId,
   });
 
   // Get purchases for the selected supplier
   const { data: purchases = [], isLoading: isLoadingPurchases } = useQuery<MaterialPurchase[]>({
-    queryKey: ["/api/suppliers", selectedSupplierId, "purchases", { dateFrom, dateTo, paymentType: paymentTypeFilter }],
+    queryKey: ["/api/suppliers", selectedSupplierId, "purchases", dateFrom, dateTo, paymentTypeFilter],
+    queryFn: async () => {
+      if (!selectedSupplierId) return [];
+      const params = new URLSearchParams();
+      if (dateFrom) params.append('dateFrom', dateFrom);
+      if (dateTo) params.append('dateTo', dateTo);
+      if (paymentTypeFilter && paymentTypeFilter !== 'all') params.append('paymentType', paymentTypeFilter);
+      
+      const response = await fetch(`/api/suppliers/${selectedSupplierId}/purchases?${params.toString()}`);
+      if (!response.ok) throw new Error('Failed to fetch purchases');
+      return response.json();
+    },
     enabled: !!selectedSupplierId,
   });
 
