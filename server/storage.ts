@@ -829,22 +829,21 @@ export class DatabaseStorage implements IStorage {
     const conditions = [];
     
     if (supplierId) {
-      // جلب اسم المورد أولاً
+      // جلب اسم المورد من جدول الموردين
       const supplierData = await db.select({ name: suppliers.name })
         .from(suppliers)
         .where(eq(suppliers.id, supplierId));
       
       const supplierName = supplierData[0]?.name;
+      console.log(`🔍 البحث عن المورد: ID=${supplierId}, Name=${supplierName}`);
       
       if (supplierName) {
-        // البحث بـ supplierId أو supplierName
-        conditions.push(
-          or(
-            eq(materialPurchases.supplierId, supplierId),
-            eq(materialPurchases.supplierName, supplierName)
-          )
-        );
+        // البحث بـ supplierName أولاً (لأن البيانات محفوظة بهذا الشكل)
+        conditions.push(eq(materialPurchases.supplierName, supplierName));
+        console.log(`✅ إضافة شرط البحث بـ supplierName: ${supplierName}`);
       } else {
+        console.log(`❌ لم يتم العثور على اسم المورد للـ ID: ${supplierId}`);
+        // في حالة عدم وجود اسم، ابحث بـ supplierId
         conditions.push(eq(materialPurchases.supplierId, supplierId));
       }
     }
