@@ -370,20 +370,22 @@ export default function WorkerAccountsPage() {
     <div className="min-h-screen bg-background p-4 space-y-6">
       {/* Header - تم إزالة العنوان المكرر لأنه موجود في شريط التطبيق */}
 
-      {/* مكون اختيار المشروع - مطابق لصفحة التقارير */}
-      <Select value={selectedProject} onValueChange={setSelectedProject}>
-        <SelectTrigger>
-          <SelectValue placeholder="جميع المشاريع" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">جميع المشاريع</SelectItem>
-          {projects.map((project: Project) => (
-            <SelectItem key={project.id} value={project.id}>
-              {project.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      {/* مكون اختيار المشروع - مطابق للصفحة الرئيسية تماماً */}
+      <div className="max-w-md">
+        <Select value={selectedProject} onValueChange={setSelectedProject}>
+          <SelectTrigger>
+            <SelectValue placeholder="جميع المشاريع" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">جميع المشاريع</SelectItem>
+            {projects.map((project: Project) => (
+              <SelectItem key={project.id} value={project.id}>
+                {project.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
       {/* Transfers List */}
       <div className="space-y-4">
