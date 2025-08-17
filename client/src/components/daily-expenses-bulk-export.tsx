@@ -498,8 +498,7 @@ export default function DailyExpensesBulkExport() {
           
           // تحسين اسم الحساب ليظهر تفاصيل التحويل
           const workerName = transfer.workerName || transfer.worker?.name || 'عامل';
-          const fromAccount = transfer.fromAccount || transfer.sourceAccount || 'المشروع';
-          const accountName = `حولة من حساب ${fromAccount} ${workerName}`;
+          const accountName = `حولة من حساب ${workerName}`;
           
           // تحسين الملاحظات لتظهر بيانات التحويل كاملة
           let transferNotes = '';
@@ -580,11 +579,13 @@ export default function DailyExpensesBulkExport() {
           currentBalance -= amount; // طرح المصاريف المتنوعة من الرصيد
           
           // تحديد نوع المصروف
-          let expenseType = misc.expenseType || 'مصروف متنوع';
+          let expenseType = misc.expenseType || 'نثريات';
           if (expenseType.includes('نثريات') && misc.description && misc.description.includes('نقليات')) {
             expenseType = 'نقليات';
           } else if (misc.category && misc.category.includes('حسابات أخرى')) {
             expenseType = 'منصرف - حسابات أخرى';
+          } else if (expenseType === 'مصروف متنوع') {
+            expenseType = 'نثريات';
           }
           
           const miscRow = worksheet.addRow([
@@ -592,12 +593,12 @@ export default function DailyExpensesBulkExport() {
             expenseType,
             'منصرف',
             formatNumber(currentBalance),
-            misc.notes || misc.description || 'مصروف متنوع'
+            misc.notes || misc.description || 'نثريات'
           ]);
           
           miscRow.eachCell((cell) => {
             cell.font = { name: 'Arial Unicode MS', size: 10 };
-            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
             cell.border = {
               top: { style: 'thin' }, bottom: { style: 'thin' },
               left: { style: 'thin' }, right: { style: 'thin' }
@@ -679,7 +680,7 @@ export default function DailyExpensesBulkExport() {
         
         purchaseRow.eachCell((cell, index) => {
           cell.font = { name: 'Arial Unicode MS', size: 10 };
-          cell.alignment = { horizontal: 'center', vertical: 'middle' };
+          cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
           
           // تمييز المشتريات الآجلة بلون مختلف (في عمود نوع الدفع)
           if (index === 4 && (paymentType === 'آجل' || paymentType === 'أجل')) {
