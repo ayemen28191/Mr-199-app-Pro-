@@ -4472,6 +4472,141 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // إضافة العمود المفقود project_id إلى جدول tools
+  app.post("/api/migrate/add-project-id-column", async (req, res) => {
+    try {
+      console.log("🔧 جاري إضافة العمود project_id إلى جدول tools...");
+
+      // التحقق من وجود العمود أولاً
+      const columnCheck = await db.execute(sql`
+        SELECT column_name 
+        FROM information_schema.columns 
+        WHERE table_name='tools' AND column_name='project_id'
+      `);
+
+      if (columnCheck.length === 0) {
+        // إضافة العمود إذا لم يكن موجوداً
+        console.log("العمود غير موجود - جاري الإضافة...");
+        await db.execute(sql`
+          ALTER TABLE tools 
+          ADD COLUMN project_id TEXT
+        `);
+        console.log("تم إضافة العمود project_id بنجاح");
+
+        // إضافة المرجعية للمشروع
+        try {
+          await db.execute(sql`
+            ALTER TABLE tools 
+            ADD CONSTRAINT fk_tools_project 
+            FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL
+          `);
+          console.log("✅ تم إضافة العمود project_id مع المرجعية بنجاح");
+        } catch (constraintError) {
+          console.log("ℹ️  تم إضافة العمود project_id (المرجعية موجودة مسبقاً)");
+        }
+        
+      } else {
+        console.log("ℹ️  العمود project_id موجود مسبقاً");
+      }
+
+      res.json({ 
+        success: true, 
+        message: "تم التحقق من العمود project_id وإضافته إذا كان مفقوداً" 
+      });
+    } catch (error) {
+      console.error("❌ خطأ في إضافة العمود project_id:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "فشل في إضافة العمود project_id", 
+        error: error instanceof Error ? error.message : "خطأ غير معروف"
+      });
+    }
+  });
+
+  // إعادة إنشاء جدول الأدوات مع جميع الأعمدة المطلوبة
+  app.post("/api/migrate/force-update-tools-schema", async (req, res) => {
+    try {
+      console.log("🔧 إعادة تحديث schema جدول tools بجميع الأعمدة...");
+      
+      const requiredColumns = [
+        { name: 'project_id', type: 'TEXT' },
+        { name: 'is_tool', type: 'BOOLEAN DEFAULT true' },
+        { name: 'is_consumable', type: 'BOOLEAN DEFAULT false' },
+        { name: 'is_serial', type: 'BOOLEAN DEFAULT false' },
+        { name: 'purchase_price', type: 'NUMERIC(12,2)' },
+        { name: 'purchase_date', type: 'TIMESTAMP' },
+        { name: 'supplier_id', type: 'TEXT' },
+        { name: 'warranty_expiry', type: 'TIMESTAMP' },
+        { name: 'maintenance_interval', type: 'INTEGER' },
+        { name: 'last_maintenance_date', type: 'TIMESTAMP' },
+        { name: 'next_maintenance_date', type: 'TIMESTAMP' },
+        { name: 'serial_number', type: 'TEXT' },
+        { name: 'barcode', type: 'TEXT' },
+        { name: 'qr_code', type: 'TEXT' },
+        { name: 'image_urls', type: 'TEXT[]' },
+        { name: 'specifications', type: 'JSONB' },
+        { name: 'total_usage_hours', type: 'NUMERIC(10,2) DEFAULT 0' },
+        { name: 'usage_count', type: 'INTEGER DEFAULT 0' },
+        { name: 'ai_rating', type: 'NUMERIC(3,2)' },
+        { name: 'ai_notes', type: 'TEXT' }
+      ];
+      
+      let addedColumns = 0;
+      
+      for (const column of requiredColumns) {
+        try {
+          await db.execute(sql.raw(`
+            ALTER TABLE tools 
+            ADD COLUMN IF NOT EXISTS ${column.name} ${column.type}
+          `));
+          addedColumns++;
+          console.log(`✅ تم فحص/إضافة العمود ${column.name}`);
+        } catch (e: any) {
+          if (!e.message.includes('already exists')) {
+            console.log(`⚠️ تحذير في العمود ${column.name}:`, e.message);
+          }
+        }
+      }
+      
+      // إضافة المراجع
+      try {
+        await db.execute(sql`
+          ALTER TABLE tools 
+          ADD CONSTRAINT IF NOT EXISTS fk_tools_project_id 
+          FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL
+        `);
+        console.log("✅ تم فحص/إضافة مرجعية المشروع");
+      } catch (e) {
+        // المرجعية موجودة
+      }
+      
+      try {
+        await db.execute(sql`
+          ALTER TABLE tools 
+          ADD CONSTRAINT IF NOT EXISTS fk_tools_supplier_id 
+          FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE SET NULL
+        `);
+        console.log("✅ تم فحص/إضافة مرجعية المورد");
+      } catch (e) {
+        // المرجعية موجودة
+      }
+
+      res.json({ 
+        success: true, 
+        message: `تم تحديث schema جدول tools - تم فحص ${requiredColumns.length} عمود`,
+        addedColumns
+      });
+      
+    } catch (error) {
+      console.error("❌ خطأ في تحديث schema جدول tools:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "فشل في تحديث schema", 
+        error: error instanceof Error ? error.message : "خطأ غير معروف"
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

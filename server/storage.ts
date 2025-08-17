@@ -21,7 +21,7 @@ import {
   toolPurchaseItems, maintenanceSchedules, maintenanceTasks, toolCostTracking
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, gte, lte, gt, sql, inArray, or } from "drizzle-orm";
+import { eq, and, gte, lte, gt, sql, inArray, or, desc, asc, isNull, isNotNull, count, sum } from "drizzle-orm";
 
 export interface IStorage {
   // Projects
