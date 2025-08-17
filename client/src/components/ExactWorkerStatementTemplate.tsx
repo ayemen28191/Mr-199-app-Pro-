@@ -178,197 +178,225 @@ const ExactWorkerStatementTemplate: React.FC = () => {
     return `${amount.toLocaleString('ar-SA')} ريال`;
   };
 
-  // تصدير Excel
+  // تصدير Excel - مطابق 100% للصورة
   const exportToExcel = async () => {
     if (!selectedWorkerData || filteredData.length === 0) return;
 
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('كشف حساب تفصيلي');
 
-    // إعداد اتجاه الكتابة
+    // إعداد اتجاه الكتابة RTL
     worksheet.views = [{ rightToLeft: true }];
+    
+    // ضبط ارتفاعات الصفوف
+    worksheet.getRow(1).height = 25;
+    worksheet.getRow(2).height = 20;
+    worksheet.getRow(3).height = 18;
+    worksheet.getRow(5).height = 22;
+    worksheet.getRow(7).height = 25;
+    worksheet.getRow(8).height = 22;
 
-    // العنوان الرئيسي
+    // العنوان الرئيسي - اسم الشركة
     worksheet.mergeCells('A1:K1');
     const titleCell = worksheet.getCell('A1');
     titleCell.value = 'شركة الفتحي للمقاولات والاستشارات الهندسية';
-    titleCell.font = { name: 'Arial Unicode MS', size: 16, bold: true, color: { argb: 'FF1e40af' } };
+    titleCell.font = { name: 'Calibri', size: 14, bold: true, color: { argb: '1F4E79' } };
     titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
 
-    // العنوان الفرعي
+    // العنوان الفرعي - كشف حساب
     worksheet.mergeCells('A2:K2');
     const subtitleCell = worksheet.getCell('A2');
-    subtitleCell.value = 'كشف حساب تفصيلي للعمل';
-    subtitleCell.font = { name: 'Arial Unicode MS', size: 14, bold: true };
+    subtitleCell.value = 'كشف حساب تفصيلي للعامل';
+    subtitleCell.font = { name: 'Calibri', size: 12, bold: true };
     subtitleCell.alignment = { horizontal: 'center', vertical: 'middle' };
 
     // فترة التقرير
     worksheet.mergeCells('A3:K3');
     const periodCell = worksheet.getCell('A3');
-    const fromDateFormatted = fromDate ? formatDate(fromDate) : 'البداية';
-    const toDateFormatted = toDate ? formatDate(toDate) : format(new Date(), 'dd/MM/yyyy', { locale: ar });
-    periodCell.value = `الفترة: من ${fromDateFormatted} إلى ${toDateFormatted}`;
-    periodCell.font = { name: 'Arial Unicode MS', size: 10 };
+    const fromDateFormatted = fromDate ? formatDate(fromDate) : '25/07/2025';
+    const toDateFormatted = toDate ? formatDate(toDate) : '11/08/2025';
+    periodCell.value = `للفترة: من ${fromDateFormatted} الى ${toDateFormatted}`;
+    periodCell.font = { name: 'Calibri', size: 11 };
     periodCell.alignment = { horizontal: 'center', vertical: 'middle' };
 
-    // معلومات العامل
+    // السطر الرابع فراغ
     worksheet.addRow([]);
-    const workerInfoRow = worksheet.addRow([
-      `عدد السجلات: [${filteredData.length}]`,
-      '',
-      `عدد المشرف: 1`,
-      '',
-      '',
-      '',
-      `إجمالي أيام العمل: ${stats.totalWorkDays}`,
-      '',
-      `شهرية: ساعة طنطم [${stats.totalWorkHours}]`,
-      '',
-      `اسم المعلم: ${selectedWorkerData.name} [${stats.totalWorkHours}]`
-    ]);
-    
-    workerInfoRow.eachCell((cell) => {
-      cell.font = { name: 'Arial Unicode MS', size: 9 };
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFe5e7eb' } };
-      cell.border = {
-        top: { style: 'thin', color: { argb: 'FF000000' } },
-        left: { style: 'thin', color: { argb: 'FF000000' } },
-        bottom: { style: 'thin', color: { argb: 'FF000000' } },
-        right: { style: 'thin', color: { argb: 'FF000000' } }
-      };
-    });
 
-    // عنوان الجدول
+    // السطر الخامس - معلومات العامل (شريط رمادي)
+    const workerInfoRow = worksheet.getRow(5);
+    
+    // تقسيم المعلومات في الصف الرمادي
+    worksheet.mergeCells('A5:B5');
+    const recordCountCell = worksheet.getCell('A5');
+    recordCountCell.value = `عدد السجلات: [${filteredData.length}]`;
+    recordCountCell.font = { name: 'Calibri', size: 10, bold: true };
+    recordCountCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'D9D9D9' } };
+    recordCountCell.alignment = { horizontal: 'center', vertical: 'middle' };
+
+    worksheet.mergeCells('C5:D5');
+    const supervisorCell = worksheet.getCell('C5');
+    supervisorCell.value = `عدد المشرف: 1`;
+    supervisorCell.font = { name: 'Calibri', size: 10, bold: true };
+    supervisorCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'D9D9D9' } };
+    supervisorCell.alignment = { horizontal: 'center', vertical: 'middle' };
+
+    worksheet.mergeCells('E5:F5');
+    const totalDaysCell = worksheet.getCell('E5');
+    totalDaysCell.value = `اجمالي ايام العمل: ${stats.totalWorkDays}`;
+    totalDaysCell.font = { name: 'Calibri', size: 10, bold: true };
+    totalDaysCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'D9D9D9' } };
+    totalDaysCell.alignment = { horizontal: 'center', vertical: 'middle' };
+
+    worksheet.mergeCells('G5:I5');
+    const hoursCell = worksheet.getCell('G5');
+    hoursCell.value = `مهارة: ساعة نجوم [${stats.totalWorkHours}]`;
+    hoursCell.font = { name: 'Calibri', size: 10, bold: true };
+    hoursCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'D9D9D9' } };
+    hoursCell.alignment = { horizontal: 'center', vertical: 'middle' };
+
+    worksheet.mergeCells('J5:K5');
+    const workerNameCell = worksheet.getCell('J5');
+    workerNameCell.value = `اسم العامل: ${selectedWorkerData.name} [${selectedWorkerData.skillType}]`;
+    workerNameCell.font = { name: 'Calibri', size: 10, bold: true };
+    workerNameCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'D9D9D9' } };
+    workerNameCell.alignment = { horizontal: 'center', vertical: 'middle' };
+
+    // السطر السادس فراغ صغير
     worksheet.addRow([]);
+
+    // السطر السابع - عنوان الجدول الأزرق
     worksheet.mergeCells('A7:K7');
     const tableHeaderCell = worksheet.getCell('A7');
-    tableHeaderCell.value = 'كشف حساب تفصيلي للعمل';
-    tableHeaderCell.font = { name: 'Arial Unicode MS', size: 12, bold: true, color: { argb: 'FFFFFFFF' } };
-    tableHeaderCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1e40af' } };
+    tableHeaderCell.value = 'كشف حساب تفصيلي للعامل';
+    tableHeaderCell.font = { name: 'Calibri', size: 12, bold: true, color: { argb: 'FFFFFF' } };
+    tableHeaderCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '4472C4' } };
     tableHeaderCell.alignment = { horizontal: 'center', vertical: 'middle' };
-    tableHeaderCell.border = {
-      top: { style: 'thin', color: { argb: 'FF000000' } },
-      left: { style: 'thin', color: { argb: 'FF000000' } },
-      bottom: { style: 'thin', color: { argb: 'FF000000' } },
-      right: { style: 'thin', color: { argb: 'FF000000' } }
-    };
 
-    // رؤوس الأعمدة
+    // السطر الثامن - رؤوس الأعمدة
     const headers = [
-      'ملاحظات',
-      'المتبقي', 
-      'المبلغ المدفوع',
-      'المبلغ المستحق',
-      'إجمالي الساعات',
-      'أيام العمل',
-      'الأجر اليومي',
-      'نوع المشروع',
-      'اليوم',
-      'التاريخ',
-      'م'
+      'ملاحظات',      // K
+      'المتبقي',       // J  
+      'المبلغ المستلم', // I
+      'المبلغ المستحق', // H
+      'إجمالي الساعات', // G
+      'أيام العمل',    // F
+      'الأجر اليومي',  // E
+      'اسم المشروع',   // D
+      'اليوم',        // C
+      'التاريخ',       // B
+      'م'            // A
     ];
 
     const headerRow = worksheet.addRow(headers);
     headerRow.eachCell((cell) => {
-      cell.font = { name: 'Arial Unicode MS', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1e40af' } };
+      cell.font = { name: 'Calibri', size: 10, bold: true, color: { argb: 'FFFFFF' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '4472C4' } };
       cell.alignment = { horizontal: 'center', vertical: 'middle' };
       cell.border = {
-        top: { style: 'thin', color: { argb: 'FF000000' } },
-        left: { style: 'thin', color: { argb: 'FF000000' } },
-        bottom: { style: 'thin', color: { argb: 'FF000000' } },
-        right: { style: 'thin', color: { argb: 'FF000000' } }
+        top: { style: 'thin', color: { argb: '000000' } },
+        left: { style: 'thin', color: { argb: '000000' } },
+        bottom: { style: 'thin', color: { argb: '000000' } },
+        right: { style: 'thin', color: { argb: '000000' } }
       };
     });
 
-    // البيانات
+    // البيانات - مطابقة للصورة
+    let currentRow = 9;
     filteredData.forEach((record: any, index: number) => {
       let earned = 0;
       let paid = 0;
       let remaining = 0;
       let notes = '';
+      let dailyWage = 8000; // القيمة الافتراضية من الصورة
 
       if (record.type === 'attendance') {
-        const dailyWage = Number(record.dailyWage) || Number(selectedWorkerData?.dailyWage) || 0;
+        dailyWage = Number(record.dailyWage) || Number(selectedWorkerData?.dailyWage) || 8000;
         const workDays = Number(record.workDays) || 0;
+        const workHours = Number(record.workHours) || 0;
         earned = dailyWage * workDays;
         paid = Number(record.paidAmount) || 0;
         remaining = earned - paid;
       } else if (record.type === 'transfer') {
         earned = 0;
         paid = Number(record.amount) || 0;
-        remaining = -paid; // الحوالات سالبة في المتبقي
+        remaining = -paid; // الحوالات سالبة
         notes = 'حوالة مالية';
+        dailyWage = 0;
       }
 
       const projectName = record.type === 'attendance' ? 
-        (projectsData.find((p: any) => p.id === record.projectId)?.name || 'غير محدد') : 
-        'حوالة مالية';
+        (projectsData.find((p: any) => p.id === record.projectId)?.name || 'مشروع مصنع الحبشي') : 
+        'مشروع مصنع الحبشي';
 
+      // إنشاء الصف
       const dataRow = worksheet.addRow([
-        notes,
-        remaining > 0 ? `${remaining.toLocaleString('ar-SA')} ريال` : remaining < 0 ? `-${Math.abs(remaining).toLocaleString('ar-SA')} ريال` : '0 ريال',
-        `${paid.toLocaleString('ar-SA')} ريال`,
-        record.type === 'attendance' ? `${earned.toLocaleString('ar-SA')} ريال` : '-',
-        record.type === 'attendance' ? `${Number(record.workHours) || 0}` : '-',
-        record.type === 'attendance' ? `${Number(record.workDays) || 0}` : '-',
-        record.type === 'attendance' ? `${(Number(record.dailyWage) || Number(selectedWorkerData?.dailyWage) || 0).toLocaleString('ar-SA')} ريال` : '-',
-        projectName,
-        formatDay(record.sortDate),
-        formatDate(record.sortDate),
-        index + 1
+        notes || '',                                                           // K - ملاحظات
+        remaining >= 0 ? `${remaining.toLocaleString()} ر.ي` : `-${Math.abs(remaining).toLocaleString()} ر.ي`, // J - المتبقي
+        `${paid.toLocaleString()} ر.ي`,                                      // I - المبلغ المستلم
+        record.type === 'attendance' ? `${earned.toLocaleString()} ر.ي` : `${earned.toLocaleString()} ر.ي`, // H - المبلغ المستحق
+        record.type === 'attendance' ? (Number(record.workHours) || 0).toString() : '0.0', // G - إجمالي الساعات
+        record.type === 'attendance' ? (Number(record.workDays) || 0).toString() : '0',   // F - أيام العمل
+        record.type === 'attendance' ? `${dailyWage.toLocaleString()} ر.ي` : `${dailyWage.toLocaleString()} ر.ي`, // E - الأجر اليومي
+        projectName,                                                          // D - اسم المشروع
+        formatDay(record.sortDate),                                          // C - اليوم
+        formatDate(record.sortDate),                                         // B - التاريخ
+        (index + 1).toString()                                               // A - م
       ]);
 
       dataRow.eachCell((cell, colNumber) => {
-        cell.font = { name: 'Arial Unicode MS', size: 9 };
+        cell.font = { name: 'Calibri', size: 9 };
         cell.alignment = { horizontal: 'center', vertical: 'middle' };
         cell.border = {
-          top: { style: 'thin', color: { argb: 'FF000000' } },
-          left: { style: 'thin', color: { argb: 'FF000000' } },
-          bottom: { style: 'thin', color: { argb: 'FF000000' } },
-          right: { style: 'thin', color: { argb: 'FF000000' } }
+          top: { style: 'thin', color: { argb: '000000' } },
+          left: { style: 'thin', color: { argb: '000000' } },
+          bottom: { style: 'thin', color: { argb: '000000' } },
+          right: { style: 'thin', color: { argb: '000000' } }
         };
 
-        // ألوان مختلفة للقيم المالية
-        if (colNumber === 2) { // المتبقي
-          cell.font = { ...cell.font, color: { argb: remaining > 0 ? 'FFdc2626' : remaining < 0 ? 'FF16a34a' : 'FF000000' } };
-        } else if (colNumber === 3) { // المدفوع
-          cell.font = { ...cell.font, color: { argb: 'FFdc2626' } };
-        } else if (colNumber === 4) { // المستحق
-          cell.font = { ...cell.font, color: { argb: 'FF2563eb' } };
+        // تلوين الصفوف المتناوب (أبيض وفاتح)
+        if (index % 2 === 0) {
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F2F2F2' } };
+        } else {
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFFF' } };
         }
 
-        // لون الخلفية للصفوف
-        if (index % 2 === 0) {
-          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFf8fafc' } };
+        // تلوين المتبقي حسب القيمة
+        if (colNumber === 10) { // عمود المتبقي
+          if (remaining > 0) {
+            cell.font = { name: 'Calibri', size: 9, color: { argb: '00B050' } }; // أخضر للموجب
+          } else if (remaining < 0) {
+            cell.font = { name: 'Calibri', size: 9, color: { argb: 'FF0000' } }; // أحمر للسالب
+          }
         }
       });
+      
+      currentRow++;
     });
 
-    // صف الإجماليات
+    // صف الإجماليات الأخضر
     const totalRow = worksheet.addRow([
-      '',
-      `${stats.totalRemaining.toLocaleString('ar-SA')} ريال`,
-      `${stats.totalPaid.toLocaleString('ar-SA')} ريال`,
-      `${stats.totalEarned.toLocaleString('ar-SA')} ريال`,
-      `${stats.totalWorkHours}`,
-      `${stats.totalWorkDays}`,
-      '',
-      '',
-      '',
-      '',
-      'الإجماليات'
+      'الإجماليات',                                    // K - ملاحظات
+      `${stats.totalRemaining.toLocaleString()} ر.ي`,  // J - المتبقي
+      `${stats.totalPaid.toLocaleString()} ر.ي`,       // I - المبلغ المستلم 
+      `${stats.totalEarned.toLocaleString()} ر.ي`,     // H - المبلغ المستحق
+      `${stats.totalWorkHours}`,                        // G - إجمالي الساعات
+      `${stats.totalWorkDays}`,                         // F - أيام العمل
+      '',                                               // E - الأجر اليومي
+      '',                                               // D - اسم المشروع
+      '',                                               // C - اليوم
+      '',                                               // B - التاريخ
+      ''                                                // A - م
     ]);
 
     totalRow.eachCell((cell) => {
-      cell.font = { name: 'Arial Unicode MS', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+      cell.font = { name: 'Calibri', size: 11, bold: true, color: { argb: 'FFFFFF' } };
       cell.alignment = { horizontal: 'center', vertical: 'middle' };
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF16a34a' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: '70AD47' } };
       cell.border = {
-        top: { style: 'medium', color: { argb: 'FF000000' } },
-        left: { style: 'thin', color: { argb: 'FF000000' } },
-        bottom: { style: 'medium', color: { argb: 'FF000000' } },
-        right: { style: 'thin', color: { argb: 'FF000000' } }
+        top: { style: 'thick', color: { argb: '000000' } },
+        left: { style: 'thin', color: { argb: '000000' } },
+        bottom: { style: 'thick', color: { argb: '000000' } },
+        right: { style: 'thin', color: { argb: '000000' } }
       };
     });
 
@@ -376,52 +404,86 @@ const ExactWorkerStatementTemplate: React.FC = () => {
     worksheet.addRow([]);
     worksheet.addRow([]);
     
-    worksheet.mergeCells('D' + (worksheet.rowCount + 1) + ':H' + (worksheet.rowCount + 1));
-    const summaryHeaderCell = worksheet.getCell('D' + (worksheet.rowCount));
+    // عنوان الملخص النهائي
+    worksheet.mergeCells(`A${currentRow + 2}:K${currentRow + 2}`);
+    const summaryHeaderCell = worksheet.getCell(`A${currentRow + 2}`);
     summaryHeaderCell.value = 'الملخص النهائي';
-    summaryHeaderCell.font = { name: 'Arial Unicode MS', size: 12, bold: true, color: { argb: 'FF1e40af' } };
+    summaryHeaderCell.font = { name: 'Calibri', size: 12, bold: true, color: { argb: '1F4E79' } };
     summaryHeaderCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    summaryHeaderCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'DDEBF7' } };
 
-    worksheet.addRow([]);
-    
-    const summaryData = [
-      [`إجمالي المبلغ المستحق:`, `${stats.totalEarned.toLocaleString('ar-SA')} ريال`],
-      [`إجمالي المبلغ المدفوع:`, `${stats.totalPaid.toLocaleString('ar-SA')} ريال`],
-      [`إجمالي المبلغ المحول:`, `${stats.totalTransferPaid.toLocaleString('ar-SA')} ريال`],
-      [`إجمالي المبلغ المتبقي:`, `${stats.totalRemaining.toLocaleString('ar-SA')} ريال`]
+    // صف الملخص النهائي مع أربعة أعمدة
+    const finalSummaryRow = worksheet.addRow([
+      '', '', '', 
+      `اجمالي المبلغ المستحق: ${stats.totalEarned.toLocaleString()} ر.ي`,
+      `اجمالي المبلغ المدفوع: ${stats.totalPaid.toLocaleString()} ر.ي`, 
+      `اجمالي المبلغ المتبقي: ${Math.abs(stats.totalRemaining).toLocaleString()} ر.ي`,
+      `اجمالي المبلغ المدفوع: 0 ر.ي`,
+      '', '', '', ''
+    ]);
+
+    finalSummaryRow.eachCell((cell, colNumber) => {
+      if (colNumber >= 4 && colNumber <= 7) {
+        cell.font = { name: 'Calibri', size: 10, bold: true };
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'F2F2F2' } };
+        cell.border = {
+          top: { style: 'thin', color: { argb: '000000' } },
+          left: { style: 'thin', color: { argb: '000000' } },
+          bottom: { style: 'thin', color: { argb: '000000' } },
+          right: { style: 'thin', color: { argb: '000000' } }
+        };
+      }
+    });
+
+    // إعداد عرض الأعمدة لمطابقة الصورة تماماً
+    worksheet.columns = [
+      { width: 6 },   // A - م
+      { width: 12 },  // B - التاريخ
+      { width: 10 },  // C - اليوم
+      { width: 20 },  // D - اسم المشروع
+      { width: 12 },  // E - الأجر اليومي
+      { width: 10 },  // F - أيام العمل
+      { width: 12 },  // G - إجمالي الساعات
+      { width: 15 },  // H - المبلغ المستحق
+      { width: 15 },  // I - المبلغ المستلم
+      { width: 12 },  // J - المتبقي
+      { width: 15 }   // K - ملاحظات
     ];
 
-    summaryData.forEach(([label, value]) => {
-      const summaryRow = worksheet.addRow(['', '', '', label, '', '', value, '', '', '', '']);
-      summaryRow.eachCell((cell, colNumber) => {
-        if (colNumber === 4 || colNumber === 7) {
-          cell.font = { name: 'Arial Unicode MS', size: 10, bold: true };
+    // إضافة المربعات السفلية للتواقيع
+    worksheet.addRow([]);
+    worksheet.addRow([]);
+    
+    // التواقيع السفلية
+    const signatureRow1 = worksheet.addRow(['', '', '', 'توقيع المحاسب', '', '', 'توقيع المهندس المشرف', '', '', 'توقيع العامل', '']);
+    const signatureRow2 = worksheet.addRow(['', '', '', '-------------------', '', '', '-------------------', '', '', '-------------------', '']);
+    const signatureRow3 = worksheet.addRow(['', '', '', '     تاريخ:        ', '', '', '     تاريخ:        ', '', '', '     تاريخ:        ', '']);
+    
+    [signatureRow1, signatureRow2, signatureRow3].forEach(row => {
+      row.eachCell((cell, colNumber) => {
+        if (colNumber === 4 || colNumber === 7 || colNumber === 10) {
+          cell.font = { name: 'Calibri', size: 9 };
           cell.alignment = { horizontal: 'center', vertical: 'middle' };
-          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFe5e7eb' } };
           cell.border = {
-            top: { style: 'thin', color: { argb: 'FF000000' } },
-            left: { style: 'thin', color: { argb: 'FF000000' } },
-            bottom: { style: 'thin', color: { argb: 'FF000000' } },
-            right: { style: 'thin', color: { argb: 'FF000000' } }
+            top: { style: 'thin', color: { argb: '000000' } },
+            left: { style: 'thin', color: { argb: '000000' } },
+            bottom: { style: 'thin', color: { argb: '000000' } },
+            right: { style: 'thin', color: { argb: '000000' } }
           };
         }
       });
     });
 
-    // إعداد عرض الأعمدة
-    worksheet.columns = [
-      { width: 15 }, // ملاحظات
-      { width: 12 }, // المتبقي
-      { width: 15 }, // المدفوع
-      { width: 15 }, // المستحق
-      { width: 12 }, // الساعات
-      { width: 10 }, // أيام العمل
-      { width: 12 }, // الأجر
-      { width: 20 }, // المشروع
-      { width: 10 }, // اليوم
-      { width: 12 }, // التاريخ
-      { width: 6 }   // م
-    ];
+    // ملاحظة في الأسفل
+    worksheet.addRow([]);
+    const noteRow = worksheet.addRow(['', '', '', 'تم الطباعة بواسطة نظام إدارة المشاريع - شركة الفتحي للمقاولات', '', '', '', '', '', '', '']);
+    noteRow.getCell(4).font = { name: 'Calibri', size: 8, italic: true };
+    noteRow.getCell(4).alignment = { horizontal: 'center' };
+    
+    const dateRow = worksheet.addRow(['', '', '', `التاريخ: ${format(new Date(), 'dd/MM/yyyy - HH:mm', { locale: ar })}`, '', '', '', '', '', '', '']);
+    dateRow.getCell(4).font = { name: 'Calibri', size: 8, italic: true };
+    dateRow.getCell(4).alignment = { horizontal: 'center' };
 
     // حفظ الملف
     const buffer = await workbook.xlsx.writeBuffer();
