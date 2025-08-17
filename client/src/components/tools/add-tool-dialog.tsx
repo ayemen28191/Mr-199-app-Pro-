@@ -136,15 +136,12 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
   const fetchAutocomplete = async (type: string, query: string) => {
     if (query.length < 2) return [];
     try {
-      const response = await fetch(`/api/autocomplete/${type}?query=${encodeURIComponent(query)}`);
-      if (response.ok) {
-        const data = await response.json();
-        return data.suggestions || [];
-      }
+      const response = await apiRequest(`/api/tools/search?type=${type}&query=${encodeURIComponent(query)}`, 'GET');
+      return response.suggestions || [];
     } catch (error) {
       console.error('Autocomplete error:', error);
+      return [];
     }
-    return [];
   };
 
   const handleNameChange = async (value: string) => {
@@ -373,11 +370,15 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                  {categories.map((category) => (
-                                    <SelectItem key={category.id} value={category.id}>
-                                      {category.name}
-                                    </SelectItem>
-                                  ))}
+                                  {categories.length > 0 ? (
+                                    categories.map((category) => (
+                                      <SelectItem key={category.id} value={category.id}>
+                                        {category.name}
+                                      </SelectItem>
+                                    ))
+                                  ) : (
+                                    <SelectItem value="no-categories">لا توجد تصنيفات</SelectItem>
+                                  )}
                                 </SelectContent>
                               </Select>
                               <Button
@@ -722,11 +723,15 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                {projects.filter(project => project.status === 'active').map((project) => (
-                                  <SelectItem key={project.id} value={project.id}>
-                                    {project.name}
-                                  </SelectItem>
-                                ))}
+                                {projects.filter(project => project.status === 'active').length > 0 ? (
+                                  projects.filter(project => project.status === 'active').map((project) => (
+                                    <SelectItem key={project.id} value={project.id}>
+                                      {project.name}
+                                    </SelectItem>
+                                  ))
+                                ) : (
+                                  <SelectItem value="no-projects">لا توجد مشاريع نشطة</SelectItem>
+                                )}
                               </SelectContent>
                             </Select>
                             <FormDescription>
