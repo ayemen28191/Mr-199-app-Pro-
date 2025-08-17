@@ -343,7 +343,18 @@ export default function Reports() {
       <div className="container mx-auto p-4 space-y-6">
         {/* مكون اختيار المشروع - مطابق للصفحة الرئيسية تماماً */}
         <div className="max-w-md">
-          <ProjectSelector onProjectChange={selectProject} />
+          <Select value={selectedProjectId} onValueChange={selectProject}>
+            <SelectTrigger>
+              <SelectValue placeholder="اختر المشروع..." />
+            </SelectTrigger>
+            <SelectContent>
+              {projects.map((project) => (
+                <SelectItem key={project.id} value={project.id}>
+                  {project.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* رسالة التنبيه عند عدم اختيار مشروع */}
