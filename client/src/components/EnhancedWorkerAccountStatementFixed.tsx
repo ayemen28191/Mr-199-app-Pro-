@@ -254,12 +254,21 @@ export const EnhancedWorkerAccountStatement = ({
         }
       };
 
-      // تصدير الملف
-      const buffer = await workbook.xlsx.writeBuffer();
+      // إعداد metadata للملف لضمان التوافق
+      workbook.creator = 'شركة الفتحي للمقاولات والاستشارات الهندسية';
+      workbook.lastModifiedBy = 'نظام إدارة المشاريع';
+      workbook.created = new Date();
+      workbook.modified = new Date();
+      
+      // تصدير الملف مع إعدادات محسنة
+      const buffer = await workbook.xlsx.writeBuffer({
+        useSharedStrings: true,
+        useStyles: true
+      });
       const workerName = (worker.name || 'Unknown').replace(/[\\/:*?"<>|]/g, '_');
       const fromDate = dateFrom.replace(/[\\/:*?"<>|]/g, '_');
       const toDate = dateTo.replace(/[\\/:*?"<>|]/g, '_');
-      const fileName = `Worker_Account_Statement_Real_Data_${workerName}_${fromDate}_to_${toDate}.xlsx`;
+      const fileName = `كشف_حساب_العامل_${workerName}_من_${fromDate}_إلى_${toDate}.xlsx`;
       
       const blob = new Blob([buffer], { 
         type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
