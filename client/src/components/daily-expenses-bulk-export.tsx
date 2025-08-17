@@ -155,9 +155,37 @@ export default function DailyExpensesBulkExport() {
     // إعداد اتجاه النص من اليمين لليسار
     worksheet.views = [{ rightToLeft: true }];
 
-    // رأس التقرير مطابق للصور المرجعية
+    // رأس الشركة
     worksheet.mergeCells('A1:E1');
-    const headerCell = worksheet.getCell('A1');
+    const companyHeaderCell = worksheet.getCell('A1');
+    companyHeaderCell.value = 'شركة الفتحي للمقاولات والاستشارات الهندسية';
+    companyHeaderCell.font = { name: 'Arial Unicode MS', size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
+    companyHeaderCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    companyHeaderCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF5B9BD5' } }; // أزرق
+    companyHeaderCell.border = {
+      top: { style: 'medium' }, bottom: { style: 'medium' },
+      left: { style: 'medium' }, right: { style: 'medium' }
+    };
+    worksheet.getRow(1).height = 30;
+
+    // تاريخ طباعة الكشف
+    worksheet.mergeCells('A2:E2');
+    const printDateCell = worksheet.getCell('A2');
+    const currentDate = new Date();
+    const printDate = `${currentDate.getDate().toString().padStart(2, '0')}/${(currentDate.getMonth() + 1).toString().padStart(2, '0')}/${currentDate.getFullYear()}`;
+    printDateCell.value = `تاريخ طباعة الكشف: ${printDate}`;
+    printDateCell.font = { name: 'Arial Unicode MS', size: 12, bold: true };
+    printDateCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    printDateCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE7E6E6' } }; // رمادي فاتح
+    printDateCell.border = {
+      top: { style: 'thin' }, bottom: { style: 'thin' },
+      left: { style: 'medium' }, right: { style: 'medium' }
+    };
+    worksheet.getRow(2).height = 25;
+
+    // رأس التقرير مطابق للصور المرجعية
+    worksheet.mergeCells('A3:E3');
+    const headerCell = worksheet.getCell('A3');
     const dayName = getDayName(dayData.date);
     const formattedDate = formatDate(dayData.date);
     headerCell.value = `كشف مصروفات ${dayData.projectName} يوم ${dayName} تاريخ ${formattedDate}`;
@@ -168,22 +196,22 @@ export default function DailyExpensesBulkExport() {
       top: { style: 'medium' }, bottom: { style: 'medium' },
       left: { style: 'medium' }, right: { style: 'medium' }
     };
-    worksheet.getRow(1).height = 30;
+    worksheet.getRow(3).height = 30;
 
     // رؤوس الجدول الرئيسي مطابقة للصور المرجعية (5 أعمدة فقط)
     const headers = ['المبلغ', 'نوع الحساب', 'نوع', 'المتبقي', 'ملاحظات'];
     const headerRow = worksheet.addRow(headers);
     
     headerRow.eachCell((cell, index) => {
-      cell.font = { name: 'Arial Unicode MS', size: 11, bold: true };
+      cell.font = { name: 'Arial Unicode MS', size: 11, bold: true, color: { argb: 'FFFFFFFF' } }; // نص أبيض
       cell.alignment = { horizontal: 'center', vertical: 'middle' };
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF92D050' } }; // أخضر مطابق للمرجع
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4F81BD' } }; // أزرق مطابق للصورة
       cell.border = {
         top: { style: 'thin' }, bottom: { style: 'thin' },
         left: { style: 'thin' }, right: { style: 'thin' }
       };
     });
-    worksheet.getRow(2).height = 25;
+    worksheet.getRow(4).height = 25;
 
     // حساب الرصيد الجاري - البداية بصفر أو بالرصيد المرحل
     let currentBalance = 0;
@@ -318,10 +346,15 @@ export default function DailyExpensesBulkExport() {
         const paidAmount = parseFloat((worker.paidAmount || 0).toString());
         const totalWage = parseFloat((worker.actualWage || worker.totalWage || 0).toString());
         
-        // إظهار المدفوع فقط (استبعاد أجور العمال التي لم تُدفع)
+        // إظهار جميع العمال - المدفوع لهم والذين لم يُدفع لهم (مبلغ = 0)
+        // فقط تحديث الرصيد عند وجود مبلغ مدفوع فعلياً
         if (paidAmount > 0) {
           currentBalance -= paidAmount; // طرح الأجرة المدفوعة فعلياً من الرصيد
           console.log(`📉 بعد أجرة عامل مدفوعة ${paidAmount}: ${currentBalance}`);
+        }
+        
+        // إظهار العامل في الجدول سواء كان له مبلغ مدفوع أو لا
+        if (paidAmount >= 0) { // تغيير الشرط ليشمل الصفر
           
           // تنسيق ملاحظات العامل المحسنة (بدون تكرار وبتصميم أفضل)
           const multiplier = worker.multiplier || worker.overtimeMultiplier || null;
