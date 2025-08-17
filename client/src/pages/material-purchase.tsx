@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Combobox } from "@/components/ui/combobox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useSelectedProject } from "@/hooks/use-selected-project";
 import ProjectSelector from "@/components/project-selector";
@@ -17,7 +18,7 @@ import { getCurrentDate, formatCurrency } from "@/lib/utils";
 import { AutocompleteInput } from "@/components/ui/autocomplete-input-database";
 import { apiRequest } from "@/lib/queryClient";
 import { useFloatingButton } from "@/components/layout/floating-button-context";
-import type { Material, InsertMaterialPurchase, InsertMaterial, Supplier } from "@shared/schema";
+import type { Material, InsertMaterialPurchase, InsertMaterial, Supplier, InsertSupplier } from "@shared/schema";
 
 export default function MaterialPurchase() {
   const [, setLocation] = useLocation();
@@ -41,6 +42,15 @@ export default function MaterialPurchase() {
   const [notes, setNotes] = useState<string>("");
   const [invoicePhoto, setInvoicePhoto] = useState<string>("");
   const [editingPurchaseId, setEditingPurchaseId] = useState<string | null>(null);
+  
+  // حالات نموذج إضافة المورد
+  const [isSupplierDialogOpen, setIsSupplierDialogOpen] = useState(false);
+  const [supplierFormName, setSupplierFormName] = useState("");
+  const [supplierFormContactPerson, setSupplierFormContactPerson] = useState("");
+  const [supplierFormPhone, setSupplierFormPhone] = useState("");
+  const [supplierFormAddress, setSupplierFormAddress] = useState("");
+  const [supplierFormPaymentTerms, setSupplierFormPaymentTerms] = useState("نقد");
+  const [supplierFormNotes, setSupplierFormNotes] = useState("");
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -78,6 +88,78 @@ export default function MaterialPurchase() {
       // تجاهل الأخطاء لأن هذه عملية مساعدة
       console.log(`Failed to save autocomplete value for ${category}:`, error);
     }
+  };
+
+  // دالة إعادة تعيين نموذج المورد
+  const resetSupplierForm = () => {
+    setSupplierFormName("");
+    setSupplierFormContactPerson("");
+    setSupplierFormPhone("");
+    setSupplierFormAddress("");
+    setSupplierFormPaymentTerms("نقد");
+    setSupplierFormNotes("");
+  };
+
+  // إضافة مورد جديد
+  const addSupplierMutation = useMutation({
+    mutationFn: async (data: InsertSupplier) => {
+      // حفظ القيم في autocomplete_data قبل العملية الأساسية
+      await Promise.all([
+        saveAutocompleteValue('supplier_name', supplierFormName),
+        saveAutocompleteValue('supplier_contact_person', supplierFormContactPerson),
+        saveAutocompleteValue('supplier_phone', supplierFormPhone),
+        saveAutocompleteValue('supplier_address', supplierFormAddress),
+        saveAutocompleteValue('supplier_payment_terms', supplierFormPaymentTerms)
+      ]);
+
+      return apiRequest("POST", "/api/suppliers", data);
+    },
+    onSuccess: (newSupplier) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
+      toast({
+        title: "تم إضافة المورد بنجاح",
+        description: `تم إضافة المورد "${supplierFormName}" إلى قاعدة البيانات`,
+      });
+      
+      // تحديد المورد الجديد في قائمة الاختيار
+      setSupplierName(supplierFormName);
+      
+      // إغلاق النموذج وإعادة تعيين القيم
+      setIsSupplierDialogOpen(false);
+      resetSupplierForm();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "خطأ في إضافة المورد",
+        description: error?.message || "حدث خطأ أثناء إضافة المورد. يرجى المحاولة مرة أخرى.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleAddSupplier = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!supplierFormName.trim()) {
+      toast({
+        title: "خطأ في البيانات",
+        description: "يرجى إدخال اسم المورد",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const supplierData: InsertSupplier = {
+      name: supplierFormName.trim(),
+      contactPerson: supplierFormContactPerson.trim() || undefined,
+      phone: supplierFormPhone.trim() || undefined,
+      address: supplierFormAddress.trim() || undefined,
+      paymentTerms: supplierFormPaymentTerms || undefined,
+      notes: supplierFormNotes.trim() || undefined,
+      isActive: true,
+    };
+
+    addSupplierMutation.mutate(supplierData);
   };
 
   const { data: materials = [] } = useQuery<Material[]>({
@@ -589,15 +671,113 @@ export default function MaterialPurchase() {
                     )}
                   </SelectContent>
                 </Select>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setLocation("/suppliers")}
-                  title="إضافة مورد جديد"
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
+                <Dialog open={isSupplierDialogOpen} onOpenChange={setIsSupplierDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      title="إضافة مورد جديد"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[425px]" dir="rtl">
+                    <DialogHeader>
+                      <DialogTitle>إضافة مورد جديد</DialogTitle>
+                      <DialogDescription>
+                        أدخل معلومات المورد الجديد. جميع الحقول اختيارية عدا اسم المورد.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleAddSupplier} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="supplier-name">اسم المورد/المحل *</Label>
+                        <Input
+                          id="supplier-name"
+                          value={supplierFormName}
+                          onChange={(e) => setSupplierFormName(e.target.value)}
+                          placeholder="مثال: مؤسسة الخضراء للمواد"
+                          required
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="supplier-contact">الشخص المسؤول</Label>
+                        <Input
+                          id="supplier-contact"
+                          value={supplierFormContactPerson}
+                          onChange={(e) => setSupplierFormContactPerson(e.target.value)}
+                          placeholder="مثال: أحمد محمد"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="supplier-phone">رقم الهاتف</Label>
+                        <Input
+                          id="supplier-phone"
+                          value={supplierFormPhone}
+                          onChange={(e) => setSupplierFormPhone(e.target.value)}
+                          placeholder="مثال: 777123456"
+                          type="tel"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="supplier-address">العنوان</Label>
+                        <Input
+                          id="supplier-address"
+                          value={supplierFormAddress}
+                          onChange={(e) => setSupplierFormAddress(e.target.value)}
+                          placeholder="مثال: شارع الستين، صنعاء"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="supplier-payment">شروط الدفع</Label>
+                        <Select value={supplierFormPaymentTerms} onValueChange={setSupplierFormPaymentTerms}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="اختر شروط الدفع" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="نقد">نقد</SelectItem>
+                            <SelectItem value="أجل">أجل</SelectItem>
+                            <SelectItem value="نقد وأجل">نقد وأجل</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="supplier-notes">ملاحظات</Label>
+                        <Textarea
+                          id="supplier-notes"
+                          value={supplierFormNotes}
+                          onChange={(e) => setSupplierFormNotes(e.target.value)}
+                          placeholder="أي ملاحظات إضافية..."
+                          rows={3}
+                        />
+                      </div>
+                      
+                      <div className="flex justify-end space-x-2 space-x-reverse pt-4">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            setIsSupplierDialogOpen(false);
+                            resetSupplierForm();
+                          }}
+                        >
+                          إلغاء
+                        </Button>
+                        <Button
+                          type="submit"
+                          disabled={addSupplierMutation.isPending || !supplierFormName.trim()}
+                        >
+                          {addSupplierMutation.isPending ? "جاري الإضافة..." : "إضافة المورد"}
+                        </Button>
+                      </div>
+                    </form>
+                  </DialogContent>
+                </Dialog>
               </div>
               {activeSuppliers.length === 0 && (
                 <p className="text-sm text-muted-foreground mt-1">
