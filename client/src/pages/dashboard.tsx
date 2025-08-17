@@ -47,16 +47,6 @@ export default function Dashboard() {
     refetchInterval: 1000 * 60, // إعادة التحديث كل دقيقة
   });
 
-  // تسجيل البيانات عند تحميلها
-  if (projects && projects.length > 0) {
-    console.log('📋 جميع المشاريع المحملة:', projects.map((p: ProjectWithStats) => ({
-      name: p.name,
-      totalIncome: p.stats?.totalIncome,
-      totalExpenses: p.stats?.totalExpenses,
-      isEqual: p.stats?.totalIncome === p.stats?.totalExpenses
-    })));
-  }
-
   const { data: todaySummary } = useQuery<DailyExpenseSummary>({
     queryKey: ["/api/projects", selectedProjectId, "daily-summary", new Date().toISOString().split('T')[0]],
     enabled: !!selectedProjectId,
@@ -73,12 +63,48 @@ export default function Dashboard() {
 
   const selectedProject = projects.find((p: ProjectWithStats) => p.id === selectedProjectId);
 
+  // تسجيل البيانات عند تحميلها - داخل useEffect لتجنب التحديثات أثناء الرسم
+  useEffect(() => {
+    if (projects && projects.length > 0) {
+      console.log('📋 جميع المشاريع المحملة:', projects.map((p: ProjectWithStats) => ({
+        name: p.name,
+        totalIncome: p.stats?.totalIncome,
+        totalExpenses: p.stats?.totalExpenses,
+        isEqual: p.stats?.totalIncome === p.stats?.totalExpenses
+      })));
+    }
+  }, [projects]);
+
   // تعيين إجراء الزر العائم
   useEffect(() => {
     const handleAddProject = () => setShowAddProject(true);
     setFloatingAction(handleAddProject, "إضافة مشروع جديد");
     return () => setFloatingAction(null);
   }, [setFloatingAction]);
+
+  // تسجيل بيانات المشروع المحدد - داخل useEffect لتجنب التحديثات أثناء الرسم
+  useEffect(() => {
+    if (selectedProject) {
+      console.log('🔍 بيانات المشروع المحدد في Frontend:', {
+        projectId: selectedProject.id,
+        projectName: selectedProject.name,
+        totalIncome: selectedProject.stats?.totalIncome,
+        totalExpenses: selectedProject.stats?.totalExpenses,
+        currentBalance: selectedProject.stats?.currentBalance
+      });
+      
+      // فحص خاص لمشروع الحبشي
+      if (selectedProject.name.includes('الحبشي')) {
+        console.warn('🚨 مشروع الحبشي - تحقق من البيانات:', {
+          مشروع: selectedProject.name,
+          الدخل: selectedProject.stats?.totalIncome,
+          المصاريف: selectedProject.stats?.totalExpenses,
+          هل_متساوية: selectedProject.stats?.totalIncome === selectedProject.stats?.totalExpenses,
+          fullStats: selectedProject.stats
+        });
+      }
+    }
+  }, [selectedProject]);
 
   // دالة تنسيق العملة
   const formatCurrency = (amount: number) => {
@@ -88,28 +114,6 @@ export default function Dashboard() {
       maximumFractionDigits: 0,
     }).format(amount) + ' ر.ي';
   };
-  
-  // إضافة تسجيل للتحقق من البيانات في Frontend
-  if (selectedProject) {
-    console.log('🔍 بيانات المشروع المحدد في Frontend:', {
-      projectId: selectedProject.id,
-      projectName: selectedProject.name,
-      totalIncome: selectedProject.stats?.totalIncome,
-      totalExpenses: selectedProject.stats?.totalExpenses,
-      currentBalance: selectedProject.stats?.currentBalance
-    });
-    
-    // فحص خاص لمشروع الحبشي
-    if (selectedProject.name.includes('الحبشي')) {
-      console.warn('🚨 مشروع الحبشي - تحقق من البيانات:', {
-        مشروع: selectedProject.name,
-        الدخل: selectedProject.stats?.totalIncome,
-        المصاريف: selectedProject.stats?.totalExpenses,
-        هل_متساوية: selectedProject.stats?.totalIncome === selectedProject.stats?.totalExpenses,
-        fullStats: selectedProject.stats
-      });
-    }
-  }
 
   const quickActions = [
     {
