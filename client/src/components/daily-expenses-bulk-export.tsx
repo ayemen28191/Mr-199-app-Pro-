@@ -288,9 +288,8 @@ export default function DailyExpensesBulkExport() {
         cell.alignment = { horizontal: 'center', vertical: 'middle' };
         
         // تحديد لون الخلفية حسب إشارة المبلغ المرحل
-        const negativeBalanceColor = safeColor(currentSettings?.negativeBalanceColor, 'FF6B6B');
         if (dayData.carriedForward < 0) {
-          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: `FF${negativeBalanceColor}` } };
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFF6B6B' } };
         } else {
           cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: `FF${transferRowColor}` } };
         }
@@ -886,13 +885,7 @@ export default function DailyExpensesBulkExport() {
       return;
     }
 
-    if (settingsLoading) {
-      toast({
-        title: "⏳ جاري التحميل",
-        description: "يرجى الانتظار حتى يتم تحميل إعدادات التصدير",
-      });
-      return;
-    }
+
 
     if (new Date(dateFrom) > new Date(dateTo)) {
       toast({
@@ -908,14 +901,7 @@ export default function DailyExpensesBulkExport() {
 
     try {
       console.log('🚀 بدء تصدير المصروفات اليومية المجمعة...');
-      console.log('📋 إعدادات التصدير المستخدمة:', currentSettings);
-      
-      // التحقق من صحة الإعدادات قبل البدء
-      if (currentSettings) {
-        console.log('✅ تم تحميل إعدادات التصدير بنجاح');
-      } else {
-        console.log('⚠️ لم يتم العثور على إعدادات تصدير - سيتم استخدام القيم الافتراضية');
-      }
+      console.log('⚠️ سيتم استخدام القيم الافتراضية للتصدير');
       
       // جلب البيانات
       const dailyExpenses = await fetchDailyExpensesForPeriod(selectedProjectId, dateFrom, dateTo);
@@ -939,7 +925,7 @@ export default function DailyExpensesBulkExport() {
       workbook.created = new Date();
       workbook.modified = new Date();
       
-      const companyName = currentSettings?.companyName || 'شركة الفتحي للمقاولات والاستشارات الهندسية';
+      const companyName = 'شركة الفتحي للمقاولات والاستشارات الهندسية';
       
       // إعداد خصائص الملف الأساسية فقط
       workbook.creator = 'نظام إدارة المشاريع';
@@ -1155,7 +1141,7 @@ export default function DailyExpensesBulkExport() {
         <div className="flex justify-center">
           <Button
             onClick={handleBulkExport}
-            disabled={isExporting || !selectedProjectId || settingsLoading}
+            disabled={isExporting || !selectedProjectId}
             size="lg"
             className="bg-green-600 hover:bg-green-700 text-white px-8 py-3"
           >
@@ -1163,11 +1149,6 @@ export default function DailyExpensesBulkExport() {
               <>
                 <RefreshCw className="h-5 w-5 mr-2 animate-spin" />
                 جاري التصدير...
-              </>
-            ) : settingsLoading ? (
-              <>
-                <RefreshCw className="h-5 w-5 mr-2 animate-spin" />
-                جاري تحميل الإعدادات...
               </>
             ) : (
               <>
@@ -1180,22 +1161,6 @@ export default function DailyExpensesBulkExport() {
 
         {/* معلومات إضافية */}
         <div className="mt-6 space-y-4">
-          {/* حالة التكامل مع إعدادات التصدير */}
-          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-            <div className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-blue-600" />
-              <h4 className="font-semibold text-blue-800">حالة التكامل مع إعدادات التصدير:</h4>
-            </div>
-            <div className="text-sm text-blue-700 mt-2">
-              {settingsLoading ? (
-                <span>⏳ جاري تحميل إعدادات التصدير...</span>
-              ) : currentSettings ? (
-                <span>✅ متصل بإعدادات التصدير: {currentSettings.name}</span>
-              ) : (
-                <span>⚠️ سيتم استخدام الإعدادات الافتراضية</span>
-              )}
-            </div>
-          </div>
 
           <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
             <div className="flex items-center gap-2">
