@@ -63,6 +63,13 @@ export interface IStorage {
   
   // Material Purchases
   getMaterialPurchases(projectId: string, dateFrom?: string, dateTo?: string): Promise<MaterialPurchase[]>;
+  getMaterialPurchasesWithFilters(filters: {
+    supplierId?: string;
+    projectId?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    purchaseType?: string;
+  }): Promise<MaterialPurchase[]>;
   getMaterialPurchaseById(id: string): Promise<MaterialPurchase | null>;
   createMaterialPurchase(purchase: InsertMaterialPurchase): Promise<MaterialPurchase>;
   updateMaterialPurchase(id: string, purchase: Partial<InsertMaterialPurchase>): Promise<MaterialPurchase | undefined>;
@@ -804,6 +811,97 @@ export class DatabaseStorage implements IStorage {
         category: purchase.materialCategory,
         unit: purchase.materialUnit,
         createdAt: purchase.materialCreatedAt
+      }
+    }));
+  }
+
+  async getMaterialPurchasesWithFilters(filters: {
+    supplierId?: string;
+    projectId?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    purchaseType?: string;
+  }): Promise<any[]> {
+    const { supplierId, projectId, dateFrom, dateTo, purchaseType } = filters;
+    
+    // إنشاء شروط البحث
+    const conditions = [];
+    
+    if (supplierId) {
+      conditions.push(eq(materialPurchases.supplierId, supplierId));
+    }
+    
+    if (projectId && projectId !== 'all') {
+      conditions.push(eq(materialPurchases.projectId, projectId));
+    }
+    
+    if (dateFrom) {
+      conditions.push(gte(materialPurchases.purchaseDate, dateFrom));
+    }
+    
+    if (dateTo) {
+      conditions.push(lte(materialPurchases.purchaseDate, dateTo));
+    }
+    
+    if (purchaseType && purchaseType !== 'all') {
+      conditions.push(eq(materialPurchases.purchaseType, purchaseType));
+    }
+
+    // جلب المشتريات مع معلومات المواد والموردين
+    const purchases = await db
+      .select({
+        id: materialPurchases.id,
+        projectId: materialPurchases.projectId,
+        materialId: materialPurchases.materialId,
+        supplierId: materialPurchases.supplierId,
+        quantity: materialPurchases.quantity,
+        unitPrice: materialPurchases.unitPrice,
+        totalAmount: materialPurchases.totalAmount,
+        purchaseType: materialPurchases.purchaseType,
+        supplierName: materialPurchases.supplierName,
+        invoiceNumber: materialPurchases.invoiceNumber,
+        invoiceDate: materialPurchases.invoiceDate,
+        invoicePhoto: materialPurchases.invoicePhoto,
+        notes: materialPurchases.notes,
+        purchaseDate: materialPurchases.purchaseDate,
+        createdAt: materialPurchases.createdAt,
+        // معلومات المادة
+        materialName: materials.name,
+        materialCategory: materials.category,
+        materialUnit: materials.unit,
+        // معلومات المشروع
+        projectName: projects.name
+      })
+      .from(materialPurchases)
+      .leftJoin(materials, eq(materialPurchases.materialId, materials.id))
+      .leftJoin(projects, eq(materialPurchases.projectId, projects.id))
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .orderBy(materialPurchases.createdAt);
+
+    return purchases.map(purchase => ({
+      id: purchase.id,
+      projectId: purchase.projectId,
+      materialId: purchase.materialId,
+      supplierId: purchase.supplierId,
+      quantity: purchase.quantity,
+      unitPrice: purchase.unitPrice,
+      totalAmount: purchase.totalAmount,
+      purchaseType: purchase.purchaseType,
+      supplierName: purchase.supplierName,
+      invoiceNumber: purchase.invoiceNumber,
+      invoiceDate: purchase.invoiceDate,
+      invoicePhoto: purchase.invoicePhoto,
+      notes: purchase.notes,
+      purchaseDate: purchase.purchaseDate,
+      createdAt: purchase.createdAt,
+      material: {
+        id: purchase.materialId,
+        name: purchase.materialName,
+        category: purchase.materialCategory,
+        unit: purchase.materialUnit
+      },
+      project: {
+        name: purchase.projectName
       }
     }));
   }

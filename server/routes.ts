@@ -1079,6 +1079,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all material purchases with filters
+  app.get("/api/material-purchases", async (req, res) => {
+    try {
+      const { supplierId, projectId, dateFrom, dateTo, purchaseType } = req.query;
+      console.log("Material purchases filter request:", { supplierId, projectId, dateFrom, dateTo, purchaseType });
+      
+      // استخدام دالة storage للحصول على جميع المشتريات مع الفلاتر
+      const purchases = await storage.getMaterialPurchasesWithFilters({
+        supplierId: supplierId as string,
+        projectId: projectId as string,
+        dateFrom: dateFrom as string,
+        dateTo: dateTo as string,
+        purchaseType: purchaseType as string
+      });
+      
+      console.log(`Found ${purchases.length} material purchases`);
+      res.json(purchases);
+    } catch (error) {
+      console.error("Error fetching material purchases:", error);
+      res.status(500).json({ message: "Error fetching material purchases" });
+    }
+  });
+
   app.get("/api/material-purchases/:id", async (req, res) => {
     try {
       const purchase = await storage.getMaterialPurchaseById(req.params.id);
