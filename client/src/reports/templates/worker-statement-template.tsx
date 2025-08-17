@@ -58,24 +58,25 @@ export function WorkerStatementTemplate({
   ];
 
   // تحضير بيانات جدول الحضور
-  const attendanceData = (data.attendance || []).map(record => {
+  const attendanceData = (data.attendance || []).map((record, index) => {
     // حساب المبلغ المستحق بناءً على عدد الأيام
     const workDays = parseFloat(record.workDays) || (record.isPresent || record.status === 'present' ? 1 : 0);
     const dailyWage = parseFloat(record.dailyWage || data.worker?.dailyWage || 0);
+    const workHours = parseFloat(record.workHours) || (workDays * 8); // حساب الساعات بناءً على الأيام
     const wageAmount = workDays * dailyWage;
     const paidAmount = parseFloat(record.paidAmount) || 0;
     const remainingAmount = wageAmount - paidAmount;
-    const isPresent = record.isPresent || record.status === 'present';
     
     return [
+      index + 1, // الرقم التسلسلي
       formatDate(record.date),
       new Date(record.date).toLocaleDateString('ar-SA', { weekday: 'long' }),
-      workDays, // عدد الأيام
-      isPresent ? 'حاضر' : 'غائب',
+      record.workDescription || 'عمل بناء وفقاً لمتطلبات المشروع', // وصف العمل
+      workDays, // عدد أيام العمل
+      `${workHours} ساعة`, // ساعات العمل
       formatCurrency(wageAmount),
       formatCurrency(paidAmount),
-      formatCurrency(remainingAmount),
-      record.notes || ""
+      formatCurrency(remainingAmount)
     ];
   });
 
@@ -184,7 +185,7 @@ export function WorkerStatementTemplate({
           </CardHeader>
           <CardContent>
             <UnifiedTable
-              headers={["التاريخ", "اليوم", "عدد الأيام", "الحالة", "الأجر المستحق", "المدفوع", "المتبقي", "ملاحظات"]}
+              headers={["🔢 #", "📅 التاريخ", "📆 اليوم", "⚒️ وصف العمل", "🗓️ عدد أيام العمل", "⏰ ساعات العمل", "💰 الأجر المستحق", "✅ المدفوع", "⏳ المتبقي"]}
               data={attendanceData}
             />
           </CardContent>

@@ -116,8 +116,8 @@ export const EnhancedWorkerAccountStatementRealData = ({
 
       // رؤوس الجدول - مطابقة للتصميم المطلوب
       const headers = [
-        'م', 'التاريخ', 'اليوم', 'وصف العمل', 'ساعات العمل', 
-        'أيام العمل', 'المبلغ المستحق', 'المبلغ المدفوع', 'المتبقي', 'الحالة'
+        '#', 'التاريخ', 'اليوم', 'وصف العمل', 'عدد أيام العمل', 
+        'ساعات العمل', 'الأجر المستحق', 'المدفوع', 'المتبقي'
       ];
       const headerRow = worksheet.addRow(headers);
       
@@ -158,12 +158,11 @@ export const EnhancedWorkerAccountStatementRealData = ({
           formatDate(record.date),
           formatDay(record.date),
           record.workDescription || 'عمل بناء وفقاً لمتطلبات المشروع',
-          `${workHours} ساعة`,
           workDays,
+          `${workHours} ساعة`,
           formatCurrency(earned),
           formatCurrency(paid),
-          formatCurrency(remaining),
-          status
+          formatCurrency(remaining)
         ]);
 
         dataRow.eachCell((cell, colNumber) => {
@@ -186,12 +185,12 @@ export const EnhancedWorkerAccountStatementRealData = ({
 
       // صف الإجماليات
       const totalRow = worksheet.addRow([
-        'الإجماليات', '', '', '', '',
+        'الإجماليات', '', '', '',
         realStats.totalWorkDays,
+        '',
         formatCurrency(totalEarnedExcel),
         formatCurrency(totalPaidExcel),
-        formatCurrency(totalEarnedExcel - totalPaidExcel),
-        ''
+        formatCurrency(totalEarnedExcel - totalPaidExcel)
       ]);
 
       totalRow.eachCell((cell) => {
@@ -208,16 +207,15 @@ export const EnhancedWorkerAccountStatementRealData = ({
 
       // إعداد عرض الأعمدة
       worksheet.columns = [
-        { width: 5 },   // م
+        { width: 5 },   // #
         { width: 12 },  // التاريخ
         { width: 10 },  // اليوم
         { width: 25 },  // وصف العمل
+        { width: 12 },  // عدد أيام العمل
         { width: 12 },  // ساعات العمل
-        { width: 10 },  // أيام العمل
-        { width: 15 },  // المستحق
+        { width: 15 },  // الأجر المستحق
         { width: 15 },  // المدفوع
-        { width: 12 },  // المتبقي
-        { width: 15 }   // الحالة
+        { width: 12 }   // المتبقي
       ];
 
       // إعداد الطباعة
@@ -395,7 +393,7 @@ export const EnhancedWorkerAccountStatementRealData = ({
             margin: '0 0 3mm 0',
             textShadow: '1px 1px 2px rgba(0,0,0,0.1)'
           }}>
-            شركة الفتيني للمقاولات والاستشارات الهندسية
+            شركة الفتحي للمقاولات والاستشارات الهندسية
           </h1>
           <h2 style={{
             fontSize: '16px',
@@ -467,16 +465,15 @@ export const EnhancedWorkerAccountStatementRealData = ({
             }}>
               <thead>
                 <tr style={{ backgroundColor: '#3b82f6', color: 'white' }}>
-                  <th style={{ border: '1px solid #d1d5db', padding: '2mm', textAlign: 'center', fontWeight: 'bold', width: '4%', fontSize: '8px' }}>م</th>
-                  <th style={{ border: '1px solid #d1d5db', padding: '2mm', textAlign: 'center', fontWeight: 'bold', width: '10%', fontSize: '8px' }}>التاريخ</th>
-                  <th style={{ border: '1px solid #d1d5db', padding: '2mm', textAlign: 'center', fontWeight: 'bold', width: '8%', fontSize: '8px' }}>اليوم</th>
-                  <th style={{ border: '1px solid #d1d5db', padding: '2mm', textAlign: 'center', fontWeight: 'bold', width: '20%', fontSize: '8px' }}>وصف العمل</th>
-                  <th style={{ border: '1px solid #d1d5db', padding: '2mm', textAlign: 'center', fontWeight: 'bold', width: '8%', fontSize: '8px' }}>ساعات العمل</th>
-                  <th style={{ border: '1px solid #d1d5db', padding: '2mm', textAlign: 'center', fontWeight: 'bold', width: '8%', fontSize: '8px' }}>أيام العمل</th>
-                  <th style={{ border: '1px solid #d1d5db', padding: '2mm', textAlign: 'center', fontWeight: 'bold', width: '12%', fontSize: '8px' }}>المستحق</th>
-                  <th style={{ border: '1px solid #d1d5db', padding: '2mm', textAlign: 'center', fontWeight: 'bold', width: '12%', fontSize: '8px' }}>المدفوع</th>
-                  <th style={{ border: '1px solid #d1d5db', padding: '2mm', textAlign: 'center', fontWeight: 'bold', width: '10%', fontSize: '8px' }}>المتبقي</th>
-                  <th style={{ border: '1px solid #d1d5db', padding: '2mm', textAlign: 'center', fontWeight: 'bold', width: '8%', fontSize: '8px' }}>الحالة</th>
+                  <th style={{ border: '1px solid #d1d5db', padding: '2mm', textAlign: 'center', fontWeight: 'bold', width: '4%', fontSize: '8px' }}>🔢 #</th>
+                  <th style={{ border: '1px solid #d1d5db', padding: '2mm', textAlign: 'center', fontWeight: 'bold', width: '10%', fontSize: '8px' }}>📅 التاريخ</th>
+                  <th style={{ border: '1px solid #d1d5db', padding: '2mm', textAlign: 'center', fontWeight: 'bold', width: '8%', fontSize: '8px' }}>📆 اليوم</th>
+                  <th style={{ border: '1px solid #d1d5db', padding: '2mm', textAlign: 'center', fontWeight: 'bold', width: '20%', fontSize: '8px' }}>⚒️ وصف العمل</th>
+                  <th style={{ border: '1px solid #d1d5db', padding: '2mm', textAlign: 'center', fontWeight: 'bold', width: '8%', fontSize: '8px' }}>🗓️ عدد أيام العمل</th>
+                  <th style={{ border: '1px solid #d1d5db', padding: '2mm', textAlign: 'center', fontWeight: 'bold', width: '8%', fontSize: '8px' }}>⏰ ساعات العمل</th>
+                  <th style={{ border: '1px solid #d1d5db', padding: '2mm', textAlign: 'center', fontWeight: 'bold', width: '12%', fontSize: '8px' }}>💰 الأجر المستحق</th>
+                  <th style={{ border: '1px solid #d1d5db', padding: '2mm', textAlign: 'center', fontWeight: 'bold', width: '12%', fontSize: '8px' }}>✅ المدفوع</th>
+                  <th style={{ border: '1px solid #d1d5db', padding: '2mm', textAlign: 'center', fontWeight: 'bold', width: '10%', fontSize: '8px' }}>⏳ المتبقي</th>
                 </tr>
               </thead>
               <tbody>
@@ -497,24 +494,23 @@ export const EnhancedWorkerAccountStatementRealData = ({
                       <td style={{ border: '1px solid #d1d5db', padding: '1.5mm', textAlign: 'center', fontSize: '8px' }}>{formatDate(record.date)}</td>
                       <td style={{ border: '1px solid #d1d5db', padding: '1.5mm', textAlign: 'center', fontSize: '8px' }}>{formatDay(record.date)}</td>
                       <td style={{ border: '1px solid #d1d5db', padding: '1.5mm', textAlign: 'right', fontSize: '8px' }}>{record.workDescription || 'عمل بناء وفقاً لمتطلبات المشروع'}</td>
-                      <td style={{ border: '1px solid #d1d5db', padding: '1.5mm', textAlign: 'center', fontSize: '8px' }}>{workHours} ساعة</td>
                       <td style={{ border: '1px solid #d1d5db', padding: '1.5mm', textAlign: 'center', fontSize: '8px', fontWeight: 'bold', color: '#059669' }}>{workDays}</td>
+                      <td style={{ border: '1px solid #d1d5db', padding: '1.5mm', textAlign: 'center', fontSize: '8px' }}>{workHours} ساعة</td>
                       <td style={{ border: '1px solid #d1d5db', padding: '1.5mm', textAlign: 'center', fontSize: '8px', fontWeight: 'bold', color: '#2563eb' }}>{formatCurrency(earned)}</td>
                       <td style={{ border: '1px solid #d1d5db', padding: '1.5mm', textAlign: 'center', fontSize: '8px', fontWeight: 'bold', color: '#dc2626' }}>{formatCurrency(paid)}</td>
                       <td style={{ border: '1px solid #d1d5db', padding: '1.5mm', textAlign: 'center', fontSize: '8px', fontWeight: 'bold', color: remaining > 0 ? '#dc2626' : '#059669' }}>{formatCurrency(remaining)}</td>
-                      <td style={{ border: '1px solid #d1d5db', padding: '1.5mm', textAlign: 'center', fontSize: '7px' }}>{status}</td>
                     </tr>
                   );
                 })}
               </tbody>
               <tfoot>
                 <tr style={{ backgroundColor: '#059669', color: 'white', fontWeight: 'bold' }}>
-                  <td colSpan={5} style={{ border: '1px solid white', padding: '2mm', textAlign: 'center', fontSize: '9px' }}>الإجماليات</td>
+                  <td colSpan={4} style={{ border: '1px solid white', padding: '2mm', textAlign: 'center', fontSize: '9px' }}>الإجماليات</td>
                   <td style={{ border: '1px solid white', padding: '2mm', textAlign: 'center', fontSize: '9px' }}>{realStats.totalWorkDays}</td>
+                  <td style={{ border: '1px solid white', padding: '2mm', textAlign: 'center', fontSize: '9px' }}>-</td>
                   <td style={{ border: '1px solid white', padding: '2mm', textAlign: 'center', fontSize: '9px' }}>{formatCurrency(realStats.totalEarned)}</td>
                   <td style={{ border: '1px solid white', padding: '2mm', textAlign: 'center', fontSize: '9px' }}>{formatCurrency(realStats.totalPaid)}</td>
                   <td style={{ border: '1px solid white', padding: '2mm', textAlign: 'center', fontSize: '9px' }}>{formatCurrency(totalRemaining)}</td>
-                  <td style={{ border: '1px solid white', padding: '2mm', textAlign: 'center', fontSize: '8px' }}>شامل</td>
                 </tr>
               </tfoot>
             </table>

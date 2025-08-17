@@ -195,13 +195,13 @@ export class UnifiedExcelExporter {
    */
   private addAttendanceTable(worksheet: ExcelJS.Worksheet, attendance: any[], startRow: number): number {
     const sectionTitle = worksheet.addRow(['سجل الحضور']);
-    worksheet.mergeCells(`A${startRow}:G${startRow}`);
+    worksheet.mergeCells(`A${startRow}:I${startRow}`);
     
     const titleCell = sectionTitle.getCell(1);
     titleCell.font = EXCEL_STYLES.fonts.subHeader;
     titleCell.alignment = { horizontal: 'center' };
 
-    const headers = ['التاريخ', 'اليوم', 'الحالة', 'الأجر', 'المدفوع', 'المتبقي', 'ملاحظات'];
+    const headers = ['#', 'التاريخ', 'اليوم', 'وصف العمل', 'عدد أيام العمل', 'ساعات العمل', 'الأجر المستحق', 'المدفوع', 'المتبقي'];
     const headerRow = worksheet.addRow(headers);
     
     headers.forEach((_, index) => {
@@ -212,28 +212,33 @@ export class UnifiedExcelExporter {
 
     let currentRow = startRow + 2;
     
-    attendance.forEach(record => {
-      // حساب المبلغ المستحق بناءً على الحضور
-      const isPresent = record.isPresent || record.status === 'present';
+    attendance.forEach((record, index) => {
+      // حساب المبلغ المستحق بناءً على عدد الأيام
+      const workDays = parseFloat(record.workDays) || (record.isPresent || record.status === 'present' ? 1 : 0);
       const dailyWage = parseFloat(record.dailyWage || 0);
-      const wageAmount = isPresent ? dailyWage : 0;
-      const paidAmount = record.paidAmount || 0;
+      const workHours = parseFloat(record.workHours) || (workDays * 8);
+      const wageAmount = workDays * dailyWage;
+      const paidAmount = parseFloat(record.paidAmount) || 0;
       const remainingAmount = wageAmount - paidAmount;
       
       const row = worksheet.addRow([
+        index + 1,
         record.date,
         record.dayName || new Date(record.date).toLocaleDateString('ar-SA', { weekday: 'long' }),
-        isPresent ? 'حاضر' : 'غائب',
+        record.workDescription || 'عمل بناء وفقاً لمتطلبات المشروع',
+        workDays,
+        `${workHours} ساعة`,
         wageAmount,
         paidAmount,
-        remainingAmount,
-        record.notes || ''
+        remainingAmount
       ]);
       
       row.eachCell((cell, colNumber) => {
         cell.font = EXCEL_STYLES.fonts.data;
-        if (colNumber === 4 || colNumber === 5 || colNumber === 6) {
+        // تنسيق أعمدة المبالغ (الأجر المستحق، المدفوع، المتبقي)
+        if (colNumber === 7 || colNumber === 8 || colNumber === 9) {
           cell.numFmt = '#,##0 "ريال"';
+          cell.alignment = { horizontal: 'left' };
         }
       });
       
