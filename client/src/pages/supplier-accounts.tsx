@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Building2, Filter, FileText, Calendar, Calculator, Download, Search } from "lucide-react";
+import { Building2, Filter, FileText, Calendar, Calculator, Download, Search, DollarSign, TrendingUp, TrendingDown } from "lucide-react";
+import { StatsCard, StatsGrid } from "@/components/ui/stats-card";
 import { useFloatingButton } from "@/components/layout/floating-button-context";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
@@ -113,21 +114,21 @@ export default function SupplierAccountsPage() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      {/* Filters */}
+    <div className="container mx-auto p-4 space-y-4" dir="rtl">
+      {/* فلاتر البحث - تصميم مضغوط */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="w-5 h-5" />
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Filter className="w-4 h-4" />
             فلاتر البحث
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            <div className="space-y-2">
-              <Label>المورد</Label>
+        <CardContent className="pt-0">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs">المورد</Label>
               <Select value={selectedSupplierId} onValueChange={setSelectedSupplierId}>
-                <SelectTrigger>
+                <SelectTrigger className="h-8">
                   <SelectValue placeholder="اختر المورد" />
                 </SelectTrigger>
                 <SelectContent>
@@ -140,28 +141,30 @@ export default function SupplierAccountsPage() {
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label>من تاريخ</Label>
+            <div className="space-y-1">
+              <Label className="text-xs">من تاريخ</Label>
               <Input
                 type="date"
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
+                className="h-8"
               />
             </div>
 
-            <div className="space-y-2">
-              <Label>إلى تاريخ</Label>
+            <div className="space-y-1">
+              <Label className="text-xs">إلى تاريخ</Label>
               <Input
                 type="date"
                 value={dateTo}
                 onChange={(e) => setDateTo(e.target.value)}
+                className="h-8"
               />
             </div>
 
-            <div className="space-y-2">
-              <Label>نوع الدفع</Label>
+            <div className="space-y-1">
+              <Label className="text-xs">نوع الدفع</Label>
               <Select value={paymentTypeFilter} onValueChange={setPaymentTypeFilter}>
-                <SelectTrigger>
+                <SelectTrigger className="h-8">
                   <SelectValue placeholder="نوع الدفع" />
                 </SelectTrigger>
                 <SelectContent>
@@ -172,49 +175,48 @@ export default function SupplierAccountsPage() {
               </Select>
             </div>
 
-            <div className="space-y-2">
-              <Label className="invisible">إجراءات</Label>
-              <div className="flex gap-2">
-                <Button
-                  onClick={exportToExcel}
-                  disabled={!selectedSupplierId || purchases.length === 0}
-                  className="flex-1"
-                >
-                  <Download className="w-4 h-4 ml-2" />
-                  تصدير
-                </Button>
-              </div>
+            <div className="space-y-1">
+              <Label className="text-xs invisible">إجراءات</Label>
+              <Button
+                onClick={exportToExcel}
+                disabled={!selectedSupplierId || purchases.length === 0}
+                size="sm"
+                className="w-full h-8"
+              >
+                <Download className="w-3 h-3 ml-1" />
+                تصدير
+              </Button>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Supplier Info */}
+      {/* معلومات المورد - تصميم مضغوط */}
       {selectedSupplier && (
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Building2 className="w-5 h-5" />
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Building2 className="w-4 h-4" />
               معلومات المورد
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <CardContent className="pt-0">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
               <div>
-                <Label className="text-sm text-gray-600">اسم المورد</Label>
-                <p className="font-medium">{selectedSupplier.name}</p>
+                <Label className="text-xs text-gray-600">اسم المورد</Label>
+                <p className="font-medium text-sm">{selectedSupplier.name}</p>
               </div>
               <div>
-                <Label className="text-sm text-gray-600">الشخص المسؤول</Label>
-                <p className="font-medium">{selectedSupplier.contactPerson || "-"}</p>
+                <Label className="text-xs text-gray-600">الشخص المسؤول</Label>
+                <p className="font-medium text-sm">{selectedSupplier.contactPerson || "-"}</p>
               </div>
               <div>
-                <Label className="text-sm text-gray-600">رقم الهاتف</Label>
-                <p className="font-medium">{selectedSupplier.phone || "-"}</p>
+                <Label className="text-xs text-gray-600">رقم الهاتف</Label>
+                <p className="font-medium text-sm">{selectedSupplier.phone || "-"}</p>
               </div>
               <div>
-                <Label className="text-sm text-gray-600">إجمالي المديونية</Label>
-                <p className="font-medium text-red-600">
+                <Label className="text-xs text-gray-600">إجمالي المديونية</Label>
+                <p className="font-medium text-red-600 text-sm">
                   {formatCurrency(selectedSupplier.totalDebt)}
                 </p>
               </div>
@@ -223,100 +225,83 @@ export default function SupplierAccountsPage() {
         </Card>
       )}
 
-      {/* Summary Cards */}
+      {/* إحصائيات الحساب - تصميم موحد ومضغوط */}
       {selectedSupplierId && purchases.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">إجمالي المشتريات</p>
-                  <p className="text-2xl font-bold">{formatCurrency(totals.totalAmount)}</p>
-                </div>
-                <Calculator className="w-8 h-8 text-blue-600" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">المدفوع</p>
-                  <p className="text-2xl font-bold text-green-600">{formatCurrency(totals.paidAmount)}</p>
-                </div>
-                <Calculator className="w-8 h-8 text-green-600" />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">المتبقي</p>
-                  <p className="text-2xl font-bold text-red-600">{formatCurrency(totals.remainingAmount)}</p>
-                </div>
-                <Calculator className="w-8 h-8 text-red-600" />
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <StatsGrid>
+          <StatsCard
+            title="إجمالي المشتريات"
+            value={formatCurrency(totals.totalAmount)}
+            icon={DollarSign}
+            color="blue"
+          />
+          <StatsCard
+            title="المدفوع"
+            value={formatCurrency(totals.paidAmount)}
+            icon={TrendingUp}
+            color="green"
+          />
+          <StatsCard
+            title="المتبقي"
+            value={formatCurrency(totals.remainingAmount)}
+            icon={TrendingDown}
+            color="red"
+          />
+        </StatsGrid>
       )}
 
-      {/* Purchases Table */}
+      {/* جدول المشتريات - تصميم مضغوط */}
       {selectedSupplierId && (
         <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="w-5 h-5" />
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <FileText className="w-4 h-4" />
               تفاصيل المشتريات
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-0">
             {isLoadingPurchases ? (
-              <div className="text-center py-8">جاري تحميل البيانات...</div>
+              <div className="text-center py-6 text-sm">جاري تحميل البيانات...</div>
             ) : purchases.length === 0 ? (
-              <div className="text-center py-8">
-                <Search className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500">لا توجد مشتريات للمورد المحدد</p>
+              <div className="text-center py-6">
+                <Search className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                <p className="text-gray-500 text-sm">لا توجد مشتريات للمورد المحدد</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow>
-                      <TableHead>التاريخ</TableHead>
-                      <TableHead>رقم الفاتورة</TableHead>
-                      <TableHead>المادة</TableHead>
-                      <TableHead>الكمية</TableHead>
-                      <TableHead>سعر الوحدة</TableHead>
-                      <TableHead>المبلغ الإجمالي</TableHead>
-                      <TableHead>نوع الدفع</TableHead>
-                      <TableHead>المدفوع</TableHead>
-                      <TableHead>المتبقي</TableHead>
+                    <TableRow className="h-8">
+                      <TableHead className="text-xs py-2">التاريخ</TableHead>
+                      <TableHead className="text-xs py-2">رقم الفاتورة</TableHead>
+                      <TableHead className="text-xs py-2">المادة</TableHead>
+                      <TableHead className="text-xs py-2">الكمية</TableHead>
+                      <TableHead className="text-xs py-2">سعر الوحدة</TableHead>
+                      <TableHead className="text-xs py-2">المبلغ الإجمالي</TableHead>
+                      <TableHead className="text-xs py-2">نوع الدفع</TableHead>
+                      <TableHead className="text-xs py-2">المدفوع</TableHead>
+                      <TableHead className="text-xs py-2">المتبقي</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {purchases.map((purchase) => (
-                      <TableRow key={purchase.id}>
-                        <TableCell>{formatDate(purchase.invoiceDate)}</TableCell>
-                        <TableCell>{purchase.invoiceNumber || "-"}</TableCell>
-                        <TableCell>{purchase.materialId}</TableCell>
-                        <TableCell>{purchase.quantity}</TableCell>
-                        <TableCell>{formatCurrency(purchase.unitPrice)}</TableCell>
-                        <TableCell className="font-medium">
+                      <TableRow key={purchase.id} className="h-8">
+                        <TableCell className="text-xs py-1">{formatDate(purchase.invoiceDate)}</TableCell>
+                        <TableCell className="text-xs py-1">{purchase.invoiceNumber || "-"}</TableCell>
+                        <TableCell className="text-xs py-1">{purchase.materialId}</TableCell>
+                        <TableCell className="text-xs py-1">{purchase.quantity}</TableCell>
+                        <TableCell className="text-xs py-1">{formatCurrency(purchase.unitPrice)}</TableCell>
+                        <TableCell className="font-medium text-xs py-1">
                           {formatCurrency(purchase.totalAmount)}
                         </TableCell>
-                        <TableCell>
-                          <Badge variant={getPaymentTypeVariant(purchase.purchaseType)}>
+                        <TableCell className="py-1">
+                          <Badge variant={getPaymentTypeVariant(purchase.purchaseType)} className="text-xs h-5">
                             {purchase.purchaseType}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-green-600">
+                        <TableCell className="text-green-600 text-xs py-1">
                           {formatCurrency(purchase.paidAmount || "0")}
                         </TableCell>
-                        <TableCell className="text-red-600">
+                        <TableCell className="text-red-600 text-xs py-1">
                           {formatCurrency(purchase.remainingAmount || "0")}
                         </TableCell>
                       </TableRow>
@@ -324,13 +309,13 @@ export default function SupplierAccountsPage() {
                   </TableBody>
                 </Table>
 
-                <Separator className="my-4" />
+                <Separator className="my-3" />
                 
-                {/* Totals Row */}
-                <div className="bg-gray-50 p-4 rounded-lg">
-                  <div className="grid grid-cols-9 gap-4 text-sm font-medium">
-                    <div className="col-span-5 text-left">المجموع الإجمالي:</div>
-                    <div className="text-left">{formatCurrency(totals.totalAmount)}</div>
+                {/* صف المجاميع - مضغوط */}
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <div className="grid grid-cols-9 gap-2 text-xs font-medium">
+                    <div className="col-span-5 text-right">المجموع الإجمالي:</div>
+                    <div className="text-right">{formatCurrency(totals.totalAmount)}</div>
                     <div></div>
                     <div className="text-green-600">{formatCurrency(totals.paidAmount)}</div>
                     <div className="text-red-600">{formatCurrency(totals.remainingAmount)}</div>
@@ -342,13 +327,13 @@ export default function SupplierAccountsPage() {
         </Card>
       )}
 
-      {/* Empty State */}
+      {/* حالة فارغة - مضغوطة */}
       {!selectedSupplierId && (
         <Card>
-          <CardContent className="text-center py-12">
-            <Building2 className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">اختر مورداً لعرض كشف الحساب</h3>
-            <p className="text-gray-500">
+          <CardContent className="text-center py-8">
+            <Building2 className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+            <h3 className="text-base font-semibold mb-1">اختر مورداً لعرض كشف الحساب</h3>
+            <p className="text-gray-500 text-sm">
               اختر مورداً من القائمة أعلاه لعرض تفاصيل حسابه ومشترياته
             </p>
           </CardContent>

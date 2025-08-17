@@ -78,6 +78,28 @@ The system uses PostgreSQL with a comprehensive schema for:
 
 ## Recent Changes (August 17, 2025)
 
+### صفحة حسابات التوريد - تحسين وضغط التصميم (أغسطس 17، 2025)
+- **حُسِنت**: صفحة حسابات التوريد بتصميم مضغوط ومُحسن
+- **أُضيفت**: مكونات إحصائيات موحدة (StatsCard) لعرض إجمالي المشتريات والمدفوع والمتبقي
+- **ضُغط**: التصميم العام مع تقليل المساحات والخطوط لاستغلال أفضل للشاشة
+- **حُسنت**: الجداول بتصميم مضغوط (نص أصغر، صفوف أقل ارتفاعاً)
+- **وُحدت**: استخدام الألوان والأيقونات مع باقي النظام
+- **خصائص**:
+  - فلاتر بحث مضغوطة بحقول أصغر (h-8)
+  - معلومات المورد في شبكة مدمجة
+  - إحصائيات بتصميم StatsCard الموحد
+  - جدول مضغوط مع نصوص أصغر (text-xs)
+  - حالة فارغة مُحسنة ومضغوطة
+
+### توحيد مكونات اختيار المشروع والإحصائيات (أغسطس 17، 2025)
+- **أُضيفت**: مكونات اختيار المشروع مع إطار وعنوان موحد في جميع الصفحات
+- **حُسنت**: صفحة worker-attendance.tsx بإطار "اختر المشروع" مع أيقونة ChartGantt
+- **حُسنت**: صفحة material-purchase.tsx بإطار "اختر المشروع" مع أيقونة ChartGantt
+- **أُضيفت**: إحصائيات عامة لصفحة projects.tsx (إجمالي المشاريع، النشطة، الرصيد، العمال)
+- **أُضيفت**: مكون اختيار المشروع لصفحة ProjectTransfers.tsx مع إحصائيات التحويلات
+- **حُدثت**: صفحة ProjectTransactionsPage.tsx لتستخدم التصميم الموحد
+- **وُحدت**: جميع الصفحات تستخدم مكون ChartGantt والتصميم المطلوب
+
 ### Worker Accounts Project Selector Enhancement (August 17, 2025)
 - **Enhanced**: Worker Accounts page project selector to match main dashboard design
 - **Implemented**: Premium variant of ProjectSelector component with professional styling
