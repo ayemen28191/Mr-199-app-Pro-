@@ -26,7 +26,7 @@ import {
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import html2canvas from 'html2canvas';
-import type { Project, ExportSettings } from '@shared/schema';
+import type { Project } from '@shared/schema';
 
 // إعلان النوع للـ garbage collector
 declare global {
@@ -69,13 +69,7 @@ export default function DailyExpensesBulkExport() {
     queryKey: ["/api/projects"],
   });
 
-  // جلب إعدادات التصدير
-  const { data: exportSettings, isLoading: settingsLoading } = useQuery<ExportSettings[]>({
-    queryKey: ["/api/export-settings"],
-  });
-
   const selectedProject = projects.find(p => p.id === selectedProjectId);
-  const currentSettings = exportSettings?.find(s => s.isDefault) || exportSettings?.[0] || null;
 
   // دالة تنسيق العملة (أرقام إنجليزية)
   const formatCurrency = (amount: number) => {
@@ -186,17 +180,6 @@ export default function DailyExpensesBulkExport() {
     return value;
   };
 
-  // دالة آمنة لمعالجة الألوان
-  const safeColor = (color: string | undefined | null, defaultColor: string): string => {
-    if (!color || typeof color !== 'string') return defaultColor.replace('#', '');
-    const cleanColor = color.trim().replace('#', '');
-    // التحقق من صحة اللون (يجب أن يكون 6 أحرف hex)
-    if (/^[0-9A-Fa-f]{6}$/.test(cleanColor)) {
-      return cleanColor;
-    }
-    return defaultColor.replace('#', '');
-  };
-
   // دالة الحصول على اسم اليوم بالعربي
   const getDayName = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -212,11 +195,11 @@ export default function DailyExpensesBulkExport() {
     // إعداد اتجاه النص من اليمين لليسار
     worksheet.views = [{ rightToLeft: true }];
 
-    // استخدام إعدادات التصدير مع قيم افتراضية آمنة والتحقق من صحتها
-    const companyName = safeValue(currentSettings?.companyName, 'شركة الفتحي للمقاولات والاستشارات الهندسية');
-    const headerBgColor = safeColor(currentSettings?.headerBackgroundColor, '5B9BD5');
-    const headerTextColor = safeColor(currentSettings?.headerTextColor, 'FFFFFF');
-    const fontFamily = safeValue(currentSettings?.fontFamily, 'Arial');
+    // إعدادات ثابتة بدلاً من الإعدادات القابلة للتخصيص
+    const companyName = 'شركة الفتحي للمقاولات والاستشارات الهندسية';
+    const headerBgColor = '5B9BD5';
+    const headerTextColor = 'FFFFFF';
+    const fontFamily = 'Arial';
 
     // رأس الشركة
     worksheet.mergeCells('A1:E1');
@@ -231,12 +214,12 @@ export default function DailyExpensesBulkExport() {
     };
     worksheet.getRow(1).height = 30;
 
-    // استخدام إعدادات الألوان مع قيم افتراضية آمنة والتحقق من صحتها
-    const tableHeaderBgColor = safeColor(currentSettings?.tableHeaderBackgroundColor, 'EAEEF5');
-    const tableHeaderTextColor = safeColor(currentSettings?.tableHeaderTextColor, '000000');
-    const transferRowColor = safeColor(currentSettings?.transferRowColor, 'B8E6B8');
-    const workerRowColor = safeColor(currentSettings?.workerRowColor, 'E6F3FF');
-    const reportTitle = safeValue(currentSettings?.reportTitle, 'كشف مصروفات المشروع');
+    // إعدادات ألوان ثابتة
+    const tableHeaderBgColor = 'EAEEF5';
+    const tableHeaderTextColor = '000000';
+    const transferRowColor = 'B8E6B8';
+    const workerRowColor = 'E6F3FF';
+    const reportTitle = 'كشف مصروفات المشروع';
 
     // رأس التقرير
     worksheet.mergeCells('A2:E2');
@@ -253,13 +236,13 @@ export default function DailyExpensesBulkExport() {
     };
     worksheet.getRow(2).height = 30;
 
-    // رؤوس الجدول الرئيسي مع استخدام إعدادات الأعمدة
+    // رؤوس الجدول الرئيسي
     const headers = [
-      currentSettings?.debitColumnHeader || 'المبلغ',
-      currentSettings?.accountColumnHeader || 'نوع الحساب',
+      'المبلغ',
+      'نوع الحساب',
       'نوع',
-      currentSettings?.balanceColumnHeader || 'المتبقي',
-      currentSettings?.notesColumnHeader || 'ملاحظات'
+      'المتبقي',
+      'ملاحظات'
     ];
     const headerRow = worksheet.addRow(headers);
     
