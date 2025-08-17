@@ -76,8 +76,10 @@ export default function SupplierAccountsPage() {
   });
 
   // جلب قائمة الموردين
-  const { data: suppliers = [] } = useQuery<Supplier[]>({
+  const { data: suppliers = [], isLoading: isLoadingSuppliers, error: suppliersError } = useQuery<Supplier[]>({
     queryKey: ["/api/suppliers"],
+    staleTime: 60000, // 1 minute
+    refetchOnWindowFocus: false,
   });
 
   // فلترة الموردين حسب البحث
@@ -92,19 +94,25 @@ export default function SupplierAccountsPage() {
       if (!selectedSupplierId) return [];
       
       const params = new URLSearchParams();
+      params.append('supplierId', selectedSupplierId);
       if (selectedProjectId && selectedProjectId !== 'all') params.append('projectId', selectedProjectId);
       if (dateFrom) params.append('dateFrom', dateFrom);
       if (dateTo) params.append('dateTo', dateTo);
       if (paymentTypeFilter && paymentTypeFilter !== 'all') params.append('purchaseType', paymentTypeFilter);
       
       const response = await fetch(`/api/material-purchases?${params.toString()}`);
-      if (!response.ok) throw new Error('فشل في جلب بيانات المشتريات');
+      if (!response.ok) {
+        console.error('خطأ في جلب المشتريات:', response.status, response.statusText);
+        return [];
+      }
       const allPurchases = await response.json();
       
-      // فلترة المشتريات حسب المورد
+      // فلترة المشتريات حسب المورد (كطبقة حماية إضافية)
       return allPurchases.filter((purchase: any) => purchase.supplierId === selectedSupplierId);
     },
     enabled: !!selectedSupplierId,
+    refetchOnWindowFocus: false,
+    staleTime: 30000, // 30 seconds
   });
 
   // إزالة الطلب للإحصائيات المركبة والاعتماد على الحسابات المحلية
@@ -138,7 +146,7 @@ export default function SupplierAccountsPage() {
 
   const formatCurrency = (amount: string | number) => {
     const num = typeof amount === 'string' ? parseFloat(amount) : amount;
-    return num.toLocaleString('ar-SA') + " ر.س";
+    return num.toLocaleString('ar-YE') + " ريال";
   };
 
   const getPaymentStatusBadge = (purchaseType: string, remainingAmount: string) => {
@@ -208,11 +216,6 @@ export default function SupplierAccountsPage() {
 
   return (
     <div className="container mx-auto p-6 space-y-6" dir="rtl">
-      {/* العنوان الرئيسي */}
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">حسابات الموردين</h1>
-        <p className="text-gray-600">إدارة ومتابعة حسابات الموردين والمشتريات</p>
-      </div>
 
       {/* الإحصائيات العامة */}
       <StatsGrid>
@@ -282,15 +285,21 @@ export default function SupplierAccountsPage() {
               <Label className="text-sm font-medium">المورد</Label>
               <Select value={selectedSupplierId} onValueChange={setSelectedSupplierId}>
                 <SelectTrigger>
-                  <SelectValue placeholder="اختر المورد" />
+                  <SelectValue placeholder={isLoadingSuppliers ? "جاري التحميل..." : "اختر المورد"} />
                 </SelectTrigger>
                 <SelectContent>
-                  {filteredSuppliers.map((supplier) => (
-                    <SelectItem key={supplier.id} value={supplier.id}>
-                      {supplier.name}
-                      {parseFloat(supplier.totalDebt) > 0 && ` - ${formatCurrency(supplier.totalDebt)}`}
-                    </SelectItem>
-                  ))}
+                  {isLoadingSuppliers ? (
+                    <SelectItem value="loading" disabled>جاري تحميل الموردين...</SelectItem>
+                  ) : filteredSuppliers.length === 0 ? (
+                    <SelectItem value="empty" disabled>لا توجد موردين متاحين</SelectItem>
+                  ) : (
+                    filteredSuppliers.map((supplier) => (
+                      <SelectItem key={supplier.id} value={supplier.id}>
+                        {supplier.name}
+                        {parseFloat(supplier.totalDebt) > 0 && ` - ${formatCurrency(supplier.totalDebt)}`}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -589,14 +598,26 @@ export default function SupplierAccountsPage() {
             <p className="text-gray-500 mb-6">
               استخدم فلاتر البحث أعلاه لاختيار مورد وعرض تفاصيل حسابه ومشترياته
             </p>
-            {suppliers.length === 0 && (
+            {isLoadingSuppliers ? (
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                <p className="text-gray-500">جاري تحميل الموردين...</p>
+              </div>
+            ) : suppliers.length === 0 ? (
               <Alert>
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription>
-                  لا يوجد موردين مسجلين في النظام. يرجى إضافة الموردين أولاً.
+                  لا يوجد موردين مسجلين في النظام. يرجى إضافة الموردين أولاً من صفحة إدارة الموردين.
                 </AlertDescription>
               </Alert>
-            )}
+            ) : suppliersError ? (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  حدث خطأ في تحميل بيانات الموردين. يرجى تحديث الصفحة أو المحاولة مرة أخرى.
+                </AlertDescription>
+              </Alert>
+            ) : null}
           </CardContent>
         </Card>
       )}
