@@ -3,12 +3,14 @@ import {
   type Material, type MaterialPurchase, type TransportationExpense, type DailyExpenseSummary,
   type WorkerTransfer, type WorkerBalance, type AutocompleteData, type WorkerType, type WorkerMiscExpense, type User,
   type Supplier, type SupplierPayment, type PrintSettings, type ProjectFundTransfer, type ExportSettings,
+  type ReportTemplate,
   type InsertProject, type InsertWorker, type InsertFundTransfer, type InsertWorkerAttendance,
   type InsertMaterial, type InsertMaterialPurchase, type InsertTransportationExpense, type InsertDailyExpenseSummary,
   type InsertWorkerTransfer, type InsertWorkerBalance, type InsertAutocompleteData, type InsertWorkerType, type InsertWorkerMiscExpense, type InsertUser,
   type InsertSupplier, type InsertSupplierPayment, type InsertPrintSettings, type InsertProjectFundTransfer, type InsertExportSettings,
+  type InsertReportTemplate,
   projects, workers, fundTransfers, workerAttendance, materials, materialPurchases, transportationExpenses, dailyExpenseSummaries,
-  workerTransfers, workerBalances, autocompleteData, workerTypes, workerMiscExpenses, users, suppliers, supplierPayments, printSettings, projectFundTransfers, exportSettings
+  workerTransfers, workerBalances, autocompleteData, workerTypes, workerMiscExpenses, users, suppliers, supplierPayments, printSettings, projectFundTransfers, exportSettings, reportTemplates
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, gte, lte, gt, sql, inArray, or } from "drizzle-orm";

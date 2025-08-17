@@ -47,10 +47,21 @@ export default function Dashboard() {
   const [localSettings, setLocalSettings] = useState<Partial<ExportSettings> | null>(null);
   
   // جلب الإعدادات الحالية
-  const { data: settings, isLoading } = useQuery({
+  const { data: settings, isLoading, error } = useQuery({
     queryKey: ['/api/export-settings'],
     select: (data: ExportSettings[]) => data.find(s => s.isDefault) || data[0] || null,
   });
+
+  // عرض الأخطاء في حالة فشل جلب الإعدادات
+  React.useEffect(() => {
+    if (error) {
+      toast({
+        title: "❌ خطأ في جلب الإعدادات",
+        description: "حدث خطأ أثناء جلب إعدادات التصدير. سيتم استخدام الإعدادات الافتراضية.",
+        variant: "destructive",
+      });
+    }
+  }, [error, toast]);
 
   // mutation لحفظ الإعدادات
   const saveSettingsMutation = useMutation({
