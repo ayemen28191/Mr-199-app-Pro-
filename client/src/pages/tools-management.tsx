@@ -47,7 +47,7 @@ import ToolCategoriesDialog from '@/components/tools/tool-categories-dialog';
 import ToolsReportsDialog from '@/components/tools/tools-reports-dialog';
 import { PurchaseIntegrationDialog } from '@/components/tools/PurchaseIntegrationDialog';
 import { MaintenanceScheduleDialog } from '@/components/tools/MaintenanceScheduleDialog';
-import EnhancedSearchFilter from '@/components/tools/enhanced-search-filter';
+
 import ToolsNotificationSystem from '@/components/tools/tools-notification-system';
 import ProjectLocationTracking from '@/components/tools/project-location-tracking';
 
@@ -216,58 +216,67 @@ const ToolsManagementPage: React.FC = () => {
     }
   };
 
-  // Tool Card Component
+  // Compact Tool Card Component
   const ToolCard: React.FC<{ tool: Tool }> = ({ tool }) => {
     const category = categories.find(c => c.id === tool.categoryId);
     
     return (
-      <Card className="hover:shadow-md transition-shadow cursor-pointer" data-testid={`tool-card-${tool.id}`}>
-        <CardHeader className="pb-3">
-          <div className="flex justify-between items-start">
-            <CardTitle className="text-lg">{tool.name}</CardTitle>
-            <div className="flex gap-2">
-              <Badge variant={getStatusBadgeVariant(tool.status)}>
-                {tool.status === 'available' ? 'متاح' :
-                 tool.status === 'in_use' ? 'مستخدم' :
-                 tool.status === 'maintenance' ? 'صيانة' :
-                 tool.status === 'damaged' ? 'معطل' : 'متقاعد'}
-              </Badge>
-              <Badge variant={getConditionBadgeVariant(tool.condition)}>
+      <Card className="hover:shadow-lg transition-all duration-200 cursor-pointer border-l-4 border-l-blue-500" data-testid={`tool-card-${tool.id}`}>
+        <CardContent className="p-4">
+          {/* Header Row */}
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-sm truncate text-gray-900 dark:text-gray-100">
+                {tool.name}
+              </h3>
+              {category && (
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  {category.name}
+                </p>
+              )}
+            </div>
+            <Badge 
+              variant={getStatusBadgeVariant(tool.status)} 
+              className="text-xs h-5 px-2 ml-2"
+            >
+              {tool.status === 'available' ? 'متاح' :
+               tool.status === 'in_use' ? 'مستخدم' :
+               tool.status === 'maintenance' ? 'صيانة' :
+               tool.status === 'damaged' ? 'معطل' : 'متقاعد'}
+            </Badge>
+          </div>
+
+          {/* Info Row */}
+          <div className="space-y-2 mb-3">
+            {tool.sku && (
+              <div className="flex items-center text-xs text-gray-600 dark:text-gray-400">
+                <Package className="h-3 w-3 ml-1" />
+                <span className="truncate">{tool.sku}</span>
+              </div>
+            )}
+            {tool.purchasePrice && (
+              <div className="flex items-center text-xs font-medium text-green-600 dark:text-green-400">
+                <span>{tool.purchasePrice.toLocaleString()} ر.س</span>
+              </div>
+            )}
+            <div className="flex items-center text-xs text-gray-600 dark:text-gray-400">
+              <span className={`w-2 h-2 rounded-full ml-1 ${
+                tool.condition === 'excellent' ? 'bg-green-500' :
+                tool.condition === 'good' ? 'bg-blue-500' :
+                tool.condition === 'fair' ? 'bg-yellow-500' :
+                tool.condition === 'poor' ? 'bg-orange-500' : 'bg-red-500'
+              }`}></span>
+              <span>
                 {tool.condition === 'excellent' ? 'ممتاز' :
                  tool.condition === 'good' ? 'جيد' :
                  tool.condition === 'fair' ? 'مقبول' :
                  tool.condition === 'poor' ? 'ضعيف' : 'معطل'}
-              </Badge>
+              </span>
             </div>
           </div>
-          {tool.description && (
-            <p className="text-sm text-gray-600 dark:text-gray-400">{tool.description}</p>
-          )}
-        </CardHeader>
-        
-        <CardContent className="space-y-3">
-          {category && (
-            <div className="flex items-center gap-2 text-sm">
-              <Folder className="h-4 w-4 text-gray-400" />
-              <span>{category.name}</span>
-            </div>
-          )}
-          
-          {tool.sku && (
-            <div className="flex items-center gap-2 text-sm">
-              <Package className="h-4 w-4 text-gray-400" />
-              <span>رقم الصنف: {tool.sku}</span>
-            </div>
-          )}
-          
-          {tool.serialNumber && (
-            <div className="flex items-center gap-2 text-sm">
-              <Settings className="h-4 w-4 text-gray-400" />
-              <span>الرقم التسلسلي: {tool.serialNumber}</span>
-            </div>
-          )}
-          
-          <div className="flex gap-2 pt-2">
+
+          {/* Action Buttons */}
+          <div className="flex gap-1">
             <Button
               size="sm"
               variant="outline"
@@ -275,9 +284,10 @@ const ToolsManagementPage: React.FC = () => {
                 setSelectedToolId(tool.id);
                 setIsDetailsDialogOpen(true);
               }}
+              className="flex-1 h-7 text-xs"
               data-testid={`view-tool-${tool.id}`}
             >
-              <Eye className="h-3 w-3 mr-1" />
+              <Eye className="h-3 w-3 ml-1" />
               عرض
             </Button>
             <Button
@@ -288,9 +298,10 @@ const ToolsManagementPage: React.FC = () => {
                 setSelectedToolName(tool.name);
                 setIsMovementsDialogOpen(true);
               }}
+              className="flex-1 h-7 text-xs"
               data-testid={`move-tool-${tool.id}`}
             >
-              <Move className="h-3 w-3 mr-1" />
+              <Move className="h-3 w-3 ml-1" />
               نقل
             </Button>
           </div>
@@ -301,205 +312,218 @@ const ToolsManagementPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900" dir="rtl">
-      {/* Mobile-First Header */}
-      <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
-        {/* Top Bar */}
-        <div className="px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+      {/* Compact Top Action Bar */}
+      <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 px-4 py-2">
+        <div className="flex items-center justify-between gap-2">
+          {/* View Toggle */}
+          <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+            <Button
+              size="sm"
+              variant={currentView === 'tools' ? 'default' : 'ghost'}
+              onClick={() => setCurrentView('tools')}
+              className="h-7 px-3 text-xs"
+            >
+              <Package className="h-3 w-3 ml-1" />
+              الأدوات
+            </Button>
+            <Button
+              size="sm"
+              variant={currentView === 'locations' ? 'default' : 'ghost'}
+              onClick={() => setCurrentView('locations')}
+              className="h-7 px-3 text-xs"
+            >
+              <MapPin className="h-3 w-3 ml-1" />
+              المواقع
+            </Button>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="flex items-center gap-1">
             <ToolsNotificationSystem />
             <Button 
               variant="outline" 
               size="sm"
               onClick={() => setIsQrScannerOpen(true)}
-              className="flex items-center gap-2 text-xs"
+              className="h-7 px-2"
             >
-              <QrCode className="h-4 w-4" />
-              <span className="hidden sm:inline">ماسح QR</span>
-            </Button>
-          </div>
-        </div>
-
-        {/* Navigation Tabs - Mobile Optimized */}
-        <div className="px-4">
-          <div className="flex border-b border-gray-200 dark:border-gray-700">
-            <Button
-              variant="ghost"
-              onClick={() => setCurrentView('tools')}
-              className={`flex-1 py-3 px-4 text-sm font-medium transition-colors duration-200 border-b-2 ${
-                currentView === 'tools' 
-                  ? 'border-blue-500 text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400' 
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              <Package className="h-4 w-4 ml-2" />
-              الأدوات
-            </Button>
-            <Button
-              variant="ghost"
-              onClick={() => setCurrentView('locations')}
-              className={`flex-1 py-3 px-4 text-sm font-medium transition-colors duration-200 border-b-2 ${
-                currentView === 'locations' 
-                  ? 'border-blue-500 text-blue-600 bg-blue-50 dark:bg-blue-900/20 dark:text-blue-400' 
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              <MapPin className="h-4 w-4 ml-2" />
-              المواقع
+              <QrCode className="h-3 w-3" />
             </Button>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="px-4 py-6 space-y-6">
-        {/* Content based on current view */}
+      <div className="p-3 space-y-3">
         {currentView === 'locations' ? (
           <ProjectLocationTracking />
         ) : (
           <>
-            {/* Statistics Cards - Mobile Optimized */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <StatsCard
-                title="إجمالي الأدوات"
-                value={stats.total}
-                icon={Package}
-                color="blue"
-                data-testid="total-tools-stat"
-              />
-              <StatsCard
-                title="متاح"
-                value={stats.available}
-                icon={CheckCircle}
-                color="green"
-                data-testid="available-tools-stat"
-              />
-              <StatsCard
-                title="قيد الاستخدام"
-                value={stats.inUse}
-                icon={Wrench}
-                color="orange"
-                data-testid="in-use-tools-stat"
-              />
-              <StatsCard
-                title="صيانة"
-                value={stats.maintenance}
-                icon={AlertTriangle}
-                color="red"
-                data-testid="maintenance-tools-stat"
-              />
+            {/* Compact Stats Row */}
+            <div className="grid grid-cols-4 gap-2">
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-3 text-center shadow-sm border">
+                <div className="text-lg font-bold text-blue-600 dark:text-blue-400">{stats.total}</div>
+                <div className="text-xs text-gray-600 dark:text-gray-400">المجموع</div>
+              </div>
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-3 text-center shadow-sm border">
+                <div className="text-lg font-bold text-green-600 dark:text-green-400">{stats.available}</div>
+                <div className="text-xs text-gray-600 dark:text-gray-400">متاح</div>
+              </div>
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-3 text-center shadow-sm border">
+                <div className="text-lg font-bold text-orange-600 dark:text-orange-400">{stats.inUse}</div>
+                <div className="text-xs text-gray-600 dark:text-gray-400">مستخدم</div>
+              </div>
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-3 text-center shadow-sm border">
+                <div className="text-lg font-bold text-red-600 dark:text-red-400">{stats.maintenance}</div>
+                <div className="text-xs text-gray-600 dark:text-gray-400">صيانة</div>
+              </div>
             </div>
 
-            {/* Enhanced Search Filter Component */}
-            <EnhancedSearchFilter
-              searchTerm={searchTerm}
-              onSearchChange={setSearchTerm}
-              selectedCategory={selectedCategory}
-              onCategoryChange={setSelectedCategory}
-              selectedStatus={selectedStatus}
-              onStatusChange={setSelectedStatus}
-              selectedCondition={selectedCondition}
-              onConditionChange={setSelectedCondition}
-              categories={categories}
-              onClearFilters={clearFilters}
-              toolStats={{
-                total: stats.total,
-                available: stats.available,
-                inUse: stats.inUse,
-                maintenance: stats.maintenance,
-                damaged: stats.damaged,
-                maintenanceOverdue: 0
-              }}
-            />
+            {/* Search & Filters in One Card */}
+            <Card className="shadow-sm">
+              <CardContent className="p-3 space-y-3">
+                {/* Search Bar */}
+                <div className="relative">
+                  <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Input
+                    placeholder="البحث عن الأدوات..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pr-10 h-9 text-sm"
+                    data-testid="search-tools"
+                  />
+                </div>
+                
+                {/* Filters Row */}
+                <div className="grid grid-cols-3 gap-2">
+                  <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue placeholder="التصنيف" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">جميع التصنيفات</SelectItem>
+                      {categories.map((category) => (
+                        <SelectItem key={category.id} value={category.id}>
+                          {category.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
 
-            {/* Action Buttons - Mobile Optimized */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setIsCategoriesDialogOpen(true)}
-                className="flex items-center justify-center gap-2"
-              >
-                <Folder className="h-4 w-4" />
-                <span className="hidden sm:inline">إدارة التصنيفات</span>
-                <span className="sm:hidden">التصنيفات</span>
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setIsReportsDialogOpen(true)}
-                className="flex items-center justify-center gap-2"
-              >
-                <BarChart3 className="h-4 w-4" />
-                <span className="hidden sm:inline">التقارير</span>
-                <span className="sm:hidden">تقارير</span>
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setIsPurchaseIntegrationOpen(true)}
-                className="flex items-center justify-center gap-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
-              >
-                <ShoppingCart className="h-4 w-4" />
-                <span className="hidden sm:inline">تكامل المشتريات</span>
-                <span className="sm:hidden">مشتريات</span>
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setIsMaintenanceScheduleOpen(true)}
-                className="flex items-center justify-center gap-2 bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-200"
-              >
-                <Settings className="h-4 w-4" />
-                <span className="hidden sm:inline">جدولة الصيانة</span>
-                <span className="sm:hidden">صيانة</span>
-              </Button>
-            </div>
+                  <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue placeholder="الحالة" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">جميع الحالات</SelectItem>
+                      <SelectItem value="available">متاح</SelectItem>
+                      <SelectItem value="in_use">قيد الاستخدام</SelectItem>
+                      <SelectItem value="maintenance">صيانة</SelectItem>
+                      <SelectItem value="damaged">تالف</SelectItem>
+                      <SelectItem value="retired">متقاعد</SelectItem>
+                    </SelectContent>
+                  </Select>
 
-            {/* Tools Grid/List */}
-            <div className="space-y-4">
-              {toolsLoading || categoriesLoading ? (
-                <div className="flex justify-center items-center py-12">
-                  <div className="flex items-center gap-3">
-                    <RefreshCw className="h-5 w-5 animate-spin" />
-                    <span className="text-muted-foreground">جاري تحميل الأدوات...</span>
+                  <Select value={selectedCondition} onValueChange={setSelectedCondition}>
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue placeholder="الجودة" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">جميع المستويات</SelectItem>
+                      <SelectItem value="excellent">ممتاز</SelectItem>
+                      <SelectItem value="good">جيد</SelectItem>
+                      <SelectItem value="fair">مقبول</SelectItem>
+                      <SelectItem value="poor">ضعيف</SelectItem>
+                      <SelectItem value="damaged">تالف</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="grid grid-cols-2 gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setIsCategoriesDialogOpen(true)}
+                    className="h-8 text-xs"
+                  >
+                    <Folder className="h-3 w-3 ml-1" />
+                    التصنيفات
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setIsReportsDialogOpen(true)}
+                    className="h-8 text-xs"
+                  >
+                    <BarChart3 className="h-3 w-3 ml-1" />
+                    التقارير
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setIsPurchaseIntegrationOpen(true)}
+                    className="h-8 text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
+                  >
+                    <ShoppingCart className="h-3 w-3 ml-1" />
+                    المشتريات
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setIsMaintenanceScheduleOpen(true)}
+                    className="h-8 text-xs bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-200"
+                  >
+                    <Settings className="h-3 w-3 ml-1" />
+                    الصيانة
+                  </Button>
+                </div>
+
+                {/* Clear Filters */}
+                {(searchTerm || selectedCategory !== 'all' || selectedStatus !== 'all' || selectedCondition !== 'all') && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={clearFilters}
+                    className="w-full h-7 text-xs text-gray-500"
+                  >
+                    <X className="h-3 w-3 ml-1" />
+                    مسح الفلاتر
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Tools Grid */}
+            {toolsLoading || categoriesLoading ? (
+              <div className="flex justify-center items-center py-8">
+                <div className="flex items-center gap-2">
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                  <span className="text-sm text-muted-foreground">جاري التحميل...</span>
+                </div>
+              </div>
+            ) : filteredTools.length === 0 ? (
+              <Card className="py-8">
+                <CardContent className="text-center space-y-3">
+                  <Package className="h-12 w-12 text-gray-400 mx-auto" />
+                  <div>
+                    <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      لا توجد أدوات
+                    </h3>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      {searchTerm || selectedCategory !== 'all' || selectedStatus !== 'all' || selectedCondition !== 'all'
+                        ? 'لا توجد أدوات تطابق المعايير'
+                        : 'لم يتم إضافة أي أدوات بعد'}
+                    </p>
                   </div>
-                </div>
-              ) : filteredTools.length === 0 ? (
-                <Card className="py-12">
-                  <CardContent className="text-center space-y-4">
-                    <div className="flex justify-center">
-                      <Package className="h-16 w-16 text-gray-400 mb-4" />
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                        لا توجد أدوات
-                      </h3>
-                      <p className="text-gray-500 dark:text-gray-400 text-center mb-4">
-                        {searchTerm || (selectedCategory && selectedCategory !== 'all') || (selectedStatus && selectedStatus !== 'all') || (selectedCondition && selectedCondition !== 'all')
-                          ? 'لا توجد أدوات تطابق المعايير المحددة'
-                          : 'لم يتم إضافة أي أدوات بعد'}
-                      </p>
-                      {!searchTerm && selectedCategory === 'all' && selectedStatus === 'all' && selectedCondition === 'all' && (
-                        <Button 
-                          onClick={() => setIsAddToolDialogOpen(true)}
-                          className="bg-primary hover:bg-primary/90"
-                          data-testid="add-first-tool-button"
-                        >
-                          <Plus className="h-4 w-4 mr-2" />
-                          إضافة أول أداة
-                        </Button>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {filteredTools.map((tool) => (
-                    <ToolCard key={tool.id} tool={tool} />
-                  ))}
-                </div>
-              )}
-            </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {filteredTools.map((tool) => (
+                  <ToolCard key={tool.id} tool={tool} />
+                ))}
+              </div>
+            )}
           </>
         )}
       </div>
