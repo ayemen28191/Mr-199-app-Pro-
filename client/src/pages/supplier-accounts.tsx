@@ -1,10 +1,29 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Building2, Filter, FileText, Calendar, Calculator, Download, Search, DollarSign, TrendingUp, TrendingDown, ChartGantt } from "lucide-react";
+import { 
+  Building2, 
+  Filter, 
+  FileText, 
+  Download, 
+  Search, 
+  DollarSign, 
+  TrendingUp, 
+  TrendingDown, 
+  Users,
+  Package,
+  CreditCard,
+  AlertCircle,
+  Calendar,
+  Phone,
+  MapPin,
+  Eye,
+  RefreshCw,
+  ShoppingCart,
+  Receipt,
+  Wallet
+} from "lucide-react";
 import { StatsCard, StatsGrid } from "@/components/ui/stats-card";
 import { useFloatingButton } from "@/components/layout/floating-button-context";
-import { useEffect } from "react";
-import ProjectSelector from "@/components/project-selector";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,68 +45,74 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import type { Supplier, MaterialPurchase } from "@shared/schema";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import type { Supplier, MaterialPurchase, Project } from "@shared/schema";
+
+interface SupplierAccountSummary {
+  totalPurchases: number;
+  totalPaid: number;
+  totalRemaining: number;
+  purchaseCount: number;
+}
 
 export default function SupplierAccountsPage() {
-  const [selectedProjectId, setSelectedProjectId] = useState<string>("");
+  const [selectedProjectId, setSelectedProjectId] = useState<string>("all");
   const [selectedSupplierId, setSelectedSupplierId] = useState<string>("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [paymentTypeFilter, setPaymentTypeFilter] = useState<string>("all");
+  const [searchTerm, setSearchTerm] = useState("");
   const { setFloatingAction } = useFloatingButton();
 
-  // Get suppliers list
-  const { data: suppliers = [] } = useQuery<Supplier[]>({
-    queryKey: ["/api/suppliers"],
-  });
-
-  // Get supplier account statement
-  const { data: accountStatement, isLoading: isLoadingStatement } = useQuery({
-    queryKey: ["/api/suppliers", selectedSupplierId, "account", dateFrom, dateTo, paymentTypeFilter],
-    queryFn: async () => {
-      if (!selectedSupplierId) return null;
-      const params = new URLSearchParams();
-      if (dateFrom) params.append('dateFrom', dateFrom);
-      if (dateTo) params.append('dateTo', dateTo);
-      if (paymentTypeFilter && paymentTypeFilter !== 'all') params.append('paymentType', paymentTypeFilter);
-      
-      const response = await fetch(`/api/suppliers/${selectedSupplierId}/account?${params.toString()}`);
-      if (!response.ok) throw new Error('Failed to fetch account statement');
-      return response.json();
-    },
-    enabled: !!selectedSupplierId,
-  });
-
-  // Get purchases for the selected supplier and project
-  const { data: purchases = [], isLoading: isLoadingPurchases } = useQuery<MaterialPurchase[]>({
-    queryKey: ["/api/material-purchases", selectedProjectId, selectedSupplierId, dateFrom, dateTo, paymentTypeFilter],
-    queryFn: async () => {
-      if (!selectedProjectId || !selectedSupplierId) return [];
-      const params = new URLSearchParams();
-      params.append('projectId', selectedProjectId);
-      if (dateFrom) params.append('dateFrom', dateFrom);
-      if (dateTo) params.append('dateTo', dateTo);
-      if (paymentTypeFilter && paymentTypeFilter !== 'all') params.append('purchaseType', paymentTypeFilter);
-      
-      const response = await fetch(`/api/material-purchases?${params.toString()}`);
-      if (!response.ok) throw new Error('Failed to fetch purchases');
-      const allPurchases = await response.json();
-      
-      // فلترة المشتريات حسب المورد
-      return allPurchases.filter((purchase: any) => purchase.supplierId === selectedSupplierId);
-    },
-    enabled: !!selectedProjectId && !!selectedSupplierId,
-  });
-
-  // إزالة الزر العائم من هذه الصفحة لأن التصدير متاح في الواجهة
+  // إزالة الزر العائم
   useEffect(() => {
     setFloatingAction(null);
     return () => setFloatingAction(null);
   }, [setFloatingAction]);
 
-  const selectedSupplier = suppliers.find(s => s.id === selectedSupplierId);
+  // جلب قائمة المشاريع
+  const { data: projects = [] } = useQuery<Project[]>({
+    queryKey: ["/api/projects"],
+  });
 
-  // Calculate totals
+  // جلب قائمة الموردين
+  const { data: suppliers = [] } = useQuery<Supplier[]>({
+    queryKey: ["/api/suppliers"],
+  });
+
+  // فلترة الموردين حسب البحث
+  const filteredSuppliers = suppliers.filter(supplier =>
+    supplier.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // جلب بيانات المشتريات للمورد المحدد
+  const { data: purchases = [], isLoading: isLoadingPurchases } = useQuery<MaterialPurchase[]>({
+    queryKey: ["/api/material-purchases", selectedProjectId, selectedSupplierId, dateFrom, dateTo, paymentTypeFilter],
+    queryFn: async () => {
+      if (!selectedSupplierId) return [];
+      
+      const params = new URLSearchParams();
+      if (selectedProjectId && selectedProjectId !== 'all') params.append('projectId', selectedProjectId);
+      if (dateFrom) params.append('dateFrom', dateFrom);
+      if (dateTo) params.append('dateTo', dateTo);
+      if (paymentTypeFilter && paymentTypeFilter !== 'all') params.append('purchaseType', paymentTypeFilter);
+      
+      const response = await fetch(`/api/material-purchases?${params.toString()}`);
+      if (!response.ok) throw new Error('فشل في جلب بيانات المشتريات');
+      const allPurchases = await response.json();
+      
+      // فلترة المشتريات حسب المورد
+      return allPurchases.filter((purchase: any) => purchase.supplierId === selectedSupplierId);
+    },
+    enabled: !!selectedSupplierId,
+  });
+
+  // إزالة الطلب للإحصائيات المركبة والاعتماد على الحسابات المحلية
+
+  const selectedSupplier = suppliers.find(s => s.id === selectedSupplierId);
+  const selectedProject = projects.find(p => p.id === selectedProjectId);
+
+  // حساب الإجماليات
   const totals = purchases.reduce((acc, purchase) => {
     acc.totalAmount += parseFloat(purchase.totalAmount);
     acc.paidAmount += parseFloat(purchase.paidAmount || "0");
@@ -95,122 +120,204 @@ export default function SupplierAccountsPage() {
     return acc;
   }, { totalAmount: 0, paidAmount: 0, remainingAmount: 0 });
 
+  // حساب الإحصائيات العامة
+  const overallStats = {
+    totalSuppliers: suppliers.length,
+    totalDebt: suppliers.reduce((sum, supplier) => sum + parseFloat(supplier.totalDebt), 0),
+    activeSuppliers: suppliers.filter(s => parseFloat(s.totalDebt) > 0).length,
+    totalPurchases: purchases.length
+  };
+
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('ar-SA');
+    return new Date(dateStr).toLocaleDateString('ar-SA', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    });
   };
 
   const formatCurrency = (amount: string | number) => {
     const num = typeof amount === 'string' ? parseFloat(amount) : amount;
-    return num.toLocaleString('ar-SA') + " ر.ي";
+    return num.toLocaleString('ar-SA') + " ر.س";
   };
 
-  const getPaymentTypeVariant = (paymentType: string) => {
-    return paymentType === "نقد" ? "default" : "secondary";
+  const getPaymentStatusBadge = (purchaseType: string, remainingAmount: string) => {
+    const remaining = parseFloat(remainingAmount || "0");
+    if (remaining === 0) {
+      return <Badge variant="default" className="bg-green-100 text-green-800 text-xs">مسدد</Badge>;
+    }
+    if (purchaseType === "نقد") {
+      return <Badge variant="secondary" className="bg-blue-100 text-blue-800 text-xs">نقد</Badge>;
+    }
+    return <Badge variant="destructive" className="text-xs">مؤجل</Badge>;
   };
 
   const exportToExcel = () => {
     if (!selectedSupplier || purchases.length === 0) return;
 
     const data = [
-      ["كشف حساب المورد", "", "", "", ""],
-      ["اسم المورد:", selectedSupplier.name, "", "", ""],
-      ["رقم الهاتف:", selectedSupplier.phone || "-", "", "", ""],
-      ["العنوان:", selectedSupplier.address || "-", "", "", ""],
-      ["", "", "", "", ""],
-      ["التاريخ", "رقم الفاتورة", "المادة", "الكمية", "المبلغ الإجمالي", "نوع الدفع", "المدفوع", "المتبقي"],
+      ["تقرير حسابات الموردين - شركة الفتحي للمقاولات والاستشارات الهندسية"],
+      [""],
+      ["معلومات المورد"],
+      ["اسم المورد:", selectedSupplier.name],
+      ["الشخص المسؤول:", selectedSupplier.contactPerson || "-"],
+      ["رقم الهاتف:", selectedSupplier.phone || "-"],
+      ["العنوان:", selectedSupplier.address || "-"],
+      [""],
+      selectedProject ? ["المشروع:", selectedProject.name] : [],
+      dateFrom || dateTo ? ["الفترة:", `من ${dateFrom || 'البداية'} إلى ${dateTo || 'النهاية'}`] : [],
+      [""],
+      ["تفاصيل المشتريات"],
+      ["التاريخ", "رقم الفاتورة", "المادة", "الكمية", "سعر الوحدة", "المبلغ الإجمالي", "نوع الدفع", "المدفوع", "المتبقي", "الحالة"],
       ...purchases.map(purchase => [
         formatDate(purchase.invoiceDate),
         purchase.invoiceNumber || "-",
-        purchase.materialId, // يجب ربطه بجدول المواد لإظهار الاسم
+        purchase.materialId,
         purchase.quantity,
+        formatCurrency(purchase.unitPrice),
         formatCurrency(purchase.totalAmount),
         purchase.purchaseType,
         formatCurrency(purchase.paidAmount || "0"),
-        formatCurrency(purchase.remainingAmount || "0")
+        formatCurrency(purchase.remainingAmount || "0"),
+        parseFloat(purchase.remainingAmount || "0") === 0 ? "مسدد" : "مؤجل"
       ]),
-      ["", "", "", "", "", "", "", ""],
-      ["المجموع", "", "", "", formatCurrency(totals.totalAmount), "", formatCurrency(totals.paidAmount), formatCurrency(totals.remainingAmount)]
+      [""],
+      ["ملخص الحساب"],
+      ["إجمالي المشتريات:", formatCurrency(totals.totalAmount)],
+      ["إجمالي المدفوع:", formatCurrency(totals.paidAmount)],
+      ["إجمالي المتبقي:", formatCurrency(totals.remainingAmount)],
+      ["عدد الفواتير:", purchases.length.toString()]
     ];
 
-    // تحويل البيانات إلى CSV للتحميل
     const csvContent = data.map(row => row.join(",")).join("\n");
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = `كشف-حساب-${selectedSupplier.name}-${new Date().toISOString().split('T')[0]}.csv`;
+    link.download = `حساب-المورد-${selectedSupplier.name}-${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
   };
 
-  return (
-    <div className="container mx-auto p-4 space-y-4" dir="rtl">
-      {/* مكون اختيار المشروع - تصميم موحد */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <ChartGantt className="w-4 h-4" />
-            اختر المشروع
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-0">
-          <ProjectSelector
-            selectedProjectId={selectedProjectId}
-            onProjectChange={(projectId, projectName) => setSelectedProjectId(projectId)}
-            showHeader={false}
-            variant="default"
-          />
-        </CardContent>
-      </Card>
+  const resetFilters = () => {
+    setSelectedProjectId("all");
+    setSelectedSupplierId("");
+    setDateFrom("");
+    setDateTo("");
+    setPaymentTypeFilter("all");
+    setSearchTerm("");
+  };
 
-      {/* فلاتر البحث - تصميم مضغوط */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base flex items-center gap-2">
-            <Filter className="w-4 h-4" />
-            فلاتر البحث
-          </CardTitle>
+  return (
+    <div className="container mx-auto p-6 space-y-6" dir="rtl">
+      {/* العنوان الرئيسي */}
+      <div className="text-center mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">حسابات الموردين</h1>
+        <p className="text-gray-600">إدارة ومتابعة حسابات الموردين والمشتريات</p>
+      </div>
+
+      {/* الإحصائيات العامة */}
+      <StatsGrid>
+        <StatsCard
+          title="إجمالي الموردين"
+          value={overallStats.totalSuppliers.toString()}
+          icon={Users}
+          color="blue"
+        />
+        <StatsCard
+          title="الموردين النشطين"
+          value={overallStats.activeSuppliers.toString()}
+          icon={Building2}
+          color="green"
+        />
+        <StatsCard
+          title="إجمالي المديونية"
+          value={formatCurrency(overallStats.totalDebt)}
+          icon={CreditCard}
+          color="red"
+        />
+        <StatsCard
+          title="إجمالي المشتريات"
+          value={overallStats.totalPurchases.toString()}
+          icon={Package}
+          color="orange"
+        />
+      </StatsGrid>
+
+      {/* فلاتر البحث */}
+      <Card className="shadow-sm">
+        <CardHeader className="pb-4">
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <Filter className="w-5 h-5" />
+              فلاتر البحث والتصفية
+            </CardTitle>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={resetFilters}
+              className="text-xs"
+            >
+              <RefreshCw className="w-4 h-4 ml-1" />
+              إعادة تعيين
+            </Button>
+          </div>
         </CardHeader>
-        <CardContent className="pt-0">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
-            <div className="space-y-1">
-              <Label className="text-xs">المورد</Label>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {/* البحث في الموردين */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">البحث في الموردين</Label>
+              <div className="relative">
+                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input
+                  placeholder="ابحث باسم المورد..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pr-10"
+                />
+              </div>
+            </div>
+
+            {/* اختيار المورد */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">المورد</Label>
               <Select value={selectedSupplierId} onValueChange={setSelectedSupplierId}>
-                <SelectTrigger className="h-8">
+                <SelectTrigger>
                   <SelectValue placeholder="اختر المورد" />
                 </SelectTrigger>
                 <SelectContent>
-                  {suppliers.map((supplier) => (
+                  {filteredSuppliers.map((supplier) => (
                     <SelectItem key={supplier.id} value={supplier.id}>
                       {supplier.name}
+                      {parseFloat(supplier.totalDebt) > 0 && ` - ${formatCurrency(supplier.totalDebt)}`}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
 
-            <div className="space-y-1">
-              <Label className="text-xs">من تاريخ</Label>
-              <Input
-                type="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-                className="h-8"
-              />
+            {/* اختيار المشروع */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">المشروع (اختياري)</Label>
+              <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="جميع المشاريع" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">جميع المشاريع</SelectItem>
+                  {projects.map((project) => (
+                    <SelectItem key={project.id} value={project.id}>
+                      {project.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
-            <div className="space-y-1">
-              <Label className="text-xs">إلى تاريخ</Label>
-              <Input
-                type="date"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-                className="h-8"
-              />
-            </div>
-
-            <div className="space-y-1">
-              <Label className="text-xs">نوع الدفع</Label>
+            {/* نوع الدفع */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">نوع الدفع</Label>
               <Select value={paymentTypeFilter} onValueChange={setPaymentTypeFilter}>
-                <SelectTrigger className="h-8">
+                <SelectTrigger>
                   <SelectValue placeholder="نوع الدفع" />
                 </SelectTrigger>
                 <SelectContent>
@@ -221,63 +328,116 @@ export default function SupplierAccountsPage() {
               </Select>
             </div>
 
-            <div className="space-y-1">
-              <Label className="text-xs invisible">إجراءات</Label>
+            {/* تاريخ البداية */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">من تاريخ</Label>
+              <div className="relative">
+                <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="pr-10"
+                />
+              </div>
+            </div>
+
+            {/* تاريخ النهاية */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">إلى تاريخ</Label>
+              <div className="relative">
+                <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="pr-10"
+                />
+              </div>
+            </div>
+
+            {/* زر التصدير */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium invisible">إجراءات</Label>
               <Button
                 onClick={exportToExcel}
                 disabled={!selectedSupplierId || purchases.length === 0}
-                size="sm"
-                className="w-full h-8"
+                className="w-full"
               >
-                <Download className="w-3 h-3 ml-1" />
-                تصدير
+                <Download className="w-4 h-4 ml-2" />
+                تصدير التقرير
               </Button>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* معلومات المورد - تصميم مضغوط */}
+      {/* معلومات المورد المحدد */}
       {selectedSupplier && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Building2 className="w-4 h-4" />
+        <Card className="shadow-sm">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2">
+              <Building2 className="w-5 h-5" />
               معلومات المورد
             </CardTitle>
           </CardHeader>
-          <CardContent className="pt-0">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-              <div>
-                <Label className="text-xs text-gray-600">اسم المورد</Label>
-                <p className="font-medium text-sm">{selectedSupplier.name}</p>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <Building2 className="w-4 h-4" />
+                  اسم المورد
+                </div>
+                <p className="font-semibold text-lg">{selectedSupplier.name}</p>
               </div>
-              <div>
-                <Label className="text-xs text-gray-600">الشخص المسؤول</Label>
-                <p className="font-medium text-sm">{selectedSupplier.contactPerson || "-"}</p>
+              
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <Users className="w-4 h-4" />
+                  الشخص المسؤول
+                </div>
+                <p className="font-medium">{selectedSupplier.contactPerson || "غير محدد"}</p>
               </div>
-              <div>
-                <Label className="text-xs text-gray-600">رقم الهاتف</Label>
-                <p className="font-medium text-sm">{selectedSupplier.phone || "-"}</p>
+              
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <Phone className="w-4 h-4" />
+                  رقم الهاتف
+                </div>
+                <p className="font-medium">{selectedSupplier.phone || "غير محدد"}</p>
               </div>
-              <div>
-                <Label className="text-xs text-gray-600">إجمالي المديونية</Label>
-                <p className="font-medium text-red-600 text-sm">
+              
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <Wallet className="w-4 h-4" />
+                  إجمالي المديونية
+                </div>
+                <p className="font-bold text-red-600 text-lg">
                   {formatCurrency(selectedSupplier.totalDebt)}
                 </p>
               </div>
             </div>
+
+            {selectedSupplier.address && (
+              <div className="mt-4 pt-4 border-t">
+                <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
+                  <MapPin className="w-4 h-4" />
+                  العنوان
+                </div>
+                <p className="text-gray-800">{selectedSupplier.address}</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
 
-      {/* إحصائيات الحساب - تصميم موحد ومضغوط */}
+      {/* إحصائيات الحساب المحدد */}
       {selectedSupplierId && (
         <StatsGrid>
           <StatsCard
             title="إجمالي المشتريات"
             value={formatCurrency(totals.totalAmount)}
-            icon={DollarSign}
+            icon={ShoppingCart}
             color="blue"
           />
           <StatsCard
@@ -292,83 +452,126 @@ export default function SupplierAccountsPage() {
             icon={TrendingDown}
             color="red"
           />
+          <StatsCard
+            title="عدد الفواتير"
+            value={purchases.length.toString()}
+            icon={Receipt}
+            color="orange"
+          />
         </StatsGrid>
       )}
 
-      {/* جدول المشتريات - تصميم مضغوط */}
+      {/* تفاصيل المشتريات */}
       {selectedSupplierId && (
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <FileText className="w-4 h-4" />
+        <Card className="shadow-sm">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5" />
               تفاصيل المشتريات
+              {selectedProject && (
+                <Badge variant="outline" className="mr-2">
+                  {selectedProject.name}
+                </Badge>
+              )}
             </CardTitle>
           </CardHeader>
-          <CardContent className="pt-0">
+          <CardContent>
             {isLoadingPurchases ? (
-              <div className="text-center py-4">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
-                <p className="text-sm text-gray-600">جاري تحميل البيانات...</p>
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">جاري تحميل البيانات...</p>
               </div>
             ) : purchases.length === 0 ? (
-              <div className="text-center py-4">
-                <Search className="w-6 h-6 text-gray-400 mx-auto mb-2" />
-                <p className="text-gray-500 text-sm">لا توجد مشتريات للمورد المحدد</p>
-                <p className="text-gray-400 text-xs mt-1">جرب تغيير فلاتر البحث أو التواريخ</p>
+              <div className="text-center py-12">
+                <Search className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500 text-lg mb-2">لا توجد مشتريات للمورد المحدد</p>
+                <p className="text-gray-400">جرب تغيير فلاتر البحث أو التواريخ</p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="h-8">
-                      <TableHead className="text-xs py-2">التاريخ</TableHead>
-                      <TableHead className="text-xs py-2">رقم الفاتورة</TableHead>
-                      <TableHead className="text-xs py-2">المادة</TableHead>
-                      <TableHead className="text-xs py-2">الكمية</TableHead>
-                      <TableHead className="text-xs py-2">سعر الوحدة</TableHead>
-                      <TableHead className="text-xs py-2">المبلغ الإجمالي</TableHead>
-                      <TableHead className="text-xs py-2">نوع الدفع</TableHead>
-                      <TableHead className="text-xs py-2">المدفوع</TableHead>
-                      <TableHead className="text-xs py-2">المتبقي</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {purchases.map((purchase) => (
-                      <TableRow key={purchase.id} className="h-8">
-                        <TableCell className="text-xs py-1">{formatDate(purchase.invoiceDate)}</TableCell>
-                        <TableCell className="text-xs py-1">{purchase.invoiceNumber || "-"}</TableCell>
-                        <TableCell className="text-xs py-1">{purchase.materialId}</TableCell>
-                        <TableCell className="text-xs py-1">{purchase.quantity}</TableCell>
-                        <TableCell className="text-xs py-1">{formatCurrency(purchase.unitPrice)}</TableCell>
-                        <TableCell className="font-medium text-xs py-1">
-                          {formatCurrency(purchase.totalAmount)}
-                        </TableCell>
-                        <TableCell className="py-1">
-                          <Badge variant={getPaymentTypeVariant(purchase.purchaseType)} className="text-xs h-5">
-                            {purchase.purchaseType}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-green-600 text-xs py-1">
-                          {formatCurrency(purchase.paidAmount || "0")}
-                        </TableCell>
-                        <TableCell className="text-red-600 text-xs py-1">
-                          {formatCurrency(purchase.remainingAmount || "0")}
-                        </TableCell>
+              <div className="space-y-4">
+                <div className="overflow-x-auto rounded-lg border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-blue-50">
+                        <TableHead className="text-center font-bold">التاريخ</TableHead>
+                        <TableHead className="text-center font-bold">رقم الفاتورة</TableHead>
+                        <TableHead className="text-center font-bold">المادة</TableHead>
+                        <TableHead className="text-center font-bold">الكمية</TableHead>
+                        <TableHead className="text-center font-bold">سعر الوحدة</TableHead>
+                        <TableHead className="text-center font-bold">المبلغ الإجمالي</TableHead>
+                        <TableHead className="text-center font-bold">نوع الدفع</TableHead>
+                        <TableHead className="text-center font-bold">المدفوع</TableHead>
+                        <TableHead className="text-center font-bold">المتبقي</TableHead>
+                        <TableHead className="text-center font-bold">الحالة</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {purchases.map((purchase, index) => (
+                        <TableRow 
+                          key={purchase.id} 
+                          className={index % 2 === 0 ? "bg-gray-50" : "bg-white"}
+                        >
+                          <TableCell className="text-center">
+                            {formatDate(purchase.invoiceDate)}
+                          </TableCell>
+                          <TableCell className="text-center font-medium">
+                            {purchase.invoiceNumber || "غير محدد"}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {purchase.materialId}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {purchase.quantity}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {formatCurrency(purchase.unitPrice)}
+                          </TableCell>
+                          <TableCell className="text-center font-bold">
+                            {formatCurrency(purchase.totalAmount)}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Badge 
+                              variant={purchase.purchaseType === "نقد" ? "default" : "secondary"}
+                              className="text-xs"
+                            >
+                              {purchase.purchaseType}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-center text-green-600 font-semibold">
+                            {formatCurrency(purchase.paidAmount || "0")}
+                          </TableCell>
+                          <TableCell className="text-center text-red-600 font-semibold">
+                            {formatCurrency(purchase.remainingAmount || "0")}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {getPaymentStatusBadge(purchase.purchaseType, purchase.remainingAmount || "0")}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
 
-                <Separator className="my-3" />
-                
-                {/* صف المجاميع - مضغوط */}
-                <div className="bg-gray-50 p-3 rounded-lg">
-                  <div className="grid grid-cols-9 gap-2 text-xs font-medium">
-                    <div className="col-span-5 text-right">المجموع الإجمالي:</div>
-                    <div className="text-right">{formatCurrency(totals.totalAmount)}</div>
-                    <div></div>
-                    <div className="text-green-600">{formatCurrency(totals.paidAmount)}</div>
-                    <div className="text-red-600">{formatCurrency(totals.remainingAmount)}</div>
+                {/* ملخص الإجماليات */}
+                <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-6 rounded-lg border border-blue-200">
+                  <h3 className="text-lg font-bold text-blue-900 mb-4 text-center">ملخص الحساب</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="text-center p-4 bg-white rounded-lg shadow-sm">
+                      <p className="text-sm text-gray-600">إجمالي المشتريات</p>
+                      <p className="text-xl font-bold text-blue-600">{formatCurrency(totals.totalAmount)}</p>
+                    </div>
+                    <div className="text-center p-4 bg-white rounded-lg shadow-sm">
+                      <p className="text-sm text-gray-600">إجمالي المدفوع</p>
+                      <p className="text-xl font-bold text-green-600">{formatCurrency(totals.paidAmount)}</p>
+                    </div>
+                    <div className="text-center p-4 bg-white rounded-lg shadow-sm">
+                      <p className="text-sm text-gray-600">إجمالي المتبقي</p>
+                      <p className="text-xl font-bold text-red-600">{formatCurrency(totals.remainingAmount)}</p>
+                    </div>
+                    <div className="text-center p-4 bg-white rounded-lg shadow-sm">
+                      <p className="text-sm text-gray-600">عدد الفواتير</p>
+                      <p className="text-xl font-bold text-gray-800">{purchases.length}</p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -377,34 +580,23 @@ export default function SupplierAccountsPage() {
         </Card>
       )}
 
-      {/* حالة فارغة - مضغوطة ومحسنة */}
-      {!selectedProjectId && (
-        <Card>
-          <CardContent className="text-center py-6">
-            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
-              <ChartGantt className="w-8 h-8 text-blue-600" />
-            </div>
-            <h3 className="text-base font-semibold mb-1 text-gray-800">اختر مشروعاً لعرض حسابات الموردين</h3>
-            <p className="text-gray-500 text-sm">
-              اختر مشروعاً من القائمة أعلاه لعرض موردين المشروع وحساباتهم
+      {/* حالة فارغة عندما لا يوجد مورد محدد */}
+      {!selectedSupplierId && (
+        <Card className="shadow-sm">
+          <CardContent className="text-center py-12">
+            <Eye className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-600 mb-2">اختر مورداً لعرض حسابه</h3>
+            <p className="text-gray-500 mb-6">
+              استخدم فلاتر البحث أعلاه لاختيار مورد وعرض تفاصيل حسابه ومشترياته
             </p>
-          </CardContent>
-        </Card>
-      )}
-
-      {selectedProjectId && !selectedSupplierId && (
-        <Card>
-          <CardContent className="text-center py-6">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-              <Building2 className="w-8 h-8 text-green-600" />
-            </div>
-            <h3 className="text-base font-semibold mb-1 text-gray-800">اختر مورداً لعرض كشف الحساب</h3>
-            <p className="text-gray-500 text-sm">
-              اختر مورداً من القائمة أعلاه لعرض تفاصيل حسابه ومشترياته والإحصائيات
-            </p>
-            <div className="mt-3 text-xs text-gray-400">
-              💡 نصيحة: يمكنك تطبيق فلاتر التاريخ ونوع الدفع لتخصيص النتائج
-            </div>
+            {suppliers.length === 0 && (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  لا يوجد موردين مسجلين في النظام. يرجى إضافة الموردين أولاً.
+                </AlertDescription>
+              </Alert>
+            )}
           </CardContent>
         </Card>
       )}
