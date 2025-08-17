@@ -408,3 +408,321 @@ export const insertReportTemplateSchema = createInsertSchema(reportTemplates).om
 
 export type InsertReportTemplate = z.infer<typeof insertReportTemplateSchema>;
 export type ReportTemplate = typeof reportTemplates.$inferSelect;
+
+// =====================================================
+// نظام إدارة المعدات والأدوات الاحترافي
+// =====================================================
+
+// Tool Categories (تصنيفات الأدوات)
+export const toolCategories = pgTable("tool_categories", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull().unique(),
+  description: text("description"),
+  icon: text("icon"), // أيقونة التصنيف
+  color: text("color").default("#3b82f6"), // لون التصنيف
+  parentId: varchar("parent_id").references((): any => toolCategories.id, { onDelete: 'cascade' }),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Tools (الأدوات الرئيسية)
+export const tools = pgTable("tools", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  sku: text("sku").unique(), // كود المخزون
+  name: text("name").notNull(),
+  description: text("description"),
+  categoryId: varchar("category_id").references(() => toolCategories.id),
+  unit: text("unit").notNull().default("قطعة"), // الوحدة
+  
+  // خصائص الأداة
+  isTool: boolean("is_tool").default(true).notNull(), // أداة عمل
+  isConsumable: boolean("is_consumable").default(false).notNull(), // قابل للاستهلاك
+  isSerial: boolean("is_serial").default(false).notNull(), // له رقم تسلسلي
+  
+  // معلومات الشراء
+  purchasePrice: decimal("purchase_price", { precision: 12, scale: 2 }),
+  purchaseDate: timestamp("purchase_date"),
+  supplierId: varchar("supplier_id").references(() => suppliers.id),
+  warrantyExpiry: timestamp("warranty_expiry"),
+  
+  // معلومات الصيانة
+  maintenanceInterval: integer("maintenance_interval"), // عدد الأيام بين الصيانة
+  lastMaintenanceDate: timestamp("last_maintenance_date"),
+  nextMaintenanceDate: timestamp("next_maintenance_date"),
+  
+  // الحالة والموقع
+  status: text("status").notNull().default("available"), // available, assigned, maintenance, lost, consumed, reserved
+  condition: text("condition").notNull().default("excellent"), // excellent, good, fair, poor, damaged
+  
+  // معلومات إضافية
+  serialNumber: text("serial_number"),
+  barcode: text("barcode"),
+  qrCode: text("qr_code"),
+  imageUrls: text("image_urls").array(),
+  notes: text("notes"),
+  specifications: jsonb("specifications"), // مواصفات تقنية
+  
+  // تتبع الاستخدام
+  totalUsageHours: decimal("total_usage_hours", { precision: 10, scale: 2 }).default('0'),
+  usageCount: integer("usage_count").default(0),
+  
+  // تقييم الذكاء الاصطناعي
+  aiRating: decimal("ai_rating", { precision: 3, scale: 2 }), // تقييم من 1-5
+  aiNotes: text("ai_notes"), // ملاحظات الذكاء الاصطناعي
+  
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Tool Stock (مخزون الأدوات حسب الموقع)
+export const toolStock = pgTable("tool_stock", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  toolId: varchar("tool_id").notNull().references(() => tools.id, { onDelete: 'cascade' }),
+  
+  // معلومات الموقع
+  locationType: text("location_type").notNull(), // warehouse, project, external, maintenance, none
+  locationId: varchar("location_id"), // مرجع للمشروع أو المخزن
+  locationName: text("location_name"), // اسم الموقع للعرض
+  
+  // الكميات
+  quantity: integer("quantity").notNull().default(0),
+  availableQuantity: integer("available_quantity").notNull().default(0),
+  reservedQuantity: integer("reserved_quantity").notNull().default(0),
+  
+  // معلومات إضافية
+  notes: text("notes"),
+  lastVerifiedAt: timestamp("last_verified_at"),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  uniqueToolLocation: sql`UNIQUE (tool_id, location_type, location_id)`
+}));
+
+// Tool Movements (سجل حركات الأدوات)
+export const toolMovements = pgTable("tool_movements", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  toolId: varchar("tool_id").notNull().references(() => tools.id, { onDelete: 'cascade' }),
+  
+  // معلومات الحركة
+  movementType: text("movement_type").notNull(), // purchase, transfer, return, consume, adjust, maintenance, lost
+  quantity: integer("quantity").notNull(),
+  
+  // من إلى
+  fromType: text("from_type"), // warehouse, project, external, supplier, none
+  fromId: varchar("from_id"),
+  fromName: text("from_name"),
+  
+  toType: text("to_type"), // warehouse, project, external, maintenance, none
+  toId: varchar("to_id"),
+  toName: text("to_name"),
+  
+  // معلومات إضافية
+  reason: text("reason"),
+  notes: text("notes"),
+  referenceNumber: text("reference_number"), // رقم مرجعي للعملية
+  cost: decimal("cost", { precision: 12, scale: 2 }), // تكلفة العملية
+  
+  // تتبع الموقع الجغرافي (GPS)
+  gpsLocation: jsonb("gps_location"), // {lat, lng, accuracy, timestamp}
+  
+  // مرفقات
+  imageUrls: text("image_urls").array(),
+  documentUrls: text("document_urls").array(),
+  
+  // معلومات المستخدم
+  performedBy: varchar("performed_by").references(() => users.id),
+  performedAt: timestamp("performed_at").defaultNow().notNull(),
+  
+  // معلومات الموافقة
+  approvedBy: varchar("approved_by").references(() => users.id),
+  approvedAt: timestamp("approved_at"),
+  
+  // مراجع خارجية
+  purchaseId: varchar("purchase_id"), // مرجع لفاتورة الشراء
+  projectId: varchar("project_id").references(() => projects.id),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Tool Maintenance Logs (سجل صيانة الأدوات)
+export const toolMaintenanceLogs = pgTable("tool_maintenance_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  toolId: varchar("tool_id").notNull().references(() => tools.id, { onDelete: 'cascade' }),
+  
+  // نوع الصيانة
+  maintenanceType: text("maintenance_type").notNull(), // preventive, corrective, emergency, inspection
+  priority: text("priority").notNull().default("medium"), // low, medium, high, urgent
+  
+  // تفاصيل الصيانة
+  title: text("title").notNull(),
+  description: text("description"),
+  workPerformed: text("work_performed"),
+  
+  // التواريخ
+  scheduledDate: timestamp("scheduled_date"),
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  nextDueDate: timestamp("next_due_date"),
+  
+  // الحالة
+  status: text("status").notNull().default("scheduled"), // scheduled, in_progress, completed, cancelled, overdue
+  
+  // التكلفة
+  laborCost: decimal("labor_cost", { precision: 12, scale: 2 }).default('0'),
+  partsCost: decimal("parts_cost", { precision: 12, scale: 2 }).default('0'),
+  totalCost: decimal("total_cost", { precision: 12, scale: 2 }).default('0'),
+  
+  // المشاركون
+  performedBy: varchar("performed_by").references(() => users.id),
+  assignedTo: varchar("assigned_to").references(() => users.id),
+  
+  // تقييم الحالة
+  conditionBefore: text("condition_before"), // حالة الأداة قبل الصيانة
+  conditionAfter: text("condition_after"), // حالة الأداة بعد الصيانة
+  
+  // مرفقات
+  imageUrls: text("image_urls").array(),
+  documentUrls: text("document_urls").array(),
+  
+  // ملاحظات
+  notes: text("notes"),
+  issues: text("issues"), // المشاكل المكتشفة
+  recommendations: text("recommendations"), // التوصيات
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Tool Usage Analytics (تحليلات استخدام الأدوات)
+export const toolUsageAnalytics = pgTable("tool_usage_analytics", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  toolId: varchar("tool_id").notNull().references(() => tools.id, { onDelete: 'cascade' }),
+  projectId: varchar("project_id").references(() => projects.id),
+  
+  // فترة التحليل
+  analysisDate: text("analysis_date").notNull(), // YYYY-MM-DD
+  analysisWeek: text("analysis_week"), // YYYY-WW
+  analysisMonth: text("analysis_month"), // YYYY-MM
+  
+  // إحصائيات الاستخدام
+  usageHours: decimal("usage_hours", { precision: 10, scale: 2 }).default('0'),
+  transferCount: integer("transfer_count").default(0),
+  maintenanceCount: integer("maintenance_count").default(0),
+  
+  // إحصائيات التكلفة
+  operationalCost: decimal("operational_cost", { precision: 12, scale: 2 }).default('0'),
+  maintenanceCost: decimal("maintenance_cost", { precision: 12, scale: 2 }).default('0'),
+  
+  // تقييم الأداء
+  utilizationRate: decimal("utilization_rate", { precision: 5, scale: 2 }), // معدل الاستخدام %
+  efficiencyScore: decimal("efficiency_score", { precision: 5, scale: 2 }), // نقاط الكفاءة
+  
+  // تنبؤات الذكاء الاصطناعي
+  predictedUsage: decimal("predicted_usage", { precision: 10, scale: 2 }),
+  riskScore: decimal("risk_score", { precision: 5, scale: 2 }), // درجة المخاطر
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  uniqueToolDate: sql`UNIQUE (tool_id, analysis_date)`
+}));
+
+// Tool Reservations (حجوزات الأدوات)
+export const toolReservations = pgTable("tool_reservations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  toolId: varchar("tool_id").notNull().references(() => tools.id, { onDelete: 'cascade' }),
+  projectId: varchar("project_id").notNull().references(() => projects.id),
+  
+  // تفاصيل الحجز
+  quantity: integer("quantity").notNull(),
+  reservedBy: varchar("reserved_by").notNull().references(() => users.id),
+  
+  // التواريخ
+  reservationDate: timestamp("reservation_date").defaultNow().notNull(),
+  requestedDate: timestamp("requested_date").notNull(),
+  expiryDate: timestamp("expiry_date"),
+  
+  // الحالة
+  status: text("status").notNull().default("pending"), // pending, approved, fulfilled, cancelled, expired
+  priority: text("priority").notNull().default("normal"), // low, normal, high, urgent
+  
+  // ملاحظات
+  reason: text("reason"),
+  notes: text("notes"),
+  
+  // الموافقة
+  approvedBy: varchar("approved_by").references(() => users.id),
+  approvedAt: timestamp("approved_at"),
+  
+  // الإنجاز
+  fulfilledBy: varchar("fulfilled_by").references(() => users.id),
+  fulfilledAt: timestamp("fulfilled_at"),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Schema Types and Validators for Tools System
+export const insertToolCategorySchema = createInsertSchema(toolCategories).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertToolSchema = createInsertSchema(tools).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertToolStockSchema = createInsertSchema(toolStock).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertToolMovementSchema = createInsertSchema(toolMovements).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertToolMaintenanceLogSchema = createInsertSchema(toolMaintenanceLogs).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertToolUsageAnalyticsSchema = createInsertSchema(toolUsageAnalytics).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertToolReservationSchema = createInsertSchema(toolReservations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+// Types
+export type InsertToolCategory = z.infer<typeof insertToolCategorySchema>;
+export type ToolCategory = typeof toolCategories.$inferSelect;
+
+export type InsertTool = z.infer<typeof insertToolSchema>;
+export type Tool = typeof tools.$inferSelect;
+
+export type InsertToolStock = z.infer<typeof insertToolStockSchema>;
+export type ToolStock = typeof toolStock.$inferSelect;
+
+export type InsertToolMovement = z.infer<typeof insertToolMovementSchema>;
+export type ToolMovement = typeof toolMovements.$inferSelect;
+
+export type InsertToolMaintenanceLog = z.infer<typeof insertToolMaintenanceLogSchema>;
+export type ToolMaintenanceLog = typeof toolMaintenanceLogs.$inferSelect;
+
+export type InsertToolUsageAnalytics = z.infer<typeof insertToolUsageAnalyticsSchema>;
+export type ToolUsageAnalytics = typeof toolUsageAnalytics.$inferSelect;
+
+export type InsertToolReservation = z.infer<typeof insertToolReservationSchema>;
+export type ToolReservation = typeof toolReservations.$inferSelect;

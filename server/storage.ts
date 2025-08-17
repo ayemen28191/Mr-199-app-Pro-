@@ -4,13 +4,16 @@ import {
   type WorkerTransfer, type WorkerBalance, type AutocompleteData, type WorkerType, type WorkerMiscExpense, type User,
   type Supplier, type SupplierPayment, type PrintSettings, type ProjectFundTransfer,
   type ReportTemplate,
+  type ToolCategory, type Tool, type ToolStock, type ToolMovement, type ToolMaintenanceLog, type ToolUsageAnalytics, type ToolReservation,
   type InsertProject, type InsertWorker, type InsertFundTransfer, type InsertWorkerAttendance,
   type InsertMaterial, type InsertMaterialPurchase, type InsertTransportationExpense, type InsertDailyExpenseSummary,
   type InsertWorkerTransfer, type InsertWorkerBalance, type InsertAutocompleteData, type InsertWorkerType, type InsertWorkerMiscExpense, type InsertUser,
   type InsertSupplier, type InsertSupplierPayment, type InsertPrintSettings, type InsertProjectFundTransfer,
   type InsertReportTemplate,
+  type InsertToolCategory, type InsertTool, type InsertToolStock, type InsertToolMovement, type InsertToolMaintenanceLog, type InsertToolUsageAnalytics, type InsertToolReservation,
   projects, workers, fundTransfers, workerAttendance, materials, materialPurchases, transportationExpenses, dailyExpenseSummaries,
-  workerTransfers, workerBalances, autocompleteData, workerTypes, workerMiscExpenses, users, suppliers, supplierPayments, printSettings, projectFundTransfers, reportTemplates
+  workerTransfers, workerBalances, autocompleteData, workerTypes, workerMiscExpenses, users, suppliers, supplierPayments, printSettings, projectFundTransfers, reportTemplates,
+  toolCategories, tools, toolStock, toolMovements, toolMaintenanceLogs, toolUsageAnalytics, toolReservations
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, gte, lte, gt, sql, inArray, or } from "drizzle-orm";
@@ -202,6 +205,88 @@ export interface IStorage {
   createReportTemplate(template: InsertReportTemplate): Promise<ReportTemplate>;
   updateReportTemplate(id: string, template: Partial<InsertReportTemplate>): Promise<ReportTemplate | undefined>;
   deleteReportTemplate(id: string): Promise<void>;
+
+  // =====================================================
+  // نظام إدارة المعدات والأدوات الاحترافي
+  // =====================================================
+
+  // Tool Categories
+  getToolCategories(): Promise<ToolCategory[]>;
+  getToolCategory(id: string): Promise<ToolCategory | undefined>;
+  getToolCategoryByName(name: string): Promise<ToolCategory | undefined>;
+  createToolCategory(category: InsertToolCategory): Promise<ToolCategory>;
+  updateToolCategory(id: string, category: Partial<InsertToolCategory>): Promise<ToolCategory | undefined>;
+  deleteToolCategory(id: string): Promise<void>;
+
+  // Tools
+  getTools(filters?: {
+    categoryId?: string;
+    status?: string;
+    condition?: string;
+    searchTerm?: string;
+    projectId?: string;
+    locationType?: string;
+  }): Promise<Tool[]>;
+  getTool(id: string): Promise<Tool | undefined>;
+  getToolBySku(sku: string): Promise<Tool | undefined>;
+  getToolByBarcode(barcode: string): Promise<Tool | undefined>;
+  getToolByQrCode(qrCode: string): Promise<Tool | undefined>;
+  createTool(tool: InsertTool): Promise<Tool>;
+  updateTool(id: string, tool: Partial<InsertTool>): Promise<Tool | undefined>;
+  deleteTool(id: string): Promise<void>;
+
+  // Tool Stock
+  getToolStock(toolId?: string, locationType?: string, locationId?: string): Promise<ToolStock[]>;
+  getToolStockByLocation(locationType: string, locationId?: string): Promise<ToolStock[]>;
+  updateToolStock(toolId: string, locationType: string, locationId: string | null, stock: Partial<InsertToolStock>): Promise<ToolStock>;
+  createOrUpdateToolStock(stock: InsertToolStock): Promise<ToolStock>;
+  
+  // Tool Movements
+  getToolMovements(filters?: {
+    toolId?: string;
+    projectId?: string;
+    movementType?: string;
+    dateFrom?: string;
+    dateTo?: string;
+  }): Promise<ToolMovement[]>;
+  getToolMovement(id: string): Promise<ToolMovement | undefined>;
+  createToolMovement(movement: InsertToolMovement): Promise<ToolMovement>;
+  updateToolMovement(id: string, movement: Partial<InsertToolMovement>): Promise<ToolMovement | undefined>;
+  deleteToolMovement(id: string): Promise<void>;
+
+  // Tool Maintenance
+  getToolMaintenanceLogs(toolId?: string, status?: string): Promise<ToolMaintenanceLog[]>;
+  getToolMaintenanceLog(id: string): Promise<ToolMaintenanceLog | undefined>;
+  createToolMaintenanceLog(log: InsertToolMaintenanceLog): Promise<ToolMaintenanceLog>;
+  updateToolMaintenanceLog(id: string, log: Partial<InsertToolMaintenanceLog>): Promise<ToolMaintenanceLog | undefined>;
+  deleteToolMaintenanceLog(id: string): Promise<void>;
+  getOverdueMaintenanceTasks(): Promise<ToolMaintenanceLog[]>;
+
+  // Tool Usage Analytics
+  getToolUsageAnalytics(toolId?: string, projectId?: string, period?: string): Promise<ToolUsageAnalytics[]>;
+  createOrUpdateToolUsageAnalytics(analytics: InsertToolUsageAnalytics): Promise<ToolUsageAnalytics>;
+  getToolUtilizationReport(dateFrom: string, dateTo: string): Promise<any[]>;
+
+  // Tool Reservations
+  getToolReservations(filters?: {
+    toolId?: string;
+    projectId?: string;
+    status?: string;
+    userId?: string;
+  }): Promise<ToolReservation[]>;
+  getToolReservation(id: string): Promise<ToolReservation | undefined>;
+  createToolReservation(reservation: InsertToolReservation): Promise<ToolReservation>;
+  updateToolReservation(id: string, reservation: Partial<InsertToolReservation>): Promise<ToolReservation | undefined>;
+  deleteToolReservation(id: string): Promise<void>;
+
+  // Advanced Tool Functions
+  transferTool(toolId: string, fromLocation: {type: string, id: string | null}, toLocation: {type: string, id: string | null}, quantity: number, userId: string, reason?: string): Promise<ToolMovement>;
+  getToolHistory(toolId: string): Promise<{movements: ToolMovement[], maintenance: ToolMaintenanceLog[]}>;
+  getToolsByProject(projectId: string): Promise<Tool[]>;
+  getLowStockTools(threshold?: number): Promise<Tool[]>;
+  getToolsNeedingMaintenance(): Promise<Tool[]>;
+  generateToolQRCode(toolId: string): Promise<string>;
+  bulkUpdateToolStatus(toolIds: string[], status: string, userId: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2895,6 +2980,918 @@ export class DatabaseStorage implements IStorage {
       await db.delete(reportTemplates).where(eq(reportTemplates.id, id));
     } catch (error) {
       console.error('Error deleting report template:', error);
+      throw error;
+    }
+  }
+
+  // =====================================================
+  // تنفيذ دوال نظام إدارة المعدات والأدوات الاحترافي
+  // =====================================================
+
+  // Tool Categories
+  async getToolCategories(): Promise<ToolCategory[]> {
+    try {
+      return await db.select().from(toolCategories)
+        .where(eq(toolCategories.isActive, true))
+        .orderBy(toolCategories.name);
+    } catch (error) {
+      console.error('Error getting tool categories:', error);
+      return [];
+    }
+  }
+
+  async getToolCategory(id: string): Promise<ToolCategory | undefined> {
+    try {
+      const [category] = await db.select().from(toolCategories).where(eq(toolCategories.id, id));
+      return category || undefined;
+    } catch (error) {
+      console.error('Error getting tool category:', error);
+      return undefined;
+    }
+  }
+
+  async getToolCategoryByName(name: string): Promise<ToolCategory | undefined> {
+    try {
+      const [category] = await db.select().from(toolCategories)
+        .where(and(eq(toolCategories.name, name.trim()), eq(toolCategories.isActive, true)));
+      return category || undefined;
+    } catch (error) {
+      console.error('Error getting tool category by name:', error);
+      return undefined;
+    }
+  }
+
+  async createToolCategory(category: InsertToolCategory): Promise<ToolCategory> {
+    try {
+      const [newCategory] = await db
+        .insert(toolCategories)
+        .values(category)
+        .returning();
+      
+      if (!newCategory) {
+        throw new Error('فشل في إنشاء تصنيف الأداة');
+      }
+      
+      return newCategory;
+    } catch (error) {
+      console.error('Error creating tool category:', error);
+      throw error;
+    }
+  }
+
+  async updateToolCategory(id: string, category: Partial<InsertToolCategory>): Promise<ToolCategory | undefined> {
+    try {
+      const [updated] = await db
+        .update(toolCategories)
+        .set({ ...category, updatedAt: sql`CURRENT_TIMESTAMP` })
+        .where(eq(toolCategories.id, id))
+        .returning();
+      return updated || undefined;
+    } catch (error) {
+      console.error('Error updating tool category:', error);
+      throw error;
+    }
+  }
+
+  async deleteToolCategory(id: string): Promise<void> {
+    try {
+      await db.update(toolCategories)
+        .set({ isActive: false })
+        .where(eq(toolCategories.id, id));
+    } catch (error) {
+      console.error('Error deleting tool category:', error);
+      throw error;
+    }
+  }
+
+  // Tools
+  async getTools(filters?: {
+    categoryId?: string;
+    status?: string;
+    condition?: string;
+    searchTerm?: string;
+    projectId?: string;
+    locationType?: string;
+  }): Promise<Tool[]> {
+    try {
+      let query = db.select().from(tools).where(eq(tools.isActive, true));
+
+      const conditions = [eq(tools.isActive, true)];
+
+      if (filters?.categoryId) {
+        conditions.push(eq(tools.categoryId, filters.categoryId));
+      }
+
+      if (filters?.status) {
+        conditions.push(eq(tools.status, filters.status));
+      }
+
+      if (filters?.condition) {
+        conditions.push(eq(tools.condition, filters.condition));
+      }
+
+      if (filters?.searchTerm) {
+        const searchTerm = `%${filters.searchTerm}%`;
+        conditions.push(
+          or(
+            sql`${tools.name} ILIKE ${searchTerm}`,
+            sql`${tools.description} ILIKE ${searchTerm}`,
+            sql`${tools.sku} ILIKE ${searchTerm}`,
+            sql`${tools.serialNumber} ILIKE ${searchTerm}`
+          )
+        );
+      }
+
+      if (conditions.length > 1) {
+        query = query.where(and(...conditions));
+      }
+
+      return await query.orderBy(tools.name);
+    } catch (error) {
+      console.error('Error getting tools:', error);
+      return [];
+    }
+  }
+
+  async getTool(id: string): Promise<Tool | undefined> {
+    try {
+      const [tool] = await db.select().from(tools).where(eq(tools.id, id));
+      return tool || undefined;
+    } catch (error) {
+      console.error('Error getting tool:', error);
+      return undefined;
+    }
+  }
+
+  async getToolBySku(sku: string): Promise<Tool | undefined> {
+    try {
+      const [tool] = await db.select().from(tools)
+        .where(and(eq(tools.sku, sku), eq(tools.isActive, true)));
+      return tool || undefined;
+    } catch (error) {
+      console.error('Error getting tool by SKU:', error);
+      return undefined;
+    }
+  }
+
+  async getToolByBarcode(barcode: string): Promise<Tool | undefined> {
+    try {
+      const [tool] = await db.select().from(tools)
+        .where(and(eq(tools.barcode, barcode), eq(tools.isActive, true)));
+      return tool || undefined;
+    } catch (error) {
+      console.error('Error getting tool by barcode:', error);
+      return undefined;
+    }
+  }
+
+  async getToolByQrCode(qrCode: string): Promise<Tool | undefined> {
+    try {
+      const [tool] = await db.select().from(tools)
+        .where(and(eq(tools.qrCode, qrCode), eq(tools.isActive, true)));
+      return tool || undefined;
+    } catch (error) {
+      console.error('Error getting tool by QR code:', error);
+      return undefined;
+    }
+  }
+
+  async createTool(tool: InsertTool): Promise<Tool> {
+    try {
+      const [newTool] = await db
+        .insert(tools)
+        .values({
+          ...tool,
+          qrCode: tool.qrCode || `TOOL_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        })
+        .returning();
+      
+      if (!newTool) {
+        throw new Error('فشل في إنشاء الأداة');
+      }
+      
+      return newTool;
+    } catch (error) {
+      console.error('Error creating tool:', error);
+      throw error;
+    }
+  }
+
+  async updateTool(id: string, tool: Partial<InsertTool>): Promise<Tool | undefined> {
+    try {
+      const [updated] = await db
+        .update(tools)
+        .set({ ...tool, updatedAt: sql`CURRENT_TIMESTAMP` })
+        .where(eq(tools.id, id))
+        .returning();
+      return updated || undefined;
+    } catch (error) {
+      console.error('Error updating tool:', error);
+      throw error;
+    }
+  }
+
+  async deleteTool(id: string): Promise<void> {
+    try {
+      await db.update(tools)
+        .set({ isActive: false })
+        .where(eq(tools.id, id));
+    } catch (error) {
+      console.error('Error deleting tool:', error);
+      throw error;
+    }
+  }
+
+  // Tool Stock
+  async getToolStock(toolId?: string, locationType?: string, locationId?: string): Promise<ToolStock[]> {
+    try {
+      const conditions = [];
+
+      if (toolId) {
+        conditions.push(eq(toolStock.toolId, toolId));
+      }
+
+      if (locationType) {
+        conditions.push(eq(toolStock.locationType, locationType));
+      }
+
+      if (locationId !== undefined) {
+        if (locationId === null) {
+          conditions.push(sql`${toolStock.locationId} IS NULL`);
+        } else {
+          conditions.push(eq(toolStock.locationId, locationId));
+        }
+      }
+
+      let query = db.select().from(toolStock);
+
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
+
+      return await query.orderBy(toolStock.createdAt);
+    } catch (error) {
+      console.error('Error getting tool stock:', error);
+      return [];
+    }
+  }
+
+  async getToolStockByLocation(locationType: string, locationId?: string): Promise<ToolStock[]> {
+    try {
+      const conditions = [eq(toolStock.locationType, locationType)];
+
+      if (locationId !== undefined) {
+        if (locationId === null) {
+          conditions.push(sql`${toolStock.locationId} IS NULL`);
+        } else {
+          conditions.push(eq(toolStock.locationId, locationId));
+        }
+      }
+
+      return await db.select().from(toolStock)
+        .where(and(...conditions))
+        .orderBy(toolStock.createdAt);
+    } catch (error) {
+      console.error('Error getting tool stock by location:', error);
+      return [];
+    }
+  }
+
+  async updateToolStock(toolId: string, locationType: string, locationId: string | null, stock: Partial<InsertToolStock>): Promise<ToolStock> {
+    try {
+      // محاولة تحديث المخزون الموجود
+      const [updated] = await db
+        .update(toolStock)
+        .set({ ...stock, updatedAt: sql`CURRENT_TIMESTAMP` })
+        .where(and(
+          eq(toolStock.toolId, toolId),
+          eq(toolStock.locationType, locationType),
+          locationId ? eq(toolStock.locationId, locationId) : sql`${toolStock.locationId} IS NULL`
+        ))
+        .returning();
+
+      if (updated) {
+        return updated;
+      }
+
+      // إذا لم يوجد، إنشاء سجل جديد
+      const [newStock] = await db
+        .insert(toolStock)
+        .values({
+          toolId,
+          locationType,
+          locationId,
+          ...stock,
+        })
+        .returning();
+
+      if (!newStock) {
+        throw new Error('فشل في تحديث مخزون الأداة');
+      }
+
+      return newStock;
+    } catch (error) {
+      console.error('Error updating tool stock:', error);
+      throw error;
+    }
+  }
+
+  async createOrUpdateToolStock(stock: InsertToolStock): Promise<ToolStock> {
+    try {
+      const [existing] = await db.select().from(toolStock)
+        .where(and(
+          eq(toolStock.toolId, stock.toolId),
+          eq(toolStock.locationType, stock.locationType),
+          stock.locationId ? eq(toolStock.locationId, stock.locationId) : sql`${toolStock.locationId} IS NULL`
+        ));
+
+      if (existing) {
+        const [updated] = await db
+          .update(toolStock)
+          .set({
+            ...stock,
+            updatedAt: sql`CURRENT_TIMESTAMP`
+          })
+          .where(eq(toolStock.id, existing.id))
+          .returning();
+        
+        return updated!;
+      } else {
+        const [newStock] = await db
+          .insert(toolStock)
+          .values(stock)
+          .returning();
+        
+        if (!newStock) {
+          throw new Error('فشل في إنشاء مخزون الأداة');
+        }
+        
+        return newStock;
+      }
+    } catch (error) {
+      console.error('Error creating/updating tool stock:', error);
+      throw error;
+    }
+  }
+
+  // Tool Movements
+  async getToolMovements(filters?: {
+    toolId?: string;
+    projectId?: string;
+    movementType?: string;
+    dateFrom?: string;
+    dateTo?: string;
+  }): Promise<ToolMovement[]> {
+    try {
+      const conditions = [];
+
+      if (filters?.toolId) {
+        conditions.push(eq(toolMovements.toolId, filters.toolId));
+      }
+
+      if (filters?.projectId) {
+        conditions.push(eq(toolMovements.projectId, filters.projectId));
+      }
+
+      if (filters?.movementType) {
+        conditions.push(eq(toolMovements.movementType, filters.movementType));
+      }
+
+      if (filters?.dateFrom) {
+        conditions.push(gte(toolMovements.performedAt, new Date(filters.dateFrom)));
+      }
+
+      if (filters?.dateTo) {
+        conditions.push(lte(toolMovements.performedAt, new Date(filters.dateTo + ' 23:59:59')));
+      }
+
+      let query = db.select().from(toolMovements);
+
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
+
+      return await query.orderBy(sql`${toolMovements.performedAt} DESC`);
+    } catch (error) {
+      console.error('Error getting tool movements:', error);
+      return [];
+    }
+  }
+
+  async getToolMovement(id: string): Promise<ToolMovement | undefined> {
+    try {
+      const [movement] = await db.select().from(toolMovements).where(eq(toolMovements.id, id));
+      return movement || undefined;
+    } catch (error) {
+      console.error('Error getting tool movement:', error);
+      return undefined;
+    }
+  }
+
+  async createToolMovement(movement: InsertToolMovement): Promise<ToolMovement> {
+    try {
+      const [newMovement] = await db
+        .insert(toolMovements)
+        .values({
+          ...movement,
+          referenceNumber: movement.referenceNumber || `MOV_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+        })
+        .returning();
+      
+      if (!newMovement) {
+        throw new Error('فشل في إنشاء حركة الأداة');
+      }
+      
+      return newMovement;
+    } catch (error) {
+      console.error('Error creating tool movement:', error);
+      throw error;
+    }
+  }
+
+  async updateToolMovement(id: string, movement: Partial<InsertToolMovement>): Promise<ToolMovement | undefined> {
+    try {
+      const [updated] = await db
+        .update(toolMovements)
+        .set(movement)
+        .where(eq(toolMovements.id, id))
+        .returning();
+      return updated || undefined;
+    } catch (error) {
+      console.error('Error updating tool movement:', error);
+      throw error;
+    }
+  }
+
+  async deleteToolMovement(id: string): Promise<void> {
+    try {
+      await db.delete(toolMovements).where(eq(toolMovements.id, id));
+    } catch (error) {
+      console.error('Error deleting tool movement:', error);
+      throw error;
+    }
+  }
+
+  // Tool Maintenance
+  async getToolMaintenanceLogs(toolId?: string, status?: string): Promise<ToolMaintenanceLog[]> {
+    try {
+      const conditions = [];
+
+      if (toolId) {
+        conditions.push(eq(toolMaintenanceLogs.toolId, toolId));
+      }
+
+      if (status) {
+        conditions.push(eq(toolMaintenanceLogs.status, status));
+      }
+
+      let query = db.select().from(toolMaintenanceLogs);
+
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
+
+      return await query.orderBy(sql`${toolMaintenanceLogs.scheduledDate} DESC`);
+    } catch (error) {
+      console.error('Error getting tool maintenance logs:', error);
+      return [];
+    }
+  }
+
+  async getToolMaintenanceLog(id: string): Promise<ToolMaintenanceLog | undefined> {
+    try {
+      const [log] = await db.select().from(toolMaintenanceLogs).where(eq(toolMaintenanceLogs.id, id));
+      return log || undefined;
+    } catch (error) {
+      console.error('Error getting tool maintenance log:', error);
+      return undefined;
+    }
+  }
+
+  async createToolMaintenanceLog(log: InsertToolMaintenanceLog): Promise<ToolMaintenanceLog> {
+    try {
+      const [newLog] = await db
+        .insert(toolMaintenanceLogs)
+        .values(log)
+        .returning();
+      
+      if (!newLog) {
+        throw new Error('فشل في إنشاء سجل الصيانة');
+      }
+      
+      return newLog;
+    } catch (error) {
+      console.error('Error creating tool maintenance log:', error);
+      throw error;
+    }
+  }
+
+  async updateToolMaintenanceLog(id: string, log: Partial<InsertToolMaintenanceLog>): Promise<ToolMaintenanceLog | undefined> {
+    try {
+      const [updated] = await db
+        .update(toolMaintenanceLogs)
+        .set({ ...log, updatedAt: sql`CURRENT_TIMESTAMP` })
+        .where(eq(toolMaintenanceLogs.id, id))
+        .returning();
+      return updated || undefined;
+    } catch (error) {
+      console.error('Error updating tool maintenance log:', error);
+      throw error;
+    }
+  }
+
+  async deleteToolMaintenanceLog(id: string): Promise<void> {
+    try {
+      await db.delete(toolMaintenanceLogs).where(eq(toolMaintenanceLogs.id, id));
+    } catch (error) {
+      console.error('Error deleting tool maintenance log:', error);
+      throw error;
+    }
+  }
+
+  async getOverdueMaintenanceTasks(): Promise<ToolMaintenanceLog[]> {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      return await db.select().from(toolMaintenanceLogs)
+        .where(and(
+          eq(toolMaintenanceLogs.status, 'scheduled'),
+          lte(toolMaintenanceLogs.scheduledDate, new Date(today))
+        ))
+        .orderBy(toolMaintenanceLogs.scheduledDate);
+    } catch (error) {
+      console.error('Error getting overdue maintenance tasks:', error);
+      return [];
+    }
+  }
+
+  // Tool Usage Analytics
+  async getToolUsageAnalytics(toolId?: string, projectId?: string, period?: string): Promise<ToolUsageAnalytics[]> {
+    try {
+      const conditions = [];
+
+      if (toolId) {
+        conditions.push(eq(toolUsageAnalytics.toolId, toolId));
+      }
+
+      if (projectId) {
+        conditions.push(eq(toolUsageAnalytics.projectId, projectId));
+      }
+
+      if (period) {
+        if (period.includes('-W')) {
+          // أسبوعي
+          conditions.push(eq(toolUsageAnalytics.analysisWeek, period));
+        } else if (period.length === 7) {
+          // شهري
+          conditions.push(eq(toolUsageAnalytics.analysisMonth, period));
+        } else {
+          // يومي
+          conditions.push(eq(toolUsageAnalytics.analysisDate, period));
+        }
+      }
+
+      let query = db.select().from(toolUsageAnalytics);
+
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
+
+      return await query.orderBy(sql`${toolUsageAnalytics.analysisDate} DESC`);
+    } catch (error) {
+      console.error('Error getting tool usage analytics:', error);
+      return [];
+    }
+  }
+
+  async createOrUpdateToolUsageAnalytics(analytics: InsertToolUsageAnalytics): Promise<ToolUsageAnalytics> {
+    try {
+      const [existing] = await db.select().from(toolUsageAnalytics)
+        .where(and(
+          eq(toolUsageAnalytics.toolId, analytics.toolId),
+          eq(toolUsageAnalytics.analysisDate, analytics.analysisDate),
+          analytics.projectId ? eq(toolUsageAnalytics.projectId, analytics.projectId) : sql`${toolUsageAnalytics.projectId} IS NULL`
+        ));
+
+      if (existing) {
+        const [updated] = await db
+          .update(toolUsageAnalytics)
+          .set(analytics)
+          .where(eq(toolUsageAnalytics.id, existing.id))
+          .returning();
+        
+        return updated!;
+      } else {
+        const [newAnalytics] = await db
+          .insert(toolUsageAnalytics)
+          .values(analytics)
+          .returning();
+        
+        if (!newAnalytics) {
+          throw new Error('فشل في إنشاء تحليلات الاستخدام');
+        }
+        
+        return newAnalytics;
+      }
+    } catch (error) {
+      console.error('Error creating/updating tool usage analytics:', error);
+      throw error;
+    }
+  }
+
+  async getToolUtilizationReport(dateFrom: string, dateTo: string): Promise<any[]> {
+    try {
+      // تقرير شامل عن استخدام الأدوات
+      const result = await db.execute(sql`
+        SELECT 
+          t.id as tool_id,
+          t.name as tool_name,
+          t.status,
+          t.condition,
+          tc.name as category_name,
+          COALESCE(SUM(ta.usage_hours), 0) as total_usage_hours,
+          COALESCE(AVG(ta.utilization_rate), 0) as avg_utilization_rate,
+          COALESCE(SUM(ta.operational_cost), 0) as total_operational_cost,
+          COUNT(tm.id) as movement_count
+        FROM tools t
+        LEFT JOIN tool_categories tc ON t.category_id = tc.id
+        LEFT JOIN tool_usage_analytics ta ON t.id = ta.tool_id 
+          AND ta.analysis_date BETWEEN ${dateFrom} AND ${dateTo}
+        LEFT JOIN tool_movements tm ON t.id = tm.tool_id 
+          AND tm.performed_at BETWEEN ${dateFrom} AND ${dateTo}
+        WHERE t.is_active = true
+        GROUP BY t.id, t.name, t.status, t.condition, tc.name
+        ORDER BY total_usage_hours DESC
+      `);
+
+      return result.rows;
+    } catch (error) {
+      console.error('Error getting tool utilization report:', error);
+      return [];
+    }
+  }
+
+  // Tool Reservations
+  async getToolReservations(filters?: {
+    toolId?: string;
+    projectId?: string;
+    status?: string;
+    userId?: string;
+  }): Promise<ToolReservation[]> {
+    try {
+      const conditions = [];
+
+      if (filters?.toolId) {
+        conditions.push(eq(toolReservations.toolId, filters.toolId));
+      }
+
+      if (filters?.projectId) {
+        conditions.push(eq(toolReservations.projectId, filters.projectId));
+      }
+
+      if (filters?.status) {
+        conditions.push(eq(toolReservations.status, filters.status));
+      }
+
+      if (filters?.userId) {
+        conditions.push(eq(toolReservations.reservedBy, filters.userId));
+      }
+
+      let query = db.select().from(toolReservations);
+
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
+
+      return await query.orderBy(sql`${toolReservations.requestedDate} DESC`);
+    } catch (error) {
+      console.error('Error getting tool reservations:', error);
+      return [];
+    }
+  }
+
+  async getToolReservation(id: string): Promise<ToolReservation | undefined> {
+    try {
+      const [reservation] = await db.select().from(toolReservations).where(eq(toolReservations.id, id));
+      return reservation || undefined;
+    } catch (error) {
+      console.error('Error getting tool reservation:', error);
+      return undefined;
+    }
+  }
+
+  async createToolReservation(reservation: InsertToolReservation): Promise<ToolReservation> {
+    try {
+      const [newReservation] = await db
+        .insert(toolReservations)
+        .values(reservation)
+        .returning();
+      
+      if (!newReservation) {
+        throw new Error('فشل في إنشاء حجز الأداة');
+      }
+      
+      return newReservation;
+    } catch (error) {
+      console.error('Error creating tool reservation:', error);
+      throw error;
+    }
+  }
+
+  async updateToolReservation(id: string, reservation: Partial<InsertToolReservation>): Promise<ToolReservation | undefined> {
+    try {
+      const [updated] = await db
+        .update(toolReservations)
+        .set({ ...reservation, updatedAt: sql`CURRENT_TIMESTAMP` })
+        .where(eq(toolReservations.id, id))
+        .returning();
+      return updated || undefined;
+    } catch (error) {
+      console.error('Error updating tool reservation:', error);
+      throw error;
+    }
+  }
+
+  async deleteToolReservation(id: string): Promise<void> {
+    try {
+      await db.delete(toolReservations).where(eq(toolReservations.id, id));
+    } catch (error) {
+      console.error('Error deleting tool reservation:', error);
+      throw error;
+    }
+  }
+
+  // Advanced Tool Functions
+  async transferTool(
+    toolId: string, 
+    fromLocation: {type: string, id: string | null}, 
+    toLocation: {type: string, id: string | null}, 
+    quantity: number, 
+    userId: string, 
+    reason?: string
+  ): Promise<ToolMovement> {
+    try {
+      // إنشاء سجل الحركة
+      const movement = await this.createToolMovement({
+        toolId,
+        movementType: 'transfer',
+        quantity,
+        fromType: fromLocation.type,
+        fromId: fromLocation.id,
+        toType: toLocation.type,
+        toId: toLocation.id,
+        reason,
+        performedBy: userId,
+      });
+
+      // تحديث المخزون في الموقع الأصلي
+      if (fromLocation.type !== 'none') {
+        const currentFromStock = await this.getToolStock(toolId, fromLocation.type, fromLocation.id);
+        if (currentFromStock.length > 0) {
+          const stock = currentFromStock[0];
+          await this.updateToolStock(toolId, fromLocation.type, fromLocation.id, {
+            quantity: Math.max(0, stock.quantity - quantity),
+            availableQuantity: Math.max(0, stock.availableQuantity - quantity),
+          });
+        }
+      }
+
+      // تحديث المخزون في الموقع الجديد
+      if (toLocation.type !== 'none') {
+        const currentToStock = await this.getToolStock(toolId, toLocation.type, toLocation.id);
+        if (currentToStock.length > 0) {
+          const stock = currentToStock[0];
+          await this.updateToolStock(toolId, toLocation.type, toLocation.id, {
+            quantity: stock.quantity + quantity,
+            availableQuantity: stock.availableQuantity + quantity,
+          });
+        } else {
+          // إنشاء سجل مخزون جديد
+          await this.createOrUpdateToolStock({
+            toolId,
+            locationType: toLocation.type,
+            locationId: toLocation.id,
+            quantity,
+            availableQuantity: quantity,
+            reservedQuantity: 0,
+          });
+        }
+      }
+
+      return movement;
+    } catch (error) {
+      console.error('Error transferring tool:', error);
+      throw error;
+    }
+  }
+
+  async getToolHistory(toolId: string): Promise<{movements: ToolMovement[], maintenance: ToolMaintenanceLog[]}> {
+    try {
+      const [movements, maintenance] = await Promise.all([
+        this.getToolMovements({ toolId }),
+        this.getToolMaintenanceLogs(toolId),
+      ]);
+
+      return { movements, maintenance };
+    } catch (error) {
+      console.error('Error getting tool history:', error);
+      return { movements: [], maintenance: [] };
+    }
+  }
+
+  async getToolsByProject(projectId: string): Promise<Tool[]> {
+    try {
+      const result = await db.execute(sql`
+        SELECT DISTINCT t.*
+        FROM tools t
+        JOIN tool_stock ts ON t.id = ts.tool_id
+        WHERE ts.location_type = 'project' 
+          AND ts.location_id = ${projectId}
+          AND t.is_active = true
+          AND ts.quantity > 0
+        ORDER BY t.name
+      `);
+
+      return result.rows as any[];
+    } catch (error) {
+      console.error('Error getting tools by project:', error);
+      return [];
+    }
+  }
+
+  async getLowStockTools(threshold: number = 5): Promise<Tool[]> {
+    try {
+      const result = await db.execute(sql`
+        SELECT t.*, SUM(ts.available_quantity) as total_available
+        FROM tools t
+        JOIN tool_stock ts ON t.id = ts.tool_id
+        WHERE t.is_active = true
+        GROUP BY t.id, t.name, t.description, t.category_id, t.unit, t.status, t.condition, t.created_at, t.updated_at
+        HAVING SUM(ts.available_quantity) <= ${threshold}
+        ORDER BY total_available ASC
+      `);
+
+      return result.rows as any[];
+    } catch (error) {
+      console.error('Error getting low stock tools:', error);
+      return [];
+    }
+  }
+
+  async getToolsNeedingMaintenance(): Promise<Tool[]> {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const result = await db.execute(sql`
+        SELECT DISTINCT t.*
+        FROM tools t
+        WHERE t.is_active = true
+          AND (
+            t.next_maintenance_date <= ${today}
+            OR t.next_maintenance_date IS NULL AND t.maintenance_interval IS NOT NULL
+          )
+        ORDER BY t.next_maintenance_date ASC NULLS LAST
+      `);
+
+      return result.rows as any[];
+    } catch (error) {
+      console.error('Error getting tools needing maintenance:', error);
+      return [];
+    }
+  }
+
+  async generateToolQRCode(toolId: string): Promise<string> {
+    try {
+      const qrCode = `TOOL_${toolId}_${Date.now()}`;
+      await this.updateTool(toolId, { qrCode });
+      return qrCode;
+    } catch (error) {
+      console.error('Error generating QR code:', error);
+      throw error;
+    }
+  }
+
+  async bulkUpdateToolStatus(toolIds: string[], status: string, userId: string): Promise<void> {
+    try {
+      await db.update(tools)
+        .set({ 
+          status, 
+          updatedAt: sql`CURRENT_TIMESTAMP` 
+        })
+        .where(inArray(tools.id, toolIds));
+
+      // إنشاء سجلات الحركة للتحديث المجمع
+      const movements = toolIds.map(toolId => ({
+        toolId,
+        movementType: 'adjust' as const,
+        quantity: 0,
+        reason: `تحديث الحالة إلى: ${status}`,
+        performedBy: userId,
+      }));
+
+      for (const movement of movements) {
+        await this.createToolMovement(movement);
+      }
+    } catch (error) {
+      console.error('Error bulk updating tool status:', error);
       throw error;
     }
   }

@@ -12,7 +12,9 @@ import {
   insertWorkerBalanceSchema, insertAutocompleteDataSchema, insertWorkerTypeSchema,
   insertWorkerMiscExpenseSchema, insertUserSchema, insertSupplierSchema, insertSupplierPaymentSchema,
   insertPrintSettingsSchema, insertProjectFundTransferSchema,
-  insertReportTemplateSchema
+  insertReportTemplateSchema,
+  insertToolCategorySchema, insertToolSchema, insertToolStockSchema, insertToolMovementSchema, 
+  insertToolMaintenanceLogSchema, insertToolUsageAnalyticsSchema, insertToolReservationSchema
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -3396,7 +3398,707 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // =====================================================
+  // API Routes لنظام إدارة المعدات والأدوات الاحترافي
+  // =====================================================
 
+  // Tool Categories Routes
+  app.get("/api/tool-categories", async (req, res) => {
+    try {
+      const categories = await storage.getToolCategories();
+      res.json(categories);
+    } catch (error) {
+      console.error("Error fetching tool categories:", error);
+      res.status(500).json({ message: "خطأ في جلب تصنيفات الأدوات" });
+    }
+  });
+
+  app.post("/api/tool-categories", async (req, res) => {
+    try {
+      const result = insertToolCategorySchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "بيانات تصنيف الأداة غير صحيحة", 
+          errors: result.error.issues 
+        });
+      }
+
+      // فحص عدم تكرار اسم التصنيف
+      const existingCategory = await storage.getToolCategoryByName(result.data.name);
+      if (existingCategory) {
+        return res.status(400).json({ message: "يوجد تصنيف بنفس الاسم مسبقاً" });
+      }
+
+      const category = await storage.createToolCategory(result.data);
+      res.status(201).json(category);
+    } catch (error) {
+      console.error("Error creating tool category:", error);
+      res.status(500).json({ message: "خطأ في إنشاء تصنيف الأداة" });
+    }
+  });
+
+  app.put("/api/tool-categories/:id", async (req, res) => {
+    try {
+      const result = insertToolCategorySchema.partial().safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "بيانات تصنيف الأداة غير صحيحة", 
+          errors: result.error.issues 
+        });
+      }
+
+      const category = await storage.updateToolCategory(req.params.id, result.data);
+      if (!category) {
+        return res.status(404).json({ message: "تصنيف الأداة غير موجود" });
+      }
+      res.json(category);
+    } catch (error) {
+      console.error("Error updating tool category:", error);
+      res.status(500).json({ message: "خطأ في تحديث تصنيف الأداة" });
+    }
+  });
+
+  app.delete("/api/tool-categories/:id", async (req, res) => {
+    try {
+      await storage.deleteToolCategory(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting tool category:", error);
+      res.status(500).json({ message: "خطأ في حذف تصنيف الأداة" });
+    }
+  });
+
+  // Tools Routes
+  app.get("/api/tools", async (req, res) => {
+    try {
+      const { categoryId, status, condition, searchTerm, projectId, locationType } = req.query;
+      const filters = {
+        categoryId: categoryId as string,
+        status: status as string,
+        condition: condition as string,
+        searchTerm: searchTerm as string,
+        projectId: projectId as string,
+        locationType: locationType as string,
+      };
+
+      const tools = await storage.getTools(filters);
+      res.json(tools);
+    } catch (error) {
+      console.error("Error fetching tools:", error);
+      res.status(500).json({ message: "خطأ في جلب الأدوات" });
+    }
+  });
+
+  app.get("/api/tools/:id", async (req, res) => {
+    try {
+      const tool = await storage.getTool(req.params.id);
+      if (!tool) {
+        return res.status(404).json({ message: "الأداة غير موجودة" });
+      }
+      res.json(tool);
+    } catch (error) {
+      console.error("Error fetching tool:", error);
+      res.status(500).json({ message: "خطأ في جلب الأداة" });
+    }
+  });
+
+  app.post("/api/tools", async (req, res) => {
+    try {
+      const result = insertToolSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "بيانات الأداة غير صحيحة", 
+          errors: result.error.issues 
+        });
+      }
+
+      // فحص عدم تكرار SKU إذا كان موجوداً
+      if (result.data.sku) {
+        const existingTool = await storage.getToolBySku(result.data.sku);
+        if (existingTool) {
+          return res.status(400).json({ message: "يوجد أداة بنفس كود المخزون مسبقاً" });
+        }
+      }
+
+      const tool = await storage.createTool(result.data);
+      res.status(201).json(tool);
+    } catch (error) {
+      console.error("Error creating tool:", error);
+      res.status(500).json({ message: "خطأ في إنشاء الأداة" });
+    }
+  });
+
+  app.put("/api/tools/:id", async (req, res) => {
+    try {
+      const result = insertToolSchema.partial().safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "بيانات الأداة غير صحيحة", 
+          errors: result.error.issues 
+        });
+      }
+
+      const tool = await storage.updateTool(req.params.id, result.data);
+      if (!tool) {
+        return res.status(404).json({ message: "الأداة غير موجودة" });
+      }
+      res.json(tool);
+    } catch (error) {
+      console.error("Error updating tool:", error);
+      res.status(500).json({ message: "خطأ في تحديث الأداة" });
+    }
+  });
+
+  app.delete("/api/tools/:id", async (req, res) => {
+    try {
+      await storage.deleteTool(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting tool:", error);
+      res.status(500).json({ message: "خطأ في حذف الأداة" });
+    }
+  });
+
+  // Tools Search Routes
+  app.get("/api/tools/search/sku/:sku", async (req, res) => {
+    try {
+      const tool = await storage.getToolBySku(req.params.sku);
+      if (!tool) {
+        return res.status(404).json({ message: "الأداة غير موجودة" });
+      }
+      res.json(tool);
+    } catch (error) {
+      console.error("Error searching tool by SKU:", error);
+      res.status(500).json({ message: "خطأ في البحث عن الأداة" });
+    }
+  });
+
+  app.get("/api/tools/search/barcode/:barcode", async (req, res) => {
+    try {
+      const tool = await storage.getToolByBarcode(req.params.barcode);
+      if (!tool) {
+        return res.status(404).json({ message: "الأداة غير موجودة" });
+      }
+      res.json(tool);
+    } catch (error) {
+      console.error("Error searching tool by barcode:", error);
+      res.status(500).json({ message: "خطأ في البحث عن الأداة" });
+    }
+  });
+
+  app.get("/api/tools/search/qr/:qrCode", async (req, res) => {
+    try {
+      const tool = await storage.getToolByQrCode(req.params.qrCode);
+      if (!tool) {
+        return res.status(404).json({ message: "الأداة غير موجودة" });
+      }
+      res.json(tool);
+    } catch (error) {
+      console.error("Error searching tool by QR code:", error);
+      res.status(500).json({ message: "خطأ في البحث عن الأداة" });
+    }
+  });
+
+  // Tool Stock Routes
+  app.get("/api/tool-stock", async (req, res) => {
+    try {
+      const { toolId, locationType, locationId } = req.query;
+      const stock = await storage.getToolStock(
+        toolId as string, 
+        locationType as string, 
+        locationId as string
+      );
+      res.json(stock);
+    } catch (error) {
+      console.error("Error fetching tool stock:", error);
+      res.status(500).json({ message: "خطأ في جلب مخزون الأدوات" });
+    }
+  });
+
+  app.post("/api/tool-stock", async (req, res) => {
+    try {
+      const result = insertToolStockSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "بيانات مخزون الأداة غير صحيحة", 
+          errors: result.error.issues 
+        });
+      }
+
+      const stock = await storage.createOrUpdateToolStock(result.data);
+      res.status(201).json(stock);
+    } catch (error) {
+      console.error("Error creating/updating tool stock:", error);
+      res.status(500).json({ message: "خطأ في إنشاء/تحديث مخزون الأداة" });
+    }
+  });
+
+  // Tool Movements Routes
+  app.get("/api/tool-movements", async (req, res) => {
+    try {
+      const { toolId, projectId, movementType, dateFrom, dateTo } = req.query;
+      const filters = {
+        toolId: toolId as string,
+        projectId: projectId as string,
+        movementType: movementType as string,
+        dateFrom: dateFrom as string,
+        dateTo: dateTo as string,
+      };
+
+      const movements = await storage.getToolMovements(filters);
+      res.json(movements);
+    } catch (error) {
+      console.error("Error fetching tool movements:", error);
+      res.status(500).json({ message: "خطأ في جلب حركات الأدوات" });
+    }
+  });
+
+  app.post("/api/tool-movements", async (req, res) => {
+    try {
+      const result = insertToolMovementSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "بيانات حركة الأداة غير صحيحة", 
+          errors: result.error.issues 
+        });
+      }
+
+      const movement = await storage.createToolMovement(result.data);
+      res.status(201).json(movement);
+    } catch (error) {
+      console.error("Error creating tool movement:", error);
+      res.status(500).json({ message: "خطأ في إنشاء حركة الأداة" });
+    }
+  });
+
+  // Tool Transfer Route
+  app.post("/api/tools/:toolId/transfer", async (req, res) => {
+    try {
+      const { toolId } = req.params;
+      const { fromLocation, toLocation, quantity, userId, reason } = req.body;
+
+      if (!fromLocation || !toLocation || !quantity || !userId) {
+        return res.status(400).json({ 
+          message: "بيانات التحويل غير مكتملة" 
+        });
+      }
+
+      const movement = await storage.transferTool(
+        toolId, 
+        fromLocation, 
+        toLocation, 
+        quantity, 
+        userId, 
+        reason
+      );
+      res.status(201).json(movement);
+    } catch (error) {
+      console.error("Error transferring tool:", error);
+      res.status(500).json({ message: "خطأ في تحويل الأداة" });
+    }
+  });
+
+  // Tool Maintenance Routes
+  app.get("/api/tool-maintenance", async (req, res) => {
+    try {
+      const { toolId, status } = req.query;
+      const logs = await storage.getToolMaintenanceLogs(
+        toolId as string, 
+        status as string
+      );
+      res.json(logs);
+    } catch (error) {
+      console.error("Error fetching tool maintenance logs:", error);
+      res.status(500).json({ message: "خطأ في جلب سجلات الصيانة" });
+    }
+  });
+
+  app.post("/api/tool-maintenance", async (req, res) => {
+    try {
+      const result = insertToolMaintenanceLogSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "بيانات صيانة الأداة غير صحيحة", 
+          errors: result.error.issues 
+        });
+      }
+
+      const log = await storage.createToolMaintenanceLog(result.data);
+      res.status(201).json(log);
+    } catch (error) {
+      console.error("Error creating tool maintenance log:", error);
+      res.status(500).json({ message: "خطأ في إنشاء سجل الصيانة" });
+    }
+  });
+
+  app.get("/api/tool-maintenance/overdue", async (req, res) => {
+    try {
+      const overdueMaintenace = await storage.getOverdueMaintenanceTasks();
+      res.json(overdueMaintenace);
+    } catch (error) {
+      console.error("Error fetching overdue maintenance:", error);
+      res.status(500).json({ message: "خطأ في جلب الصيانة المتأخرة" });
+    }
+  });
+
+  // Tool Reservations Routes
+  app.get("/api/tool-reservations", async (req, res) => {
+    try {
+      const { toolId, projectId, status, userId } = req.query;
+      const filters = {
+        toolId: toolId as string,
+        projectId: projectId as string,
+        status: status as string,
+        userId: userId as string,
+      };
+
+      const reservations = await storage.getToolReservations(filters);
+      res.json(reservations);
+    } catch (error) {
+      console.error("Error fetching tool reservations:", error);
+      res.status(500).json({ message: "خطأ في جلب حجوزات الأدوات" });
+    }
+  });
+
+  app.post("/api/tool-reservations", async (req, res) => {
+    try {
+      const result = insertToolReservationSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "بيانات حجز الأداة غير صحيحة", 
+          errors: result.error.issues 
+        });
+      }
+
+      const reservation = await storage.createToolReservation(result.data);
+      res.status(201).json(reservation);
+    } catch (error) {
+      console.error("Error creating tool reservation:", error);
+      res.status(500).json({ message: "خطأ في إنشاء حجز الأداة" });
+    }
+  });
+
+  // Advanced Tool Reports Routes
+  app.get("/api/tools/reports/utilization", async (req, res) => {
+    try {
+      const { dateFrom, dateTo } = req.query;
+      
+      if (!dateFrom || !dateTo) {
+        return res.status(400).json({ message: "يرجى تحديد تاريخ البداية والنهاية" });
+      }
+
+      const report = await storage.getToolUtilizationReport(
+        dateFrom as string, 
+        dateTo as string
+      );
+      res.json(report);
+    } catch (error) {
+      console.error("Error generating tool utilization report:", error);
+      res.status(500).json({ message: "خطأ في إنشاء تقرير استخدام الأدوات" });
+    }
+  });
+
+  app.get("/api/tools/reports/low-stock", async (req, res) => {
+    try {
+      const { threshold = 5 } = req.query;
+      const lowStockTools = await storage.getLowStockTools(parseInt(threshold as string));
+      res.json(lowStockTools);
+    } catch (error) {
+      console.error("Error fetching low stock tools:", error);
+      res.status(500).json({ message: "خطأ في جلب الأدوات منخفضة المخزون" });
+    }
+  });
+
+  app.get("/api/tools/reports/needing-maintenance", async (req, res) => {
+    try {
+      const toolsNeedingMaintenance = await storage.getToolsNeedingMaintenance();
+      res.json(toolsNeedingMaintenance);
+    } catch (error) {
+      console.error("Error fetching tools needing maintenance:", error);
+      res.status(500).json({ message: "خطأ في جلب الأدوات التي تحتاج صيانة" });
+    }
+  });
+
+  app.get("/api/tools/:toolId/history", async (req, res) => {
+    try {
+      const history = await storage.getToolHistory(req.params.toolId);
+      res.json(history);
+    } catch (error) {
+      console.error("Error fetching tool history:", error);
+      res.status(500).json({ message: "خطأ في جلب تاريخ الأداة" });
+    }
+  });
+
+  app.get("/api/projects/:projectId/tools", async (req, res) => {
+    try {
+      const tools = await storage.getToolsByProject(req.params.projectId);
+      res.json(tools);
+    } catch (error) {
+      console.error("Error fetching project tools:", error);
+      res.status(500).json({ message: "خطأ في جلب أدوات المشروع" });
+    }
+  });
+
+  // Tool QR Code Generation
+  app.post("/api/tools/:toolId/generate-qr", async (req, res) => {
+    try {
+      const qrCode = await storage.generateToolQRCode(req.params.toolId);
+      res.json({ qrCode });
+    } catch (error) {
+      console.error("Error generating QR code:", error);
+      res.status(500).json({ message: "خطأ في إنشاء كود QR" });
+    }
+  });
+
+  // Bulk Tool Operations
+  app.post("/api/tools/bulk-update-status", async (req, res) => {
+    try {
+      const { toolIds, status, userId } = req.body;
+      
+      if (!toolIds || !Array.isArray(toolIds) || !status || !userId) {
+        return res.status(400).json({ 
+          message: "بيانات التحديث المجمع غير مكتملة" 
+        });
+      }
+
+      await storage.bulkUpdateToolStatus(toolIds, status, userId);
+      res.json({ message: "تم تحديث حالة الأدوات بنجاح", count: toolIds.length });
+    } catch (error) {
+      console.error("Error bulk updating tool status:", error);
+      res.status(500).json({ message: "خطأ في التحديث المجمع لحالة الأدوات" });
+    }
+  });
+
+  // Tool System Migration Endpoint
+  app.post("/api/migrate/tools", async (req, res) => {
+    try {
+      console.log("🔧 بدء إنشاء جداول نظام الأدوات...");
+      
+      // حذف الجداول الموجودة إذا كانت موجودة وغير متطابقة
+      try {
+        console.log("🗑️ حذف الجداول القديمة إذا كانت موجودة...");
+        await db.execute(sql`DROP TABLE IF EXISTS tool_reservations CASCADE`);
+        await db.execute(sql`DROP TABLE IF EXISTS tool_usage_analytics CASCADE`);
+        await db.execute(sql`DROP TABLE IF EXISTS tool_maintenance_logs CASCADE`);
+        await db.execute(sql`DROP TABLE IF EXISTS tool_movements CASCADE`);
+        await db.execute(sql`DROP TABLE IF EXISTS tool_stock CASCADE`);
+        await db.execute(sql`DROP TABLE IF EXISTS tools CASCADE`);
+        await db.execute(sql`DROP TABLE IF EXISTS tool_categories CASCADE`);
+        console.log("✅ تم حذف الجداول القديمة");
+      } catch (error) {
+        console.log("ℹ️ لا توجد جداول قديمة للحذف");
+      }
+
+      // إنشاء جداول نظام الأدوات
+      await db.execute(sql`
+        CREATE TABLE tool_categories (
+          id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+          name TEXT NOT NULL UNIQUE,
+          description TEXT,
+          icon TEXT,
+          color TEXT DEFAULT '#3b82f6',
+          parent_id TEXT REFERENCES tool_categories(id) ON DELETE CASCADE,
+          is_active BOOLEAN DEFAULT true,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        )
+      `);
+
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS tools (
+          id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+          name TEXT NOT NULL,
+          description TEXT,
+          category_id TEXT REFERENCES tool_categories(id) ON DELETE SET NULL,
+          sku TEXT,
+          serial_number TEXT,
+          barcode TEXT,
+          qr_code TEXT,
+          unit TEXT NOT NULL DEFAULT 'قطعة',
+          purchase_price DECIMAL(15,2),
+          current_value DECIMAL(15,2),
+          depreciation_rate DECIMAL(5,2) DEFAULT 0,
+          purchase_date DATE,
+          warranty_expiry DATE,
+          maintenance_interval INTEGER,
+          next_maintenance_date DATE,
+          status TEXT DEFAULT 'available',
+          condition TEXT DEFAULT 'good',
+          location_type TEXT DEFAULT 'warehouse',
+          location_id TEXT,
+          specifications JSONB DEFAULT '{}',
+          images TEXT[] DEFAULT '{}',
+          manuals TEXT[] DEFAULT '{}',
+          is_active BOOLEAN DEFAULT true,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        )
+      `);
+
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS tool_stock (
+          id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+          tool_id TEXT NOT NULL REFERENCES tools(id) ON DELETE CASCADE,
+          location_type TEXT NOT NULL,
+          location_id TEXT,
+          quantity INTEGER NOT NULL DEFAULT 0,
+          available_quantity INTEGER NOT NULL DEFAULT 0,
+          reserved_quantity INTEGER NOT NULL DEFAULT 0,
+          min_stock_level INTEGER DEFAULT 1,
+          max_stock_level INTEGER,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        )
+      `);
+
+      console.log("✅ تم إنشاء الجداول الأساسية");
+
+      // باقي الجداول
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS tool_movements (
+          id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+          tool_id TEXT NOT NULL REFERENCES tools(id) ON DELETE CASCADE,
+          movement_type TEXT NOT NULL,
+          quantity INTEGER NOT NULL DEFAULT 1,
+          from_type TEXT,
+          from_id TEXT,
+          to_type TEXT,
+          to_id TEXT,
+          project_id TEXT REFERENCES projects(id) ON DELETE SET NULL,
+          reference_number TEXT,
+          reason TEXT,
+          performed_by TEXT NOT NULL,
+          performed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          notes TEXT
+        )
+      `);
+
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS tool_maintenance_logs (
+          id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+          tool_id TEXT NOT NULL REFERENCES tools(id) ON DELETE CASCADE,
+          maintenance_type TEXT NOT NULL,
+          scheduled_date DATE NOT NULL,
+          completed_date DATE,
+          status TEXT DEFAULT 'scheduled',
+          cost DECIMAL(15,2),
+          performed_by TEXT,
+          description TEXT,
+          notes TEXT,
+          next_maintenance_date DATE,
+          parts_replaced TEXT[] DEFAULT '{}',
+          attachments TEXT[] DEFAULT '{}',
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        )
+      `);
+
+      console.log("✅ تم إنشاء جداول الحركة والصيانة");
+
+      // الجداول المتقدمة
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS tool_usage_analytics (
+          id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+          tool_id TEXT NOT NULL REFERENCES tools(id) ON DELETE CASCADE,
+          project_id TEXT REFERENCES projects(id) ON DELETE SET NULL,
+          analysis_date DATE NOT NULL,
+          analysis_week TEXT,
+          analysis_month TEXT,
+          usage_hours DECIMAL(10,2) DEFAULT 0,
+          utilization_rate DECIMAL(5,2) DEFAULT 0,
+          operational_cost DECIMAL(15,2) DEFAULT 0,
+          efficiency_score DECIMAL(5,2) DEFAULT 0,
+          downtime_hours DECIMAL(10,2) DEFAULT 0,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        )
+      `);
+
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS tool_reservations (
+          id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
+          tool_id TEXT NOT NULL REFERENCES tools(id) ON DELETE CASCADE,
+          project_id TEXT REFERENCES projects(id) ON DELETE CASCADE,
+          reserved_by TEXT NOT NULL,
+          requested_date DATE NOT NULL,
+          start_date DATE NOT NULL,
+          end_date DATE NOT NULL,
+          quantity INTEGER NOT NULL DEFAULT 1,
+          status TEXT DEFAULT 'pending',
+          purpose TEXT,
+          approved_by TEXT,
+          approved_at TIMESTAMP WITH TIME ZONE,
+          notes TEXT,
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+          updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+        )
+      `);
+
+      console.log("✅ تم إنشاء الجداول المتقدمة");
+
+      // إنشاء الفهارس للأداء المحسن
+      const indexCommands = [
+        `CREATE INDEX IF NOT EXISTS idx_tools_category ON tools(category_id)`,
+        `CREATE INDEX IF NOT EXISTS idx_tools_status ON tools(status)`,
+        `CREATE INDEX IF NOT EXISTS idx_tools_sku ON tools(sku)`,
+        `CREATE INDEX IF NOT EXISTS idx_tools_qr_code ON tools(qr_code)`,
+        `CREATE INDEX IF NOT EXISTS idx_tool_stock_tool_id ON tool_stock(tool_id)`,
+        `CREATE INDEX IF NOT EXISTS idx_tool_stock_location ON tool_stock(location_type, location_id)`,
+        `CREATE INDEX IF NOT EXISTS idx_tool_movements_tool_id ON tool_movements(tool_id)`,
+        `CREATE INDEX IF NOT EXISTS idx_tool_movements_project_id ON tool_movements(project_id)`,
+        `CREATE INDEX IF NOT EXISTS idx_tool_movements_performed_at ON tool_movements(performed_at)`,
+        `CREATE INDEX IF NOT EXISTS idx_tool_maintenance_tool_id ON tool_maintenance_logs(tool_id)`,
+        `CREATE INDEX IF NOT EXISTS idx_tool_maintenance_scheduled_date ON tool_maintenance_logs(scheduled_date)`,
+        `CREATE INDEX IF NOT EXISTS idx_tool_maintenance_status ON tool_maintenance_logs(status)`,
+        `CREATE INDEX IF NOT EXISTS idx_tool_analytics_tool_id ON tool_usage_analytics(tool_id)`,
+        `CREATE INDEX IF NOT EXISTS idx_tool_analytics_date ON tool_usage_analytics(analysis_date)`,
+        `CREATE INDEX IF NOT EXISTS idx_tool_reservations_tool_id ON tool_reservations(tool_id)`,
+        `CREATE INDEX IF NOT EXISTS idx_tool_reservations_project_id ON tool_reservations(project_id)`,
+        `CREATE INDEX IF NOT EXISTS idx_tool_reservations_dates ON tool_reservations(start_date, end_date)`
+      ];
+
+      for (const indexCmd of indexCommands) {
+        await db.execute(sql.raw(indexCmd));
+      }
+
+      console.log("✅ تم إنشاء جميع الفهارس");
+
+      // إدراج بيانات أولية للتصنيفات
+      const categories = [
+        ['أدوات كهربائية', 'أدوات العمل الكهربائية والآلات', 'Zap'],
+        ['أدوات يدوية', 'الأدوات اليدوية التقليدية', 'Tool'],
+        ['معدات الحفر', 'معدات وأدوات الحفر والتنقيب', 'Drill'],
+        ['معدات الرفع', 'رافعات وونشات ومعدات الرفع', 'Crane'],
+        ['أدوات القياس', 'أجهزة القياس والمعايرة', 'Ruler'],
+        ['معدات الأمان', 'معدات السلامة والحماية الشخصية', 'Shield'],
+        ['أدوات البناء', 'أدوات ومعدات أعمال البناء', 'Hammer'],
+        ['معدات النقل', 'مركبات ومعدات النقل الداخلي', 'Truck']
+      ];
+
+      for (const [name, description, icon] of categories) {
+        await db.execute(sql`
+          INSERT INTO tool_categories (name, description, icon) VALUES (${name}, ${description}, ${icon})
+          ON CONFLICT (name) DO NOTHING
+        `);
+      }
+
+      console.log("✅ تم إدراج التصنيفات الأولية");
+
+      res.json({ 
+        success: true, 
+        message: "تم إنشاء جداول نظام الأدوات بنجاح",
+        tablesCreated: 7,
+        indexesCreated: 16,
+        categoriesInserted: 8
+      });
+    } catch (error) {
+      console.error("❌ خطأ في إنشاء جداول نظام الأدوات:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "فشل في إنشاء جداول نظام الأدوات", 
+        error: error.message 
+      });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;
