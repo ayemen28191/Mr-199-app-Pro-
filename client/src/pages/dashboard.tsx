@@ -66,12 +66,16 @@ export default function Dashboard() {
 
 
 
+  // دالة لفتح نموذج المشروع - مُعرَّفة خارج useEffect لتجنب إعادة إنشائها
+  const handleOpenAddProject = useCallback(() => {
+    _setShowAddProject(true);
+  }, []);
+
   // تعيين إجراء الزر العائم
   useEffect(() => {
-    const handleOpenAddProject = () => _setShowAddProject(true);
     setFloatingAction(handleOpenAddProject, "إضافة مشروع جديد");
     return () => setFloatingAction(null);
-  }, [setFloatingAction]);
+  }, [setFloatingAction, handleOpenAddProject]);
 
   // تسجيل بيانات المشروع المحدد - داخل useEffect لتجنب التحديثات أثناء الرسم
   useEffect(() => {
