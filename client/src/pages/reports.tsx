@@ -40,6 +40,7 @@ import {
 
 // استيراد القالب الجديد المطابق للصورة
 import ExactWorkerStatementTemplate from "@/components/ExactWorkerStatementTemplate";
+import ProfessionalDailyExpenseReport from "@/components/ProfessionalDailyExpenseReport";
 
 // استيراد نظام التصفية الموحد
 import { 
@@ -592,27 +593,7 @@ export default function Reports() {
                     )}
                   </Button>
 
-                  {reportData && activeReportType === 'daily' && (
-                    <>
-                      <Button
-                        onClick={handleExportExcel}
-                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3"
-                        size="lg"
-                      >
-                        <FileSpreadsheet className="h-5 w-5" />
-                        تصدير Excel
-                      </Button>
-                      <Button
-                        onClick={handlePrint}
-                        variant="outline"
-                        className="flex items-center gap-2 px-6 py-3"
-                        size="lg"
-                      >
-                        <Printer className="h-5 w-5" />
-                        طباعة A4
-                      </Button>
-                    </>
-                  )}
+
                 </div>
               </CardContent>
             </Card>
@@ -804,23 +785,7 @@ export default function Reports() {
 
                   {reportData && activeReportType === 'worker' && (
                     <>
-                      <Button
-                        onClick={handleExportExcel}
-                        className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-3"
-                        size="lg"
-                      >
-                        <FileSpreadsheet className="h-5 w-5" />
-                        تصدير Excel
-                      </Button>
-                      <Button
-                        onClick={handlePrint}
-                        variant="outline"
-                        className="flex items-center gap-2 px-6 py-3"
-                        size="lg"
-                      >
-                        <Printer className="h-5 w-5" />
-                        طباعة A4
-                      </Button>
+
                     </>
                   )}
                 </div>
@@ -911,7 +876,7 @@ export default function Reports() {
                 }}
               >
                 {activeReportType === 'daily' ? (
-                  <DailyExpenseTemplate data={reportData} />
+                  <ProfessionalDailyExpenseReport data={reportData} />
                 ) : (
                   <WorkerStatementTemplate data={reportData} />
                 )}
