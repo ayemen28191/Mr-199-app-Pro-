@@ -222,8 +222,8 @@ export default function Dashboard() {
               </Badge>
             </div>
 
-            {/* Project Statistics - Financial */}
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
+            {/* Project Statistics */}
+            <div className="grid grid-cols-2 gap-3">
               <StatsCard
                 title="إجمالي التوريد"
                 value={selectedProject?.stats?.totalIncome || 0}
@@ -245,10 +245,6 @@ export default function Dashboard() {
                 color="green"
                 formatter={formatCurrency}
               />
-            </div>
-
-            {/* Project Activity Stats */}
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
               <StatsCard
                 title="العمال النشطين"
                 value={selectedProject?.stats?.activeWorkers || "0"}
