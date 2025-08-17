@@ -308,7 +308,6 @@ export default function DailyExpensesBulkExport() {
             notes
           ]);
           
-          transferRow.height = 25; // زيادة ارتفاع الصف لاحتواء النص الملتف
           transferRow.eachCell((cell) => {
             cell.font = { name: 'Arial Unicode MS', size: 10 };
             cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
@@ -379,7 +378,6 @@ export default function DailyExpensesBulkExport() {
             notes + workDaysText // دمج الملاحظات مع أيام العمل
           ]);
           
-          workerRow.height = 25; // زيادة ارتفاع الصف لاحتواء النص الملتف
           workerRow.eachCell((cell, index) => {
             cell.font = { name: 'Arial Unicode MS', size: 10 };
             cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true }; // إضافة التفاف النص
@@ -500,20 +498,35 @@ export default function DailyExpensesBulkExport() {
           const workerName = transfer.workerName || transfer.worker?.name || 'عامل';
           const accountName = `حولة من حساب ${workerName}`;
           
-          // تحسين الملاحظات لتظهر بيانات التحويل كاملة
+          // تحسين الملاحظات لتظهر بيانات التحويل كاملة بالترتيب المطلوب
           let transferNotes = '';
+          const systemNotes = transfer.notes || transfer.description || '';
           const recipientName = transfer.recipientName || transfer.receiverName || workerName;
-          const transferNumber = transfer.transferNumber || transfer.referenceNumber || transfer.transactionId;
+          const transferNumber = transfer.transferNumber || transfer.referenceNumber || transfer.transactionId || '';
           
-          // بناء الملاحظات بالتفاصيل المطلوبة
-          if (recipientName && transferNumber) {
-            transferNotes = `اسم المستلم: ${recipientName} - رقم الحوالة: ${transferNumber}`;
+          // بناء الملاحظات بالترتيب: ملاحظات النظام + اسم المستلم + رقم الحوالة
+          const noteParts = [];
+          
+          // أولاً: ملاحظات النظام
+          if (systemNotes && systemNotes.trim()) {
+            noteParts.push(systemNotes.trim());
+          }
+          
+          // ثانياً: اسم المستلم
+          if (recipientName && recipientName !== workerName) {
+            noteParts.push(`اسم المستلم: ${recipientName}`);
           } else if (recipientName) {
-            transferNotes = `اسم المستلم: ${recipientName}`;
-          } else if (transferNumber) {
-            transferNotes = `رقم الحوالة: ${transferNumber}`;
-          } else if (transfer.notes || transfer.description) {
-            transferNotes = transfer.notes || transfer.description;
+            noteParts.push(`المستلم: ${recipientName}`);
+          }
+          
+          // ثالثاً: رقم الحوالة
+          if (transferNumber) {
+            noteParts.push(`رقم الحوالة: ${transferNumber}`);
+          }
+          
+          // دمج الأجزاء مع فاصل مناسب
+          if (noteParts.length > 0) {
+            transferNotes = noteParts.join(' - ');
           } else {
             transferNotes = `تحويل إلى ${workerName}`;
           }
@@ -629,7 +642,6 @@ export default function DailyExpensesBulkExport() {
         cell.font = { ...cell.font, color: { argb: 'FFFF0000' } };
       }
     });
-    finalBalanceRow.height = 25;
 
     // فراغ قبل الجدول الإضافي
     worksheet.addRow(['']);
@@ -711,11 +723,15 @@ export default function DailyExpensesBulkExport() {
       }
     }
     
-    // زيادة ارتفاع جميع الصفوف بعد الرأس للتناسب مع التفاف النص وتوسيط المحتوى
+    // إعداد ارتفاع تلقائي لجميع الصفوف بعد الرأس للتناسب مع التفاف النص
+    // تمكين الارتفاع التلقائي لجميع الصفوف
+    (worksheet.properties as any).defaultRowHeight = undefined;
+    
     for (let rowIndex = 3; rowIndex <= worksheet.rowCount; rowIndex++) {
       const row = worksheet.getRow(rowIndex);
       if (row && row.hasValues) {
-        row.height = 22; // زيادة الارتفاع إلى 22 لراحة أكبر
+        // السماح بالارتفاع التلقائي - حذف تحديد الارتفاع
+        delete (row as any).height;
         
         // تطبيق التفاف النص وتوسيط المحتوى على جميع الخلايا
         row.eachCell((cell) => {
