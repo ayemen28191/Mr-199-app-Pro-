@@ -882,6 +882,10 @@ export class DatabaseStorage implements IStorage {
         notes: materialPurchases.notes,
         purchaseDate: materialPurchases.purchaseDate,
         createdAt: materialPurchases.createdAt,
+        // إضافة الحقول المالية المطلوبة
+        paidAmount: materialPurchases.paidAmount,
+        remainingAmount: materialPurchases.remainingAmount,
+        dueDate: materialPurchases.dueDate,
         // معلومات المادة
         materialName: materials.name,
         materialCategory: materials.category,
@@ -894,7 +898,11 @@ export class DatabaseStorage implements IStorage {
       .leftJoin(projects, eq(materialPurchases.projectId, projects.id))
       .where(conditions.length > 0 ? and(...conditions) : undefined)
       .orderBy(materialPurchases.createdAt);
+      
+    console.log(`📊 استعلم قاعدة البيانات وحصل على ${purchases.length} مشترى`);
 
+    console.log(`🔍 إرجاع ${purchases.length} مشترى بعد التطبيق الفلاتر`);
+    
     return purchases.map(purchase => ({
       id: purchase.id,
       projectId: purchase.projectId,
@@ -911,6 +919,10 @@ export class DatabaseStorage implements IStorage {
       notes: purchase.notes,
       purchaseDate: purchase.purchaseDate,
       createdAt: purchase.createdAt,
+      // إضافة الحقول المفقودة بقيم افتراضية
+      paidAmount: purchase.paidAmount || "0",
+      remainingAmount: purchase.remainingAmount || "0",
+      dueDate: purchase.dueDate || null,
       material: {
         id: purchase.materialId,
         name: purchase.materialName,

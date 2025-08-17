@@ -106,6 +106,8 @@ export default function SupplierAccountsPage() {
       if (dateTo) params.append('dateTo', dateTo);
       if (paymentTypeFilter && paymentTypeFilter !== 'all') params.append('purchaseType', paymentTypeFilter);
       
+      console.log('🔍 طلب مشتريات المورد:', { selectedSupplierId, selectedProjectId, dateFrom, dateTo, paymentTypeFilter });
+      
       const response = await fetch(`/api/material-purchases?${params.toString()}`);
       if (!response.ok) {
         console.error('خطأ في جلب المشتريات:', response.status, response.statusText);
@@ -113,8 +115,14 @@ export default function SupplierAccountsPage() {
       }
       const allPurchases = await response.json();
       
-      // فلترة المشتريات حسب المورد (كطبقة حماية إضافية)
-      return allPurchases.filter((purchase: any) => purchase.supplierId === selectedSupplierId);
+      console.log('📊 تم جلب المشتريات:', allPurchases.length);
+      
+      // إضافة الحقول المفقودة للتوافق مع النوع MaterialPurchase
+      return allPurchases.map((purchase: any) => ({
+        ...purchase,
+        paidAmount: purchase.paidAmount || "0",
+        remainingAmount: purchase.remainingAmount || "0"
+      }));
     },
     enabled: !!selectedSupplierId,
     refetchOnWindowFocus: false,
