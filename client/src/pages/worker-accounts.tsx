@@ -371,42 +371,22 @@ export default function WorkerAccountsPage() {
     <div className="min-h-screen bg-background p-4 space-y-6">
       {/* Header - تم إزالة العنوان المكرر لأنه موجود في شريط التطبيق */}
 
-      {/* مكون اختيار المشروع المحسن - يطابق تصميم الصفحة الرئيسية */}
-      <ProjectSelector 
-        selectedProjectId={selectedProject === 'all' ? '' : selectedProject}
-        onProjectChange={(projectId: string) => setSelectedProject(projectId || 'all')}
-        showHeader={true}
-        variant="premium"
-        className="mb-6"
-      />
-      
-      {/* زر لعرض جميع المشاريع */}
-      {selectedProject !== 'all' && (
-        <Card className="mb-4 border-orange-200 bg-gradient-to-r from-orange-50 to-amber-50 shadow-sm">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-gradient-to-br from-orange-500 to-amber-600 rounded-lg shadow-md">
-                  <ArrowLeft className="h-4 w-4 text-white" />
-                </div>
-                <div>
-                  <p className="text-sm text-orange-800 font-medium">عرض حوالات جميع المشاريع</p>
-                  <p className="text-xs text-orange-600">انقر لعرض جميع الحوالات من كافة المشاريع</p>
-                </div>
-              </div>
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setSelectedProject('all')}
-                className="border-orange-300 text-orange-700 hover:bg-orange-100 font-medium"
-                data-testid="button-all-projects"
-              >
-                جميع المشاريع
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Project Filter */}
+      <div className="space-y-4">
+        <Select value={selectedProject} onValueChange={setSelectedProject}>
+          <SelectTrigger>
+            <SelectValue placeholder="جميع المشاريع" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">جميع المشاريع</SelectItem>
+            {projects.map((project: Project) => (
+              <SelectItem key={project.id} value={project.id}>
+                {project.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
 
       {/* Transfers List */}
       <div className="space-y-4">
