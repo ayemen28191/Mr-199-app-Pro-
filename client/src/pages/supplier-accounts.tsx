@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Building2, Filter, FileText, Calendar, Calculator, Download, Search, DollarSign, TrendingUp, TrendingDown } from "lucide-react";
+import { Building2, Filter, FileText, Calendar, Calculator, Download, Search, DollarSign, TrendingUp, TrendingDown, ChartGantt } from "lucide-react";
 import { StatsCard, StatsGrid } from "@/components/ui/stats-card";
 import { useFloatingButton } from "@/components/layout/floating-button-context";
 import { useEffect } from "react";
+import ProjectSelector from "@/components/project-selector";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,6 +29,7 @@ import { Separator } from "@/components/ui/separator";
 import type { Supplier, MaterialPurchase } from "@shared/schema";
 
 export default function SupplierAccountsPage() {
+  const [selectedProjectId, setSelectedProjectId] = useState<string>("");
   const [selectedSupplierId, setSelectedSupplierId] = useState<string>("");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -56,21 +58,25 @@ export default function SupplierAccountsPage() {
     enabled: !!selectedSupplierId,
   });
 
-  // Get purchases for the selected supplier
+  // Get purchases for the selected supplier and project
   const { data: purchases = [], isLoading: isLoadingPurchases } = useQuery<MaterialPurchase[]>({
-    queryKey: ["/api/suppliers", selectedSupplierId, "purchases", dateFrom, dateTo, paymentTypeFilter],
+    queryKey: ["/api/material-purchases", selectedProjectId, selectedSupplierId, dateFrom, dateTo, paymentTypeFilter],
     queryFn: async () => {
-      if (!selectedSupplierId) return [];
+      if (!selectedProjectId || !selectedSupplierId) return [];
       const params = new URLSearchParams();
+      params.append('projectId', selectedProjectId);
       if (dateFrom) params.append('dateFrom', dateFrom);
       if (dateTo) params.append('dateTo', dateTo);
-      if (paymentTypeFilter && paymentTypeFilter !== 'all') params.append('paymentType', paymentTypeFilter);
+      if (paymentTypeFilter && paymentTypeFilter !== 'all') params.append('purchaseType', paymentTypeFilter);
       
-      const response = await fetch(`/api/suppliers/${selectedSupplierId}/purchases?${params.toString()}`);
+      const response = await fetch(`/api/material-purchases?${params.toString()}`);
       if (!response.ok) throw new Error('Failed to fetch purchases');
-      return response.json();
+      const allPurchases = await response.json();
+      
+      // فلترة المشتريات حسب المورد
+      return allPurchases.filter((purchase: any) => purchase.supplierId === selectedSupplierId);
     },
-    enabled: !!selectedSupplierId,
+    enabled: !!selectedProjectId && !!selectedSupplierId,
   });
 
   // إزالة الزر العائم من هذه الصفحة لأن التصدير متاح في الواجهة
@@ -137,6 +143,24 @@ export default function SupplierAccountsPage() {
 
   return (
     <div className="container mx-auto p-4 space-y-4" dir="rtl">
+      {/* مكون اختيار المشروع - تصميم موحد */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <ChartGantt className="w-4 h-4" />
+            اختر المشروع
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <ProjectSelector
+            selectedProjectId={selectedProjectId}
+            onProjectChange={setSelectedProjectId}
+            showHeader={false}
+            variant="default"
+          />
+        </CardContent>
+      </Card>
+
       {/* فلاتر البحث - تصميم مضغوط */}
       <Card>
         <CardHeader className="pb-3">
@@ -354,11 +378,25 @@ export default function SupplierAccountsPage() {
       )}
 
       {/* حالة فارغة - مضغوطة ومحسنة */}
-      {!selectedSupplierId && (
+      {!selectedProjectId && (
         <Card>
           <CardContent className="text-center py-6">
             <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
-              <Building2 className="w-8 h-8 text-blue-600" />
+              <ChartGantt className="w-8 h-8 text-blue-600" />
+            </div>
+            <h3 className="text-base font-semibold mb-1 text-gray-800">اختر مشروعاً لعرض حسابات الموردين</h3>
+            <p className="text-gray-500 text-sm">
+              اختر مشروعاً من القائمة أعلاه لعرض موردين المشروع وحساباتهم
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {selectedProjectId && !selectedSupplierId && (
+        <Card>
+          <CardContent className="text-center py-6">
+            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+              <Building2 className="w-8 h-8 text-green-600" />
             </div>
             <h3 className="text-base font-semibold mb-1 text-gray-800">اختر مورداً لعرض كشف الحساب</h3>
             <p className="text-gray-500 text-sm">
