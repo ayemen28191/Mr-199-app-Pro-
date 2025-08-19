@@ -3532,21 +3532,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/tools/:id", async (req, res) => {
     try {
+      console.log('🔧 PUT /api/tools/:id - البيانات المستلمة:', req.body);
+      console.log('🔧 PUT /api/tools/:id - معرف الأداة:', req.params.id);
+      
       const result = insertToolSchema.partial().safeParse(req.body);
       if (!result.success) {
+        console.error('❌ خطأ في التحقق من صحة البيانات:', result.error.issues);
         return res.status(400).json({ 
           message: "بيانات الأداة غير صحيحة", 
           errors: result.error.issues 
         });
       }
 
+      console.log('✅ البيانات المتحقق منها:', result.data);
       const tool = await storage.updateTool(req.params.id, result.data);
       if (!tool) {
+        console.error('❌ الأداة غير موجودة:', req.params.id);
         return res.status(404).json({ message: "الأداة غير موجودة" });
       }
+      
+      console.log('✅ تم تحديث الأداة بنجاح:', tool);
       res.json(tool);
     } catch (error) {
-      console.error("Error updating tool:", error);
+      console.error("❌ خطأ في تحديث الأداة:", error);
       res.status(500).json({ message: "خطأ في تحديث الأداة" });
     }
   });

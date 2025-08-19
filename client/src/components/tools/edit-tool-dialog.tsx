@@ -217,6 +217,8 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
   // Update tool mutation
   const updateToolMutation = useMutation({
     mutationFn: async (data: EditToolFormData) => {
+      console.log('🔧 البيانات المُرسلة من Frontend:', data);
+      
       // Convert specifications string to JSON if provided
       const specifications = data.specifications 
         ? (() => {
@@ -229,12 +231,20 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
           })()
         : {};
 
+      // تنظيف البيانات وإزالة الحقول الفارغة أو undefined
+      const cleanedData = Object.fromEntries(
+        Object.entries(data).filter(([_, value]) => 
+          value !== '' && value !== undefined && value !== null
+        )
+      );
+
       const updateData = {
-        ...data,
+        ...cleanedData,
         specifications,
-        updatedAt: new Date().toISOString(),
+        // إزالة حقل updatedAt لأن قاعدة البيانات تتولى هذا
       };
 
+      console.log('📤 البيانات النهائية المُرسلة:', updateData);
       return apiRequest(`/api/tools/${toolId}`, 'PUT', updateData);
     },
     onSuccess: () => {
