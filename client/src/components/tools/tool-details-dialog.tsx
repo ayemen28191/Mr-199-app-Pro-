@@ -475,7 +475,7 @@ const ToolDetailsDialog: React.FC<ToolDetailsDialogProps> = ({
                     <div>
                       <p className="text-sm text-muted-foreground">الموقع</p>
                       <p className="font-medium text-sm">
-                        {tool.locationType}
+                        {tool.locationType || 'غير محدد'}
                         {tool.locationId && ` - ${tool.locationId}`}
                       </p>
                     </div>
@@ -544,19 +544,25 @@ const ToolDetailsDialog: React.FC<ToolDetailsDialogProps> = ({
                     <div>
                       <span className="text-muted-foreground">سعر الشراء:</span>
                       <p className="font-medium">
-                        {tool.purchasePrice ? `${tool.purchasePrice.toLocaleString('en-US')} ر.ي` : 'غير محدد'}
+                        {tool.purchasePrice && parseFloat(tool.purchasePrice.toString()) > 0 
+                          ? `${parseFloat(tool.purchasePrice.toString()).toLocaleString('en-US')} ر.ي` 
+                          : 'غير محدد'}
                       </p>
                     </div>
                     <div>
                       <span className="text-muted-foreground">القيمة الحالية:</span>
                       <p className="font-medium">
-                        {tool.currentValue ? `${tool.currentValue.toLocaleString('en-US')} ر.ي` : 'غير محدد'}
+                        {tool.currentValue && parseFloat(tool.currentValue.toString()) > 0 
+                          ? `${parseFloat(tool.currentValue.toString()).toLocaleString('en-US')} ر.ي` 
+                          : 'غير محدد'}
                       </p>
                     </div>
                     <div>
                       <span className="text-muted-foreground">معدل الإهلاك:</span>
                       <p className="font-medium">
-                        {tool.depreciationRate ? `${tool.depreciationRate}%` : 'غير محدد'}
+                        {tool.depreciationRate && parseFloat(tool.depreciationRate.toString()) > 0 
+                          ? `${parseFloat(tool.depreciationRate.toString())}%` 
+                          : 'غير محدد'}
                       </p>
                     </div>
                     <div>
