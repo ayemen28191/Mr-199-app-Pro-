@@ -845,8 +845,19 @@ export default function DailyExpenses() {
                   </div>
                 </div>
               ) : (
-                <div className="text-muted-foreground text-sm text-center p-3">
-                  لا توجد عهد مضافة لهذا اليوم (العدد: {todayFundTransfers?.length || 0})
+                <div className="text-center py-6 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+                  <DollarSign className="mx-auto h-10 w-10 text-gray-400 mb-3" />
+                  <p className="text-sm font-medium text-gray-600 mb-2">
+                    لا توجد تحويلات عهد لهذا التاريخ
+                  </p>
+                  <p className="text-xs text-gray-500 mb-3">
+                    التاريخ: {selectedDate}
+                  </p>
+                  <div className="bg-blue-50 border border-blue-200 rounded-md p-2 mx-4">
+                    <p className="text-xs text-blue-600">
+                      💡 جرب تاريخ مختلف أو أضف تحويل جديد
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
@@ -862,7 +873,11 @@ export default function DailyExpenses() {
             أجور العمال
           </h4>
           {todayAttendance.length === 0 ? (
-            <p className="text-muted-foreground text-sm">لم يتم تسجيل حضور عمال لهذا اليوم</p>
+            <div className="text-center py-4 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+              <Users className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+              <p className="text-sm text-gray-600">لم يتم تسجيل حضور عمال لتاريخ {selectedDate}</p>
+              <p className="text-xs text-gray-500 mt-1">قم بتسجيل حضور العمال أولاً</p>
+            </div>
           ) : (
             <div className="space-y-2">
               {todayAttendance.map((attendance, index) => {
@@ -991,7 +1006,11 @@ export default function DailyExpenses() {
             شراء مواد
           </h4>
           {!Array.isArray(todayMaterialPurchases) || todayMaterialPurchases.length === 0 ? (
-            <p className="text-muted-foreground text-sm mb-3">لا توجد مشتريات لهذا اليوم</p>
+            <div className="text-center py-4 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+              <Package className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+              <p className="text-sm text-gray-600">لا توجد مشتريات مواد لتاريخ {selectedDate}</p>
+              <p className="text-xs text-gray-500 mt-1">جرب تاريخ مختلف أو أضف مشتريات جديدة</p>
+            </div>
           ) : (
             <div className="space-y-2 mb-3">
               {todayMaterialPurchases.map((purchase, index) => {
@@ -1088,7 +1107,11 @@ export default function DailyExpenses() {
             حولة من حساب العمال
           </h4>
           {!Array.isArray(todayWorkerTransfers) || todayWorkerTransfers.length === 0 ? (
-            <p className="text-muted-foreground text-sm mb-3">لا توجد حوالات لهذا اليوم</p>
+            <div className="text-center py-4 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+              <ArrowLeftRight className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+              <p className="text-sm text-gray-600">لا توجد حوالات عمال لتاريخ {selectedDate}</p>
+              <p className="text-xs text-gray-500 mt-1">جرب تاريخ مختلف أو أضف حوالات جديدة</p>
+            </div>
           ) : (
             <div className="space-y-2 mb-3">
               {todayWorkerTransfers.map((transfer, index) => {
