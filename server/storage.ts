@@ -3121,7 +3121,39 @@ export class DatabaseStorage implements IStorage {
   async getTool(id: string): Promise<Tool | undefined> {
     try {
       const [tool] = await db.select().from(tools).where(eq(tools.id, id));
-      return tool || undefined;
+      if (!tool) return undefined;
+
+      // حساب الصيانة القادمة تلقائياً إذا لم تكن محددة وهناك فترة صيانة
+      let calculatedTool = { ...tool };
+      if (tool.maintenanceInterval && !tool.nextMaintenanceDate) {
+        const baseDate = tool.lastMaintenanceDate 
+          ? new Date(tool.lastMaintenanceDate)
+          : new Date(tool.purchaseDate || tool.createdAt);
+        
+        const nextMaintenanceDate = new Date(baseDate);
+        nextMaintenanceDate.setDate(nextMaintenanceDate.getDate() + tool.maintenanceInterval);
+        
+        calculatedTool.nextMaintenanceDate = nextMaintenanceDate.toISOString().split('T')[0];
+        
+        // تحديث قاعدة البيانات بالصيانة المحسوبة
+        await db.update(tools)
+          .set({ nextMaintenanceDate: calculatedTool.nextMaintenanceDate })
+          .where(eq(tools.id, id));
+      }
+
+      // إصلاح الرمز الشريطي إذا كان فارغاً أو مجرد ID
+      if (!tool.barcode || tool.barcode === tool.id) {
+        // إنشاء رمز شريطي مناسب
+        const newBarcode = tool.sku ? `BARCODE_${tool.sku}` : `TOOL_${id.substring(0, 8).toUpperCase()}`;
+        calculatedTool.barcode = newBarcode;
+        
+        // تحديث قاعدة البيانات بالرمز الجديد
+        await db.update(tools)
+          .set({ barcode: newBarcode })
+          .where(eq(tools.id, id));
+      }
+
+      return calculatedTool;
     } catch (error) {
       console.error('Error getting tool:', error);
       return undefined;

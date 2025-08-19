@@ -3620,6 +3620,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Tool Stock by ID Route (for tool details dialog)
+  app.get("/api/tool-stock/:toolId", async (req, res) => {
+    try {
+      const stock = await storage.getToolStock(req.params.toolId);
+      res.json(stock);
+    } catch (error) {
+      console.error("Error fetching tool stock by ID:", error);
+      res.status(500).json({ message: "خطأ في جلب مخزون الأداة" });
+    }
+  });
+
   app.post("/api/tool-stock", async (req, res) => {
     try {
       const result = insertToolStockSchema.safeParse(req.body);
@@ -3655,6 +3666,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching tool movements:", error);
       res.status(500).json({ message: "خطأ في جلب حركات الأدوات" });
+    }
+  });
+
+  // Tool Movements Recent by ID Route (for tool details dialog)
+  app.get("/api/tool-movements/:toolId/recent", async (req, res) => {
+    try {
+      const filters = {
+        toolId: req.params.toolId,
+        projectId: '',
+        movementType: '',
+        dateFrom: '',
+        dateTo: '',
+      };
+
+      const movements = await storage.getToolMovements(filters);
+      // أخذ آخر 10 حركات فقط
+      const recentMovements = movements.slice(0, 10);
+      res.json(recentMovements);
+    } catch (error) {
+      console.error("Error fetching recent tool movements:", error);
+      res.status(500).json({ message: "خطأ في جلب الحركات الأخيرة للأداة" });
     }
   });
 
