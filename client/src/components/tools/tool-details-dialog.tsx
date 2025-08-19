@@ -518,7 +518,7 @@ const ToolDetailsDialog: React.FC<ToolDetailsDialogProps> = ({
                     <div>
                       <span className="text-muted-foreground">تاريخ الإنشاء:</span>
                       <p className="font-medium">
-                        {new Date(tool.createdAt).toLocaleDateString('ar-SA')}
+                        {new Date(tool.createdAt).toLocaleDateString('en-US')}
                       </p>
                     </div>
                   </div>
@@ -544,13 +544,13 @@ const ToolDetailsDialog: React.FC<ToolDetailsDialogProps> = ({
                     <div>
                       <span className="text-muted-foreground">سعر الشراء:</span>
                       <p className="font-medium">
-                        {tool.purchasePrice ? `${tool.purchasePrice.toLocaleString('en-US')} ريال` : 'غير محدد'}
+                        {tool.purchasePrice ? `${tool.purchasePrice.toLocaleString('en-US')} ر.ي` : 'غير محدد'}
                       </p>
                     </div>
                     <div>
                       <span className="text-muted-foreground">القيمة الحالية:</span>
                       <p className="font-medium">
-                        {tool.currentValue ? `${tool.currentValue.toLocaleString('en-US')} ريال` : 'غير محدد'}
+                        {tool.currentValue ? `${tool.currentValue.toLocaleString('en-US')} ر.ي` : 'غير محدد'}
                       </p>
                     </div>
                     <div>
@@ -562,13 +562,13 @@ const ToolDetailsDialog: React.FC<ToolDetailsDialogProps> = ({
                     <div>
                       <span className="text-muted-foreground">تاريخ الشراء:</span>
                       <p className="font-medium">
-                        {tool.purchaseDate ? new Date(tool.purchaseDate).toLocaleDateString('ar-SA') : 'غير محدد'}
+                        {tool.purchaseDate ? new Date(tool.purchaseDate).toLocaleDateString('en-US') : 'غير محدد'}
                       </p>
                     </div>
                     <div>
                       <span className="text-muted-foreground">انتهاء الضمان:</span>
                       <p className="font-medium">
-                        {tool.warrantyExpiry ? new Date(tool.warrantyExpiry).toLocaleDateString('ar-SA') : 'غير محدد'}
+                        {tool.warrantyExpiry ? new Date(tool.warrantyExpiry).toLocaleDateString('en-US') : 'غير محدد'}
                       </p>
                     </div>
                   </div>
@@ -594,7 +594,7 @@ const ToolDetailsDialog: React.FC<ToolDetailsDialogProps> = ({
                     <div>
                       <span className="text-muted-foreground">الصيانة القادمة:</span>
                       <p className="font-medium">
-                        {tool.nextMaintenanceDate ? new Date(tool.nextMaintenanceDate).toLocaleDateString('ar-SA') : 'غير محدد'}
+                        {tool.nextMaintenanceDate ? new Date(tool.nextMaintenanceDate).toLocaleDateString('en-US') : 'غير محدد'}
                       </p>
                     </div>
                   </div>
@@ -699,7 +699,7 @@ const ToolDetailsDialog: React.FC<ToolDetailsDialogProps> = ({
                             <div>
                               <span className="text-muted-foreground">آخر تحديث:</span>
                               <p className="font-medium text-xs">
-                                {new Date(stockItem.lastUpdated).toLocaleDateString('ar-SA')}
+                                {new Date(stockItem.lastUpdated).toLocaleDateString('en-US')}
                               </p>
                             </div>
                           </div>
@@ -791,7 +791,7 @@ const ToolDetailsDialog: React.FC<ToolDetailsDialogProps> = ({
                           </div>
                           <div className="text-left">
                             <p className="text-xs text-muted-foreground">
-                              {new Date(movement.createdAt).toLocaleDateString('ar-SA')}
+                              {new Date(movement.createdAt).toLocaleDateString('en-US')}
                             </p>
                             <p className="text-xs text-muted-foreground">
                               الكمية: {movement.quantity}

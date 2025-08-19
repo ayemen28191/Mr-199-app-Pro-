@@ -410,7 +410,7 @@ export function MaintenanceScheduleDialog({
               </div>
 
               <div>
-                <Label htmlFor="estimatedCost">التكلفة المقدرة (ريال)</Label>
+                <Label htmlFor="estimatedCost">التكلفة المقدرة (ر.ي)</Label>
                 <Input
                   id="estimatedCost"
                   type="number"

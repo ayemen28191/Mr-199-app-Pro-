@@ -38,7 +38,7 @@ export const EnhancedWorkerAccountStatement = ({
       style: 'decimal',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
-    }).format(validAmount) + ' ريال';
+    }).format(validAmount) + ' ر.ي';
   };
 
   const formatDate = (dateStr: string) => {

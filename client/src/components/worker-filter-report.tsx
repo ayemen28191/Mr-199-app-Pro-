@@ -218,7 +218,7 @@ export default function WorkerFilterReport() {
 
   // دالة تنسيق العملة
   const formatCurrency = (amount: number) => {
-    return `${Number(amount).toLocaleString('en-US')} ريال`;
+    return `${Number(amount).toLocaleString('en-US')} ر.ي`;
   };
 
   // تصدير إلى Excel بالبيانات الحقيقية

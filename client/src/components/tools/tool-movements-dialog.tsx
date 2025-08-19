@@ -356,10 +356,10 @@ const ToolMovementsDialog: React.FC<ToolMovementsDialogProps> = ({
                           <div className="text-left">
                             <div className="flex items-center gap-1 text-xs text-muted-foreground">
                               <Clock className="h-3 w-3" />
-                              {new Date(movement.createdAt).toLocaleDateString('ar-SA')}
+                              {new Date(movement.createdAt).toLocaleDateString('en-US')}
                             </div>
                             <div className="text-xs text-muted-foreground mt-1">
-                              {new Date(movement.createdAt).toLocaleTimeString('ar-SA', { 
+                              {new Date(movement.createdAt).toLocaleTimeString('en-US', { 
                                 hour: '2-digit', 
                                 minute: '2-digit' 
                               })}

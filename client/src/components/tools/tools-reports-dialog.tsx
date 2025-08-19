@@ -316,7 +316,7 @@ const ToolsReportsDialog: React.FC<ToolsReportsDialogProps> = ({
                   <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
                     <span className="text-muted-foreground">القيمة الإجمالية:</span>
                     <span className="font-bold text-lg">
-                      {toolsStats?.totalValue?.toLocaleString('en-US') || 0} ريال
+                      {toolsStats?.totalValue?.toLocaleString('en-US') || 0} ر.ي
                     </span>
                   </div>
                   <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
@@ -324,7 +324,7 @@ const ToolsReportsDialog: React.FC<ToolsReportsDialogProps> = ({
                     <span className="font-medium">
                       {toolsStats && toolsStats.totalTools > 0 
                         ? Math.round(toolsStats.totalValue / toolsStats.totalTools).toLocaleString('en-US')
-                        : 0} ريال
+                        : 0} ر.ي
                     </span>
                   </div>
                   <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
@@ -734,7 +734,7 @@ const ToolsReportsDialog: React.FC<ToolsReportsDialogProps> = ({
                                 <p className="text-lg font-bold text-green-600">
                                   {category.totalValue ? Math.round(category.totalValue/1000) + 'ك' : 0}
                                 </p>
-                                <p className="text-xs text-muted-foreground">القيمة (ألف ريال)</p>
+                                <p className="text-xs text-muted-foreground">القيمة (ألف ر.ي)</p>
                               </div>
                               <div className="text-center p-3 bg-muted/30 rounded-lg">
                                 <p className={`text-sm font-bold ${getConditionColor(category.averageCondition)}`}>
@@ -763,7 +763,7 @@ const ToolsReportsDialog: React.FC<ToolsReportsDialogProps> = ({
                                 <p className="text-2xl font-bold text-green-600">
                                   {category.totalValue?.toLocaleString('en-US') || 0}
                                 </p>
-                                <p className="text-sm text-muted-foreground">القيمة الإجمالية (ريال)</p>
+                                <p className="text-sm text-muted-foreground">القيمة الإجمالية (ر.ي)</p>
                               </div>
                               <div className="text-center p-4 bg-muted/30 rounded-lg">
                                 <p className={`text-2xl font-bold ${getConditionColor(category.averageCondition)}`}>

@@ -245,7 +245,7 @@ export default function ProfessionalDailyExpenseReport({ data }: ProfessionalDai
               <span className={`text-2xl font-bold ${
                 data.remainingBalance >= 0 ? 'text-green-600' : 'text-red-600'
               }`}>
-                {formatCurrencySimple(Math.abs(data.remainingBalance))} ريال
+                {formatCurrencySimple(Math.abs(data.remainingBalance))} ر.ي
                 {data.remainingBalance < 0 && ' (عجز)'}
               </span>
             </div>

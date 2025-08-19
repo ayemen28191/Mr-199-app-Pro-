@@ -238,7 +238,7 @@ const ProjectLocationTracking: React.FC = () => {
 
                   {project.startDate && (
                     <div className="text-xs text-gray-500">
-                      بدأ في: {new Date(project.startDate).toLocaleDateString('ar-SA')}
+                      بدأ في: {new Date(project.startDate).toLocaleDateString('en-US')}
                     </div>
                   )}
                 </CardContent>

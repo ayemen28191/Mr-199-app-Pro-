@@ -37,8 +37,8 @@ export const EXCEL_STYLES = {
 export const COMPANY_INFO = {
   name: 'شركة الفتيني للمقاولات والاستشارات الهندسية',
   nameEn: 'Al-Fathi Construction & Engineering Consultancy Company',
-  address: 'المملكة العربية السعودية',
-  phone: '+966XXXXXXXXX',
+  address: 'الجمهورية اليمنية',
+  phone: '+967XXXXXXXXX',
   email: 'info@alfatini.com',
   website: 'www.alfatini.com',
   logo: '🏗️', // يمكن استبدالها بشعار الشركة لاحقاً

@@ -187,11 +187,11 @@ export function PurchaseIntegrationDialog({
           </div>
           <div>
             <Label className="text-sm text-muted-foreground">السعر للوحدة</Label>
-            <p className="font-medium">{item.unitPrice.toLocaleString('en-US')} ريال</p>
+            <p className="font-medium">{item.unitPrice.toLocaleString('en-US')} ر.ي</p>
           </div>
           <div>
             <Label className="text-sm text-muted-foreground">المجموع</Label>
-            <p className="font-medium">{item.totalPrice.toLocaleString('en-US')} ريال</p>
+            <p className="font-medium">{item.totalPrice.toLocaleString('en-US')} ر.ي</p>
           </div>
         </div>
 
