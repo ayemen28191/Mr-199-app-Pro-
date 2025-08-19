@@ -53,29 +53,21 @@ const editToolSchema = z.object({
     .min(0, 'سعر الشراء لا يمكن أن يكون سالباً')
     .max(999999, 'سعر الشراء مرتفع جداً')
     .optional(),
-  currentValue: z.coerce.number()
-    .min(0, 'القيمة الحالية لا يمكن أن تكون سالبة')
-    .max(999999, 'القيمة الحالية مرتفعة جداً')
-    .optional(),
-  depreciationRate: z.coerce.number()
-    .min(0, 'معدل الإهلاك لا يمكن أن يكون سالباً')
-    .max(100, 'معدل الإهلاك لا يمكن أن يزيد عن 100%')
-    .optional(),
+
   purchaseDate: z.string().optional(),
   warrantyExpiry: z.string().optional(),
   maintenanceInterval: z.coerce.number()
     .min(1, 'فترة الصيانة يجب أن تكون يوم واحد على الأقل')
     .max(3650, 'فترة الصيانة طويلة جداً (أكثر من 10 سنوات)')
     .optional(),
-  status: z.enum(['available', 'in_use', 'maintenance', 'damaged', 'retired'], {
+  status: z.enum(['available', 'assigned', 'maintenance', 'lost', 'consumed', 'reserved'], {
     errorMap: () => ({ message: 'يجب اختيار حالة الأداة من القائمة' })
   }),
   condition: z.enum(['excellent', 'good', 'fair', 'poor', 'damaged'], {
     errorMap: () => ({ message: 'يجب اختيار حالة الجودة من القائمة' })
   }),
   projectId: z.string().min(1, 'يجب اختيار المشروع المرتبط بالأداة'),
-  locationType: z.string().optional(),
-  locationId: z.string().optional(),
+
   specifications: z.string().optional(),
 });
 
@@ -167,8 +159,7 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
       barcode: '',
       unit: 'قطعة',
       status: 'available',
-      condition: 'good',
-      locationType: 'مخزن',
+      condition: 'excellent',
       specifications: '',
     },
   });
@@ -204,16 +195,12 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
         barcode: tool.barcode || '',
         unit: tool.unit || 'قطعة',
         purchasePrice: parseNumber(tool.purchasePrice),
-        currentValue: parseNumber(tool.currentValue),
-        depreciationRate: parseNumber(tool.depreciationRate),
         purchaseDate: formatDateForInput(tool.purchaseDate),
         warrantyExpiry: formatDateForInput(tool.warrantyExpiry),
         maintenanceInterval: parseNumber(tool.maintenanceInterval),
         status: tool.status || 'available',
-        condition: tool.condition || 'good',
+        condition: tool.condition || 'excellent',
         projectId: tool.projectId || '',
-        locationType: tool.locationType || 'مخزن',
-        locationId: tool.locationId || '',
         specifications: typeof tool.specifications === 'string' 
           ? tool.specifications 
           : tool.specifications 
@@ -221,7 +208,8 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
             : '',
       };
       
-      console.log('🔧 تحميل بيانات الأداة في النموذج:', formData);
+      console.log('🔧 البيانات الأصلية المُرجعة من API:', tool);
+      console.log('🔧 البيانات المحولة للنموذج:', formData);
       form.reset(formData);
       setHasChanges(false);
     }
@@ -565,10 +553,11 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
                               </FormControl>
                               <SelectContent>
                                 <SelectItem value="available">متاح</SelectItem>
-                                <SelectItem value="in_use">قيد الاستخدام</SelectItem>
+                                <SelectItem value="assigned">مخصص</SelectItem>
                                 <SelectItem value="maintenance">صيانة</SelectItem>
-                                <SelectItem value="damaged">معطل</SelectItem>
-                                <SelectItem value="retired">متقاعد</SelectItem>
+                                <SelectItem value="lost">مفقود</SelectItem>
+                                <SelectItem value="consumed">مستهلك</SelectItem>
+                                <SelectItem value="reserved">محجوز</SelectItem>
                               </SelectContent>
                             </Select>
                             <FormMessage />
@@ -687,43 +676,7 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
                         )}
                       />
 
-                      <FormField
-                        control={form.control}
-                        name="currentValue"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>القيمة الحالية (ر.ي)</FormLabel>
-                            <FormControl>
-                              <Input
-                                type="number"
-                                step="0.01"
-                                placeholder="مثال: 1200.00"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
 
-                      <FormField
-                        control={form.control}
-                        name="depreciationRate"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>معدل الإهلاك (%)</FormLabel>
-                            <FormControl>
-                              <Input
-                                type="number"
-                                step="0.1"
-                                placeholder="مثال: 10.5"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
 
                       <FormField
                         control={form.control}
@@ -779,50 +732,7 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
                         )}
                       />
 
-                      <FormField
-                        control={form.control}
-                        name="locationType"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>نوع الموقع <span className="text-xs text-gray-500">(اختياري)</span></FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="اختر نوع الموقع" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="مخزن">مخزن</SelectItem>
-                                <SelectItem value="مشروع">مشروع</SelectItem>
-                                <SelectItem value="صيانة">ورشة صيانة</SelectItem>
-                                <SelectItem value="مكتب">مكتب</SelectItem>
-                                <SelectItem value="موقع">موقع خارجي</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="locationId"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>تفاصيل الموقع <span className="text-xs text-gray-500">(اختياري)</span></FormLabel>
-                            <FormControl>
-                              <AutocompleteInput
-                                value={field.value || ''}
-                                onChange={field.onChange}
-                                placeholder="مثال: مخزن رقم 1، مشروع الرياض، ورشة الصيانة"
-                                category="toolLocations"
-                                className="arabic-numbers"
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                      {/* Location fields removed - not available in database schema */}
                     </div>
                   </CardContent>
                 </Card>
