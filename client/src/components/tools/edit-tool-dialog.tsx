@@ -102,6 +102,7 @@ interface Tool {
   condition: 'excellent' | 'good' | 'fair' | 'poor' | 'damaged';
   locationType: string;
   locationId?: string;
+  projectId?: string;
   specifications?: any;
   images?: string[];
   manuals?: string[];
@@ -717,6 +718,31 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <FormField
                         control={form.control}
+                        name="projectId"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>المشروع المرتبط *</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="اختر المشروع" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {projects.filter(p => p.status === 'active').map((project) => (
+                                  <SelectItem key={project.id} value={project.id}>
+                                    {project.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
                         name="locationType"
                         render={({ field }) => (
                           <FormItem>
@@ -752,31 +778,6 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
                                 {...field}
                               />
                             </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="projectId"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>المشروع المرتبط *</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="اختر المشروع" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {projects.filter(p => p.status === 'active').map((project) => (
-                                  <SelectItem key={project.id} value={project.id}>
-                                    {project.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
                             <FormMessage />
                           </FormItem>
                         )}
