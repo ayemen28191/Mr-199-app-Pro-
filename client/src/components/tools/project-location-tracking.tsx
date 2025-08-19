@@ -133,11 +133,11 @@ const ProjectLocationTracking: React.FC = () => {
       </div>
 
       {/* Navigation Tabs */}
-      <div className="flex flex-col sm:flex-row gap-2 border-b border-gray-200 dark:border-gray-700 overflow-x-auto">
+      <div className="flex gap-2 border-b border-gray-200 dark:border-gray-700 overflow-x-auto pb-1">
         <Button
           variant={activeTab === 'projects' ? 'default' : 'ghost'}
           onClick={() => setActiveTab('projects')}
-          className="rounded-none border-b-2 border-transparent flex-1 sm:flex-none min-w-0 text-xs sm:text-sm whitespace-nowrap"
+          className="rounded-none border-b-2 border-transparent flex-shrink-0 text-xs sm:text-sm whitespace-nowrap px-3 sm:px-4"
           data-testid="tab-projects"
         >
           <Construction className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
@@ -146,7 +146,7 @@ const ProjectLocationTracking: React.FC = () => {
         <Button
           variant={activeTab === 'tools' ? 'default' : 'ghost'}
           onClick={() => setActiveTab('tools')}
-          className="rounded-none border-b-2 border-transparent flex-1 sm:flex-none min-w-0 text-xs sm:text-sm whitespace-nowrap"
+          className="rounded-none border-b-2 border-transparent flex-shrink-0 text-xs sm:text-sm whitespace-nowrap px-3 sm:px-4"
           data-testid="tab-tools"
         >
           <Package className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
@@ -155,7 +155,7 @@ const ProjectLocationTracking: React.FC = () => {
         <Button
           variant={activeTab === 'movements' ? 'default' : 'ghost'}
           onClick={() => setActiveTab('movements')}
-          className="rounded-none border-b-2 border-transparent flex-1 sm:flex-none min-w-0 text-xs sm:text-sm whitespace-nowrap"
+          className="rounded-none border-b-2 border-transparent flex-shrink-0 text-xs sm:text-sm whitespace-nowrap px-3 sm:px-4"
           data-testid="tab-movements"
         >
           <Clock className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
