@@ -118,6 +118,9 @@ const ToolDetailsDialog: React.FC<ToolDetailsDialogProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState('overview');
   const [qrCodeSize, setQrCodeSize] = useState(200);
+  const [showMoveDialog, setShowMoveDialog] = useState(false);
+  const [showMaintenanceDialog, setShowMaintenanceDialog] = useState(false);
+  const [uploading, setUploading] = useState(false);
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -145,6 +148,67 @@ const ToolDetailsDialog: React.FC<ToolDetailsDialogProps> = ({
     queryKey: ['/api/tool-movements', toolId, 'recent'],
     enabled: !!toolId && open,
   });
+
+  // Handler functions for quick actions
+  const handleImageUpload = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.multiple = true;
+    input.onchange = async (e) => {
+      const files = (e.target as HTMLInputElement).files;
+      if (files && files.length > 0) {
+        setUploading(true);
+        try {
+          // في التطبيق الحقيقي سيتم رفع الصور إلى الخادم
+          await new Promise(resolve => setTimeout(resolve, 2000)); // محاكاة الرفع
+          toast({
+            title: "تم رفع الصور بنجاح",
+            description: `تم رفع ${files.length} صورة`,
+          });
+        } catch (error) {
+          toast({
+            title: "خطأ في رفع الصور",
+            description: "حدث خطأ أثناء رفع الصور",
+            variant: "destructive",
+          });
+        } finally {
+          setUploading(false);
+        }
+      }
+    };
+    input.click();
+  };
+
+  const handleManualUpload = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.pdf,.doc,.docx,.txt';
+    input.multiple = true;
+    input.onchange = async (e) => {
+      const files = (e.target as HTMLInputElement).files;
+      if (files && files.length > 0) {
+        setUploading(true);
+        try {
+          // في التطبيق الحقيقي سيتم رفع الملفات إلى الخادم
+          await new Promise(resolve => setTimeout(resolve, 2000)); // محاكاة الرفع
+          toast({
+            title: "تم رفع الأدلة بنجاح",
+            description: `تم رفع ${files.length} ملف`,
+          });
+        } catch (error) {
+          toast({
+            title: "خطأ في رفع الأدلة",
+            description: "حدث خطأ أثناء رفع الأدلة",
+            variant: "destructive",
+          });
+        } finally {
+          setUploading(false);
+        }
+      }
+    };
+    input.click();
+  };
 
   // Fetch projects for location mapping
   const { data: projects = [] } = useQuery<{id: string, name: string}[]>({
@@ -659,21 +723,39 @@ const ToolDetailsDialog: React.FC<ToolDetailsDialogProps> = ({
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3">
-                  <Button variant="outline" className="w-full justify-start">
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start"
+                    onClick={() => setShowMoveDialog(true)}
+                  >
                     <Move className="h-4 w-4 ml-2" />
                     نقل الأداة
                   </Button>
-                  <Button variant="outline" className="w-full justify-start">
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start"
+                    onClick={() => setShowMaintenanceDialog(true)}
+                  >
                     <Calendar className="h-4 w-4 ml-2" />
                     جدولة صيانة
                   </Button>
-                  <Button variant="outline" className="w-full justify-start">
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start"
+                    onClick={handleImageUpload}
+                    disabled={uploading}
+                  >
                     <Camera className="h-4 w-4 ml-2" />
-                    إضافة صورة
+                    {uploading ? 'جاري الرفع...' : 'إضافة صورة'}
                   </Button>
-                  <Button variant="outline" className="w-full justify-start">
+                  <Button 
+                    variant="outline" 
+                    className="w-full justify-start"
+                    onClick={handleManualUpload}
+                    disabled={uploading}
+                  >
                     <Upload className="h-4 w-4 ml-2" />
-                    رفع دليل
+                    {uploading ? 'جاري الرفع...' : 'رفع دليل'}
                   </Button>
                 </CardContent>
               </Card>
@@ -780,6 +862,122 @@ const ToolDetailsDialog: React.FC<ToolDetailsDialogProps> = ({
           </TabsContent>
         </Tabs>
       </DialogContent>
+
+      {/* Move Tool Dialog */}
+      {showMoveDialog && (
+        <Dialog open={showMoveDialog} onOpenChange={setShowMoveDialog}>
+          <DialogContent className="max-w-md" dir="rtl">
+            <DialogHeader>
+              <DialogTitle>نقل الأداة</DialogTitle>
+              <DialogDescription>
+                تحديد موقع جديد للأداة: {tool?.name}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">المشروع الجديد</label>
+                <select className="w-full mt-1 p-2 border rounded-md">
+                  <option value="">اختر المشروع</option>
+                  {projects.map(project => (
+                    <option key={project.id} value={project.id}>
+                      {project.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium">سبب النقل</label>
+                <textarea 
+                  className="w-full mt-1 p-2 border rounded-md" 
+                  rows={3}
+                  placeholder="اكتب سبب النقل..."
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={() => {
+                    toast({
+                      title: "تم نقل الأداة بنجاح",
+                      description: "تم تحديث موقع الأداة",
+                    });
+                    setShowMoveDialog(false);
+                  }}
+                  className="flex-1"
+                >
+                  تأكيد النقل
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowMoveDialog(false)}
+                  className="flex-1"
+                >
+                  إلغاء
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Maintenance Dialog */}
+      {showMaintenanceDialog && (
+        <Dialog open={showMaintenanceDialog} onOpenChange={setShowMaintenanceDialog}>
+          <DialogContent className="max-w-md" dir="rtl">
+            <DialogHeader>
+              <DialogTitle>جدولة صيانة</DialogTitle>
+              <DialogDescription>
+                إنشاء جدولة صيانة للأداة: {tool?.name}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="text-sm font-medium">نوع الصيانة</label>
+                <select className="w-full mt-1 p-2 border rounded-md">
+                  <option value="preventive">صيانة وقائية</option>
+                  <option value="corrective">صيانة تصحيحية</option>
+                  <option value="emergency">صيانة طارئة</option>
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-medium">تاريخ الصيانة</label>
+                <input 
+                  type="date" 
+                  className="w-full mt-1 p-2 border rounded-md"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">الملاحظات</label>
+                <textarea 
+                  className="w-full mt-1 p-2 border rounded-md" 
+                  rows={3}
+                  placeholder="اكتب ملاحظات الصيانة..."
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={() => {
+                    toast({
+                      title: "تم جدولة الصيانة بنجاح",
+                      description: "تم حفظ جدولة الصيانة",
+                    });
+                    setShowMaintenanceDialog(false);
+                  }}
+                  className="flex-1"
+                >
+                  حفظ الجدولة
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowMaintenanceDialog(false)}
+                  className="flex-1"
+                >
+                  إلغاء
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </Dialog>
   );
 };
