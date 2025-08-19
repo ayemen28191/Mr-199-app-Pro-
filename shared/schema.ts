@@ -872,34 +872,38 @@ export const updateToolSchema = insertToolSchema.extend({
     return typeof val === 'string' ? val : val.toString();
   }),
   purchaseDate: z.union([z.string(), z.date()]).optional().transform((val) => {
-    if (!val) return undefined;
+    if (!val || val === '') return null;
     if (typeof val === 'string') {
-      const date = new Date(val);
-      return isNaN(date.getTime()) ? undefined : date;
+      // تحويل التاريخ من تنسيق YYYY-MM-DD إلى Date object
+      const date = new Date(val + 'T00:00:00.000Z');
+      return isNaN(date.getTime()) ? null : date;
     }
     return val;
   }),
   warrantyExpiry: z.union([z.string(), z.date()]).optional().transform((val) => {
-    if (!val) return undefined;
+    if (!val || val === '') return null;
     if (typeof val === 'string') {
-      const date = new Date(val);
-      return isNaN(date.getTime()) ? undefined : date;
+      // تحويل التاريخ من تنسيق YYYY-MM-DD إلى Date object
+      const date = new Date(val + 'T00:00:00.000Z');
+      return isNaN(date.getTime()) ? null : date;
     }
     return val;
   }),
   lastMaintenanceDate: z.union([z.string(), z.date()]).optional().transform((val) => {
-    if (!val) return undefined;
+    if (!val || val === '') return null;
     if (typeof val === 'string') {
-      const date = new Date(val);
-      return isNaN(date.getTime()) ? undefined : date;
+      // تحويل التاريخ من تنسيق YYYY-MM-DD إلى Date object
+      const date = new Date(val + 'T00:00:00.000Z');
+      return isNaN(date.getTime()) ? null : date;
     }
     return val;
   }),
   nextMaintenanceDate: z.union([z.string(), z.date()]).optional().transform((val) => {
-    if (!val) return undefined;
+    if (!val || val === '') return null;
     if (typeof val === 'string') {
-      const date = new Date(val);
-      return isNaN(date.getTime()) ? undefined : date;
+      // تحويل التاريخ من تنسيق YYYY-MM-DD إلى Date object
+      const date = new Date(val + 'T00:00:00.000Z');
+      return isNaN(date.getTime()) ? null : date;
     }
     return val;
   }),
