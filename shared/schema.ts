@@ -441,8 +441,10 @@ export const tools = pgTable("tools", {
   isConsumable: boolean("is_consumable").default(false).notNull(), // قابل للاستهلاك
   isSerial: boolean("is_serial").default(false).notNull(), // له رقم تسلسلي
   
-  // معلومات الشراء
+  // معلومات الشراء والمالية
   purchasePrice: decimal("purchase_price", { precision: 12, scale: 2 }),
+  currentValue: decimal("current_value", { precision: 12, scale: 2 }), // القيمة الحالية
+  depreciationRate: decimal("depreciation_rate", { precision: 5, scale: 2 }), // معدل الإهلاك السنوي
   purchaseDate: timestamp("purchase_date"),
   supplierId: varchar("supplier_id").references(() => suppliers.id),
   warrantyExpiry: timestamp("warranty_expiry"),
@@ -455,6 +457,8 @@ export const tools = pgTable("tools", {
   // الحالة والموقع
   status: text("status").notNull().default("available"), // available, assigned, maintenance, lost, consumed, reserved
   condition: text("condition").notNull().default("excellent"), // excellent, good, fair, poor, damaged
+  locationType: text("location_type"), // نوع الموقع (مخزن، مشروع، فرع، مكتب، ورشة)
+  locationId: text("location_id"), // تحديد الموقع
   
   // معلومات إضافية
   serialNumber: text("serial_number"),

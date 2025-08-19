@@ -4755,6 +4755,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Temporary SQL migration endpoint (مؤقت لإضافة الحقول المفقودة)
+  app.post("/api/tools/add-missing-fields", async (req, res) => {
+    try {
+      console.log('🔧 بدء إضافة الحقول المفقودة إلى جدول tools...');
+      
+      // إضافة الحقول الجديدة
+      await db.execute(sql`
+        ALTER TABLE tools 
+        ADD COLUMN IF NOT EXISTS current_value DECIMAL(12, 2),
+        ADD COLUMN IF NOT EXISTS depreciation_rate DECIMAL(5, 2),
+        ADD COLUMN IF NOT EXISTS location_type TEXT,
+        ADD COLUMN IF NOT EXISTS location_id TEXT
+      `);
+      
+      // التحقق من إضافة الحقول
+      const checkResult = await db.execute(sql`
+        SELECT column_name, data_type, is_nullable 
+        FROM information_schema.columns 
+        WHERE table_name = 'tools' 
+        AND column_name IN ('current_value', 'depreciation_rate', 'location_type', 'location_id')
+        ORDER BY column_name
+      `);
+      
+      console.log('✅ تم إضافة الحقول الجديدة بنجاح:', checkResult.rows);
+      
+      res.json({
+        success: true,
+        message: 'تم إضافة الحقول المفقودة بنجاح',
+        fields: checkResult.rows
+      });
+      
+    } catch (error) {
+      console.error('❌ خطأ في إضافة الحقول:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: 'خطأ في إضافة الحقول المفقودة',
+        error: error.message 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

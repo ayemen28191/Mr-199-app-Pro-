@@ -75,7 +75,8 @@ const editToolSchema = z.object({
     errorMap: () => ({ message: 'يجب اختيار حالة الجودة من القائمة' })
   }),
   projectId: z.string().min(1, 'يجب اختيار المشروع المرتبط بالأداة'),
-
+  locationType: z.string().optional(),
+  locationId: z.string().optional(),
   specifications: z.string().optional(),
 });
 
@@ -211,6 +212,8 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
         status: tool.status || 'available',
         condition: tool.condition || 'excellent',
         projectId: tool.projectId || '',
+        locationType: tool.locationType || '',
+        locationId: tool.locationId || '',
         specifications: typeof tool.specifications === 'string' 
           ? tool.specifications 
           : tool.specifications 
@@ -830,7 +833,108 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
                         )}
                       />
 
-                      {/* Location fields removed - not available in database schema */}
+                      <FormField
+                        control={form.control}
+                        name="locationType"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>نوع الموقع</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value || ""}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="اختر نوع الموقع" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="مخزن">مخزن</SelectItem>
+                                <SelectItem value="مشروع">مشروع</SelectItem>
+                                <SelectItem value="فرع">فرع</SelectItem>
+                                <SelectItem value="مكتب">مكتب</SelectItem>
+                                <SelectItem value="ورشة">ورشة</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="locationId"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>تحديد الموقع</FormLabel>
+                            <FormControl>
+                              <Input
+                                placeholder="مثال: مخزن رقم 1، مشروع الرياض، ورشة الصيانة"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              مثال: مخزن رقم 1، مشروع الرياض، إلخ
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="status"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>حالة الأداة *</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="اختر حالة الأداة" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="available">متاح</SelectItem>
+                                <SelectItem value="assigned">مخصص</SelectItem>
+                                <SelectItem value="in_use">قيد الاستخدام</SelectItem>
+                                <SelectItem value="maintenance">صيانة</SelectItem>
+                                <SelectItem value="damaged">معطل</SelectItem>
+                                <SelectItem value="lost">مفقود</SelectItem>
+                                <SelectItem value="consumed">مستهلك</SelectItem>
+                                <SelectItem value="reserved">محجوز</SelectItem>
+                                <SelectItem value="retired">متقاعد</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="condition"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>حالة الجودة *</FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="اختر حالة الجودة" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value="excellent">ممتاز</SelectItem>
+                                <SelectItem value="good">جيد</SelectItem>
+                                <SelectItem value="fair">مقبول</SelectItem>
+                                <SelectItem value="poor">ضعيف</SelectItem>
+                                <SelectItem value="damaged">معطل</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
                     </div>
                   </CardContent>
                 </Card>
