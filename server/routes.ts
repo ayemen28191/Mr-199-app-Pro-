@@ -3534,6 +3534,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log('🔧 PUT /api/tools/:id - البيانات المستلمة:', req.body);
       console.log('🔧 PUT /api/tools/:id - معرف الأداة:', req.params.id);
+      console.log('🔧 تفاصيل التواريخ في البيانات الخام:', {
+        purchaseDate: req.body.purchaseDate,
+        warrantyExpiry: req.body.warrantyExpiry,
+        purchaseDateType: typeof req.body.purchaseDate,
+        warrantyExpiryType: typeof req.body.warrantyExpiry
+      });
       
       const result = updateToolSchema.safeParse(req.body);
       if (!result.success) {
@@ -3545,6 +3551,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       console.log('✅ البيانات المتحقق منها:', result.data);
+      console.log('🔧 تفاصيل التواريخ بعد parsing:', {
+        purchaseDate: result.data.purchaseDate,
+        warrantyExpiry: result.data.warrantyExpiry,
+        purchaseDateType: typeof result.data.purchaseDate,
+        warrantyExpiryType: typeof result.data.warrantyExpiry
+      });
       const tool = await storage.updateTool(req.params.id, result.data);
       if (!tool) {
         console.error('❌ الأداة غير موجودة:', req.params.id);
