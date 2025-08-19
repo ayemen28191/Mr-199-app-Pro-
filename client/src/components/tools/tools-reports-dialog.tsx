@@ -459,7 +459,7 @@ const ToolsReportsDialog: React.FC<ToolsReportsDialogProps> = ({
                                   </Badge>
                                 </TableCell>
                                 <TableCell className="text-muted-foreground text-sm">
-                                  {tool.lastUsed ? new Date(tool.lastUsed).toLocaleDateString('ar-SA') : 'لم يستخدم'}
+                                  {tool.lastUsed ? new Date(tool.lastUsed).toLocaleDateString('en-GB') : 'لم يستخدم'}
                                 </TableCell>
                                 <TableCell>
                                   <div className="flex items-center gap-2">
@@ -515,7 +515,7 @@ const ToolsReportsDialog: React.FC<ToolsReportsDialogProps> = ({
                                 <div className="flex justify-between items-center">
                                   <span className="text-muted-foreground text-xs">آخر استخدام:</span>
                                   <span className="font-medium text-xs">
-                                    {tool.lastUsed ? new Date(tool.lastUsed).toLocaleDateString('ar-SA') : 'لم يستخدم'}
+                                    {tool.lastUsed ? new Date(tool.lastUsed).toLocaleDateString('en-GB') : 'لم يستخدم'}
                                   </span>
                                 </div>
                                 <div className="flex justify-between items-center">
