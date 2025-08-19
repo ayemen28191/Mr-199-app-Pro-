@@ -195,7 +195,7 @@ const ToolsReportsDialog: React.FC<ToolsReportsDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[98vw] max-w-6xl max-h-[95vh] overflow-y-auto" dir="rtl">
+      <DialogContent className="w-[95vw] sm:w-[90vw] max-w-6xl max-h-[90vh] overflow-y-auto" dir="rtl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 sm:gap-3 text-lg sm:text-xl">
             <BarChart3 className="h-5 w-5 sm:h-6 sm:w-6" />
@@ -207,7 +207,7 @@ const ToolsReportsDialog: React.FC<ToolsReportsDialogProps> = ({
         </DialogHeader>
 
         {/* Filters - Mobile Responsive */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 sm:p-4 bg-muted/30 rounded-lg">
+        <div className="flex flex-col gap-3 p-3 sm:p-4 bg-muted/30 rounded-lg sm:grid sm:grid-cols-3">
           <div className="flex flex-col sm:flex-row sm:items-center gap-2">
             <div className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
@@ -254,26 +254,22 @@ const ToolsReportsDialog: React.FC<ToolsReportsDialogProps> = ({
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 bg-muted/30 p-1 rounded-lg mb-4 sm:mb-6">
-            <TabsTrigger value="overview" className="text-xs sm:text-sm font-medium py-2">
-              <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
-              <span className="hidden sm:inline">نظرة عامة</span>
-              <span className="sm:hidden">عامة</span>
+          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 bg-muted/30 p-1 rounded-lg mb-4 sm:mb-6 h-auto">
+            <TabsTrigger value="overview" className="text-xs sm:text-sm font-medium py-3 px-2 flex-col gap-1 lg:flex-row lg:gap-2" data-testid="tab-overview">
+              <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="text-[10px] sm:text-xs lg:text-sm">نظرة عامة</span>
             </TabsTrigger>
-            <TabsTrigger value="usage" className="text-xs sm:text-sm font-medium py-2">
-              <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
-              <span className="hidden sm:inline">تقرير الاستخدام</span>
-              <span className="sm:hidden">الاستخدام</span>
+            <TabsTrigger value="usage" className="text-xs sm:text-sm font-medium py-3 px-2 flex-col gap-1 lg:flex-row lg:gap-2" data-testid="tab-usage">
+              <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="text-[10px] sm:text-xs lg:text-sm">الاستخدام</span>
             </TabsTrigger>
-            <TabsTrigger value="maintenance" className="text-xs sm:text-sm font-medium py-2">
-              <Wrench className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
-              <span className="hidden sm:inline">تقرير الصيانة</span>
-              <span className="sm:hidden">الصيانة</span>
+            <TabsTrigger value="maintenance" className="text-xs sm:text-sm font-medium py-3 px-2 flex-col gap-1 lg:flex-row lg:gap-2 col-span-2 lg:col-span-1" data-testid="tab-maintenance">
+              <Wrench className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="text-[10px] sm:text-xs lg:text-sm">الصيانة</span>
             </TabsTrigger>
-            <TabsTrigger value="categories" className="text-xs sm:text-sm font-medium py-2">
-              <Package className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
-              <span className="hidden sm:inline">تحليل التصنيفات</span>
-              <span className="sm:hidden">التصنيفات</span>
+            <TabsTrigger value="categories" className="text-xs sm:text-sm font-medium py-3 px-2 flex-col gap-1 lg:flex-row lg:gap-2 col-span-2 lg:col-span-1" data-testid="tab-categories">
+              <Package className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="text-[10px] sm:text-xs lg:text-sm">التصنيفات</span>
             </TabsTrigger>
           </TabsList>
 
@@ -370,43 +366,48 @@ const ToolsReportsDialog: React.FC<ToolsReportsDialogProps> = ({
             </div>
 
             {/* Actions */}
-            <div className="flex gap-2">
-              <Button onClick={() => downloadReport('overview')}>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <Button onClick={() => downloadReport('overview')} className="w-full sm:w-auto" data-testid="button-export-overview">
                 <Download className="h-4 w-4 ml-1" />
-                تصدير النظرة العامة
+                <span className="hidden sm:inline">تصدير النظرة العامة</span>
+                <span className="sm:hidden">تصدير عام</span>
               </Button>
-              <Button variant="outline" onClick={() => downloadReport('detailed')}>
+              <Button variant="outline" onClick={() => downloadReport('detailed')} className="w-full sm:w-auto" data-testid="button-export-detailed">
                 <FileText className="h-4 w-4 ml-1" />
-                تقرير مفصل
+                <span className="hidden sm:inline">تقرير مفصل</span>
+                <span className="sm:hidden">تقرير مفصل</span>
               </Button>
             </div>
           </TabsContent>
 
           {/* Usage Report Tab */}
-          <TabsContent value="usage" className="space-y-6">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                  <Input
-                    placeholder="البحث في الأدوات..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pr-10 w-80"
-                  />
-                </div>
+          <TabsContent value="usage" className="space-y-4 sm:space-y-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
+              <div className="relative flex-1 sm:max-w-md">
+                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="البحث في الأدوات..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pr-10 w-full"
+                  data-testid="input-search-tools"
+                />
               </div>
-              <Button onClick={() => downloadReport('usage')}>
+              <Button onClick={() => downloadReport('usage')} className="w-full sm:w-auto" data-testid="button-export-usage">
                 <Download className="h-4 w-4 ml-1" />
-                تصدير تقرير الاستخدام
+                <span className="hidden sm:inline">تصدير تقرير الاستخدام</span>
+                <span className="sm:hidden">تصدير التقرير</span>
               </Button>
             </div>
 
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" />
-                  تقرير استخدام الأدوات ({filteredUsageReport.length})
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <span>تقرير استخدام الأدوات</span>
+                  <Badge variant="outline" className="mr-auto text-xs">
+                    {filteredUsageReport.length}
+                  </Badge>
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -487,42 +488,43 @@ const ToolsReportsDialog: React.FC<ToolsReportsDialogProps> = ({
                         const statusInfo = getStatusInfo(tool.status);
                         const StatusIcon = statusInfo.icon;
                         return (
-                          <Card key={tool.id} className="p-4">
+                          <Card key={tool.id} className="p-3 sm:p-4 shadow-sm" data-testid={`card-tool-${tool.id}`}>
                             <div className="space-y-3">
-                              <div className="flex items-start justify-between">
-                                <div>
-                                  <h3 className="font-medium text-base mb-1">{tool.name}</h3>
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <h3 className="font-medium text-sm sm:text-base mb-1 truncate" title={tool.name}>{tool.name}</h3>
                                   <Badge variant="outline" className="text-xs">{tool.category}</Badge>
                                 </div>
-                                <Badge 
-                                  variant={tool.usageCount > 10 ? "default" : tool.usageCount > 5 ? "secondary" : "outline"}
-                                  className="text-xs"
-                                >
-                                  {tool.usageCount} مرة
-                                </Badge>
-                              </div>
-                              
-                              <div className="grid grid-cols-2 gap-3 text-sm">
-                                <div>
-                                  <span className="text-muted-foreground">آخر استخدام:</span>
-                                  <p className="font-medium">
-                                    {tool.lastUsed ? new Date(tool.lastUsed).toLocaleDateString('ar-SA') : 'لم يستخدم'}
-                                  </p>
-                                </div>
-                                <div>
-                                  <span className="text-muted-foreground">الموقع:</span>
+                                <div className="flex flex-col items-end gap-1">
+                                  <Badge 
+                                    variant={tool.usageCount > 10 ? "default" : tool.usageCount > 5 ? "secondary" : "outline"}
+                                    className="text-xs whitespace-nowrap"
+                                  >
+                                    {tool.usageCount} مرة
+                                  </Badge>
                                   <div className="flex items-center gap-1">
-                                    <MapPin className="h-3 w-3" />
-                                    <span className="font-medium">{tool.location}</span>
+                                    <StatusIcon className={`h-3 w-3 ${statusInfo.color}`} />
+                                    <span className={`text-xs ${statusInfo.color}`}>
+                                      {statusInfo.text}
+                                    </span>
                                   </div>
                                 </div>
                               </div>
                               
-                              <div className="flex items-center gap-2 pt-2 border-t">
-                                <StatusIcon className={`h-4 w-4 ${statusInfo.color}`} />
-                                <span className={`text-sm font-medium ${statusInfo.color}`}>
-                                  {statusInfo.text}
-                                </span>
+                              <div className="space-y-2 text-sm">
+                                <div className="flex justify-between items-center">
+                                  <span className="text-muted-foreground text-xs">آخر استخدام:</span>
+                                  <span className="font-medium text-xs">
+                                    {tool.lastUsed ? new Date(tool.lastUsed).toLocaleDateString('ar-SA') : 'لم يستخدم'}
+                                  </span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                  <span className="text-muted-foreground text-xs">الموقع:</span>
+                                  <div className="flex items-center gap-1">
+                                    <MapPin className="h-3 w-3" />
+                                    <span className="font-medium text-xs">{tool.location}</span>
+                                  </div>
+                                </div>
                               </div>
                             </div>
                           </Card>
@@ -537,11 +539,12 @@ const ToolsReportsDialog: React.FC<ToolsReportsDialogProps> = ({
 
           {/* Maintenance Report Tab */}
           <TabsContent value="maintenance" className="space-y-6">
-            <div className="flex justify-between items-center">
+            <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
               <h3 className="text-lg font-semibold">تقرير الصيانة والمتابعة</h3>
-              <Button onClick={() => downloadReport('maintenance')}>
+              <Button onClick={() => downloadReport('maintenance')} className="w-full sm:w-auto" data-testid="button-export-maintenance">
                 <Download className="h-4 w-4 ml-1" />
-                تصدير تقرير الصيانة
+                <span className="hidden sm:inline">تصدير تقرير الصيانة</span>
+                <span className="sm:hidden">تصدير التقرير</span>
               </Button>
             </div>
 
@@ -682,19 +685,20 @@ const ToolsReportsDialog: React.FC<ToolsReportsDialogProps> = ({
           </TabsContent>
 
           {/* Categories Analysis Tab */}
-          <TabsContent value="categories" className="space-y-6">
-            <div className="flex justify-between items-center">
+          <TabsContent value="categories" className="space-y-4 sm:space-y-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
               <h3 className="text-lg font-semibold">تحليل التصنيفات</h3>
-              <Button onClick={() => downloadReport('categories')}>
+              <Button onClick={() => downloadReport('categories')} className="w-full sm:w-auto" data-testid="button-export-categories">
                 <Download className="h-4 w-4 ml-1" />
-                تصدير تحليل التصنيفات
+                <span className="hidden sm:inline">تصدير تحليل التصنيفات</span>
+                <span className="sm:hidden">تصدير التحليل</span>
               </Button>
             </div>
 
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Package className="h-5 w-5" />
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                  <Package className="h-4 w-4 sm:h-5 sm:w-5" />
                   إحصائيات التصنيفات
                 </CardTitle>
               </CardHeader>
@@ -713,39 +717,68 @@ const ToolsReportsDialog: React.FC<ToolsReportsDialogProps> = ({
                     <p className="text-muted-foreground">لا توجد تصنيفات للتحليل</p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
                     {categoriesStats.map((category) => (
-                      <Card key={category.id}>
-                        <CardContent className="p-4">
-                          <div className="flex justify-between items-center">
-                            <div className="flex-1">
-                              <h4 className="font-semibold text-lg">{category.name}</h4>
-                              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-3">
-                                <div className="text-center">
-                                  <p className="text-2xl font-bold text-primary">{category.toolCount}</p>
-                                  <p className="text-sm text-muted-foreground">عدد الأدوات</p>
-                                </div>
-                                <div className="text-center">
-                                  <p className="text-2xl font-bold text-green-600">
-                                    {category.totalValue?.toLocaleString() || 0}
-                                  </p>
-                                  <p className="text-sm text-muted-foreground">القيمة الإجمالية (ريال)</p>
-                                </div>
-                                <div className="text-center">
-                                  <p className={`text-2xl font-bold ${getConditionColor(category.averageCondition)}`}>
-                                    {category.averageCondition === 'excellent' ? 'ممتاز' :
-                                     category.averageCondition === 'good' ? 'جيد' :
-                                     category.averageCondition === 'fair' ? 'مقبول' :
-                                     category.averageCondition === 'poor' ? 'ضعيف' : 'معطل'}
-                                  </p>
-                                  <p className="text-sm text-muted-foreground">متوسط الحالة</p>
-                                </div>
-                                <div className="text-center">
-                                  <p className="text-sm font-medium text-muted-foreground">الأكثر استخداماً:</p>
-                                  <p className="text-sm font-bold">
-                                    {category.mostUsedTool || 'غير محدد'}
-                                  </p>
-                                </div>
+                      <Card key={category.id} className="shadow-sm" data-testid={`card-category-${category.id}`}>
+                        <CardContent className="p-3 sm:p-4">
+                          <div>
+                            <h4 className="font-semibold text-base sm:text-lg mb-3 sm:mb-4">{category.name}</h4>
+                            
+                            {/* Mobile Layout - 2 columns */}
+                            <div className="grid grid-cols-2 gap-3 sm:hidden">
+                              <div className="text-center p-3 bg-muted/30 rounded-lg">
+                                <p className="text-lg font-bold text-primary">{category.toolCount}</p>
+                                <p className="text-xs text-muted-foreground">عدد الأدوات</p>
+                              </div>
+                              <div className="text-center p-3 bg-muted/30 rounded-lg">
+                                <p className="text-lg font-bold text-green-600">
+                                  {category.totalValue ? Math.round(category.totalValue/1000) + 'ك' : 0}
+                                </p>
+                                <p className="text-xs text-muted-foreground">القيمة (ألف ريال)</p>
+                              </div>
+                              <div className="text-center p-3 bg-muted/30 rounded-lg">
+                                <p className={`text-sm font-bold ${getConditionColor(category.averageCondition)}`}>
+                                  {category.averageCondition === 'excellent' ? 'ممتاز' :
+                                   category.averageCondition === 'good' ? 'جيد' :
+                                   category.averageCondition === 'fair' ? 'مقبول' :
+                                   category.averageCondition === 'poor' ? 'ضعيف' : 'معطل'}
+                                </p>
+                                <p className="text-xs text-muted-foreground">متوسط الحالة</p>
+                              </div>
+                              <div className="text-center p-3 bg-muted/30 rounded-lg">
+                                <p className="text-xs font-bold text-muted-foreground truncate" title={category.mostUsedTool || 'غير محدد'}>
+                                  {category.mostUsedTool || 'غير محدد'}
+                                </p>
+                                <p className="text-xs text-muted-foreground">الأكثر استخداماً</p>
+                              </div>
+                            </div>
+                            
+                            {/* Desktop/Tablet Layout - 4 columns */}
+                            <div className="hidden sm:grid sm:grid-cols-2 md:grid-cols-4 gap-4">
+                              <div className="text-center p-4 bg-muted/30 rounded-lg">
+                                <p className="text-2xl font-bold text-primary">{category.toolCount}</p>
+                                <p className="text-sm text-muted-foreground">عدد الأدوات</p>
+                              </div>
+                              <div className="text-center p-4 bg-muted/30 rounded-lg">
+                                <p className="text-2xl font-bold text-green-600">
+                                  {category.totalValue?.toLocaleString() || 0}
+                                </p>
+                                <p className="text-sm text-muted-foreground">القيمة الإجمالية (ريال)</p>
+                              </div>
+                              <div className="text-center p-4 bg-muted/30 rounded-lg">
+                                <p className={`text-2xl font-bold ${getConditionColor(category.averageCondition)}`}>
+                                  {category.averageCondition === 'excellent' ? 'ممتاز' :
+                                   category.averageCondition === 'good' ? 'جيد' :
+                                   category.averageCondition === 'fair' ? 'مقبول' :
+                                   category.averageCondition === 'poor' ? 'ضعيف' : 'معطل'}
+                                </p>
+                                <p className="text-sm text-muted-foreground">متوسط الحالة</p>
+                              </div>
+                              <div className="text-center p-4 bg-muted/30 rounded-lg">
+                                <p className="text-sm font-medium text-muted-foreground">الأكثر استخداماً:</p>
+                                <p className="text-sm font-bold">
+                                  {category.mostUsedTool || 'غير محدد'}
+                                </p>
                               </div>
                             </div>
                           </div>
