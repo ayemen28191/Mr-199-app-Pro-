@@ -55,6 +55,14 @@ const addToolSchema = z.object({
     .min(0, 'سعر الشراء لا يمكن أن يكون سالباً')
     .max(999999, 'سعر الشراء مرتفع جداً')
     .optional(),
+  currentValue: z.coerce.number()
+    .min(0, 'القيمة الحالية لا يمكن أن تكون سالبة')
+    .max(999999, 'القيمة الحالية مرتفعة جداً')
+    .optional(),
+  depreciationRate: z.coerce.number()
+    .min(0, 'معدل الإهلاك لا يمكن أن يكون سالباً')
+    .max(100, 'معدل الإهلاك لا يمكن أن يتجاوز 100%')
+    .optional(),
   purchaseDate: z.string().optional(),
   warrantyExpiry: z.string().optional(),
   maintenanceInterval: z.coerce.number()
@@ -109,6 +117,12 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
       serialNumber: '',
       barcode: '',
       unit: 'قطعة',
+      purchasePrice: undefined,
+      currentValue: undefined,
+      depreciationRate: undefined,
+      purchaseDate: '',
+      warrantyExpiry: '',
+      maintenanceInterval: undefined,
       status: 'available',
       condition: 'good',
       locationType: 'مخزن',
@@ -533,6 +547,54 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                                 data-testid="tool-purchase-date-input"
                               />
                             </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="currentValue"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>القيمة الحالية <span className="text-xs text-gray-500">(اختياري)</span></FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                placeholder="0.00"
+                                {...field}
+                                data-testid="tool-current-value-input"
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              القيمة التقديرية الحالية للأداة
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="depreciationRate"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>معدل الإهلاك (%) <span className="text-xs text-gray-500">(اختياري)</span></FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                placeholder="10"
+                                min="0"
+                                max="100"
+                                {...field}
+                                data-testid="tool-depreciation-rate-input"
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              معدل انخفاض القيمة سنوياً
+                            </FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}

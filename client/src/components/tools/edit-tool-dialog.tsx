@@ -18,6 +18,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -53,14 +54,21 @@ const editToolSchema = z.object({
     .min(0, 'سعر الشراء لا يمكن أن يكون سالباً')
     .max(999999, 'سعر الشراء مرتفع جداً')
     .optional(),
-
+  currentValue: z.coerce.number()
+    .min(0, 'القيمة الحالية لا يمكن أن تكون سالبة')
+    .max(999999, 'القيمة الحالية مرتفعة جداً')
+    .optional(),
+  depreciationRate: z.coerce.number()
+    .min(0, 'معدل الإهلاك لا يمكن أن يكون سالباً')
+    .max(100, 'معدل الإهلاك لا يمكن أن يتجاوز 100%')
+    .optional(),
   purchaseDate: z.string().optional(),
   warrantyExpiry: z.string().optional(),
   maintenanceInterval: z.coerce.number()
     .min(1, 'فترة الصيانة يجب أن تكون يوم واحد على الأقل')
     .max(3650, 'فترة الصيانة طويلة جداً (أكثر من 10 سنوات)')
     .optional(),
-  status: z.enum(['available', 'assigned', 'maintenance', 'lost', 'consumed', 'reserved'], {
+  status: z.enum(['available', 'assigned', 'maintenance', 'lost', 'consumed', 'reserved', 'in_use', 'damaged', 'retired'], {
     errorMap: () => ({ message: 'يجب اختيار حالة الأداة من القائمة' })
   }),
   condition: z.enum(['excellent', 'good', 'fair', 'poor', 'damaged'], {
@@ -91,7 +99,7 @@ interface Tool {
   warrantyExpiry?: string;
   maintenanceInterval?: number;
   nextMaintenanceDate?: string;
-  status: 'available' | 'in_use' | 'maintenance' | 'damaged' | 'retired';
+  status: 'available' | 'assigned' | 'maintenance' | 'lost' | 'consumed' | 'reserved' | 'in_use' | 'damaged' | 'retired';
   condition: 'excellent' | 'good' | 'fair' | 'poor' | 'damaged';
   projectId?: string;
   locationType?: string;
@@ -195,6 +203,8 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
         barcode: tool.barcode || '',
         unit: tool.unit || 'قطعة',
         purchasePrice: parseNumber(tool.purchasePrice),
+        currentValue: parseNumber(tool.currentValue),
+        depreciationRate: parseNumber(tool.depreciationRate),
         purchaseDate: formatDateForInput(tool.purchaseDate),
         warrantyExpiry: formatDateForInput(tool.warrantyExpiry),
         maintenanceInterval: parseNumber(tool.maintenanceInterval),
@@ -676,8 +686,6 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
                         )}
                       />
 
-
-
                       <FormField
                         control={form.control}
                         name="purchaseDate"
@@ -690,6 +698,96 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
                                 {...field}
                               />
                             </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="currentValue"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>القيمة الحالية (ر.ي)</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                placeholder="مثال: 1200.00"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              القيمة التقديرية الحالية للأداة
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="depreciationRate"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>معدل الإهلاك (%)</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                max="100"
+                                placeholder="مثال: 15"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              معدل انخفاض القيمة سنوياً
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="warrantyExpiry"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>انتهاء الضمان</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="date"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
+                        name="maintenanceInterval"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>فترة الصيانة (بالأيام)</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                min="1"
+                                max="3650"
+                                placeholder="مثال: 90"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              عدد الأيام بين كل صيانة وأخرى
+                            </FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
