@@ -853,6 +853,54 @@ export const insertToolSchema = createInsertSchema(tools).omit({
   updatedAt: true,
 });
 
+// Schema مخصص لتحديث الأدوات مع معالجة تحويل الأنواع
+export const updateToolSchema = insertToolSchema.extend({
+  purchasePrice: z.union([z.string(), z.number()]).optional().transform((val) => {
+    if (val === undefined || val === null || val === '') return undefined;
+    return typeof val === 'string' ? val : val.toString();
+  }),
+  currentValue: z.union([z.string(), z.number()]).optional().transform((val) => {
+    if (val === undefined || val === null || val === '') return undefined;
+    return typeof val === 'string' ? val : val.toString();
+  }),
+  depreciationRate: z.union([z.string(), z.number()]).optional().transform((val) => {
+    if (val === undefined || val === null || val === '') return undefined;
+    return typeof val === 'string' ? val : val.toString();
+  }),
+  purchaseDate: z.union([z.string(), z.date()]).optional().transform((val) => {
+    if (!val) return undefined;
+    if (typeof val === 'string') {
+      const date = new Date(val);
+      return isNaN(date.getTime()) ? undefined : date;
+    }
+    return val;
+  }),
+  warrantyExpiry: z.union([z.string(), z.date()]).optional().transform((val) => {
+    if (!val) return undefined;
+    if (typeof val === 'string') {
+      const date = new Date(val);
+      return isNaN(date.getTime()) ? undefined : date;
+    }
+    return val;
+  }),
+  lastMaintenanceDate: z.union([z.string(), z.date()]).optional().transform((val) => {
+    if (!val) return undefined;
+    if (typeof val === 'string') {
+      const date = new Date(val);
+      return isNaN(date.getTime()) ? undefined : date;
+    }
+    return val;
+  }),
+  nextMaintenanceDate: z.union([z.string(), z.date()]).optional().transform((val) => {
+    if (!val) return undefined;
+    if (typeof val === 'string') {
+      const date = new Date(val);
+      return isNaN(date.getTime()) ? undefined : date;
+    }
+    return val;
+  }),
+}).partial();
+
 export const insertToolStockSchema = createInsertSchema(toolStock).omit({
   id: true,
   createdAt: true,
@@ -886,6 +934,7 @@ export type InsertToolCategory = z.infer<typeof insertToolCategorySchema>;
 export type ToolCategory = typeof toolCategories.$inferSelect;
 
 export type InsertTool = z.infer<typeof insertToolSchema>;
+export type UpdateTool = z.infer<typeof updateToolSchema>;
 export type Tool = typeof tools.$inferSelect;
 
 export type InsertToolStock = z.infer<typeof insertToolStockSchema>;

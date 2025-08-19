@@ -13,7 +13,7 @@ import {
   insertWorkerMiscExpenseSchema, insertUserSchema, insertSupplierSchema, insertSupplierPaymentSchema,
   insertPrintSettingsSchema, insertProjectFundTransferSchema,
   insertReportTemplateSchema,
-  insertToolCategorySchema, insertToolSchema, insertToolStockSchema, insertToolMovementSchema, 
+  insertToolCategorySchema, insertToolSchema, updateToolSchema, insertToolStockSchema, insertToolMovementSchema, 
   insertToolMaintenanceLogSchema, insertToolUsageAnalyticsSchema, insertToolReservationSchema,
   // Phase 3 schemas
   insertToolPurchaseItemSchema, insertMaintenanceScheduleSchema, insertMaintenanceTaskSchema, insertToolCostTrackingSchema
@@ -3535,7 +3535,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('🔧 PUT /api/tools/:id - البيانات المستلمة:', req.body);
       console.log('🔧 PUT /api/tools/:id - معرف الأداة:', req.params.id);
       
-      const result = insertToolSchema.partial().safeParse(req.body);
+      const result = updateToolSchema.safeParse(req.body);
       if (!result.success) {
         console.error('❌ خطأ في التحقق من صحة البيانات:', result.error.issues);
         return res.status(400).json({ 
