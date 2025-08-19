@@ -74,7 +74,7 @@ const editToolSchema = z.object({
   }),
   locationType: z.string().min(1, 'يجب اختيار نوع الموقع'),
   locationId: z.string().optional(),
-  projectId: z.string().optional(),
+  projectId: z.string().min(1, 'يجب اختيار المشروع المرتبط بالأداة'),
   specifications: z.string().optional(),
 });
 
@@ -192,6 +192,7 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
         condition: tool.condition || 'good',
         locationType: tool.locationType || 'مخزن',
         locationId: tool.locationId || '',
+        projectId: tool.projectId || '',
         specifications: typeof tool.specifications === 'string' 
           ? tool.specifications 
           : tool.specifications 
@@ -761,15 +762,14 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
                         name="projectId"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>المشروع المرتبط</FormLabel>
+                            <FormLabel>المشروع المرتبط *</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value}>
                               <FormControl>
                                 <SelectTrigger>
-                                  <SelectValue placeholder="اختر المشروع (اختياري)" />
+                                  <SelectValue placeholder="اختر المشروع" />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                <SelectItem value="none">غير مربوط بمشروع</SelectItem>
                                 {projects.filter(p => p.status === 'active').map((project) => (
                                   <SelectItem key={project.id} value={project.id}>
                                     {project.name}

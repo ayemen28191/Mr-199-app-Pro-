@@ -68,7 +68,7 @@ const addToolSchema = z.object({
   }),
   locationType: z.string().min(1, 'يجب اختيار نوع الموقع'),
   locationId: z.string().optional(),
-  projectId: z.string().optional(),
+  projectId: z.string().min(1, 'يجب اختيار المشروع المرتبط بالأداة'),
   specifications: z.string().optional(),
 });
 
@@ -118,7 +118,7 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
       condition: 'good',
       locationType: 'مخزن',
       specifications: '',
-      projectId: undefined,
+      projectId: '',
     },
   });
 
@@ -715,7 +715,7 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                         name="projectId"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>المشروع <span className="text-xs text-gray-500">(اختياري)</span></FormLabel>
+                            <FormLabel>المشروع المرتبط *</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value || ""}>
                               <FormControl>
                                 <SelectTrigger data-testid="tool-project-select">

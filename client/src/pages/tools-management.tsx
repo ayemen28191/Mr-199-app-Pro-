@@ -426,6 +426,20 @@ const ToolsManagementPage: React.FC = () => {
               <Edit className="h-3 w-3 sm:ml-1" />
               <span className="hidden sm:inline">تعديل</span>
             </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setSelectedToolId(tool.id);
+                setSelectedToolName(tool.name);
+                setIsMovementsDialogOpen(true);
+              }}
+              className="flex-1 h-6 sm:h-7 text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800"
+              data-testid={`quick-move-${tool.id}`}
+            >
+              <Move className="h-3 w-3 sm:ml-1" />
+              <span className="hidden sm:inline">نقل</span>
+            </Button>
           </div>
         </CardContent>
       </Card>
