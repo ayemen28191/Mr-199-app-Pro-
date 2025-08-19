@@ -19,11 +19,12 @@ export default function FloatingAddButton() {
   return (
     <Button
       onClick={handleClick}
-      className="fixed bottom-20 right-4 z-40 h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 bg-primary hover:bg-primary/90"
+      className="fixed bottom-24 left-4 sm:bottom-20 sm:left-4 z-40 h-12 w-12 sm:h-14 sm:w-14 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 bg-primary hover:bg-primary/90 safe-area-inset-bottom"
       size="icon"
       title={floatingLabel}
+      data-testid="floating-add-button"
     >
-      <Plus className="h-6 w-6" />
+      <Plus className="h-5 w-5 sm:h-6 sm:w-6" />
     </Button>
   );
 }
