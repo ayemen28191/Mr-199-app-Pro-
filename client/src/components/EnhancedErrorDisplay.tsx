@@ -1,7 +1,7 @@
 import React from "react";
 import { AlertTriangle, XCircle, Info, Lightbulb, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { ValidationError } from "@/hooks/useWorkersSettlementValidation";
+// ValidationError type no longer needed - removing unused import
 
 export type ErrorType = 'error' | 'warning' | 'info' | 'success';
 
