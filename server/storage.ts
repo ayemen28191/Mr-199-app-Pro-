@@ -3192,11 +3192,11 @@ export class DatabaseStorage implements IStorage {
         if (field in processedTool) {
           const value = processedTool[field as keyof typeof processedTool];
           if (value === null || value === undefined || value === '') {
-            processedTool[field as keyof typeof processedTool] = null;
+            processedTool[field as keyof typeof processedTool] = undefined;
           } else if (value instanceof Date) {
             // التأكد من أن التاريخ صحيح
             if (isNaN(value.getTime())) {
-              processedTool[field as keyof typeof processedTool] = null;
+              processedTool[field as keyof typeof processedTool] = undefined;
             }
           }
         }

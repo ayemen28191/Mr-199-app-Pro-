@@ -445,14 +445,14 @@ export const tools = pgTable("tools", {
   purchasePrice: decimal("purchase_price", { precision: 12, scale: 2 }),
   currentValue: decimal("current_value", { precision: 12, scale: 2 }), // القيمة الحالية
   depreciationRate: decimal("depreciation_rate", { precision: 5, scale: 2 }), // معدل الإهلاك السنوي
-  purchaseDate: timestamp("purchase_date"),
+  purchaseDate: timestamp("purchase_date", { mode: 'date' }),
   supplierId: varchar("supplier_id").references(() => suppliers.id),
-  warrantyExpiry: timestamp("warranty_expiry"),
+  warrantyExpiry: timestamp("warranty_expiry", { mode: 'date' }),
   
   // معلومات الصيانة
   maintenanceInterval: integer("maintenance_interval"), // عدد الأيام بين الصيانة
-  lastMaintenanceDate: timestamp("last_maintenance_date"),
-  nextMaintenanceDate: timestamp("next_maintenance_date"),
+  lastMaintenanceDate: timestamp("last_maintenance_date", { mode: 'date' }),
+  nextMaintenanceDate: timestamp("next_maintenance_date", { mode: 'date' }),
   
   // الحالة والموقع
   status: text("status").notNull().default("available"), // available, assigned, maintenance, lost, consumed, reserved
@@ -872,38 +872,38 @@ export const updateToolSchema = insertToolSchema.extend({
     return typeof val === 'string' ? val : val.toString();
   }),
   purchaseDate: z.union([z.string(), z.date()]).optional().transform((val) => {
-    if (!val || val === '') return null;
+    if (!val || val === '') return undefined;
     if (typeof val === 'string') {
       // تحويل التاريخ من تنسيق YYYY-MM-DD إلى Date object
       const date = new Date(val + 'T00:00:00.000Z');
-      return isNaN(date.getTime()) ? null : date;
+      return isNaN(date.getTime()) ? undefined : date;
     }
     return val;
   }),
   warrantyExpiry: z.union([z.string(), z.date()]).optional().transform((val) => {
-    if (!val || val === '') return null;
+    if (!val || val === '') return undefined;
     if (typeof val === 'string') {
       // تحويل التاريخ من تنسيق YYYY-MM-DD إلى Date object
       const date = new Date(val + 'T00:00:00.000Z');
-      return isNaN(date.getTime()) ? null : date;
+      return isNaN(date.getTime()) ? undefined : date;
     }
     return val;
   }),
   lastMaintenanceDate: z.union([z.string(), z.date()]).optional().transform((val) => {
-    if (!val || val === '') return null;
+    if (!val || val === '') return undefined;
     if (typeof val === 'string') {
       // تحويل التاريخ من تنسيق YYYY-MM-DD إلى Date object
       const date = new Date(val + 'T00:00:00.000Z');
-      return isNaN(date.getTime()) ? null : date;
+      return isNaN(date.getTime()) ? undefined : date;
     }
     return val;
   }),
   nextMaintenanceDate: z.union([z.string(), z.date()]).optional().transform((val) => {
-    if (!val || val === '') return null;
+    if (!val || val === '') return undefined;
     if (typeof val === 'string') {
       // تحويل التاريخ من تنسيق YYYY-MM-DD إلى Date object
       const date = new Date(val + 'T00:00:00.000Z');
-      return isNaN(date.getTime()) ? null : date;
+      return isNaN(date.getTime()) ? undefined : date;
     }
     return val;
   }),
