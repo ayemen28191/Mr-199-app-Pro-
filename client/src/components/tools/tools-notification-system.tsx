@@ -102,17 +102,18 @@ const ToolsNotificationSystem: React.FC = () => {
 
   const markAsRead = async (notificationId: string) => {
     try {
-      // إرسال طلب لتحديث حالة الإشعار في قاعدة البيانات
-      await apiRequest(`/api/notifications/${notificationId}/mark-read`, 'POST');
+      const response = await fetch(`/api/notifications/${notificationId}/mark-read`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
       
-      // تحديث البيانات المحلية
-      const currentNotifications = notifications.map(notification => 
-        notification.id === notificationId 
-          ? { ...notification, isRead: true }
-          : notification
-      );
+      if (!response.ok) {
+        throw new Error('فشل في تحديث الإشعار');
+      }
       
-      // إعادة تحديث البيانات
+      // إعادة جلب البيانات من الخادم
       refetch();
     } catch (error) {
       console.error('خطأ في تحديد الإشعار كمقروء:', error);
@@ -121,10 +122,18 @@ const ToolsNotificationSystem: React.FC = () => {
 
   const markAllAsRead = async () => {
     try {
-      // إرسال طلب لتحديث جميع الإشعارات
-      await apiRequest('/api/notifications/mark-all-read', 'POST');
+      const response = await fetch('/api/notifications/mark-all-read', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
       
-      // إعادة تحديث البيانات
+      if (!response.ok) {
+        throw new Error('فشل في تحديث الإشعارات');
+      }
+      
+      // إعادة جلب البيانات من الخادم
       refetch();
     } catch (error) {
       console.error('خطأ في تحديد جميع الإشعارات كمقروءة:', error);

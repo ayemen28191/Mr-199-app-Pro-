@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   Plus, 
@@ -180,13 +180,28 @@ const ToolsManagementPage: React.FC = () => {
   });
 
   // Calculate statistics - Use original tools array for total stats
-  const stats = {
-    total: tools.length, // إجمالي الأدوات في النظام
-    available: tools.filter(t => t.status === 'available').length,
-    inUse: tools.filter(t => t.status === 'in_use').length,
-    maintenance: tools.filter(t => t.status === 'maintenance').length,
-    damaged: tools.filter(t => t.status === 'damaged').length,
-  };
+  const stats = useMemo(() => {
+    if (!tools || tools.length === 0) {
+      console.log('⚠️ أدوات فارغة أو غير محملة:', { toolsLength: tools?.length, tools });
+      return {
+        total: 0,
+        available: 0,
+        inUse: 0,
+        maintenance: 0,
+        damaged: 0,
+      };
+    }
+    
+    console.log('📊 حساب الإحصائيات للأدوات:', { toolsCount: tools.length });
+    
+    return {
+      total: tools.length, // إجمالي الأدوات في النظام
+      available: tools.filter(t => t.status === 'available').length,
+      inUse: tools.filter(t => t.status === 'in_use').length,
+      maintenance: tools.filter(t => t.status === 'maintenance').length,
+      damaged: tools.filter(t => t.status === 'damaged').length,
+    };
+  }, [tools]);
 
   // Filtered statistics for display context
   const filteredStats = {
