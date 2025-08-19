@@ -3184,11 +3184,33 @@ export class DatabaseStorage implements IStorage {
 
   async updateTool(id: string, tool: Partial<InsertTool>): Promise<Tool | undefined> {
     try {
+      // معالجة التواريخ بشكل صحيح قبل الحفظ
+      const processedTool = { ...tool };
+      
+      // تحويل التواريخ إلى تنسيق صحيح أو null
+      ['purchaseDate', 'warrantyExpiry', 'lastMaintenanceDate', 'nextMaintenanceDate'].forEach(field => {
+        if (field in processedTool) {
+          const value = processedTool[field as keyof typeof processedTool];
+          if (value === null || value === undefined || value === '') {
+            processedTool[field as keyof typeof processedTool] = null;
+          } else if (value instanceof Date) {
+            // التأكد من أن التاريخ صحيح
+            if (isNaN(value.getTime())) {
+              processedTool[field as keyof typeof processedTool] = null;
+            }
+          }
+        }
+      });
+
+      console.log('🔧 Storage updateTool - البيانات قبل الحفظ:', processedTool);
+
       const [updated] = await db
         .update(tools)
-        .set({ ...tool, updatedAt: sql`CURRENT_TIMESTAMP` })
+        .set({ ...processedTool, updatedAt: sql`CURRENT_TIMESTAMP` })
         .where(eq(tools.id, id))
         .returning();
+      
+      console.log('🔧 Storage updateTool - النتيجة بعد الحفظ:', updated);
       return updated || undefined;
     } catch (error) {
       console.error('Error updating tool:', error);
