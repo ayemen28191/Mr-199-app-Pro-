@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, decimal, timestamp, boolean, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, decimal, timestamp, date, boolean, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -445,14 +445,14 @@ export const tools = pgTable("tools", {
   purchasePrice: decimal("purchase_price", { precision: 12, scale: 2 }),
   currentValue: decimal("current_value", { precision: 12, scale: 2 }), // القيمة الحالية
   depreciationRate: decimal("depreciation_rate", { precision: 5, scale: 2 }), // معدل الإهلاك السنوي
-  purchaseDate: timestamp("purchase_date", { mode: 'date' }),
+  purchaseDate: date("purchase_date"),
   supplierId: varchar("supplier_id").references(() => suppliers.id),
-  warrantyExpiry: timestamp("warranty_expiry", { mode: 'date' }),
+  warrantyExpiry: date("warranty_expiry"),
   
   // معلومات الصيانة
   maintenanceInterval: integer("maintenance_interval"), // عدد الأيام بين الصيانة
-  lastMaintenanceDate: timestamp("last_maintenance_date", { mode: 'date' }),
-  nextMaintenanceDate: timestamp("next_maintenance_date", { mode: 'date' }),
+  lastMaintenanceDate: date("last_maintenance_date"),
+  nextMaintenanceDate: date("next_maintenance_date"),
   
   // الحالة والموقع
   status: text("status").notNull().default("available"), // available, assigned, maintenance, lost, consumed, reserved
