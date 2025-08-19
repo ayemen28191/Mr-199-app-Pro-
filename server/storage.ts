@@ -3228,13 +3228,14 @@ export class DatabaseStorage implements IStorage {
         }
       }
 
-      let query = db.select().from(toolStock);
-
       if (conditions.length > 0) {
-        query = db.select().from(toolStock).where(and(...conditions));
+        return await db.select().from(toolStock)
+          .where(and(...conditions))
+          .orderBy(toolStock.createdAt);
       }
 
-      return await query.orderBy(toolStock.createdAt);
+      return await db.select().from(toolStock)
+        .orderBy(toolStock.createdAt);
     } catch (error) {
       console.error('Error getting tool stock:', error);
       return [];
@@ -3370,13 +3371,14 @@ export class DatabaseStorage implements IStorage {
         conditions.push(lte(toolMovements.performedAt, new Date(filters.dateTo + ' 23:59:59')));
       }
 
-      let query = db.select().from(toolMovements);
-
       if (conditions.length > 0) {
-        query = db.select().from(toolMovements).where(and(...conditions));
+        return await db.select().from(toolMovements)
+          .where(and(...conditions))
+          .orderBy(sql`${toolMovements.performedAt} DESC`);
       }
 
-      return await query.orderBy(sql`${toolMovements.performedAt} DESC`);
+      return await db.select().from(toolMovements)
+        .orderBy(sql`${toolMovements.performedAt} DESC`);
     } catch (error) {
       console.error('Error getting tool movements:', error);
       return [];
@@ -3450,13 +3452,14 @@ export class DatabaseStorage implements IStorage {
         conditions.push(eq(toolMaintenanceLogs.status, status));
       }
 
-      let query = db.select().from(toolMaintenanceLogs);
-
       if (conditions.length > 0) {
-        query = db.select().from(toolMaintenanceLogs).where(and(...conditions));
+        return await db.select().from(toolMaintenanceLogs)
+          .where(and(...conditions))
+          .orderBy(sql`${toolMaintenanceLogs.scheduledDate} DESC`);
       }
 
-      return await query.orderBy(sql`${toolMaintenanceLogs.scheduledDate} DESC`);
+      return await db.select().from(toolMaintenanceLogs)
+        .orderBy(sql`${toolMaintenanceLogs.scheduledDate} DESC`);
     } catch (error) {
       console.error('Error getting tool maintenance logs:', error);
       return [];
@@ -3555,13 +3558,14 @@ export class DatabaseStorage implements IStorage {
         }
       }
 
-      let query = db.select().from(toolUsageAnalytics);
-
       if (conditions.length > 0) {
-        query = db.select().from(toolUsageAnalytics).where(and(...conditions));
+        return await db.select().from(toolUsageAnalytics)
+          .where(and(...conditions))
+          .orderBy(sql`${toolUsageAnalytics.analysisDate} DESC`);
       }
 
-      return await query.orderBy(sql`${toolUsageAnalytics.analysisDate} DESC`);
+      return await db.select().from(toolUsageAnalytics)
+        .orderBy(sql`${toolUsageAnalytics.analysisDate} DESC`);
     } catch (error) {
       console.error('Error getting tool usage analytics:', error);
       return [];
@@ -3661,13 +3665,14 @@ export class DatabaseStorage implements IStorage {
         conditions.push(eq(toolReservations.reservedBy, filters.userId));
       }
 
-      let query = db.select().from(toolReservations);
-
       if (conditions.length > 0) {
-        query = db.select().from(toolReservations).where(and(...conditions));
+        return await db.select().from(toolReservations)
+          .where(and(...conditions))
+          .orderBy(sql`${toolReservations.requestedDate} DESC`);
       }
 
-      return await query.orderBy(sql`${toolReservations.requestedDate} DESC`);
+      return await db.select().from(toolReservations)
+        .orderBy(sql`${toolReservations.requestedDate} DESC`);
     } catch (error) {
       console.error('Error getting tool reservations:', error);
       return [];
@@ -3750,7 +3755,7 @@ export class DatabaseStorage implements IStorage {
 
       // تحديث المخزون في الموقع الأصلي
       if (fromLocation.type !== 'none') {
-        const currentFromStock = await this.getToolStock(toolId, fromLocation.type, fromLocation.id);
+        const currentFromStock = await this.getToolStock(toolId, fromLocation.type, fromLocation.id || undefined);
         if (currentFromStock.length > 0) {
           const stock = currentFromStock[0];
           await this.updateToolStock(toolId, fromLocation.type, fromLocation.id, {
@@ -3762,7 +3767,7 @@ export class DatabaseStorage implements IStorage {
 
       // تحديث المخزون في الموقع الجديد
       if (toLocation.type !== 'none') {
-        const currentToStock = await this.getToolStock(toolId, toLocation.type, toLocation.id);
+        const currentToStock = await this.getToolStock(toolId, toLocation.type, toLocation.id || undefined);
         if (currentToStock.length > 0) {
           const stock = currentToStock[0];
           await this.updateToolStock(toolId, toLocation.type, toLocation.id, {
@@ -4005,10 +4010,13 @@ export class DatabaseStorage implements IStorage {
       }
 
       if (conditions.length > 0) {
-        query = query.where(and(...conditions));
+        return await db.select().from(maintenanceSchedules)
+          .where(and(...conditions))
+          .orderBy(desc(maintenanceSchedules.nextDueDate));
       }
 
-      return await query.orderBy(desc(maintenanceSchedules.nextDueDate));
+      return await db.select().from(maintenanceSchedules)
+        .orderBy(desc(maintenanceSchedules.nextDueDate));
     } catch (error) {
       console.error('Error getting maintenance schedules:', error);
       return [];
@@ -4081,10 +4089,13 @@ export class DatabaseStorage implements IStorage {
       }
 
       if (conditions.length > 0) {
-        query = query.where(and(...conditions));
+        return await db.select().from(maintenanceTasks)
+          .where(and(...conditions))
+          .orderBy(desc(maintenanceTasks.dueDate));
       }
 
-      return await query.orderBy(desc(maintenanceTasks.dueDate));
+      return await db.select().from(maintenanceTasks)
+        .orderBy(desc(maintenanceTasks.dueDate));
     } catch (error) {
       console.error('Error getting maintenance tasks:', error);
       return [];
@@ -4101,9 +4112,9 @@ export class DatabaseStorage implements IStorage {
 
       // إضافة timestamps حسب الحالة
       if (status === 'in_progress' && !updateData.startedAt) {
-        updateValues.startedAt = sql`CURRENT_TIMESTAMP`;
+        updateValues.startedAt = new Date();
       } else if (status === 'completed' && !updateData.completedAt) {
-        updateValues.completedAt = sql`CURRENT_TIMESTAMP`;
+        updateValues.completedAt = new Date();
       }
 
       const [updated] = await db
@@ -4175,10 +4186,13 @@ export class DatabaseStorage implements IStorage {
       }
 
       if (conditions.length > 0) {
-        query = query.where(and(...conditions));
+        return await db.select().from(toolCostTracking)
+          .where(and(...conditions))
+          .orderBy(desc(toolCostTracking.costDate));
       }
 
-      return await query.orderBy(desc(toolCostTracking.costDate));
+      return await db.select().from(toolCostTracking)
+        .orderBy(desc(toolCostTracking.costDate));
     } catch (error) {
       console.error('Error getting tool cost tracking:', error);
       return [];
@@ -4251,7 +4265,7 @@ export class DatabaseStorage implements IStorage {
         if (isToolItem) {
           // اقتراح تصنيف بناءً على الكلمات المفتاحية
           let suggestedCategoryId = null;
-          const categories = await this.getToolCategories({ isActive: true });
+          const categories = await this.getToolCategories();
           
           for (const category of categories) {
             if (itemName.includes(category.name.toLowerCase())) {
@@ -4264,7 +4278,7 @@ export class DatabaseStorage implements IStorage {
             .set({
               isToolItem: true,
               suggestedCategoryId,
-              aiConfidence: isToolItem ? 85 : 15,
+              aiConfidence: sql`${isToolItem ? 85 : 15}`,
               aiSuggestions: {
                 category: suggestedCategoryId ? categories.find(c => c.id === suggestedCategoryId)?.name : null,
                 confidence: isToolItem ? 85 : 15,

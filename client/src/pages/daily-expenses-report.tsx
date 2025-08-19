@@ -79,7 +79,9 @@ export default function DailyExpensesReport(): JSX.Element {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label className="text-sm font-medium mb-2 block">المشروع</label>
-              <ProjectSelector />
+              <ProjectSelector onProjectChange={(projectId) => {
+                console.log('تم تغيير المشروع في تقرير المصاريف:', projectId);
+              }} />
             </div>
             <div>
               <label className="text-sm font-medium mb-2 block">من تاريخ</label>

@@ -205,8 +205,15 @@ export function EnhancedErrorDisplay({
 }
 
 // مكون للتحقق الفوري من الحقول
+type SimpleValidationError = {
+  field: string;
+  message: string;
+  type: 'error' | 'warning' | 'info';
+  suggestion?: string;
+};
+
 export type FieldValidationDisplayProps = {
-  errors: ValidationError[];
+  errors: SimpleValidationError[];
   className?: string;
   compact?: boolean;
 };
@@ -277,8 +284,8 @@ export function FieldValidationDisplay({
   );
 }
 
-// دالة مساعدة لتحويل ValidationError إلى EnhancedError
-export function transformValidationErrors(validationErrors: ValidationError[]): EnhancedError[] {
+// دالة مساعدة لتحويل SimpleValidationError إلى EnhancedError
+export function transformValidationErrors(validationErrors: SimpleValidationError[]): EnhancedError[] {
   return validationErrors.map((error, index) => ({
     id: `validation-${index}`,
     title: `خطأ في ${getFieldDisplayName(error.field)}`,

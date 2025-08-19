@@ -73,7 +73,7 @@ async function runSupplierMigrations() {
       `);
       
     } catch (error) {
-      console.log('⚠️ بعض الحقول موجودة مسبقاً:', error.message);
+      console.log('⚠️ بعض الحقول موجودة مسبقاً:', (error as Error).message);
     }
     
     console.log('✅ تم تطبيق جميع migrations الموردين بنجاح!');

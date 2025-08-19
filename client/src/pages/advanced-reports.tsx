@@ -41,7 +41,9 @@ export default function AdvancedReports(): JSX.Element {
             <CardTitle className="text-sm">اختيار المشروع</CardTitle>
           </CardHeader>
           <CardContent>
-            <ProjectSelector />
+            <ProjectSelector onProjectChange={(projectId) => {
+              console.log('تم تغيير المشروع في التقارير المتقدمة:', projectId);
+            }} />
           </CardContent>
         </Card>
 

@@ -74,7 +74,9 @@ export default function ExcelStyleDailyExpenses(): JSX.Element {
           <CardContent className="p-6 text-center">
             <p className="text-gray-500">يرجى اختيار مشروع لعرض المصاريف</p>
             <div className="mt-4">
-              <ProjectSelector />
+              <ProjectSelector onProjectChange={(projectId) => {
+                console.log('تم تغيير المشروع في المصاريف Excel:', projectId);
+              }} />
             </div>
           </CardContent>
         </Card>
@@ -107,7 +109,9 @@ export default function ExcelStyleDailyExpenses(): JSX.Element {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 no-print">
         <div>
           <label className="block text-sm font-medium mb-2">المشروع</label>
-          <ProjectSelector />
+          <ProjectSelector onProjectChange={(projectId) => {
+            console.log('تم تغيير المشروع في Excel Style:', projectId);
+          }} />
         </div>
         <div>
           <label className="block text-sm font-medium mb-2">التاريخ</label>

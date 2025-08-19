@@ -7,6 +7,7 @@ export function useSelectedProject() {
   const [selectedProjectId, setSelectedProjectId] = useState<string>("");
   const [selectedProjectName, setSelectedProjectName] = useState<string>("");
   const [isLoading, setIsLoading] = useState(true);
+  const [projects, setProjects] = useState<any[]>([]);
 
   // تحميل المشروع المحفوظ عند بدء التطبيق
   useEffect(() => {
@@ -83,5 +84,6 @@ export function useSelectedProject() {
     selectProject,
     clearProject,
     hasStoredProject,
+    projects,
   };
 }

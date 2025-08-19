@@ -452,7 +452,7 @@ export default function SupplierAccountsPage() {
       });
       
       // ارتفاع تلقائي للصف ليتناسب مع النص الملتف
-      row.height = null; // ارتفاع تلقائي
+      row.height = 25; // ارتفاع ثابت
       currentRow++;
     });
 
