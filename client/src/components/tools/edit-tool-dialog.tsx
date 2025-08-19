@@ -769,7 +769,7 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                <SelectItem value="">غير مربوط بمشروع</SelectItem>
+                                <SelectItem value="none">غير مربوط بمشروع</SelectItem>
                                 {projects.filter(p => p.status === 'active').map((project) => (
                                   <SelectItem key={project.id} value={project.id}>
                                     {project.name}
