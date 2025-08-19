@@ -3780,6 +3780,119 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ==================== Tools Reports API ====================
+  
+  // Tools stats endpoint
+  app.get("/api/tools/stats/:days", async (req, res) => {
+    try {
+      const days = parseInt(req.params.days);
+      const tools = await storage.getTools({});
+      
+      const stats = {
+        totalTools: tools.length,
+        availableTools: tools.filter(t => t.status === 'available').length,
+        inUseTools: tools.filter(t => t.status === 'in_use').length,
+        maintenanceTools: tools.filter(t => t.status === 'maintenance').length,
+        damagedTools: tools.filter(t => t.status === 'damaged').length,
+        totalValue: tools.reduce((sum, tool) => sum + (tool.purchasePrice || 0), 0),
+        categoriesCount: new Set(tools.map(t => t.categoryId)).size
+      };
+      
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching tools stats:", error);
+      res.status(500).json({ message: "خطأ في جلب إحصائيات الأدوات" });
+    }
+  });
+
+  // Usage report endpoint  
+  app.get("/api/tools/usage-report/:days/:category", async (req, res) => {
+    try {
+      const days = parseInt(req.params.days);
+      const category = req.params.category;
+      
+      const tools = await storage.getTools({
+        categoryId: category === 'all' ? undefined : category
+      });
+      
+      const categories = await storage.getToolCategories();
+      const categoryMap = new Map(categories.map(c => [c.id, c.name]));
+      
+      const usageReport = tools.map(tool => ({
+        id: tool.id,
+        name: tool.name,
+        category: categoryMap.get(tool.categoryId) || 'غير محدد',
+        usageCount: tool.usageCount || 0,
+        lastUsed: tool.updatedAt,
+        status: tool.status,
+        location: 'المخزن الرئيسي' // Default location
+      }));
+      
+      res.json(usageReport);
+    } catch (error) {
+      console.error("Error fetching usage report:", error);
+      res.status(500).json({ message: "خطأ في جلب تقرير الاستخدام" });
+    }
+  });
+
+  // Categories stats endpoint
+  app.get("/api/tools/categories-stats/:days", async (req, res) => {
+    try {
+      const categories = await storage.getToolCategories();
+      const tools = await storage.getTools({});
+      
+      const categoryStats = categories.map(category => {
+        const categoryTools = tools.filter(t => t.categoryId === category.id);
+        return {
+          id: category.id,
+          name: category.name,
+          description: category.description,
+          icon: category.icon,
+          toolCount: categoryTools.length,
+          totalValue: categoryTools.reduce((sum, tool) => sum + (tool.purchasePrice || 0), 0),
+          availableCount: categoryTools.filter(t => t.status === 'available').length,
+          inUseCount: categoryTools.filter(t => t.status === 'in_use').length,
+          createdAt: category.createdAt
+        };
+      });
+      
+      res.json(categoryStats);
+    } catch (error) {
+      console.error("Error fetching categories stats:", error);
+      res.status(500).json({ message: "خطأ في جلب إحصائيات التصنيفات" });
+    }
+  });
+
+  // Maintenance report endpoint
+  app.get("/api/tools/maintenance-report", async (req, res) => {
+    try {
+      const tools = await storage.getTools({});
+      
+      const maintenanceReport = tools
+        .filter(tool => tool.nextMaintenanceDate)
+        .map(tool => {
+          const nextMaintenance = new Date(tool.nextMaintenanceDate!);
+          const today = new Date();
+          const daysUntilMaintenance = Math.ceil((nextMaintenance.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+          
+          return {
+            id: tool.id,
+            toolName: tool.name,
+            lastMaintenance: tool.lastMaintenanceDate,
+            nextMaintenance: tool.nextMaintenanceDate,
+            maintenanceType: 'صيانة دورية',
+            overdue: daysUntilMaintenance < 0,
+            daysOverdue: Math.abs(daysUntilMaintenance)
+          };
+        });
+      
+      res.json(maintenanceReport);
+    } catch (error) {
+      console.error("Error fetching maintenance report:", error);
+      res.status(500).json({ message: "خطأ في جلب تقرير الصيانة" });
+    }
+  });
+
   // Advanced Tool Reports Routes
   app.get("/api/tools/reports/utilization", async (req, res) => {
     try {

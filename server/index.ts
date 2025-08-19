@@ -141,6 +141,12 @@ app.use((req, res, next) => {
 
   const server = await registerRoutes(app);
 
+  // Add middleware to ensure API routes are handled correctly
+  app.use('/api/*', (req, res, next) => {
+    // If we reach here, it means the route wasn't found in our API routes
+    res.status(404).json({ message: `API endpoint not found: ${req.path}` });
+  });
+
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
