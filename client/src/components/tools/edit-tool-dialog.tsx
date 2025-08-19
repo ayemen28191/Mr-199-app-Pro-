@@ -72,9 +72,9 @@ const editToolSchema = z.object({
   condition: z.enum(['excellent', 'good', 'fair', 'poor', 'damaged'], {
     errorMap: () => ({ message: 'يجب اختيار حالة الجودة من القائمة' })
   }),
-  locationType: z.string().min(1, 'يجب اختيار نوع الموقع'),
-  locationId: z.string().optional(),
   projectId: z.string().min(1, 'يجب اختيار المشروع المرتبط بالأداة'),
+  locationType: z.string().optional(),
+  locationId: z.string().optional(),
   specifications: z.string().optional(),
 });
 
@@ -100,9 +100,9 @@ interface Tool {
   nextMaintenanceDate?: string;
   status: 'available' | 'in_use' | 'maintenance' | 'damaged' | 'retired';
   condition: 'excellent' | 'good' | 'fair' | 'poor' | 'damaged';
-  locationType: string;
-  locationId?: string;
   projectId?: string;
+  locationType?: string;
+  locationId?: string;
   specifications?: any;
   images?: string[];
   manuals?: string[];
@@ -191,9 +191,9 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
         maintenanceInterval: tool.maintenanceInterval || undefined,
         status: tool.status || 'available',
         condition: tool.condition || 'good',
+        projectId: tool.projectId || '',
         locationType: tool.locationType || 'مخزن',
         locationId: tool.locationId || '',
-        projectId: tool.projectId || '',
         specifications: typeof tool.specifications === 'string' 
           ? tool.specifications 
           : tool.specifications 
@@ -410,7 +410,7 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
                         name="sku"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>رقم SKU</FormLabel>
+                            <FormLabel>رقم SKU <span className="text-xs text-gray-500">(اختياري)</span></FormLabel>
                             <FormControl>
                               <Input
                                 placeholder="مثال: TOOL-001"
@@ -427,7 +427,7 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
                         name="serialNumber"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>الرقم التسلسلي</FormLabel>
+                            <FormLabel>الرقم التسلسلي <span className="text-xs text-gray-500">(اختياري)</span></FormLabel>
                             <FormControl>
                               <Input
                                 placeholder="مثال: SN123456789"
@@ -471,7 +471,7 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
                         name="barcode"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>الرمز الشريطي</FormLabel>
+                            <FormLabel>الرمز الشريطي <span className="text-xs text-gray-500">(اختياري)</span></FormLabel>
                             <FormControl>
                               <Input
                                 placeholder="رمز QR أو باركود"
@@ -490,7 +490,7 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
                       name="description"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>الوصف</FormLabel>
+                          <FormLabel>الوصف <span className="text-xs text-gray-500">(اختياري)</span></FormLabel>
                           <FormControl>
                             <Textarea
                               placeholder="وصف مفصل للأداة وخصائصها..."
@@ -569,7 +569,7 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
                         name="maintenanceInterval"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>فترة الصيانة (بالأيام)</FormLabel>
+                            <FormLabel>فترة الصيانة (بالأيام) <span className="text-xs text-gray-500">(اختياري)</span></FormLabel>
                             <FormControl>
                               <Input
                                 type="number"
@@ -587,7 +587,7 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
                         name="warrantyExpiry"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>انتهاء الضمان</FormLabel>
+                            <FormLabel>انتهاء الضمان <span className="text-xs text-gray-500">(اختياري)</span></FormLabel>
                             <FormControl>
                               <Input
                                 type="date"
@@ -605,7 +605,7 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
                       name="specifications"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>المواصفات التقنية</FormLabel>
+                          <FormLabel>المواصفات التقنية <span className="text-xs text-gray-500">(اختياري)</span></FormLabel>
                           <FormControl>
                             <Textarea
                               placeholder="مواصفات تقنية مفصلة (يمكن كتابتها بصيغة JSON)..."
@@ -746,7 +746,7 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
                         name="locationType"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>نوع الموقع *</FormLabel>
+                            <FormLabel>نوع الموقع <span className="text-xs text-gray-500">(اختياري)</span></FormLabel>
                             <Select onValueChange={field.onChange} value={field.value}>
                               <FormControl>
                                 <SelectTrigger>
@@ -771,7 +771,7 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
                         name="locationId"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>تفاصيل الموقع</FormLabel>
+                            <FormLabel>تفاصيل الموقع <span className="text-xs text-gray-500">(اختياري)</span></FormLabel>
                             <FormControl>
                               <Input
                                 placeholder="رقم الرف، المنطقة، إلخ"
