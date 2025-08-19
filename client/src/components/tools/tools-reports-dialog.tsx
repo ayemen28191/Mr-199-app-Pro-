@@ -426,56 +426,110 @@ const ToolsReportsDialog: React.FC<ToolsReportsDialogProps> = ({
                     </p>
                   </div>
                 ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="text-right">اسم الأداة</TableHead>
-                        <TableHead className="text-right">التصنيف</TableHead>
-                        <TableHead className="text-right">عدد مرات الاستخدام</TableHead>
-                        <TableHead className="text-right">آخر استخدام</TableHead>
-                        <TableHead className="text-right">الحالة</TableHead>
-                        <TableHead className="text-right">الموقع</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
+                  <>
+                    {/* Desktop Table View */}
+                    <div className="hidden md:block">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="text-right">اسم الأداة</TableHead>
+                            <TableHead className="text-right">التصنيف</TableHead>
+                            <TableHead className="text-right">عدد مرات الاستخدام</TableHead>
+                            <TableHead className="text-right">آخر استخدام</TableHead>
+                            <TableHead className="text-right">الحالة</TableHead>
+                            <TableHead className="text-right">الموقع</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {filteredUsageReport.map((tool) => {
+                            const statusInfo = getStatusInfo(tool.status);
+                            const StatusIcon = statusInfo.icon;
+                            return (
+                              <TableRow key={tool.id}>
+                                <TableCell className="font-medium">{tool.name}</TableCell>
+                                <TableCell>
+                                  <Badge variant="outline">{tool.category}</Badge>
+                                </TableCell>
+                                <TableCell>
+                                  <Badge 
+                                    variant={tool.usageCount > 10 ? "default" : tool.usageCount > 5 ? "secondary" : "outline"}
+                                  >
+                                    {tool.usageCount}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell className="text-muted-foreground text-sm">
+                                  {tool.lastUsed ? new Date(tool.lastUsed).toLocaleDateString('ar-SA') : 'لم يستخدم'}
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-2">
+                                    <StatusIcon className={`h-4 w-4 ${statusInfo.color}`} />
+                                    <span className={`text-sm ${statusInfo.color}`}>
+                                      {statusInfo.text}
+                                    </span>
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                    <MapPin className="h-3 w-3" />
+                                    {tool.location}
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+
+                    {/* Mobile Card View */}
+                    <div className="md:hidden space-y-3">
                       {filteredUsageReport.map((tool) => {
                         const statusInfo = getStatusInfo(tool.status);
                         const StatusIcon = statusInfo.icon;
                         return (
-                          <TableRow key={tool.id}>
-                            <TableCell className="font-medium">{tool.name}</TableCell>
-                            <TableCell>
-                              <Badge variant="outline">{tool.category}</Badge>
-                            </TableCell>
-                            <TableCell>
-                              <Badge 
-                                variant={tool.usageCount > 10 ? "default" : tool.usageCount > 5 ? "secondary" : "outline"}
-                              >
-                                {tool.usageCount}
-                              </Badge>
-                            </TableCell>
-                            <TableCell className="text-muted-foreground text-sm">
-                              {tool.lastUsed ? new Date(tool.lastUsed).toLocaleDateString('ar-SA') : 'لم يستخدم'}
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
+                          <Card key={tool.id} className="p-4">
+                            <div className="space-y-3">
+                              <div className="flex items-start justify-between">
+                                <div>
+                                  <h3 className="font-medium text-base mb-1">{tool.name}</h3>
+                                  <Badge variant="outline" className="text-xs">{tool.category}</Badge>
+                                </div>
+                                <Badge 
+                                  variant={tool.usageCount > 10 ? "default" : tool.usageCount > 5 ? "secondary" : "outline"}
+                                  className="text-xs"
+                                >
+                                  {tool.usageCount} مرة
+                                </Badge>
+                              </div>
+                              
+                              <div className="grid grid-cols-2 gap-3 text-sm">
+                                <div>
+                                  <span className="text-muted-foreground">آخر استخدام:</span>
+                                  <p className="font-medium">
+                                    {tool.lastUsed ? new Date(tool.lastUsed).toLocaleDateString('ar-SA') : 'لم يستخدم'}
+                                  </p>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">الموقع:</span>
+                                  <div className="flex items-center gap-1">
+                                    <MapPin className="h-3 w-3" />
+                                    <span className="font-medium">{tool.location}</span>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center gap-2 pt-2 border-t">
                                 <StatusIcon className={`h-4 w-4 ${statusInfo.color}`} />
-                                <span className={`text-sm ${statusInfo.color}`}>
+                                <span className={`text-sm font-medium ${statusInfo.color}`}>
                                   {statusInfo.text}
                                 </span>
                               </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                                <MapPin className="h-3 w-3" />
-                                {tool.location}
-                              </div>
-                            </TableCell>
-                          </TableRow>
+                            </div>
+                          </Card>
                         );
                       })}
-                    </TableBody>
-                  </Table>
+                    </div>
+                  </>
                 )}
               </CardContent>
             </Card>
@@ -534,46 +588,94 @@ const ToolsReportsDialog: React.FC<ToolsReportsDialogProps> = ({
                     <p className="text-muted-foreground">لا توجد أدوات مجدولة للصيانة</p>
                   </div>
                 ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="text-right">اسم الأداة</TableHead>
-                        <TableHead className="text-right">آخر صيانة</TableHead>
-                        <TableHead className="text-right">الصيانة القادمة</TableHead>
-                        <TableHead className="text-right">نوع الصيانة</TableHead>
-                        <TableHead className="text-right">الحالة</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
+                  <>
+                    {/* Desktop Table View */}
+                    <div className="hidden md:block">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead className="text-right">اسم الأداة</TableHead>
+                            <TableHead className="text-right">آخر صيانة</TableHead>
+                            <TableHead className="text-right">الصيانة القادمة</TableHead>
+                            <TableHead className="text-right">نوع الصيانة</TableHead>
+                            <TableHead className="text-right">الحالة</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {maintenanceReport.map((item) => (
+                            <TableRow key={item.id}>
+                              <TableCell className="font-medium">{item.toolName}</TableCell>
+                              <TableCell className="text-muted-foreground text-sm">
+                                {item.lastMaintenance ? new Date(item.lastMaintenance).toLocaleDateString('ar-SA') : 'لا توجد'}
+                              </TableCell>
+                              <TableCell className="text-muted-foreground text-sm">
+                                {new Date(item.nextMaintenance).toLocaleDateString('ar-SA')}
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="outline">{item.maintenanceType}</Badge>
+                              </TableCell>
+                              <TableCell>
+                                {item.overdue ? (
+                                  <Badge variant="destructive" className="flex items-center gap-1 w-fit">
+                                    <AlertTriangle className="h-3 w-3" />
+                                    متأخر {item.daysOverdue} يوم
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="secondary" className="flex items-center gap-1 w-fit">
+                                    <CheckCircle className="h-3 w-3" />
+                                    مجدول
+                                  </Badge>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    </div>
+
+                    {/* Mobile Card View */}
+                    <div className="md:hidden space-y-3">
                       {maintenanceReport.map((item) => (
-                        <TableRow key={item.id}>
-                          <TableCell className="font-medium">{item.toolName}</TableCell>
-                          <TableCell className="text-muted-foreground text-sm">
-                            {item.lastMaintenance ? new Date(item.lastMaintenance).toLocaleDateString('ar-SA') : 'لا توجد'}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground text-sm">
-                            {new Date(item.nextMaintenance).toLocaleDateString('ar-SA')}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{item.maintenanceType}</Badge>
-                          </TableCell>
-                          <TableCell>
-                            {item.overdue ? (
-                              <Badge variant="destructive" className="flex items-center gap-1 w-fit">
-                                <AlertTriangle className="h-3 w-3" />
-                                متأخر {item.daysOverdue} يوم
-                              </Badge>
-                            ) : (
-                              <Badge variant="secondary" className="flex items-center gap-1 w-fit">
-                                <CheckCircle className="h-3 w-3" />
-                                مجدول
-                              </Badge>
-                            )}
-                          </TableCell>
-                        </TableRow>
+                        <Card key={item.id} className="p-4">
+                          <div className="space-y-3">
+                            <div className="flex items-start justify-between">
+                              <h3 className="font-medium text-base">{item.toolName}</h3>
+                              {item.overdue ? (
+                                <Badge variant="destructive" className="flex items-center gap-1 text-xs">
+                                  <AlertTriangle className="h-3 w-3" />
+                                  متأخر {item.daysOverdue} يوم
+                                </Badge>
+                              ) : (
+                                <Badge variant="secondary" className="flex items-center gap-1 text-xs">
+                                  <CheckCircle className="h-3 w-3" />
+                                  مجدول
+                                </Badge>
+                              )}
+                            </div>
+                            
+                            <div className="space-y-2 text-sm">
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">آخر صيانة:</span>
+                                <span className="font-medium">
+                                  {item.lastMaintenance ? new Date(item.lastMaintenance).toLocaleDateString('ar-SA') : 'لا توجد'}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">الصيانة القادمة:</span>
+                                <span className="font-medium">
+                                  {new Date(item.nextMaintenance).toLocaleDateString('ar-SA')}
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground">نوع الصيانة:</span>
+                                <Badge variant="outline" className="text-xs">{item.maintenanceType}</Badge>
+                              </div>
+                            </div>
+                          </div>
+                        </Card>
                       ))}
-                    </TableBody>
-                  </Table>
+                    </div>
+                  </>
                 )}
               </CardContent>
             </Card>
