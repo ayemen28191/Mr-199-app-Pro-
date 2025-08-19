@@ -131,11 +131,14 @@ const ToolDetailsDialog: React.FC<ToolDetailsDialogProps> = ({
     enabled: !!toolId && open,
   });
 
-  // Fetch tool category
-  const { data: category } = useQuery<ToolCategory>({
-    queryKey: ['/api/tool-categories', tool?.categoryId],
-    enabled: !!tool?.categoryId,
+  // Fetch all tool categories and find the specific one
+  const { data: categories = [] } = useQuery<ToolCategory[]>({
+    queryKey: ['/api/tool-categories'],
+    enabled: open,
   });
+
+  // Find the specific category for this tool
+  const category = categories.find(cat => cat.id === tool?.categoryId);
 
   // Fetch tool stock
   const { data: stock } = useQuery<ToolStock[]>({
