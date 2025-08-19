@@ -253,11 +253,19 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
           })()
         : {};
 
-      // تنظيف البيانات وإزالة الحقول الفارغة أو undefined
+      // تنظيف البيانات مع المحافظة على التواريخ الفارغة كـ null
       const cleanedData = Object.fromEntries(
-        Object.entries(data).filter(([_, value]) => 
-          value !== '' && value !== undefined && value !== null
-        )
+        Object.entries(data).map(([key, value]) => {
+          // For date fields, convert empty strings to null
+          if (['purchaseDate', 'warrantyExpiry'].includes(key) && value === '') {
+            return [key, null];
+          }
+          // For other fields, keep the original behavior
+          if (value === '' || value === undefined) {
+            return [key, null];
+          }
+          return [key, value];
+        }).filter(([_, value]) => value !== undefined)
       );
 
       const updateData = {
