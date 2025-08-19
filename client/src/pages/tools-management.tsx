@@ -281,12 +281,12 @@ const ToolsManagementPage: React.FC = () => {
     const category = categories.find(c => c.id === tool.categoryId);
     
     return (
-      <Card className="hover:shadow-lg transition-all duration-200 border-l-4 border-l-blue-500 group" data-testid={`tool-card-${tool.id}`}>
-        <CardContent className="p-4">
+      <Card className="hover:shadow-lg transition-all duration-200 border-r-2 sm:border-r-4 border-r-blue-500 group shadow-sm" data-testid={`tool-card-${tool.id}`}>
+        <CardContent className="p-3 sm:p-4">
           {/* Header Row with Actions Menu */}
-          <div className="flex items-start justify-between mb-3">
+          <div className="flex items-start justify-between mb-2 sm:mb-3">
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-sm truncate text-gray-900 dark:text-gray-100">
+              <h3 className="font-semibold text-sm sm:text-base truncate text-gray-900 dark:text-gray-100">
                 {tool.name}
               </h3>
               {category && (
@@ -295,10 +295,10 @@ const ToolsManagementPage: React.FC = () => {
                 </p>
               )}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2">
               <Badge 
                 variant={getStatusBadgeVariant(tool.status)} 
-                className="text-xs h-5 px-2"
+                className="text-xs h-4 sm:h-5 px-1 sm:px-2"
               >
                 {tool.status === 'available' ? 'متاح' :
                  tool.status === 'in_use' ? 'مستخدم' :
@@ -312,13 +312,13 @@ const ToolsManagementPage: React.FC = () => {
                   <Button 
                     variant="ghost" 
                     size="sm" 
-                    className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="h-6 w-6 p-0 opacity-70 sm:opacity-0 group-hover:opacity-100 transition-opacity"
                     data-testid={`tool-actions-${tool.id}`}
                   >
                     <MoreVertical className="h-3 w-3" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuContent align="end" className="w-44 sm:w-48">
                   <DropdownMenuItem 
                     onClick={() => {
                       setSelectedToolId(tool.id);
@@ -365,7 +365,7 @@ const ToolsManagementPage: React.FC = () => {
           </div>
 
           {/* Info Row */}
-          <div className="space-y-2 mb-3">
+          <div className="space-y-1 sm:space-y-2 mb-2 sm:mb-3">
             {tool.sku && (
               <div className="flex items-center text-xs text-gray-600 dark:text-gray-400">
                 <Package className="h-3 w-3 ml-1" />
@@ -373,8 +373,8 @@ const ToolsManagementPage: React.FC = () => {
               </div>
             )}
             {tool.purchasePrice && (
-              <div className="flex items-center text-xs font-medium text-green-600 dark:text-green-400">
-                <span>{tool.purchasePrice.toLocaleString()} ر.س</span>
+              <div className="text-xs font-medium text-green-600 dark:text-green-400">
+                {tool.purchasePrice.toLocaleString()} ر.س
               </div>
             )}
             <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
@@ -392,14 +392,14 @@ const ToolsManagementPage: React.FC = () => {
                    tool.condition === 'poor' ? 'ضعيف' : 'معطل'}
                 </span>
               </div>
-              <span className="text-xs text-gray-400">
+              <span className="text-xs text-gray-400 truncate max-w-20">
                 {tool.locationType}
               </span>
             </div>
           </div>
 
           {/* Quick Action Buttons */}
-          <div className="flex gap-2">
+          <div className="flex gap-1 sm:gap-2">
             <Button
               size="sm"
               variant="outline"
@@ -407,11 +407,11 @@ const ToolsManagementPage: React.FC = () => {
                 setSelectedToolId(tool.id);
                 setIsDetailsDialogOpen(true);
               }}
-              className="flex-1 h-7 text-xs"
+              className="flex-1 h-6 sm:h-7 text-xs"
               data-testid={`quick-view-${tool.id}`}
             >
-              <Eye className="h-3 w-3 ml-1" />
-              عرض
+              <Eye className="h-3 w-3 sm:ml-1" />
+              <span className="hidden sm:inline">عرض</span>
             </Button>
             <Button
               size="sm"
@@ -420,11 +420,11 @@ const ToolsManagementPage: React.FC = () => {
                 setSelectedToolId(tool.id);
                 setIsEditDialogOpen(true);
               }}
-              className="flex-1 h-7 text-xs"
+              className="flex-1 h-6 sm:h-7 text-xs"
               data-testid={`quick-edit-${tool.id}`}
             >
-              <Edit className="h-3 w-3 ml-1" />
-              تعديل
+              <Edit className="h-3 w-3 sm:ml-1" />
+              <span className="hidden sm:inline">تعديل</span>
             </Button>
           </div>
         </CardContent>
@@ -435,7 +435,7 @@ const ToolsManagementPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900" dir="rtl">
       {/* Compact Top Action Bar */}
-      <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 px-4 py-2">
+      <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 px-3 sm:px-4 py-2">
         <div className="flex items-center justify-between gap-2">
           {/* View Toggle */}
           <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
@@ -443,19 +443,21 @@ const ToolsManagementPage: React.FC = () => {
               size="sm"
               variant={currentView === 'tools' ? 'default' : 'ghost'}
               onClick={() => setCurrentView('tools')}
-              className="h-7 px-3 text-xs"
+              className="h-7 px-2 sm:px-3 text-xs"
+              data-testid="tab-tools"
             >
-              <Package className="h-3 w-3 ml-1" />
-              الأدوات
+              <Package className="h-3 w-3 sm:ml-1" />
+              <span className="hidden sm:inline">الأدوات</span>
             </Button>
             <Button
               size="sm"
               variant={currentView === 'locations' ? 'default' : 'ghost'}
               onClick={() => setCurrentView('locations')}
-              className="h-7 px-3 text-xs"
+              className="h-7 px-2 sm:px-3 text-xs"
+              data-testid="tab-locations"
             >
-              <MapPin className="h-3 w-3 ml-1" />
-              المواقع
+              <MapPin className="h-3 w-3 sm:ml-1" />
+              <span className="hidden sm:inline">المواقع</span>
             </Button>
           </div>
 
@@ -467,35 +469,37 @@ const ToolsManagementPage: React.FC = () => {
               size="sm"
               onClick={() => setIsQrScannerOpen(true)}
               className="h-7 px-2"
+              data-testid="button-qr-scanner"
             >
               <QrCode className="h-3 w-3" />
+              <span className="hidden sm:inline sm:mr-1">مسح</span>
             </Button>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="p-3 space-y-3">
+      <div className="p-2 sm:p-3 space-y-3">
         {currentView === 'locations' ? (
           <ProjectLocationTracking />
         ) : (
           <>
             {/* Compact Stats Row */}
-            <div className="grid grid-cols-4 gap-2">
-              <div className="bg-white dark:bg-gray-800 rounded-lg p-3 text-center shadow-sm border">
-                <div className="text-lg font-bold text-blue-600 dark:text-blue-400">{stats.total}</div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center shadow-sm border" data-testid="stat-total">
+                <div className="text-base sm:text-lg font-bold text-blue-600 dark:text-blue-400">{stats.total}</div>
                 <div className="text-xs text-gray-600 dark:text-gray-400">المجموع</div>
               </div>
-              <div className="bg-white dark:bg-gray-800 rounded-lg p-3 text-center shadow-sm border">
-                <div className="text-lg font-bold text-green-600 dark:text-green-400">{stats.available}</div>
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center shadow-sm border" data-testid="stat-available">
+                <div className="text-base sm:text-lg font-bold text-green-600 dark:text-green-400">{stats.available}</div>
                 <div className="text-xs text-gray-600 dark:text-gray-400">متاح</div>
               </div>
-              <div className="bg-white dark:bg-gray-800 rounded-lg p-3 text-center shadow-sm border">
-                <div className="text-lg font-bold text-orange-600 dark:text-orange-400">{stats.inUse}</div>
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center shadow-sm border" data-testid="stat-in-use">
+                <div className="text-base sm:text-lg font-bold text-orange-600 dark:text-orange-400">{stats.inUse}</div>
                 <div className="text-xs text-gray-600 dark:text-gray-400">مستخدم</div>
               </div>
-              <div className="bg-white dark:bg-gray-800 rounded-lg p-3 text-center shadow-sm border">
-                <div className="text-lg font-bold text-red-600 dark:text-red-400">{stats.maintenance}</div>
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center shadow-sm border" data-testid="stat-maintenance">
+                <div className="text-base sm:text-lg font-bold text-red-600 dark:text-red-400">{stats.maintenance}</div>
                 <div className="text-xs text-gray-600 dark:text-gray-400">صيانة</div>
               </div>
             </div>
@@ -516,9 +520,9 @@ const ToolsManagementPage: React.FC = () => {
                 </div>
                 
                 {/* Filters Row */}
-                <div className="grid grid-cols-3 gap-2">
+                <div className="flex flex-col gap-2 sm:grid sm:grid-cols-3">
                   <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                    <SelectTrigger className="h-8 text-xs">
+                    <SelectTrigger className="h-8 text-xs" data-testid="filter-category">
                       <SelectValue placeholder="التصنيف" />
                     </SelectTrigger>
                     <SelectContent>
@@ -532,7 +536,7 @@ const ToolsManagementPage: React.FC = () => {
                   </Select>
 
                   <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                    <SelectTrigger className="h-8 text-xs">
+                    <SelectTrigger className="h-8 text-xs" data-testid="filter-status">
                       <SelectValue placeholder="الحالة" />
                     </SelectTrigger>
                     <SelectContent>
@@ -546,7 +550,7 @@ const ToolsManagementPage: React.FC = () => {
                   </Select>
 
                   <Select value={selectedCondition} onValueChange={setSelectedCondition}>
-                    <SelectTrigger className="h-8 text-xs">
+                    <SelectTrigger className="h-8 text-xs" data-testid="filter-condition">
                       <SelectValue placeholder="الجودة" />
                     </SelectTrigger>
                     <SelectContent>
@@ -567,36 +571,44 @@ const ToolsManagementPage: React.FC = () => {
                     size="sm"
                     onClick={() => setIsCategoriesDialogOpen(true)}
                     className="h-8 text-xs"
+                    data-testid="button-categories"
                   >
                     <Folder className="h-3 w-3 ml-1" />
-                    التصنيفات
+                    <span className="hidden sm:inline">التصنيفات</span>
+                    <span className="sm:hidden">تصنيفات</span>
                   </Button>
                   <Button 
                     variant="outline" 
                     size="sm"
                     onClick={() => setIsReportsDialogOpen(true)}
                     className="h-8 text-xs"
+                    data-testid="button-reports"
                   >
                     <BarChart3 className="h-3 w-3 ml-1" />
-                    التقارير
+                    <span className="hidden sm:inline">التقارير</span>
+                    <span className="sm:hidden">تقارير</span>
                   </Button>
                   <Button 
                     variant="outline" 
                     size="sm"
                     onClick={() => setIsPurchaseIntegrationOpen(true)}
-                    className="h-8 text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200"
+                    className="h-8 text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800"
+                    data-testid="button-purchases"
                   >
                     <ShoppingCart className="h-3 w-3 ml-1" />
-                    المشتريات
+                    <span className="hidden sm:inline">المشتريات</span>
+                    <span className="sm:hidden">مشتريات</span>
                   </Button>
                   <Button 
                     variant="outline" 
                     size="sm"
                     onClick={() => setIsMaintenanceScheduleOpen(true)}
-                    className="h-8 text-xs bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-200"
+                    className="h-8 text-xs bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/20 dark:hover:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800"
+                    data-testid="button-maintenance"
                   >
                     <Settings className="h-3 w-3 ml-1" />
-                    الصيانة
+                    <span className="hidden sm:inline">الصيانة</span>
+                    <span className="sm:hidden">صيانة</span>
                   </Button>
                 </div>
 
@@ -606,7 +618,8 @@ const ToolsManagementPage: React.FC = () => {
                     variant="ghost" 
                     size="sm"
                     onClick={clearFilters}
-                    className="w-full h-7 text-xs text-gray-500"
+                    className="w-full h-6 sm:h-7 text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    data-testid="button-clear-filters"
                   >
                     <X className="h-3 w-3 ml-1" />
                     مسح الفلاتر
@@ -640,7 +653,7 @@ const ToolsManagementPage: React.FC = () => {
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3">
                 {filteredTools.map((tool) => (
                   <ToolCard key={tool.id} tool={tool} />
                 ))}
