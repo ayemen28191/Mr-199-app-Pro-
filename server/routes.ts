@@ -3473,6 +3473,165 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Tools Routes
+  // Tool Notifications API Routes - Must come before /api/tools/:id
+  app.get("/api/tool-notifications", async (req, res) => {
+    try {
+      const tools = await storage.getTools();
+      const notifications: any[] = [];
+
+      // فحص الصيانة المتأخرة
+      tools.forEach((tool: any) => {
+        if (tool.nextMaintenanceDate) {
+          const maintenanceDate = new Date(tool.nextMaintenanceDate);
+          const today = new Date();
+          const daysDiff = Math.ceil((maintenanceDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+          
+          if (daysDiff < 0) {
+            notifications.push({
+              id: `maintenance-${tool.id}`,
+              type: 'maintenance',
+              title: 'صيانة متأخرة',
+              message: `الأداة "${tool.name}" متأخرة عن موعد الصيانة بـ ${Math.abs(daysDiff)} يوم`,
+              toolId: tool.id,
+              toolName: tool.name,
+              priority: 'critical',
+              timestamp: new Date().toISOString(),
+              isRead: false,
+              actionRequired: true,
+            });
+          } else if (daysDiff <= 3) {
+            notifications.push({
+              id: `maintenance-soon-${tool.id}`,
+              type: 'maintenance',
+              title: 'صيانة قريبة',
+              message: `الأداة "${tool.name}" تحتاج صيانة خلال ${daysDiff} أيام`,
+              toolId: tool.id,
+              toolName: tool.name,
+              priority: 'high',
+              timestamp: new Date().toISOString(),
+              isRead: false,
+              actionRequired: true,
+            });
+          }
+        }
+
+        // فحص انتهاء الضمان
+        if (tool.warrantyExpiry) {
+          const warrantyDate = new Date(tool.warrantyExpiry);
+          const today = new Date();
+          const daysDiff = Math.ceil((warrantyDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+          
+          if (daysDiff <= 30 && daysDiff > 0) {
+            notifications.push({
+              id: `warranty-${tool.id}`,
+              type: 'warranty',
+              title: 'انتهاء الضمان قريباً',
+              message: `ضمان الأداة "${tool.name}" ينتهي خلال ${daysDiff} يوم`,
+              toolId: tool.id,
+              toolName: tool.name,
+              priority: 'medium',
+              timestamp: new Date().toISOString(),
+              isRead: false,
+              actionRequired: false,
+            });
+          } else if (daysDiff <= 0) {
+            notifications.push({
+              id: `warranty-expired-${tool.id}`,
+              type: 'warranty',
+              title: 'انتهى الضمان',
+              message: `انتهى ضمان الأداة "${tool.name}"`,
+              toolId: tool.id,
+              toolName: tool.name,
+              priority: 'low',
+              timestamp: new Date().toISOString(),
+              isRead: false,
+              actionRequired: false,
+            });
+          }
+        }
+
+        // فحص الأدوات المعطلة
+        if (tool.status === 'damaged') {
+          notifications.push({
+            id: `damaged-${tool.id}`,
+            type: 'damaged',
+            title: 'أداة معطلة',
+            message: `الأداة "${tool.name}" بحالة تالفة وتحتاج إصلاح أو استبدال`,
+            toolId: tool.id,
+            toolName: tool.name,
+            priority: 'high',
+            timestamp: new Date().toISOString(),
+            isRead: false,
+            actionRequired: true,
+          });
+        }
+      });
+
+      res.json(notifications);
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+      res.status(500).json({ message: "خطأ في جلب الإشعارات" });
+    }
+  });
+
+  app.post("/api/notifications/:id/mark-read", async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      res.json({ 
+        success: true, 
+        message: "تم تحديد الإشعار كمقروء",
+        notificationId: id 
+      });
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+      res.status(500).json({ message: "خطأ في تحديد الإشعار كمقروء" });
+    }
+  });
+
+  app.post("/api/notifications/mark-all-read", async (req, res) => {
+    try {
+      res.json({ 
+        success: true, 
+        message: "تم تحديد جميع الإشعارات كمقروءة" 
+      });
+    } catch (error) {
+      console.error("Error marking all notifications as read:", error);
+      res.status(500).json({ message: "خطأ في تحديد جميع الإشعارات كمقروءة" });
+    }
+  });
+
+  // Maintenance Schedule API Routes
+  app.get("/api/maintenance-schedules", async (req, res) => {
+    try {
+      // إرجاع قائمة فارغة مؤقتاً - سيتم ربطها بقاعدة البيانات لاحقاً
+      res.json([]);
+    } catch (error) {
+      console.error("Error fetching maintenance schedules:", error);
+      res.status(500).json({ message: "خطأ في جلب جداول الصيانة" });
+    }
+  });
+
+  app.post("/api/maintenance-schedules", async (req, res) => {
+    try {
+      // معالجة إنشاء جدول صيانة جديد
+      const scheduleData = req.body;
+      
+      // إنشاء ID فريد للجدول
+      const newSchedule = {
+        id: `schedule_${Date.now()}`,
+        ...scheduleData,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      };
+      
+      res.json(newSchedule);
+    } catch (error) {
+      console.error("Error creating maintenance schedule:", error);
+      res.status(500).json({ message: "خطأ في إنشاء جدول الصيانة" });
+    }
+  });
+
   app.get("/api/tools", async (req, res) => {
     try {
       const { categoryId, status, condition, searchTerm, projectId, locationType } = req.query;
@@ -4825,138 +4984,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Tool Notifications API Routes
-  app.get("/api/tools/notifications", async (req, res) => {
-    try {
-      const tools = await storage.getTools();
-      const notifications: any[] = [];
 
-      // فحص الصيانة المتأخرة
-      tools.forEach((tool: any) => {
-        if (tool.nextMaintenanceDate) {
-          const maintenanceDate = new Date(tool.nextMaintenanceDate);
-          const today = new Date();
-          const daysDiff = Math.ceil((maintenanceDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-          
-          if (daysDiff < 0) {
-            notifications.push({
-              id: `maintenance-${tool.id}`,
-              type: 'maintenance',
-              title: 'صيانة متأخرة',
-              message: `الأداة "${tool.name}" متأخرة عن موعد الصيانة بـ ${Math.abs(daysDiff)} يوم`,
-              toolId: tool.id,
-              toolName: tool.name,
-              priority: 'critical',
-              timestamp: new Date().toISOString(),
-              isRead: false,
-              actionRequired: true,
-            });
-          } else if (daysDiff <= 3) {
-            notifications.push({
-              id: `maintenance-soon-${tool.id}`,
-              type: 'maintenance',
-              title: 'صيانة قريبة',
-              message: `الأداة "${tool.name}" تحتاج صيانة خلال ${daysDiff} أيام`,
-              toolId: tool.id,
-              toolName: tool.name,
-              priority: 'high',
-              timestamp: new Date().toISOString(),
-              isRead: false,
-              actionRequired: true,
-            });
-          }
-        }
-
-        // فحص انتهاء الضمان
-        if (tool.warrantyExpiry) {
-          const warrantyDate = new Date(tool.warrantyExpiry);
-          const today = new Date();
-          const daysDiff = Math.ceil((warrantyDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-          
-          if (daysDiff <= 30 && daysDiff > 0) {
-            notifications.push({
-              id: `warranty-${tool.id}`,
-              type: 'warranty',
-              title: 'انتهاء الضمان قريباً',
-              message: `ضمان الأداة "${tool.name}" ينتهي خلال ${daysDiff} يوم`,
-              toolId: tool.id,
-              toolName: tool.name,
-              priority: 'medium',
-              timestamp: new Date().toISOString(),
-              isRead: false,
-              actionRequired: false,
-            });
-          } else if (daysDiff <= 0) {
-            notifications.push({
-              id: `warranty-expired-${tool.id}`,
-              type: 'warranty',
-              title: 'انتهى الضمان',
-              message: `انتهى ضمان الأداة "${tool.name}"`,
-              toolId: tool.id,
-              toolName: tool.name,
-              priority: 'low',
-              timestamp: new Date().toISOString(),
-              isRead: false,
-              actionRequired: false,
-            });
-          }
-        }
-
-        // فحص الأدوات المعطلة
-        if (tool.status === 'damaged') {
-          notifications.push({
-            id: `damaged-${tool.id}`,
-            type: 'damaged',
-            title: 'أداة معطلة',
-            message: `الأداة "${tool.name}" بحالة تالفة وتحتاج إصلاح أو استبدال`,
-            toolId: tool.id,
-            toolName: tool.name,
-            priority: 'high',
-            timestamp: new Date().toISOString(),
-            isRead: false,
-            actionRequired: true,
-          });
-        }
-      });
-
-      res.json(notifications);
-    } catch (error) {
-      console.error("Error fetching notifications:", error);
-      res.status(500).json({ message: "خطأ في جلب الإشعارات" });
-    }
-  });
-
-  app.post("/api/notifications/:id/mark-read", async (req, res) => {
-    try {
-      const { id } = req.params;
-      
-      // في التطبيق الحقيقي سيتم حفظ حالة القراءة في قاعدة البيانات
-      // مؤقتاً سنرجع استجابة ناجحة
-      
-      res.json({ 
-        success: true, 
-        message: "تم تحديد الإشعار كمقروء",
-        notificationId: id 
-      });
-    } catch (error) {
-      console.error("Error marking notification as read:", error);
-      res.status(500).json({ message: "خطأ في تحديد الإشعار كمقروء" });
-    }
-  });
-
-  app.post("/api/notifications/mark-all-read", async (req, res) => {
-    try {
-      // في التطبيق الحقيقي سيتم تحديث جميع الإشعارات في قاعدة البيانات
-      
-      res.json({ 
-        success: true, 
-        message: "تم تحديد جميع الإشعارات كمقروءة" 
-      });
-    } catch (error) {
-      console.error("Error marking all notifications as read:", error);
-      res.status(500).json({ message: "خطأ في تحديد جميع الإشعارات كمقروءة" });
-    }
-  });
 
   const httpServer = createServer(app);
   return httpServer;

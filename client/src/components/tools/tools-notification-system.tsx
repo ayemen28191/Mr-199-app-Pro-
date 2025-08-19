@@ -68,7 +68,7 @@ const ToolsNotificationSystem: React.FC = () => {
 
   // جلب الإشعارات من الخادم
   const { data: notifications = [], refetch } = useQuery<ToolNotification[]>({
-    queryKey: ['/api/tools/notifications'],
+    queryKey: ['/api/tool-notifications'],
     refetchInterval: 300000, // كل 5 دقائق
   });
 

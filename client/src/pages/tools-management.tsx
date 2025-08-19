@@ -179,8 +179,17 @@ const ToolsManagementPage: React.FC = () => {
     return matchesSearch && matchesCategory && matchesStatus && matchesCondition;
   });
 
-  // Calculate statistics
+  // Calculate statistics - Use original tools array for total stats
   const stats = {
+    total: tools.length, // إجمالي الأدوات في النظام
+    available: tools.filter(t => t.status === 'available').length,
+    inUse: tools.filter(t => t.status === 'in_use').length,
+    maintenance: tools.filter(t => t.status === 'maintenance').length,
+    damaged: tools.filter(t => t.status === 'damaged').length,
+  };
+
+  // Filtered statistics for display context
+  const filteredStats = {
     total: filteredTools.length,
     available: filteredTools.filter(t => t.status === 'available').length,
     inUse: filteredTools.filter(t => t.status === 'in_use').length,
