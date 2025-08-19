@@ -34,7 +34,7 @@ import type {
 export default function DailyExpenses() {
   const [, setLocation] = useLocation();
   const { selectedProjectId, selectProject } = useSelectedProject();
-  const [selectedDate, setSelectedDate] = useState(getCurrentDate());
+  const [selectedDate, setSelectedDate] = useState("2025-08-11");
   const [carriedForward, setCarriedForward] = useState<string>("0");
   const [showProjectTransfers, setShowProjectTransfers] = useState<boolean>(true);
   
@@ -198,13 +198,14 @@ export default function DailyExpenses() {
       console.log("selectedDate:", selectedDate);
       
       const response = await apiRequest("GET", `/api/projects/${selectedProjectId}/fund-transfers?date=${selectedDate}`);
-      console.log("=== FUND TRANSFERS DEBUG ===");
-      console.log("API URL:", `/api/projects/${selectedProjectId}/fund-transfers?date=${selectedDate}`);
-      console.log("API Response:", response);
-      console.log("Response type:", typeof response);
-      console.log("Is array:", Array.isArray(response));
-      console.log("Array length:", response?.length);
-      console.log("============================");
+      console.log("=== FUND TRANSFERS RESULT ===");
+      console.log("Response received:", response);
+      console.log("Response length:", Array.isArray(response) ? response.length : 'Not an array');
+      if (Array.isArray(response) && response.length > 0) {
+        console.log("First item:", response[0]);
+      }
+      console.log("================================");
+      
       return Array.isArray(response) ? response as FundTransfer[] : [];
     },
     enabled: !!selectedProjectId && !!selectedDate,
