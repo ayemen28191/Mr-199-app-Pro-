@@ -229,30 +229,31 @@ const ToolsNotificationSystem: React.FC = () => {
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden">
+      <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-hidden" dir="rtl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Bell className="h-5 w-5" />
+          <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
             إشعارات إدارة الأدوات
             {criticalCount > 0 && (
-              <Badge variant="destructive" className="flex items-center gap-1">
+              <Badge variant="destructive" className="flex items-center gap-1 text-xs">
                 <Zap className="h-3 w-3" />
                 {criticalCount} عاجل
               </Badge>
             )}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm">
             تتبع حالة الأدوات والصيانة والتنبيهات المهمة
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col h-full">
-          {/* Filter Tabs */}
-          <div className="flex gap-2 mb-4 flex-wrap">
+          {/* Filter Tabs - Mobile Responsive */}
+          <div className="grid grid-cols-2 sm:flex gap-2 mb-4">
             <Button
               variant={selectedType === 'all' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setSelectedType('all')}
+              className="text-xs"
             >
               الكل ({notifications.length})
             </Button>
@@ -260,6 +261,7 @@ const ToolsNotificationSystem: React.FC = () => {
               variant={selectedType === 'maintenance' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setSelectedType('maintenance')}
+              className="text-xs"
             >
               <Wrench className="h-3 w-3 ml-1" />
               صيانة ({notifications.filter(n => n.type === 'maintenance').length})
@@ -268,6 +270,7 @@ const ToolsNotificationSystem: React.FC = () => {
               variant={selectedType === 'warranty' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setSelectedType('warranty')}
+              className="text-xs"
             >
               <Calendar className="h-3 w-3 ml-1" />
               ضمان ({notifications.filter(n => n.type === 'warranty').length})
@@ -276,19 +279,21 @@ const ToolsNotificationSystem: React.FC = () => {
               variant={selectedType === 'damaged' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setSelectedType('damaged')}
+              className="text-xs"
             >
               <AlertTriangle className="h-3 w-3 ml-1" />
               معطل ({notifications.filter(n => n.type === 'damaged').length})
             </Button>
           </div>
 
-          {/* Action Bar */}
-          <div className="flex justify-between items-center mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
+          {/* Action Bar - Mobile Responsive */}
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 mb-4 pb-2 border-b border-gray-200 dark:border-gray-700">
             <Button
               variant="ghost"
               size="sm"
               onClick={markAllAsRead}
               disabled={unreadCount === 0}
+              className="text-xs"
             >
               <CheckCircle className="h-4 w-4 ml-1" />
               تحديد الكل كمقروء
@@ -296,7 +301,7 @@ const ToolsNotificationSystem: React.FC = () => {
             
             <Collapsible>
               <CollapsibleTrigger asChild>
-                <Button variant="ghost" size="sm">
+                <Button variant="ghost" size="sm" className="text-xs">
                   <Settings className="h-4 w-4 ml-1" />
                   إعدادات الإشعارات
                 </Button>
@@ -361,32 +366,32 @@ const ToolsNotificationSystem: React.FC = () => {
                     !notification.isRead ? 'shadow-md' : 'opacity-75'
                   } transition-all hover:shadow-lg`}
                 >
-                  <CardContent className="p-4">
+                  <CardContent className="p-3 sm:p-4">
                     <div className="flex items-start justify-between">
-                      <div className="flex items-start gap-3">
+                      <div className="flex items-start gap-2 sm:gap-3 flex-1">
                         <div className="flex-shrink-0 mt-0.5">
                           {getNotificationIcon(notification.type)}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h4 className="font-medium text-sm">
+                          <div className="flex items-start gap-2 mb-1 flex-wrap">
+                            <h4 className="font-medium text-sm leading-tight">
                               {notification.title}
                             </h4>
                             {!notification.isRead && (
-                              <div className="h-2 w-2 bg-blue-500 rounded-full"></div>
+                              <div className="h-2 w-2 bg-blue-500 rounded-full flex-shrink-0 mt-1"></div>
                             )}
                             {notification.actionRequired && (
-                              <Badge variant="outline" className="text-xs">
+                              <Badge variant="outline" className="text-xs flex-shrink-0">
                                 يتطلب إجراء
                               </Badge>
                             )}
                           </div>
-                          <p className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mb-2 leading-relaxed">
                             {notification.message}
                           </p>
-                          <div className="flex items-center gap-2 text-xs text-gray-500">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-xs text-gray-500">
                             <span>الأداة: {notification.toolName}</span>
-                            <span>•</span>
+                            <span className="hidden sm:inline">•</span>
                             <span>
                               {formatDistanceToNow(new Date(notification.timestamp), {
                                 addSuffix: true,
@@ -396,12 +401,13 @@ const ToolsNotificationSystem: React.FC = () => {
                           </div>
                         </div>
                       </div>
-                      <div className="flex gap-1">
+                      <div className="flex flex-col sm:flex-row gap-1 flex-shrink-0">
                         {!notification.isRead && (
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => markAsRead(notification.id)}
+                            className="h-8 w-8 p-0 sm:h-auto sm:w-auto sm:px-2"
                           >
                             <CheckCircle className="h-3 w-3" />
                           </Button>
@@ -409,6 +415,7 @@ const ToolsNotificationSystem: React.FC = () => {
                         <Button
                           variant="ghost"
                           size="sm"
+                          className="h-8 w-8 p-0 sm:h-auto sm:w-auto sm:px-2"
                         >
                           <X className="h-3 w-3" />
                         </Button>

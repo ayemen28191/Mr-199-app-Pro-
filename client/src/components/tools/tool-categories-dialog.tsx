@@ -237,32 +237,32 @@ const ToolCategoriesDialog: React.FC<ToolCategoriesDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" dir="rtl">
+      <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto" dir="rtl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-3 text-xl">
-            <Folder className="h-6 w-6" />
+          <DialogTitle className="flex items-center gap-2 sm:gap-3 text-lg sm:text-xl">
+            <Folder className="h-5 w-5 sm:h-6 sm:w-6" />
             إدارة تصنيفات الأدوات
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm">
             إضافة وتعديل وحذف تصنيفات الأدوات والمعدات
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6">
-          {/* Header Actions */}
-          <div className="flex justify-between items-center">
+        <div className="space-y-4 sm:space-y-6">
+          {/* Header Actions - Mobile Responsive */}
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
             <div className="flex items-center gap-3 flex-1">
-              <div className="relative flex-1 max-w-md">
+              <div className="relative flex-1 max-w-full sm:max-w-md">
                 <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
                   placeholder="البحث في التصنيفات..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pr-10"
+                  className="pr-10 text-sm"
                 />
               </div>
             </div>
-            <Button onClick={() => setIsAddDialogOpen(true)}>
+            <Button onClick={() => setIsAddDialogOpen(true)} className="w-full sm:w-auto">
               <Plus className="h-4 w-4 ml-1" />
               إضافة تصنيف
             </Button>
@@ -299,71 +299,132 @@ const ToolCategoriesDialog: React.FC<ToolCategoriesDialogProps> = ({
                   )}
                 </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="text-right">الرمز</TableHead>
-                      <TableHead className="text-right">اسم التصنيف</TableHead>
-                      <TableHead className="text-right">الوصف</TableHead>
-                      <TableHead className="text-right">عدد الأدوات</TableHead>
-                      <TableHead className="text-right">تاريخ الإنشاء</TableHead>
-                      <TableHead className="text-center">الإجراءات</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+                <>
+                  {/* Desktop Table View - Hidden on mobile */}
+                  <div className="hidden md:block">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="text-right">الرمز</TableHead>
+                          <TableHead className="text-right">اسم التصنيف</TableHead>
+                          <TableHead className="text-right">الوصف</TableHead>
+                          <TableHead className="text-right">عدد الأدوات</TableHead>
+                          <TableHead className="text-right">تاريخ الإنشاء</TableHead>
+                          <TableHead className="text-center">الإجراءات</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredCategories.map((category) => {
+                          const IconComponent = getIcon(category.icon || 'Folder');
+                          return (
+                            <TableRow key={category.id}>
+                              <TableCell>
+                                <div className="flex justify-center">
+                                  <IconComponent className="h-5 w-5 text-primary" />
+                                </div>
+                              </TableCell>
+                              <TableCell className="font-medium">
+                                {category.name}
+                              </TableCell>
+                              <TableCell className="text-muted-foreground">
+                                {category.description || 'لا يوجد وصف'}
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="secondary">
+                                  {category.toolCount || 0}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-muted-foreground text-sm">
+                                {new Date(category.createdAt).toLocaleDateString('ar-SA')}
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex justify-center">
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="sm">
+                                        <MoreVertical className="h-4 w-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem onClick={() => handleEdit(category)}>
+                                        <Edit className="h-4 w-4 ml-2" />
+                                        تعديل
+                                      </DropdownMenuItem>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem 
+                                        onClick={() => handleDelete(category.id, category.name)}
+                                        className="text-red-600"
+                                      >
+                                        <Trash2 className="h-4 w-4 ml-2" />
+                                        حذف
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+
+                  {/* Mobile Card View - Shown only on mobile */}
+                  <div className="md:hidden space-y-3">
                     {filteredCategories.map((category) => {
                       const IconComponent = getIcon(category.icon || 'Folder');
                       return (
-                        <TableRow key={category.id}>
-                          <TableCell>
-                            <div className="flex justify-center">
-                              <IconComponent className="h-5 w-5 text-primary" />
+                        <Card key={category.id} className="p-4">
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-start gap-3 flex-1">
+                              <div className="flex-shrink-0">
+                                <IconComponent className="h-6 w-6 text-primary" />
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <h3 className="font-medium text-base mb-1">{category.name}</h3>
+                                <p className="text-sm text-muted-foreground mb-2">
+                                  {category.description || 'لا يوجد وصف'}
+                                </p>
+                                <div className="flex items-center gap-4 text-xs">
+                                  <div className="flex items-center gap-1">
+                                    <span>عدد الأدوات:</span>
+                                    <Badge variant="secondary" className="text-xs">
+                                      {category.toolCount || 0}
+                                    </Badge>
+                                  </div>
+                                  <span className="text-muted-foreground">
+                                    {new Date(category.createdAt).toLocaleDateString('ar-SA')}
+                                  </span>
+                                </div>
+                              </div>
                             </div>
-                          </TableCell>
-                          <TableCell className="font-medium">
-                            {category.name}
-                          </TableCell>
-                          <TableCell className="text-muted-foreground">
-                            {category.description || 'لا يوجد وصف'}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="secondary">
-                              {category.toolCount || 0}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-muted-foreground text-sm">
-                            {new Date(category.createdAt).toLocaleDateString('ar-SA')}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex justify-center">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="sm">
-                                    <MoreVertical className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => handleEdit(category)}>
-                                    <Edit className="h-4 w-4 ml-2" />
-                                    تعديل
-                                  </DropdownMenuItem>
-                                  <DropdownMenuSeparator />
-                                  <DropdownMenuItem 
-                                    onClick={() => handleDelete(category.id, category.name)}
-                                    className="text-red-600"
-                                  >
-                                    <Trash2 className="h-4 w-4 ml-2" />
-                                    حذف
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </div>
-                          </TableCell>
-                        </TableRow>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleEdit(category)}>
+                                  <Edit className="h-4 w-4 ml-2" />
+                                  تعديل
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem 
+                                  onClick={() => handleDelete(category.id, category.name)}
+                                  className="text-red-600"
+                                >
+                                  <Trash2 className="h-4 w-4 ml-2" />
+                                  حذف
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        </Card>
                       );
                     })}
-                  </TableBody>
-                </Table>
+                  </div>
+                </>
               )}
             </CardContent>
           </Card>

@@ -195,24 +195,26 @@ const ToolsReportsDialog: React.FC<ToolsReportsDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[95vh] overflow-y-auto" dir="rtl">
+      <DialogContent className="w-[98vw] max-w-6xl max-h-[95vh] overflow-y-auto" dir="rtl">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-3 text-xl">
-            <BarChart3 className="h-6 w-6" />
+          <DialogTitle className="flex items-center gap-2 sm:gap-3 text-lg sm:text-xl">
+            <BarChart3 className="h-5 w-5 sm:h-6 sm:w-6" />
             تقارير وإحصائيات الأدوات
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm">
             تقارير شاملة وتحليلات ذكية لإدارة الأدوات والمعدات
           </DialogDescription>
         </DialogHeader>
 
-        {/* Filters */}
-        <div className="flex flex-wrap gap-4 p-4 bg-muted/30 rounded-lg">
-          <div className="flex items-center gap-2">
-            <Calendar className="h-4 w-4" />
-            <span className="text-sm font-medium">الفترة:</span>
+        {/* Filters - Mobile Responsive */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 sm:p-4 bg-muted/30 rounded-lg">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              <span className="text-sm font-medium">الفترة:</span>
+            </div>
             <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-              <SelectTrigger className="w-36">
+              <SelectTrigger className="w-full sm:w-36">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -225,11 +227,13 @@ const ToolsReportsDialog: React.FC<ToolsReportsDialogProps> = ({
             </Select>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4" />
-            <span className="text-sm font-medium">التصنيف:</span>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4" />
+              <span className="text-sm font-medium">التصنيف:</span>
+            </div>
             <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger className="w-36">
+              <SelectTrigger className="w-full sm:w-36">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -243,36 +247,40 @@ const ToolsReportsDialog: React.FC<ToolsReportsDialogProps> = ({
             </Select>
           </div>
 
-          <Button variant="outline" size="sm" className="mr-auto">
+          <Button variant="outline" size="sm" className="w-full sm:w-auto sm:mr-auto">
             <RefreshCw className="h-4 w-4 ml-1" />
             تحديث
           </Button>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4 bg-muted/30 p-1 rounded-lg mb-6">
-            <TabsTrigger value="overview" className="text-sm font-medium">
-              <BarChart3 className="h-4 w-4 ml-1" />
-              نظرة عامة
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 bg-muted/30 p-1 rounded-lg mb-4 sm:mb-6">
+            <TabsTrigger value="overview" className="text-xs sm:text-sm font-medium py-2">
+              <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
+              <span className="hidden sm:inline">نظرة عامة</span>
+              <span className="sm:hidden">عامة</span>
             </TabsTrigger>
-            <TabsTrigger value="usage" className="text-sm font-medium">
-              <TrendingUp className="h-4 w-4 ml-1" />
-              تقرير الاستخدام
+            <TabsTrigger value="usage" className="text-xs sm:text-sm font-medium py-2">
+              <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
+              <span className="hidden sm:inline">تقرير الاستخدام</span>
+              <span className="sm:hidden">الاستخدام</span>
             </TabsTrigger>
-            <TabsTrigger value="maintenance" className="text-sm font-medium">
-              <Wrench className="h-4 w-4 ml-1" />
-              تقرير الصيانة
+            <TabsTrigger value="maintenance" className="text-xs sm:text-sm font-medium py-2">
+              <Wrench className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
+              <span className="hidden sm:inline">تقرير الصيانة</span>
+              <span className="sm:hidden">الصيانة</span>
             </TabsTrigger>
-            <TabsTrigger value="categories" className="text-sm font-medium">
-              <Package className="h-4 w-4 ml-1" />
-              تحليل التصنيفات
+            <TabsTrigger value="categories" className="text-xs sm:text-sm font-medium py-2">
+              <Package className="h-3 w-3 sm:h-4 sm:w-4 ml-1" />
+              <span className="hidden sm:inline">تحليل التصنيفات</span>
+              <span className="sm:hidden">التصنيفات</span>
             </TabsTrigger>
           </TabsList>
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
-            {/* Statistics Cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {/* Statistics Cards - Mobile Responsive */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               <StatsCard
                 title="إجمالي الأدوات"
                 value={toolsStats?.totalTools || 0}
