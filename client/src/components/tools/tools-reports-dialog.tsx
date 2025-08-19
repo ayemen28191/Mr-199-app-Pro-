@@ -316,14 +316,14 @@ const ToolsReportsDialog: React.FC<ToolsReportsDialogProps> = ({
                   <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
                     <span className="text-muted-foreground">القيمة الإجمالية:</span>
                     <span className="font-bold text-lg">
-                      {toolsStats?.totalValue?.toLocaleString() || 0} ريال
+                      {toolsStats?.totalValue?.toLocaleString('en-US') || 0} ريال
                     </span>
                   </div>
                   <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
                     <span className="text-muted-foreground">متوسط قيمة الأداة:</span>
                     <span className="font-medium">
                       {toolsStats && toolsStats.totalTools > 0 
-                        ? Math.round(toolsStats.totalValue / toolsStats.totalTools).toLocaleString()
+                        ? Math.round(toolsStats.totalValue / toolsStats.totalTools).toLocaleString('en-US')
                         : 0} ريال
                     </span>
                   </div>
@@ -761,7 +761,7 @@ const ToolsReportsDialog: React.FC<ToolsReportsDialogProps> = ({
                               </div>
                               <div className="text-center p-4 bg-muted/30 rounded-lg">
                                 <p className="text-2xl font-bold text-green-600">
-                                  {category.totalValue?.toLocaleString() || 0}
+                                  {category.totalValue?.toLocaleString('en-US') || 0}
                                 </p>
                                 <p className="text-sm text-muted-foreground">القيمة الإجمالية (ريال)</p>
                               </div>

@@ -374,7 +374,7 @@ const ToolsManagementPage: React.FC = () => {
             )}
             {tool.purchasePrice && (
               <div className="text-xs font-medium text-green-600 dark:text-green-400">
-                {tool.purchasePrice.toLocaleString()} ر.س
+                {tool.purchasePrice.toLocaleString('en-US')} ر.س
               </div>
             )}
             <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">

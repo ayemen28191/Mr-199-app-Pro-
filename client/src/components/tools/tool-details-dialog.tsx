@@ -331,7 +331,7 @@ const ToolDetailsDialog: React.FC<ToolDetailsDialogProps> = ({
     
     toast({
       title: 'تم إرسال طباعة رمز QR',
-      description: 'تم إرسال رمز QR للطابعة',
+      description: 'تم إرسال رمز QR للطابع يمني',
     });
   };
 
@@ -544,13 +544,13 @@ const ToolDetailsDialog: React.FC<ToolDetailsDialogProps> = ({
                     <div>
                       <span className="text-muted-foreground">سعر الشراء:</span>
                       <p className="font-medium">
-                        {tool.purchasePrice ? `${tool.purchasePrice.toLocaleString()} ريال` : 'غير محدد'}
+                        {tool.purchasePrice ? `${tool.purchasePrice.toLocaleString('en-US')} ريال` : 'غير محدد'}
                       </p>
                     </div>
                     <div>
                       <span className="text-muted-foreground">القيمة الحالية:</span>
                       <p className="font-medium">
-                        {tool.currentValue ? `${tool.currentValue.toLocaleString()} ريال` : 'غير محدد'}
+                        {tool.currentValue ? `${tool.currentValue.toLocaleString('en-US')} ريال` : 'غير محدد'}
                       </p>
                     </div>
                     <div>

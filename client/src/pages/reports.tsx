@@ -330,7 +330,7 @@ export default function Reports() {
     } catch (error) {
       toast({
         title: "خطأ في الطباعة ❌",
-        description: "تأكد من إعدادات الطابعة والمتصفح",
+        description: "تأكد من إعدادات الطابع يمني والمتصفح",
         variant: "destructive",
       });
     }
