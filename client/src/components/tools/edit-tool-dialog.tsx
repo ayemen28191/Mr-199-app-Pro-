@@ -176,6 +176,25 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
   // Load tool data into form when tool is fetched
   useEffect(() => {
     if (tool) {
+      // Helper function to convert dates from string to YYYY-MM-DD format
+      const formatDateForInput = (dateString: string | null | undefined) => {
+        if (!dateString) return '';
+        try {
+          const date = new Date(dateString);
+          if (isNaN(date.getTime())) return '';
+          return date.toISOString().split('T')[0]; // YYYY-MM-DD format
+        } catch {
+          return '';
+        }
+      };
+
+      // Helper function to convert string numbers to actual numbers
+      const parseNumber = (value: string | number | null | undefined) => {
+        if (value === null || value === undefined || value === '') return undefined;
+        const parsed = typeof value === 'string' ? parseFloat(value) : value;
+        return isNaN(parsed) ? undefined : parsed;
+      };
+
       const formData = {
         name: tool.name || '',
         description: tool.description || '',
@@ -184,12 +203,12 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
         serialNumber: tool.serialNumber || '',
         barcode: tool.barcode || '',
         unit: tool.unit || 'قطعة',
-        purchasePrice: tool.purchasePrice || undefined,
-        currentValue: tool.currentValue || undefined,
-        depreciationRate: tool.depreciationRate || undefined,
-        purchaseDate: tool.purchaseDate || '',
-        warrantyExpiry: tool.warrantyExpiry || '',
-        maintenanceInterval: tool.maintenanceInterval || undefined,
+        purchasePrice: parseNumber(tool.purchasePrice),
+        currentValue: parseNumber(tool.currentValue),
+        depreciationRate: parseNumber(tool.depreciationRate),
+        purchaseDate: formatDateForInput(tool.purchaseDate),
+        warrantyExpiry: formatDateForInput(tool.warrantyExpiry),
+        maintenanceInterval: parseNumber(tool.maintenanceInterval),
         status: tool.status || 'available',
         condition: tool.condition || 'good',
         projectId: tool.projectId || '',
@@ -202,6 +221,7 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
             : '',
       };
       
+      console.log('🔧 تحميل بيانات الأداة في النموذج:', formData);
       form.reset(formData);
       setHasChanges(false);
     }
@@ -653,7 +673,7 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
                         name="purchasePrice"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>سعر الشراء (ريال)</FormLabel>
+                            <FormLabel>سعر الشراء (ر.ي)</FormLabel>
                             <FormControl>
                               <Input
                                 type="number"
@@ -672,7 +692,7 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
                         name="currentValue"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>القيمة الحالية (ريال)</FormLabel>
+                            <FormLabel>القيمة الحالية (ر.ي)</FormLabel>
                             <FormControl>
                               <Input
                                 type="number"
