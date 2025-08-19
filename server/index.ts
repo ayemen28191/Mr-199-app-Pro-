@@ -3,6 +3,8 @@ import session from "express-session";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { databaseManager } from "./database-manager";
+import { sql } from "drizzle-orm";
+import { db } from "./db";
 
 import { exec } from "child_process";
 import { promisify } from "util";
