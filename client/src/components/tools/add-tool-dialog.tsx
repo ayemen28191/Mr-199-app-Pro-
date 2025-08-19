@@ -37,6 +37,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
+import { AutocompleteInput } from '@/components/ui/autocomplete-input-database';
 
 // Form validation schema with enhanced validation and autocomplete
 const addToolSchema = z.object({
@@ -92,13 +93,7 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
   const [showAddCategoryDialog, setShowAddCategoryDialog] = useState(false);
   const [showAddUnitDialog, setShowAddUnitDialog] = useState(false);
   
-  // Autocomplete data states
-  const [toolNameSuggestions, setToolNameSuggestions] = useState<string[]>([]);
-  const [skuSuggestions, setSkuSuggestions] = useState<string[]>([]);
-  const [locationSuggestions, setLocationSuggestions] = useState<string[]>([]);
-  const [showNameSuggestions, setShowNameSuggestions] = useState(false);
-  const [showSkuSuggestions, setShowSkuSuggestions] = useState(false);
-  const [showLocationSuggestions, setShowLocationSuggestions] = useState(false);
+  // تم حذف نظام الإكمال التلقائي القديم واستبداله بالمكون المحدث
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -132,47 +127,7 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
     queryKey: ['/api/projects'],
   });
 
-  // Autocomplete functions
-  const fetchAutocomplete = async (type: string, query: string) => {
-    if (query.length < 2) return [];
-    try {
-      const response = await apiRequest(`/api/tools/search?type=${type}&query=${encodeURIComponent(query)}`, 'GET');
-      return response.suggestions || [];
-    } catch (error) {
-      console.error('Autocomplete error:', error);
-      return [];
-    }
-  };
-
-  const handleNameChange = async (value: string) => {
-    if (value.length >= 2) {
-      const suggestions = await fetchAutocomplete('tool-names', value);
-      setToolNameSuggestions(suggestions);
-      setShowNameSuggestions(suggestions.length > 0);
-    } else {
-      setShowNameSuggestions(false);
-    }
-  };
-
-  const handleSkuChange = async (value: string) => {
-    if (value.length >= 2) {
-      const suggestions = await fetchAutocomplete('tool-skus', value);
-      setSkuSuggestions(suggestions);
-      setShowSkuSuggestions(suggestions.length > 0);
-    } else {
-      setShowSkuSuggestions(false);
-    }
-  };
-
-  const handleLocationChange = async (value: string) => {
-    if (value.length >= 2) {
-      const suggestions = await fetchAutocomplete('locations', value);
-      setLocationSuggestions(suggestions);
-      setShowLocationSuggestions(suggestions.length > 0);
-    } else {
-      setShowLocationSuggestions(false);
-    }
-  };
+  // تم استبدال دوال الإكمال التلقائي القديمة بمكون AutocompleteInput المحدث
 
   // Create tool mutation
   const createToolMutation = useMutation({
@@ -314,42 +269,13 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                           <FormItem>
                             <FormLabel>اسم الأداة <span className="text-red-500">*</span></FormLabel>
                             <FormControl>
-                              <div className="relative">
-                                <Input
-                                  placeholder="مثال: مثقاب كهربائي"
-                                  {...field}
-                                  data-testid="tool-name-input"
-                                  onChange={(e) => {
-                                    field.onChange(e);
-                                    handleNameChange(e.target.value);
-                                  }}
-                                  onFocus={() => {
-                                    if (field.value && field.value.length >= 2) {
-                                      handleNameChange(field.value);
-                                    }
-                                  }}
-                                  onBlur={() => {
-                                    setTimeout(() => setShowNameSuggestions(false), 200);
-                                  }}
-                                />
-                                {showNameSuggestions && toolNameSuggestions.length > 0 && (
-                                  <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                                    {toolNameSuggestions.map((suggestion, index) => (
-                                      <button
-                                        key={index}
-                                        type="button"
-                                        className="w-full px-3 py-2 text-right hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
-                                        onClick={() => {
-                                          field.onChange(suggestion);
-                                          setShowNameSuggestions(false);
-                                        }}
-                                      >
-                                        {suggestion}
-                                      </button>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
+                              <AutocompleteInput
+                                value={field.value}
+                                onChange={field.onChange}
+                                placeholder="مثال: مثقاب كهربائي، منشار، مولد كهرباء"
+                                category="toolNames"
+                                className="arabic-numbers"
+                              />
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -405,10 +331,12 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                         <FormItem>
                           <FormLabel>الوصف <span className="text-xs text-gray-500">(اختياري)</span></FormLabel>
                           <FormControl>
-                            <Textarea
-                              placeholder="وصف مفصل للأداة ومواصفاتها..."
-                              {...field}
-                              data-testid="tool-description-input"
+                            <AutocompleteInput
+                              value={field.value || ''}
+                              onChange={field.onChange}
+                              placeholder="مثال: مثقاب كهربائي قوي، منشار يدوي، مولد طوارئ"
+                              category="toolDescriptions"
+                              className="arabic-numbers"
                             />
                           </FormControl>
                           <FormDescription>
@@ -425,37 +353,15 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>وحدة القياس <span className="text-red-500">*</span></FormLabel>
-                          <div className="flex gap-2">
-                            <Select onValueChange={field.onChange} value={field.value || ""}>
-                              <FormControl>
-                                <SelectTrigger data-testid="tool-unit-select">
-                                  <SelectValue placeholder="اختر وحدة القياس" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="قطعة">قطعة</SelectItem>
-                                <SelectItem value="مجموعة">مجموعة</SelectItem>
-                                <SelectItem value="كيلوغرام">كيلوغرام</SelectItem>
-                                <SelectItem value="متر">متر</SelectItem>
-                                <SelectItem value="لتر">لتر</SelectItem>
-                                <SelectItem value="عبوة">عبوة</SelectItem>
-                                <SelectItem value="صندوق">صندوق</SelectItem>
-                                <SelectItem value="طن">طن</SelectItem>
-                                <SelectItem value="حقيبة">حقيبة</SelectItem>
-                                <SelectItem value="دلو">دلو</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              className="px-3"
-                              onClick={() => setShowAddUnitDialog(true)}
-                              data-testid="add-unit-button"
-                            >
-                              <Plus className="h-4 w-4" />
-                            </Button>
-                          </div>
+                          <FormControl>
+                            <AutocompleteInput
+                              value={field.value || ''}
+                              onChange={field.onChange}
+                              placeholder="مثال: قطعة، مجموعة، كيلوغرام، متر، لتر"
+                              category="toolUnits"
+                              className="arabic-numbers"
+                            />
+                          </FormControl>
                           <FormMessage />
                         </FormItem>
                       )}
@@ -479,43 +385,16 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                           <FormItem>
                             <FormLabel>رمز المنتج (SKU) <span className="text-xs text-gray-500">(اختياري)</span></FormLabel>
                             <div className="flex gap-2">
-                              <div className="relative flex-1">
+                              <div className="flex-1">
                                 <FormControl>
-                                  <Input
-                                    placeholder="مثال: TOOL-123456"
-                                    {...field}
-                                    data-testid="tool-sku-input"
-                                    onChange={(e) => {
-                                      field.onChange(e);
-                                      handleSkuChange(e.target.value);
-                                    }}
-                                    onFocus={() => {
-                                      if (field.value && field.value.length >= 2) {
-                                        handleSkuChange(field.value);
-                                      }
-                                    }}
-                                    onBlur={() => {
-                                      setTimeout(() => setShowSkuSuggestions(false), 200);
-                                    }}
+                                  <AutocompleteInput
+                                    value={field.value || ''}
+                                    onChange={field.onChange}
+                                    placeholder="مثال: TOOL-123456، BUILD-789012"
+                                    category="toolSkus"
+                                    className="arabic-numbers"
                                   />
                                 </FormControl>
-                                {showSkuSuggestions && skuSuggestions.length > 0 && (
-                                  <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                                    {skuSuggestions.map((suggestion, index) => (
-                                      <button
-                                        key={index}
-                                        type="button"
-                                        className="w-full px-3 py-2 text-right hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
-                                        onClick={() => {
-                                          field.onChange(suggestion);
-                                          setShowSkuSuggestions(false);
-                                        }}
-                                      >
-                                        {suggestion}
-                                      </button>
-                                    ))}
-                                  </div>
-                                )}
                               </div>
                               <Button
                                 type="button"
@@ -539,10 +418,12 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                           <FormItem>
                             <FormLabel>الرقم التسلسلي <span className="text-xs text-gray-500">(اختياري)</span></FormLabel>
                             <FormControl>
-                              <Input
-                                placeholder="الرقم التسلسلي للأداة"
-                                {...field}
-                                data-testid="tool-serial-input"
+                              <AutocompleteInput
+                                value={field.value || ''}
+                                onChange={field.onChange}
+                                placeholder="مثال: SN-123456، ABC-789"
+                                category="toolSerialNumbers"
+                                className="arabic-numbers"
                               />
                             </FormControl>
                             <FormMessage />
@@ -559,10 +440,12 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                           <FormLabel>رمز QR / الباركود <span className="text-xs text-gray-500">(اختياري)</span></FormLabel>
                           <div className="flex gap-2">
                             <FormControl>
-                              <Input
+                              <AutocompleteInput
+                                value={field.value || ''}
+                                onChange={field.onChange}
                                 placeholder="رمز QR أو الباركود"
-                                {...field}
-                                data-testid="tool-barcode-input"
+                                category="toolBarcodes"
+                                className="arabic-numbers"
                               />
                             </FormControl>
                             <Button
@@ -588,10 +471,12 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                         <FormItem>
                           <FormLabel>المواصفات التقنية <span className="text-xs text-gray-500">(اختياري)</span></FormLabel>
                           <FormControl>
-                            <Textarea
-                              placeholder='مثال: {"القوة": "750 واط", "السرعة": "3000 دورة/دقيقة", "الوزن": "2.5 كجم"}'
-                              {...field}
-                              data-testid="tool-specifications-input"
+                            <AutocompleteInput
+                              value={field.value || ''}
+                              onChange={field.onChange}
+                              placeholder='مثال: قوة 750 واط، سرعة 3000 دورة/دقيقة، وزن 2.5 كجم'
+                              category="toolSpecifications"
+                              className="arabic-numbers"
                             />
                           </FormControl>
                           <FormDescription>
@@ -774,42 +659,13 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                           <FormItem>
                             <FormLabel>تحديد الموقع <span className="text-xs text-gray-500">(اختياري)</span></FormLabel>
                             <FormControl>
-                              <div className="relative">
-                                <Input
-                                  placeholder="رقم أو اسم الموقع المحدد"
-                                  {...field}
-                                  data-testid="tool-location-id-input"
-                                  onChange={(e) => {
-                                    field.onChange(e);
-                                    handleLocationChange(e.target.value);
-                                  }}
-                                  onFocus={() => {
-                                    if (field.value && field.value.length >= 2) {
-                                      handleLocationChange(field.value);
-                                    }
-                                  }}
-                                  onBlur={() => {
-                                    setTimeout(() => setShowLocationSuggestions(false), 200);
-                                  }}
-                                />
-                                {showLocationSuggestions && locationSuggestions.length > 0 && (
-                                  <div className="absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
-                                    {locationSuggestions.map((suggestion, index) => (
-                                      <button
-                                        key={index}
-                                        type="button"
-                                        className="w-full px-3 py-2 text-right hover:bg-gray-100 focus:bg-gray-100 focus:outline-none"
-                                        onClick={() => {
-                                          field.onChange(suggestion);
-                                          setShowLocationSuggestions(false);
-                                        }}
-                                      >
-                                        {suggestion}
-                                      </button>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
+                              <AutocompleteInput
+                                value={field.value || ''}
+                                onChange={field.onChange}
+                                placeholder="مثال: مخزن رقم 1، مشروع الرياض، ورشة الصيانة"
+                                category="toolLocations"
+                                className="arabic-numbers"
+                              />
                             </FormControl>
                             <FormDescription>
                               مثال: مخزن رقم 1، مشروع الرياض، إلخ

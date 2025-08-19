@@ -36,6 +36,7 @@ import { Badge } from '@/components/ui/badge';
 
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
+import { AutocompleteInput } from '@/components/ui/autocomplete-input-database';
 
 // Form validation schema
 const editToolSchema = z.object({
@@ -380,9 +381,12 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
                           <FormItem>
                             <FormLabel>اسم الأداة *</FormLabel>
                             <FormControl>
-                              <Input
-                                placeholder="مثال: مثقاب كهربائي"
-                                {...field}
+                              <AutocompleteInput
+                                value={field.value || ''}
+                                onChange={field.onChange}
+                                placeholder="مثال: مثقاب كهربائي، منشار، مولد طوارئ"
+                                category="toolNames"
+                                className="arabic-numbers"
                               />
                             </FormControl>
                             <FormMessage />
@@ -422,9 +426,12 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
                           <FormItem>
                             <FormLabel>رقم SKU <span className="text-xs text-gray-500">(اختياري)</span></FormLabel>
                             <FormControl>
-                              <Input
-                                placeholder="مثال: TOOL-001"
-                                {...field}
+                              <AutocompleteInput
+                                value={field.value || ''}
+                                onChange={field.onChange}
+                                placeholder="مثال: TOOL-123456، BUILD-789012"
+                                category="toolSkus"
+                                className="arabic-numbers"
                               />
                             </FormControl>
                             <FormMessage />
@@ -439,9 +446,12 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
                           <FormItem>
                             <FormLabel>الرقم التسلسلي <span className="text-xs text-gray-500">(اختياري)</span></FormLabel>
                             <FormControl>
-                              <Input
-                                placeholder="مثال: SN123456789"
-                                {...field}
+                              <AutocompleteInput
+                                value={field.value || ''}
+                                onChange={field.onChange}
+                                placeholder="مثال: SN-123456، ABC-789"
+                                category="toolSerialNumbers"
+                                className="arabic-numbers"
                               />
                             </FormControl>
                             <FormMessage />
@@ -455,22 +465,15 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>وحدة القياس *</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="اختر وحدة القياس" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="قطعة">قطعة</SelectItem>
-                                <SelectItem value="عدد">عدد</SelectItem>
-                                <SelectItem value="متر">متر</SelectItem>
-                                <SelectItem value="كيلوجرام">كيلوجرام</SelectItem>
-                                <SelectItem value="لتر">لتر</SelectItem>
-                                <SelectItem value="صندوق">صندوق</SelectItem>
-                                <SelectItem value="طقم">طقم</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            <FormControl>
+                              <AutocompleteInput
+                                value={field.value || ''}
+                                onChange={field.onChange}
+                                placeholder="مثال: قطعة، مجموعة، كيلوغرام، متر"
+                                category="toolUnits"
+                                className="arabic-numbers"
+                              />
+                            </FormControl>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -483,10 +486,12 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
                           <FormItem>
                             <FormLabel>الرمز الشريطي <span className="text-xs text-gray-500">(اختياري)</span></FormLabel>
                             <FormControl>
-                              <Input
-                                placeholder="رمز QR أو باركود"
-                                {...field}
-                                readOnly
+                              <AutocompleteInput
+                                value={field.value || ''}
+                                onChange={field.onChange}
+                                placeholder="رمز QR أو الباركود"
+                                category="toolBarcodes"
+                                className="arabic-numbers"
                               />
                             </FormControl>
                             <FormMessage />
@@ -502,10 +507,12 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
                         <FormItem>
                           <FormLabel>الوصف <span className="text-xs text-gray-500">(اختياري)</span></FormLabel>
                           <FormControl>
-                            <Textarea
-                              placeholder="وصف مفصل للأداة وخصائصها..."
-                              {...field}
-                              rows={3}
+                            <AutocompleteInput
+                              value={field.value || ''}
+                              onChange={field.onChange}
+                              placeholder="مثال: مثقاب كهربائي قوي، منشار يدوي، مولد طوارئ"
+                              category="toolDescriptions"
+                              className="arabic-numbers"
                             />
                           </FormControl>
                           <FormMessage />
@@ -617,11 +624,12 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
                         <FormItem>
                           <FormLabel>المواصفات التقنية <span className="text-xs text-gray-500">(اختياري)</span></FormLabel>
                           <FormControl>
-                            <Textarea
-                              placeholder="مواصفات تقنية مفصلة (يمكن كتابتها بصيغة JSON)..."
-                              {...field}
-                              rows={6}
-                              className="font-mono text-sm"
+                            <AutocompleteInput
+                              value={field.value || ''}
+                              onChange={field.onChange}
+                              placeholder="مثال: قوة 750 واط، سرعة 3000 دورة/دقيقة، وزن 2.5 كجم"
+                              category="toolSpecifications"
+                              className="arabic-numbers"
                             />
                           </FormControl>
                           <FormMessage />
@@ -783,9 +791,12 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
                           <FormItem>
                             <FormLabel>تفاصيل الموقع <span className="text-xs text-gray-500">(اختياري)</span></FormLabel>
                             <FormControl>
-                              <Input
-                                placeholder="رقم الرف، المنطقة، إلخ"
-                                {...field}
+                              <AutocompleteInput
+                                value={field.value || ''}
+                                onChange={field.onChange}
+                                placeholder="مثال: مخزن رقم 1، مشروع الرياض، ورشة الصيانة"
+                                category="toolLocations"
+                                className="arabic-numbers"
                               />
                             </FormControl>
                             <FormMessage />
