@@ -23,6 +23,9 @@ import {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
+  // Track read notifications in memory (could be moved to database later)
+  const readNotifications = new Set<string>();
+  
   // Projects
   app.get("/api/projects", async (req, res) => {
     try {
@@ -3487,8 +3490,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const daysDiff = Math.ceil((maintenanceDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
           
           if (daysDiff < 0) {
+            const notificationId = `maintenance-${tool.id}`;
             notifications.push({
-              id: `maintenance-${tool.id}`,
+              id: notificationId,
               type: 'maintenance',
               title: 'صيانة متأخرة',
               message: `الأداة "${tool.name}" متأخرة عن موعد الصيانة بـ ${Math.abs(daysDiff)} يوم`,
@@ -3496,12 +3500,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
               toolName: tool.name,
               priority: 'critical',
               timestamp: new Date().toISOString(),
-              isRead: false,
+              isRead: readNotifications.has(notificationId),
               actionRequired: true,
             });
           } else if (daysDiff <= 3) {
+            const notificationId = `maintenance-soon-${tool.id}`;
             notifications.push({
-              id: `maintenance-soon-${tool.id}`,
+              id: notificationId,
               type: 'maintenance',
               title: 'صيانة قريبة',
               message: `الأداة "${tool.name}" تحتاج صيانة خلال ${daysDiff} أيام`,
@@ -3509,7 +3514,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               toolName: tool.name,
               priority: 'high',
               timestamp: new Date().toISOString(),
-              isRead: false,
+              isRead: readNotifications.has(notificationId),
               actionRequired: true,
             });
           }
@@ -3522,8 +3527,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const daysDiff = Math.ceil((warrantyDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
           
           if (daysDiff <= 30 && daysDiff > 0) {
+            const notificationId = `warranty-${tool.id}`;
             notifications.push({
-              id: `warranty-${tool.id}`,
+              id: notificationId,
               type: 'warranty',
               title: 'انتهاء الضمان قريباً',
               message: `ضمان الأداة "${tool.name}" ينتهي خلال ${daysDiff} يوم`,
@@ -3531,12 +3537,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
               toolName: tool.name,
               priority: 'medium',
               timestamp: new Date().toISOString(),
-              isRead: false,
+              isRead: readNotifications.has(notificationId),
               actionRequired: false,
             });
           } else if (daysDiff <= 0) {
+            const notificationId = `warranty-expired-${tool.id}`;
             notifications.push({
-              id: `warranty-expired-${tool.id}`,
+              id: notificationId,
               type: 'warranty',
               title: 'انتهى الضمان',
               message: `انتهى ضمان الأداة "${tool.name}"`,
@@ -3544,7 +3551,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               toolName: tool.name,
               priority: 'low',
               timestamp: new Date().toISOString(),
-              isRead: false,
+              isRead: readNotifications.has(notificationId),
               actionRequired: false,
             });
           }
@@ -3552,8 +3559,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // فحص الأدوات المعطلة
         if (tool.status === 'damaged') {
+          const notificationId = `damaged-${tool.id}`;
           notifications.push({
-            id: `damaged-${tool.id}`,
+            id: notificationId,
             type: 'damaged',
             title: 'أداة معطلة',
             message: `الأداة "${tool.name}" بحالة تالفة وتحتاج إصلاح أو استبدال`,
@@ -3561,7 +3569,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             toolName: tool.name,
             priority: 'high',
             timestamp: new Date().toISOString(),
-            isRead: false,
+            isRead: readNotifications.has(notificationId),
             actionRequired: true,
           });
         }
@@ -3589,8 +3597,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/notifications/:id/mark-read", async (req, res) => {
+    try {
+      const { id } = req.params;
+      readNotifications.add(id);
+      res.json({ 
+        success: true, 
+        message: "تم تحديد الإشعار كمقروء" 
+      });
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+      res.status(500).json({ message: "خطأ في تحديد الإشعار كمقروء" });
+    }
+  });
+
   app.post("/api/notifications/mark-all-read", async (req, res) => {
     try {
+      // الحصول على جميع الإشعارات الحالية وتحديدها كمقروءة
+      const tools = await storage.getTools();
+      
+      tools.forEach((tool: any) => {
+        if (tool.nextMaintenanceDate) {
+          const maintenanceDate = new Date(tool.nextMaintenanceDate);
+          const today = new Date();
+          const daysDiff = Math.ceil((maintenanceDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+          
+          if (daysDiff <= 3 || daysDiff < 0) {
+            readNotifications.add(`maintenance-${tool.id}`);
+          }
+        }
+        
+        if (tool.status === 'damaged' || tool.condition === 'poor') {
+          readNotifications.add(`damage-${tool.id}`);
+        }
+        
+        if (tool.warrantyExpiry) {
+          const warrantyDate = new Date(tool.warrantyExpiry);
+          const today = new Date();
+          const daysDiff = Math.ceil((warrantyDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+          
+          if (daysDiff <= 30) {
+            readNotifications.add(`warranty-${tool.id}`);
+          }
+        }
+        
+        if (tool.lastUsed) {
+          const lastUsedDate = new Date(tool.lastUsed);
+          const today = new Date();
+          const daysDiff = Math.ceil((today.getTime() - lastUsedDate.getTime()) / (1000 * 60 * 60 * 24));
+          
+          if (daysDiff > 90) {
+            readNotifications.add(`unused-${tool.id}`);
+          }
+        }
+      });
+      
       res.json({ 
         success: true, 
         message: "تم تحديد جميع الإشعارات كمقروءة" 
