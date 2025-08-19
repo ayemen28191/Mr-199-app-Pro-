@@ -67,108 +67,13 @@ const ToolsNotificationSystem: React.FC = () => {
   });
 
   // جلب الإشعارات من الخادم
-  const { data: notifications = [], refetch } = useQuery({
+  const { data: notifications = [], refetch } = useQuery<ToolNotification[]>({
     queryKey: ['/api/tools/notifications'],
-    queryFn: async () => {
-      // محاكاة البيانات - في التطبيق الحقيقي سيتم جلبها من الخادم
-      const tools = await apiRequest('/api/tools', 'GET');
-      const mockNotifications: ToolNotification[] = [];
-
-      // فحص الصيانة المتأخرة
-      tools.forEach((tool: any) => {
-        if (tool.nextMaintenanceDate) {
-          const maintenanceDate = new Date(tool.nextMaintenanceDate);
-          const today = new Date();
-          const daysDiff = Math.ceil((maintenanceDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-          
-          if (daysDiff < 0) {
-            mockNotifications.push({
-              id: `maintenance-${tool.id}`,
-              type: 'maintenance',
-              title: 'صيانة متأخرة',
-              message: `الأداة "${tool.name}" متأخرة عن موعد الصيانة بـ ${Math.abs(daysDiff)} يوم`,
-              toolId: tool.id,
-              toolName: tool.name,
-              priority: 'critical',
-              timestamp: new Date().toISOString(),
-              isRead: false,
-              actionRequired: true,
-            });
-          } else if (daysDiff <= 3) {
-            mockNotifications.push({
-              id: `maintenance-soon-${tool.id}`,
-              type: 'maintenance',
-              title: 'صيانة قريبة',
-              message: `الأداة "${tool.name}" تحتاج صيانة خلال ${daysDiff} أيام`,
-              toolId: tool.id,
-              toolName: tool.name,
-              priority: 'high',
-              timestamp: new Date().toISOString(),
-              isRead: false,
-              actionRequired: true,
-            });
-          }
-        }
-
-        // فحص انتهاء الضمان
-        if (tool.warrantyExpiry) {
-          const warrantyDate = new Date(tool.warrantyExpiry);
-          const today = new Date();
-          const daysDiff = Math.ceil((warrantyDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-          
-          if (daysDiff <= 30 && daysDiff > 0) {
-            mockNotifications.push({
-              id: `warranty-${tool.id}`,
-              type: 'warranty',
-              title: 'انتهاء الضمان قريباً',
-              message: `ضمان الأداة "${tool.name}" ينتهي خلال ${daysDiff} يوم`,
-              toolId: tool.id,
-              toolName: tool.name,
-              priority: 'medium',
-              timestamp: new Date().toISOString(),
-              isRead: false,
-              actionRequired: false,
-            });
-          } else if (daysDiff <= 0) {
-            mockNotifications.push({
-              id: `warranty-expired-${tool.id}`,
-              type: 'warranty',
-              title: 'انتهى الضمان',
-              message: `انتهى ضمان الأداة "${tool.name}"`,
-              toolId: tool.id,
-              toolName: tool.name,
-              priority: 'low',
-              timestamp: new Date().toISOString(),
-              isRead: false,
-              actionRequired: false,
-            });
-          }
-        }
-
-        // فحص الأدوات المعطلة
-        if (tool.status === 'damaged') {
-          mockNotifications.push({
-            id: `damaged-${tool.id}`,
-            type: 'damaged',
-            title: 'أداة معطلة',
-            message: `الأداة "${tool.name}" بحالة تالفة وتحتاج إصلاح أو استبدال`,
-            toolId: tool.id,
-            toolName: tool.name,
-            priority: 'high',
-            timestamp: new Date().toISOString(),
-            isRead: false,
-            actionRequired: true,
-          });
-        }
-      });
-
-      return mockNotifications;
-    },
     refetchInterval: 300000, // كل 5 دقائق
   });
 
-  const unreadCount = notifications.filter(n => !n.isRead).length;
-  const criticalCount = notifications.filter(n => n.priority === 'critical').length;
+  const unreadCount = (notifications as ToolNotification[]).filter((n: ToolNotification) => !n.isRead).length;
+  const criticalCount = (notifications as ToolNotification[]).filter((n: ToolNotification) => n.priority === 'critical').length;
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -191,20 +96,39 @@ const ToolsNotificationSystem: React.FC = () => {
     }
   };
 
-  const filteredNotifications = notifications.filter(notification => 
+  const filteredNotifications = (notifications as ToolNotification[]).filter((notification: ToolNotification) => 
     selectedType === 'all' || notification.type === selectedType
   );
 
   const markAsRead = async (notificationId: string) => {
-    // في التطبيق الحقيقي، سيتم إرسال طلب للخادم
-    console.log(`Marking notification ${notificationId} as read`);
-    refetch();
+    try {
+      // إرسال طلب لتحديث حالة الإشعار في قاعدة البيانات
+      await apiRequest(`/api/notifications/${notificationId}/mark-read`, 'POST');
+      
+      // تحديث البيانات المحلية
+      const currentNotifications = notifications.map(notification => 
+        notification.id === notificationId 
+          ? { ...notification, isRead: true }
+          : notification
+      );
+      
+      // إعادة تحديث البيانات
+      refetch();
+    } catch (error) {
+      console.error('خطأ في تحديد الإشعار كمقروء:', error);
+    }
   };
 
   const markAllAsRead = async () => {
-    // في التطبيق الحقيقي، سيتم إرسال طلب للخادم
-    console.log('Marking all notifications as read');
-    refetch();
+    try {
+      // إرسال طلب لتحديث جميع الإشعارات
+      await apiRequest('/api/notifications/mark-all-read', 'POST');
+      
+      // إعادة تحديث البيانات
+      refetch();
+    } catch (error) {
+      console.error('خطأ في تحديد جميع الإشعارات كمقروءة:', error);
+    }
   };
 
   return (
@@ -255,7 +179,7 @@ const ToolsNotificationSystem: React.FC = () => {
               onClick={() => setSelectedType('all')}
               className="text-xs"
             >
-              الكل ({notifications.length})
+              الكل ({(notifications as ToolNotification[]).length})
             </Button>
             <Button
               variant={selectedType === 'maintenance' ? 'default' : 'outline'}
@@ -264,7 +188,7 @@ const ToolsNotificationSystem: React.FC = () => {
               className="text-xs"
             >
               <Wrench className="h-3 w-3 ml-1" />
-              صيانة ({notifications.filter(n => n.type === 'maintenance').length})
+              صيانة ({(notifications as ToolNotification[]).filter((n: ToolNotification) => n.type === 'maintenance').length})
             </Button>
             <Button
               variant={selectedType === 'warranty' ? 'default' : 'outline'}
@@ -273,7 +197,7 @@ const ToolsNotificationSystem: React.FC = () => {
               className="text-xs"
             >
               <Calendar className="h-3 w-3 ml-1" />
-              ضمان ({notifications.filter(n => n.type === 'warranty').length})
+              ضمان ({(notifications as ToolNotification[]).filter((n: ToolNotification) => n.type === 'warranty').length})
             </Button>
             <Button
               variant={selectedType === 'damaged' ? 'default' : 'outline'}
@@ -282,7 +206,7 @@ const ToolsNotificationSystem: React.FC = () => {
               className="text-xs"
             >
               <AlertTriangle className="h-3 w-3 ml-1" />
-              معطل ({notifications.filter(n => n.type === 'damaged').length})
+              معطل ({(notifications as ToolNotification[]).filter((n: ToolNotification) => n.type === 'damaged').length})
             </Button>
           </div>
 
@@ -359,7 +283,7 @@ const ToolsNotificationSystem: React.FC = () => {
                 </p>
               </div>
             ) : (
-              filteredNotifications.map((notification) => (
+              filteredNotifications.map((notification: ToolNotification) => (
                 <Card
                   key={notification.id}
                   className={`${getPriorityColor(notification.priority)} ${

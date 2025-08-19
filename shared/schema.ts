@@ -997,3 +997,24 @@ export type MaintenanceTask = typeof maintenanceTasks.$inferSelect;
 
 export type InsertToolCostTracking = z.infer<typeof insertToolCostTrackingSchema>;
 export type ToolCostTracking = typeof toolCostTracking.$inferSelect;
+
+// Tool Notifications (إشعارات الأدوات)
+export const toolNotifications = pgTable("tool_notifications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  type: text("type").notNull(), // maintenance, warranty, stock, unused, damaged
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  toolId: varchar("tool_id").references(() => tools.id),
+  toolName: text("tool_name"),
+  priority: text("priority").notNull().default("medium"), // low, medium, high, critical
+  isRead: boolean("is_read").notNull().default(false),
+  actionRequired: boolean("action_required").notNull().default(false),
+  metadata: jsonb("metadata"), // بيانات إضافية حسب نوع الإشعار
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  readAt: timestamp("read_at"),
+});
+
+// Insert schema for tool notifications
+export const insertToolNotificationSchema = createInsertSchema(toolNotifications);
+export type InsertToolNotification = z.infer<typeof insertToolNotificationSchema>;
+export type ToolNotification = typeof toolNotifications.$inferSelect;
