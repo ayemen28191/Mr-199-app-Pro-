@@ -193,24 +193,18 @@ export default function DailyExpenses() {
   const { data: todayFundTransfers = [], refetch: refetchFundTransfers, isLoading: fundTransfersLoading } = useQuery({
     queryKey: ["/api/projects", selectedProjectId, "fund-transfers", selectedDate],
     queryFn: async () => {
-      console.log("=== FUND TRANSFERS QUERY STARTED ===");
-      console.log("selectedProjectId:", selectedProjectId);
-      console.log("selectedDate:", selectedDate);
+      if (!selectedProjectId || !selectedDate) {
+        return [];
+      }
       
       const response = await apiRequest("GET", `/api/projects/${selectedProjectId}/fund-transfers?date=${selectedDate}`);
-      console.log("=== FUND TRANSFERS RESULT ===");
-      console.log("Response received:", response);
-      console.log("Response length:", Array.isArray(response) ? response.length : 'Not an array');
-      if (Array.isArray(response) && response.length > 0) {
-        console.log("First item:", response[0]);
-      }
-      console.log("================================");
-      
       return Array.isArray(response) ? response as FundTransfer[] : [];
     },
     enabled: !!selectedProjectId && !!selectedDate,
     refetchOnMount: true,
     refetchOnWindowFocus: false,
+    staleTime: 30000, // البيانات صالحة لـ30 ثانية
+    gcTime: 60000, // الاحتفاظ بالذاكرة لدقيقة واحدة
   });
 
   // جلب الرصيد المتبقي من اليوم السابق
@@ -886,6 +880,7 @@ export default function DailyExpenses() {
             {/* عرض العهد المضافة لهذا اليوم */}
             <div className="mt-3 pt-3 border-t">
               <h5 className="text-sm font-medium text-muted-foreground mb-2">العهد المضافة اليوم:</h5>
+
               {fundTransfersLoading ? (
                 <div className="text-center text-muted-foreground">جاري التحميل...</div>
               ) : Array.isArray(todayFundTransfers) && todayFundTransfers.length > 0 ? (
@@ -936,6 +931,7 @@ export default function DailyExpenses() {
                   <p className="text-xs text-gray-500">
                     يمكنك إضافة تحويل جديد أو اختيار تاريخ آخر
                   </p>
+
                 </div>
               )}
             </div>
