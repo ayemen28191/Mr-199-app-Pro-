@@ -706,7 +706,18 @@ export default function DailyExpenses() {
 
   const totals = calculateTotals();
 
+  // حساب مؤشرات البيانات المتوفرة
+  const dataIndicators = {
+    fundTransfers: todayFundTransfers.length > 0,
+    attendance: todayAttendance.length > 0,
+    transportation: todayTransportation.length > 0,
+    materials: Array.isArray(todayMaterialPurchases) && todayMaterialPurchases.length > 0,
+    workerTransfers: Array.isArray(todayWorkerTransfers) && todayWorkerTransfers.length > 0,
+    miscExpenses: Array.isArray(todayMiscExpenses) && todayMiscExpenses.length > 0
+  };
 
+  const totalDataSections = Object.keys(dataIndicators).length;
+  const sectionsWithData = Object.values(dataIndicators).filter(Boolean).length;
 
   return (
     <div className="p-4 slide-in">
@@ -715,6 +726,77 @@ export default function DailyExpenses() {
         selectedProjectId={selectedProjectId}
         onProjectChange={(projectId, projectName) => selectProject(projectId, projectName)}
       />
+
+      {/* Data Overview Indicator */}
+      {selectedProjectId && (
+        <Card className={`mb-3 border-l-4 ${
+          sectionsWithData === 0 
+            ? 'border-l-amber-400 bg-amber-50/30' 
+            : sectionsWithData === totalDataSections 
+              ? 'border-l-green-500 bg-green-50/30' 
+              : 'border-l-blue-500 bg-blue-50/30'
+        }`}>
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className={`h-3 w-3 rounded-full ${
+                  sectionsWithData === 0 
+                    ? 'bg-amber-400' 
+                    : sectionsWithData === totalDataSections 
+                      ? 'bg-green-500' 
+                      : 'bg-blue-500'
+                }`}></div>
+                <span className="text-sm font-medium">
+                  بيانات يوم {formatDate(selectedDate)}
+                </span>
+              </div>
+              <div className="flex items-center gap-3 text-xs">
+                <div className="flex items-center gap-1">
+                  <span className="font-bold text-lg arabic-numbers">{sectionsWithData}</span>
+                  <span className="text-muted-foreground">/{totalDataSections}</span>
+                </div>
+                {sectionsWithData === 0 && (
+                  <span className="text-amber-700 bg-amber-100 px-3 py-1 rounded-full text-xs font-medium">
+                    لا توجد بيانات
+                  </span>
+                )}
+                {sectionsWithData > 0 && sectionsWithData < totalDataSections && (
+                  <span className="text-blue-700 bg-blue-100 px-3 py-1 rounded-full text-xs font-medium">
+                    بيانات جزئية
+                  </span>
+                )}
+                {sectionsWithData === totalDataSections && (
+                  <span className="text-green-700 bg-green-100 px-3 py-1 rounded-full text-xs font-medium">
+                    بيانات كاملة ✓
+                  </span>
+                )}
+              </div>
+            </div>
+            {sectionsWithData > 0 && (
+              <div className="mt-2 flex gap-1 flex-wrap">
+                {dataIndicators.fundTransfers && (
+                  <span className="bg-primary/10 text-primary text-xs px-2 py-1 rounded">عهدة</span>
+                )}
+                {dataIndicators.attendance && (
+                  <span className="bg-success/10 text-success text-xs px-2 py-1 rounded">حضور</span>
+                )}
+                {dataIndicators.transportation && (
+                  <span className="bg-secondary/10 text-secondary text-xs px-2 py-1 rounded">نقل</span>
+                )}
+                {dataIndicators.materials && (
+                  <span className="bg-green-500/10 text-green-600 text-xs px-2 py-1 rounded">مواد</span>
+                )}
+                {dataIndicators.workerTransfers && (
+                  <span className="bg-orange-500/10 text-orange-600 text-xs px-2 py-1 rounded">حوالات</span>
+                )}
+                {dataIndicators.miscExpenses && (
+                  <span className="bg-purple-500/10 text-purple-600 text-xs px-2 py-1 rounded">متنوعة</span>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Date and Balance Info */}
       <Card className="mb-4">
@@ -845,19 +927,14 @@ export default function DailyExpenses() {
                   </div>
                 </div>
               ) : (
-                <div className="text-center py-6 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
-                  <DollarSign className="mx-auto h-10 w-10 text-gray-400 mb-3" />
-                  <p className="text-sm font-medium text-gray-600 mb-2">
-                    لا توجد تحويلات عهد لهذا التاريخ
+                <div className="text-center py-4 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+                  <DollarSign className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+                  <p className="text-sm text-gray-600 mb-1">
+                    لا توجد تحويلات عهد للتاريخ {selectedDate}
                   </p>
-                  <p className="text-xs text-gray-500 mb-3">
-                    التاريخ: {selectedDate}
+                  <p className="text-xs text-gray-500">
+                    يمكنك إضافة تحويل جديد أو اختيار تاريخ آخر
                   </p>
-                  <div className="bg-blue-50 border border-blue-200 rounded-md p-2 mx-4">
-                    <p className="text-xs text-blue-600">
-                      💡 جرب تاريخ مختلف أو أضف تحويل جديد
-                    </p>
-                  </div>
                 </div>
               )}
             </div>
@@ -875,8 +952,8 @@ export default function DailyExpenses() {
           {todayAttendance.length === 0 ? (
             <div className="text-center py-4 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
               <Users className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-              <p className="text-sm text-gray-600">لم يتم تسجيل حضور عمال لتاريخ {selectedDate}</p>
-              <p className="text-xs text-gray-500 mt-1">قم بتسجيل حضور العمال أولاً</p>
+              <p className="text-sm text-gray-600">لا يوجد حضور عمال للتاريخ {selectedDate}</p>
+              <p className="text-xs text-gray-500 mt-1">اذهب إلى صفحة حضور العمال لتسجيل الحضور</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -967,33 +1044,49 @@ export default function DailyExpenses() {
             </div>
             
             {/* Show existing transportation expenses */}
-            {todayTransportation.map((expense, index) => (
-              <div key={index} className="flex justify-between items-center p-2 bg-muted rounded">
-                <span className="text-sm flex-1">{expense.description}</span>
-                <div className="flex items-center gap-2">
-                  <span className="font-medium arabic-numbers">{formatCurrency(expense.amount)}</span>
-                  <div className="flex gap-1">
-                    <Button 
-                      size="sm" 
-                      variant="ghost" 
-                      className="h-7 w-7 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                      onClick={() => handleEditTransportation(expense)}
-                    >
-                      <Edit2 className="h-3 w-3" />
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      variant="ghost" 
-                      className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                      onClick={() => deleteTransportationMutation.mutate(expense.id)}
-                      disabled={deleteTransportationMutation.isPending}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
+            {todayTransportation.length === 0 ? (
+              <div className="text-center py-4 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200 mt-3">
+                <Car className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+                <p className="text-sm text-gray-600">لا توجد مصاريف نقل للتاريخ {selectedDate}</p>
+                <p className="text-xs text-gray-500 mt-1">أضف مصاريف جديدة أو اختر تاريخ آخر</p>
+              </div>
+            ) : (
+              <div className="mt-3 space-y-2">
+                {todayTransportation.map((expense, index) => (
+                  <div key={index} className="flex justify-between items-center p-2 bg-muted rounded">
+                    <span className="text-sm flex-1">{expense.description}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium arabic-numbers">{formatCurrency(expense.amount)}</span>
+                      <div className="flex gap-1">
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          className="h-7 w-7 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          onClick={() => handleEditTransportation(expense)}
+                        >
+                          <Edit2 className="h-3 w-3" />
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => deleteTransportationMutation.mutate(expense.id)}
+                          disabled={deleteTransportationMutation.isPending}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
                   </div>
+                ))}
+                <div className="text-left mt-2 pt-2 border-t">
+                  <span className="text-sm text-muted-foreground">إجمالي النقل: </span>
+                  <span className="font-bold text-secondary arabic-numbers">
+                    {formatCurrency(totals.totalTransportation)}
+                  </span>
                 </div>
               </div>
-            ))}
+            )}
           </div>
         </CardContent>
       </Card>
@@ -1008,8 +1101,8 @@ export default function DailyExpenses() {
           {!Array.isArray(todayMaterialPurchases) || todayMaterialPurchases.length === 0 ? (
             <div className="text-center py-4 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
               <Package className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-              <p className="text-sm text-gray-600">لا توجد مشتريات مواد لتاريخ {selectedDate}</p>
-              <p className="text-xs text-gray-500 mt-1">جرب تاريخ مختلف أو أضف مشتريات جديدة</p>
+              <p className="text-sm text-gray-600">لا توجد مشتريات مواد للتاريخ {selectedDate}</p>
+              <p className="text-xs text-gray-500 mt-1">اذهب إلى شراء المواد لإضافة مشتريات جديدة</p>
             </div>
           ) : (
             <div className="space-y-2 mb-3">
@@ -1109,8 +1202,8 @@ export default function DailyExpenses() {
           {!Array.isArray(todayWorkerTransfers) || todayWorkerTransfers.length === 0 ? (
             <div className="text-center py-4 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
               <ArrowLeftRight className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-              <p className="text-sm text-gray-600">لا توجد حوالات عمال لتاريخ {selectedDate}</p>
-              <p className="text-xs text-gray-500 mt-1">جرب تاريخ مختلف أو أضف حوالات جديدة</p>
+              <p className="text-sm text-gray-600">لا توجد حوالات عمال للتاريخ {selectedDate}</p>
+              <p className="text-xs text-gray-500 mt-1">اذهب إلى صفحة العمال لإدارة الحوالات</p>
             </div>
           ) : (
             <div className="space-y-2 mb-3">
