@@ -521,7 +521,7 @@ const ToolDetailsDialog: React.FC<ToolDetailsDialogProps> = ({
                     <div>
                       <span className="text-muted-foreground">تاريخ الإنشاء:</span>
                       <p className="font-medium">
-                        {new Date(tool.createdAt).toLocaleDateString('en-US')}
+                        {new Date(tool.createdAt).toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit' })}
                       </p>
                     </div>
                   </div>
@@ -571,13 +571,13 @@ const ToolDetailsDialog: React.FC<ToolDetailsDialogProps> = ({
                     <div>
                       <span className="text-muted-foreground">تاريخ الشراء:</span>
                       <p className="font-medium">
-                        {tool.purchaseDate ? new Date(tool.purchaseDate).toLocaleDateString('en-US') : 'غير محدد'}
+                        {tool.purchaseDate ? new Date(tool.purchaseDate).toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit' }) : 'غير محدد'}
                       </p>
                     </div>
                     <div>
                       <span className="text-muted-foreground">انتهاء الضمان:</span>
                       <p className="font-medium">
-                        {tool.warrantyExpiry ? new Date(tool.warrantyExpiry).toLocaleDateString('en-US') : 'غير محدد'}
+                        {tool.warrantyExpiry ? new Date(tool.warrantyExpiry).toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit' }) : 'غير محدد'}
                       </p>
                     </div>
                   </div>
@@ -603,7 +603,7 @@ const ToolDetailsDialog: React.FC<ToolDetailsDialogProps> = ({
                     <div>
                       <span className="text-muted-foreground">الصيانة القادمة:</span>
                       <p className="font-medium">
-                        {tool.nextMaintenanceDate ? new Date(tool.nextMaintenanceDate).toLocaleDateString('en-US') : 'غير محدد'}
+                        {tool.nextMaintenanceDate ? new Date(tool.nextMaintenanceDate).toLocaleDateString('ar-SA', { year: 'numeric', month: '2-digit', day: '2-digit' }) : 'غير محدد'}
                       </p>
                     </div>
                   </div>
