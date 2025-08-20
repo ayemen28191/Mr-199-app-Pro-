@@ -182,9 +182,16 @@ export default function SupplierAccountsPage() {
     return acc;
   }, { totalAmount: 0, paidAmount: 0, remainingAmount: 0 });
 
-  // فصل المشتريات حسب نوع الدفع للمورد المحدد
-  const cashPurchases = purchases.filter(p => p.purchaseType === "نقد");
-  const creditPurchases = purchases.filter(p => p.purchaseType === "أجل");
+  // فصل المشتريات حسب نوع الدفع للمورد المحدد (مع دعم الأحرف العربية المختلفة)
+  const cashPurchases = purchases.filter(p => {
+    const cleanType = p.purchaseType?.replace(/['"]/g, '') || '';
+    return cleanType === "نقد";
+  });
+  const creditPurchases = purchases.filter(p => {
+    const cleanType = p.purchaseType?.replace(/['"]/g, '') || '';
+    // البحث عن جميع أشكال "أجل": مع الألف العادية والمد
+    return cleanType === "أجل" || cleanType === "آجل" || cleanType.includes("جل");
+  });
   
   const cashTotals = {
     totalAmount: cashPurchases.reduce((sum, p) => sum + parseFloat(p.totalAmount), 0),

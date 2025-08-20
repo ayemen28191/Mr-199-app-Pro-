@@ -3003,7 +3003,7 @@ export class DatabaseStorage implements IStorage {
         });
         
         // عرض جميع القيم الفريدة لـ purchaseType
-        const uniqueTypes = [...new Set(purchases.map(p => p.purchaseType))];
+        const uniqueTypes = Array.from(new Set(purchases.map(p => p.purchaseType)));
         console.log('🏷️ جميع قيم purchaseType الموجودة:', uniqueTypes);
       }
       
@@ -3046,9 +3046,20 @@ export class DatabaseStorage implements IStorage {
       // حساب الإجماليات
       const totalCashPurchases = cashPurchases.reduce((sum, p) => sum + parseFloat(p.totalAmount || '0'), 0);
       const totalCreditPurchases = creditPurchases.reduce((sum, p) => sum + parseFloat(p.totalAmount || '0'), 0);
-      const totalDebt = totalCashPurchases + totalCreditPurchases;
+      
+      // المديونية = فقط المشتريات الآجلة (ليس النقدية)
+      const totalDebt = totalCreditPurchases;
       const totalPaid = payments.reduce((sum, p) => sum + parseFloat(p.amount || '0'), 0);
       const remainingDebt = totalDebt - totalPaid;
+      
+      console.log('💰 تفاصيل حساب المديونية:', {
+        cashPurchases: totalCashPurchases,
+        creditPurchases: totalCreditPurchases,
+        totalDebt: totalDebt,
+        totalPaid: totalPaid,
+        remainingDebt: remainingDebt,
+        creditPurchasesCount: creditPurchases.length
+      });
       
       // حساب عدد الموردين النشطين (الذين لديهم مشتريات)
       const activeSupplierNames = Array.from(new Set(purchases.map(p => p.supplierName).filter(name => name !== null)));
