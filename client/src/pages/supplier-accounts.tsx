@@ -890,7 +890,7 @@ export default function SupplierAccountsPage() {
                   المديونية
                 </div>
                 <p className="font-bold text-red-600 text-sm">
-                  {formatCurrency(selectedSupplier.totalDebt)}
+                  {selectedSupplierId ? formatCurrency(overallStats.remainingDebt) : formatCurrency(selectedSupplier.totalDebt)}
                 </p>
               </div>
             </div>
