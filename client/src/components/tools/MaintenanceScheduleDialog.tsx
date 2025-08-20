@@ -16,6 +16,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { AutocompleteInput } from "@/components/ui/autocomplete-input-database";
+import { apiRequest } from "@/lib/queryClient";
 
 interface MaintenanceScheduleDialogProps {
   isOpen: boolean;
@@ -95,6 +97,20 @@ export function MaintenanceScheduleDialog({
 }: MaintenanceScheduleDialogProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  
+  // دالة حفظ القيم في autocomplete_data
+  const saveAutocompleteValue = async (category: string, value: string | null | undefined) => {
+    if (!value || typeof value !== 'string' || !value.trim()) return;
+    try {
+      await apiRequest("/api/autocomplete", "POST", { 
+        category, 
+        value: value.trim() 
+      });
+    } catch (error) {
+      // تجاهل الأخطاء لأن هذه عملية مساعدة
+      console.log(`Failed to save autocomplete value for ${category}:`, error);
+    }
+  };
   const [checklistItems, setChecklistItems] = useState<Array<{
     id: string;
     title: string;
@@ -259,7 +275,13 @@ export function MaintenanceScheduleDialog({
     setChecklistItems(items => items.filter(item => item.id !== id));
   };
 
-  const onSubmit = (data: ScheduleForm) => {
+  const onSubmit = async (data: ScheduleForm) => {
+    // حفظ القيم في autocomplete_data قبل الحفظ الأساسي
+    await Promise.all([
+      saveAutocompleteValue('maintenanceTitles', data.title),
+      saveAutocompleteValue('maintenanceDescriptions', data.description)
+    ]);
+    
     saveMutation.mutate(data);
   };
 
@@ -342,10 +364,12 @@ export function MaintenanceScheduleDialog({
 
               <div>
                 <Label htmlFor="title">عنوان جدول الصيانة *</Label>
-                <Input
-                  id="title"
-                  {...form.register("title")}
+                <AutocompleteInput
+                  value={form.watch("title") || ''}
+                  onChange={(value) => form.setValue("title", value)}
                   placeholder="مثال: صيانة دورية للمولد الكهربائي"
+                  category="maintenanceTitles"
+                  className="arabic-numbers"
                 />
                 {form.formState.errors.title && (
                   <p className="text-sm text-red-500">{form.formState.errors.title.message}</p>
@@ -354,10 +378,13 @@ export function MaintenanceScheduleDialog({
 
               <div>
                 <Label htmlFor="description">الوصف</Label>
-                <Textarea
-                  id="description"
-                  {...form.register("description")}
+                <AutocompleteInput
+                  value={form.watch("description") || ''}
+                  onChange={(value) => form.setValue("description", value)}
                   placeholder="وصف تفصيلي لجدول الصيانة..."
+                  category="maintenanceDescriptions"
+                  className="arabic-numbers"
+                  isTextArea={true}
                   rows={3}
                 />
               </div>
