@@ -88,7 +88,7 @@ export default function Dashboard() {
   // متحولات لإضافة العامل والمشروع
   const addWorkerMutation = useMutation({
     mutationFn: async (data: any) => {
-      return apiRequest("POST", "/api/workers", data);
+      return apiRequest("/api/workers", "POST", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/workers"] });
@@ -110,7 +110,7 @@ export default function Dashboard() {
 
   const addProjectMutation = useMutation({
     mutationFn: async (data: any) => {
-      return apiRequest("POST", "/api/projects", data);
+      return apiRequest("/api/projects", "POST", data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
@@ -134,7 +134,7 @@ export default function Dashboard() {
   // إضافة نوع عامل جديد
   const addWorkerTypeMutation = useMutation({
     mutationFn: async (data: { name: string }) => {
-      return apiRequest("POST", "/api/worker-types", data);
+      return apiRequest("/api/worker-types", "POST", data);
     },
     onSuccess: (newType) => {
       toast({
