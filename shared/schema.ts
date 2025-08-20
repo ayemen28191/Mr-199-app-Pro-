@@ -903,6 +903,21 @@ export const systemNotifications = pgTable("system_notifications", {
   scheduledIdx: sql`CREATE INDEX IF NOT EXISTS notifications_scheduled_idx ON ${table} (scheduled_for, status)`,
 }));
 
+// Notification Read States (حالات قراءة الإشعارات)
+// جدول بسيط لحفظ الإشعارات المقروءة - يحل مشكلة اختفاء الحالة عند إعادة تشغيل الخادم
+export const notificationReadStates = pgTable("notification_read_states", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  notificationId: text("notification_id").notNull(), // معرف الإشعار (مثل maintenance-tool-id)
+  userId: varchar("user_id").references(() => users.id), // المستخدم الذي قرأ الإشعار (null للعام)
+  isRead: boolean("is_read").default(true).notNull(), // حالة القراءة
+  readAt: timestamp("read_at").defaultNow().notNull(), // تاريخ القراءة
+  deviceInfo: text("device_info"), // معلومات الجهاز للمراجعة
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  // قيد فريد لمنع تكرار الإدخال لنفس الإشعار والمستخدم
+  uniqueNotificationUser: sql`UNIQUE (notification_id, user_id)`
+}));
+
 // Schema Types and Validators for Tools System
 export const insertToolCategorySchema = createInsertSchema(toolCategories).omit({
   id: true,
@@ -1099,3 +1114,11 @@ export const toolNotifications = pgTable("tool_notifications", {
 export const insertToolNotificationSchema = createInsertSchema(toolNotifications);
 export type InsertToolNotification = z.infer<typeof insertToolNotificationSchema>;
 export type ToolNotification = typeof toolNotifications.$inferSelect;
+
+// Insert schema for notification read states
+export const insertNotificationReadStateSchema = createInsertSchema(notificationReadStates).omit({
+  id: true,
+  createdAt: true,
+});
+export type InsertNotificationReadState = z.infer<typeof insertNotificationReadStateSchema>;
+export type NotificationReadState = typeof notificationReadStates.$inferSelect;

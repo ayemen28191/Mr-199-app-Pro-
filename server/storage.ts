@@ -25,16 +25,20 @@ import {
   type InsertToolPurchaseItem, type InsertMaintenanceSchedule, type InsertMaintenanceTask, type InsertToolCostTracking,
   // System Notifications
   type SystemNotification, type InsertSystemNotification,
+  // Notification Read States
+  type NotificationReadState, type InsertNotificationReadState,
   projects, workers, fundTransfers, workerAttendance, materials, materialPurchases, transportationExpenses, dailyExpenseSummaries,
   workerTransfers, workerBalances, autocompleteData, workerTypes, workerMiscExpenses, users, suppliers, supplierPayments, printSettings, projectFundTransfers, reportTemplates,
   toolCategories, tools, toolStock, toolMovements, toolMaintenanceLogs, toolUsageAnalytics, toolReservations,
   // Phase 3 imports
   toolPurchaseItems, maintenanceSchedules, maintenanceTasks, toolCostTracking,
   // System Notifications
-  systemNotifications
+  systemNotifications,
+  // Notification Read States
+  notificationReadStates
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, gte, lte, gt, sql, inArray, or, desc, asc, isNull, isNotNull, count, sum } from "drizzle-orm";
+import { and, eq, isNull, or, gte, lte, desc, ilike, like, isNotNull, asc, count, sum, ne, max, sql, inArray, gt } from 'drizzle-orm';
 
 export interface IStorage {
   // Projects
@@ -335,6 +339,13 @@ export interface IStorage {
   generateToolQRCode(toolId: string): Promise<string>;
   bulkUpdateToolStatus(toolIds: string[], status: string, userId: string): Promise<void>;
 
+  // Notification Read States
+  getNotificationReadState(notificationId: string, userId?: string): Promise<NotificationReadState | undefined>;
+  markNotificationAsRead(notificationId: string, userId?: string): Promise<NotificationReadState>;
+  markAllNotificationsAsRead(notificationIds: string[], userId?: string): Promise<void>;
+  isNotificationRead(notificationId: string, userId?: string): Promise<boolean>;
+  getReadNotifications(userId?: string): Promise<string[]>;
+
   // System Notifications
   getSystemNotifications(filters?: {
     userId?: string;
@@ -353,6 +364,8 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  // ذاكرة محلية مؤقتة لحالات القراءة
+  private memoryReadStates: Set<string> = new Set();
   // Projects
   async getProjects(): Promise<Project[]> {
     return await db.select().from(projects);
@@ -4839,7 +4852,157 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async markNotificationAsRead(id: string): Promise<void> {
+  // ======================================================
+  // Notification Read States Implementation
+  // ======================================================
+
+  async getNotificationReadState(notificationId: string, userId?: string): Promise<NotificationReadState | undefined> {
+    try {
+      // محاولة إنشاء الجدول أولاً إذا لم يكن موجوداً
+      await this.ensureNotificationReadStatesTable();
+      
+      const conditions = [eq(notificationReadStates.notificationId, notificationId)];
+      if (userId) {
+        conditions.push(eq(notificationReadStates.userId, userId));
+      } else {
+        conditions.push(isNull(notificationReadStates.userId));
+      }
+
+      const result = await db
+        .select()
+        .from(notificationReadStates)
+        .where(and(...conditions))
+        .limit(1);
+
+      return result[0] || undefined;
+    } catch (error) {
+      console.error('Error getting notification read state:', error);
+      return undefined;
+    }
+  }
+
+  async markNotificationAsRead(notificationId: string, userId?: string): Promise<NotificationReadState> {
+    try {
+      // محاولة إنشاء الجدول أولاً إذا لم يكن موجوداً
+      await this.ensureNotificationReadStatesTable();
+      
+      // محاولة إدراج سجل جديد أو تحديث الموجود
+      const readState: InsertNotificationReadState = {
+        notificationId,
+        userId: userId || null,
+        isRead: true,
+        readAt: new Date(),
+        deviceInfo: 'web_browser'
+      };
+
+      const [result] = await db
+        .insert(notificationReadStates)
+        .values(readState)
+        .onConflictDoUpdate({
+          target: [notificationReadStates.notificationId, notificationReadStates.userId],
+          set: {
+            isRead: true,
+            readAt: new Date()
+          }
+        })
+        .returning();
+
+      return result;
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+      // حل احتياطي مؤقت: استخدام ذاكرة محلية
+      this.addToMemoryReadStates(notificationId, userId);
+      
+      // إرجاع كائن مؤقت
+      return {
+        id: `temp-${Date.now()}`,
+        notificationId,
+        userId: userId || null,
+        isRead: true,
+        readAt: new Date(),
+        deviceInfo: 'web_browser',
+        createdAt: new Date()
+      };
+    }
+  }
+
+  // دوال الذاكرة المحلية المؤقتة
+  private addToMemoryReadStates(notificationId: string, userId?: string): void {
+    const key = `${notificationId}:${userId || 'anonymous'}`;
+    this.memoryReadStates.add(key);
+  }
+
+  private isInMemoryReadStates(notificationId: string, userId?: string): boolean {
+    const key = `${notificationId}:${userId || 'anonymous'}`;
+    return this.memoryReadStates.has(key);
+  }
+
+  // دالة مساعدة لضمان وجود الجدول
+  private async ensureNotificationReadStatesTable(): Promise<void> {
+    try {
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS notification_read_states (
+          id varchar PRIMARY KEY DEFAULT gen_random_uuid(),
+          notification_id text NOT NULL,
+          user_id varchar,
+          is_read boolean NOT NULL DEFAULT true,
+          read_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          device_info text,
+          created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(notification_id, user_id)
+        );
+      `);
+    } catch (error) {
+      // تجاهل الخطأ إذا كان الجدول موجوداً
+      console.log('Table creation attempted:', error);
+    }
+  }
+
+  async markAllNotificationsAsRead(notificationIds: string[], userId?: string): Promise<void> {
+    try {
+      for (const notificationId of notificationIds) {
+        await this.markNotificationAsRead(notificationId, userId);
+      }
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+      throw error;
+    }
+  }
+
+  async isNotificationRead(notificationId: string, userId?: string): Promise<boolean> {
+    try {
+      const readState = await this.getNotificationReadState(notificationId, userId);
+      return readState ? readState.isRead : false;
+    } catch (error) {
+      console.error('Error checking notification read state:', error);
+      // التحقق من الذاكرة المحلية كحل احتياطي
+      return this.isInMemoryReadStates(notificationId, userId);
+    }
+  }
+
+  async getReadNotifications(userId?: string): Promise<string[]> {
+    try {
+      const conditions = [eq(notificationReadStates.isRead, true)];
+      if (userId) {
+        conditions.push(eq(notificationReadStates.userId, userId));
+      } else {
+        conditions.push(isNull(notificationReadStates.userId));
+      }
+
+      const results = await db
+        .select({ notificationId: notificationReadStates.notificationId })
+        .from(notificationReadStates)
+        .where(and(...conditions));
+
+      return results.map(r => r.notificationId);
+    } catch (error) {
+      console.error('Error getting read notifications:', error);
+      return [];
+    }
+  }
+
+  // Legacy methods (kept for compatibility)
+  async markNotificationAsReadLegacy(id: string): Promise<void> {
     try {
       await db.update(systemNotifications)
         .set({
@@ -4854,7 +5017,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async markAllNotificationsAsRead(userId?: string): Promise<void> {
+  async markAllNotificationsAsReadLegacy(userId?: string): Promise<void> {
     try {
       let query = db.update(systemNotifications)
         .set({

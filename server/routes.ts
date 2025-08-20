@@ -32,8 +32,7 @@ import {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
-  // Track read notifications in memory (could be moved to database later)
-  const readNotifications = new Set<string>();
+  // تم نقل تتبع الإشعارات المقروءة إلى قاعدة البيانات - حل مشكلة اختفاء الحالة عند إعادة التشغيل
   
   // Fund Transfers (تحويلات العهدة)
   app.get("/api/fund-transfers", async (req, res) => {
@@ -3582,8 +3581,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const tools = await storage.getTools();
       const notifications: any[] = [];
 
-      // فحص الصيانة المتأخرة
-      tools.forEach((tool: any) => {
+      // فحص الصيانة المتأخرة - باستخدام for loop لدعم await
+      for (const tool of tools) {
         if (tool.nextMaintenanceDate) {
           const maintenanceDate = new Date(tool.nextMaintenanceDate);
           const today = new Date();
@@ -3600,12 +3599,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
               toolName: tool.name,
               priority: 'critical',
               createdAt: new Date().toISOString(),
-              status: readNotifications.has(notificationId) ? 'read' : 'unread',
+              status: await storage.isNotificationRead(notificationId) ? 'read' : 'unread',
               actionRequired: true,
             });
           }
         }
-      });
+      }
 
       res.json(notifications);
     } catch (error) {
@@ -3669,8 +3668,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const tools = await storage.getTools();
       const notifications: any[] = [];
 
-      // فحص الصيانة المتأخرة
-      tools.forEach((tool: any) => {
+      // فحص الصيانة المتأخرة - باستخدام for loop لدعم await
+      for (const tool of tools) {
         if (tool.nextMaintenanceDate) {
           const maintenanceDate = new Date(tool.nextMaintenanceDate);
           const today = new Date();
@@ -3687,7 +3686,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               toolName: tool.name,
               priority: 'critical',
               timestamp: new Date().toISOString(),
-              isRead: readNotifications.has(notificationId),
+              isRead: await storage.isNotificationRead(notificationId),
               actionRequired: true,
             });
           } else if (daysDiff <= 3) {
@@ -3701,7 +3700,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               toolName: tool.name,
               priority: 'high',
               timestamp: new Date().toISOString(),
-              isRead: readNotifications.has(notificationId),
+              isRead: await storage.isNotificationRead(notificationId),
               actionRequired: true,
             });
           }
@@ -3724,7 +3723,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               toolName: tool.name,
               priority: 'medium',
               timestamp: new Date().toISOString(),
-              isRead: readNotifications.has(notificationId),
+              isRead: await storage.isNotificationRead(notificationId),
               actionRequired: false,
             });
           } else if (daysDiff <= 0) {
@@ -3738,7 +3737,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               toolName: tool.name,
               priority: 'low',
               timestamp: new Date().toISOString(),
-              isRead: readNotifications.has(notificationId),
+              isRead: await storage.isNotificationRead(notificationId),
               actionRequired: false,
             });
           }
@@ -3756,11 +3755,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             toolName: tool.name,
             priority: 'high',
             timestamp: new Date().toISOString(),
-            isRead: readNotifications.has(notificationId),
+            isRead: await storage.isNotificationRead(notificationId),
             actionRequired: true,
           });
         }
-      });
+      }
 
       res.json(notifications);
     } catch (error) {
@@ -3774,12 +3773,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/notifications/:id/mark-read", async (req, res) => {
     try {
       const { id } = req.params;
-      readNotifications.add(id);
-      console.log(`✅ تم تحديد الإشعار ${id} كمقروء - إجمالي الإشعارات المقروءة: ${readNotifications.size}`);
+      const { userId } = req.body; // إمكانية تخصيص المستخدم
+      
+      // استخدام قاعدة البيانات بدلاً من الذاكرة
+      const readState = await storage.markNotificationAsRead(id, userId);
+      
+      console.log(`✅ تم حفظ الإشعار ${id} كمقروء في قاعدة البيانات`);
       res.json({ 
         success: true, 
         message: "تم تحديد الإشعار كمقروء",
-        notificationId: id 
+        notificationId: id,
+        readState
       });
     } catch (error) {
       console.error("Error marking notification as read:", error);
@@ -3789,46 +3793,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/notifications/mark-all-read", async (req, res) => {
     try {
-      // Get all current notifications and mark them as read
+      const { userId } = req.body; // إمكانية تخصيص المستخدم
+      
+      // الحصول على جميع معرفات الإشعارات الحالية
       const tools = await storage.getTools();
-      const notifications: any[] = [];
+      const notificationIds: string[] = [];
 
-      // فحص الصيانة المتأخرة وإضافة IDs للمجموعة
-      tools.forEach((tool: any) => {
+      // فحص الصيانة المتأخرة وجمع معرفات الإشعارات
+      for (const tool of tools) {
         if (tool.nextMaintenanceDate) {
           const maintenanceDate = new Date(tool.nextMaintenanceDate);
           const today = new Date();
           const daysDiff = Math.ceil((maintenanceDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
           
           if (daysDiff < 0) {
-            readNotifications.add(`maintenance-${tool.id}`);
+            notificationIds.push(`maintenance-${tool.id}`);
           } else if (daysDiff <= 3) {
-            readNotifications.add(`maintenance-soon-${tool.id}`);
+            notificationIds.push(`maintenance-soon-${tool.id}`);
           }
         }
 
         // فحص انتهاء الضمان
-        if (tool.warrantyExpiry) {
-          const warrantyDate = new Date(tool.warrantyExpiry);
+        if (tool.warrantyEndDate) {
+          const warrantyDate = new Date(tool.warrantyEndDate);
           const today = new Date();
           const daysDiff = Math.ceil((warrantyDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
           
           if (daysDiff <= 30 && daysDiff > 0) {
-            readNotifications.add(`warranty-${tool.id}`);
+            notificationIds.push(`warranty-${tool.id}`);
           } else if (daysDiff <= 0) {
-            readNotifications.add(`warranty-expired-${tool.id}`);
+            notificationIds.push(`warranty-expired-${tool.id}`);
           }
         }
-      });
 
+        // فحص الأدوات المعطلة
+        if (tool.status === 'damaged') {
+          notificationIds.push(`damaged-${tool.id}`);
+        }
+      }
+
+      // تحديد جميع الإشعارات كمقروءة في قاعدة البيانات
+      await storage.markAllNotificationsAsRead(notificationIds, userId);
+
+      console.log(`✅ تم حفظ ${notificationIds.length} إشعار كمقروء في قاعدة البيانات`);
       res.json({ 
         success: true, 
         message: "تم تحديد جميع الإشعارات كمقروءة",
-        markedCount: readNotifications.size
+        markedCount: notificationIds.length
       });
     } catch (error) {
       console.error("Error marking all notifications as read:", error);
       res.status(500).json({ message: "خطأ في تحديد الإشعارات كمقروءة" });
+    }
+  });
+
+  // Additional notification status endpoints
+  app.get("/api/notifications/:id/read-status", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { userId } = req.query;
+      
+      const isRead = await storage.isNotificationRead(id, userId as string);
+      const readState = await storage.getNotificationReadState(id, userId as string);
+      
+      res.json({ 
+        notificationId: id,
+        isRead,
+        readState 
+      });
+    } catch (error) {
+      console.error("Error checking notification read status:", error);
+      res.status(500).json({ message: "خطأ في فحص حالة الإشعار" });
+    }
+  });
+
+  app.get("/api/notifications/read-list", async (req, res) => {
+    try {
+      const { userId } = req.query;
+      
+      const readNotificationIds = await storage.getReadNotifications(userId as string);
+      
+      res.json({ 
+        readNotifications: readNotificationIds,
+        count: readNotificationIds.length
+      });
+    } catch (error) {
+      console.error("Error fetching read notifications list:", error);
+      res.status(500).json({ message: "خطأ في جلب قائمة الإشعارات المقروءة" });
     }
   });
 
