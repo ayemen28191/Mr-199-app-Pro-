@@ -1,3 +1,12 @@
+/**
+ * الوصف: طبقة الوصول للبيانات - إدارة جميع عمليات قاعدة البيانات
+ * المدخلات: طلبات CRUD للبيانات
+ * المخرجات: كائنات البيانات والاستعلامات المحسّنة
+ * المالك: عمار
+ * آخر تعديل: 2025-08-20
+ * الحالة: نشط - نظام إدارة البيانات الأساسي
+ */
+
 import { 
   type Project, type Worker, type FundTransfer, type WorkerAttendance, 
   type Material, type MaterialPurchase, type TransportationExpense, type DailyExpenseSummary,
@@ -3491,7 +3500,7 @@ export class DatabaseStorage implements IStorage {
       }
       
       if (conditions.length > 0) {
-        queryBuilder = queryBuilder.where(and(...conditions));
+        queryBuilder = queryBuilder.where(and(...conditions)) as any;
       }
       
       const movements = await queryBuilder.orderBy(desc(toolMovements.performedAt));
@@ -3539,7 +3548,7 @@ export class DatabaseStorage implements IStorage {
         notes: movement.notes || null,
         referenceNumber: movement.referenceNumber || `MOV_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
         performedBy: movement.performedBy,
-        performedAt: movement.performedAt || new Date(),
+        // performedAt سيتم تعيينه تلقائياً من قاعدة البيانات
       };
       
       console.log('📝 البيانات المعدة للإدراج:', dataToInsert);
@@ -4494,13 +4503,13 @@ export class DatabaseStorage implements IStorage {
       }
 
       if (conditions.length > 0) {
-        query = query.where(and(...conditions));
+        query = query.where(and(...conditions)) as any;
       }
 
-      query = query.orderBy(desc(systemNotifications.createdAt));
+      query = query.orderBy(desc(systemNotifications.createdAt)) as any;
 
       if (filters.limit) {
-        query = query.limit(filters.limit);
+        query = query.limit(filters.limit) as any;
       }
 
       return await query;
@@ -4594,9 +4603,9 @@ export class DatabaseStorage implements IStorage {
         });
 
       if (userId) {
-        query = query.where(eq(systemNotifications.userId, userId));
+        await query.where(eq(systemNotifications.userId, userId));
       } else {
-        query = query.where(eq(systemNotifications.status, 'unread'));
+        await query.where(eq(systemNotifications.status, 'unread'));
       }
 
       await query;
@@ -4624,8 +4633,7 @@ export class DatabaseStorage implements IStorage {
               message: `الأداة "${tool.name}" تحتاج صيانة خلال ${daysDiff} أيام`,
               type: 'maintenance',
               priority: daysDiff === 0 ? 'high' : daysDiff <= 1 ? 'medium' : 'low',
-              entityType: 'tool',
-              entityId: tool.id,
+              category: 'maintenance',
               metadata: {
                 toolName: tool.name,
                 maintenanceDate: tool.nextMaintenanceDate,
@@ -4647,8 +4655,7 @@ export class DatabaseStorage implements IStorage {
               message: `ضمان الأداة "${tool.name}" سينتهي خلال ${daysDiff} يوم`,
               type: 'warranty',
               priority: daysDiff <= 7 ? 'high' : daysDiff <= 15 ? 'medium' : 'low',
-              entityType: 'tool',
-              entityId: tool.id,
+              category: 'warranty',
               metadata: {
                 toolName: tool.name,
                 warrantyExpiry: tool.warrantyExpiry,
@@ -4666,8 +4673,7 @@ export class DatabaseStorage implements IStorage {
             message: `الأداة "${tool.name}" في حالة ${tool.status === 'damaged' ? 'تالفة' : 'سيئة'}`,
             type: 'damage',
             priority: 'high',
-            entityType: 'tool',
-            entityId: tool.id,
+            category: 'damage',
             metadata: {
               toolName: tool.name,
               status: tool.status,
@@ -4677,9 +4683,9 @@ export class DatabaseStorage implements IStorage {
           notifications.push(notification);
         }
 
-        // إشعارات عدم الاستخدام
-        if (tool.lastUsed) {
-          const lastUsedDate = new Date(tool.lastUsed);
+        // إشعارات عدم الاستخدام - تحقق من وجود الحقل أولاً
+        if (tool.updatedAt) {
+          const lastUsedDate = new Date(tool.updatedAt);
           const daysSinceUsed = Math.ceil((today.getTime() - lastUsedDate.getTime()) / (1000 * 60 * 60 * 24));
           
           if (daysSinceUsed > 90) {
@@ -4688,11 +4694,10 @@ export class DatabaseStorage implements IStorage {
               message: `الأداة "${tool.name}" لم تُستخدم لمدة ${daysSinceUsed} يوم`,
               type: 'usage',
               priority: 'low',
-              entityType: 'tool',
-              entityId: tool.id,
+              category: 'usage',
               metadata: {
                 toolName: tool.name,
-                lastUsed: tool.lastUsed,
+                lastUsed: tool.updatedAt,
                 daysSinceUsed
               }
             });
@@ -4739,17 +4744,17 @@ export class DatabaseStorage implements IStorage {
       let updatedCount = 0;
       
       for (const movement of lastMovements.rows) {
-        const newProjectId = movement.to_type === 'project' ? movement.to_id : null;
+        const newProjectId = movement.to_type === 'project' ? (movement.to_id as string) : null;
         
         // تحديث الأداة إذا كان موقعها مختلف
-        if (movement.current_project_id !== newProjectId) {
+        if ((movement.current_project_id as string) !== newProjectId) {
           await db
             .update(tools)
             .set({ 
               projectId: newProjectId,
               updatedAt: sql`CURRENT_TIMESTAMP`
             })
-            .where(eq(tools.id, movement.tool_id));
+            .where(eq(tools.id, movement.tool_id as string));
           
           console.log(`✅ تم تحديث أداة "${movement.tool_name}" إلى المشروع: ${newProjectId || 'المستودع'}`);
           updatedCount++;

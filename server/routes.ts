@@ -1,3 +1,12 @@
+/**
+ * الوصف: نظام API الرئيسي للخادم - إدارة جميع المسارات والعمليات
+ * المدخلات: طلبات HTTP من العميل
+ * المخرجات: استجابات JSON مع البيانات المطلوبة
+ * المالك: عمار
+ * آخر تعديل: 2025-08-20
+ * الحالة: نشط - النظام الأساسي للتطبيق
+ */
+
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";

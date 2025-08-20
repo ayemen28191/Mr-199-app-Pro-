@@ -1,3 +1,12 @@
+/**
+ * الوصف: صفحة إدارة حسابات العمال والحوالات المالية
+ * المدخلات: بيانات العمال والحوالات المالية
+ * المخرجات: عرض أرصدة العمال وإدارة الحوالات
+ * المالك: عمار
+ * آخر تعديل: 2025-08-20
+ * الحالة: نشط - إدارة مالية العمال
+ */
+
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'wouter';

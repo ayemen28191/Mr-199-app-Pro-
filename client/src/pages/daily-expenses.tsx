@@ -1,3 +1,12 @@
+/**
+ * الوصف: صفحة إدارة المصاريف اليومية والتحويلات المالية
+ * المدخلات: تاريخ محدد ومعرف المشروع
+ * المخرجات: عرض وإدارة جميع المصاريف والتحويلات اليومية
+ * المالك: عمار
+ * آخر تعديل: 2025-08-20
+ * الحالة: نشط - الصفحة الأساسية لإدارة المصاريف
+ */
+
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
