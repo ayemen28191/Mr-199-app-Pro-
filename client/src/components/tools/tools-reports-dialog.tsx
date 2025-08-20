@@ -207,69 +207,98 @@ const ToolsReportsDialog: React.FC<ToolsReportsDialogProps> = ({
         </DialogHeader>
 
         {/* Filters - Mobile Responsive */}
-        <div className="flex flex-col gap-3 p-3 sm:p-4 bg-muted/30 rounded-lg sm:grid sm:grid-cols-3">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              <span className="text-sm font-medium">الفترة:</span>
+        <div className="bg-muted/30 rounded-lg p-3 sm:p-4 space-y-3">
+          {/* Mobile: Stack all filters */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <Calendar className="h-4 w-4" />
+                <span>الفترة</span>
+              </div>
+              <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+                <SelectTrigger className="w-full h-10">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="7">آخر 7 أيام</SelectItem>
+                  <SelectItem value="30">آخر 30 يوم</SelectItem>
+                  <SelectItem value="90">آخر 3 أشهر</SelectItem>
+                  <SelectItem value="365">آخر سنة</SelectItem>
+                  <SelectItem value="all">جميع الفترات</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-              <SelectTrigger className="w-full sm:w-36">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="7">آخر 7 أيام</SelectItem>
-                <SelectItem value="30">آخر 30 يوم</SelectItem>
-                <SelectItem value="90">آخر 3 أشهر</SelectItem>
-                <SelectItem value="365">آخر سنة</SelectItem>
-                <SelectItem value="all">جميع الفترات</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
 
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4" />
-              <span className="text-sm font-medium">التصنيف:</span>
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <Filter className="h-4 w-4" />
+                <span>التصنيف</span>
+              </div>
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger className="w-full h-10">
+                  <SelectValue placeholder="اختر تصنيف" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">جميع التصنيفات</SelectItem>
+                  {categoriesStats.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger className="w-full sm:w-36">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">جميع التصنيفات</SelectItem>
-                {categoriesStats.map((category) => (
-                  <SelectItem key={category.id} value={category.id}>
-                    {category.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
 
-          <Button variant="outline" size="sm" className="w-full sm:w-auto sm:mr-auto">
-            <RefreshCw className="h-4 w-4 ml-1" />
-            تحديث
-          </Button>
+            <div className="space-y-2 sm:col-span-2 lg:col-span-1">
+              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <RefreshCw className="h-4 w-4" />
+                <span>إجراءات</span>
+              </div>
+              <Button variant="outline" size="sm" className="w-full h-10">
+                <RefreshCw className="h-4 w-4 ml-1" />
+                تحديث البيانات
+              </Button>
+            </div>
+          </div>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 bg-muted/30 p-1 rounded-lg mb-4 sm:mb-6 h-auto">
-            <TabsTrigger value="overview" className="text-xs sm:text-sm font-medium py-3 px-2 flex-col gap-1 lg:flex-row lg:gap-2" data-testid="tab-overview">
-              <BarChart3 className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="text-[10px] sm:text-xs lg:text-sm">نظرة عامة</span>
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 bg-muted/30 p-1 rounded-lg mb-4 sm:mb-6 h-auto">
+            <TabsTrigger 
+              value="overview" 
+              className="flex items-center justify-center gap-2 text-xs sm:text-sm font-medium py-3 px-3 min-h-[44px]" 
+              data-testid="tab-overview"
+            >
+              <BarChart3 className="h-4 w-4" />
+              <span className="hidden sm:inline">نظرة عامة</span>
+              <span className="sm:hidden">عامة</span>
             </TabsTrigger>
-            <TabsTrigger value="usage" className="text-xs sm:text-sm font-medium py-3 px-2 flex-col gap-1 lg:flex-row lg:gap-2" data-testid="tab-usage">
-              <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="text-[10px] sm:text-xs lg:text-sm">الاستخدام</span>
+            <TabsTrigger 
+              value="usage" 
+              className="flex items-center justify-center gap-2 text-xs sm:text-sm font-medium py-3 px-3 min-h-[44px]" 
+              data-testid="tab-usage"
+            >
+              <TrendingUp className="h-4 w-4" />
+              <span className="hidden sm:inline">الاستخدام</span>
+              <span className="sm:hidden">استخدام</span>
             </TabsTrigger>
-            <TabsTrigger value="maintenance" className="text-xs sm:text-sm font-medium py-3 px-2 flex-col gap-1 lg:flex-row lg:gap-2 col-span-2 lg:col-span-1" data-testid="tab-maintenance">
-              <Wrench className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="text-[10px] sm:text-xs lg:text-sm">الصيانة</span>
+            <TabsTrigger 
+              value="maintenance" 
+              className="flex items-center justify-center gap-2 text-xs sm:text-sm font-medium py-3 px-3 min-h-[44px]" 
+              data-testid="tab-maintenance"
+            >
+              <Wrench className="h-4 w-4" />
+              <span className="hidden sm:inline">الصيانة</span>
+              <span className="sm:hidden">صيانة</span>
             </TabsTrigger>
-            <TabsTrigger value="categories" className="text-xs sm:text-sm font-medium py-3 px-2 flex-col gap-1 lg:flex-row lg:gap-2 col-span-2 lg:col-span-1" data-testid="tab-categories">
-              <Package className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="text-[10px] sm:text-xs lg:text-sm">التصنيفات</span>
+            <TabsTrigger 
+              value="categories" 
+              className="flex items-center justify-center gap-2 text-xs sm:text-sm font-medium py-3 px-3 min-h-[44px]" 
+              data-testid="tab-categories"
+            >
+              <Package className="h-4 w-4" />
+              <span className="hidden sm:inline">التصنيفات</span>
+              <span className="sm:hidden">تصنيفات</span>
             </TabsTrigger>
           </TabsList>
 
@@ -724,32 +753,32 @@ const ToolsReportsDialog: React.FC<ToolsReportsDialogProps> = ({
                           <div>
                             <h4 className="font-semibold text-base sm:text-lg mb-3 sm:mb-4">{category.name}</h4>
                             
-                            {/* Mobile Layout - 2 columns */}
+                            {/* Mobile Layout - Improved 2x2 grid */}
                             <div className="grid grid-cols-2 gap-3 sm:hidden">
-                              <div className="text-center p-3 bg-muted/30 rounded-lg">
-                                <p className="text-lg font-bold text-primary">{category.toolCount}</p>
-                                <p className="text-xs text-muted-foreground">عدد الأدوات</p>
+                              <div className="text-center p-3 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                                <p className="text-xl font-bold text-blue-600 dark:text-blue-400">{category.toolCount}</p>
+                                <p className="text-xs text-blue-600/70 dark:text-blue-400/70 mt-1">عدد الأدوات</p>
                               </div>
-                              <div className="text-center p-3 bg-muted/30 rounded-lg">
-                                <p className="text-lg font-bold text-green-600">
-                                  {category.totalValue ? Math.round(category.totalValue/1000) + 'ك' : 0}
+                              <div className="text-center p-3 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800">
+                                <p className="text-lg font-bold text-green-600 dark:text-green-400">
+                                  {category.totalValue ? (category.totalValue >= 1000 ? Math.round(category.totalValue/1000) + 'ك' : category.totalValue.toLocaleString('en-US')) : '0'}
                                 </p>
-                                <p className="text-xs text-muted-foreground">القيمة (ألف ر.ي)</p>
+                                <p className="text-xs text-green-600/70 dark:text-green-400/70 mt-1">القيمة (ر.ي)</p>
                               </div>
-                              <div className="text-center p-3 bg-muted/30 rounded-lg">
+                              <div className="text-center p-3 bg-orange-50 dark:bg-orange-950/20 rounded-lg border border-orange-200 dark:border-orange-800">
                                 <p className={`text-sm font-bold ${getConditionColor(category.averageCondition)}`}>
                                   {category.averageCondition === 'excellent' ? 'ممتاز' :
                                    category.averageCondition === 'good' ? 'جيد' :
                                    category.averageCondition === 'fair' ? 'مقبول' :
                                    category.averageCondition === 'poor' ? 'ضعيف' : 'معطل'}
                                 </p>
-                                <p className="text-xs text-muted-foreground">متوسط الحالة</p>
+                                <p className="text-xs text-orange-600/70 dark:text-orange-400/70 mt-1">متوسط الحالة</p>
                               </div>
-                              <div className="text-center p-3 bg-muted/30 rounded-lg">
-                                <p className="text-xs font-bold text-muted-foreground truncate" title={category.mostUsedTool || 'غير محدد'}>
-                                  {category.mostUsedTool || 'غير محدد'}
+                              <div className="text-center p-3 bg-purple-50 dark:bg-purple-950/20 rounded-lg border border-purple-200 dark:border-purple-800">
+                                <p className="text-xs font-bold text-purple-600 dark:text-purple-400 truncate" title={category.mostUsedTool || 'لا يوجد'}>
+                                  {category.mostUsedTool || 'لا يوجد'}
                                 </p>
-                                <p className="text-xs text-muted-foreground">الأكثر استخداماً</p>
+                                <p className="text-xs text-purple-600/70 dark:text-purple-400/70 mt-1">الأكثر استخداماً</p>
                               </div>
                             </div>
                             
