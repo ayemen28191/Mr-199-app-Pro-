@@ -272,7 +272,7 @@ const PredictiveMaintenanceSystem: React.FC<PredictiveMaintenanceSystemProps> = 
     <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm">
       <div className="fixed inset-4 z-50 overflow-auto bg-background border rounded-lg shadow-lg">
         <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
             <div>
               <h2 className="text-2xl font-bold flex items-center gap-2">
                 <Brain className="h-7 w-7 text-blue-600" />
@@ -282,38 +282,40 @@ const PredictiveMaintenanceSystem: React.FC<PredictiveMaintenanceSystemProps> = 
                 توقعات مدعومة بالذكاء الاصطناعي لصيانة الأدوات
               </p>
             </div>
-            <div className="flex items-center gap-4">
-              <Select value={selectedUrgency} onValueChange={setSelectedUrgency}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="مستوى الأولوية" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">جميع المستويات</SelectItem>
-                  <SelectItem value="critical">حرج</SelectItem>
-                  <SelectItem value="high">عالي</SelectItem>
-                  <SelectItem value="medium">متوسط</SelectItem>
-                  <SelectItem value="low">منخفض</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={selectedTimeframe} onValueChange={setSelectedTimeframe}>
-                <SelectTrigger className="w-40">
-                  <SelectValue placeholder="الإطار الزمني" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">جميع الأوقات</SelectItem>
-                  <SelectItem value="7">خلال أسبوع</SelectItem>
-                  <SelectItem value="30">خلال شهر</SelectItem>
-                  <SelectItem value="90">خلال 3 أشهر</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <Select value={selectedUrgency} onValueChange={setSelectedUrgency}>
+                  <SelectTrigger className="w-full sm:w-40">
+                    <SelectValue placeholder="مستوى الأولوية" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">جميع المستويات</SelectItem>
+                    <SelectItem value="critical">حرج</SelectItem>
+                    <SelectItem value="high">عالي</SelectItem>
+                    <SelectItem value="medium">متوسط</SelectItem>
+                    <SelectItem value="low">منخفض</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={selectedTimeframe} onValueChange={setSelectedTimeframe}>
+                  <SelectTrigger className="w-full sm:w-40">
+                    <SelectValue placeholder="الإطار الزمني" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">جميع الأوقات</SelectItem>
+                    <SelectItem value="7">خلال أسبوع</SelectItem>
+                    <SelectItem value="30">خلال شهر</SelectItem>
+                    <SelectItem value="90">خلال 3 أشهر</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
                 إغلاق
               </Button>
             </div>
           </div>
 
           {/* Summary Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <Card>
               <CardContent className="p-4 text-center">
                 <div className="text-2xl font-bold text-red-600">{predictions.filter(p => p.urgencyLevel === 'critical').length}</div>
@@ -360,14 +362,14 @@ const PredictiveMaintenanceSystem: React.FC<PredictiveMaintenanceSystemProps> = 
                                   prediction.urgencyLevel === 'medium' ? '#d97706' : '#16a34a'
                 }}>
                   <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg">{prediction.toolName}</CardTitle>
-                      <div className="flex items-center gap-2">
-                        <Badge className={cn("border", getUrgencyColor(prediction.urgencyLevel))}>
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                      <CardTitle className="text-lg break-words">{prediction.toolName}</CardTitle>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge className={cn("border whitespace-nowrap", getUrgencyColor(prediction.urgencyLevel))}>
                           {getUrgencyIcon(prediction.urgencyLevel)}
                           <span className="mr-1">{getUrgencyText(prediction.urgencyLevel)}</span>
                         </Badge>
-                        <Badge variant="outline">
+                        <Badge variant="outline" className="whitespace-nowrap">
                           <TrendingUp className="h-3 w-3 ml-1" />
                           {prediction.confidence}% دقة
                         </Badge>
@@ -375,7 +377,7 @@ const PredictiveMaintenanceSystem: React.FC<PredictiveMaintenanceSystemProps> = 
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                       {/* Prediction Details */}
                       <div className="space-y-3">
                         <div className="flex items-center gap-2">
@@ -429,16 +431,16 @@ const PredictiveMaintenanceSystem: React.FC<PredictiveMaintenanceSystemProps> = 
                       </div>
                     </div>
 
-                    {/* Action Buttons */}
-                    <div className="flex gap-2 mt-4">
-                      <Button size="sm" variant="outline">
+                    {/* Action Buttons - Responsive Layout */}
+                    <div className="flex flex-col sm:flex-row gap-2 mt-4">
+                      <Button size="sm" variant="outline" className="w-full sm:w-auto">
                         جدولة صيانة
                       </Button>
-                      <Button size="sm" variant="outline">
+                      <Button size="sm" variant="outline" className="w-full sm:w-auto">
                         عرض تفاصيل الأداة
                       </Button>
                       {prediction.urgencyLevel === 'critical' && (
-                        <Button size="sm" className="bg-red-600 hover:bg-red-700">
+                        <Button size="sm" className="bg-red-600 hover:bg-red-700 w-full sm:w-auto">
                           إجراء فوري
                         </Button>
                       )}
