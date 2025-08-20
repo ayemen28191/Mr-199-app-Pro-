@@ -162,7 +162,7 @@ const ToolsNotificationSystem: React.FC = () => {
         </Button>
       </DialogTrigger>
 
-      <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-hidden" dir="rtl">
+      <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
             <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -283,7 +283,7 @@ const ToolsNotificationSystem: React.FC = () => {
           </div>
 
           {/* Notifications List */}
-          <div className="flex-1 overflow-y-auto space-y-3">
+          <div className="flex-1 space-y-3 pb-4">
             {filteredNotifications.length === 0 ? (
               <div className="text-center py-8">
                 <Bell className="h-12 w-12 text-gray-300 mx-auto mb-4" />
