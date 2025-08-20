@@ -249,6 +249,61 @@ const ToolMovementsDialog: React.FC<ToolMovementsDialogProps> = ({
     return iconMap[type] || Move;
   };
 
+  // Get movement color theme
+  const getMovementTheme = (type: string) => {
+    const themeMap: { [key: string]: { border: string; bg: string; text: string; icon: string } } = {
+      'check_in': { 
+        border: 'border-l-green-500', 
+        bg: 'bg-green-50 dark:bg-green-900/20', 
+        text: 'text-green-700 dark:text-green-300',
+        icon: 'text-green-600'
+      },
+      'check_out': { 
+        border: 'border-l-blue-500', 
+        bg: 'bg-blue-50 dark:bg-blue-900/20', 
+        text: 'text-blue-700 dark:text-blue-300',
+        icon: 'text-blue-600'
+      },
+      'transfer': { 
+        border: 'border-l-purple-500', 
+        bg: 'bg-purple-50 dark:bg-purple-900/20', 
+        text: 'text-purple-700 dark:text-purple-300',
+        icon: 'text-purple-600'
+      },
+      'maintenance': { 
+        border: 'border-l-orange-500', 
+        bg: 'bg-orange-50 dark:bg-orange-900/20', 
+        text: 'text-orange-700 dark:text-orange-300',
+        icon: 'text-orange-600'
+      },
+      'return': { 
+        border: 'border-l-cyan-500', 
+        bg: 'bg-cyan-50 dark:bg-cyan-900/20', 
+        text: 'text-cyan-700 dark:text-cyan-300',
+        icon: 'text-cyan-600'
+      },
+      'repair': { 
+        border: 'border-l-red-500', 
+        bg: 'bg-red-50 dark:bg-red-900/20', 
+        text: 'text-red-700 dark:text-red-300',
+        icon: 'text-red-600'
+      },
+      'inspection': { 
+        border: 'border-l-indigo-500', 
+        bg: 'bg-indigo-50 dark:bg-indigo-900/20', 
+        text: 'text-indigo-700 dark:text-indigo-300',
+        icon: 'text-indigo-600'
+      },
+      'dispose': { 
+        border: 'border-l-gray-500', 
+        bg: 'bg-gray-50 dark:bg-gray-900/20', 
+        text: 'text-gray-700 dark:text-gray-300',
+        icon: 'text-gray-600'
+      },
+    };
+    return themeMap[type] || themeMap['transfer'];
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full" dir="rtl">
@@ -307,86 +362,96 @@ const ToolMovementsDialog: React.FC<ToolMovementsDialogProps> = ({
                 </CardContent>
               </Card>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {movements.map((movement) => {
                   const MovementIcon = getMovementIcon(movement.movementType);
                   const fromProject = projects.find(p => p.id === movement.fromProjectId);
                   const toProject = projects.find(p => p.id === movement.toProjectId);
+                  const theme = getMovementTheme(movement.movementType);
                   
                   return (
-                    <Card key={movement.id}>
-                      <CardContent className="p-4">
-                        <div className="flex items-start justify-between">
+                    <Card key={movement.id} className={`${theme.border} border-l-4 hover:shadow-md transition-shadow`}>
+                      <CardContent className={`p-3 sm:p-4 ${theme.bg}`}>
+                        <div className="flex flex-col sm:flex-row gap-3">
+                          {/* رأس البطاقة - المعلومات الأساسية */}
                           <div className="flex items-start gap-3 flex-1">
-                            <div className="bg-primary/10 p-2 rounded-lg">
-                              <MovementIcon className="h-5 w-5 text-primary" />
+                            <div className={`p-2 rounded-lg ${theme.bg} border`}>
+                              <MovementIcon className={`h-4 w-4 sm:h-5 sm:w-5 ${theme.icon}`} />
                             </div>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <Badge variant="outline">
+                            
+                            <div className="flex-1 min-w-0">
+                              {/* العنوان الرئيسي */}
+                              <div className="flex flex-wrap items-center gap-2 mb-2">
+                                <Badge variant="outline" className={`${theme.text} border-current text-xs font-semibold`}>
                                   {formatMovementType(movement.movementType)}
                                 </Badge>
-                                <span className="text-sm text-muted-foreground">
-                                  الكمية: {movement.quantity}
-                                </span>
-                              </div>
-                              
-                              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                                <MapPin className="h-4 w-4" />
-                                {movement.fromLocation && (
-                                  <span>من: {movement.fromLocation}</span>
-                                )}
-                                {movement.fromLocation && movement.toLocation && (
-                                  <ArrowRight className="h-4 w-4" />
-                                )}
-                                {movement.toLocation && (
-                                  <span>إلى: {movement.toLocation}</span>
-                                )}
+                                <div className="flex items-center gap-1 text-xs font-medium text-gray-600 dark:text-gray-300">
+                                  <Package className="h-3 w-3" />
+                                  <span>الكمية: {movement.quantity}</span>
+                                </div>
                               </div>
 
-                              {(fromProject || toProject) && (
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-                                  <Package className="h-4 w-4" />
-                                  {fromProject && (
-                                    <span>من مشروع: {fromProject.name}</span>
-                                  )}
-                                  {fromProject && toProject && (
-                                    <ArrowRight className="h-4 w-4" />
-                                  )}
-                                  {toProject && (
-                                    <span>إلى مشروع: {toProject.name}</span>
-                                  )}
-                                </div>
-                              )}
+                              {/* المعلومات المفصلة في شبكة */}
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs">
+                                {/* الموقع */}
+                                {(movement.fromLocation || movement.toLocation) && (
+                                  <div className="flex items-center gap-1.5 text-gray-600 dark:text-gray-300">
+                                    <MapPin className="h-3 w-3 text-gray-500" />
+                                    <span className="truncate">
+                                      {movement.fromLocation && movement.toLocation 
+                                        ? `${movement.fromLocation} ← ${movement.toLocation}`
+                                        : movement.toLocation || movement.fromLocation
+                                      }
+                                    </span>
+                                  </div>
+                                )}
 
-                              {movement.reason && (
-                                <div className="flex items-start gap-2 text-sm text-muted-foreground mb-2">
-                                  <FileText className="h-4 w-4 mt-0.5" />
-                                  <span>السبب: {movement.reason}</span>
-                                </div>
-                              )}
+                                {/* المشروع */}
+                                {(fromProject || toProject) && (
+                                  <div className="flex items-center gap-1.5 text-gray-600 dark:text-gray-300">
+                                    <Package className="h-3 w-3 text-gray-500" />
+                                    <span className="truncate">
+                                      {fromProject && toProject 
+                                        ? `${fromProject.name} ← ${toProject.name}`
+                                        : (toProject?.name || fromProject?.name)
+                                      }
+                                    </span>
+                                  </div>
+                                )}
 
-                              {movement.performedBy && (
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                  <User className="h-4 w-4" />
-                                  <span>بواسطة: {movement.performedBy}</span>
-                                </div>
-                              )}
+                                {/* المسؤول */}
+                                {movement.performedBy && (
+                                  <div className="flex items-center gap-1.5 text-gray-600 dark:text-gray-300">
+                                    <User className="h-3 w-3 text-gray-500" />
+                                    <span className="truncate">بواسطة: {movement.performedBy}</span>
+                                  </div>
+                                )}
 
+                                {/* السبب */}
+                                {movement.reason && (
+                                  <div className="flex items-center gap-1.5 text-gray-600 dark:text-gray-300">
+                                    <FileText className="h-3 w-3 text-gray-500" />
+                                    <span className="truncate">السبب: {movement.reason}</span>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* الملاحظات الإضافية */}
                               {movement.notes && (
-                                <div className="mt-2 p-2 bg-muted rounded text-sm">
-                                  {movement.notes}
+                                <div className="mt-2 p-2 bg-white/50 dark:bg-black/20 rounded text-xs border border-gray-200 dark:border-gray-700">
+                                  <span className="text-gray-700 dark:text-gray-300">{movement.notes}</span>
                                 </div>
                               )}
                             </div>
                           </div>
                           
-                          <div className="text-left">
-                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          {/* التوقيت - يظهر على اليمين في الحاسوب وأسفل في الهاتف */}
+                          <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-2 text-xs">
+                            <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
                               <Clock className="h-3 w-3" />
-                              {new Date(movement.createdAt).toLocaleDateString('en-GB')}
+                              <span>{new Date(movement.createdAt).toLocaleDateString('en-GB')}</span>
                             </div>
-                            <div className="text-xs text-muted-foreground mt-1">
+                            <div className="text-gray-400 dark:text-gray-500 font-mono">
                               {new Date(movement.createdAt).toLocaleTimeString('en-GB', { 
                                 hour: '2-digit', 
                                 minute: '2-digit' 
