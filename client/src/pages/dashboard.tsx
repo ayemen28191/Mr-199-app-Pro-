@@ -73,6 +73,19 @@ export default function Dashboard() {
   const { setFloatingAction } = useFloatingButton();
   const { toast } = useToast();
 
+  // دالة مساعدة لحفظ القيم في autocomplete_data
+  const saveAutocompleteValue = async (category: string, value: string | null | undefined) => {
+    if (!value || typeof value !== 'string' || !value.trim()) return;
+    try {
+      await apiRequest("/api/autocomplete", "POST", { 
+        category, 
+        value: value.trim() 
+      });
+    } catch (error) {
+      console.log(`Failed to save autocomplete value for ${category}:`, error);
+    }
+  };
+
   // تحميل المشاريع مع الإحصائيات بشكل محسن
   const { data: projects = [], isLoading: projectsLoading } = useQuery<ProjectWithStats[]>({
     queryKey: ["/api/projects/with-stats"],
@@ -88,9 +101,18 @@ export default function Dashboard() {
   // متحولات لإضافة العامل والمشروع
   const addWorkerMutation = useMutation({
     mutationFn: async (data: any) => {
+      // حفظ القيم في autocomplete_data قبل العملية الأساسية
+      await Promise.all([
+        saveAutocompleteValue('workerNames', data.name),
+        saveAutocompleteValue('workerTypes', data.type)
+      ]);
+      
       return apiRequest("/api/workers", "POST", data);
     },
     onSuccess: () => {
+      // تحديث كاش autocomplete للتأكد من ظهور البيانات الجديدة
+      queryClient.invalidateQueries({ queryKey: ["/api/autocomplete"] });
+      
       queryClient.invalidateQueries({ queryKey: ["/api/workers"] });
       toast({
         title: "نجح الحفظ",
@@ -110,9 +132,18 @@ export default function Dashboard() {
 
   const addProjectMutation = useMutation({
     mutationFn: async (data: any) => {
+      // حفظ القيم في autocomplete_data قبل العملية الأساسية
+      await Promise.all([
+        saveAutocompleteValue('projectNames', data.name),
+        saveAutocompleteValue('projectDescriptions', data.description)
+      ]);
+      
       return apiRequest("/api/projects", "POST", data);
     },
     onSuccess: () => {
+      // تحديث كاش autocomplete للتأكد من ظهور البيانات الجديدة
+      queryClient.invalidateQueries({ queryKey: ["/api/autocomplete"] });
+      
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
       queryClient.invalidateQueries({ queryKey: ["/api/projects/with-stats"] });
       toast({
@@ -134,9 +165,15 @@ export default function Dashboard() {
   // إضافة نوع عامل جديد
   const addWorkerTypeMutation = useMutation({
     mutationFn: async (data: { name: string }) => {
+      // حفظ قيم أنواع العمال في autocomplete_data
+      await saveAutocompleteValue('workerTypes', data.name);
+      
       return apiRequest("/api/worker-types", "POST", data);
     },
     onSuccess: (newType) => {
+      // تحديث كاش autocomplete للتأكد من ظهور البيانات الجديدة
+      queryClient.invalidateQueries({ queryKey: ["/api/autocomplete"] });
+      
       toast({
         title: "تم الحفظ",
         description: "تم إضافة نوع العامل بنجاح",

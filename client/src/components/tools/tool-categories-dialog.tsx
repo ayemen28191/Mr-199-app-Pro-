@@ -102,6 +102,19 @@ const ToolCategoriesDialog: React.FC<ToolCategoriesDialogProps> = ({
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // دالة مساعدة لحفظ القيم في autocomplete_data
+  const saveAutocompleteValue = async (category: string, value: string | null | undefined) => {
+    if (!value || typeof value !== 'string' || !value.trim()) return;
+    try {
+      await apiRequest("/api/autocomplete", "POST", { 
+        category, 
+        value: value.trim() 
+      });
+    } catch (error) {
+      console.log(`Failed to save autocomplete value for ${category}:`, error);
+    }
+  };
+
   // Fetch categories with tool count
   const { data: categories = [], isLoading } = useQuery<ToolCategory[]>({
     queryKey: ['/api/tool-categories'],
@@ -121,9 +134,18 @@ const ToolCategoriesDialog: React.FC<ToolCategoriesDialogProps> = ({
   // Create category mutation
   const createCategoryMutation = useMutation({
     mutationFn: async (data: CategoryFormData) => {
+      // حفظ القيم في autocomplete_data قبل العملية الأساسية
+      await Promise.all([
+        saveAutocompleteValue('toolCategoryNames', data.name),
+        saveAutocompleteValue('toolCategoryDescriptions', data.description)
+      ]);
+      
       return apiRequest('/api/tool-categories', 'POST', data);
     },
     onSuccess: () => {
+      // تحديث كاش autocomplete للتأكد من ظهور البيانات الجديدة
+      queryClient.invalidateQueries({ queryKey: ["/api/autocomplete"] });
+      
       toast({
         title: 'تم إنشاء التصنيف بنجاح',
         description: 'تمت إضافة التصنيف الجديد إلى النظام',
@@ -144,6 +166,12 @@ const ToolCategoriesDialog: React.FC<ToolCategoriesDialogProps> = ({
   // Update category mutation
   const updateCategoryMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string, data: CategoryFormData }) => {
+      // حفظ القيم في autocomplete_data قبل العملية الأساسية
+      await Promise.all([
+        saveAutocompleteValue('toolCategoryNames', data.name),
+        saveAutocompleteValue('toolCategoryDescriptions', data.description)
+      ]);
+      
       return apiRequest(`/api/tool-categories/${id}`, 'PUT', data);
     },
     onSuccess: () => {
