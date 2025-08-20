@@ -69,7 +69,7 @@ import ToolsReportsDialog from '@/components/tools/tools-reports-dialog';
 import { PurchaseIntegrationDialog } from '@/components/tools/PurchaseIntegrationDialog';
 import { MaintenanceScheduleDialog } from '@/components/tools/MaintenanceScheduleDialog';
 
-import ToolsNotificationSystem from '@/components/tools/tools-notification-system';
+import AdvancedNotificationSystem from '@/components/tools/advanced-notification-system';
 import ProjectLocationTracking from '@/components/tools/project-location-tracking';
 
 // Types from schema
@@ -501,7 +501,7 @@ const ToolsManagementPage: React.FC = () => {
 
           {/* Quick Actions */}
           <div className="flex items-center gap-1">
-            <ToolsNotificationSystem />
+            <AdvancedNotificationSystem />
             <Button 
               variant="outline" 
               size="sm"

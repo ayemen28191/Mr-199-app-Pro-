@@ -14,11 +14,15 @@ import {
   // Phase 3 types
   type ToolPurchaseItem, type MaintenanceSchedule, type MaintenanceTask, type ToolCostTracking,
   type InsertToolPurchaseItem, type InsertMaintenanceSchedule, type InsertMaintenanceTask, type InsertToolCostTracking,
+  // System Notifications
+  type SystemNotification, type InsertSystemNotification,
   projects, workers, fundTransfers, workerAttendance, materials, materialPurchases, transportationExpenses, dailyExpenseSummaries,
   workerTransfers, workerBalances, autocompleteData, workerTypes, workerMiscExpenses, users, suppliers, supplierPayments, printSettings, projectFundTransfers, reportTemplates,
   toolCategories, tools, toolStock, toolMovements, toolMaintenanceLogs, toolUsageAnalytics, toolReservations,
   // Phase 3 imports
-  toolPurchaseItems, maintenanceSchedules, maintenanceTasks, toolCostTracking
+  toolPurchaseItems, maintenanceSchedules, maintenanceTasks, toolCostTracking,
+  // System Notifications
+  systemNotifications
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, gte, lte, gt, sql, inArray, or, desc, asc, isNull, isNotNull, count, sum } from "drizzle-orm";
@@ -292,6 +296,22 @@ export interface IStorage {
   getToolsNeedingMaintenance(): Promise<Tool[]>;
   generateToolQRCode(toolId: string): Promise<string>;
   bulkUpdateToolStatus(toolIds: string[], status: string, userId: string): Promise<void>;
+
+  // System Notifications
+  getSystemNotifications(filters?: {
+    userId?: string;
+    status?: string;
+    type?: string;
+    priority?: string;
+    limit?: number;
+  }): Promise<SystemNotification[]>;
+  getSystemNotification(id: string): Promise<SystemNotification | undefined>;
+  createSystemNotification(notification: InsertSystemNotification): Promise<SystemNotification>;
+  updateSystemNotification(id: string, notification: Partial<InsertSystemNotification>): Promise<SystemNotification | undefined>;
+  deleteSystemNotification(id: string): Promise<void>;
+  markNotificationAsRead(id: string): Promise<void>;
+  markAllNotificationsAsRead(userId?: string): Promise<void>;
+  generateToolNotifications(): Promise<SystemNotification[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -4395,6 +4415,252 @@ export class DatabaseStorage implements IStorage {
       }
     } catch (error) {
       console.error('Error classifying purchase items:', error);
+    }
+  }
+
+  // ===============================================
+  // System Notifications Implementation
+  // ===============================================
+
+  async getSystemNotifications(filters: {
+    userId?: string;
+    status?: string;
+    type?: string;
+    priority?: string;
+    limit?: number;
+  } = {}): Promise<SystemNotification[]> {
+    try {
+      let query = db.select().from(systemNotifications);
+      const conditions = [];
+
+      if (filters.userId) {
+        conditions.push(eq(systemNotifications.userId, filters.userId));
+      }
+
+      if (filters.status) {
+        conditions.push(eq(systemNotifications.status, filters.status));
+      }
+
+      if (filters.type) {
+        conditions.push(eq(systemNotifications.type, filters.type));
+      }
+
+      if (filters.priority) {
+        conditions.push(eq(systemNotifications.priority, filters.priority));
+      }
+
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
+
+      query = query.orderBy(desc(systemNotifications.createdAt));
+
+      if (filters.limit) {
+        query = query.limit(filters.limit);
+      }
+
+      return await query;
+    } catch (error) {
+      console.error('Error getting system notifications:', error);
+      return [];
+    }
+  }
+
+  async getSystemNotification(id: string): Promise<SystemNotification | undefined> {
+    try {
+      const [notification] = await db.select()
+        .from(systemNotifications)
+        .where(eq(systemNotifications.id, id));
+      
+      return notification || undefined;
+    } catch (error) {
+      console.error('Error getting system notification:', error);
+      return undefined;
+    }
+  }
+
+  async createSystemNotification(notification: InsertSystemNotification): Promise<SystemNotification> {
+    try {
+      const [newNotification] = await db
+        .insert(systemNotifications)
+        .values(notification)
+        .returning();
+      
+      if (!newNotification) {
+        throw new Error('فشل في إنشاء الإشعار');
+      }
+      
+      return newNotification;
+    } catch (error) {
+      console.error('Error creating system notification:', error);
+      throw error;
+    }
+  }
+
+  async updateSystemNotification(id: string, notification: Partial<InsertSystemNotification>): Promise<SystemNotification | undefined> {
+    try {
+      const [updatedNotification] = await db
+        .update(systemNotifications)
+        .set({
+          ...notification,
+          updatedAt: sql`CURRENT_TIMESTAMP`
+        })
+        .where(eq(systemNotifications.id, id))
+        .returning();
+      
+      return updatedNotification || undefined;
+    } catch (error) {
+      console.error('Error updating system notification:', error);
+      return undefined;
+    }
+  }
+
+  async deleteSystemNotification(id: string): Promise<void> {
+    try {
+      await db.delete(systemNotifications)
+        .where(eq(systemNotifications.id, id));
+    } catch (error) {
+      console.error('Error deleting system notification:', error);
+      throw error;
+    }
+  }
+
+  async markNotificationAsRead(id: string): Promise<void> {
+    try {
+      await db.update(systemNotifications)
+        .set({
+          status: 'read',
+          readAt: sql`CURRENT_TIMESTAMP`,
+          updatedAt: sql`CURRENT_TIMESTAMP`
+        })
+        .where(eq(systemNotifications.id, id));
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+      throw error;
+    }
+  }
+
+  async markAllNotificationsAsRead(userId?: string): Promise<void> {
+    try {
+      let query = db.update(systemNotifications)
+        .set({
+          status: 'read',
+          readAt: sql`CURRENT_TIMESTAMP`,
+          updatedAt: sql`CURRENT_TIMESTAMP`
+        });
+
+      if (userId) {
+        query = query.where(eq(systemNotifications.userId, userId));
+      } else {
+        query = query.where(eq(systemNotifications.status, 'unread'));
+      }
+
+      await query;
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+      throw error;
+    }
+  }
+
+  async generateToolNotifications(): Promise<SystemNotification[]> {
+    try {
+      const allTools = await this.getTools();
+      const notifications: SystemNotification[] = [];
+      const today = new Date();
+
+      for (const tool of allTools) {
+        // إشعارات الصيانة
+        if (tool.nextMaintenanceDate) {
+          const maintenanceDate = new Date(tool.nextMaintenanceDate);
+          const daysDiff = Math.ceil((maintenanceDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+          
+          if (daysDiff <= 3 && daysDiff >= 0) {
+            const notification = await this.createSystemNotification({
+              title: 'تنبيه صيانة الأداة',
+              message: `الأداة "${tool.name}" تحتاج صيانة خلال ${daysDiff} أيام`,
+              type: 'maintenance',
+              priority: daysDiff === 0 ? 'high' : daysDiff <= 1 ? 'medium' : 'low',
+              entityType: 'tool',
+              entityId: tool.id,
+              metadata: {
+                toolName: tool.name,
+                maintenanceDate: tool.nextMaintenanceDate,
+                daysRemaining: daysDiff
+              }
+            });
+            notifications.push(notification);
+          }
+        }
+
+        // إشعارات انتهاء الضمان
+        if (tool.warrantyExpiry) {
+          const warrantyDate = new Date(tool.warrantyExpiry);
+          const daysDiff = Math.ceil((warrantyDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+          
+          if (daysDiff <= 30 && daysDiff >= 0) {
+            const notification = await this.createSystemNotification({
+              title: 'تنبيه انتهاء الضمان',
+              message: `ضمان الأداة "${tool.name}" سينتهي خلال ${daysDiff} يوم`,
+              type: 'warranty',
+              priority: daysDiff <= 7 ? 'high' : daysDiff <= 15 ? 'medium' : 'low',
+              entityType: 'tool',
+              entityId: tool.id,
+              metadata: {
+                toolName: tool.name,
+                warrantyExpiry: tool.warrantyExpiry,
+                daysRemaining: daysDiff
+              }
+            });
+            notifications.push(notification);
+          }
+        }
+
+        // إشعارات الأدوات التالفة
+        if (tool.status === 'damaged' || tool.condition === 'poor') {
+          const notification = await this.createSystemNotification({
+            title: 'تنبيه حالة الأداة',
+            message: `الأداة "${tool.name}" في حالة ${tool.status === 'damaged' ? 'تالفة' : 'سيئة'}`,
+            type: 'damage',
+            priority: 'high',
+            entityType: 'tool',
+            entityId: tool.id,
+            metadata: {
+              toolName: tool.name,
+              status: tool.status,
+              condition: tool.condition
+            }
+          });
+          notifications.push(notification);
+        }
+
+        // إشعارات عدم الاستخدام
+        if (tool.lastUsed) {
+          const lastUsedDate = new Date(tool.lastUsed);
+          const daysSinceUsed = Math.ceil((today.getTime() - lastUsedDate.getTime()) / (1000 * 60 * 60 * 24));
+          
+          if (daysSinceUsed > 90) {
+            const notification = await this.createSystemNotification({
+              title: 'تنبيه عدم استخدام الأداة',
+              message: `الأداة "${tool.name}" لم تُستخدم لمدة ${daysSinceUsed} يوم`,
+              type: 'usage',
+              priority: 'low',
+              entityType: 'tool',
+              entityId: tool.id,
+              metadata: {
+                toolName: tool.name,
+                lastUsed: tool.lastUsed,
+                daysSinceUsed
+              }
+            });
+            notifications.push(notification);
+          }
+        }
+      }
+
+      return notifications;
+    } catch (error) {
+      console.error('Error generating tool notifications:', error);
+      return [];
     }
   }
 

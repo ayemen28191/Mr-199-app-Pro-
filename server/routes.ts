@@ -3585,7 +3585,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/notifications/:id/mark-read", async (req, res) => {
     try {
       const { id } = req.params;
-      
+      await storage.markNotificationAsRead(id);
       res.json({ 
         success: true, 
         message: "تم تحديد الإشعار كمقروء",
@@ -3597,68 +3597,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/notifications/:id/mark-read", async (req, res) => {
-    try {
-      const { id } = req.params;
-      readNotifications.add(id);
-      res.json({ 
-        success: true, 
-        message: "تم تحديد الإشعار كمقروء" 
-      });
-    } catch (error) {
-      console.error("Error marking notification as read:", error);
-      res.status(500).json({ message: "خطأ في تحديد الإشعار كمقروء" });
-    }
-  });
-
   app.post("/api/notifications/mark-all-read", async (req, res) => {
     try {
-      // الحصول على جميع الإشعارات الحالية وتحديدها كمقروءة
-      const tools = await storage.getTools();
-      
-      tools.forEach((tool: any) => {
-        if (tool.nextMaintenanceDate) {
-          const maintenanceDate = new Date(tool.nextMaintenanceDate);
-          const today = new Date();
-          const daysDiff = Math.ceil((maintenanceDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-          
-          if (daysDiff <= 3 || daysDiff < 0) {
-            readNotifications.add(`maintenance-${tool.id}`);
-          }
-        }
-        
-        if (tool.status === 'damaged' || tool.condition === 'poor') {
-          readNotifications.add(`damage-${tool.id}`);
-        }
-        
-        if (tool.warrantyExpiry) {
-          const warrantyDate = new Date(tool.warrantyExpiry);
-          const today = new Date();
-          const daysDiff = Math.ceil((warrantyDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-          
-          if (daysDiff <= 30) {
-            readNotifications.add(`warranty-${tool.id}`);
-          }
-        }
-        
-        if (tool.lastUsed) {
-          const lastUsedDate = new Date(tool.lastUsed);
-          const today = new Date();
-          const daysDiff = Math.ceil((today.getTime() - lastUsedDate.getTime()) / (1000 * 60 * 60 * 24));
-          
-          if (daysDiff > 90) {
-            readNotifications.add(`unused-${tool.id}`);
-          }
-        }
-      });
-      
+      await storage.markAllNotificationsAsRead();
       res.json({ 
         success: true, 
         message: "تم تحديد جميع الإشعارات كمقروءة" 
       });
     } catch (error) {
       console.error("Error marking all notifications as read:", error);
-      res.status(500).json({ message: "خطأ في تحديد جميع الإشعارات كمقروءة" });
+      res.status(500).json({ message: "خطأ في تحديد الإشعارات كمقروءة" });
     }
   });
 
