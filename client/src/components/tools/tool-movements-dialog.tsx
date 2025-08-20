@@ -540,57 +540,7 @@ const ToolMovementsDialog: React.FC<ToolMovementsDialogProps> = ({
                         </div>
                       </div>
 
-                      <FormField
-                        control={form.control}
-                        name="fromProjectId"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>من المشروع</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value || 'none'}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="اختر المشروع (اختياري)" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="none">غير محدد</SelectItem>
-                                {projects.map((project) => (
-                                  <SelectItem key={project.id} value={project.id}>
-                                    {project.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="toProjectId"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>إلى المشروع</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value || 'none'}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="اختر المشروع (اختياري)" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="none">غير محدد</SelectItem>
-                                {projects.map((project) => (
-                                  <SelectItem key={project.id} value={project.id}>
-                                    {project.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                      {/* تم حذف التكرار - المشروع المستهدف موجود أعلاه في قسم "إلى أين تريد نقل الأداة؟" */}
 
                       {/* المسؤول والسبب */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
