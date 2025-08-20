@@ -3126,6 +3126,26 @@ export class DatabaseStorage implements IStorage {
         conditions.push(eq(tools.condition, filters.condition));
       }
 
+      if (filters?.projectId) {
+        conditions.push(
+          or(
+            eq(tools.projectId, filters.projectId),
+            and(
+              eq(tools.locationType, 'project'),
+              eq(tools.locationId, filters.projectId)
+            ),
+            and(
+              eq(tools.locationType, 'مشروع'),
+              eq(tools.locationId, filters.projectId)
+            )
+          )!
+        );
+      }
+
+      if (filters?.locationType) {
+        conditions.push(eq(tools.locationType, filters.locationType));
+      }
+
       if (filters?.searchTerm) {
         const searchTerm = `%${filters.searchTerm}%`;
         conditions.push(

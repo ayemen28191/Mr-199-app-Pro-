@@ -43,6 +43,7 @@ interface Tool {
   name: string;
   locationType: string;
   locationId?: string;
+  projectId?: string;
   status: 'available' | 'in_use' | 'maintenance' | 'damaged' | 'retired';
 }
 
@@ -86,7 +87,13 @@ const ProjectLocationTracking: React.FC = () => {
 
   // إحصائيات الأدوات لكل مشروع
   const getProjectToolStats = (projectId: string) => {
-    const projectTools = tools.filter(tool => tool.locationId === projectId);
+    // البحث عن الأدوات المرتبطة بالمشروع باستخدام projectId أو locationId عندما locationType = 'project'
+    const projectTools = tools.filter(tool => 
+      tool.projectId === projectId || 
+      (tool.locationType === 'project' && tool.locationId === projectId) ||
+      (tool.locationType === 'مشروع' && tool.locationId === projectId)
+    );
+    
     return {
       total: projectTools.length,
       available: projectTools.filter(tool => tool.status === 'available').length,
@@ -211,27 +218,50 @@ const ProjectLocationTracking: React.FC = () => {
                     </div>
                   )}
 
-                  {/* إحصائيات الأدوات */}
-                  <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2 sm:p-3">
-                    <h4 className="text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
+                  {/* إحصائيات الأدوات - عرض محسن للهاتف المحمول */}
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 rounded-lg p-3 border border-blue-200 dark:border-blue-800">
+                    <h4 className="text-xs sm:text-sm font-semibold text-blue-900 dark:text-blue-100 mb-2 flex items-center gap-2">
+                      <Package className="h-3 w-3 sm:h-4 sm:w-4" />
                       الأدوات في هذا الموقع
                     </h4>
-                    <div className="grid grid-cols-2 gap-1 sm:gap-2 text-xs sm:text-sm">
+                    
+                    {/* Mobile: 2x2 Grid for better visibility */}
+                    <div className="grid grid-cols-2 gap-2 sm:hidden">
+                      <div className="text-center p-2 bg-white dark:bg-gray-800 rounded border border-blue-200 dark:border-blue-700">
+                        <div className="text-lg font-bold text-blue-600 dark:text-blue-400">{stats.total}</div>
+                        <div className="text-xs text-blue-600/70 dark:text-blue-400/70">المجموع</div>
+                      </div>
+                      <div className="text-center p-2 bg-white dark:bg-gray-800 rounded border border-green-200 dark:border-green-700">
+                        <div className="text-lg font-bold text-green-600 dark:text-green-400">{stats.available}</div>
+                        <div className="text-xs text-green-600/70 dark:text-green-400/70">متاح</div>
+                      </div>
+                      <div className="text-center p-2 bg-white dark:bg-gray-800 rounded border border-orange-200 dark:border-orange-700">
+                        <div className="text-lg font-bold text-orange-600 dark:text-orange-400">{stats.inUse}</div>
+                        <div className="text-xs text-orange-600/70 dark:text-orange-400/70">مستخدم</div>
+                      </div>
+                      <div className="text-center p-2 bg-white dark:bg-gray-800 rounded border border-yellow-200 dark:border-yellow-700">
+                        <div className="text-lg font-bold text-yellow-600 dark:text-yellow-400">{stats.maintenance}</div>
+                        <div className="text-xs text-yellow-600/70 dark:text-yellow-400/70">صيانة</div>
+                      </div>
+                    </div>
+                    
+                    {/* Desktop: Row layout */}
+                    <div className="hidden sm:grid sm:grid-cols-4 gap-2 text-xs sm:text-sm">
                       <div className="flex justify-between">
                         <span className="text-gray-600 dark:text-gray-400">المجموع:</span>
-                        <span className="font-medium">{stats.total}</span>
+                        <span className="font-bold text-blue-600 dark:text-blue-400">{stats.total}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600 dark:text-gray-400">متاح:</span>
-                        <span className="font-medium text-green-600">{stats.available}</span>
+                        <span className="font-bold text-green-600 dark:text-green-400">{stats.available}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600 dark:text-gray-400">مستخدم:</span>
-                        <span className="font-medium text-blue-600">{stats.inUse}</span>
+                        <span className="font-bold text-orange-600 dark:text-orange-400">{stats.inUse}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-gray-600 dark:text-gray-400">صيانة:</span>
-                        <span className="font-medium text-yellow-600">{stats.maintenance}</span>
+                        <span className="font-bold text-yellow-600 dark:text-yellow-400">{stats.maintenance}</span>
                       </div>
                     </div>
                   </div>
