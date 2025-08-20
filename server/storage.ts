@@ -3554,6 +3554,29 @@ export class DatabaseStorage implements IStorage {
         throw new Error('فشل في إنشاء حركة الأداة');
       }
       
+      // تحديث الموقع الحالي للأداة في جدول tools
+      if (movement.movementType === 'transfer' || movement.movementType === 'check_out' || movement.movementType === 'check_in') {
+        let newProjectId = null;
+        
+        // تحديد المشروع الجديد بناءً على نوع الوجهة
+        if (movement.toType === 'project' && movement.toId) {
+          newProjectId = movement.toId;
+        }
+        
+        console.log(`🔄 تحديث موقع الأداة ${movement.toolId} إلى المشروع: ${newProjectId || 'المستودع'}`);
+        
+        // تحديث projectId في جدول tools
+        await db
+          .update(tools)
+          .set({ 
+            projectId: newProjectId,
+            updatedAt: sql`CURRENT_TIMESTAMP`
+          })
+          .where(eq(tools.id, movement.toolId));
+        
+        console.log('✅ تم تحديث موقع الأداة بنجاح');
+      }
+      
       console.log('✅ Tool movement created successfully:', newMovement);
       return newMovement;
     } catch (error) {
