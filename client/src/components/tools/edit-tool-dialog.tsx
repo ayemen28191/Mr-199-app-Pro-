@@ -123,23 +123,21 @@ interface EditToolDialogProps {
   toolId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSuccess?: () => void;
 }
 
-const EditToolDialog: React.FC<EditToolDialogProps> = ({ 
-  toolId, 
-  open, 
-  onOpenChange, 
-  onSuccess 
-}) => {
-  const [activeTab, setActiveTab] = useState('basic');
-  const [hasChanges, setHasChanges] = useState(false);
-  
+interface Project {
+  id: string;
+  name: string;
+  status: string;
+}
+
+const EditToolDialog: React.FC<EditToolDialogProps> = ({ toolId, open, onOpenChange }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [hasChanges, setHasChanges] = useState(false);
 
-  // Fetch tool details
-  const { data: tool, isLoading } = useQuery<Tool>({
+  // Fetch tool data
+  const { data: tool, isLoading: isLoadingTool } = useQuery<Tool>({
     queryKey: ['/api/tools', toolId],
     enabled: !!toolId && open,
   });
@@ -150,8 +148,8 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
     enabled: open,
   });
 
-  // Fetch projects for location selection
-  const { data: projects = [] } = useQuery<{id: string, name: string, status: string}[]>({
+  // Fetch projects
+  const { data: projects = [] } = useQuery<Project[]>({
     queryKey: ['/api/projects'],
     enabled: open,
   });
@@ -166,69 +164,52 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
       sku: '',
       serialNumber: '',
       barcode: '',
-      unit: 'قطعة',
+      unit: '',
+      purchasePrice: 0,
+      currentValue: 0,
+      depreciationRate: 0,
+      purchaseDate: '',
+      warrantyExpiry: '',
+      maintenanceInterval: 90,
       status: 'available',
-      condition: 'excellent',
+      condition: 'good',
+      projectId: '',
+      locationType: '',
+      locationId: '',
       specifications: '',
     },
   });
 
-  // Load tool data into form when tool is fetched
+  // Update form when tool data loads
   useEffect(() => {
     if (tool) {
-      // Helper function to convert dates from string to YYYY-MM-DD format
-      const formatDateForInput = (dateString: string | null | undefined) => {
-        if (!dateString) return '';
-        try {
-          const date = new Date(dateString);
-          if (isNaN(date.getTime())) return '';
-          return date.toISOString().split('T')[0]; // YYYY-MM-DD format
-        } catch {
-          return '';
-        }
-      };
-
-      // Helper function to convert string numbers to actual numbers
-      const parseNumber = (value: string | number | null | undefined) => {
-        if (value === null || value === undefined || value === '') return undefined;
-        const parsed = typeof value === 'string' ? parseFloat(value) : value;
-        return isNaN(parsed) ? undefined : parsed;
-      };
-
-      const formData = {
+      const formData: EditToolFormData = {
         name: tool.name || '',
         description: tool.description || '',
         categoryId: tool.categoryId || '',
         sku: tool.sku || '',
         serialNumber: tool.serialNumber || '',
         barcode: tool.barcode || '',
-        unit: tool.unit || 'قطعة',
-        purchasePrice: parseNumber(tool.purchasePrice),
-        currentValue: parseNumber(tool.currentValue),
-        depreciationRate: parseNumber(tool.depreciationRate),
-        purchaseDate: formatDateForInput(tool.purchaseDate),
-        warrantyExpiry: formatDateForInput(tool.warrantyExpiry),
-        maintenanceInterval: parseNumber(tool.maintenanceInterval),
-        status: tool.status || 'available',
-        condition: tool.condition || 'excellent',
+        unit: tool.unit || '',
+        purchasePrice: tool.purchasePrice || 0,
+        currentValue: tool.currentValue || 0,
+        depreciationRate: tool.depreciationRate || 0,
+        purchaseDate: tool.purchaseDate || '',
+        warrantyExpiry: tool.warrantyExpiry || '',
+        maintenanceInterval: tool.maintenanceInterval || 90,
+        status: tool.status,
+        condition: tool.condition,
         projectId: tool.projectId || '',
         locationType: tool.locationType || '',
         locationId: tool.locationId || '',
-        specifications: typeof tool.specifications === 'string' 
-          ? tool.specifications 
-          : tool.specifications 
-            ? JSON.stringify(tool.specifications, null, 2) 
-            : '',
+        specifications: typeof tool.specifications === 'string' ? tool.specifications : JSON.stringify(tool.specifications || {}),
       };
-      
-      console.log('🔧 البيانات الأصلية المُرجعة من API:', tool);
-      console.log('🔧 البيانات المحولة للنموذج:', formData);
       form.reset(formData);
       setHasChanges(false);
     }
   }, [tool, form]);
 
-  // Watch for form changes
+  // Track form changes
   useEffect(() => {
     const subscription = form.watch(() => {
       setHasChanges(true);
@@ -239,62 +220,27 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
   // Update tool mutation
   const updateToolMutation = useMutation({
     mutationFn: async (data: EditToolFormData) => {
-      console.log('🔧 البيانات المُرسلة من Frontend:', data);
-      
-      // Convert specifications string to JSON if provided
-      const specifications = data.specifications 
-        ? (() => {
-            try {
-              return JSON.parse(data.specifications);
-            } catch {
-              // If not valid JSON, store as simple text object
-              return { description: data.specifications };
-            }
-          })()
-        : {};
-
-      // تنظيف البيانات مع المحافظة على التواريخ الفارغة كـ null
-      const cleanedData = Object.fromEntries(
-        Object.entries(data).map(([key, value]) => {
-          // For date fields, convert empty strings to null
-          if (['purchaseDate', 'warrantyExpiry'].includes(key) && value === '') {
-            return [key, null];
-          }
-          // For other fields, keep the original behavior
-          if (value === '' || value === undefined) {
-            return [key, null];
-          }
-          return [key, value];
-        }).filter(([_, value]) => value !== undefined)
-      );
-
-      const updateData = {
-        ...cleanedData,
-        specifications,
-        // إزالة حقل updatedAt لأن قاعدة البيانات تتولى هذا
+      const payload = {
+        ...data,
+        specifications: data.specifications ? JSON.parse(data.specifications) : {},
       };
-
-      console.log('📤 البيانات النهائية المُرسلة:', updateData);
-      return apiRequest(`/api/tools/${toolId}`, 'PUT', updateData);
+      return apiRequest(`/api/tools/${toolId}`, 'PUT', payload);
     },
     onSuccess: () => {
-      toast({
-        title: 'تم تحديث الأداة بنجاح',
-        description: 'تم حفظ التغييرات على الأداة',
-      });
       queryClient.invalidateQueries({ queryKey: ['/api/tools'] });
       queryClient.invalidateQueries({ queryKey: ['/api/tools', toolId] });
+      toast({
+        title: "نجح تحديث الأداة",
+        description: "تم حفظ التغييرات بنجاح",
+      });
       setHasChanges(false);
       onOpenChange(false);
-      if (onSuccess) {
-        onSuccess();
-      }
     },
     onError: (error: any) => {
       toast({
-        title: 'خطأ في تحديث الأداة',
-        description: error.message || 'حدث خطأ أثناء تحديث الأداة',
-        variant: 'destructive',
+        title: "خطأ في تحديث الأداة",
+        description: error.message || "حدث خطأ أثناء تحديث بيانات الأداة",
+        variant: "destructive",
       });
     },
   });
@@ -303,24 +249,25 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
     updateToolMutation.mutate(data);
   };
 
-  // Handle dialog close with unsaved changes warning
   const handleDialogClose = (open: boolean) => {
     if (!open && hasChanges) {
-      const confirmed = confirm('لديك تغييرات غير محفوظة. هل تريد المتابعة؟');
-      if (!confirmed) return;
+      const confirmClose = window.confirm('لديك تغييرات غير محفوظة. هل تريد المتابعة بدون حفظ؟');
+      if (!confirmClose) return;
     }
     onOpenChange(open);
+    if (!open) {
+      form.reset();
+      setHasChanges(false);
+    }
   };
 
-  if (isLoading) {
+  if (isLoadingTool) {
     return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" dir="rtl">
-          <div className="flex justify-center items-center py-12">
-            <div className="text-center">
-              <Package className="h-12 w-12 animate-pulse text-gray-400 mx-auto mb-4" />
-              <p className="text-muted-foreground">جاري تحميل بيانات الأداة...</p>
-            </div>
+      <Dialog open={open} onOpenChange={handleDialogClose}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+            <span className="ml-2">جاري تحميل بيانات الأداة...</span>
           </div>
         </DialogContent>
       </Dialog>
@@ -329,16 +276,12 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
 
   if (!tool) {
     return (
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-md" dir="rtl">
-          <DialogHeader>
-            <DialogTitle>خطأ</DialogTitle>
-            <DialogDescription>
-              لم يتم العثور على الأداة المطلوبة
-            </DialogDescription>
-          </DialogHeader>
-          <div className="flex justify-end">
-            <Button onClick={() => onOpenChange(false)}>إغلاق</Button>
+      <Dialog open={open} onOpenChange={handleDialogClose}>
+        <DialogContent className="max-w-md">
+          <div className="text-center py-8">
+            <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-red-600 mb-2">خطأ في تحميل البيانات</h3>
+            <p className="text-sm text-gray-600">لم يتم العثور على بيانات الأداة المطلوبة</p>
           </div>
         </DialogContent>
       </Dialog>
@@ -347,51 +290,32 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={handleDialogClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" dir="rtl">
-        <DialogHeader>
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <DialogTitle className="flex items-center gap-3 text-xl">
-                <Edit className="h-6 w-6" />
-                تعديل الأداة: {tool.name}
-              </DialogTitle>
-              <DialogDescription className="mt-2">
-                تحديث معلومات الأداة وإعداداتها
-              </DialogDescription>
-            </div>
-            <div className="flex gap-2 mr-4">
-              {hasChanges && (
-                <Badge variant="secondary" className="text-orange-600">
-                  <AlertTriangle className="h-3 w-3 ml-1" />
-                  تغييرات غير محفوظة
-                </Badge>
-              )}
-              <Button variant="outline" size="sm" onClick={() => handleDialogClose(false)}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+      <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto">
+        <DialogHeader className="pb-4">
+          <DialogTitle className="text-xl font-bold flex items-center gap-2">
+            <Edit className="h-5 w-5" />
+            تعديل الأداة: {tool.name}
+          </DialogTitle>
+          <DialogDescription>
+            قم بتحديث معلومات الأداة والبيانات المرتبطة بها
+          </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-4 bg-muted/30 p-1 rounded-lg mb-6">
-                <TabsTrigger value="basic" className="text-sm font-medium">
-                  <Package className="h-4 w-4 ml-1" />
-                  الأساسية
+            <Tabs defaultValue="basic" className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="basic" className="flex items-center gap-2">
+                  <Package className="h-4 w-4" />
+                  البيانات الأساسية
                 </TabsTrigger>
-                <TabsTrigger value="details" className="text-sm font-medium">
-                  <FileText className="h-4 w-4 ml-1" />
-                  التقنية
+                <TabsTrigger value="details" className="flex items-center gap-2">
+                  <DollarSign className="h-4 w-4" />
+                  التفاصيل المالية
                 </TabsTrigger>
-                <TabsTrigger value="financial" className="text-sm font-medium">
-                  <DollarSign className="h-4 w-4 ml-1" />
-                  المالية
-                </TabsTrigger>
-                <TabsTrigger value="location" className="text-sm font-medium">
-                  <MapPin className="h-4 w-4 ml-1" />
-                  الموقع
+                <TabsTrigger value="location" className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4" />
+                  الموقع والحالة
                 </TabsTrigger>
               </TabsList>
 
@@ -411,9 +335,9 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
                             <FormLabel>اسم الأداة *</FormLabel>
                             <FormControl>
                               <AutocompleteInput
-                                value={field.value || ''}
+                                value={field.value}
                                 onChange={field.onChange}
-                                placeholder="مثال: مثقاب كهربائي، منشار، مولد طوارئ"
+                                placeholder="مثال: مثقاب كهربائي، منشار يدوي، مولد طوارئ"
                                 category="toolNames"
                                 className="arabic-numbers"
                               />
@@ -552,129 +476,11 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
                 </Card>
               </TabsContent>
 
-              {/* Technical Details Tab */}
+              {/* Financial Details Tab */}
               <TabsContent value="details" className="space-y-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">التفاصيل التقنية</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="status"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>حالة الأداة *</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="اختر حالة الأداة" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="available">متاح</SelectItem>
-                                <SelectItem value="assigned">مخصص</SelectItem>
-                                <SelectItem value="maintenance">صيانة</SelectItem>
-                                <SelectItem value="lost">مفقود</SelectItem>
-                                <SelectItem value="consumed">مستهلك</SelectItem>
-                                <SelectItem value="reserved">محجوز</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="condition"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>حالة الجودة *</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                              <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="اختر حالة الجودة" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="excellent">ممتاز</SelectItem>
-                                <SelectItem value="good">جيد</SelectItem>
-                                <SelectItem value="fair">مقبول</SelectItem>
-                                <SelectItem value="poor">ضعيف</SelectItem>
-                                <SelectItem value="damaged">معطل</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="maintenanceInterval"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>فترة الصيانة (بالأيام) <span className="text-xs text-gray-500">(اختياري)</span></FormLabel>
-                            <FormControl>
-                              <Input
-                                type="number"
-                                placeholder="مثال: 30"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-
-                      <FormField
-                        control={form.control}
-                        name="warrantyExpiry"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>انتهاء الضمان <span className="text-xs text-gray-500">(اختياري)</span></FormLabel>
-                            <FormControl>
-                              <Input
-                                type="date"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <FormField
-                      control={form.control}
-                      name="specifications"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>المواصفات التقنية <span className="text-xs text-gray-500">(اختياري)</span></FormLabel>
-                          <FormControl>
-                            <AutocompleteInput
-                              value={field.value || ''}
-                              onChange={field.onChange}
-                              placeholder="مثال: قوة 750 واط، سرعة 3000 دورة/دقيقة، وزن 2.5 كجم"
-                              category="toolSpecifications"
-                              className="arabic-numbers"
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              {/* Financial Information Tab */}
-              <TabsContent value="financial" className="space-y-4">
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-lg">المعلومات المالية</CardTitle>
+                    <CardTitle className="text-lg">التفاصيل المالية</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -695,30 +501,14 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
                                 className="arabic-numbers"
                               />
                             </FormControl>
+                            <FormDescription>
+                              سعر شراء الأداة الأصلي
+                            </FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
 
-                      <FormField
-                        control={form.control}
-                        name="purchaseDate"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>تاريخ الشراء</FormLabel>
-                            <FormControl>
-                              <Input
-                                type="date"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <FormField
                         control={form.control}
                         name="currentValue"
@@ -772,6 +562,23 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <FormField
                         control={form.control}
+                        name="purchaseDate"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>تاريخ الشراء</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="date"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={form.control}
                         name="warrantyExpiry"
                         render={({ field }) => (
                           <FormItem>
@@ -818,7 +625,7 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
               <TabsContent value="location" className="space-y-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">معلومات الموقع</CardTitle>
+                    <CardTitle className="text-lg">معلومات الموقع والحالة</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -847,33 +654,7 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
                         )}
                       />
 
-                      {/* حقل المشروع الحالي المجمد - للعرض فقط */}
                       <FormField
-                        control={form.control}
-                        name="projectId"
-                        render={({ field }) => {
-                          const selectedProject = projects.find(p => p.id === field.value);
-                          return (
-                            <FormItem>
-                              <FormLabel>المشروع الحالي</FormLabel>
-                              <FormControl>
-                                <Input
-                                  value={selectedProject ? selectedProject.name : tool?.projectId ? `مشروع ID: ${tool.projectId}` : 'لا يوجد مشروع'}
-                                  disabled={true}
-                                  className="bg-muted text-muted-foreground cursor-not-allowed"
-                                  placeholder="المشروع الحالي للأداة"
-                                />
-                              </FormControl>
-                              <FormDescription>
-                                هذا الحقل يعرض المشروع الحالي للأداة (مجمد للقراءة فقط)
-                              </FormDescription>
-                            </FormItem>
-                          );
-                        }}
-                      />
-                    </div>
-
-                    <FormField
                         control={form.control}
                         name="locationType"
                         render={({ field }) => (
@@ -971,6 +752,29 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
                                 <SelectItem value="damaged">معطل</SelectItem>
                               </SelectContent>
                             </Select>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4">
+                      <FormField
+                        control={form.control}
+                        name="specifications"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>المواصفات التقنية <span className="text-xs text-gray-500">(اختياري)</span></FormLabel>
+                            <FormControl>
+                              <Textarea
+                                placeholder="مثال: القوة 500 واط، الوزن 2.5 كيلو، المقاس 30x20x15 سم"
+                                className="min-h-[100px]"
+                                {...field}
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              أدخل المواصفات التقنية والتفاصيل الإضافية للأداة
+                            </FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
