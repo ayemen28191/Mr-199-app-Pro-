@@ -25,7 +25,11 @@ import {
   Trash2,
   MoreVertical,
   Building,
-  Archive
+  Archive,
+  Brain,
+  TrendingUp,
+  Lightbulb,
+  Zap
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -75,6 +79,8 @@ import AdvancedNotificationSystem from '@/components/tools/advanced-notification
 import ProjectLocationTracking from '@/components/tools/project-location-tracking';
 import AdvancedAnalyticsDashboard from '@/components/tools/advanced-analytics-dashboard';
 import PredictiveMaintenanceSystem from '@/components/tools/predictive-maintenance-system';
+import IntelligentRecommendationsEngine from '@/components/tools/intelligent-recommendations-engine';
+import SmartPerformanceOptimizer from '@/components/tools/smart-performance-optimizer';
 
 // Types from schema
 interface ToolCategory {
@@ -141,6 +147,8 @@ const ToolsManagementPage: React.FC = () => {
   const [toolToDelete, setToolToDelete] = useState<Tool | null>(null);
   const [isAnalyticsDashboardOpen, setIsAnalyticsDashboardOpen] = useState(false);
   const [isPredictiveMaintenanceOpen, setIsPredictiveMaintenanceOpen] = useState(false);
+  const [isRecommendationsEngineOpen, setIsRecommendationsEngineOpen] = useState(false);
+  const [isPerformanceOptimizerOpen, setIsPerformanceOptimizerOpen] = useState(false);
 
   const { setFloatingAction } = useFloatingButton();
   const { toast } = useToast();
@@ -736,6 +744,32 @@ const ToolsManagementPage: React.FC = () => {
                     <span className="hidden sm:inline">الصيانة الذكية</span>
                     <span className="sm:hidden">ذكية</span>
                   </Button>
+                </div>
+
+                {/* Advanced AI Tools Row */}
+                <div className="grid grid-cols-2 gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setIsRecommendationsEngineOpen(true)}
+                    className="h-8 text-xs bg-gradient-to-r from-emerald-50 to-teal-50 hover:from-emerald-100 hover:to-teal-100 dark:from-emerald-900/20 dark:to-teal-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400"
+                    data-testid="button-recommendations"
+                  >
+                    <Lightbulb className="h-3 w-3 ml-1" />
+                    <span className="hidden sm:inline">التوصيات الذكية</span>
+                    <span className="sm:hidden">توصيات</span>
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setIsPerformanceOptimizerOpen(true)}
+                    className="h-8 text-xs bg-gradient-to-r from-orange-50 to-red-50 hover:from-orange-100 hover:to-red-100 dark:from-orange-900/20 dark:to-red-900/20 border-orange-200 dark:border-orange-800 text-orange-700 dark:text-orange-400"
+                    data-testid="button-optimizer"
+                  >
+                    <Zap className="h-3 w-3 ml-1" />
+                    <span className="hidden sm:inline">محسن الأداء</span>
+                    <span className="sm:hidden">محسن</span>
+                  </Button>
                   <Button 
                     variant="outline" 
                     size="sm"
@@ -874,6 +908,16 @@ const ToolsManagementPage: React.FC = () => {
       <PredictiveMaintenanceSystem
         open={isPredictiveMaintenanceOpen}
         onOpenChange={setIsPredictiveMaintenanceOpen}
+      />
+      
+      <IntelligentRecommendationsEngine
+        open={isRecommendationsEngineOpen}
+        onOpenChange={setIsRecommendationsEngineOpen}
+      />
+      
+      <SmartPerformanceOptimizer
+        open={isPerformanceOptimizerOpen}
+        onOpenChange={setIsPerformanceOptimizerOpen}
       />
       
       <PurchaseIntegrationDialog
