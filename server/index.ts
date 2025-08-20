@@ -101,6 +101,33 @@ app.use((req, res, next) => {
         } catch (error) {
           log("ℹ️  أعمدة tools موجودة مسبقاً أو تم إنشاؤها");
         }
+
+        // إضافة الأعمدة المفقودة لجدول tool_movements
+        try {
+          log("🔧 فحص وإضافة الأعمدة المفقودة لجدول tool_movements...");
+          await sql`ALTER TABLE tool_movements ADD COLUMN IF NOT EXISTS from_type TEXT`;
+          await sql`ALTER TABLE tool_movements ADD COLUMN IF NOT EXISTS from_id VARCHAR`;
+          await sql`ALTER TABLE tool_movements ADD COLUMN IF NOT EXISTS from_name TEXT`;
+          await sql`ALTER TABLE tool_movements ADD COLUMN IF NOT EXISTS to_type TEXT`;
+          await sql`ALTER TABLE tool_movements ADD COLUMN IF NOT EXISTS to_id VARCHAR`;
+          await sql`ALTER TABLE tool_movements ADD COLUMN IF NOT EXISTS to_name TEXT`;
+          await sql`ALTER TABLE tool_movements ADD COLUMN IF NOT EXISTS reason TEXT`;
+          await sql`ALTER TABLE tool_movements ADD COLUMN IF NOT EXISTS notes TEXT`;
+          await sql`ALTER TABLE tool_movements ADD COLUMN IF NOT EXISTS reference_number TEXT`;
+          await sql`ALTER TABLE tool_movements ADD COLUMN IF NOT EXISTS cost DECIMAL(12,2)`;
+          await sql`ALTER TABLE tool_movements ADD COLUMN IF NOT EXISTS gps_location JSONB`;
+          await sql`ALTER TABLE tool_movements ADD COLUMN IF NOT EXISTS image_urls TEXT[]`;
+          await sql`ALTER TABLE tool_movements ADD COLUMN IF NOT EXISTS document_urls TEXT[]`;
+          await sql`ALTER TABLE tool_movements ADD COLUMN IF NOT EXISTS performed_by VARCHAR`;
+          await sql`ALTER TABLE tool_movements ADD COLUMN IF NOT EXISTS performed_at TIMESTAMP DEFAULT NOW() NOT NULL`;
+          await sql`ALTER TABLE tool_movements ADD COLUMN IF NOT EXISTS approved_by VARCHAR`;
+          await sql`ALTER TABLE tool_movements ADD COLUMN IF NOT EXISTS approved_at TIMESTAMP`;
+          await sql`ALTER TABLE tool_movements ADD COLUMN IF NOT EXISTS purchase_id VARCHAR`;
+          await sql`ALTER TABLE tool_movements ADD COLUMN IF NOT EXISTS project_id VARCHAR`;
+          log("✅ تم التأكد من وجود جميع أعمدة جدول tool_movements");
+        } catch (error) {
+          log("ℹ️  أعمدة tool_movements موجودة مسبقاً أو تم إنشاؤها");
+        }
         
         // تشغيل الاختبار الشامل لجميع الوظائف
         log("🧪 بدء الاختبار الشامل لجميع وظائف التطبيق...");
