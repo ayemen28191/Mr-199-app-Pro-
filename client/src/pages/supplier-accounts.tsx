@@ -641,8 +641,9 @@ export default function SupplierAccountsPage() {
   return (
     <div className="container mx-auto p-6 space-y-6" dir="rtl">
 
-      {/* الإحصائيات العامة مع فصل النقدي والآجل */}
-      <StatsGrid>
+      {/* الإحصائيات الشاملة - منطقة واحدة للجميع */}
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3">
+        {/* الإحصائيات العامة */}
         <StatsCard
           title="إجمالي الموردين"
           value={overallStats.totalSuppliers.toLocaleString('en-US')}
@@ -667,48 +668,78 @@ export default function SupplierAccountsPage() {
           icon={Building2}
           color="purple"
         />
-      </StatsGrid>
+        
+        {/* الإحصائيات الخاصة بالمورد المحدد */}
+        {selectedSupplierId && (
+          <>
+            <StatsCard
+              title="مشتريات المورد (إجمالي)"
+              value={formatCurrency(totals.totalAmount)}
+              icon={ShoppingCart}
+              color="indigo"
+            />
+            <StatsCard
+              title="المدفوع للمورد"
+              value={formatCurrency(totals.paidAmount)}
+              icon={TrendingUp}
+              color="emerald"
+            />
+            <StatsCard
+              title="المتبقي على المورد"
+              value={formatCurrency(totals.remainingAmount)}
+              icon={TrendingDown}
+              color="red"
+            />
+            <StatsCard
+              title="فواتير المورد"
+              value={purchases.length.toLocaleString('en-US')}
+              icon={Receipt}
+              color="amber"
+            />
+          </>
+        )}
+      </div>
 
-      {/* فلاتر البحث */}
+      {/* فلاتر البحث المضغوطة */}
       <Card className="shadow-sm">
-        <CardHeader className="pb-4">
+        <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Filter className="w-5 h-5" />
-              فلاتر البحث والتصفية
+            <CardTitle className="flex items-center gap-1 text-base">
+              <Filter className="w-4 h-4" />
+              فلاتر البحث
             </CardTitle>
             <Button 
               variant="outline" 
               size="sm" 
               onClick={resetFilters}
-              className="text-xs"
+              className="text-xs h-7 px-2"
             >
-              <RefreshCw className="w-4 h-4 ml-1" />
+              <RefreshCw className="w-3 h-3 ml-1" />
               إعادة تعيين
             </Button>
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <CardContent className="pt-2">
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3">
             {/* البحث في الموردين */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">البحث في الموردين</Label>
+            <div className="space-y-1">
+              <Label className="text-xs font-medium text-gray-600">البحث في الموردين</Label>
               <div className="relative">
-                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Search className="absolute right-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-gray-400" />
                 <Input
                   placeholder="ابحث باسم المورد..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pr-10"
+                  className="pr-8 h-8 text-sm"
                 />
               </div>
             </div>
 
             {/* اختيار المورد */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">المورد</Label>
+            <div className="space-y-1">
+              <Label className="text-xs font-medium text-gray-600">المورد</Label>
               <Select value={selectedSupplierId} onValueChange={setSelectedSupplierId}>
-                <SelectTrigger>
+                <SelectTrigger className="h-8 text-sm">
                   <SelectValue placeholder={isLoadingSuppliers ? "جاري التحميل..." : "اختر المورد"} />
                 </SelectTrigger>
                 <SelectContent>
@@ -729,10 +760,10 @@ export default function SupplierAccountsPage() {
             </div>
 
             {/* اختيار المشروع */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">المشروع (اختياري)</Label>
+            <div className="space-y-1">
+              <Label className="text-xs font-medium text-gray-600">المشروع</Label>
               <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
-                <SelectTrigger>
+                <SelectTrigger className="h-8 text-sm">
                   <SelectValue placeholder="جميع المشاريع" />
                 </SelectTrigger>
                 <SelectContent>
@@ -747,10 +778,10 @@ export default function SupplierAccountsPage() {
             </div>
 
             {/* نوع الدفع */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">نوع الدفع</Label>
+            <div className="space-y-1">
+              <Label className="text-xs font-medium text-gray-600">نوع الدفع</Label>
               <Select value={paymentTypeFilter} onValueChange={setPaymentTypeFilter}>
-                <SelectTrigger>
+                <SelectTrigger className="h-8 text-sm">
                   <SelectValue placeholder="نوع الدفع" />
                 </SelectTrigger>
                 <SelectContent>
@@ -761,30 +792,33 @@ export default function SupplierAccountsPage() {
               </Select>
             </div>
 
+          </div>
+          {/* التواريخ في صف منفصل للوضوح */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3 pt-3 border-t border-gray-100">
             {/* تاريخ البداية */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">من تاريخ</Label>
+            <div className="space-y-1">
+              <Label className="text-xs font-medium text-gray-600">من تاريخ</Label>
               <div className="relative">
-                <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Calendar className="absolute right-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-gray-400" />
                 <Input
                   type="date"
                   value={dateFrom}
                   onChange={(e) => setDateFrom(e.target.value)}
-                  className="pr-10"
+                  className="pr-8 h-8 text-sm"
                 />
               </div>
             </div>
 
             {/* تاريخ النهاية */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">إلى تاريخ</Label>
+            <div className="space-y-1">
+              <Label className="text-xs font-medium text-gray-600">إلى تاريخ</Label>
               <div className="relative">
-                <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Calendar className="absolute right-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-gray-400" />
                 <Input
                   type="date"
                   value={dateTo}
                   onChange={(e) => setDateTo(e.target.value)}
-                  className="pr-10"
+                  className="pr-8 h-8 text-sm"
                 />
               </div>
             </div>
@@ -864,85 +898,6 @@ export default function SupplierAccountsPage() {
         </Card>
       )}
 
-      {/* إحصائيات الحساب المحدد مع فصل النقدي والآجل */}
-      {selectedSupplierId && (
-        <div className="space-y-4">
-          {/* إحصائيات عامة */}
-          <StatsGrid>
-            <StatsCard
-              title="إجمالي المشتريات"
-              value={formatCurrency(totals.totalAmount)}
-              icon={ShoppingCart}
-              color="blue"
-            />
-            <StatsCard
-              title="المدفوع"
-              value={formatCurrency(totals.paidAmount)}
-              icon={TrendingUp}
-              color="green"
-            />
-            <StatsCard
-              title="المتبقي"
-              value={formatCurrency(totals.remainingAmount)}
-              icon={TrendingDown}
-              color="red"
-            />
-            <StatsCard
-              title="عدد الفواتير"
-              value={purchases.length.toLocaleString('en-US')}
-              icon={Receipt}
-              color="orange"
-            />
-          </StatsGrid>
-
-          {/* إحصائيات منفصلة للنقدي والآجل */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* المشتريات النقدية */}
-            <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-green-200 dark:border-green-700">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg flex items-center gap-2 text-green-700 dark:text-green-300">
-                  <Wallet className="w-5 h-5" />
-                  المشتريات النقدية
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">المبلغ الإجمالي</span>
-                    <span className="font-semibold text-green-700 dark:text-green-300">{formatCurrency(cashTotals.totalAmount)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">عدد الفواتير</span>
-                    <span className="font-semibold text-green-700 dark:text-green-300">{cashTotals.count}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* المشتريات الآجلة */}
-            <Card className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 border-orange-200 dark:border-orange-700">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg flex items-center gap-2 text-orange-700 dark:text-orange-300">
-                  <Receipt className="w-5 h-5" />
-                  المشتريات الآجلة
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">المبلغ الإجمالي</span>
-                    <span className="font-semibold text-orange-700 dark:text-orange-300">{formatCurrency(creditTotals.totalAmount)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">عدد الفواتير</span>
-                    <span className="font-semibold text-orange-700 dark:text-orange-300">{creditTotals.count}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      )}
 
       {/* تفاصيل المشتريات */}
       {selectedSupplierId && (
