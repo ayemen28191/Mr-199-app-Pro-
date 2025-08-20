@@ -1141,6 +1141,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         purchaseType: purchaseType as string
       });
       
+      // طباعة عينة من البيانات للتحقق من قيم purchaseType
+      if (purchases.length > 0) {
+        console.log('🔍 عينة من مشتريات المواد:', {
+          total: purchases.length,
+          first3: purchases.slice(0, 3).map(p => ({
+            id: p.id,
+            purchaseType: p.purchaseType,
+            purchaseTypeValue: JSON.stringify(p.purchaseType),
+            totalAmount: p.totalAmount,
+            supplierName: p.supplierName
+          }))
+        });
+        
+        // عرض جميع القيم الفريدة لـ purchaseType
+        const uniqueTypes = [...new Set(purchases.map(p => p.purchaseType))];
+        console.log('🏷️ جميع قيم purchaseType في المشتريات:', uniqueTypes.map(t => `"${t}"`));
+      }
+      
       console.log(`Found ${purchases.length} material purchases`);
       res.json(purchases);
     } catch (error) {
