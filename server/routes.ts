@@ -4133,6 +4133,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const categoryStats = categories.map(category => {
         const categoryTools = tools.filter(t => t.categoryId === category.id);
+        
+        // حساب الأداة الأكثر استخداماً
+        const mostUsedTool = categoryTools.length > 0 
+          ? categoryTools.reduce((max, tool) => 
+              (tool.usageCount || 0) > (max.usageCount || 0) ? tool : max
+            ).name || null
+          : null;
+        
+        // حساب متوسط الحالة
+        const conditionValues = {
+          'excellent': 5,
+          'good': 4,
+          'fair': 3,
+          'poor': 2,
+          'damaged': 1
+        };
+        
+        const averageConditionScore = categoryTools.length > 0
+          ? categoryTools.reduce((sum, tool) => sum + (conditionValues[tool.condition as keyof typeof conditionValues] || 3), 0) / categoryTools.length
+          : 3;
+        
+        const averageCondition = averageConditionScore >= 4.5 ? 'excellent' :
+                                averageConditionScore >= 3.5 ? 'good' :
+                                averageConditionScore >= 2.5 ? 'fair' :
+                                averageConditionScore >= 1.5 ? 'poor' : 'damaged';
+        
         return {
           id: category.id,
           name: category.name,
@@ -4142,6 +4168,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           totalValue: categoryTools.reduce((sum, tool) => sum + (Number(tool.purchasePrice) || 0), 0),
           availableCount: categoryTools.filter(t => t.status === 'available').length,
           inUseCount: categoryTools.filter(t => t.status === 'in_use').length,
+          mostUsedTool: mostUsedTool,
+          averageCondition: averageCondition,
           createdAt: category.createdAt
         };
       });
