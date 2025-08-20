@@ -339,10 +339,14 @@ const AdvancedNotificationSystem: React.FC = () => {
                           
                           <div className="flex items-center gap-4 text-xs text-muted-foreground">
                             <span>
-                              {formatDistanceToNow(new Date(notification.createdAt), {
-                                addSuffix: true,
-                                locale: ar
-                              })}
+                              {notification.createdAt ? (
+                                formatDistanceToNow(new Date(notification.createdAt), {
+                                  addSuffix: true,
+                                  locale: ar
+                                })
+                              ) : (
+                                'منذ قليل'
+                              )}
                             </span>
                             {notification.entityType === 'tool' && notification.metadata?.toolName && (
                               <span className="flex items-center gap-1">

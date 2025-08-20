@@ -3576,6 +3576,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // General Notifications API - Alias for tool-notifications
+  app.get("/api/notifications", async (req, res) => {
+    try {
+      const tools = await storage.getTools();
+      const notifications: any[] = [];
+
+      // فحص الصيانة المتأخرة
+      tools.forEach((tool: any) => {
+        if (tool.nextMaintenanceDate) {
+          const maintenanceDate = new Date(tool.nextMaintenanceDate);
+          const today = new Date();
+          const daysDiff = Math.ceil((maintenanceDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+          
+          if (daysDiff < 0) {
+            const notificationId = `maintenance-${tool.id}`;
+            notifications.push({
+              id: notificationId,
+              type: 'maintenance',
+              title: 'صيانة متأخرة',
+              message: `الأداة "${tool.name}" متأخرة عن موعد الصيانة بـ ${Math.abs(daysDiff)} يوم`,
+              toolId: tool.id,
+              toolName: tool.name,
+              priority: 'critical',
+              createdAt: new Date().toISOString(),
+              status: 'unread',
+              actionRequired: true,
+            });
+          }
+        }
+      });
+
+      res.json(notifications);
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+      res.status(500).json({ message: "خطأ في جلب الإشعارات" });
+    }
+  });
+
+  // Tool Usage Analytics API
+  app.get("/api/tool-usage-analytics", async (req, res) => {
+    try {
+      const tools = await storage.getTools();
+      const movements = await storage.getToolMovements();
+      
+      // حساب إحصائيات الاستخدام
+      const analytics = {
+        totalTools: tools.length,
+        activeTools: tools.filter(t => t.status === 'in_use').length,
+        totalMovements: movements.length,
+        averageUsage: tools.length > 0 ? Math.round((movements.length / tools.length) * 100) / 100 : 0,
+        categoryDistribution: tools.reduce((acc: any, tool) => {
+          const category = tool.categoryId || 'غير مصنف';
+          acc[category] = (acc[category] || 0) + 1;
+          return acc;
+        }, {}),
+        statusDistribution: tools.reduce((acc: any, tool) => {
+          acc[tool.status] = (acc[tool.status] || 0) + 1;
+          return acc;
+        }, {}),
+        conditionDistribution: tools.reduce((acc: any, tool) => {
+          acc[tool.condition] = (acc[tool.condition] || 0) + 1;
+          return acc;
+        }, {}),
+        recentActivity: movements.slice(-10).reverse()
+      };
+
+      res.json(analytics);
+    } catch (error) {
+      console.error("Error fetching tool usage analytics:", error);
+      res.status(500).json({ message: "خطأ في جلب تحليلات استخدام الأدوات" });
+    }
+  });
+
+  // Tool Movements with limit API
+  app.get("/api/tool-movements/:limit", async (req, res) => {
+    try {
+      const limit = parseInt(req.params.limit) || 30;
+      const movements = await storage.getToolMovements();
+      const limitedMovements = movements.slice(-limit).reverse();
+      res.json(limitedMovements);
+    } catch (error) {
+      console.error("Error fetching tool movements:", error);
+      res.status(500).json({ message: "خطأ في جلب تحركات الأدوات" });
+    }
+  });
+
   // Tools Routes
   // Tool Notifications API Routes - Must come before /api/tools/:id
   app.get("/api/tool-notifications", async (req, res) => {

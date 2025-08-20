@@ -568,46 +568,54 @@ const ToolsManagementPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900" dir="rtl">
-      {/* Compact Top Action Bar */}
-      <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 px-3 sm:px-4 py-2">
-        <div className="flex items-center justify-between gap-2">
-          {/* View Toggle */}
-          <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+      {/* Mobile-Friendly Top Action Bar */}
+      <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 px-3 py-3">
+        {/* Top Row - Main Tabs */}
+        <div className="flex items-center justify-between gap-2 mb-3">
+          {/* View Toggle - Mobile Responsive */}
+          <div className="flex bg-gray-100 dark:bg-gray-700 rounded-lg p-1 w-full sm:w-auto">
             <Button
               size="sm"
               variant={currentView === 'tools' ? 'default' : 'ghost'}
               onClick={() => setCurrentView('tools')}
-              className="h-7 px-2 sm:px-3 text-xs"
+              className="h-8 px-3 text-sm flex-1 sm:flex-none"
               data-testid="tab-tools"
             >
-              <Package className="h-3 w-3 sm:ml-1" />
-              <span className="hidden sm:inline">الأدوات</span>
+              <Package className="h-4 w-4 ml-1" />
+              جميع الأدوات
             </Button>
             <Button
               size="sm"
               variant={currentView === 'locations' ? 'default' : 'ghost'}
               onClick={() => setCurrentView('locations')}
-              className="h-7 px-2 sm:px-3 text-xs"
+              className="h-8 px-3 text-sm flex-1 sm:flex-none"
               data-testid="tab-locations"
             >
-              <MapPin className="h-3 w-3 sm:ml-1" />
-              <span className="hidden sm:inline">المواقع</span>
+              <MapPin className="h-4 w-4 ml-1" />
+              تتبع المواقع
             </Button>
           </div>
+        </div>
 
-          {/* Quick Actions */}
-          <div className="flex items-center gap-1">
-            <AdvancedNotificationSystem />
+        {/* Bottom Row - Quick Actions for Mobile */}
+        <div className="flex items-center justify-between gap-2">
+          {/* Left Side - QR Scanner */}
+          <div className="flex items-center gap-2">
             <Button 
               variant="outline" 
               size="sm"
               onClick={() => setIsQrScannerOpen(true)}
-              className="h-7 px-2"
+              className="h-8 px-3 text-sm"
               data-testid="button-qr-scanner"
             >
-              <QrCode className="h-3 w-3" />
-              <span className="hidden sm:inline sm:mr-1">مسح</span>
+              <QrCode className="h-4 w-4 ml-1" />
+              مسح QR
             </Button>
+          </div>
+
+          {/* Right Side - Notification System */}
+          <div className="flex items-center">
+            <AdvancedNotificationSystem />
           </div>
         </div>
       </div>
@@ -618,23 +626,23 @@ const ToolsManagementPage: React.FC = () => {
           <ProjectLocationTracking />
         ) : (
           <>
-            {/* Compact Stats Row */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              <div className="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center shadow-sm border" data-testid="stat-total">
-                <div className="text-base sm:text-lg font-bold text-blue-600 dark:text-blue-400">{stats.total}</div>
-                <div className="text-xs text-gray-600 dark:text-gray-400">المجموع</div>
+            {/* Mobile-Friendly Stats Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-3 text-center shadow-sm border border-blue-100 dark:border-blue-800" data-testid="stat-total">
+                <div className="text-lg sm:text-xl font-bold text-blue-600 dark:text-blue-400">{stats.total}</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400 font-medium">إجمالي الأدوات</div>
               </div>
-              <div className="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center shadow-sm border" data-testid="stat-available">
-                <div className="text-base sm:text-lg font-bold text-green-600 dark:text-green-400">{stats.available}</div>
-                <div className="text-xs text-gray-600 dark:text-gray-400">متاح</div>
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-3 text-center shadow-sm border border-green-100 dark:border-green-800" data-testid="stat-available">
+                <div className="text-lg sm:text-xl font-bold text-green-600 dark:text-green-400">{stats.available}</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400 font-medium">متاح للاستخدام</div>
               </div>
-              <div className="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center shadow-sm border" data-testid="stat-in-use">
-                <div className="text-base sm:text-lg font-bold text-orange-600 dark:text-orange-400">{stats.inUse}</div>
-                <div className="text-xs text-gray-600 dark:text-gray-400">مستخدم</div>
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-3 text-center shadow-sm border border-orange-100 dark:border-orange-800" data-testid="stat-in-use">
+                <div className="text-lg sm:text-xl font-bold text-orange-600 dark:text-orange-400">{stats.inUse}</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400 font-medium">قيد الاستخدام</div>
               </div>
-              <div className="bg-white dark:bg-gray-800 rounded-lg p-2 sm:p-3 text-center shadow-sm border" data-testid="stat-maintenance">
-                <div className="text-base sm:text-lg font-bold text-red-600 dark:text-red-400">{stats.maintenance}</div>
-                <div className="text-xs text-gray-600 dark:text-gray-400">صيانة</div>
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-3 text-center shadow-sm border border-red-100 dark:border-red-800" data-testid="stat-maintenance">
+                <div className="text-lg sm:text-xl font-bold text-red-600 dark:text-red-400">{stats.maintenance + stats.damaged}</div>
+                <div className="text-sm text-gray-600 dark:text-gray-400 font-medium">يحتاج صيانة</div>
               </div>
             </div>
 
@@ -653,42 +661,46 @@ const ToolsManagementPage: React.FC = () => {
                   />
                 </div>
                 
-                {/* Filters Row */}
-                <div className="flex flex-col gap-2 sm:grid sm:grid-cols-3">
-                  <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                    <SelectTrigger className="h-8 text-xs" data-testid="filter-category">
-                      <SelectValue placeholder="التصنيف" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">جميع التصنيفات</SelectItem>
-                      {categories.map((category) => (
-                        <SelectItem key={category.id} value={category.id}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                {/* Mobile-Optimized Filters */}
+                <div className="space-y-2">
+                  {/* First Row - Category and Status */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                      <SelectTrigger className="h-10 text-sm" data-testid="filter-category">
+                        <SelectValue placeholder="التصنيف" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">جميع التصنيفات</SelectItem>
+                        {categories.map((category) => (
+                          <SelectItem key={category.id} value={category.id}>
+                            {category.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
 
-                  <Select value={selectedStatus} onValueChange={setSelectedStatus}>
-                    <SelectTrigger className="h-8 text-xs" data-testid="filter-status">
-                      <SelectValue placeholder="الحالة" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">جميع الحالات</SelectItem>
-                      <SelectItem value="available">متاح</SelectItem>
-                      <SelectItem value="in_use">قيد الاستخدام</SelectItem>
-                      <SelectItem value="maintenance">صيانة</SelectItem>
-                      <SelectItem value="damaged">تالف</SelectItem>
-                      <SelectItem value="retired">متقاعد</SelectItem>
-                    </SelectContent>
-                  </Select>
+                    <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+                      <SelectTrigger className="h-10 text-sm" data-testid="filter-status">
+                        <SelectValue placeholder="الحالة" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">جميع الحالات</SelectItem>
+                        <SelectItem value="available">متاح</SelectItem>
+                        <SelectItem value="in_use">قيد الاستخدام</SelectItem>
+                        <SelectItem value="maintenance">صيانة</SelectItem>
+                        <SelectItem value="damaged">تالف</SelectItem>
+                        <SelectItem value="retired">متقاعد</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
+                  {/* Second Row - Condition Filter */}
                   <Select value={selectedCondition} onValueChange={setSelectedCondition}>
-                    <SelectTrigger className="h-8 text-xs" data-testid="filter-condition">
-                      <SelectValue placeholder="الجودة" />
+                    <SelectTrigger className="h-10 text-sm w-full" data-testid="filter-condition">
+                      <SelectValue placeholder="حالة الجودة" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">جميع المستويات</SelectItem>
+                      <SelectItem value="all">جميع مستويات الجودة</SelectItem>
                       <SelectItem value="excellent">ممتاز</SelectItem>
                       <SelectItem value="good">جيد</SelectItem>
                       <SelectItem value="fair">مقبول</SelectItem>
@@ -698,100 +710,105 @@ const ToolsManagementPage: React.FC = () => {
                   </Select>
                 </div>
 
-                {/* Action Buttons */}
-                <div className="grid grid-cols-2 gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setIsCategoriesDialogOpen(true)}
-                    className="h-8 text-xs"
-                    data-testid="button-categories"
-                  >
-                    <Folder className="h-3 w-3 ml-1" />
-                    <span className="hidden sm:inline">التصنيفات</span>
-                    <span className="sm:hidden">تصنيفات</span>
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setIsReportsDialogOpen(true)}
-                    className="h-8 text-xs"
-                    data-testid="button-reports"
-                  >
-                    <BarChart3 className="h-3 w-3 ml-1" />
-                    <span className="hidden sm:inline">التقارير</span>
-                    <span className="sm:hidden">تقارير</span>
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setIsAnalyticsDashboardOpen(true)}
-                    className="h-8 text-xs bg-gradient-to-r from-blue-50 to-purple-50 hover:from-blue-100 hover:to-purple-100 dark:from-blue-900/20 dark:to-purple-900/20 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400"
-                    data-testid="button-analytics"
-                  >
-                    <TrendingUp className="h-3 w-3 ml-1" />
-                    <span className="hidden sm:inline">التحليلات الذكية</span>
-                    <span className="sm:hidden">تحليلات</span>
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setIsPredictiveMaintenanceOpen(true)}
-                    className="h-8 text-xs bg-gradient-to-r from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-400"
-                    data-testid="button-predictive"
-                  >
-                    <Brain className="h-3 w-3 ml-1" />
-                    <span className="hidden sm:inline">الصيانة الذكية</span>
-                    <span className="sm:hidden">ذكية</span>
-                  </Button>
-                </div>
+                {/* Essential Action Buttons - Mobile Optimized */}
+                <div className="space-y-3">
+                  {/* Primary Actions Row */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setIsCategoriesDialogOpen(true)}
+                      className="h-9 text-sm"
+                      data-testid="button-categories"
+                    >
+                      <Folder className="h-4 w-4 ml-1" />
+                      التصنيفات
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setIsReportsDialogOpen(true)}
+                      className="h-9 text-sm"
+                      data-testid="button-reports"
+                    >
+                      <BarChart3 className="h-4 w-4 ml-1" />
+                      التقارير
+                    </Button>
+                  </div>
 
-                {/* Advanced AI Tools Row */}
-                <div className="grid grid-cols-2 gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setIsRecommendationsEngineOpen(true)}
-                    className="h-8 text-xs bg-gradient-to-r from-emerald-50 to-teal-50 hover:from-emerald-100 hover:to-teal-100 dark:from-emerald-900/20 dark:to-teal-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400"
-                    data-testid="button-recommendations"
-                  >
-                    <Lightbulb className="h-3 w-3 ml-1" />
-                    <span className="hidden sm:inline">التوصيات الذكية</span>
-                    <span className="sm:hidden">توصيات</span>
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setIsPerformanceOptimizerOpen(true)}
-                    className="h-8 text-xs bg-gradient-to-r from-orange-50 to-red-50 hover:from-orange-100 hover:to-red-100 dark:from-orange-900/20 dark:to-red-900/20 border-orange-200 dark:border-orange-800 text-orange-700 dark:text-orange-400"
-                    data-testid="button-optimizer"
-                  >
-                    <Zap className="h-3 w-3 ml-1" />
-                    <span className="hidden sm:inline">محسن الأداء</span>
-                    <span className="sm:hidden">محسن</span>
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setIsPurchaseIntegrationOpen(true)}
-                    className="h-8 text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800"
-                    data-testid="button-purchases"
-                  >
-                    <ShoppingCart className="h-3 w-3 ml-1" />
-                    <span className="hidden sm:inline">المشتريات</span>
-                    <span className="sm:hidden">مشتريات</span>
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setIsMaintenanceScheduleOpen(true)}
-                    className="h-8 text-xs bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/20 dark:hover:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800"
-                    data-testid="button-maintenance"
-                  >
-                    <Settings className="h-3 w-3 ml-1" />
-                    <span className="hidden sm:inline">الصيانة</span>
-                    <span className="sm:hidden">صيانة</span>
-                  </Button>
+                  {/* Smart AI Features Row */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setIsAnalyticsDashboardOpen(true)}
+                      className="h-9 text-sm bg-gradient-to-r from-blue-50 to-purple-50 hover:from-blue-100 hover:to-purple-100 dark:from-blue-900/20 dark:to-purple-900/20 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400"
+                      data-testid="button-analytics"
+                    >
+                      <TrendingUp className="h-4 w-4 ml-1" />
+                      تحليلات ذكية
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => setIsPredictiveMaintenanceOpen(true)}
+                      className="h-9 text-sm bg-gradient-to-r from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-400"
+                      data-testid="button-predictive"
+                    >
+                      <Brain className="h-4 w-4 ml-1" />
+                      صيانة ذكية
+                    </Button>
+                  </div>
+
+                  {/* Additional Tools - Collapsible for Mobile */}
+                  <details className="group">
+                    <summary className="flex items-center justify-center cursor-pointer p-2 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-sm text-gray-600 dark:text-gray-400">
+                      <span>أدوات إضافية</span>
+                      <span className="mr-2 group-open:rotate-180 transition-transform">▼</span>
+                    </summary>
+                    <div className="mt-2 grid grid-cols-2 gap-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setIsRecommendationsEngineOpen(true)}
+                        className="h-9 text-sm bg-gradient-to-r from-emerald-50 to-teal-50 hover:from-emerald-100 hover:to-teal-100 dark:from-emerald-900/20 dark:to-teal-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400"
+                        data-testid="button-recommendations"
+                      >
+                        <Lightbulb className="h-4 w-4 ml-1" />
+                        توصيات ذكية
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setIsPerformanceOptimizerOpen(true)}
+                        className="h-9 text-sm bg-gradient-to-r from-orange-50 to-red-50 hover:from-orange-100 hover:to-red-100 dark:from-orange-900/20 dark:to-red-900/20 border-orange-200 dark:border-orange-800 text-orange-700 dark:text-orange-400"
+                        data-testid="button-optimizer"
+                      >
+                        <Zap className="h-4 w-4 ml-1" />
+                        محسن الأداء
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setIsPurchaseIntegrationOpen(true)}
+                        className="h-9 text-sm bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800"
+                        data-testid="button-purchases"
+                      >
+                        <ShoppingCart className="h-4 w-4 ml-1" />
+                        المشتريات
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => setIsMaintenanceScheduleOpen(true)}
+                        className="h-9 text-sm bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/20 dark:hover:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800"
+                        data-testid="button-maintenance"
+                      >
+                        <Settings className="h-4 w-4 ml-1" />
+                        جدولة الصيانة
+                      </Button>
+                    </div>
+                  </details>
                 </div>
 
                 {/* Clear Filters */}
