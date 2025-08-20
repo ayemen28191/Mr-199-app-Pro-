@@ -22,7 +22,7 @@ interface DailyExpense {
 export default function DailyExpensesReport(): JSX.Element {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
   const { selectedProjectId } = useSelectedProject();
 
   const { data: expenses = [], isLoading } = useQuery<DailyExpense[]>({
@@ -33,7 +33,7 @@ export default function DailyExpensesReport(): JSX.Element {
         projectId: selectedProjectId,
         ...(dateFrom && { dateFrom }),
         ...(dateTo && { dateTo }),
-        ...(categoryFilter && { category: categoryFilter })
+        ...(categoryFilter && categoryFilter !== "all" && { category: categoryFilter })
       });
       return apiRequest("GET", `/api/daily-expenses-report?${params}`);
     },
@@ -106,7 +106,7 @@ export default function DailyExpensesReport(): JSX.Element {
                   <SelectValue placeholder="كل الفئات" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">كل الفئات</SelectItem>
+                  <SelectItem value="all">كل الفئات</SelectItem>
                   <SelectItem value="materials">مواد</SelectItem>
                   <SelectItem value="labor">عمالة</SelectItem>
                   <SelectItem value="transport">نقل</SelectItem>

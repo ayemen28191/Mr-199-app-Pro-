@@ -136,6 +136,9 @@ const ToolMovementsDialog: React.FC<ToolMovementsDialogProps> = ({
       const movementData = {
         ...data,
         toolId,
+        // Convert "none" to null for project IDs
+        fromProjectId: data.fromProjectId === "none" ? null : data.fromProjectId,
+        toProjectId: data.toProjectId === "none" ? null : data.toProjectId,
         gpsLocation: null, // Can be enhanced with GPS if needed
         createdAt: new Date().toISOString(),
       };
@@ -473,14 +476,14 @@ const ToolMovementsDialog: React.FC<ToolMovementsDialogProps> = ({
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>من المشروع</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value || ''}>
+                            <Select onValueChange={field.onChange} value={field.value || 'none'}>
                               <FormControl>
                                 <SelectTrigger>
                                   <SelectValue placeholder="اختر المشروع (اختياري)" />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                <SelectItem value="">غير محدد</SelectItem>
+                                <SelectItem value="none">غير محدد</SelectItem>
                                 {projects.map((project) => (
                                   <SelectItem key={project.id} value={project.id}>
                                     {project.name}
@@ -499,14 +502,14 @@ const ToolMovementsDialog: React.FC<ToolMovementsDialogProps> = ({
                         render={({ field }) => (
                           <FormItem>
                             <FormLabel>إلى المشروع</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value || ''}>
+                            <Select onValueChange={field.onChange} value={field.value || 'none'}>
                               <FormControl>
                                 <SelectTrigger>
                                   <SelectValue placeholder="اختر المشروع (اختياري)" />
                                 </SelectTrigger>
                               </FormControl>
                               <SelectContent>
-                                <SelectItem value="">غير محدد</SelectItem>
+                                <SelectItem value="none">غير محدد</SelectItem>
                                 {projects.map((project) => (
                                   <SelectItem key={project.id} value={project.id}>
                                     {project.name}
