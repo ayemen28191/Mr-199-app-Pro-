@@ -498,6 +498,38 @@ const ToolMovementsDialog: React.FC<ToolMovementsDialogProps> = ({
                 <Form {...form}>
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
 
+                    {/* Current Tool Info - Enhanced with lock indicator */}
+                    {currentTool && (
+                      <div className="bg-blue-50 dark:bg-blue-900/20 p-3 sm:p-4 rounded-lg border border-blue-200 dark:border-blue-800 relative">
+                        <div className="flex items-center justify-between mb-2">
+                          <h4 className="font-semibold text-blue-800 dark:text-blue-300 flex items-center gap-2">
+                            <Package className="h-4 w-4" />
+                            الموقع الحالي للأداة
+                          </h4>
+                          <div className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-800/50 px-2 py-1 rounded">
+                            <Lock className="h-3 w-3" />
+                            <span>مجمد</span>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                          {currentTool.projectName && (
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-blue-700 dark:text-blue-400">المشروع:</span>
+                              <span className="text-blue-800 dark:text-blue-300 font-semibold">{currentTool.projectName}</span>
+                            </div>
+                          )}
+                          {currentTool.currentLocation && (
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-blue-700 dark:text-blue-400">الموقع:</span>
+                              <span className="text-blue-800 dark:text-blue-300 font-semibold">{currentTool.currentLocation}</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="mt-2 text-xs text-blue-600 dark:text-blue-400">
+                          💡 هذه المعلومات مجمدة ولا يمكن تغييرها - تُظهر الموقع الحالي للأداة
+                        </div>
+                      </div>
+                    )}
 
                     <div className="grid grid-cols-1 gap-4">
 

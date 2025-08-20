@@ -696,29 +696,7 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                       />
 
                       {/* حقل المشروع الحالي المجمد - للعرض فقط */}
-                      <FormField
-                        control={form.control}
-                        name="projectId"
-                        render={({ field }) => {
-                          const selectedProject = projects.find(p => p.id === field.value);
-                          return (
-                            <FormItem>
-                              <FormLabel>المشروع الحالي</FormLabel>
-                              <FormControl>
-                                <Input
-                                  value={selectedProject ? selectedProject.name : 'لم يتم تحديد مشروع'}
-                                  disabled={true}
-                                  className="bg-muted text-muted-foreground cursor-not-allowed"
-                                  placeholder="سيتم عرض المشروع المحدد هنا"
-                                />
-                              </FormControl>
-                              <FormDescription>
-                                هذا الحقل يعرض المشروع الحالي المحدد للأداة (مجمد للقراءة فقط)
-                              </FormDescription>
-                            </FormItem>
-                          );
-                        }}
-                      />
+
 
                       <FormField
                         control={form.control}
