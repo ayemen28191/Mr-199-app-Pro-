@@ -685,11 +685,14 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
                           <FormItem>
                             <FormLabel>سعر الشراء (ر.ي)</FormLabel>
                             <FormControl>
-                              <Input
-                                type="number"
-                                step="0.01"
+                              <AutocompleteInput
+                                value={field.value?.toString() || ''}
+                                onChange={(value) => field.onChange(parseFloat(value) || 0)}
+                                category="toolPurchasePrices"
                                 placeholder="مثال: 1500.00"
-                                {...field}
+                                type="number"
+                                inputMode="decimal"
+                                className="arabic-numbers"
                               />
                             </FormControl>
                             <FormMessage />
@@ -723,11 +726,14 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
                           <FormItem>
                             <FormLabel>القيمة الحالية (ر.ي)</FormLabel>
                             <FormControl>
-                              <Input
-                                type="number"
-                                step="0.01"
+                              <AutocompleteInput
+                                value={field.value?.toString() || ''}
+                                onChange={(value) => field.onChange(parseFloat(value) || 0)}
+                                category="toolCurrentValues"
                                 placeholder="مثال: 1200.00"
-                                {...field}
+                                type="number"
+                                inputMode="decimal"
+                                className="arabic-numbers"
                               />
                             </FormControl>
                             <FormDescription>
@@ -841,7 +847,33 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
                         )}
                       />
 
+                      {/* حقل المشروع الحالي المجمد - للعرض فقط */}
                       <FormField
+                        control={form.control}
+                        name="projectId"
+                        render={({ field }) => {
+                          const selectedProject = projects.find(p => p.id === field.value);
+                          return (
+                            <FormItem>
+                              <FormLabel>المشروع الحالي</FormLabel>
+                              <FormControl>
+                                <Input
+                                  value={selectedProject ? selectedProject.name : tool?.projectId ? `مشروع ID: ${tool.projectId}` : 'لا يوجد مشروع'}
+                                  disabled={true}
+                                  className="bg-muted text-muted-foreground cursor-not-allowed"
+                                  placeholder="المشروع الحالي للأداة"
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                هذا الحقل يعرض المشروع الحالي للأداة (مجمد للقراءة فقط)
+                              </FormDescription>
+                            </FormItem>
+                          );
+                        }}
+                      />
+                    </div>
+
+                    <FormField
                         control={form.control}
                         name="locationType"
                         render={({ field }) => (

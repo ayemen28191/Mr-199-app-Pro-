@@ -522,11 +522,14 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                           <FormItem>
                             <FormLabel>سعر الشراء <span className="text-xs text-gray-500">(اختياري)</span></FormLabel>
                             <FormControl>
-                              <Input
-                                type="number"
+                              <AutocompleteInput
+                                value={field.value?.toString() || ''}
+                                onChange={(value) => field.onChange(parseFloat(value) || 0)}
+                                category="toolPurchasePrices"
                                 placeholder="0.00"
-                                {...field}
-                                data-testid="tool-purchase-price-input"
+                                type="number"
+                                inputMode="decimal"
+                                className="arabic-numbers"
                               />
                             </FormControl>
                             <FormMessage />
@@ -561,11 +564,14 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                           <FormItem>
                             <FormLabel>القيمة الحالية <span className="text-xs text-gray-500">(اختياري)</span></FormLabel>
                             <FormControl>
-                              <Input
-                                type="number"
+                              <AutocompleteInput
+                                value={field.value?.toString() || ''}
+                                onChange={(value) => field.onChange(parseFloat(value) || 0)}
+                                category="toolCurrentValues"
                                 placeholder="0.00"
-                                {...field}
-                                data-testid="tool-current-value-input"
+                                type="number"
+                                inputMode="decimal"
+                                className="arabic-numbers"
                               />
                             </FormControl>
                             <FormDescription>
@@ -687,6 +693,31 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                             <FormMessage />
                           </FormItem>
                         )}
+                      />
+
+                      {/* حقل المشروع الحالي المجمد - للعرض فقط */}
+                      <FormField
+                        control={form.control}
+                        name="projectId"
+                        render={({ field }) => {
+                          const selectedProject = projects.find(p => p.id === field.value);
+                          return (
+                            <FormItem>
+                              <FormLabel>المشروع الحالي</FormLabel>
+                              <FormControl>
+                                <Input
+                                  value={selectedProject ? selectedProject.name : 'لم يتم تحديد مشروع'}
+                                  disabled={true}
+                                  className="bg-muted text-muted-foreground cursor-not-allowed"
+                                  placeholder="سيتم عرض المشروع المحدد هنا"
+                                />
+                              </FormControl>
+                              <FormDescription>
+                                هذا الحقل يعرض المشروع الحالي المحدد للأداة (مجمد للقراءة فقط)
+                              </FormDescription>
+                            </FormItem>
+                          );
+                        }}
                       />
 
                       <FormField
