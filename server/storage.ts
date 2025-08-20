@@ -2973,22 +2973,46 @@ export class DatabaseStorage implements IStorage {
       const payments = await db.select().from(supplierPayments)
         .where(paymentConditions.length > 0 ? and(...paymentConditions) : undefined);
 
-      // تطبيق فلتر نوع الدفع إذا وُجد
-      let filteredPurchases = purchases;
-      if (filters?.purchaseType && filters.purchaseType !== 'all') {
-        filteredPurchases = purchases.filter(p => p.purchaseType === filters.purchaseType);
+      // طباعة عينة من البيانات للتحقق من قيم purchaseType
+      if (purchases.length > 0) {
+        console.log('🔍 عينة من البيانات:', {
+          total: purchases.length,
+          first3: purchases.slice(0, 3).map(p => ({
+            id: p.id,
+            purchaseType: p.purchaseType,
+            purchaseTypeType: typeof p.purchaseType,
+            totalAmount: p.totalAmount
+          }))
+        });
+        
+        // عرض جميع القيم الفريدة لـ purchaseType
+        const uniqueTypes = [...new Set(purchases.map(p => p.purchaseType))];
+        console.log('🏷️ جميع قيم purchaseType الموجودة:', uniqueTypes);
       }
       
-      // فصل المشتريات حسب نوع الدفع
-      const cashPurchases = filteredPurchases.filter(p => p.purchaseType === 'نقد');
-      const creditPurchases = filteredPurchases.filter(p => p.purchaseType === 'أجل');
+      // فصل المشتريات حسب نوع الدفع أولاً
+      const allCashPurchases = purchases.filter(p => p.purchaseType === 'نقد');
+      const allCreditPurchases = purchases.filter(p => p.purchaseType === 'أجل');
+      
+      // تطبيق فلتر نوع الدفع المحدد
+      let cashPurchases = allCashPurchases;
+      let creditPurchases = allCreditPurchases;
+      
+      if (filters?.purchaseType && filters.purchaseType !== 'all') {
+        if (filters.purchaseType === 'نقد') {
+          creditPurchases = []; // إخفاء الآجلة عند اختيار النقدية فقط
+        } else if (filters.purchaseType === 'أجل') {
+          cashPurchases = []; // إخفاء النقدية عند اختيار الآجلة فقط
+        }
+      }
       
       console.log('📊 Purchase statistics:', {
         totalPurchases: purchases.length,
-        filteredPurchases: filteredPurchases.length,
-        cashPurchases: cashPurchases.length,
-        creditPurchases: creditPurchases.length,
-        filters
+        allCashPurchases: allCashPurchases.length,
+        allCreditPurchases: allCreditPurchases.length,
+        filteredCashPurchases: cashPurchases.length,
+        filteredCreditPurchases: creditPurchases.length,
+        selectedFilter: filters?.purchaseType || 'all'
       });
 
       // حساب الإجماليات
