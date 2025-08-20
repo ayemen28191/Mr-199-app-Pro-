@@ -1009,10 +1009,17 @@ export class DatabaseStorage implements IStorage {
     }
     
     if (purchaseType && purchaseType !== 'all') {
-      // إضافة شرط فلترة purchaseType مع التعامل مع علامات التنصيص المضاعفة
+      // إضافة شرط فلترة purchaseType مع التعامل مع الأحرف العربية المختلفة
       console.log(`🔍 فلتر purchaseType المطلوب: "${purchaseType}"`);
-      // استخدام LIKE للبحث المرن
-      conditions.push(sql`${materialPurchases.purchaseType} LIKE ${'%' + purchaseType + '%'}`);
+      // البحث عن كلا الشكلين: "أجل" و "آجل"
+      if (purchaseType === 'أجل') {
+        conditions.push(or(
+          sql`${materialPurchases.purchaseType} LIKE ${'%أجل%'}`,
+          sql`${materialPurchases.purchaseType} LIKE ${'%آجل%'}`
+        ));
+      } else {
+        conditions.push(sql`${materialPurchases.purchaseType} LIKE ${'%' + purchaseType + '%'}`);
+      }
     }
 
     // جلب المشتريات مع معلومات المواد والموردين
@@ -2844,14 +2851,15 @@ export class DatabaseStorage implements IStorage {
         .where(and(...paymentConditions))
         .orderBy(supplierPayments.paymentDate);
 
-      // فصل المشتريات حسب نوع الدفع (مع إزالة علامات التنصيص المحتملة)
+      // فصل المشتريات حسب نوع الدفع (مع إزالة علامات التنصيص وتطبيع الأحرف العربية)
       const cashPurchasesList = purchases.filter(p => {
         const cleanType = p.purchaseType?.replace(/['"]/g, '') || '';
         return cleanType === 'نقد';
       });
       const creditPurchasesList = purchases.filter(p => {
         const cleanType = p.purchaseType?.replace(/['"]/g, '') || '';
-        return cleanType === 'أجل';
+        // البحث عن جميع أشكال "أجل": مع الألف العادية والمد
+        return cleanType === 'أجل' || cleanType === 'آجل' || cleanType.includes('جل');
       });
 
       // حساب الإجماليات منفصلة
@@ -2999,16 +3007,19 @@ export class DatabaseStorage implements IStorage {
         console.log('🏷️ جميع قيم purchaseType الموجودة:', uniqueTypes);
       }
       
-      // فصل المشتريات حسب نوع الدفع أولاً (مع إزالة علامات التنصيص المحتملة)
+      // فصل المشتريات حسب نوع الدفع أولاً (مع إزالة علامات التنصيص وتطبيع الأحرف العربية)
       const allCashPurchases = purchases.filter(p => {
         const cleanType = p.purchaseType?.replace(/['"]/g, '') || '';
-        console.log(`💳 فحص: "${p.purchaseType}" -> "${cleanType}" -> نقد؟ ${cleanType === 'نقد'}`);
-        return cleanType === 'نقد';
+        const isCash = cleanType === 'نقد';
+        console.log(`💳 فحص: "${p.purchaseType}" -> "${cleanType}" -> نقد؟ ${isCash}`);
+        return isCash;
       });
       const allCreditPurchases = purchases.filter(p => {
         const cleanType = p.purchaseType?.replace(/['"]/g, '') || '';
-        console.log(`💰 فحص: "${p.purchaseType}" -> "${cleanType}" -> أجل؟ ${cleanType === 'أجل'}`);
-        return cleanType === 'أجل';
+        // البحث عن جميع أشكال "أجل": مع الألف العادية والمد
+        const isCredit = cleanType === 'أجل' || cleanType === 'آجل' || cleanType.includes('جل');
+        console.log(`💰 فحص: "${p.purchaseType}" -> "${cleanType}" -> أجل/آجل؟ ${isCredit}`);
+        return isCredit;
       });
       
       // تطبيق فلتر نوع الدفع المحدد
