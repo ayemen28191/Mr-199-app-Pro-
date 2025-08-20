@@ -358,14 +358,14 @@ export interface IStorage {
   createSystemNotification(notification: InsertSystemNotification): Promise<SystemNotification>;
   updateSystemNotification(id: string, notification: Partial<InsertSystemNotification>): Promise<SystemNotification | undefined>;
   deleteSystemNotification(id: string): Promise<void>;
-  markNotificationAsRead(id: string): Promise<void>;
-  markAllNotificationsAsRead(userId?: string): Promise<void>;
   generateToolNotifications(): Promise<SystemNotification[]>;
+  
+  // Legacy methods (kept for compatibility)
+  markNotificationAsReadLegacy(id: string): Promise<void>;
+  markAllNotificationsAsReadLegacy(userId?: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
-  // ذاكرة محلية مؤقتة لحالات القراءة
-  private memoryReadStates: Set<string> = new Set();
   // Projects
   async getProjects(): Promise<Project[]> {
     return await db.select().from(projects);
@@ -4858,9 +4858,6 @@ export class DatabaseStorage implements IStorage {
 
   async getNotificationReadState(notificationId: string, userId?: string): Promise<NotificationReadState | undefined> {
     try {
-      // محاولة إنشاء الجدول أولاً إذا لم يكن موجوداً
-      await this.ensureNotificationReadStatesTable();
-      
       const conditions = [eq(notificationReadStates.notificationId, notificationId)];
       if (userId) {
         conditions.push(eq(notificationReadStates.userId, userId));
@@ -4883,9 +4880,6 @@ export class DatabaseStorage implements IStorage {
 
   async markNotificationAsRead(notificationId: string, userId?: string): Promise<NotificationReadState> {
     try {
-      // محاولة إنشاء الجدول أولاً إذا لم يكن موجوداً
-      await this.ensureNotificationReadStatesTable();
-      
       // محاولة إدراج سجل جديد أو تحديث الموجود
       const readState: InsertNotificationReadState = {
         notificationId,
@@ -4910,53 +4904,11 @@ export class DatabaseStorage implements IStorage {
       return result;
     } catch (error) {
       console.error('Error marking notification as read:', error);
-      // حل احتياطي مؤقت: استخدام ذاكرة محلية
-      this.addToMemoryReadStates(notificationId, userId);
-      
-      // إرجاع كائن مؤقت
-      return {
-        id: `temp-${Date.now()}`,
-        notificationId,
-        userId: userId || null,
-        isRead: true,
-        readAt: new Date(),
-        deviceInfo: 'web_browser',
-        createdAt: new Date()
-      };
+      throw error;
     }
   }
 
-  // دوال الذاكرة المحلية المؤقتة
-  private addToMemoryReadStates(notificationId: string, userId?: string): void {
-    const key = `${notificationId}:${userId || 'anonymous'}`;
-    this.memoryReadStates.add(key);
-  }
 
-  private isInMemoryReadStates(notificationId: string, userId?: string): boolean {
-    const key = `${notificationId}:${userId || 'anonymous'}`;
-    return this.memoryReadStates.has(key);
-  }
-
-  // دالة مساعدة لضمان وجود الجدول
-  private async ensureNotificationReadStatesTable(): Promise<void> {
-    try {
-      await db.execute(sql`
-        CREATE TABLE IF NOT EXISTS notification_read_states (
-          id varchar PRIMARY KEY DEFAULT gen_random_uuid(),
-          notification_id text NOT NULL,
-          user_id varchar,
-          is_read boolean NOT NULL DEFAULT true,
-          read_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          device_info text,
-          created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-          UNIQUE(notification_id, user_id)
-        );
-      `);
-    } catch (error) {
-      // تجاهل الخطأ إذا كان الجدول موجوداً
-      console.log('Table creation attempted:', error);
-    }
-  }
 
   async markAllNotificationsAsRead(notificationIds: string[], userId?: string): Promise<void> {
     try {
@@ -4975,8 +4927,7 @@ export class DatabaseStorage implements IStorage {
       return readState ? readState.isRead : false;
     } catch (error) {
       console.error('Error checking notification read state:', error);
-      // التحقق من الذاكرة المحلية كحل احتياطي
-      return this.isInMemoryReadStates(notificationId, userId);
+      return false;
     }
   }
 
