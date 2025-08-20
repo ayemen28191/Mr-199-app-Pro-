@@ -139,13 +139,16 @@ export default function SupplierAccountsPage() {
     remainingDebt: string;
     activeSuppliers: number;
   }>({
-    queryKey: ["/api/suppliers/statistics", selectedProjectId, selectedSupplierId, dateFrom, dateTo],
+    queryKey: ["/api/suppliers/statistics", selectedProjectId, selectedSupplierId, dateFrom, dateTo, paymentTypeFilter],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (selectedSupplierId) params.append('supplierId', selectedSupplierId);
       if (selectedProjectId && selectedProjectId !== 'all') params.append('projectId', selectedProjectId);
       if (dateFrom) params.append('dateFrom', dateFrom);
       if (dateTo) params.append('dateTo', dateTo);
+      if (paymentTypeFilter && paymentTypeFilter !== 'all') params.append('purchaseType', paymentTypeFilter);
+      
+      console.log('🔄 إرسال طلب إحصائيات مع الفلاتر:', Object.fromEntries(params));
       
       const response = await fetch(`/api/suppliers/statistics?${params.toString()}`);
       if (!response.ok) {

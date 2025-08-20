@@ -2910,6 +2910,7 @@ export class DatabaseStorage implements IStorage {
     projectId?: string;
     dateFrom?: string;
     dateTo?: string;
+    purchaseType?: string;
   }): Promise<{
     totalSuppliers: number;
     totalCashPurchases: string;
@@ -2920,6 +2921,8 @@ export class DatabaseStorage implements IStorage {
     activeSuppliers: number;
   }> {
     try {
+      console.log('🔍 Supplier statistics filters:', filters);
+      
       // جلب جميع الموردين
       const allSuppliers = await this.getSuppliers();
       
@@ -2929,12 +2932,19 @@ export class DatabaseStorage implements IStorage {
       
       if (filters?.supplierId) {
         // للبحث بالمورد المحدد
-        const supplier = await this.getSupplier(filters.supplierId);
-        if (supplier) {
-          purchaseConditions.push(eq(materialPurchases.supplierName, supplier.name));
-          paymentConditions.push(eq(supplierPayments.supplierId, filters.supplierId));
-        } else {
-          // إذا لم يوجد المورد، نبحث مباشرة بالـ ID في جدول المشتريات
+        try {
+          const supplier = await this.getSupplier(filters.supplierId);
+          if (supplier) {
+            purchaseConditions.push(eq(materialPurchases.supplierName, supplier.name));
+            paymentConditions.push(eq(supplierPayments.supplierId, filters.supplierId));
+          } else {
+            // إذا لم يوجد المورد، نبحث مباشرة بالـ ID في جدول المشتريات
+            purchaseConditions.push(eq(materialPurchases.supplierId, filters.supplierId));
+            paymentConditions.push(eq(supplierPayments.supplierId, filters.supplierId));
+          }
+        } catch (error) {
+          console.error('⚠️ خطأ في البحث عن المورد، سيتم البحث بالـ ID مباشرة:', error);
+          // في حالة خطأ، نبحث مباشرة بالـ ID
           purchaseConditions.push(eq(materialPurchases.supplierId, filters.supplierId));
           paymentConditions.push(eq(supplierPayments.supplierId, filters.supplierId));
         }
@@ -2963,9 +2973,23 @@ export class DatabaseStorage implements IStorage {
       const payments = await db.select().from(supplierPayments)
         .where(paymentConditions.length > 0 ? and(...paymentConditions) : undefined);
 
+      // تطبيق فلتر نوع الدفع إذا وُجد
+      let filteredPurchases = purchases;
+      if (filters?.purchaseType && filters.purchaseType !== 'all') {
+        filteredPurchases = purchases.filter(p => p.purchaseType === filters.purchaseType);
+      }
+      
       // فصل المشتريات حسب نوع الدفع
-      const cashPurchases = purchases.filter(p => p.purchaseType === 'نقد');
-      const creditPurchases = purchases.filter(p => p.purchaseType === 'أجل');
+      const cashPurchases = filteredPurchases.filter(p => p.purchaseType === 'نقد');
+      const creditPurchases = filteredPurchases.filter(p => p.purchaseType === 'أجل');
+      
+      console.log('📊 Purchase statistics:', {
+        totalPurchases: purchases.length,
+        filteredPurchases: filteredPurchases.length,
+        cashPurchases: cashPurchases.length,
+        creditPurchases: creditPurchases.length,
+        filters
+      });
 
       // حساب الإجماليات
       const totalCashPurchases = cashPurchases.reduce((sum, p) => sum + parseFloat(p.totalAmount || '0'), 0);
