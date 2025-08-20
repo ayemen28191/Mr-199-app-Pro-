@@ -121,6 +121,43 @@ const ToolMovementsDialog: React.FC<ToolMovementsDialogProps> = ({
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // دالة مساعدة لحفظ قيم الإكمال التلقائي
+  const saveAutocompleteValue = async (category: string, value: string) => {
+    if (!value || value.trim().length < 2) return;
+    
+    try {
+      await apiRequest('/api/autocomplete', 'POST', {
+        category,
+        value: value.trim(),
+        usageCount: 1
+      });
+      console.log(`✅ تم حفظ قيمة الإكمال التلقائي: ${category} = ${value.trim()}`);
+    } catch (error) {
+      console.error(`❌ خطأ في حفظ قيمة الإكمال التلقائي ${category}:`, error);
+    }
+  };
+
+  // دالة لحفظ جميع قيم الإكمال التلقائي
+  const saveAllAutocompleteValues = async (data: AddMovementFormData) => {
+    const promises = [];
+    
+    if (data.performedBy && data.performedBy.trim().length >= 2) {
+      promises.push(saveAutocompleteValue('movementPerformedBy', data.performedBy));
+    }
+    
+    if (data.reason && data.reason.trim().length >= 2) {
+      promises.push(saveAutocompleteValue('movementReasons', data.reason));
+    }
+    
+    if (data.notes && data.notes.trim().length >= 2) {
+      promises.push(saveAutocompleteValue('movementNotes', data.notes));
+    }
+    
+    if (promises.length > 0) {
+      await Promise.all(promises);
+    }
+  };
+
   // Fetch tool movements
   const { data: movements = [], isLoading } = useQuery<ToolMovement[]>({
     queryKey: ['/api/tool-movements', toolId],
@@ -193,6 +230,7 @@ const ToolMovementsDialog: React.FC<ToolMovementsDialogProps> = ({
       });
       queryClient.invalidateQueries({ queryKey: ['/api/tool-movements', toolId] });
       queryClient.invalidateQueries({ queryKey: ['/api/tools', toolId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/autocomplete'] });
       form.reset();
       setShowAddForm(false);
     },
@@ -205,7 +243,10 @@ const ToolMovementsDialog: React.FC<ToolMovementsDialogProps> = ({
     },
   });
 
-  const onSubmit = (data: AddMovementFormData) => {
+  const onSubmit = async (data: AddMovementFormData) => {
+    // حفظ قيم الإكمال التلقائي قبل إرسال البيانات
+    await saveAllAutocompleteValues(data);
+    
     createMovementMutation.mutate(data);
   };
 

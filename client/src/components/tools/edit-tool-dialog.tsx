@@ -194,6 +194,67 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
   // Get current project name for display
   const currentProject = projects.find(p => p.id === tool?.projectId);
 
+  // دالة مساعدة لحفظ قيم الإكمال التلقائي
+  const saveAutocompleteValue = async (category: string, value: string) => {
+    if (!value || value.trim().length < 2) return;
+    
+    try {
+      await apiRequest('/api/autocomplete', 'POST', {
+        category,
+        value: value.trim(),
+        usageCount: 1
+      });
+      console.log(`✅ تم حفظ قيمة الإكمال التلقائي: ${category} = ${value.trim()}`);
+    } catch (error) {
+      console.error(`❌ خطأ في حفظ قيمة الإكمال التلقائي ${category}:`, error);
+    }
+  };
+
+  // دالة لحفظ جميع قيم الإكمال التلقائي
+  const saveAllAutocompleteValues = async (data: EditToolFormData) => {
+    const promises = [];
+    
+    if (data.name && data.name.trim().length >= 2) {
+      promises.push(saveAutocompleteValue('toolNames', data.name));
+    }
+    
+    if (data.description && data.description.trim().length >= 2) {
+      promises.push(saveAutocompleteValue('toolDescriptions', data.description));
+    }
+    
+    if (data.sku && data.sku.trim().length >= 2) {
+      promises.push(saveAutocompleteValue('toolSkus', data.sku));
+    }
+    
+    if (data.barcode && data.barcode.trim().length >= 2) {
+      promises.push(saveAutocompleteValue('toolBarcodes', data.barcode));
+    }
+    
+    if (data.specifications && data.specifications.trim().length >= 2) {
+      promises.push(saveAutocompleteValue('toolSpecifications', data.specifications));
+    }
+    
+    if (data.unit && data.unit.trim().length >= 2) {
+      promises.push(saveAutocompleteValue('toolUnits', data.unit));
+    }
+    
+    if (data.locationType && data.locationType.trim().length >= 2) {
+      promises.push(saveAutocompleteValue('toolLocationTypes', data.locationType));
+    }
+    
+    if (data.locationId && data.locationId.trim().length >= 2) {
+      promises.push(saveAutocompleteValue('toolLocations', data.locationId));
+    }
+    
+    if (data.serialNumber && data.serialNumber.trim().length >= 2) {
+      promises.push(saveAutocompleteValue('toolSerialNumbers', data.serialNumber));
+    }
+    
+    if (promises.length > 0) {
+      await Promise.all(promises);
+    }
+  };
+
   // Form setup
   const form = useForm<EditToolFormData>({
     resolver: zodResolver(editToolSchema),
@@ -322,6 +383,7 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
       });
       queryClient.invalidateQueries({ queryKey: ['/api/tools'] });
       queryClient.invalidateQueries({ queryKey: ['/api/tools', toolId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/autocomplete'] });
       setHasChanges(false);
       onOpenChange(false);
       if (onSuccess) {
@@ -337,7 +399,10 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
     },
   });
 
-  const onSubmit = (data: EditToolFormData) => {
+  const onSubmit = async (data: EditToolFormData) => {
+    // حفظ قيم الإكمال التلقائي قبل إرسال البيانات
+    await saveAllAutocompleteValues(data);
+    
     updateToolMutation.mutate(data);
   };
 

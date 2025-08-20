@@ -141,7 +141,58 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
     queryKey: ['/api/projects'],
   });
 
-  // تم استبدال دوال الإكمال التلقائي القديمة بمكون AutocompleteInput المحدث
+  // دالة مساعدة لحفظ قيم الإكمال التلقائي
+  const saveAutocompleteValue = async (category: string, value: string) => {
+    if (!value || value.trim().length < 2) return;
+    
+    try {
+      await apiRequest('/api/autocomplete', 'POST', {
+        category,
+        value: value.trim(),
+        usageCount: 1
+      });
+      console.log(`✅ تم حفظ قيمة الإكمال التلقائي: ${category} = ${value.trim()}`);
+    } catch (error) {
+      console.error(`❌ خطأ في حفظ قيمة الإكمال التلقائي ${category}:`, error);
+    }
+  };
+
+  // دالة لحفظ جميع قيم الإكمال التلقائي
+  const saveAllAutocompleteValues = async (data: AddToolFormData) => {
+    const promises = [];
+    
+    if (data.name && data.name.trim().length >= 2) {
+      promises.push(saveAutocompleteValue('toolNames', data.name));
+    }
+    
+    if (data.description && data.description.trim().length >= 2) {
+      promises.push(saveAutocompleteValue('toolDescriptions', data.description));
+    }
+    
+    if (data.sku && data.sku.trim().length >= 2) {
+      promises.push(saveAutocompleteValue('toolSkus', data.sku));
+    }
+    
+    if (data.barcode && data.barcode.trim().length >= 2) {
+      promises.push(saveAutocompleteValue('toolBarcodes', data.barcode));
+    }
+    
+    if (data.specifications && data.specifications.trim().length >= 2) {
+      promises.push(saveAutocompleteValue('toolSpecifications', data.specifications));
+    }
+    
+    if (data.unit && data.unit.trim().length >= 2) {
+      promises.push(saveAutocompleteValue('toolUnits', data.unit));
+    }
+    
+    if (data.locationType && data.locationType.trim().length >= 2) {
+      promises.push(saveAutocompleteValue('toolLocationTypes', data.locationType));
+    }
+    
+    if (promises.length > 0) {
+      await Promise.all(promises);
+    }
+  };
 
   // Create tool mutation
   const createToolMutation = useMutation({
@@ -174,6 +225,7 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
         description: 'تمت إضافة الأداة الجديدة إلى النظام',
       });
       queryClient.invalidateQueries({ queryKey: ['/api/tools'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/autocomplete'] });
       form.reset();
       setUploadedImages([]);
       onOpenChange(false);
@@ -187,7 +239,10 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
     },
   });
 
-  const onSubmit = (data: AddToolFormData) => {
+  const onSubmit = async (data: AddToolFormData) => {
+    // حفظ قيم الإكمال التلقائي قبل إرسال البيانات
+    await saveAllAutocompleteValues(data);
+    
     createToolMutation.mutate(data);
   };
 
