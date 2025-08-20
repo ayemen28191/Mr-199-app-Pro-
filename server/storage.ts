@@ -3472,15 +3472,39 @@ export class DatabaseStorage implements IStorage {
     movementType?: string;
     dateFrom?: string;
     dateTo?: string;
-  }): Promise<ToolMovement[]> {
+  }): Promise<any[]> {
     try {
-      // استعلام مباشر وبسيط
-      const result = await db.execute(sql`
-        SELECT * FROM tool_movements 
-        ORDER BY performed_at DESC
-      `);
+      let queryBuilder = db.select().from(toolMovements);
+      const conditions = [];
       
-      return result.rows as ToolMovement[];
+      // تطبيق الفلاتر
+      if (filters?.toolId) {
+        conditions.push(eq(toolMovements.toolId, filters.toolId));
+      }
+      
+      if (filters?.projectId) {
+        conditions.push(eq(toolMovements.projectId, filters.projectId));
+      }
+      
+      if (filters?.movementType) {
+        conditions.push(eq(toolMovements.movementType, filters.movementType));
+      }
+      
+      if (conditions.length > 0) {
+        queryBuilder = queryBuilder.where(and(...conditions));
+      }
+      
+      const movements = await queryBuilder.orderBy(desc(toolMovements.performedAt));
+      
+      // إضافة حقول إضافية للتوافق مع المكون
+      return movements.map(movement => ({
+        ...movement,
+        createdAt: movement.performedAt, // للتوافق مع المكون
+        fromProjectId: movement.fromType === 'project' ? movement.fromId : undefined,
+        toProjectId: movement.toType === 'project' ? movement.toId : undefined,
+        fromLocation: movement.fromType === 'warehouse' ? 'المستودع' : movement.fromType,
+        toLocation: movement.toType === 'warehouse' ? 'المستودع' : movement.toType,
+      }));
     } catch (error) {
       console.error('Error getting tool movements:', error);
       return [];

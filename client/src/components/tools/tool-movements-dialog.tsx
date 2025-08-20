@@ -82,6 +82,7 @@ interface ToolMovement {
   notes?: string;
   gpsLocation?: any;
   createdAt: string;
+  performedAt: string;
 }
 
 interface ToolMovementsDialogProps {
