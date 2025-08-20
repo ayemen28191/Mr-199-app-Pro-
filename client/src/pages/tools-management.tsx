@@ -23,7 +23,9 @@ import {
   ShoppingCart,
   Edit,
   Trash2,
-  MoreVertical
+  MoreVertical,
+  Building,
+  Archive
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -304,126 +306,187 @@ const ToolsManagementPage: React.FC = () => {
   const ToolCard: React.FC<{ tool: Tool }> = ({ tool }) => {
     const category = categories.find(c => c.id === tool.categoryId);
     
+    // Get status color and icon
+    const getStatusDisplay = (status: string) => {
+      switch (status) {
+        case 'available': return { color: 'text-green-600 bg-green-50 border-green-200', icon: CheckCircle, text: 'متاح' };
+        case 'in_use': return { color: 'text-blue-600 bg-blue-50 border-blue-200', icon: Settings, text: 'مستخدم' };
+        case 'maintenance': return { color: 'text-orange-600 bg-orange-50 border-orange-200', icon: Wrench, text: 'صيانة' };
+        case 'damaged': return { color: 'text-red-600 bg-red-50 border-red-200', icon: AlertTriangle, text: 'معطل' };
+        case 'retired': return { color: 'text-gray-600 bg-gray-50 border-gray-200', icon: Archive, text: 'متقاعد' };
+        default: return { color: 'text-gray-600 bg-gray-50 border-gray-200', icon: Package, text: 'غير محدد' };
+      }
+    };
+    
+    const statusDisplay = getStatusDisplay(tool.status);
+    const StatusIcon = statusDisplay.icon;
+    
     return (
-      <Card className="hover:shadow-lg transition-all duration-200 border-r-2 sm:border-r-4 border-r-blue-500 group shadow-sm" data-testid={`tool-card-${tool.id}`}>
-        <CardContent className="p-3 sm:p-4">
-          {/* Header Row with Actions Menu */}
-          <div className="flex items-start justify-between mb-2 sm:mb-3">
-            <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-sm sm:text-base truncate text-gray-900 dark:text-gray-100">
-                {tool.name}
-              </h3>
-              {category && (
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  {category.name}
-                </p>
-              )}
-            </div>
-            <div className="flex items-center gap-1 sm:gap-2">
-              <Badge 
-                variant={getStatusBadgeVariant(tool.status)} 
-                className="text-xs h-4 sm:h-5 px-1 sm:px-2"
-              >
-                {tool.status === 'available' ? 'متاح' :
-                 tool.status === 'in_use' ? 'مستخدم' :
-                 tool.status === 'maintenance' ? 'صيانة' :
-                 tool.status === 'damaged' ? 'معطل' : 'متقاعد'}
-              </Badge>
+      <Card className={`hover:shadow-lg transition-all duration-300 group shadow-sm border-2 ${
+        tool.status === 'available' ? 'border-green-200 hover:border-green-300' :
+        tool.status === 'in_use' ? 'border-blue-200 hover:border-blue-300' :
+        tool.status === 'maintenance' ? 'border-orange-200 hover:border-orange-300' :
+        tool.status === 'damaged' ? 'border-red-200 hover:border-red-300' :
+        'border-gray-200 hover:border-gray-300'
+      } relative overflow-hidden`} data-testid={`tool-card-${tool.id}`}>
+        
+        {/* Status indicator bar */}
+        <div className={`absolute top-0 left-0 right-0 h-1 ${
+          tool.status === 'available' ? 'bg-green-500' :
+          tool.status === 'in_use' ? 'bg-blue-500' :
+          tool.status === 'maintenance' ? 'bg-orange-500' :
+          tool.status === 'damaged' ? 'bg-red-500' : 'bg-gray-500'
+        }`}></div>
+        
+        <CardContent className="p-4">
+          {/* Header */}
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex items-start gap-3 flex-1 min-w-0">
+              {/* Tool Icon */}
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${statusDisplay.color} border`}>
+                <StatusIcon className="h-5 w-5" />
+              </div>
               
-              {/* Actions Dropdown */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="h-6 w-6 p-0 opacity-70 sm:opacity-0 group-hover:opacity-100 transition-opacity"
-                    data-testid={`tool-actions-${tool.id}`}
-                  >
-                    <MoreVertical className="h-3 w-3" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-44 sm:w-48">
-                  <DropdownMenuItem 
-                    onClick={() => {
-                      setSelectedToolId(tool.id);
-                      setIsDetailsDialogOpen(true);
-                    }}
-                    data-testid={`view-details-${tool.id}`}
-                  >
-                    <Eye className="h-4 w-4 ml-2" />
-                    عرض التفاصيل
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => {
-                      setSelectedToolId(tool.id);
-                      setIsEditDialogOpen(true);
-                    }}
-                    data-testid={`edit-tool-${tool.id}`}
-                  >
-                    <Edit className="h-4 w-4 ml-2" />
-                    تعديل
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => {
-                      setSelectedToolId(tool.id);
-                      setSelectedToolName(tool.name);
-                      setIsMovementsDialogOpen(true);
-                    }}
-                    data-testid={`move-tool-${tool.id}`}
-                  >
-                    <Move className="h-4 w-4 ml-2" />
-                    نقل
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem 
-                    onClick={() => handleDeleteTool(tool)}
-                    className="text-red-600 dark:text-red-400 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950"
-                    data-testid={`delete-tool-${tool.id}`}
-                  >
-                    <Trash2 className="h-4 w-4 ml-2" />
-                    حذف
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              {/* Tool Info */}
+              <div className="flex-1 min-w-0">
+                <h3 className="font-bold text-base truncate text-gray-900 dark:text-gray-100 mb-1">
+                  {tool.name}
+                </h3>
+                {category && (
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                    {category.name}
+                  </p>
+                )}
+                {tool.sku && (
+                  <div className="flex items-center text-xs text-gray-600 dark:text-gray-400">
+                    <Package className="h-3 w-3 ml-1" />
+                    <span className="truncate font-mono">{tool.sku}</span>
+                  </div>
+                )}
+              </div>
             </div>
+            
+            {/* Actions Menu */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                  data-testid={`tool-actions-${tool.id}`}
+                >
+                  <MoreVertical className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem 
+                  onClick={() => {
+                    setSelectedToolId(tool.id);
+                    setIsDetailsDialogOpen(true);
+                  }}
+                  data-testid={`view-details-${tool.id}`}
+                >
+                  <Eye className="h-4 w-4 ml-2" />
+                  عرض التفاصيل
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => {
+                    setSelectedToolId(tool.id);
+                    setIsEditDialogOpen(true);
+                  }}
+                  data-testid={`edit-tool-${tool.id}`}
+                >
+                  <Edit className="h-4 w-4 ml-2" />
+                  تعديل
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={() => {
+                    setSelectedToolId(tool.id);
+                    setSelectedToolName(tool.name);
+                    setIsMovementsDialogOpen(true);
+                  }}
+                  data-testid={`move-tool-${tool.id}`}
+                >
+                  <Move className="h-4 w-4 ml-2" />
+                  نقل
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={() => handleDeleteTool(tool)}
+                  className="text-red-600 dark:text-red-400 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950"
+                  data-testid={`delete-tool-${tool.id}`}
+                >
+                  <Trash2 className="h-4 w-4 ml-2" />
+                  حذف
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
 
-          {/* Info Row */}
-          <div className="space-y-1 sm:space-y-2 mb-2 sm:mb-3">
-            {tool.sku && (
-              <div className="flex items-center text-xs text-gray-600 dark:text-gray-400">
-                <Package className="h-3 w-3 ml-1" />
-                <span className="truncate">{tool.sku}</span>
-              </div>
-            )}
-            {tool.purchasePrice && (
-              <div className="text-xs font-medium text-green-600 dark:text-green-400">
-                {tool.purchasePrice.toLocaleString('en-US')} ر.ي
-              </div>
-            )}
-            <div className="flex items-center justify-between text-xs text-gray-600 dark:text-gray-400">
-              <div className="flex items-center">
-                <span className={`w-2 h-2 rounded-full ml-1 ${
-                  tool.condition === 'excellent' ? 'bg-green-500' :
-                  tool.condition === 'good' ? 'bg-blue-500' :
-                  tool.condition === 'fair' ? 'bg-yellow-500' :
-                  tool.condition === 'poor' ? 'bg-orange-500' : 'bg-red-500'
-                }`}></span>
-                <span>
-                  {tool.condition === 'excellent' ? 'ممتاز' :
-                   tool.condition === 'good' ? 'جيد' :
-                   tool.condition === 'fair' ? 'مقبول' :
-                   tool.condition === 'poor' ? 'ضعيف' : 'معطل'}
-                </span>
-              </div>
-              <span className="text-xs text-gray-400 truncate max-w-20">
-                {tool.locationType}
+          {/* Key Info Grid */}
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            {/* Status */}
+            <div className="flex items-center gap-2">
+              <Badge className={`${statusDisplay.color} border text-xs px-2 py-1`}>
+                {statusDisplay.text}
+              </Badge>
+            </div>
+            
+            {/* Condition */}
+            <div className="flex items-center gap-1 justify-end">
+              <span className={`w-2 h-2 rounded-full ${
+                tool.condition === 'excellent' ? 'bg-green-500' :
+                tool.condition === 'good' ? 'bg-blue-500' :
+                tool.condition === 'fair' ? 'bg-yellow-500' :
+                tool.condition === 'poor' ? 'bg-orange-500' : 'bg-red-500'
+              }`}></span>
+              <span className="text-xs text-gray-600 dark:text-gray-400">
+                {tool.condition === 'excellent' ? 'ممتاز' :
+                 tool.condition === 'good' ? 'جيد' :
+                 tool.condition === 'fair' ? 'مقبول' :
+                 tool.condition === 'poor' ? 'ضعيف' : 'معطل'}
               </span>
             </div>
+            
+            {/* Price */}
+            {tool.purchasePrice && (
+              <div className="col-span-1">
+                <div className="text-sm font-bold text-green-600 dark:text-green-400">
+                  {tool.purchasePrice.toLocaleString('en-US')} ر.ي
+                </div>
+                <div className="text-xs text-gray-500">سعر الشراء</div>
+              </div>
+            )}
+            
+            {/* Location */}
+            <div className="col-span-1 text-left">
+              <div className="flex items-center gap-1 justify-end">
+                <MapPin className="h-3 w-3 text-gray-400" />
+                <span className="text-xs text-gray-600 dark:text-gray-400 truncate max-w-20">
+                  {tool.locationType || 'غير محدد'}
+                </span>
+              </div>
+              <div className="text-xs text-gray-500 text-left">الموقع الحالي</div>
+            </div>
           </div>
 
-          {/* Quick Action Buttons */}
-          <div className="flex gap-1 sm:gap-2">
+          {/* Current Project Info */}
+          {tool.status === 'in_use' && (
+            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-2 mb-3">
+              <div className="flex items-center gap-2">
+                <Building className="h-3 w-3 text-blue-600" />
+                <span className="text-xs font-medium text-blue-800 dark:text-blue-200 truncate">
+                  قيد الاستخدام
+                </span>
+              </div>
+              <div className="text-xs text-blue-600 dark:text-blue-300 mt-1">
+                مستخدم حالياً
+              </div>
+            </div>
+          )}
+
+          {/* Quick Actions */}
+          <div className="flex gap-2">
             <Button
               size="sm"
               variant="outline"
@@ -431,24 +494,11 @@ const ToolsManagementPage: React.FC = () => {
                 setSelectedToolId(tool.id);
                 setIsDetailsDialogOpen(true);
               }}
-              className="flex-1 h-6 sm:h-7 text-xs"
+              className="flex-1 h-8 text-xs hover:bg-gray-50"
               data-testid={`quick-view-${tool.id}`}
             >
-              <Eye className="h-3 w-3 sm:ml-1" />
-              <span className="hidden sm:inline">عرض</span>
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                setSelectedToolId(tool.id);
-                setIsEditDialogOpen(true);
-              }}
-              className="flex-1 h-6 sm:h-7 text-xs"
-              data-testid={`quick-edit-${tool.id}`}
-            >
-              <Edit className="h-3 w-3 sm:ml-1" />
-              <span className="hidden sm:inline">تعديل</span>
+              <Eye className="h-3 w-3 ml-1" />
+              عرض
             </Button>
             <Button
               size="sm"
@@ -458,11 +508,11 @@ const ToolsManagementPage: React.FC = () => {
                 setSelectedToolName(tool.name);
                 setIsMovementsDialogOpen(true);
               }}
-              className="flex-1 h-6 sm:h-7 text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800"
+              className="flex-1 h-8 text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800"
               data-testid={`quick-move-${tool.id}`}
             >
-              <Move className="h-3 w-3 sm:ml-1" />
-              <span className="hidden sm:inline">نقل</span>
+              <Move className="h-3 w-3 ml-1" />
+              نقل
             </Button>
           </div>
         </CardContent>
