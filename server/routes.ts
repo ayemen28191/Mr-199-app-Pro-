@@ -1155,7 +1155,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         
         // عرض جميع القيم الفريدة لـ purchaseType
-        const uniqueTypes = [...new Set(purchases.map(p => p.purchaseType))];
+        const uniqueTypes = Array.from(new Set(purchases.map(p => p.purchaseType)));
         console.log('🏷️ جميع قيم purchaseType في المشتريات:', uniqueTypes.map(t => `"${t}"`));
       }
       
