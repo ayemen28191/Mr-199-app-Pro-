@@ -117,6 +117,12 @@ const ToolMovementsDialog: React.FC<ToolMovementsDialogProps> = ({
     enabled: open,
   });
 
+  // Fetch current tool data to show current location and project
+  const { data: currentTool } = useQuery<{id: string, name: string, currentLocation?: string, projectId?: string, projectName?: string}>({
+    queryKey: ['/api/tools', toolId],
+    enabled: !!toolId && open,
+  });
+
   // Form setup
   const form = useForm<AddMovementFormData>({
     resolver: zodResolver(addMovementSchema),
@@ -228,7 +234,7 @@ const ToolMovementsDialog: React.FC<ToolMovementsDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" dir="rtl">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto w-[95vw] sm:w-full" dir="rtl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3 text-xl">
             <History className="h-6 w-6" />
@@ -240,14 +246,16 @@ const ToolMovementsDialog: React.FC<ToolMovementsDialogProps> = ({
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 bg-muted/30 p-1 rounded-lg mb-6">
-            <TabsTrigger value="history" className="text-sm font-medium">
-              <History className="h-4 w-4 ml-1" />
-              سجل الحركات
+          <TabsList className="grid w-full grid-cols-2 bg-muted/30 p-1 rounded-lg mb-4 sm:mb-6">
+            <TabsTrigger value="history" className="text-xs sm:text-sm font-medium flex items-center gap-1">
+              <History className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">سجل الحركات</span>
+              <span className="sm:hidden">السجل</span>
             </TabsTrigger>
-            <TabsTrigger value="add" className="text-sm font-medium">
-              <Plus className="h-4 w-4 ml-1" />
-              إضافة حركة
+            <TabsTrigger value="add" className="text-xs sm:text-sm font-medium flex items-center gap-1">
+              <Plus className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">إضافة حركة</span>
+              <span className="sm:hidden">إضافة</span>
             </TabsTrigger>
           </TabsList>
 
@@ -389,86 +397,180 @@ const ToolMovementsDialog: React.FC<ToolMovementsDialogProps> = ({
               <CardContent>
                 <Form {...form}>
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="movementType"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>نوع الحركة *</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
+                    {/* Current Tool Info */}
+                    {currentTool && (
+                      <div className="bg-blue-50 dark:bg-blue-900/20 p-3 sm:p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                        <h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-2 flex items-center gap-2">
+                          <Package className="h-4 w-4" />
+                          الموقع الحالي للأداة
+                        </h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                          {currentTool.projectName && (
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-blue-700 dark:text-blue-400">المشروع:</span>
+                              <span className="text-blue-800 dark:text-blue-300">{currentTool.projectName}</span>
+                            </div>
+                          )}
+                          {currentTool.currentLocation && (
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium text-blue-700 dark:text-blue-400">الموقع:</span>
+                              <span className="text-blue-800 dark:text-blue-300">{currentTool.currentLocation}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 gap-4">
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="movementType"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>نوع الحركة *</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value}>
+                                <FormControl>
+                                  <SelectTrigger className="text-sm">
+                                    <SelectValue placeholder="اختر نوع الحركة" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="check_in">استلام</SelectItem>
+                                  <SelectItem value="check_out">تسليم</SelectItem>
+                                  <SelectItem value="transfer">نقل</SelectItem>
+                                  <SelectItem value="maintenance">صيانة</SelectItem>
+                                  <SelectItem value="return">إرجاع</SelectItem>
+                                  <SelectItem value="repair">إصلاح</SelectItem>
+                                  <SelectItem value="inspection">فحص</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+
+                        <FormField
+                          control={form.control}
+                          name="quantity"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>الكمية *</FormLabel>
                               <FormControl>
-                                <SelectTrigger>
-                                  <SelectValue placeholder="اختر نوع الحركة" />
-                                </SelectTrigger>
+                                <Input
+                                  type="number"
+                                  min="1"
+                                  placeholder="1"
+                                  {...field}
+                                  className="text-sm"
+                                />
                               </FormControl>
-                              <SelectContent>
-                                <SelectItem value="check_in">استلام</SelectItem>
-                                <SelectItem value="check_out">تسليم</SelectItem>
-                                <SelectItem value="transfer">نقل</SelectItem>
-                                <SelectItem value="maintenance">صيانة</SelectItem>
-                                <SelectItem value="return">إرجاع</SelectItem>
-                                <SelectItem value="repair">إصلاح</SelectItem>
-                                <SelectItem value="inspection">فحص</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
 
-                      <FormField
-                        control={form.control}
-                        name="quantity"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>الكمية *</FormLabel>
-                            <FormControl>
-                              <Input
-                                type="number"
-                                min="1"
-                                placeholder="1"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                      {/* من الموقع والمشروع */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="fromLocation"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>من الموقع (اختياري)</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder={currentTool?.currentLocation || "الموقع الحالي"}
+                                  {...field}
+                                  className="text-sm bg-gray-50 dark:bg-gray-800"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
 
-                      <FormField
-                        control={form.control}
-                        name="fromLocation"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>من الموقع</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="مثال: مخزن A - رف 3"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                        <FormField
+                          control={form.control}
+                          name="fromProjectId"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>من المشروع (اختياري)</FormLabel>
+                              <Select onValueChange={field.onChange} value={field.value || currentTool?.projectId || 'none'}>
+                                <FormControl>
+                                  <SelectTrigger className="text-sm bg-gray-50 dark:bg-gray-800">
+                                    <SelectValue placeholder={currentTool?.projectName || "المشروع الحالي"} />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  <SelectItem value="none">غير محدد</SelectItem>
+                                  {projects.map((project) => (
+                                    <SelectItem key={project.id} value={project.id}>
+                                      {project.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
 
-                      <FormField
-                        control={form.control}
-                        name="toLocation"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>إلى الموقع *</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="مثال: موقع العمل - القطاع B"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                      {/* إلى الموقع والمشروع - المطلوب */}
+                      <div className="bg-green-50 dark:bg-green-900/20 p-3 sm:p-4 rounded-lg border border-green-200 dark:border-green-800">
+                        <h4 className="font-semibold text-green-800 dark:text-green-300 mb-3 flex items-center gap-2">
+                          <ArrowRight className="h-4 w-4" />
+                          إلى أين تريد نقل الأداة؟
+                        </h4>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <FormField
+                            control={form.control}
+                            name="toLocation"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-green-800 dark:text-green-300 font-semibold">الموقع الجديد *</FormLabel>
+                                <FormControl>
+                                  <Input
+                                    placeholder="مثال: موقع العمل - القطاع B"
+                                    {...field}
+                                    className="border-green-300 dark:border-green-700 focus:border-green-500 text-sm"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+
+                          <FormField
+                            control={form.control}
+                            name="toProjectId"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel className="text-green-800 dark:text-green-300 font-semibold">المشروع الجديد (اختياري)</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value || 'none'}>
+                                  <FormControl>
+                                    <SelectTrigger className="border-green-300 dark:border-green-700 focus:border-green-500 text-sm">
+                                      <SelectValue placeholder="اختر المشروع المستهدف" />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent>
+                                    <SelectItem value="none">غير محدد</SelectItem>
+                                    {projects.map((project) => (
+                                      <SelectItem key={project.id} value={project.id}>
+                                        {project.name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      </div>
 
                       <FormField
                         control={form.control}
@@ -522,39 +624,44 @@ const ToolMovementsDialog: React.FC<ToolMovementsDialogProps> = ({
                         )}
                       />
 
-                      <FormField
-                        control={form.control}
-                        name="performedBy"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>المسؤول عن الحركة *</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="اسم الشخص المسؤول"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                      {/* المسؤول والسبب */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <FormField
+                          control={form.control}
+                          name="performedBy"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>المسؤول عن الحركة *</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="اسم الشخص المسؤول"
+                                  {...field}
+                                  className="text-sm"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
 
-                      <FormField
-                        control={form.control}
-                        name="reason"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>سبب الحركة</FormLabel>
-                            <FormControl>
-                              <Input
-                                placeholder="مثال: صيانة دورية، نقل للمشروع"
-                                {...field}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
+                        <FormField
+                          control={form.control}
+                          name="reason"
+                          render={({ field }) => (
+                            <FormItem>
+                              <FormLabel>سبب الحركة</FormLabel>
+                              <FormControl>
+                                <Input
+                                  placeholder="مثال: صيانة دورية، نقل للمشروع"
+                                  {...field}
+                                  className="text-sm"
+                                />
+                              </FormControl>
+                              <FormMessage />
+                            </FormItem>
+                          )}
+                        />
+                      </div>
                     </div>
 
                     <FormField
@@ -568,6 +675,7 @@ const ToolMovementsDialog: React.FC<ToolMovementsDialogProps> = ({
                               placeholder="أي ملاحظات أو تفاصيل إضافية..."
                               {...field}
                               rows={3}
+                              className="text-sm"
                             />
                           </FormControl>
                           <FormMessage />
@@ -577,38 +685,42 @@ const ToolMovementsDialog: React.FC<ToolMovementsDialogProps> = ({
 
                     <Separator />
 
-                    <div className="flex justify-between items-center">
+                    <div className="flex flex-col sm:flex-row justify-between items-center gap-3 pt-2">
                       <Button
                         type="button"
                         variant="outline"
                         onClick={getCurrentLocation}
-                        className="flex items-center gap-2"
+                        className="flex items-center gap-2 w-full sm:w-auto text-sm"
+                        size="sm"
                       >
-                        <Navigation className="h-4 w-4" />
+                        <Navigation className="h-3 w-3" />
                         تحديد الموقع الحالي
                       </Button>
 
-                      <div className="flex gap-2">
+                      <div className="flex gap-2 w-full sm:w-auto">
                         <Button 
                           type="button" 
                           variant="outline" 
                           onClick={() => setActiveTab('history')}
+                          className="flex-1 sm:flex-none text-sm"
+                          size="sm"
                         >
                           إلغاء
                         </Button>
                         <Button 
                           type="submit" 
                           disabled={createMovementMutation.isPending}
-                          className="min-w-[120px]"
+                          className="min-w-[120px] flex-1 sm:flex-none text-sm"
+                          size="sm"
                         >
                           {createMovementMutation.isPending ? (
                             <>
-                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white ml-2"></div>
+                              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white ml-2"></div>
                               جاري الحفظ...
                             </>
                           ) : (
                             <>
-                              <Plus className="h-4 w-4 ml-2" />
+                              <Plus className="h-3 w-3 ml-2" />
                               تسجيل الحركة
                             </>
                           )}
