@@ -301,7 +301,9 @@ export const insertMaterialPurchaseSchema = createInsertSchema(materialPurchases
   remainingAmount: z.coerce.number().default(0), // المتبقي
 });
 export const insertTransportationExpenseSchema = createInsertSchema(transportationExpenses).omit({ id: true, createdAt: true });
-export const insertWorkerTransferSchema = createInsertSchema(workerTransfers).omit({ id: true, createdAt: true });
+export const insertWorkerTransferSchema = createInsertSchema(workerTransfers).omit({ id: true, createdAt: true }).extend({
+  amount: z.coerce.string(), // تحويل number إلى string تلقائياً للتوافق مع نوع decimal في قاعدة البيانات
+});
 export const insertWorkerBalanceSchema = createInsertSchema(workerBalances).omit({ id: true, createdAt: true, lastUpdated: true });
 export const insertProjectFundTransferSchema = createInsertSchema(projectFundTransfers).omit({ id: true, createdAt: true });
 export const insertDailyExpenseSummarySchema = createInsertSchema(dailyExpenseSummaries).omit({ id: true, createdAt: true });
