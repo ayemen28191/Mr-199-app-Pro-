@@ -3600,7 +3600,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               toolName: tool.name,
               priority: 'critical',
               createdAt: new Date().toISOString(),
-              status: 'unread',
+              status: readNotifications.has(notificationId) ? 'read' : 'unread',
               actionRequired: true,
             });
           }
@@ -3769,10 +3769,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Use the existing readNotifications Set defined at the top
+
   app.post("/api/notifications/:id/mark-read", async (req, res) => {
     try {
       const { id } = req.params;
-      await storage.markNotificationAsRead(id);
+      readNotifications.add(id);
+      console.log(`✅ تم تحديد الإشعار ${id} كمقروء - إجمالي الإشعارات المقروءة: ${readNotifications.size}`);
       res.json({ 
         success: true, 
         message: "تم تحديد الإشعار كمقروء",
@@ -3786,10 +3789,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/notifications/mark-all-read", async (req, res) => {
     try {
-      await storage.markAllNotificationsAsRead();
+      // Get all current notifications and mark them as read
+      const tools = await storage.getTools();
+      const notifications: any[] = [];
+
+      // فحص الصيانة المتأخرة وإضافة IDs للمجموعة
+      tools.forEach((tool: any) => {
+        if (tool.nextMaintenanceDate) {
+          const maintenanceDate = new Date(tool.nextMaintenanceDate);
+          const today = new Date();
+          const daysDiff = Math.ceil((maintenanceDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+          
+          if (daysDiff < 0) {
+            readNotifications.add(`maintenance-${tool.id}`);
+          } else if (daysDiff <= 3) {
+            readNotifications.add(`maintenance-soon-${tool.id}`);
+          }
+        }
+
+        // فحص انتهاء الضمان
+        if (tool.warrantyExpiry) {
+          const warrantyDate = new Date(tool.warrantyExpiry);
+          const today = new Date();
+          const daysDiff = Math.ceil((warrantyDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+          
+          if (daysDiff <= 30 && daysDiff > 0) {
+            readNotifications.add(`warranty-${tool.id}`);
+          } else if (daysDiff <= 0) {
+            readNotifications.add(`warranty-expired-${tool.id}`);
+          }
+        }
+      });
+
       res.json({ 
         success: true, 
-        message: "تم تحديد جميع الإشعارات كمقروءة" 
+        message: "تم تحديد جميع الإشعارات كمقروءة",
+        markedCount: readNotifications.size
       });
     } catch (error) {
       console.error("Error marking all notifications as read:", error);
