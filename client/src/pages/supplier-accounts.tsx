@@ -129,7 +129,38 @@ export default function SupplierAccountsPage() {
     staleTime: 30000, // 30 seconds
   });
 
-  // جلب إحصائيات الموردين العامة مع فصل النقدي والآجل
+  // جلب الإحصائيات العامة (بدون فلاتر) للبطاقات العلوية
+  const { data: globalStats } = useQuery<{
+    totalSuppliers: number;
+    totalCashPurchases: string;
+    totalCreditPurchases: string;
+    totalDebt: string;
+    totalPaid: string;
+    remainingDebt: string;
+    activeSuppliers: number;
+  }>({
+    queryKey: ["/api/suppliers/statistics"],
+    queryFn: async () => {
+      const response = await fetch('/api/suppliers/statistics');
+      if (!response.ok) {
+        console.error('خطأ في جلب الإحصائيات العامة:', response.status, response.statusText);
+        return {
+          totalSuppliers: 0,
+          totalCashPurchases: "0",
+          totalCreditPurchases: "0",
+          totalDebt: "0",
+          totalPaid: "0",
+          remainingDebt: "0",
+          activeSuppliers: 0
+        };
+      }
+      return await response.json();
+    },
+    refetchOnWindowFocus: false,
+    staleTime: 60000 // 1 minute
+  });
+
+  // جلب إحصائيات مفلترة للمورد المحدد
   const { data: supplierStats } = useQuery<{
     totalSuppliers: number;
     totalCashPurchases: string;
@@ -148,11 +179,11 @@ export default function SupplierAccountsPage() {
       if (dateTo) params.append('dateTo', dateTo);
       if (paymentTypeFilter && paymentTypeFilter !== 'all') params.append('purchaseType', paymentTypeFilter);
       
-      console.log('🔄 إرسال طلب إحصائيات مع الفلاتر:', Object.fromEntries(params));
+      console.log('🔄 إرسال طلب إحصائيات مفلترة:', Object.fromEntries(params));
       
       const response = await fetch(`/api/suppliers/statistics?${params.toString()}`);
       if (!response.ok) {
-        console.error('خطأ في جلب إحصائيات الموردين:', response.status, response.statusText);
+        console.error('خطأ في جلب إحصائيات الموردين المفلترة:', response.status, response.statusText);
         return {
           totalSuppliers: 0,
           totalCashPurchases: "0",
@@ -166,7 +197,8 @@ export default function SupplierAccountsPage() {
       return await response.json();
     },
     refetchOnWindowFocus: false,
-    staleTime: 30000 // 30 seconds
+    staleTime: 30000, // 30 seconds
+    enabled: !!selectedSupplierId // فقط عند تحديد مورد
   });
 
   // إزالة الطلب للإحصائيات المركبة والاعتماد على الحسابات المحلية
@@ -203,15 +235,16 @@ export default function SupplierAccountsPage() {
     count: creditPurchases.length
   };
 
-  // استخدام الإحصائيات من API إذا كانت متوفرة، وإلا الحسابات المحلية
+  // استخدام الإحصائيات العامة للبطاقات العلوية والمفلترة للمورد المحدد
   const overallStats = {
-    totalSuppliers: supplierStats?.totalSuppliers || suppliers.length,
-    totalCashPurchases: supplierStats?.totalCashPurchases || "0",
-    totalCreditPurchases: supplierStats?.totalCreditPurchases || "0",
-    totalDebt: supplierStats?.totalDebt || "0",
-    totalPaid: supplierStats?.totalPaid || "0",
-    remainingDebt: supplierStats?.remainingDebt || "0",
-    activeSuppliers: supplierStats?.activeSuppliers || suppliers.filter(s => parseFloat(s.totalDebt) > 0).length,
+    // الإحصائيات العامة من globalStats (بدون فلاتر)
+    totalSuppliers: globalStats?.totalSuppliers || suppliers.length,
+    totalCashPurchases: globalStats?.totalCashPurchases || "0",
+    totalCreditPurchases: globalStats?.totalCreditPurchases || "0",
+    totalDebt: globalStats?.totalDebt || "0",
+    totalPaid: globalStats?.totalPaid || "0",
+    remainingDebt: selectedSupplierId ? (supplierStats?.remainingDebt || "0") : (globalStats?.remainingDebt || "0"),
+    activeSuppliers: globalStats?.activeSuppliers || suppliers.filter(s => parseFloat(s.totalDebt) > 0).length,
     totalPurchases: purchases.length
   };
 
