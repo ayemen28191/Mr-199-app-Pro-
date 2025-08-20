@@ -106,6 +106,13 @@ const ToolMovementsDialog: React.FC<ToolMovementsDialogProps> = ({
   // Fetch tool movements
   const { data: movements = [], isLoading } = useQuery<ToolMovement[]>({
     queryKey: ['/api/tool-movements', toolId],
+    queryFn: async () => {
+      const response = await fetch(`/api/tool-movements?toolId=${toolId}`);
+      if (!response.ok) {
+        throw new Error('فشل في جلب حركات الأداة');
+      }
+      return response.json();
+    },
     enabled: !!toolId && open,
   });
 
@@ -160,7 +167,7 @@ const ToolMovementsDialog: React.FC<ToolMovementsDialogProps> = ({
         notes: data.notes,
         cost: null,
         gpsLocation: null, // Can be enhanced with GPS if needed
-        performedAt: new Date(),
+        performedAt: new Date().toISOString(),
       };
 
       return apiRequest('/api/tool-movements', 'POST', movementData);
