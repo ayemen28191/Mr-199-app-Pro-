@@ -4,7 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/not-found";
-import Dashboard from "@/pages/dashboard";
+import DashboardSimple from "@/pages/dashboard-simple";
 
 import WorkerAttendance from "@/pages/worker-attendance";
 
@@ -31,7 +31,7 @@ import { FloatingButtonProvider } from "@/components/layout/floating-button-cont
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Dashboard} />
+      <Route path="/" component={DashboardSimple} />
 
       <Route path="/projects" component={ProjectsPage} />
       <Route path="/workers" component={WorkersPage} />
