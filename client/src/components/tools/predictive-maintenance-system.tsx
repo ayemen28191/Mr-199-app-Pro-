@@ -74,10 +74,14 @@ const PredictiveMaintenanceSystem: React.FC<PredictiveMaintenanceSystemProps> = 
     enabled: open,
   });
 
-  const { data: usageAnalytics = [] } = useQuery<any[]>({
+  const { data: usageAnalyticsData } = useQuery<any>({
     queryKey: ['/api/tool-usage-analytics'],
     enabled: open,
   });
+
+  // Extract usage analytics from API response
+  // Since there's no specific toolUsageAnalytics array, we'll use recentActivity for analysis
+  const usageAnalytics = usageAnalyticsData?.recentActivity || [];
 
   // AI-powered predictive algorithm
   const predictions = useMemo((): MaintenancePrediction[] => {
@@ -95,10 +99,10 @@ const PredictiveMaintenanceSystem: React.FC<PredictiveMaintenanceSystemProps> = 
       const lastMaintenance = toolMaintenanceHistory
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
 
-      // Get usage data
-      const toolUsage = usageAnalytics.filter(usage => usage.toolId === tool.id);
-      const avgDailyUsage = toolUsage.length > 0 
-        ? toolUsage.reduce((sum, u) => sum + (u.hoursUsed || 0), 0) / toolUsage.length 
+      // Get usage data from recent activity
+      const toolActivity = usageAnalytics.filter((activity: any) => activity.toolId === tool.id);
+      const avgDailyUsage = toolActivity.length > 0 
+        ? Math.min(toolActivity.length * 2, 12) // Estimate usage based on activity frequency 
         : 4; // Default 4 hours per day
 
       // Calculate days since last maintenance
