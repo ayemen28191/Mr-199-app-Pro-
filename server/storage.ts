@@ -1009,7 +1009,10 @@ export class DatabaseStorage implements IStorage {
     }
     
     if (purchaseType && purchaseType !== 'all') {
-      conditions.push(eq(materialPurchases.purchaseType, purchaseType));
+      // إضافة شرط فلترة purchaseType مع التعامل مع علامات التنصيص المضاعفة
+      console.log(`🔍 فلتر purchaseType المطلوب: "${purchaseType}"`);
+      // استخدام LIKE للبحث المرن
+      conditions.push(sql`${materialPurchases.purchaseType} LIKE ${'%' + purchaseType + '%'}`);
     }
 
     // جلب المشتريات مع معلومات المواد والموردين
@@ -2841,9 +2844,15 @@ export class DatabaseStorage implements IStorage {
         .where(and(...paymentConditions))
         .orderBy(supplierPayments.paymentDate);
 
-      // فصل المشتريات حسب نوع الدفع
-      const cashPurchasesList = purchases.filter(p => p.purchaseType === 'نقد');
-      const creditPurchasesList = purchases.filter(p => p.purchaseType === 'أجل');
+      // فصل المشتريات حسب نوع الدفع (مع إزالة علامات التنصيص المحتملة)
+      const cashPurchasesList = purchases.filter(p => {
+        const cleanType = p.purchaseType?.replace(/['"]/g, '') || '';
+        return cleanType === 'نقد';
+      });
+      const creditPurchasesList = purchases.filter(p => {
+        const cleanType = p.purchaseType?.replace(/['"]/g, '') || '';
+        return cleanType === 'أجل';
+      });
 
       // حساب الإجماليات منفصلة
       const cashTotal = cashPurchasesList.reduce((sum, purchase) => 
@@ -2990,9 +2999,17 @@ export class DatabaseStorage implements IStorage {
         console.log('🏷️ جميع قيم purchaseType الموجودة:', uniqueTypes);
       }
       
-      // فصل المشتريات حسب نوع الدفع أولاً
-      const allCashPurchases = purchases.filter(p => p.purchaseType === 'نقد');
-      const allCreditPurchases = purchases.filter(p => p.purchaseType === 'أجل');
+      // فصل المشتريات حسب نوع الدفع أولاً (مع إزالة علامات التنصيص المحتملة)
+      const allCashPurchases = purchases.filter(p => {
+        const cleanType = p.purchaseType?.replace(/['"]/g, '') || '';
+        console.log(`💳 فحص: "${p.purchaseType}" -> "${cleanType}" -> نقد؟ ${cleanType === 'نقد'}`);
+        return cleanType === 'نقد';
+      });
+      const allCreditPurchases = purchases.filter(p => {
+        const cleanType = p.purchaseType?.replace(/['"]/g, '') || '';
+        console.log(`💰 فحص: "${p.purchaseType}" -> "${cleanType}" -> أجل؟ ${cleanType === 'أجل'}`);
+        return cleanType === 'أجل';
+      });
       
       // تطبيق فلتر نوع الدفع المحدد
       let cashPurchases = allCashPurchases;
