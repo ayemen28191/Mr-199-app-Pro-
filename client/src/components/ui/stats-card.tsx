@@ -5,7 +5,7 @@ interface StatsCardProps {
   title: string;
   value: string | number;
   icon: LucideIcon;
-  color: "blue" | "green" | "orange" | "red" | "purple" | "teal" | "indigo";
+  color: "blue" | "green" | "orange" | "red" | "purple" | "teal" | "indigo" | "emerald" | "amber";
   formatter?: (value: number) => string;
 }
 
@@ -58,11 +58,25 @@ const colorVariants = {
     bg: "bg-indigo-50 dark:bg-indigo-900/20",
     iconBg: "bg-indigo-100 dark:bg-indigo-900/30",
     iconColor: "text-indigo-600 dark:text-indigo-400"
+  },
+  emerald: {
+    border: "border-l-emerald-500",
+    text: "text-emerald-600",
+    bg: "bg-emerald-50 dark:bg-emerald-900/20",
+    iconBg: "bg-emerald-100 dark:bg-emerald-900/30",
+    iconColor: "text-emerald-600 dark:text-emerald-400"
+  },
+  amber: {
+    border: "border-l-amber-500",
+    text: "text-amber-600",
+    bg: "bg-amber-50 dark:bg-amber-900/20",
+    iconBg: "bg-amber-100 dark:bg-amber-900/30",
+    iconColor: "text-amber-600 dark:text-amber-400"
   }
 };
 
 export function StatsCard({ title, value, icon: Icon, color, formatter }: StatsCardProps) {
-  const colors = colorVariants[color];
+  const colors = colorVariants[color] || colorVariants.blue; // fallback to blue if color not found
   const displayValue = typeof value === 'number' && formatter ? formatter(value) : value.toString();
   
   return (
