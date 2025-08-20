@@ -16,7 +16,8 @@ import {
   CheckCircle, 
   AlertTriangle,
   Navigation,
-  Clock
+  Clock,
+  Lock
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -51,18 +52,34 @@ import { Separator } from '@/components/ui/separator';
 
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
+import { AutocompleteInput } from '@/components/ui/autocomplete-input-database';
 
-// Form validation schema
+// Enhanced form validation schema with improved constraints
 const addMovementSchema = z.object({
-  movementType: z.string().min(1, 'يجب اختيار نوع الحركة'),
-  toLocation: z.string().min(1, 'يجب تحديد الموقع المستهدف'),
+  movementType: z.string()
+    .min(1, 'يجب اختيار نوع الحركة من القائمة')
+    .refine((val) => ['check_in', 'check_out', 'transfer', 'maintenance', 'return', 'repair', 'inspection'].includes(val), {
+      message: 'نوع الحركة المختار غير صحيح'
+    }),
+  toLocation: z.string()
+    .min(2, 'يجب تحديد الموقع المستهدف (أكثر من حرف واحد)')
+    .max(200, 'اسم الموقع طويل جداً (أكثر من 200 حرف)')
+    .regex(/^[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\w\s\-\(\)\.،]+$/, 'الموقع يحتوي على أحرف غير مسموحة'),
   toProjectId: z.string().optional(),
   quantity: z.coerce.number()
     .min(1, 'الكمية يجب أن تكون أكبر من صفر')
-    .max(1000, 'الكمية مرتفعة جداً'),
-  reason: z.string().optional(),
-  performedBy: z.string().min(2, 'يجب إدخال اسم المسؤول عن الحركة'),
-  notes: z.string().optional(),
+    .max(10000, 'الكمية مرتفعة جداً (أكثر من 10,000)')
+    .int('الكمية يجب أن تكون رقماً صحيحاً'),
+  reason: z.string()
+    .max(300, 'السبب طويل جداً (أكثر من 300 حرف)')
+    .optional(),
+  performedBy: z.string()
+    .min(2, 'يجب إدخال اسم المسؤول عن الحركة (أكثر من حرف واحد)')
+    .max(100, 'اسم المسؤول طويل جداً (أكثر من 100 حرف)')
+    .regex(/^[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\w\s\-\.]+$/, 'اسم المسؤول يحتوي على أحرف غير مسموحة'),
+  notes: z.string()
+    .max(500, 'الملاحظات طويلة جداً (أكثر من 500 حرف)')
+    .optional(),
 });
 
 type AddMovementFormData = z.infer<typeof addMovementSchema>;
@@ -480,29 +497,7 @@ const ToolMovementsDialog: React.FC<ToolMovementsDialogProps> = ({
               <CardContent>
                 <Form {...form}>
                   <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                    {/* Current Tool Info */}
-                    {currentTool && (
-                      <div className="bg-blue-50 dark:bg-blue-900/20 p-3 sm:p-4 rounded-lg border border-blue-200 dark:border-blue-800">
-                        <h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-2 flex items-center gap-2">
-                          <Package className="h-4 w-4" />
-                          الموقع الحالي للأداة
-                        </h4>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-                          {currentTool.projectName && (
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-blue-700 dark:text-blue-400">المشروع:</span>
-                              <span className="text-blue-800 dark:text-blue-300">{currentTool.projectName}</span>
-                            </div>
-                          )}
-                          {currentTool.currentLocation && (
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-blue-700 dark:text-blue-400">الموقع:</span>
-                              <span className="text-blue-800 dark:text-blue-300">{currentTool.currentLocation}</span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
+
 
                     <div className="grid grid-cols-1 gap-4">
 
@@ -541,12 +536,12 @@ const ToolMovementsDialog: React.FC<ToolMovementsDialogProps> = ({
                             <FormItem>
                               <FormLabel>الكمية *</FormLabel>
                               <FormControl>
-                                <Input
-                                  type="number"
-                                  min="1"
+                                <AutocompleteInput
+                                  value={field.value?.toString() || ''}
+                                  onChange={(value) => field.onChange(parseInt(value) || 1)}
                                   placeholder="1"
-                                  {...field}
-                                  className="text-sm"
+                                  category="toolQuantities"
+                                  className="text-sm arabic-numbers"
                                 />
                               </FormControl>
                               <FormMessage />
@@ -570,10 +565,12 @@ const ToolMovementsDialog: React.FC<ToolMovementsDialogProps> = ({
                               <FormItem>
                                 <FormLabel className="text-green-800 dark:text-green-300 font-semibold">الموقع الجديد *</FormLabel>
                                 <FormControl>
-                                  <Input
-                                    placeholder="مثال: موقع العمل - القطاع B"
-                                    {...field}
-                                    className="border-green-300 dark:border-green-700 focus:border-green-500 text-sm"
+                                  <AutocompleteInput
+                                    value={field.value || ''}
+                                    onChange={field.onChange}
+                                    placeholder="مثال: موقع العمل - القطاع B، مخزن رقم 1، ورشة الصيانة"
+                                    category="toolLocations"
+                                    className="border-green-300 dark:border-green-700 focus:border-green-500 text-sm arabic-numbers"
                                   />
                                 </FormControl>
                                 <FormMessage />
@@ -620,10 +617,12 @@ const ToolMovementsDialog: React.FC<ToolMovementsDialogProps> = ({
                             <FormItem>
                               <FormLabel>المسؤول عن الحركة *</FormLabel>
                               <FormControl>
-                                <Input
-                                  placeholder="اسم الشخص المسؤول"
-                                  {...field}
-                                  className="text-sm"
+                                <AutocompleteInput
+                                  value={field.value || ''}
+                                  onChange={field.onChange}
+                                  placeholder="اسم الشخص المسؤول، مثال: أحمد محمد، مهندس الموقع"
+                                  category="performedByNames"
+                                  className="text-sm arabic-numbers"
                                 />
                               </FormControl>
                               <FormMessage />
@@ -636,12 +635,14 @@ const ToolMovementsDialog: React.FC<ToolMovementsDialogProps> = ({
                           name="reason"
                           render={({ field }) => (
                             <FormItem>
-                              <FormLabel>سبب الحركة</FormLabel>
+                              <FormLabel>سبب الحركة (اختياري)</FormLabel>
                               <FormControl>
-                                <Input
-                                  placeholder="مثال: صيانة دورية، نقل للمشروع"
-                                  {...field}
-                                  className="text-sm"
+                                <AutocompleteInput
+                                  value={field.value || ''}
+                                  onChange={field.onChange}
+                                  placeholder="مثال: انتهاء العمل، صيانة دورية، تغيير الموقع، طلب المشروع"
+                                  category="movementReasons"
+                                  className="text-sm arabic-numbers"
                                 />
                               </FormControl>
                               <FormMessage />
@@ -656,13 +657,14 @@ const ToolMovementsDialog: React.FC<ToolMovementsDialogProps> = ({
                       name="notes"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>ملاحظات إضافية</FormLabel>
+                          <FormLabel>ملاحظات إضافية (اختياري)</FormLabel>
                           <FormControl>
-                            <Textarea
-                              placeholder="أي ملاحظات أو تفاصيل إضافية..."
-                              {...field}
-                              rows={3}
-                              className="text-sm"
+                            <AutocompleteInput
+                              value={field.value || ''}
+                              onChange={field.onChange}
+                              placeholder="مثال: الأداة في حالة ممتازة، تحتاج صيانة بسيطة، تم التحقق من الأداء"
+                              category="movementNotes"
+                              className="text-sm arabic-numbers"
                             />
                           </FormControl>
                           <FormMessage />
