@@ -4044,7 +4044,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const categoryMap = new Map(categories.map(c => [c.id, c.name]));
       
       // جلب أسماء المشاريع للأدوات المربوطة بمشاريع
-      const projects = await storage.getProjects({});
+      const projects = await storage.getProjects();
       const projectMap = new Map(projects.map(p => [p.id, p.name]));
       
       const usageReport = tools.map(tool => {

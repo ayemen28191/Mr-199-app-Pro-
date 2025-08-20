@@ -91,6 +91,7 @@ interface Tool {
   name: string;
   description?: string;
   categoryId?: string;
+  projectId?: string; // إضافة المشروع المرتبط
   sku?: string;
   serialNumber?: string;
   barcode?: string;
