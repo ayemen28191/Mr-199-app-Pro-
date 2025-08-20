@@ -668,7 +668,7 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                         name="projectId"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>المشروع المرتبط *</FormLabel>
+                            <FormLabel>المشروع الرئيسي <span className="text-red-500">*</span></FormLabel>
                             <Select onValueChange={field.onChange} value={field.value || ""}>
                               <FormControl>
                                 <SelectTrigger data-testid="tool-project-select">
@@ -688,36 +688,31 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
                               </SelectContent>
                             </Select>
                             <FormDescription>
-                              اختر المشروع الذي ستستخدم فيه هذه الأداة
+                              المشروع الذي ستنتمي إليه الأداة كموقع رئيسي
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
                       />
 
-                      {/* حقل المشروع الحالي المجمد - للعرض فقط */}
-
-
                       <FormField
                         control={form.control}
                         name="locationType"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>نوع الموقع <span className="text-red-500">*</span></FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value || ""}>
-                              <FormControl>
-                                <SelectTrigger data-testid="tool-location-type-select">
-                                  <SelectValue placeholder="اختر نوع الموقع" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                <SelectItem value="مخزن">مخزن</SelectItem>
-                                <SelectItem value="مشروع">مشروع</SelectItem>
-                                <SelectItem value="فرع">فرع</SelectItem>
-                                <SelectItem value="مكتب">مكتب</SelectItem>
-                                <SelectItem value="ورشة">ورشة</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            <FormLabel>نوع الموقع <span className="text-xs text-gray-500">(اختياري)</span></FormLabel>
+                            <FormControl>
+                              <AutocompleteInput
+                                value={field.value || ''}
+                                onChange={field.onChange}
+                                placeholder="مثال: مخزن، ورشة، مكتب، فرع"
+                                category="toolLocationTypes"
+                                className="arabic-numbers"
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              مثال: مخزن رئيسي، ورشة الصيانة، إلخ
+                            </FormDescription>
                             <FormMessage />
                           </FormItem>
                         )}
@@ -725,21 +720,26 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
 
                       <FormField
                         control={form.control}
-                        name="locationId"
+                        name="projectId"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>تحديد الموقع <span className="text-xs text-gray-500">(اختياري)</span></FormLabel>
-                            <FormControl>
-                              <AutocompleteInput
-                                value={field.value || ''}
-                                onChange={field.onChange}
-                                placeholder="مثال: مخزن رقم 1، مشروع الرياض، ورشة الصيانة"
-                                category="toolLocations"
-                                className="arabic-numbers"
-                              />
-                            </FormControl>
+                            <FormLabel>المشروع الرئيسي <span className="text-red-500">*</span></FormLabel>
+                            <Select onValueChange={field.onChange} value={field.value || ""}>
+                              <FormControl>
+                                <SelectTrigger data-testid="tool-project-select">
+                                  <SelectValue placeholder="اختر المشروع" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {projects.map((project) => (
+                                  <SelectItem key={project.id} value={project.id}>
+                                    {project.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                             <FormDescription>
-                              مثال: مخزن رقم 1، مشروع الرياض، إلخ
+                              المشروع الذي ستنتمي إليه الأداة كموقع رئيسي
                             </FormDescription>
                             <FormMessage />
                           </FormItem>
