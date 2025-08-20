@@ -4708,6 +4708,61 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  // إصلاح مواقع الأدوات بناءً على آخر حركات النقل
+  async fixToolLocations(): Promise<void> {
+    try {
+      console.log('🔧 بدء إصلاح مواقع الأدوات...');
+      
+      // الحصول على آخر حركة نقل لكل أداة
+      const lastMovements = await db.execute(sql`
+        WITH latest_movements AS (
+          SELECT DISTINCT ON (tool_id) 
+            tool_id,
+            to_type,
+            to_id,
+            movement_type,
+            performed_at
+          FROM tool_movements 
+          WHERE movement_type IN ('transfer', 'check_out', 'check_in')
+          ORDER BY tool_id, performed_at DESC
+        )
+        SELECT 
+          lm.tool_id,
+          lm.to_type,
+          lm.to_id,
+          t.name as tool_name,
+          t.project_id as current_project_id
+        FROM latest_movements lm
+        JOIN tools t ON lm.tool_id = t.id
+      `);
+      
+      let updatedCount = 0;
+      
+      for (const movement of lastMovements.rows) {
+        const newProjectId = movement.to_type === 'project' ? movement.to_id : null;
+        
+        // تحديث الأداة إذا كان موقعها مختلف
+        if (movement.current_project_id !== newProjectId) {
+          await db
+            .update(tools)
+            .set({ 
+              projectId: newProjectId,
+              updatedAt: sql`CURRENT_TIMESTAMP`
+            })
+            .where(eq(tools.id, movement.tool_id));
+          
+          console.log(`✅ تم تحديث أداة "${movement.tool_name}" إلى المشروع: ${newProjectId || 'المستودع'}`);
+          updatedCount++;
+        }
+      }
+      
+      console.log(`🎉 تم إصلاح ${updatedCount} أداة بنجاح`);
+    } catch (error) {
+      console.error('خطأ في إصلاح مواقع الأدوات:', error);
+      throw error;
+    }
+  }
+
 }
 
 export const storage = new DatabaseStorage();

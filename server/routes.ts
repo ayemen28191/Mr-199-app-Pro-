@@ -5058,7 +5058,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-
+  // Fix tools current location based on latest movements
+  app.post('/api/tools/fix-locations', async (req, res) => {
+    try {
+      await storage.fixToolLocations();
+      res.json({ message: 'تم إصلاح مواقع الأدوات بنجاح' });
+    } catch (error) {
+      console.error('Error fixing tool locations:', error);
+      res.status(500).json({ error: 'فشل في إصلاح مواقع الأدوات' });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;
