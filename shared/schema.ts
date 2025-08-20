@@ -286,33 +286,50 @@ export const projectFundTransfers = pgTable("project_fund_transfers", {
 export const insertProjectSchema = createInsertSchema(projects).omit({ id: true, createdAt: true });
 export const insertWorkerSchema = createInsertSchema(workers).omit({ id: true, createdAt: true });
 export const insertFundTransferSchema = createInsertSchema(fundTransfers).omit({ id: true, createdAt: true }).extend({
+  amount: z.coerce.string(), // تحويل number إلى string تلقائياً للتوافق مع نوع decimal
   transferDate: z.coerce.date(), // تحويل string إلى Date تلقائياً
 });
 export const insertWorkerAttendanceSchema = createInsertSchema(workerAttendance).omit({ id: true, createdAt: true, actualWage: true }).extend({
   workDays: z.number().min(0.1).max(2.0).default(1.0), // عدد أيام العمل من 0.1 إلى 2.0
+  dailyWage: z.coerce.string(), // تحويل إلى string للتوافق مع نوع decimal
+  paidAmount: z.coerce.string().optional(), // تحويل إلى string للتوافق مع نوع decimal
+  remainingAmount: z.coerce.string().optional(), // تحويل إلى string للتوافق مع نوع decimal
 });
 export const insertMaterialSchema = createInsertSchema(materials).omit({ id: true, createdAt: true });
 export const insertMaterialPurchaseSchema = createInsertSchema(materialPurchases).omit({ id: true, createdAt: true }).extend({
-  quantity: z.coerce.number().positive(), // تحويل تلقائي للرقم
-  unitPrice: z.coerce.number().positive(), // تحويل تلقائي للرقم
-  totalAmount: z.coerce.number().positive(), // تحويل تلقائي للرقم
+  quantity: z.coerce.string(), // تحويل إلى string للتوافق مع نوع decimal
+  unitPrice: z.coerce.string(), // تحويل إلى string للتوافق مع نوع decimal
+  totalAmount: z.coerce.string(), // تحويل إلى string للتوافق مع نوع decimal
   purchaseType: z.string().default("نقد"), // قيمة افتراضية للنوع
-  paidAmount: z.coerce.number().default(0), // المبلغ المدفوع
-  remainingAmount: z.coerce.number().default(0), // المتبقي
+  paidAmount: z.coerce.string().default("0"), // المبلغ المدفوع
+  remainingAmount: z.coerce.string().default("0"), // المتبقي
 });
-export const insertTransportationExpenseSchema = createInsertSchema(transportationExpenses).omit({ id: true, createdAt: true });
+export const insertTransportationExpenseSchema = createInsertSchema(transportationExpenses).omit({ id: true, createdAt: true }).extend({
+  amount: z.coerce.string(), // تحويل number إلى string تلقائياً للتوافق مع نوع decimal
+});
 export const insertWorkerTransferSchema = createInsertSchema(workerTransfers).omit({ id: true, createdAt: true }).extend({
   amount: z.coerce.string(), // تحويل number إلى string تلقائياً للتوافق مع نوع decimal في قاعدة البيانات
 });
-export const insertWorkerBalanceSchema = createInsertSchema(workerBalances).omit({ id: true, createdAt: true, lastUpdated: true });
-export const insertProjectFundTransferSchema = createInsertSchema(projectFundTransfers).omit({ id: true, createdAt: true });
+export const insertWorkerBalanceSchema = createInsertSchema(workerBalances).omit({ id: true, createdAt: true, lastUpdated: true }).extend({
+  totalEarned: z.coerce.string().optional(),
+  totalPaid: z.coerce.string().optional(),
+  totalTransferred: z.coerce.string().optional(),
+  currentBalance: z.coerce.string().optional(),
+});
+export const insertProjectFundTransferSchema = createInsertSchema(projectFundTransfers).omit({ id: true, createdAt: true }).extend({
+  amount: z.coerce.string(), // تحويل number إلى string تلقائياً للتوافق مع نوع decimal
+});
 export const insertDailyExpenseSummarySchema = createInsertSchema(dailyExpenseSummaries).omit({ id: true, createdAt: true });
 export const insertWorkerTypeSchema = createInsertSchema(workerTypes).omit({ id: true, createdAt: true, lastUsed: true });
 export const insertAutocompleteDataSchema = createInsertSchema(autocompleteData).omit({ id: true, createdAt: true, lastUsed: true });
-export const insertWorkerMiscExpenseSchema = createInsertSchema(workerMiscExpenses).omit({ id: true, createdAt: true });
+export const insertWorkerMiscExpenseSchema = createInsertSchema(workerMiscExpenses).omit({ id: true, createdAt: true }).extend({
+  amount: z.coerce.string(), // تحويل number إلى string تلقائياً للتوافق مع نوع decimal
+});
 export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, updatedAt: true, lastLogin: true });
 export const insertSupplierSchema = createInsertSchema(suppliers).omit({ id: true, createdAt: true });
-export const insertSupplierPaymentSchema = createInsertSchema(supplierPayments).omit({ id: true, createdAt: true });
+export const insertSupplierPaymentSchema = createInsertSchema(supplierPayments).omit({ id: true, createdAt: true }).extend({
+  amount: z.coerce.string(), // تحويل number إلى string تلقائياً للتوافق مع نوع decimal
+});
 export const insertPrintSettingsSchema = createInsertSchema(printSettings).omit({ id: true, createdAt: true, updatedAt: true });
 
 // Type definitions
@@ -897,6 +914,9 @@ export const insertToolSchema = createInsertSchema(tools).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  purchasePrice: z.coerce.string().optional(), // تحويل number إلى string للتوافق مع نوع decimal
+  currentValue: z.coerce.string().optional(), // تحويل number إلى string للتوافق مع نوع decimal
 });
 
 // Schema مخصص لتحديث الأدوات مع معالجة تحويل الأنواع
@@ -966,6 +986,10 @@ export const insertToolMaintenanceLogSchema = createInsertSchema(toolMaintenance
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  laborCost: z.coerce.string().optional(), // تحويل number إلى string للتوافق مع نوع decimal
+  partsCost: z.coerce.string().optional(), // تحويل number إلى string للتوافق مع نوع decimal
+  totalCost: z.coerce.string().optional(), // تحويل number إلى string للتوافق مع نوع decimal
 });
 
 export const insertToolUsageAnalyticsSchema = createInsertSchema(toolUsageAnalytics).omit({
@@ -1019,6 +1043,9 @@ export const insertToolPurchaseItemSchema = createInsertSchema(toolPurchaseItems
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  unitPrice: z.coerce.string(), // تحويل number إلى string للتوافق مع نوع decimal
+  totalPrice: z.coerce.string(), // تحويل number إلى string للتوافق مع نوع decimal
 });
 
 export const insertMaintenanceScheduleSchema = createInsertSchema(maintenanceSchedules).omit({
