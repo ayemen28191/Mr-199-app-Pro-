@@ -55,9 +55,7 @@ import { apiRequest } from '@/lib/queryClient';
 // Form validation schema
 const addMovementSchema = z.object({
   movementType: z.string().min(1, 'يجب اختيار نوع الحركة'),
-  fromLocation: z.string().optional(),
   toLocation: z.string().min(1, 'يجب تحديد الموقع المستهدف'),
-  fromProjectId: z.string().optional(),
   toProjectId: z.string().optional(),
   quantity: z.coerce.number()
     .min(1, 'الكمية يجب أن تكون أكبر من صفر')
@@ -140,13 +138,29 @@ const ToolMovementsDialog: React.FC<ToolMovementsDialogProps> = ({
   const createMovementMutation = useMutation({
     mutationFn: async (data: AddMovementFormData) => {
       const movementData = {
-        ...data,
         toolId,
-        // Convert "none" to null for project IDs
-        fromProjectId: data.fromProjectId === "none" ? null : data.fromProjectId,
-        toProjectId: data.toProjectId === "none" ? null : data.toProjectId,
+        movementType: data.movementType,
+        quantity: Number(data.quantity),
+        
+        // From location (current location from tool data)
+        fromType: currentTool?.projectId ? 'project' : 'warehouse',
+        fromId: currentTool?.projectId || null,
+        fromName: currentTool?.projectName || 'مخزن رئيسي',
+        
+        // To location (destination)
+        toType: data.toProjectId && data.toProjectId !== 'none' ? 'project' : 'warehouse',
+        toId: data.toProjectId === 'none' ? null : data.toProjectId,
+        toName: data.toProjectId && data.toProjectId !== 'none' 
+          ? projects.find(p => p.id === data.toProjectId)?.name || data.toLocation
+          : data.toLocation,
+        
+        // Other details
+        performedBy: data.performedBy,
+        reason: data.reason,
+        notes: data.notes,
+        cost: null,
         gpsLocation: null, // Can be enhanced with GPS if needed
-        createdAt: new Date().toISOString(),
+        performedAt: new Date(),
       };
 
       return apiRequest('/api/tool-movements', 'POST', movementData);
@@ -472,52 +486,6 @@ const ToolMovementsDialog: React.FC<ToolMovementsDialogProps> = ({
                         />
                       </div>
 
-                      {/* من الموقع والمشروع */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <FormField
-                          control={form.control}
-                          name="fromLocation"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>من الموقع (اختياري)</FormLabel>
-                              <FormControl>
-                                <Input
-                                  placeholder={currentTool?.currentLocation || "الموقع الحالي"}
-                                  {...field}
-                                  className="text-sm bg-gray-50 dark:bg-gray-800"
-                                />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-
-                        <FormField
-                          control={form.control}
-                          name="fromProjectId"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>من المشروع (اختياري)</FormLabel>
-                              <Select onValueChange={field.onChange} value={field.value || currentTool?.projectId || 'none'}>
-                                <FormControl>
-                                  <SelectTrigger className="text-sm bg-gray-50 dark:bg-gray-800">
-                                    <SelectValue placeholder={currentTool?.projectName || "المشروع الحالي"} />
-                                  </SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                  <SelectItem value="none">غير محدد</SelectItem>
-                                  {projects.map((project) => (
-                                    <SelectItem key={project.id} value={project.id}>
-                                      {project.name}
-                                    </SelectItem>
-                                  ))}
-                                </SelectContent>
-                              </Select>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                      </div>
 
                       {/* إلى الموقع والمشروع - المطلوب */}
                       <div className="bg-green-50 dark:bg-green-900/20 p-3 sm:p-4 rounded-lg border border-green-200 dark:border-green-800">
