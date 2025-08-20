@@ -188,6 +188,7 @@ export default function AdvancedDataExport() {
     try {
       setIsExporting(true);
       
+      const ExcelJS = await import('exceljs');
       const workbook = new ExcelJS.Workbook();
       
       // ورقة الملخص العام
