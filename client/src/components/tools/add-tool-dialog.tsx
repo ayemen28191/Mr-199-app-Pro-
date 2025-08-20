@@ -151,7 +151,7 @@ const AddToolDialog: React.FC<AddToolDialogProps> = ({ open, onOpenChange }) => 
         value: value.trim(),
         usageCount: 1
       });
-      console.log(`✅ تم حفظ قيمة الإكمال التلقائي: ${category} = ${value.trim()}`);
+
     } catch (error) {
       console.error(`❌ خطأ في حفظ قيمة الإكمال التلقائي ${category}:`, error);
     }

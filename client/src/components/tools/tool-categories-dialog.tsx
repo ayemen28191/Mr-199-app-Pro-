@@ -111,7 +111,7 @@ const ToolCategoriesDialog: React.FC<ToolCategoriesDialogProps> = ({
         value: value.trim() 
       });
     } catch (error) {
-      console.log(`Failed to save autocomplete value for ${category}:`, error);
+
     }
   };
 

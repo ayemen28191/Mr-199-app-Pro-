@@ -384,8 +384,6 @@ export function MaintenanceScheduleDialog({
                   placeholder="وصف تفصيلي لجدول الصيانة..."
                   category="maintenanceDescriptions"
                   className="arabic-numbers"
-                  isTextArea={true}
-                  rows={3}
                 />
               </div>
 

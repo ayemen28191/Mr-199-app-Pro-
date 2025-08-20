@@ -57,14 +57,6 @@ export const EnhancedWorkerAccountStatementRealData = ({
     summary = {},
     projectsInfo = []
   } = data || {};
-  
-  console.log('🔍 بيانات كشف الحساب الحقيقية:', {
-    worker,
-    attendanceCount: attendance.length,
-    transfersCount: transfers.length,
-    selectedProject: selectedProject?.name,
-    dateRange: `${dateFrom} - ${dateTo}`
-  });
 
   // حساب الإجماليات الحقيقية من البيانات - مع إصلاح حساب أيام العمل
   const realStats = attendance.reduce((acc: any, record: any) => {
@@ -76,7 +68,7 @@ export const EnhancedWorkerAccountStatementRealData = ({
     const earned = dailyWage * workDays;
     const paid = Number(record.paidAmount) || 0;
     
-    console.log(`📊 سجل حضور: التاريخ=${record.date}, الأيام=${workDays}, الأجر=${dailyWage}, المستحق=${earned}, المدفوع=${paid}`);
+
     
     return {
       totalWorkDays: acc.totalWorkDays + workDays,
@@ -86,7 +78,7 @@ export const EnhancedWorkerAccountStatementRealData = ({
     };
   }, { totalWorkDays: 0, totalWorkHours: 0, totalEarned: 0, totalPaid: 0 });
   
-  console.log('🧮 الإجماليات المحسوبة:', realStats);
+
 
   const totalRemaining = realStats.totalEarned - realStats.totalPaid;
   const totalTransferred = transfers.reduce((sum: number, transfer: any) => sum + (Number(transfer.amount) || 0), 0);
@@ -95,7 +87,7 @@ export const EnhancedWorkerAccountStatementRealData = ({
   // تصدير Excel محسن بالبيانات الحقيقية
   const exportToExcel = async () => {
     try {
-      console.log('📊 بدء تصدير كشف الحساب بالبيانات الحقيقية...');
+
       
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('كشف حساب العامل - بيانات حقيقية');
@@ -148,7 +140,7 @@ export const EnhancedWorkerAccountStatementRealData = ({
         const remaining = earned - paid;
         const status = paid >= earned ? 'مدفوع كامل' : paid > 0 ? 'مدفوع جزئي' : 'غير مدفوع';
         
-        console.log(`📋 Excel Row ${index + 1}: أيام=${workDays}, مستحق=${earned}, مدفوع=${paid}, متبقي=${remaining}`);
+
         
         totalEarnedExcel += earned;
         totalPaidExcel += paid;
@@ -254,7 +246,7 @@ export const EnhancedWorkerAccountStatementRealData = ({
       
       saveAs(blob, fileName);
       
-      console.log('✅ تم تصدير ملف Excel بالبيانات الحقيقية بنجاح');
+
       
     } catch (error) {
       console.error('❌ خطأ في تصدير Excel:', error);
@@ -265,7 +257,7 @@ export const EnhancedWorkerAccountStatementRealData = ({
   // دالة الطباعة المحسنة
   const handlePrint = () => {
     try {
-      console.log('🖨️ بدء عملية الطباعة بالبيانات الحقيقية...');
+
       
       const printContent = document.getElementById('enhanced-worker-account-statement-real-data');
       if (!printContent || !printContent.innerHTML.trim()) {
@@ -275,7 +267,7 @@ export const EnhancedWorkerAccountStatementRealData = ({
 
       window.print();
       
-      console.log('✅ تمت عملية الطباعة بنجاح');
+
       
     } catch (error) {
       console.error('❌ خطأ في الطباعة:', error);
@@ -286,7 +278,7 @@ export const EnhancedWorkerAccountStatementRealData = ({
   // دالة تحميل صورة التقرير
   const downloadImage = async () => {
     try {
-      console.log('📸 بدء تحميل صورة التقرير...');
+
       
       const element = document.getElementById('enhanced-worker-account-statement-real-data');
       if (!element) {
@@ -322,7 +314,7 @@ export const EnhancedWorkerAccountStatementRealData = ({
       link.click();
       document.body.removeChild(link);
 
-      console.log('✅ تم تحميل صورة التقرير بنجاح');
+
       
     } catch (error) {
       console.error('❌ خطأ في تحميل الصورة:', error);

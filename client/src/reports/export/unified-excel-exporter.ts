@@ -1,24 +1,33 @@
 /**
- * الوصف: نظام تصدير Excel موحد لجميع التقارير
+ * الوصف: نظام تصدير Excel موحد لجميع التقارير (محسّن للأداء)
  * المدخلات: بيانات التقرير + نوع التقرير
  * المخرجات: ملف Excel منسق باحترافية
  * المالك: عمار
- * آخر تعديل: 2025-08-15
- * الحالة: نشط
+ * آخر تعديل: 2025-08-20 (تحسين الأداء - Dynamic Import)
+ * الحالة: نشط - محسّن للأداء
  */
 
-import * as ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 
 // استيراد الأنماط الموحدة
 import { EXCEL_STYLES, COMPANY_INFO, addReportHeader } from '../../components/excel-export-utils';
 
 export class UnifiedExcelExporter {
-  private workbook: ExcelJS.Workbook;
+  private workbook: any;
+  private ExcelJS: any;
   
   constructor() {
-    this.workbook = new ExcelJS.Workbook();
-    this.initializeWorkbook();
+    // تحسين الأداء: تحميل ExcelJS عند الحاجة فقط
+  }
+
+  // تحميل ExcelJS بشكل ديناميكي
+  private async loadExcelJS() {
+    if (!this.ExcelJS) {
+      this.ExcelJS = await import('exceljs');
+      this.workbook = new this.ExcelJS.Workbook();
+      this.initializeWorkbook();
+    }
+    return this.ExcelJS;
   }
 
   private initializeWorkbook() {
@@ -32,6 +41,7 @@ export class UnifiedExcelExporter {
    * تصدير تقرير المصروفات اليومية
    */
   async exportDailyExpenses(data: any, filename: string = 'daily-expenses') {
+    await this.loadExcelJS(); // تحميل المكتبة عند الحاجة
     const worksheet = this.workbook.addWorksheet('المصروفات اليومية', {
       properties: { defaultColWidth: 15 }
     });

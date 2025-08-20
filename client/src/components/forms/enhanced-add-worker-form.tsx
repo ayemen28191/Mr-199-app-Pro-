@@ -33,7 +33,7 @@ export default function EnhancedAddWorkerForm({ onSuccess }: EnhancedAddWorkerFo
       });
     } catch (error) {
       // تجاهل الأخطاء لأن هذه عملية مساعدة
-      console.log(`Failed to save autocomplete value for ${category}:`, error);
+
     }
   };
 

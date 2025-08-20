@@ -15,7 +15,7 @@ export function useSelectedProject() {
       const savedProjectId = localStorage.getItem(SELECTED_PROJECT_KEY);
       const savedProjectName = localStorage.getItem(SELECTED_PROJECT_NAME_KEY);
       
-      console.log('🔄 تحميل المشروع المحفوظ:', { savedProjectId, savedProjectName });
+
       
       if (savedProjectId && savedProjectId !== "undefined" && savedProjectId !== "null") {
         setSelectedProjectId(savedProjectId);
@@ -24,7 +24,7 @@ export function useSelectedProject() {
         }
       }
     } catch (error) {
-      console.error('❌ خطأ في تحميل المشروع المحفوظ:', error);
+
       // في حالة وجود خطأ، قم بمسح البيانات الفاسدة
       localStorage.removeItem(SELECTED_PROJECT_KEY);
       localStorage.removeItem(SELECTED_PROJECT_NAME_KEY);
@@ -35,7 +35,7 @@ export function useSelectedProject() {
 
   // حفظ المشروع في localStorage عند تغييره
   const selectProject = useCallback((projectId: string, projectName?: string) => {
-    console.log('💾 حفظ المشروع الجديد:', { projectId, projectName });
+
     
     setSelectedProjectId(projectId);
     
@@ -49,21 +49,21 @@ export function useSelectedProject() {
         if (projectName) {
           localStorage.setItem(SELECTED_PROJECT_NAME_KEY, projectName);
         }
-        console.log('✅ تم حفظ المشروع بنجاح في localStorage');
+
       } else {
         localStorage.removeItem(SELECTED_PROJECT_KEY);
         localStorage.removeItem(SELECTED_PROJECT_NAME_KEY);
         setSelectedProjectName("");
-        console.log('🗑️ تم مسح بيانات المشروع من localStorage');
+
       }
     } catch (error) {
-      console.error('❌ خطأ في حفظ المشروع:', error);
+
     }
   }, []);
 
   // دالة لمسح الاختيار الحالي
   const clearProject = useCallback(() => {
-    console.log('🧹 مسح اختيار المشروع');
+
     selectProject("", "");
   }, [selectProject]);
 

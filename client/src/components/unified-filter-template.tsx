@@ -116,7 +116,7 @@ export function UnifiedFilterTemplate<T extends Record<string, any>>({
 
   // إشعار المكون الأب بالتغييرات - إصلاح عدم ظهور البيانات
   useEffect(() => {
-    console.log('🔄 إشعار المكون الأب بالتغييرات، عدد النتائج:', filteredAndSortedData.length);
+
     onFilteredDataChange(filteredAndSortedData);
   }, [filteredAndSortedData, onFilteredDataChange]);
 

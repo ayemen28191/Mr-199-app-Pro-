@@ -30,7 +30,7 @@ export default function ProjectSelector({
   // دالة معالجة تغيير المشروع مع تمرير اسم المشروع
   const handleProjectChange = (projectId: string) => {
     const project = projects.find(p => p.id === projectId);
-    console.log('🔄 تغيير المشروع في ProjectSelector:', { projectId, projectName: project?.name });
+
     onProjectChange(projectId, project?.name);
   };
 

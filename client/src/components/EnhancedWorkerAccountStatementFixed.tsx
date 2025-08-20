@@ -95,7 +95,7 @@ export const EnhancedWorkerAccountStatement = ({
   // تصدير Excel محسن بالبيانات الحقيقية
   const exportToExcel = async () => {
     try {
-      console.log('📊 بدء تصدير كشف الحساب بالبيانات الحقيقية...');
+
       
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('كشف حساب العامل - بيانات حقيقية');
@@ -275,7 +275,7 @@ export const EnhancedWorkerAccountStatement = ({
       
       saveAs(blob, fileName);
       
-      console.log('✅ تم تصدير ملف Excel بالبيانات الحقيقية بنجاح');
+
       
     } catch (error) {
       console.error('❌ خطأ في تصدير Excel:', error);
@@ -286,7 +286,7 @@ export const EnhancedWorkerAccountStatement = ({
   // دالة الطباعة المحسنة
   const handlePrint = () => {
     try {
-      console.log('🖨️ بدء عملية الطباعة بالبيانات الحقيقية...');
+
       
       const printContent = document.getElementById('enhanced-worker-account-statement');
       if (!printContent || !printContent.innerHTML.trim()) {
@@ -296,7 +296,7 @@ export const EnhancedWorkerAccountStatement = ({
 
       window.print();
       
-      console.log('✅ تمت عملية الطباعة بنجاح');
+
       
     } catch (error) {
       console.error('❌ خطأ في الطباعة:', error);

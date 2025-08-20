@@ -109,7 +109,7 @@ export default function DailyExpensesBulkExport() {
     const startDate = new Date(fromDate);
     const endDate = new Date(toDate);
     
-    console.log(`📅 جلب المصروفات اليومية من ${fromDate} إلى ${toDate} للمشروع ${projectId}`);
+
     
     for (let date = new Date(startDate); date <= endDate; date.setDate(date.getDate() + 1)) {
       const dateStr = date.toISOString().split('T')[0];
@@ -203,14 +203,14 @@ export default function DailyExpensesBulkExport() {
     // حساب الرصيد الجاري - البداية بصفر أو بالرصيد المرحل
     let currentBalance = 0;
     
-    console.log(`📊 بدء حساب الرصيد ليوم ${dayData.date}`);
-    console.log(`📈 الرصيد المرحل: ${dayData.carriedForward}`);
+
+
     
     // صف المبلغ المرحل من سابق (فقط إذا كان هناك رصيد مرحل حقيقي وأكبر من صفر)
     // إخفاء الصفوف الصفرية كما هو مطلوب
     if (dayData.carriedForward && Math.abs(dayData.carriedForward) > 0) {
       currentBalance = parseFloat(dayData.carriedForward.toString()); // إضافة الرصيد المرحل
-      console.log(`📈 بعد إضافة المرحل الفعلي: ${currentBalance}`);
+
       
       const yesterdayDate = new Date(dayData.date);
       yesterdayDate.setDate(yesterdayDate.getDate() - 1);
@@ -224,7 +224,7 @@ export default function DailyExpensesBulkExport() {
         `مرحل من تاريخ ${formattedYesterday}`
       ]);
       
-      console.log(`✅ تم إضافة صف المرحل الفعلي: مبلغ=${formatNumber(dayData.carriedForward)}, متبقي=${formatNumber(currentBalance)}`);
+
       
       carryForwardRow.eachCell((cell) => {
         cell.font = { name: 'Arial Unicode MS', size: 10, bold: true };
@@ -250,7 +250,7 @@ export default function DailyExpensesBulkExport() {
         const amount = parseFloat((transfer.amount || 0).toString());
         if (amount && amount > 0) {
           currentBalance += amount; // إضافة المبلغ المرحل للرصيد
-          console.log(`📈 تحويل من مشروع آخر: ${amount}, رصيد حالي: ${currentBalance}`);
+
           
           // تبسيط الملاحظات - فقط اسم المشروع والتاريخ
           const transferDate = transfer.transferDate || transfer.date ? 
@@ -284,11 +284,11 @@ export default function DailyExpensesBulkExport() {
       dayData.fundTransfers.forEach((transfer: any) => {
         const transferAmount = parseFloat((transfer.amount || 0).toString());
         
-        console.log(`🔍 فحص حوالة مالية: المبلغ=${transferAmount}, البيانات=`, transfer);
+
         
         if (transferAmount && transferAmount > 0) {
           currentBalance += transferAmount; // إضافة الحوالة للرصيد
-          console.log(`📈 بعد حوالة ${transferAmount}: ${currentBalance}`);
+
           
           // تفاصيل الحوالة المحسنة
           let notes = '';
@@ -321,7 +321,7 @@ export default function DailyExpensesBulkExport() {
             };
           });
         } else {
-          console.log(`⚠️ تخطي حوالة بمبلغ صفر أو فارغ: ${transferAmount}`);
+
         }
       });
     }
@@ -337,7 +337,7 @@ export default function DailyExpensesBulkExport() {
         // فقط تحديث الرصيد عند وجود مبلغ مدفوع فعلياً
         if (paidAmount > 0) {
           currentBalance -= paidAmount; // طرح الأجرة المدفوعة فعلياً من الرصيد
-          console.log(`📉 بعد أجرة عامل مدفوعة ${paidAmount}: ${currentBalance}`);
+
         }
         
         // إظهار العامل في الجدول سواء كان له مبلغ مدفوع أو لا
@@ -435,7 +435,7 @@ export default function DailyExpensesBulkExport() {
         const amount = parseFloat((expense.amount || expense.totalAmount || 0).toString());
         if (amount > 0) {
           currentBalance -= amount; // طرح مصروف النقليات من الرصيد
-          console.log(`📉 بعد نقليات ${amount}: ${currentBalance}`);
+
           
           const expenseRow = worksheet.addRow([
             formatNumber(amount),
@@ -469,7 +469,7 @@ export default function DailyExpensesBulkExport() {
         // إظهار فقط المشتريات النقدية وليس الآجلة
         if (amount > 0 && isCashPurchase && !isDeferredPurchase) {
           currentBalance -= amount; // طرح مشتريات المواد النقدية من الرصيد
-          console.log(`📉 بعد مشتريات نقدية ${amount}: ${currentBalance}`);
+
           
           const materialRow = worksheet.addRow([
             formatNumber(amount),
@@ -610,7 +610,7 @@ export default function DailyExpensesBulkExport() {
     }
 
     // صف المبلغ المتبقي النهائي (خلفية برتقالية) - العنوان والرصيد في نفس الصف مع دمج الخلايا
-    console.log(`🏁 الرصيد النهائي: ${currentBalance}`);
+
     const finalBalanceRow = worksheet.addRow(['المبلغ المتبقي النهائي', '', '', formatNumber(currentBalance), '']);
     
     // دمج الخلايا A إلى C لنص "المبلغ المتبقي النهائي"
@@ -666,7 +666,7 @@ export default function DailyExpensesBulkExport() {
         const quantity = formatNumber(purchase.quantity || 1); // تنسيق الكمية لإزالة الأصفار الزائدة
         const amount = formatNumber(purchase.totalAmount || purchase.totalCost || 0);
         
-        console.log(`✅ بعد التنسيق: الكمية=${quantity}, المبلغ=${amount}`);
+
         
         const purchaseDescription = `${quantity} ${purchase.materialName || purchase.material?.name || 'مادة'} ${purchase.notes || ''}`;
         const paymentType = purchase.purchaseType || purchase.paymentType || 'نقد';
@@ -749,7 +749,7 @@ export default function DailyExpensesBulkExport() {
   // دالة تحميل صورة المعاينة
   const downloadComponentImage = async () => {
     try {
-      console.log('📸 بدء تحميل صورة معاينة تصدير المصروفات المجمعة...');
+
       
       const element = document.getElementById('bulk-export-component');
       if (!element) {
@@ -779,7 +779,7 @@ export default function DailyExpensesBulkExport() {
       link.click();
       document.body.removeChild(link);
 
-      console.log('✅ تم تحميل صورة المعاينة بنجاح');
+
       
     } catch (error) {
       console.error('❌ خطأ في تحميل الصورة:', error);
@@ -820,7 +820,7 @@ export default function DailyExpensesBulkExport() {
     setExportProgress({ current: 0, total: 0 });
 
     try {
-      console.log('🚀 بدء تصدير المصروفات اليومية المجمعة...');
+
       
       // جلب البيانات
       const dailyExpenses = await fetchDailyExpensesForPeriod(selectedProjectId, dateFrom, dateTo);
@@ -834,7 +834,7 @@ export default function DailyExpensesBulkExport() {
         return;
       }
 
-      console.log(`📊 تم جلب ${dailyExpenses.length} يوم من البيانات`);
+
 
       // إنشاء ملف Excel
       const workbook = new ExcelJS.Workbook();
@@ -856,17 +856,17 @@ export default function DailyExpensesBulkExport() {
       const fileName = `تقرير_المصروفات_اليومية_${projectName}_من_${dateFrom}_إلى_${dateTo}.xlsx`;
       saveAs(blob, fileName);
 
-      console.log('📄 تفاصيل الملف المُصدّر:');
-      console.log(`   📁 اسم الملف: ${fileName}`);
-      console.log(`   📊 عدد الأوراق: ${dailyExpenses.length}`);
-      console.log(`   📋 البيانات المُضمّنة:`);
+
+
+
+
 
       toast({
         title: "تم التصدير بنجاح! 🎉",
         description: `تم تصدير ${dailyExpenses.length} يوم من المصروفات اليومية`,
       });
 
-      console.log('✅ تم إنتهاء التصدير بنجاح');
+
 
     } catch (error) {
       console.error('❌ خطأ في التصدير:', error);

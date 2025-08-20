@@ -120,7 +120,7 @@ export default function WorkerFilterReportRealData() {
   const fetchWorkerAttendanceData = async (workerIds: string[], projectIds: string[] = []) => {
     try {
       setIsLoading(true);
-      console.log('🔍 جلب بيانات الحضور الحقيقية:', { workerIds, projectIds, dateFrom, dateTo });
+
 
       const queryParams = new URLSearchParams({
         dateFrom: dateFrom || '',
@@ -136,7 +136,7 @@ export default function WorkerFilterReportRealData() {
       }
 
       const data = await response.json();
-      console.log('📊 البيانات المستلمة من الخادم:', data);
+
 
       // التحقق من أن البيانات في التنسيق المتوقع
       const workersData = data.workers || [];
@@ -157,7 +157,7 @@ export default function WorkerFilterReportRealData() {
         const totalEarned = Number(workerData.total_earned) || 0;
         const totalPaid = Number(workerData.total_paid) || 0;
         
-        console.log(`📋 عامل ${workerData.worker_name}: أيام=${totalWorkDays}, مستحق=${totalEarned}, مدفوع=${totalPaid}`);
+
 
         // الحصول على اسم المشروع
         let projectName = 'جميع المشاريع';
@@ -181,8 +181,7 @@ export default function WorkerFilterReportRealData() {
       });
 
       setWorkersSummary(summaryData);
-      console.log('✅ تم معالجة بيانات الملخص:', summaryData);
-      console.log('📈 إجماليات التقرير:', data.totals);
+
 
     } catch (error) {
       console.error('❌ خطأ في جلب بيانات الحضور:', error);

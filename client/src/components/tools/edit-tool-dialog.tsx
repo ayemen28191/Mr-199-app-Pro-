@@ -204,7 +204,7 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
         value: value.trim(),
         usageCount: 1
       });
-      console.log(`✅ تم حفظ قيمة الإكمال التلقائي: ${category} = ${value.trim()}`);
+
     } catch (error) {
       console.error(`❌ خطأ في حفظ قيمة الإكمال التلقائي ${category}:`, error);
     }
@@ -320,8 +320,8 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
             : '',
       };
       
-      console.log('🔧 البيانات الأصلية المُرجعة من API:', tool);
-      console.log('🔧 البيانات المحولة للنموذج:', formData);
+
+
       form.reset(formData);
       setHasChanges(false);
     }
@@ -338,7 +338,7 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
   // Update tool mutation
   const updateToolMutation = useMutation({
     mutationFn: async (data: EditToolFormData) => {
-      console.log('🔧 البيانات المُرسلة من Frontend:', data);
+
       
       // Convert specifications string to JSON if provided
       const specifications = data.specifications 
@@ -373,7 +373,7 @@ const EditToolDialog: React.FC<EditToolDialogProps> = ({
         // إزالة حقل updatedAt لأن قاعدة البيانات تتولى هذا
       };
 
-      console.log('📤 البيانات النهائية المُرسلة:', updateData);
+
       return apiRequest(`/api/tools/${toolId}`, 'PUT', updateData);
     },
     onSuccess: () => {

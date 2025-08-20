@@ -29,7 +29,7 @@ import {
   Settings,
   Activity
 } from 'lucide-react';
-import ExcelJS from 'exceljs';
+// تحسين الأداء: Dynamic import لـ ExcelJS
 import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';

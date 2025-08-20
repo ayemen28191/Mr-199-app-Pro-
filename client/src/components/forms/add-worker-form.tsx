@@ -53,7 +53,7 @@ export default function AddWorkerForm({ worker, onSuccess, onCancel, submitLabel
       });
     } catch (error) {
       // تجاهل الأخطاء لأن هذه عملية مساعدة
-      console.log(`Failed to save autocomplete value for ${category}:`, error);
+
     }
   };
 
