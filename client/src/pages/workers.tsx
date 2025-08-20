@@ -213,7 +213,7 @@ export default function WorkersPage() {
 
 
   const deleteWorkerMutation = useMutation({
-    mutationFn: (id: string) => apiRequest("DELETE", `/api/workers/${id}`),
+    mutationFn: (id: string) => apiRequest(`/api/workers/${id}`, "DELETE"),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/workers'] });
       toast({
@@ -232,7 +232,7 @@ export default function WorkersPage() {
 
   const updateWorkerMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => 
-      apiRequest("PATCH", `/api/workers/${id}`, data),
+      apiRequest(`/api/workers/${id}`, "PATCH", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/workers'] });
       toast({

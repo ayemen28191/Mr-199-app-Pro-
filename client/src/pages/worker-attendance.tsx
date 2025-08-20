@@ -71,7 +71,7 @@ export default function WorkerAttendance() {
   const saveAutocompleteValue = async (category: string, value: string | null | undefined) => {
     if (!value || typeof value !== 'string' || !value.trim()) return;
     try {
-      await apiRequest("POST", "/api/autocomplete", { 
+      await apiRequest("/api/autocomplete", "POST", { 
         category, 
         value: value.trim() 
       });
@@ -84,14 +84,14 @@ export default function WorkerAttendance() {
   // Get today's attendance records
   const { data: todayAttendance = [] } = useQuery({
     queryKey: ["/api/projects", selectedProjectId, "attendance", selectedDate],
-    queryFn: () => apiRequest("GET", `/api/projects/${selectedProjectId}/attendance?date=${selectedDate}`),
+    queryFn: () => apiRequest(`/api/projects/${selectedProjectId}/attendance?date=${selectedDate}`, "GET"),
     enabled: !!selectedProjectId,
   });
 
   // Fetch specific attendance record for editing
   const { data: attendanceToEdit } = useQuery({
     queryKey: ["/api/worker-attendance", editId],
-    queryFn: () => apiRequest("GET", `/api/worker-attendance/${editId}`),
+    queryFn: () => apiRequest(`/api/worker-attendance/${editId}`, "GET"),
     enabled: !!editId,
   });
 
@@ -114,7 +114,7 @@ export default function WorkerAttendance() {
 
   // Delete Attendance Mutation
   const deleteAttendanceMutation = useMutation({
-    mutationFn: (id: string) => apiRequest("DELETE", `/api/worker-attendance/${id}`),
+    mutationFn: (id: string) => apiRequest(`/api/worker-attendance/${id}`, "DELETE"),
     onSuccess: () => {
       toast({
         title: "تم الحذف",
@@ -169,7 +169,7 @@ export default function WorkerAttendance() {
       
       // تنفيذ العملية الأساسية
       const promises = attendanceRecords.map(record =>
-        apiRequest("POST", "/api/worker-attendance", record)
+        apiRequest("/api/worker-attendance", "POST", record)
       );
       await Promise.all(promises);
       return attendanceRecords;

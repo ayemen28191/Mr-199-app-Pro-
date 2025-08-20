@@ -26,11 +26,11 @@ export default function EnhancedAddWorkerForm({ onSuccess }: EnhancedAddWorkerFo
   // جلب أنواع العمال المتاحة
   const { data: workerTypes = [], isLoading: loadingTypes } = useQuery<WorkerType[]>({
     queryKey: ["/api/worker-types"],
-    queryFn: () => apiRequest("GET", "/api/worker-types"),
+    queryFn: () => apiRequest("/api/worker-types", "GET"),
   });
 
   const addWorkerMutation = useMutation({
-    mutationFn: (data: InsertWorker) => apiRequest("POST", "/api/workers", data),
+    mutationFn: (data: InsertWorker) => apiRequest("/api/workers", "POST", data),
     onSuccess: () => {
       toast({
         title: "تم الحفظ",
@@ -53,7 +53,7 @@ export default function EnhancedAddWorkerForm({ onSuccess }: EnhancedAddWorkerFo
   });
 
   const addWorkerTypeMutation = useMutation({
-    mutationFn: (data: InsertWorkerType) => apiRequest("POST", "/api/worker-types", data),
+    mutationFn: (data: InsertWorkerType) => apiRequest("/api/worker-types", "POST", data),
     onSuccess: (newWorkerType: WorkerType) => {
       toast({
         title: "تم الحفظ",
