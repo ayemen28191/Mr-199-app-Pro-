@@ -35,6 +35,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Track read notifications in memory (could be moved to database later)
   const readNotifications = new Set<string>();
   
+  // Fund Transfers (تحويلات العهدة)
+  app.get("/api/fund-transfers", async (req, res) => {
+    try {
+      const projectId = req.query.projectId as string;
+      const date = req.query.date as string;
+      console.log(`🔍 جلب جميع تحويلات العهدة - المشروع: ${projectId || 'الكل'}, التاريخ: ${date || 'الكل'}`);
+      const transfers = await storage.getFundTransfers(projectId, date);
+      console.log(`✅ تم العثور على ${transfers.length} تحويل`);
+      res.json(transfers);
+    } catch (error) {
+      console.error("خطأ في جلب تحويلات العهدة:", error);
+      res.status(500).json({ message: "خطأ في جلب تحويلات العهدة", error: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  });
+  
   // Projects
   app.get("/api/projects", async (req, res) => {
     try {
@@ -465,7 +480,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Fund Transfers
+
+
   app.get("/api/projects/:projectId/fund-transfers", async (req, res) => {
     try {
       const date = req.query.date as string;
@@ -1169,6 +1185,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Transportation Expenses
+  app.get("/api/transportation-expenses", async (req, res) => {
+    try {
+      const expenses = await storage.getAllTransportationExpenses();
+      res.json(expenses);
+    } catch (error) {
+      res.status(500).json({ message: "Error fetching transportation expenses" });
+    }
+  });
+
   app.get("/api/projects/:projectId/transportation-expenses", async (req, res) => {
     try {
       const date = req.query.date as string;
@@ -2660,6 +2685,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Supplier payments routes
+  app.get("/api/supplier-payments", async (req, res) => {
+    try {
+      console.log('🔍 API: بدء استدعاء getAllSupplierPayments...');
+      const payments = await storage.getAllSupplierPayments();
+      console.log(`📊 API: تم الحصول على ${payments.length} مدفوعة`);
+      res.json(payments);
+    } catch (error) {
+      console.error("خطأ في API route للمدفوعات:", error);
+      res.status(500).json({ message: "خطأ في جلب جميع مدفوعات الموردين" });
+    }
+  });
+
   app.get("/api/suppliers/:supplierId/payments", async (req, res) => {
     try {
       const { supplierId } = req.params;

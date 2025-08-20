@@ -168,7 +168,7 @@ app.use((req, res, next) => {
 
   const server = await registerRoutes(app);
 
-  // Add middleware to ensure API routes are handled correctly
+  // Add middleware to ensure API routes are handled correctly (AFTER routes are registered)
   app.use('/api/*', (req, res, next) => {
     // If we reach here, it means the route wasn't found in our API routes
     res.status(404).json({ message: `API endpoint not found: ${req.path}` });

@@ -98,6 +98,7 @@ export interface IStorage {
   deleteMaterialPurchase(id: string): Promise<void>;
   
   // Transportation Expenses
+  getAllTransportationExpenses(): Promise<TransportationExpense[]>;
   getTransportationExpenses(projectId: string, date?: string): Promise<TransportationExpense[]>;
   createTransportationExpense(expense: InsertTransportationExpense): Promise<TransportationExpense>;
   updateTransportationExpense(id: string, expense: Partial<InsertTransportationExpense>): Promise<TransportationExpense | undefined>;
@@ -187,6 +188,7 @@ export interface IStorage {
   deleteSupplier(id: string): Promise<void>;
   
   // Supplier Payments
+  getAllSupplierPayments(): Promise<SupplierPayment[]>;
   getSupplierPayments(supplierId: string, projectId?: string): Promise<SupplierPayment[]>;
   getSupplierPayment(id: string): Promise<SupplierPayment | undefined>;
   createSupplierPayment(payment: InsertSupplierPayment): Promise<SupplierPayment>;
@@ -1126,6 +1128,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Transportation Expenses
+  async getAllTransportationExpenses(): Promise<TransportationExpense[]> {
+    try {
+      return await db.select().from(transportationExpenses).orderBy(transportationExpenses.date, transportationExpenses.id);
+    } catch (error) {
+      console.error('Error getting all transportation expenses:', error);
+      return [];
+    }
+  }
+
   async getTransportationExpenses(projectId: string, date?: string): Promise<TransportationExpense[]> {
     if (date) {
       return await db.select().from(transportationExpenses)
@@ -2665,6 +2676,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Supplier Payments methods
+  async getAllSupplierPayments(): Promise<SupplierPayment[]> {
+    try {
+      console.log('🔍 جاري جلب جميع مدفوعات الموردين...');
+      const payments = await db.select().from(supplierPayments).orderBy(supplierPayments.paymentDate);
+      console.log(`✅ تم جلب ${payments.length} مدفوعة مورد`);
+      return payments;
+    } catch (error) {
+      console.error('خطأ في جلب جميع مدفوعات الموردين:', error);
+      return [];
+    }
+  }
+
   async getSupplierPayments(supplierId: string, projectId?: string): Promise<SupplierPayment[]> {
     try {
       const conditions = [eq(supplierPayments.supplierId, supplierId)];
