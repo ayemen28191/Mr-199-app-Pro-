@@ -3878,14 +3878,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/tool-movements", async (req, res) => {
     try {
+      console.log("📦 البيانات المستلمة:", JSON.stringify(req.body, null, 2));
+      
       const result = insertToolMovementSchema.safeParse(req.body);
       if (!result.success) {
+        console.log("❌ فشل التحقق من الصحة:", JSON.stringify(result.error.issues, null, 2));
         return res.status(400).json({ 
           message: "بيانات حركة الأداة غير صحيحة", 
           errors: result.error.issues 
         });
       }
 
+      console.log("✅ البيانات المحققة:", JSON.stringify(result.data, null, 2));
       const movement = await storage.createToolMovement(result.data);
       res.status(201).json(movement);
     } catch (error) {

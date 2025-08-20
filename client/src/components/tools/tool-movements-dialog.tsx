@@ -152,22 +152,18 @@ const ToolMovementsDialog: React.FC<ToolMovementsDialogProps> = ({
         // From location (current location from tool data)
         fromType: currentTool?.projectId ? 'project' : 'warehouse',
         fromId: currentTool?.projectId || null,
-        fromName: currentTool?.projectName || 'مخزن رئيسي',
         
         // To location (destination)
         toType: data.toProjectId && data.toProjectId !== 'none' ? 'project' : 'warehouse',
         toId: data.toProjectId === 'none' ? null : data.toProjectId,
-        toName: data.toProjectId && data.toProjectId !== 'none' 
-          ? projects.find(p => p.id === data.toProjectId)?.name || data.toLocation
-          : data.toLocation,
         
-        // Other details
+        // معلومات إضافية
+        projectId: data.toProjectId === 'none' ? null : data.toProjectId,
         performedBy: data.performedBy,
         reason: data.reason,
         notes: data.notes,
-        cost: null,
-        gpsLocation: null, // Can be enhanced with GPS if needed
-        performedAt: new Date().toISOString(),
+        referenceNumber: `MOV_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+        performedAt: new Date(),
       };
 
       return apiRequest('/api/tool-movements', 'POST', movementData);

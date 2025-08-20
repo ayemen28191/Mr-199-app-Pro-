@@ -3474,36 +3474,13 @@ export class DatabaseStorage implements IStorage {
     dateTo?: string;
   }): Promise<ToolMovement[]> {
     try {
-      const conditions = [];
-
-      if (filters?.toolId) {
-        conditions.push(eq(toolMovements.toolId, filters.toolId));
-      }
-
-      if (filters?.projectId) {
-        conditions.push(eq(toolMovements.projectId, filters.projectId));
-      }
-
-      if (filters?.movementType) {
-        conditions.push(eq(toolMovements.movementType, filters.movementType));
-      }
-
-      if (filters?.dateFrom) {
-        conditions.push(gte(toolMovements.performedAt, new Date(filters.dateFrom)));
-      }
-
-      if (filters?.dateTo) {
-        conditions.push(lte(toolMovements.performedAt, new Date(filters.dateTo + ' 23:59:59')));
-      }
-
-      if (conditions.length > 0) {
-        return await db.select().from(toolMovements)
-          .where(and(...conditions))
-          .orderBy(sql`${toolMovements.performedAt} DESC`);
-      }
-
-      return await db.select().from(toolMovements)
-        .orderBy(sql`${toolMovements.performedAt} DESC`);
+      // استعلام مباشر وبسيط
+      const result = await db.execute(sql`
+        SELECT * FROM tool_movements 
+        ORDER BY performed_at DESC
+      `);
+      
+      return result.rows as ToolMovement[];
     } catch (error) {
       console.error('Error getting tool movements:', error);
       return [];
@@ -3522,18 +3499,38 @@ export class DatabaseStorage implements IStorage {
 
   async createToolMovement(movement: InsertToolMovement): Promise<ToolMovement> {
     try {
+      console.log('Creating tool movement with data:', movement);
+      
+      // تحضير البيانات مع معالجة القيم الفارغة
+      const dataToInsert = {
+        toolId: movement.toolId,
+        movementType: movement.movementType,
+        quantity: movement.quantity,
+        fromType: movement.fromType || null,
+        fromId: movement.fromId || null,
+        toType: movement.toType || null,
+        toId: movement.toId || null,
+        projectId: movement.projectId || null,
+        reason: movement.reason || null,
+        notes: movement.notes || null,
+        referenceNumber: movement.referenceNumber || `MOV_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+        performedBy: movement.performedBy,
+        performedAt: movement.performedAt || new Date(),
+      };
+      
+      console.log('📝 البيانات المعدة للإدراج:', dataToInsert);
+      
+      // استخدام Drizzle ORM بدلاً من SQL خام
       const [newMovement] = await db
         .insert(toolMovements)
-        .values({
-          ...movement,
-          referenceNumber: movement.referenceNumber || `MOV_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
-        })
+        .values(dataToInsert)
         .returning();
       
       if (!newMovement) {
         throw new Error('فشل في إنشاء حركة الأداة');
       }
       
+      console.log('✅ Tool movement created successfully:', newMovement);
       return newMovement;
     } catch (error) {
       console.error('Error creating tool movement:', error);

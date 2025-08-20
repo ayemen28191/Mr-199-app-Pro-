@@ -518,38 +518,17 @@ export const toolMovements = pgTable("tool_movements", {
   // من إلى
   fromType: text("from_type"), // warehouse, project, external, supplier, none
   fromId: varchar("from_id"),
-  fromName: text("from_name"),
   
   toType: text("to_type"), // warehouse, project, external, maintenance, none
   toId: varchar("to_id"),
-  toName: text("to_name"),
   
   // معلومات إضافية
+  projectId: varchar("project_id").references(() => projects.id),
   reason: text("reason"),
   notes: text("notes"),
   referenceNumber: text("reference_number"), // رقم مرجعي للعملية
-  cost: decimal("cost", { precision: 12, scale: 2 }), // تكلفة العملية
-  
-  // تتبع الموقع الجغرافي (GPS)
-  gpsLocation: jsonb("gps_location"), // {lat, lng, accuracy, timestamp}
-  
-  // مرفقات
-  imageUrls: text("image_urls").array(),
-  documentUrls: text("document_urls").array(),
-  
-  // معلومات المستخدم
-  performedBy: varchar("performed_by").references(() => users.id),
+  performedBy: text("performed_by").notNull(),
   performedAt: timestamp("performed_at").defaultNow().notNull(),
-  
-  // معلومات الموافقة
-  approvedBy: varchar("approved_by").references(() => users.id),
-  approvedAt: timestamp("approved_at"),
-  
-  // مراجع خارجية
-  purchaseId: varchar("purchase_id"), // مرجع لفاتورة الشراء
-  projectId: varchar("project_id").references(() => projects.id),
-  
-  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // Tool Maintenance Logs (سجل صيانة الأدوات)
@@ -978,7 +957,7 @@ export const insertToolStockSchema = createInsertSchema(toolStock).omit({
 
 export const insertToolMovementSchema = createInsertSchema(toolMovements).omit({
   id: true,
-  createdAt: true,
+  performedAt: true, // سيتم إنشاؤه تلقائياً إذا لم يُرسل
 });
 
 export const insertToolMaintenanceLogSchema = createInsertSchema(toolMaintenanceLogs).omit({
