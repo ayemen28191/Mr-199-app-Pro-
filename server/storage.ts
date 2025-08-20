@@ -1998,10 +1998,11 @@ export class DatabaseStorage implements IStorage {
           WHERE project_id = ${projectId}
         `),
         
-        // إجمالي مشتريات المواد النقدية فقط (المشتريات الآجلة لا تُحسب)
+        // إجمالي مشتريات المواد النقدية (المدفوعة فعلياً)
         db.execute(sql`
           SELECT 
-            COALESCE(SUM(CASE WHEN purchase_type = 'نقد' THEN CAST(total_amount AS DECIMAL) ELSE 0 END), 0) as total,
+            COALESCE(SUM(CASE WHEN purchase_type = 'نقد' THEN CAST(total_amount AS DECIMAL) ELSE 0 END), 0) as cash_total,
+            COALESCE(SUM(CASE WHEN purchase_type = 'أجل' THEN CAST(total_amount AS DECIMAL) ELSE 0 END), 0) as credit_total,
             COUNT(DISTINCT id) as count
           FROM material_purchases 
           WHERE project_id = ${projectId}
@@ -2036,7 +2037,8 @@ export class DatabaseStorage implements IStorage {
       const totalProjectOut = parseFloat((projectTransfersOut.rows[0] as any)?.total || '0');
       const totalWages = parseFloat((attendance.rows[0] as any)?.total_wages || '0');
       const completedDays = parseInt((attendance.rows[0] as any)?.completed_days || '0');
-      const totalMaterials = parseFloat((materials.rows[0] as any)?.total || '0');
+      const totalMaterialsCash = parseFloat((materials.rows[0] as any)?.cash_total || '0');
+      const totalMaterialsCredit = parseFloat((materials.rows[0] as any)?.credit_total || '0');
       const materialCount = parseInt((materials.rows[0] as any)?.count || '0');
       const totalTransport = parseFloat((transport.rows[0] as any)?.total || '0');
       const totalMisc = parseFloat((miscExpenses.rows[0] as any)?.total || '0');
@@ -2048,7 +2050,8 @@ export class DatabaseStorage implements IStorage {
       console.log(`   📈 تحويلات واردة: ${totalProjectIn}`);
       console.log(`   📉 تحويلات صادرة: ${totalProjectOut}`);
       console.log(`   👷 أجور العمال المدفوعة فعلياً: ${totalWages}`);
-      console.log(`   🏗️  مشتريات المواد (نقدية فقط): ${totalMaterials}`);
+      console.log(`   🏗️  مشتريات المواد (نقدية): ${totalMaterialsCash}`);
+      console.log(`   📦 مشتريات المواد (بالأجل): ${totalMaterialsCredit}`);
       console.log(`   🚚 النقل: ${totalTransport}`);
       console.log(`   📋 مصاريف متنوعة: ${totalMisc}`);
       console.log(`   💸 حوالات الأهل: ${totalWorkerTransfers}`);
@@ -2056,7 +2059,7 @@ export class DatabaseStorage implements IStorage {
 
       // الإجمالي الكلي للدخل والمصروفات - مع تصحيح منطق التحويلات الصادرة
       const totalIncome = totalFundTransfers + totalProjectIn;
-      const totalExpenses = totalWages + totalMaterials + totalTransport + totalMisc + totalWorkerTransfers + totalProjectOut;
+      const totalExpenses = totalWages + totalMaterialsCash + totalTransport + totalMisc + totalWorkerTransfers + totalProjectOut;
       // ملاحظة: التحويلات الصادرة تُحسب كمصروف لأنها أموال تخرج من المشروع
       // حوالات الأهل أيضاً تُحسب كمصروف لأنها أموال تخرج من المشروع نهائياً
       const currentBalance = totalIncome - totalExpenses;
