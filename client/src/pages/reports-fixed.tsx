@@ -55,14 +55,14 @@ export default function ReportsFixed(): JSX.Element {
     queryKey: ["/api/report-templates", selectedCategory],
     queryFn: async () => {
       const params = selectedCategory !== "all" ? `?category=${selectedCategory}` : "";
-      return apiRequest("GET", `/api/report-templates${params}`);
+      return apiRequest(`/api/report-templates${params}`, "GET");
     }
   });
 
   // جلب التقارير المُنشأة مؤخراً
   const { data: recentReports = [], isLoading: reportsLoading } = useQuery({
     queryKey: ["/api/recent-reports", selectedProjectId],
-    queryFn: () => selectedProjectId ? apiRequest("GET", `/api/recent-reports?projectId=${selectedProjectId}`) : [],
+    queryFn: () => selectedProjectId ? apiRequest(`/api/recent-reports?projectId=${selectedProjectId}`, "GET") : [],
     enabled: !!selectedProjectId
   });
 
@@ -74,7 +74,7 @@ export default function ReportsFixed(): JSX.Element {
 
     setIsGenerating(true);
     try {
-      const response = await apiRequest("POST", "/api/generate-report", {
+      const response = await apiRequest("/api/generate-report", "POST", {
         templateId,
         projectId: selectedProjectId,
         dateFrom,

@@ -34,7 +34,9 @@ import type {
 export default function DailyExpenses() {
   const [, setLocation] = useLocation();
   const { selectedProjectId, selectProject } = useSelectedProject();
-  const [selectedDate, setSelectedDate] = useState("2025-08-11");
+  const [selectedDate, setSelectedDate] = useState(() => {
+    return new Date().toISOString().split('T')[0];
+  });
   const [carriedForward, setCarriedForward] = useState<string>("0");
   const [showProjectTransfers, setShowProjectTransfers] = useState<boolean>(true);
   

@@ -80,7 +80,7 @@ export default function MaterialPurchase() {
   const saveAutocompleteValue = async (category: string, value: string | null | undefined) => {
     if (!value || typeof value !== 'string' || !value.trim()) return;
     try {
-      await apiRequest("POST", "/api/autocomplete", { 
+      await apiRequest("/api/autocomplete", "POST", { 
         category, 
         value: value.trim() 
       });
@@ -112,7 +112,7 @@ export default function MaterialPurchase() {
         saveAutocompleteValue('supplier_payment_terms', supplierFormPaymentTerms)
       ]);
 
-      return apiRequest("POST", "/api/suppliers", data);
+      return apiRequest("/api/suppliers", "POST", data);
     },
     onSuccess: (newSupplier) => {
       queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
@@ -174,7 +174,7 @@ export default function MaterialPurchase() {
   // Fetch purchase data for editing
   const { data: purchaseToEdit } = useQuery({
     queryKey: ["/api/material-purchases", editId],
-    queryFn: () => apiRequest("GET", `/api/material-purchases/${editId}`),
+    queryFn: () => apiRequest(`/api/material-purchases/${editId}`, "GET"),
     enabled: !!editId,
   });
 
@@ -198,7 +198,7 @@ export default function MaterialPurchase() {
   }, [purchaseToEdit]);
 
   const addMaterialMutation = useMutation({
-    mutationFn: (data: InsertMaterial) => apiRequest("POST", "/api/materials", data),
+    mutationFn: (data: InsertMaterial) => apiRequest("/api/materials", "POST", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/materials"] });
     },
@@ -239,7 +239,7 @@ export default function MaterialPurchase() {
       ]);
       
       // تنفيذ العملية الأساسية
-      return apiRequest("POST", "/api/material-purchases", data);
+      return apiRequest("/api/material-purchases", "POST", data);
     },
     onSuccess: async () => {
       // تحديث كاش autocomplete للتأكد من ظهور البيانات الجديدة
@@ -330,7 +330,7 @@ export default function MaterialPurchase() {
         saveAutocompleteValue('notes', notes)
       ]);
       
-      return apiRequest("PUT", `/api/material-purchases/${id}`, data);
+      return apiRequest(`/api/material-purchases/${id}`, "PUT", data);
     },
     onSuccess: async () => {
       // تحديث كاش autocomplete للتأكد من ظهور البيانات الجديدة
@@ -391,7 +391,7 @@ export default function MaterialPurchase() {
 
   // Delete Material Purchase Mutation
   const deleteMaterialPurchaseMutation = useMutation({
-    mutationFn: (id: string) => apiRequest("DELETE", `/api/material-purchases/${id}`),
+    mutationFn: (id: string) => apiRequest(`/api/material-purchases/${id}`, "DELETE"),
     onSuccess: () => {
       toast({
         title: "تم الحذف",
