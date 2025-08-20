@@ -762,27 +762,28 @@ export default function SupplierAccountsPage() {
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="pt-2">
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-3">
+        <CardContent className="pt-2 space-y-2">
+          {/* الصف الأول: البحث والمورد */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {/* البحث في الموردين */}
             <div className="space-y-1">
-              <Label className="text-xs font-medium text-gray-600">البحث في الموردين</Label>
+              <Label className="text-xs text-gray-600">البحث في الموردين</Label>
               <div className="relative">
                 <Search className="absolute right-2 top-1/2 transform -translate-y-1/2 w-3 h-3 text-gray-400" />
                 <Input
                   placeholder="ابحث باسم المورد..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pr-8 h-8 text-sm"
+                  className="pr-8 h-7 text-xs"
                 />
               </div>
             </div>
 
             {/* اختيار المورد */}
             <div className="space-y-1">
-              <Label className="text-xs font-medium text-gray-600">المورد</Label>
+              <Label className="text-xs text-gray-600">المورد</Label>
               <Select value={selectedSupplierId} onValueChange={setSelectedSupplierId}>
-                <SelectTrigger className="h-8 text-sm">
+                <SelectTrigger className="h-7 text-xs">
                   <SelectValue placeholder={isLoadingSuppliers ? "جاري التحميل..." : "اختر المورد"} />
                 </SelectTrigger>
                 <SelectContent>
@@ -801,12 +802,16 @@ export default function SupplierAccountsPage() {
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          {/* الصف الثاني: المشروع ونوع الدفع */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
 
             {/* اختيار المشروع */}
             <div className="space-y-1">
-              <Label className="text-xs font-medium text-gray-600">المشروع</Label>
+              <Label className="text-xs text-gray-600">المشروع</Label>
               <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
-                <SelectTrigger className="h-8 text-sm">
+                <SelectTrigger className="h-7 text-xs">
                   <SelectValue placeholder="جميع المشاريع" />
                 </SelectTrigger>
                 <SelectContent>
@@ -822,9 +827,9 @@ export default function SupplierAccountsPage() {
 
             {/* نوع الدفع */}
             <div className="space-y-1">
-              <Label className="text-xs font-medium text-gray-600">نوع الدفع</Label>
+              <Label className="text-xs text-gray-600">نوع الدفع</Label>
               <Select value={paymentTypeFilter} onValueChange={setPaymentTypeFilter}>
-                <SelectTrigger className="h-8 text-sm">
+                <SelectTrigger className="h-7 text-xs">
                   <SelectValue placeholder="نوع الدفع" />
                 </SelectTrigger>
                 <SelectContent>
@@ -834,6 +839,10 @@ export default function SupplierAccountsPage() {
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          {/* الصف الثالث: التواريخ */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-2 border-t border-gray-100">
 
           </div>
           {/* التواريخ في صف منفصل للوضوح */}
