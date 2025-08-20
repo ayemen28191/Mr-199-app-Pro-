@@ -203,6 +203,33 @@ export interface IStorage {
     totalDebt: string;
     totalPaid: string;
     remainingDebt: string;
+    // إضافة الحسابات المنفصلة للنقدي والآجل
+    cashPurchases: {
+      total: string;
+      count: number;
+      purchases: MaterialPurchase[];
+    };
+    creditPurchases: {
+      total: string;
+      count: number;
+      purchases: MaterialPurchase[];
+    };
+  }>;
+  
+  // إحصائيات عامة لحساب الموردين
+  getSupplierStatistics(filters?: {
+    supplierId?: string;
+    projectId?: string;
+    dateFrom?: string;
+    dateTo?: string;
+  }): Promise<{
+    totalSuppliers: number;
+    totalCashPurchases: string;
+    totalCreditPurchases: string;
+    totalDebt: string;
+    totalPaid: string;
+    remainingDebt: string;
+    activeSuppliers: number;
   }>;
   
   // Purchase filtering for supplier reports
@@ -2761,6 +2788,17 @@ export class DatabaseStorage implements IStorage {
     totalDebt: string;
     totalPaid: string;
     remainingDebt: string;
+    // إضافة الحسابات المنفصلة للنقدي والآجل
+    cashPurchases: {
+      total: string;
+      count: number;
+      purchases: MaterialPurchase[];
+    };
+    creditPurchases: {
+      total: string;
+      count: number;
+      purchases: MaterialPurchase[];
+    };
   }> {
     try {
       // جلب بيانات المورد
@@ -2769,24 +2807,28 @@ export class DatabaseStorage implements IStorage {
         throw new Error('المورد غير موجود');
       }
 
-      // شروط التصفية
-      const purchaseConditions = [eq(materialPurchases.supplierId, supplierId)];
+      // شروط التصفية للمشتريات (نحتاج للبحث بـ supplierName بدلاً من supplierId)
+      const supplierName = supplier.name;
+      const purchaseConditions = [eq(materialPurchases.supplierName, supplierName)];
       const paymentConditions = [eq(supplierPayments.supplierId, supplierId)];
       
-      if (projectId) {
+      if (projectId && projectId !== 'all') {
         purchaseConditions.push(eq(materialPurchases.projectId, projectId));
         paymentConditions.push(eq(supplierPayments.projectId, projectId));
       }
       
-      if (dateFrom && dateTo) {
-        purchaseConditions.push(
-          gte(materialPurchases.invoiceDate, dateFrom),
-          lte(materialPurchases.invoiceDate, dateTo)
-        );
-        paymentConditions.push(
-          gte(supplierPayments.paymentDate, dateFrom),
-          lte(supplierPayments.paymentDate, dateTo)
-        );
+      if (dateFrom) {
+        purchaseConditions.push(gte(materialPurchases.invoiceDate, dateFrom));
+        if (paymentConditions.length > 1 || !paymentConditions.some(c => c === paymentConditions[0])) {
+          paymentConditions.push(gte(supplierPayments.paymentDate, dateFrom));
+        }
+      }
+      
+      if (dateTo) {
+        purchaseConditions.push(lte(materialPurchases.invoiceDate, dateTo));
+        if (paymentConditions.length > 1 || dateFrom) {
+          paymentConditions.push(lte(supplierPayments.paymentDate, dateTo));
+        }
       }
 
       // جلب المشتريات
@@ -2799,9 +2841,17 @@ export class DatabaseStorage implements IStorage {
         .where(and(...paymentConditions))
         .orderBy(supplierPayments.paymentDate);
 
-      // حساب الإجماليات
-      const totalDebt = purchases.reduce((sum, purchase) => 
+      // فصل المشتريات حسب نوع الدفع
+      const cashPurchasesList = purchases.filter(p => p.purchaseType === 'نقد');
+      const creditPurchasesList = purchases.filter(p => p.purchaseType === 'أجل');
+
+      // حساب الإجماليات منفصلة
+      const cashTotal = cashPurchasesList.reduce((sum, purchase) => 
         sum + parseFloat(purchase.totalAmount || '0'), 0);
+      const creditTotal = creditPurchasesList.reduce((sum, purchase) => 
+        sum + parseFloat(purchase.totalAmount || '0'), 0);
+      
+      const totalDebt = cashTotal + creditTotal;
       const totalPaid = payments.reduce((sum, payment) => 
         sum + parseFloat(payment.amount || '0'), 0);
       const remainingDebt = totalDebt - totalPaid;
@@ -2812,7 +2862,17 @@ export class DatabaseStorage implements IStorage {
         payments,
         totalDebt: totalDebt.toString(),
         totalPaid: totalPaid.toString(),
-        remainingDebt: remainingDebt.toString()
+        remainingDebt: remainingDebt.toString(),
+        cashPurchases: {
+          total: cashTotal.toString(),
+          count: cashPurchasesList.length,
+          purchases: cashPurchasesList
+        },
+        creditPurchases: {
+          total: creditTotal.toString(),
+          count: creditPurchasesList.length,
+          purchases: creditPurchasesList
+        }
       };
     } catch (error) {
       console.error('Error getting supplier account statement:', error);
@@ -2841,6 +2901,94 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error getting purchases by supplier:', error);
       return [];
+    }
+  }
+
+  // تنفيذ دالة إحصائيات الموردين العامة
+  async getSupplierStatistics(filters?: {
+    supplierId?: string;
+    projectId?: string;
+    dateFrom?: string;
+    dateTo?: string;
+  }): Promise<{
+    totalSuppliers: number;
+    totalCashPurchases: string;
+    totalCreditPurchases: string;
+    totalDebt: string;
+    totalPaid: string;
+    remainingDebt: string;
+    activeSuppliers: number;
+  }> {
+    try {
+      // جلب جميع الموردين
+      const allSuppliers = await this.getSuppliers();
+      
+      // إعداد شروط البحث للمشتريات
+      const purchaseConditions = [];
+      const paymentConditions = [];
+      
+      if (filters?.supplierId) {
+        // للبحث بالمورد المحدد
+        const supplier = await this.getSupplier(filters.supplierId);
+        if (supplier) {
+          purchaseConditions.push(eq(materialPurchases.supplierName, supplier.name));
+          paymentConditions.push(eq(supplierPayments.supplierId, filters.supplierId));
+        } else {
+          // إذا لم يوجد المورد، نبحث مباشرة بالـ ID في جدول المشتريات
+          purchaseConditions.push(eq(materialPurchases.supplierId, filters.supplierId));
+          paymentConditions.push(eq(supplierPayments.supplierId, filters.supplierId));
+        }
+      }
+      
+      if (filters?.projectId && filters.projectId !== 'all') {
+        purchaseConditions.push(eq(materialPurchases.projectId, filters.projectId));
+        paymentConditions.push(eq(supplierPayments.projectId, filters.projectId));
+      }
+      
+      if (filters?.dateFrom) {
+        purchaseConditions.push(gte(materialPurchases.invoiceDate, filters.dateFrom));
+        paymentConditions.push(gte(supplierPayments.paymentDate, filters.dateFrom));
+      }
+      
+      if (filters?.dateTo) {
+        purchaseConditions.push(lte(materialPurchases.invoiceDate, filters.dateTo));
+        paymentConditions.push(lte(supplierPayments.paymentDate, filters.dateTo));
+      }
+
+      // جلب جميع المشتريات مع الفلاتر
+      const purchases = await db.select().from(materialPurchases)
+        .where(purchaseConditions.length > 0 ? and(...purchaseConditions) : undefined);
+      
+      // جلب جميع المدفوعات مع الفلاتر
+      const payments = await db.select().from(supplierPayments)
+        .where(paymentConditions.length > 0 ? and(...paymentConditions) : undefined);
+
+      // فصل المشتريات حسب نوع الدفع
+      const cashPurchases = purchases.filter(p => p.purchaseType === 'نقد');
+      const creditPurchases = purchases.filter(p => p.purchaseType === 'أجل');
+
+      // حساب الإجماليات
+      const totalCashPurchases = cashPurchases.reduce((sum, p) => sum + parseFloat(p.totalAmount || '0'), 0);
+      const totalCreditPurchases = creditPurchases.reduce((sum, p) => sum + parseFloat(p.totalAmount || '0'), 0);
+      const totalDebt = totalCashPurchases + totalCreditPurchases;
+      const totalPaid = payments.reduce((sum, p) => sum + parseFloat(p.amount || '0'), 0);
+      const remainingDebt = totalDebt - totalPaid;
+      
+      // حساب عدد الموردين النشطين (الذين لديهم مشتريات)
+      const activeSupplierNames = Array.from(new Set(purchases.map(p => p.supplierName).filter(name => name !== null)));
+      
+      return {
+        totalSuppliers: filters?.supplierId ? 1 : allSuppliers.length,
+        totalCashPurchases: totalCashPurchases.toString(),
+        totalCreditPurchases: totalCreditPurchases.toString(),
+        totalDebt: totalDebt.toString(),
+        totalPaid: totalPaid.toString(),
+        remainingDebt: remainingDebt.toString(),
+        activeSuppliers: activeSupplierNames.length
+      };
+    } catch (error) {
+      console.error('Error getting supplier statistics:', error);
+      throw error;
     }
   }
 

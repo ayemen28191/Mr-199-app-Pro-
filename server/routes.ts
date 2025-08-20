@@ -2667,6 +2667,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // إحصائيات الموردين العامة مع فصل النقدي والآجل
+  app.get("/api/suppliers/statistics", async (req, res) => {
+    try {
+      const { supplierId, projectId, dateFrom, dateTo } = req.query;
+      console.log(`📊 طلب إحصائيات الموردين:`, { supplierId, projectId, dateFrom, dateTo });
+      
+      // تصفية القيم الفارغة والغير محددة
+      const filters: any = {};
+      if (supplierId && supplierId !== 'undefined') filters.supplierId = supplierId as string;
+      if (projectId && projectId !== 'all' && projectId !== 'undefined') filters.projectId = projectId as string;
+      if (dateFrom && dateFrom !== 'undefined') filters.dateFrom = dateFrom as string;
+      if (dateTo && dateTo !== 'undefined') filters.dateTo = dateTo as string;
+      
+      const statistics = await storage.getSupplierStatistics(filters);
+      
+      console.log(`✅ تم حساب إحصائيات الموردين:`, statistics);
+      res.json(statistics);
+    } catch (error) {
+      console.error("خطأ في جلب إحصائيات الموردين:", error);
+      
+      // إرجاع إحصائيات فارغة بدلاً من خطأ 500
+      res.json({
+        totalSuppliers: 0,
+        totalCashPurchases: "0",
+        totalCreditPurchases: "0",
+        totalDebt: "0",
+        totalPaid: "0",
+        remainingDebt: "0",
+        activeSuppliers: 0
+      });
+    }
+  });
+
   // Supplier purchases
   app.get("/api/suppliers/:id/purchases", async (req, res) => {
     try {

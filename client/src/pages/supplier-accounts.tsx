@@ -129,12 +129,49 @@ export default function SupplierAccountsPage() {
     staleTime: 30000, // 30 seconds
   });
 
+  // جلب إحصائيات الموردين العامة مع فصل النقدي والآجل
+  const { data: supplierStats } = useQuery<{
+    totalSuppliers: number;
+    totalCashPurchases: string;
+    totalCreditPurchases: string;
+    totalDebt: string;
+    totalPaid: string;
+    remainingDebt: string;
+    activeSuppliers: number;
+  }>({
+    queryKey: ["/api/suppliers/statistics", selectedProjectId, selectedSupplierId, dateFrom, dateTo],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (selectedSupplierId) params.append('supplierId', selectedSupplierId);
+      if (selectedProjectId && selectedProjectId !== 'all') params.append('projectId', selectedProjectId);
+      if (dateFrom) params.append('dateFrom', dateFrom);
+      if (dateTo) params.append('dateTo', dateTo);
+      
+      const response = await fetch(`/api/suppliers/statistics?${params.toString()}`);
+      if (!response.ok) {
+        console.error('خطأ في جلب إحصائيات الموردين:', response.status, response.statusText);
+        return {
+          totalSuppliers: 0,
+          totalCashPurchases: "0",
+          totalCreditPurchases: "0",
+          totalDebt: "0",
+          totalPaid: "0",
+          remainingDebt: "0",
+          activeSuppliers: 0
+        };
+      }
+      return await response.json();
+    },
+    refetchOnWindowFocus: false,
+    staleTime: 30000 // 30 seconds
+  });
+
   // إزالة الطلب للإحصائيات المركبة والاعتماد على الحسابات المحلية
 
   const selectedSupplier = suppliers.find(s => s.id === selectedSupplierId);
   const selectedProject = projects.find(p => p.id === selectedProjectId);
 
-  // حساب الإجماليات
+  // حساب الإجماليات للمورد المحدد (للعرض التفصيلي)
   const totals = purchases.reduce((acc, purchase) => {
     acc.totalAmount += parseFloat(purchase.totalAmount);
     acc.paidAmount += parseFloat(purchase.paidAmount || "0");
@@ -142,11 +179,29 @@ export default function SupplierAccountsPage() {
     return acc;
   }, { totalAmount: 0, paidAmount: 0, remainingAmount: 0 });
 
-  // حساب الإحصائيات العامة
+  // فصل المشتريات حسب نوع الدفع للمورد المحدد
+  const cashPurchases = purchases.filter(p => p.purchaseType === "نقد");
+  const creditPurchases = purchases.filter(p => p.purchaseType === "أجل");
+  
+  const cashTotals = {
+    totalAmount: cashPurchases.reduce((sum, p) => sum + parseFloat(p.totalAmount), 0),
+    count: cashPurchases.length
+  };
+  
+  const creditTotals = {
+    totalAmount: creditPurchases.reduce((sum, p) => sum + parseFloat(p.totalAmount), 0),
+    count: creditPurchases.length
+  };
+
+  // استخدام الإحصائيات من API إذا كانت متوفرة، وإلا الحسابات المحلية
   const overallStats = {
-    totalSuppliers: suppliers.length,
-    totalDebt: suppliers.reduce((sum, supplier) => sum + parseFloat(supplier.totalDebt), 0),
-    activeSuppliers: suppliers.filter(s => parseFloat(s.totalDebt) > 0).length,
+    totalSuppliers: supplierStats?.totalSuppliers || suppliers.length,
+    totalCashPurchases: supplierStats?.totalCashPurchases || "0",
+    totalCreditPurchases: supplierStats?.totalCreditPurchases || "0",
+    totalDebt: supplierStats?.totalDebt || "0",
+    totalPaid: supplierStats?.totalPaid || "0",
+    remainingDebt: supplierStats?.remainingDebt || "0",
+    activeSuppliers: supplierStats?.activeSuppliers || suppliers.filter(s => parseFloat(s.totalDebt) > 0).length,
     totalPurchases: purchases.length
   };
 
@@ -586,7 +641,7 @@ export default function SupplierAccountsPage() {
   return (
     <div className="container mx-auto p-6 space-y-6" dir="rtl">
 
-      {/* الإحصائيات العامة */}
+      {/* الإحصائيات العامة مع فصل النقدي والآجل */}
       <StatsGrid>
         <StatsCard
           title="إجمالي الموردين"
@@ -595,22 +650,22 @@ export default function SupplierAccountsPage() {
           color="blue"
         />
         <StatsCard
-          title="الموردين النشطين"
-          value={overallStats.activeSuppliers.toLocaleString('en-US')}
-          icon={Building2}
+          title="المشتريات النقدية"
+          value={formatCurrency(overallStats.totalCashPurchases)}
+          icon={Wallet}
           color="green"
         />
         <StatsCard
-          title="إجمالي المديونية"
-          value={formatCurrency(overallStats.totalDebt)}
+          title="المشتريات الآجلة"
+          value={formatCurrency(overallStats.totalCreditPurchases)}
           icon={CreditCard}
-          color="red"
+          color="orange"
         />
         <StatsCard
-          title="إجمالي المشتريات"
-          value={overallStats.totalPurchases.toLocaleString('en-US')}
-          icon={Package}
-          color="orange"
+          title="الموردين النشطين"
+          value={overallStats.activeSuppliers.toLocaleString('en-US')}
+          icon={Building2}
+          color="purple"
         />
       </StatsGrid>
 
@@ -809,34 +864,84 @@ export default function SupplierAccountsPage() {
         </Card>
       )}
 
-      {/* إحصائيات الحساب المحدد */}
+      {/* إحصائيات الحساب المحدد مع فصل النقدي والآجل */}
       {selectedSupplierId && (
-        <StatsGrid>
-          <StatsCard
-            title="إجمالي المشتريات"
-            value={formatCurrency(totals.totalAmount)}
-            icon={ShoppingCart}
-            color="blue"
-          />
-          <StatsCard
-            title="المدفوع"
-            value={formatCurrency(totals.paidAmount)}
-            icon={TrendingUp}
-            color="green"
-          />
-          <StatsCard
-            title="المتبقي"
-            value={formatCurrency(totals.remainingAmount)}
-            icon={TrendingDown}
-            color="red"
-          />
-          <StatsCard
-            title="عدد الفواتير"
-            value={purchases.length.toLocaleString('en-US')}
-            icon={Receipt}
-            color="orange"
-          />
-        </StatsGrid>
+        <div className="space-y-4">
+          {/* إحصائيات عامة */}
+          <StatsGrid>
+            <StatsCard
+              title="إجمالي المشتريات"
+              value={formatCurrency(totals.totalAmount)}
+              icon={ShoppingCart}
+              color="blue"
+            />
+            <StatsCard
+              title="المدفوع"
+              value={formatCurrency(totals.paidAmount)}
+              icon={TrendingUp}
+              color="green"
+            />
+            <StatsCard
+              title="المتبقي"
+              value={formatCurrency(totals.remainingAmount)}
+              icon={TrendingDown}
+              color="red"
+            />
+            <StatsCard
+              title="عدد الفواتير"
+              value={purchases.length.toLocaleString('en-US')}
+              icon={Receipt}
+              color="orange"
+            />
+          </StatsGrid>
+
+          {/* إحصائيات منفصلة للنقدي والآجل */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* المشتريات النقدية */}
+            <Card className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-900/20 dark:to-green-800/20 border-green-200 dark:border-green-700">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg flex items-center gap-2 text-green-700 dark:text-green-300">
+                  <Wallet className="w-5 h-5" />
+                  المشتريات النقدية
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">المبلغ الإجمالي</span>
+                    <span className="font-semibold text-green-700 dark:text-green-300">{formatCurrency(cashTotals.totalAmount)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">عدد الفواتير</span>
+                    <span className="font-semibold text-green-700 dark:text-green-300">{cashTotals.count}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* المشتريات الآجلة */}
+            <Card className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 border-orange-200 dark:border-orange-700">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg flex items-center gap-2 text-orange-700 dark:text-orange-300">
+                  <Receipt className="w-5 h-5" />
+                  المشتريات الآجلة
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">المبلغ الإجمالي</span>
+                    <span className="font-semibold text-orange-700 dark:text-orange-300">{formatCurrency(creditTotals.totalAmount)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">عدد الفواتير</span>
+                    <span className="font-semibold text-orange-700 dark:text-orange-300">{creditTotals.count}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       )}
 
       {/* تفاصيل المشتريات */}
