@@ -86,10 +86,13 @@ const IntelligentRecommendationsEngine: React.FC<IntelligentRecommendationsEngin
     enabled: open,
   });
 
-  const { data: usageData = [] } = useQuery<any[]>({
+  const { data: usageAnalyticsData } = useQuery<any>({
     queryKey: ['/api/tool-usage-analytics'],
     enabled: open,
   });
+
+  // Extract usage data from API response
+  const usageData = usageAnalyticsData?.recentActivity || [];
 
   const { data: costData = [] } = useQuery<any[]>({
     queryKey: ['/api/tool-cost-tracking'],
@@ -105,9 +108,9 @@ const IntelligentRecommendationsEngine: React.FC<IntelligentRecommendationsEngin
     // 1. Cost Optimization Analysis
     const totalToolValue = tools.reduce((sum, tool) => sum + (tool.purchasePrice || 0), 0);
     const underutilizedTools = tools.filter(tool => {
-      const usage = usageData.filter(u => u.toolId === tool.id);
-      const avgUsage = usage.length > 0 ? usage.reduce((sum, u) => sum + (u.hoursUsed || 0), 0) / usage.length : 0;
-      return avgUsage < 2; // Less than 2 hours per day
+      const activity = usageData.filter((u: any) => u.toolId === tool.id);
+      const activityScore = activity.length; // Number of recent activities
+      return activityScore < 3; // Less than 3 recent activities
     });
 
     if (underutilizedTools.length > 0) {
