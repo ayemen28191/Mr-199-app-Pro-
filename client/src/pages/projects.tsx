@@ -280,13 +280,8 @@ export default function ProjectsPage() {
 
   const currentBalance = overallStats.totalIncome - overallStats.totalExpenses;
 
-  const formatCurrencyLocal = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'decimal',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount) + ' ريال';
-  };
+  // استخدام دالة formatCurrency من utils.ts لضمان التوحيد
+  const formatCurrencyLocal = formatCurrency;
 
   return (
     <div className="space-y-6 p-6">

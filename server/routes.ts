@@ -3762,7 +3762,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
           errors: result.error.issues 
         });
       }
-      const tool = await storage.updateTool(req.params.id, result.data);
+      // تحويل التواريخ إلى strings إذا كانت Date objects
+      const updateData = {
+        ...result.data,
+        purchaseDate: result.data.purchaseDate instanceof Date 
+          ? result.data.purchaseDate.toISOString().split('T')[0] 
+          : result.data.purchaseDate,
+        warrantyExpiry: result.data.warrantyExpiry instanceof Date 
+          ? result.data.warrantyExpiry.toISOString().split('T')[0] 
+          : result.data.warrantyExpiry,
+        lastMaintenanceDate: result.data.lastMaintenanceDate instanceof Date 
+          ? result.data.lastMaintenanceDate.toISOString().split('T')[0] 
+          : result.data.lastMaintenanceDate,
+        nextMaintenanceDate: result.data.nextMaintenanceDate instanceof Date 
+          ? result.data.nextMaintenanceDate.toISOString().split('T')[0] 
+          : result.data.nextMaintenanceDate,
+      };
+      const tool = await storage.updateTool(req.params.id, updateData);
       if (!tool) {
         console.error('❌ الأداة غير موجودة:', req.params.id);
         return res.status(404).json({ message: "الأداة غير موجودة" });
@@ -4051,7 +4067,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         inUseTools: tools.filter(t => t.status === 'in_use').length,
         maintenanceTools: tools.filter(t => t.status === 'maintenance').length,
         damagedTools: tools.filter(t => t.status === 'damaged').length,
-        totalValue: tools.reduce((sum, tool) => sum + (tool.purchasePrice || 0), 0),
+        totalValue: tools.reduce((sum, tool) => sum + (Number(tool.purchasePrice) || 0), 0),
         categoriesCount: new Set(tools.map(t => t.categoryId)).size
       };
       
@@ -4075,15 +4091,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const categories = await storage.getToolCategories();
       const categoryMap = new Map(categories.map(c => [c.id, c.name]));
       
-      const usageReport = tools.map(tool => ({
-        id: tool.id,
-        name: tool.name,
-        category: categoryMap.get(tool.categoryId) || 'غير محدد',
-        usageCount: tool.usageCount || 0,
-        lastUsed: tool.updatedAt,
-        status: tool.status,
-        location: 'المخزن الرئيسي' // Default location
-      }));
+      // جلب أسماء المشاريع للأدوات المربوطة بمشاريع
+      const projects = await storage.getProjects({});
+      const projectMap = new Map(projects.map(p => [p.id, p.name]));
+      
+      const usageReport = tools.map(tool => {
+        let location = 'المخزن الرئيسي';
+        
+        // تحديد الموقع بناءً على بيانات الأداة
+        if (tool.projectId && projectMap.has(tool.projectId)) {
+          location = projectMap.get(tool.projectId)!;
+        } else if (tool.locationType === 'project' && tool.locationId && projectMap.has(tool.locationId)) {
+          location = projectMap.get(tool.locationId)!;
+        } else if (tool.locationType && tool.locationType !== 'warehouse') {
+          location = tool.locationType;
+        }
+        
+        return {
+          id: tool.id,
+          name: tool.name,
+          category: categoryMap.get(tool.categoryId || '') || 'غير محدد',
+          usageCount: tool.usageCount || 0,
+          lastUsed: tool.updatedAt,
+          status: tool.status,
+          location: location
+        };
+      });
       
       res.json(usageReport);
     } catch (error) {
@@ -4106,7 +4139,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           description: category.description,
           icon: category.icon,
           toolCount: categoryTools.length,
-          totalValue: categoryTools.reduce((sum, tool) => sum + (tool.purchasePrice || 0), 0),
+          totalValue: categoryTools.reduce((sum, tool) => sum + (Number(tool.purchasePrice) || 0), 0),
           availableCount: categoryTools.filter(t => t.status === 'available').length,
           inUseCount: categoryTools.filter(t => t.status === 'in_use').length,
           createdAt: category.createdAt
@@ -5040,7 +5073,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ 
         success: false, 
         message: 'خطأ في إضافة الحقول المفقودة',
-        error: error.message 
+        error: (error as Error).message 
       });
     }
   });

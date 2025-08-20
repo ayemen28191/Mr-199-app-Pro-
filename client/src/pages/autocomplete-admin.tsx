@@ -207,10 +207,10 @@ export default function AutocompleteAdminPage() {
                 <div>
                   <div className="flex justify-between mb-2">
                     <span>كفاءة البيانات</span>
-                    <span>{stats ? Math.round(((stats.totalRecords - stats.oldRecordsCount) / stats.totalRecords) * 100) : 0}%</span>
+                    <span>{stats && stats.totalRecords > 0 ? Math.round(((stats.totalRecords - stats.oldRecordsCount) / stats.totalRecords) * 100) : 0}%</span>
                   </div>
                   <Progress 
-                    value={stats ? ((stats.totalRecords - stats.oldRecordsCount) / stats.totalRecords) * 100 : 0} 
+                    value={stats && stats.totalRecords > 0 ? ((stats.totalRecords - stats.oldRecordsCount) / stats.totalRecords) * 100 : 0} 
                   />
                 </div>
                 
@@ -245,7 +245,7 @@ export default function AutocompleteAdminPage() {
                     <div className="flex-1">
                       <h3 className="font-medium">{category.category}</h3>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {formatNumber(category.count)} سجل - متوسط الاستخدام: {category.avgUsage.toFixed(1)}
+                        {formatNumber(category.count)} سجل - متوسط الاستخدام: {isNaN(category.avgUsage) || !isFinite(category.avgUsage) ? '0.0' : category.avgUsage.toFixed(1)}
                       </p>
                     </div>
                     <div className="flex items-center gap-2">
