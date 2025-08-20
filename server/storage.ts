@@ -2996,9 +2996,40 @@ export class DatabaseStorage implements IStorage {
   // Tool Categories
   async getToolCategories(): Promise<ToolCategory[]> {
     try {
-      return await db.select().from(toolCategories)
+      // جلب التصنيفات مع حساب عدد الأدوات في كل تصنيف
+      const categoriesWithCount = await db
+        .select({
+          id: toolCategories.id,
+          name: toolCategories.name,
+          description: toolCategories.description,
+          icon: toolCategories.icon,
+          color: toolCategories.color,
+          parentId: toolCategories.parentId,
+          isActive: toolCategories.isActive,
+          createdAt: toolCategories.createdAt,
+          updatedAt: toolCategories.updatedAt,
+          toolCount: sql<number>`COALESCE(COUNT(${tools.id}), 0)`.as('toolCount')
+        })
+        .from(toolCategories)
+        .leftJoin(tools, and(
+          eq(toolCategories.id, tools.categoryId),
+          eq(tools.isActive, true)
+        ))
         .where(eq(toolCategories.isActive, true))
+        .groupBy(
+          toolCategories.id,
+          toolCategories.name,
+          toolCategories.description,
+          toolCategories.icon,
+          toolCategories.color,
+          toolCategories.parentId,
+          toolCategories.isActive,
+          toolCategories.createdAt,
+          toolCategories.updatedAt
+        )
         .orderBy(toolCategories.name);
+
+      return categoriesWithCount;
     } catch (error) {
       console.error('Error getting tool categories:', error);
       return [];

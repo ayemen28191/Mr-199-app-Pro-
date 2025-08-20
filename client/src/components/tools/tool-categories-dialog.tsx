@@ -335,7 +335,11 @@ const ToolCategoriesDialog: React.FC<ToolCategoriesDialogProps> = ({
                                 </Badge>
                               </TableCell>
                               <TableCell className="text-muted-foreground text-sm">
-                                {new Date(category.createdAt).toLocaleDateString('en-US')}
+                                {new Date(category.createdAt).toLocaleDateString('ar-SA', {
+                                  year: 'numeric',
+                                  month: '2-digit',
+                                  day: '2-digit'
+                                })}
                               </TableCell>
                               <TableCell>
                                 <div className="flex justify-center">
@@ -393,7 +397,11 @@ const ToolCategoriesDialog: React.FC<ToolCategoriesDialogProps> = ({
                                     </Badge>
                                   </div>
                                   <span className="text-muted-foreground">
-                                    {new Date(category.createdAt).toLocaleDateString('en-US')}
+                                    {new Date(category.createdAt).toLocaleDateString('ar-SA', {
+                                      year: 'numeric',
+                                      month: '2-digit',
+                                      day: '2-digit'
+                                    })}
                                   </span>
                                 </div>
                               </div>
