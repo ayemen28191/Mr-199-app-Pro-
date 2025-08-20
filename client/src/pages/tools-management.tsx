@@ -73,6 +73,8 @@ import { MaintenanceScheduleDialog } from '@/components/tools/MaintenanceSchedul
 
 import AdvancedNotificationSystem from '@/components/tools/advanced-notification-system';
 import ProjectLocationTracking from '@/components/tools/project-location-tracking';
+import AdvancedAnalyticsDashboard from '@/components/tools/advanced-analytics-dashboard';
+import PredictiveMaintenanceSystem from '@/components/tools/predictive-maintenance-system';
 
 // Types from schema
 interface ToolCategory {
@@ -137,6 +139,8 @@ const ToolsManagementPage: React.FC = () => {
   const [currentView, setCurrentView] = useState<'tools' | 'locations'>('tools');
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [toolToDelete, setToolToDelete] = useState<Tool | null>(null);
+  const [isAnalyticsDashboardOpen, setIsAnalyticsDashboardOpen] = useState(false);
+  const [isPredictiveMaintenanceOpen, setIsPredictiveMaintenanceOpen] = useState(false);
 
   const { setFloatingAction } = useFloatingButton();
   const { toast } = useToast();
@@ -713,6 +717,28 @@ const ToolsManagementPage: React.FC = () => {
                   <Button 
                     variant="outline" 
                     size="sm"
+                    onClick={() => setIsAnalyticsDashboardOpen(true)}
+                    className="h-8 text-xs bg-gradient-to-r from-blue-50 to-purple-50 hover:from-blue-100 hover:to-purple-100 dark:from-blue-900/20 dark:to-purple-900/20 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400"
+                    data-testid="button-analytics"
+                  >
+                    <TrendingUp className="h-3 w-3 ml-1" />
+                    <span className="hidden sm:inline">التحليلات الذكية</span>
+                    <span className="sm:hidden">تحليلات</span>
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setIsPredictiveMaintenanceOpen(true)}
+                    className="h-8 text-xs bg-gradient-to-r from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20 border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-400"
+                    data-testid="button-predictive"
+                  >
+                    <Brain className="h-3 w-3 ml-1" />
+                    <span className="hidden sm:inline">الصيانة الذكية</span>
+                    <span className="sm:hidden">ذكية</span>
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
                     onClick={() => setIsPurchaseIntegrationOpen(true)}
                     className="h-8 text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800"
                     data-testid="button-purchases"
@@ -838,6 +864,16 @@ const ToolsManagementPage: React.FC = () => {
       <ToolsReportsDialog
         open={isReportsDialogOpen}
         onOpenChange={setIsReportsDialogOpen}
+      />
+      
+      <AdvancedAnalyticsDashboard
+        open={isAnalyticsDashboardOpen}
+        onOpenChange={setIsAnalyticsDashboardOpen}
+      />
+      
+      <PredictiveMaintenanceSystem
+        open={isPredictiveMaintenanceOpen}
+        onOpenChange={setIsPredictiveMaintenanceOpen}
       />
       
       <PurchaseIntegrationDialog
