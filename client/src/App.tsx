@@ -47,6 +47,7 @@ function Router() {
       <Route path="/project-transactions" component={ProjectTransactionsPage} />
       <Route path="/autocomplete-admin" component={AutocompleteAdminPage} />
 
+      <Route path="/tools" component={ToolsManagementPage} />
       <Route path="/tools-management" component={ToolsManagementPage} />
       <Route path="/reports" component={Reports} />
 

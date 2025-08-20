@@ -324,7 +324,7 @@ const IntelligentRecommendationsEngine: React.FC<IntelligentRecommendationsEngin
     <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm">
       <div className="fixed inset-4 z-50 overflow-auto bg-background border rounded-lg shadow-lg">
         <div className="p-6">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
             <div>
               <h2 className="text-2xl font-bold flex items-center gap-2">
                 <Brain className="h-7 w-7 text-purple-600" />
@@ -334,39 +334,41 @@ const IntelligentRecommendationsEngine: React.FC<IntelligentRecommendationsEngin
                 توصيات مدعومة بالذكاء الاصطناعي لتحسين الأداء والكفاءة
               </p>
             </div>
-            <div className="flex items-center gap-4">
-              <Select value={selectedType} onValueChange={setSelectedType}>
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="نوع التوصية" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">جميع الأنواع</SelectItem>
-                  <SelectItem value="cost_optimization">تحسين التكاليف</SelectItem>
-                  <SelectItem value="efficiency_improvement">تحسين الكفاءة</SelectItem>
-                  <SelectItem value="preventive_action">إجراءات وقائية</SelectItem>
-                  <SelectItem value="investment_opportunity">فرص استثمارية</SelectItem>
-                  <SelectItem value="resource_allocation">توزيع الموارد</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={selectedPriority} onValueChange={setSelectedPriority}>
-                <SelectTrigger className="w-32">
-                  <SelectValue placeholder="الأولوية" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">جميع الأولويات</SelectItem>
-                  <SelectItem value="high">عالية</SelectItem>
-                  <SelectItem value="medium">متوسطة</SelectItem>
-                  <SelectItem value="low">منخفضة</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <Select value={selectedType} onValueChange={setSelectedType}>
+                  <SelectTrigger className="w-full sm:w-48">
+                    <SelectValue placeholder="نوع التوصية" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">جميع الأنواع</SelectItem>
+                    <SelectItem value="cost_optimization">تحسين التكاليف</SelectItem>
+                    <SelectItem value="efficiency_improvement">تحسين الكفاءة</SelectItem>
+                    <SelectItem value="preventive_action">إجراءات وقائية</SelectItem>
+                    <SelectItem value="investment_opportunity">فرص استثمارية</SelectItem>
+                    <SelectItem value="resource_allocation">توزيع الموارد</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={selectedPriority} onValueChange={setSelectedPriority}>
+                  <SelectTrigger className="w-full sm:w-32">
+                    <SelectValue placeholder="الأولوية" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">جميع الأولويات</SelectItem>
+                    <SelectItem value="high">عالية</SelectItem>
+                    <SelectItem value="medium">متوسطة</SelectItem>
+                    <SelectItem value="low">منخفضة</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button variant="outline" onClick={() => onOpenChange(false)} className="w-full sm:w-auto">
                 إغلاق
               </Button>
             </div>
           </div>
 
-          {/* Summary Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          {/* Summary Stats - Responsive */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <Card>
               <CardContent className="p-4 text-center">
                 <div className="text-2xl font-bold text-purple-600">{recommendations.length}</div>
@@ -418,17 +420,17 @@ const IntelligentRecommendationsEngine: React.FC<IntelligentRecommendationsEngin
                                   recommendation.priority === 'medium' ? '#d97706' : '#16a34a'
                 }}>
                   <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                       <CardTitle className="text-lg flex items-center gap-2">
                         {getTypeIcon(recommendation.type)}
-                        {recommendation.title}
+                        <span className="break-words">{recommendation.title}</span>
                       </CardTitle>
-                      <div className="flex items-center gap-2">
-                        <Badge className={cn("border", getPriorityColor(recommendation.priority))}>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge className={cn("border whitespace-nowrap", getPriorityColor(recommendation.priority))}>
                           {recommendation.priority === 'high' ? 'عالية' : 
                            recommendation.priority === 'medium' ? 'متوسطة' : 'منخفضة'}
                         </Badge>
-                        <Badge variant="outline">
+                        <Badge variant="outline" className="whitespace-nowrap">
                           <Star className="h-3 w-3 ml-1" />
                           {recommendation.impactScore}%
                         </Badge>
@@ -438,7 +440,7 @@ const IntelligentRecommendationsEngine: React.FC<IntelligentRecommendationsEngin
                   <CardContent>
                     <p className="text-muted-foreground mb-4">{recommendation.description}</p>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
                       {/* Financial Impact */}
                       <div className="space-y-2">
                         <h4 className="font-semibold text-sm">الأثر المالي:</h4>
@@ -498,15 +500,15 @@ const IntelligentRecommendationsEngine: React.FC<IntelligentRecommendationsEngin
                       </ul>
                     </div>
 
-                    {/* Action Buttons */}
-                    <div className="flex gap-2 mt-4">
-                      <Button size="sm" className="bg-purple-600 hover:bg-purple-700">
+                    {/* Action Buttons - Responsive Layout */}
+                    <div className="flex flex-col sm:flex-row gap-2 mt-4">
+                      <Button size="sm" className="bg-purple-600 hover:bg-purple-700 w-full sm:w-auto">
                         تنفيذ التوصية
                       </Button>
-                      <Button size="sm" variant="outline">
+                      <Button size="sm" variant="outline" className="w-full sm:w-auto">
                         تفاصيل أكثر
                       </Button>
-                      <Button size="sm" variant="outline">
+                      <Button size="sm" variant="outline" className="w-full sm:w-auto">
                         تأجيل
                       </Button>
                     </div>
