@@ -165,6 +165,12 @@ const ToolsManagementPage: React.FC = () => {
   const { data: categories = [], isLoading: categoriesLoading, error: categoriesError } = useQuery<ToolCategory[]>({
     queryKey: ['/api/tool-categories'],
   });
+  
+  // Fetch projects for mapping names
+  const { data: projects = [] } = useQuery<{id: string, name: string}[]>({
+    queryKey: ['/api/projects'],
+    staleTime: 60000,
+  });
 
   // Filter tools based on current criteria
   const filteredTools = tools.filter(tool => {
@@ -471,22 +477,22 @@ const ToolsManagementPage: React.FC = () => {
           </div>
 
           {/* Current Project Info */}
-          {tool.status === 'in_use' && (
+          {tool.projectId && (
             <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-2 mb-3">
               <div className="flex items-center gap-2">
                 <Building className="h-3 w-3 text-blue-600" />
                 <span className="text-xs font-medium text-blue-800 dark:text-blue-200 truncate">
-                  قيد الاستخدام
+                  {projects.find(p => p.id === tool.projectId)?.name || 'مشروع غير محدد'}
                 </span>
               </div>
               <div className="text-xs text-blue-600 dark:text-blue-300 mt-1">
-                مستخدم حالياً
+                المشروع المرتبط
               </div>
             </div>
           )}
 
-          {/* Quick Actions */}
-          <div className="flex gap-2">
+          {/* Action Buttons */}
+          <div className="grid grid-cols-2 gap-2 mb-2">
             <Button
               size="sm"
               variant="outline"
@@ -494,10 +500,10 @@ const ToolsManagementPage: React.FC = () => {
                 setSelectedToolId(tool.id);
                 setIsDetailsDialogOpen(true);
               }}
-              className="flex-1 h-8 text-xs hover:bg-gray-50"
+              className="h-8 text-xs hover:bg-gray-50 flex items-center gap-1"
               data-testid={`quick-view-${tool.id}`}
             >
-              <Eye className="h-3 w-3 ml-1" />
+              <Eye className="h-3 w-3" />
               عرض
             </Button>
             <Button
@@ -508,11 +514,38 @@ const ToolsManagementPage: React.FC = () => {
                 setSelectedToolName(tool.name);
                 setIsMovementsDialogOpen(true);
               }}
-              className="flex-1 h-8 text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800"
+              className="h-8 text-xs bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800 flex items-center gap-1"
               data-testid={`quick-move-${tool.id}`}
             >
-              <Move className="h-3 w-3 ml-1" />
+              <Move className="h-3 w-3" />
               نقل
+            </Button>
+          </div>
+          
+          {/* Edit & Delete Buttons */}
+          <div className="grid grid-cols-2 gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setSelectedToolId(tool.id);
+                setIsEditDialogOpen(true);
+              }}
+              className="h-8 text-xs hover:bg-green-50 text-green-600 border-green-200 flex items-center gap-1"
+              data-testid={`quick-edit-${tool.id}`}
+            >
+              <Edit className="h-3 w-3" />
+              تعديل
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => handleDeleteTool(tool)}
+              className="h-8 text-xs hover:bg-red-50 text-red-600 border-red-200 flex items-center gap-1"
+              data-testid={`quick-delete-${tool.id}`}
+            >
+              <Trash2 className="h-3 w-3" />
+              حذف
             </Button>
           </div>
         </CardContent>
