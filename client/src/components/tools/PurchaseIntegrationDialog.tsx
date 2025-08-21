@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { StatsGrid } from "@/components/ui/stats-grid";
 import { Loader2, Package, Wrench, CheckCircle, XCircle, Brain, ArrowRight } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -290,32 +291,28 @@ export function PurchaseIntegrationDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">إجمالي البنود</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold">{purchaseItems.length}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">الأدوات المكتشفة</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold text-blue-600">{toolItems.length}</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg">تم التحويل</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold text-green-600">{convertedItems.length}</p>
-            </CardContent>
-          </Card>
-        </div>
+        <StatsGrid 
+          stats={[
+            {
+              title: "إجمالي البنود",
+              value: purchaseItems.length,
+              icon: Package,
+              color: "purple"
+            },
+            {
+              title: "الأدوات المكتشفة", 
+              value: toolItems.length,
+              icon: Wrench,
+              color: "blue"
+            },
+            {
+              title: "تم التحويل",
+              value: convertedItems.length,
+              icon: CheckCircle,
+              color: "green"
+            }
+          ]}
+        />
 
         <div className="flex gap-2 mb-4">
           <Button
