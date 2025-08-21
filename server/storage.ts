@@ -3250,12 +3250,16 @@ export class DatabaseStorage implements IStorage {
       // تحسين جذري: 5 معدات فقط والحقول الأساسية جداً
       const LIMIT = 5;
       
-      // تبسيط جذري - أقل البيانات الممكنة
+      // تبسيط جذري - أقل البيانات الممكنة مع إضافة الحقول المطلوبة للعرض
       const basicFields = {
         id: equipment.id,
         code: equipment.code,
         name: equipment.name,
-        status: equipment.status
+        status: equipment.status,
+        imageUrl: equipment.imageUrl,  // إضافة حقل الصورة المطلوب
+        type: equipment.type,  // إضافة النوع للأيقونات الاحتياطية
+        currentProjectId: equipment.currentProjectId,  // إضافة الموقع الحالي
+        purchasePrice: equipment.purchasePrice  // إضافة السعر للعرض
       };
       
       const conditions = [];
