@@ -3249,12 +3249,18 @@ export class DatabaseStorage implements IStorage {
       // تحسين جذري: 10 معدات فقط والحقول الأساسية جداً
       const LIMIT = 10;
       
-      // تبسيط جذري - الحقول الأساسية جداً فقط
+      // الحقول الأساسية مع الصورة
       const basicFields = {
         id: equipment.id,
         code: equipment.code,
         name: equipment.name,
-        status: equipment.status
+        type: equipment.type,
+        status: equipment.status,
+        currentProjectId: equipment.currentProjectId,
+        imageUrl: equipment.imageUrl,
+        description: equipment.description,
+        purchaseDate: equipment.purchaseDate,
+        purchasePrice: equipment.purchasePrice
       };
       
       const conditions = [];
