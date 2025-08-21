@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, Wrench, Truck, ArrowUpDown, PenTool, Settings, Eye, MapPin, Calendar, DollarSign, Activity, MoreVertical, Edit, Trash2, Image, X } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Plus, Search, Wrench, Truck, ArrowUpDown, PenTool, Settings, Eye, MapPin, Calendar, DollarSign, Activity, MoreVertical, Edit, Trash2, Image, X, Heart } from "lucide-react";
 import { StatsCard, StatsGrid } from "@/components/ui/stats-card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useFloatingButton } from "@/components/layout/floating-button-context";
@@ -26,6 +27,7 @@ export function EquipmentManagement() {
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showTransferDialog, setShowTransferDialog] = useState(false);
   const [enlargedImage, setEnlargedImage] = useState<string | null>(null);
+  const [showEquipmentModal, setShowEquipmentModal] = useState(false);
 
   const queryClient = useQueryClient();
   const { setFloatingAction } = useFloatingButton();
@@ -78,7 +80,7 @@ export function EquipmentManagement() {
 
   const handleEquipmentClick = (item: Equipment) => {
     setSelectedEquipment(item);
-    setShowDetailsDialog(true);
+    setShowEquipmentModal(true);
   };
 
   const handleTransferClick = (item: Equipment, e: React.MouseEvent) => {
@@ -263,10 +265,10 @@ export function EquipmentManagement() {
         />
       </StatsGrid>
 
-      {/* Equipment Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Equipment List - Restaurant Style */}
+      <div className="space-y-4">
         {equipment.length === 0 ? (
-          <div className="col-span-full text-center py-12">
+          <Card className="p-8 text-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900">
             <div className="text-gray-400 mb-4">
               <Wrench className="h-16 w-16 mx-auto opacity-50" />
             </div>
@@ -276,222 +278,109 @@ export function EquipmentManagement() {
             <p className="text-gray-500 dark:text-gray-400 mb-6">
               لم يتم العثور على أي معدات تطابق الفلاتر المحددة
             </p>
-            <Button onClick={() => setShowAddDialog(true)} className="bg-blue-600 hover:bg-blue-700 text-white">
+            <Button onClick={() => setShowAddDialog(true)} className="bg-red-500 hover:bg-red-600 text-white rounded-full px-6">
               <Plus className="h-4 w-4 mr-2" />
               إضافة معدة جديدة
             </Button>
-          </div>
+          </Card>
         ) : (
           equipment.map((item: Equipment) => (
-          <Card 
-            key={item.id} 
-            className={`transition-all duration-300 hover:shadow-lg border-r-4 cursor-pointer ${getStatusBorderColor(item.status)}`}
-            onClick={() => handleEquipmentClick(item)}
-            data-testid={`card-equipment-${item.id}`}
-          >
-            <CardHeader className="pb-2">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-2">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${getTypeBackgroundColor(item.type)}`}>
-                    {getTypeIcon(item.type)}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <CardTitle className="text-base font-bold text-gray-900 dark:text-gray-100 truncate" data-testid={`text-equipment-name-${item.id}`}>
-                      {item.name}
-                    </CardTitle>
-                    <div className="flex items-center gap-1.5 mt-1">
-                      <Badge className={`text-xs ${getStatusColor(item.status)}`} data-testid={`badge-status-${item.id}`}>
-                        {getStatusText(item.status)}
-                      </Badge>
-                      <Badge variant="outline" className="text-xs">
-                        {item.code}
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
-                
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="h-8 w-8 p-0"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem onClick={(e) => {e.stopPropagation(); handleEquipmentClick(item);}}>
-                      <Eye className="mr-2 h-4 w-4" />
-                      عرض التفاصيل
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={(e) => {e.stopPropagation(); handleTransferClick(item, e);}}>
-                      <ArrowUpDown className="mr-2 h-4 w-4" />
-                      نقل المعدة
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem 
-                      className="text-red-600"
-                      onClick={(e) => {e.stopPropagation(); /* handleDeleteClick */}}
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      حذف المعدة
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            </CardHeader>
-
-            <CardContent className="pt-0">
-              <div className="space-y-2">
-                {/* صورة المعدة مضغوطة وأنيقة */}
-                {item.imageUrl && (
-                  <div className="relative w-full h-16 bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden cursor-pointer group">
-                    <img 
-                      src={item.imageUrl} 
-                      alt={`صورة ${item.name}`}
-                      className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEnlargedImage(item.imageUrl!);
-                      }}
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                      }}
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                      <div className="absolute bottom-1 left-1 flex items-center gap-1">
-                        <div className="w-4 h-4 bg-purple-500/80 rounded-full flex items-center justify-center">
-                          <Image className="h-2 w-2 text-white" />
+            <Card 
+              key={item.id}
+              className="bg-white dark:bg-gray-800 hover:shadow-md transition-all duration-200 cursor-pointer border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden"
+              onClick={() => handleEquipmentClick(item)}
+              data-testid={`card-equipment-${item.id}`}
+            >
+              <div className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4 flex-1">
+                    {/* Equipment Image */}
+                    <div className="relative w-16 h-16 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-700 shrink-0">
+                      {item.imageUrl ? (
+                        <img 
+                          src={item.imageUrl} 
+                          alt={item.name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <div className={`w-full h-full flex items-center justify-center ${getTypeBackgroundColor(item.type)}`}>
+                          {getTypeIcon(item.type)}
                         </div>
-                        <span className="text-xs text-white font-medium">صورة المعدة</span>
+                      )}
+                    </div>
+
+                    {/* Equipment Info */}
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 mb-1" data-testid={`text-equipment-name-${item.id}`}>
+                        {item.name}
+                      </h3>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge className={`text-xs ${getStatusColor(item.status)}`} data-testid={`badge-status-${item.id}`}>
+                          {getStatusText(item.status)}
+                        </Badge>
+                        <Badge variant="outline" className="text-xs">
+                          {item.code}
+                        </Badge>
                       </div>
-                      <div className="absolute top-1 right-1">
-                        <Eye className="text-white h-3 w-3" />
+                      <div className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-400">
+                        <MapPin className="h-3 w-3" />
+                        <span className="truncate" data-testid={`text-location-${item.id}`}>
+                          {item.currentProjectId 
+                            ? projects.find((p: any) => p.id === item.currentProjectId)?.name || 'مشروع غير معروف'
+                            : 'المستودع'
+                          }
+                        </span>
                       </div>
                     </div>
                   </div>
-                )}
 
-                {/* Location Info Card - مضغوط */}
-                <div className="p-2 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-md border border-green-100 dark:border-green-800">
-                  <div className="flex items-center gap-2">
-                    <div className="w-5 h-5 bg-green-500 rounded-full flex items-center justify-center">
-                      <MapPin className="h-3 w-3 text-white" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <span className="text-xs text-green-700 dark:text-green-300 font-medium">الموقع الحالي</span>
-                      <p className="text-sm font-semibold text-green-900 dark:text-green-100 truncate" data-testid={`text-location-${item.id}`}>
-                        {item.currentProjectId 
-                          ? projects.find((p: any) => p.id === item.currentProjectId)?.name || 'مشروع غير معروف'
-                          : 'المستودع'
-                        }
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Purchase Info - مضغوط */}
-                {(item.purchaseDate || item.purchasePrice) && (
-                  <div className="grid grid-cols-2 gap-2">
-                    {item.purchaseDate && (
-                      <div className="p-1.5 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-md border border-blue-100 dark:border-blue-800">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3 text-blue-500 shrink-0" />
-                          <div className="min-w-0 flex-1">
-                            <span className="text-xs text-blue-700 dark:text-blue-300 font-medium block">تاريخ الشراء</span>
-                            <p className="text-xs font-semibold text-blue-900 dark:text-blue-100 truncate">{formatDate(item.purchaseDate)}</p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
+                  {/* Price and Actions */}
+                  <div className="flex flex-col items-end gap-2">
                     {item.purchasePrice && (
-                      <div className="p-1.5 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-md border border-amber-100 dark:border-amber-800">
-                        <div className="flex items-center gap-1">
-                          <DollarSign className="h-3 w-3 text-amber-500 shrink-0" />
-                          <div className="min-w-0 flex-1">
-                            <span className="text-xs text-amber-700 dark:text-amber-300 font-medium block">السعر</span>
-                            <p className="text-xs font-semibold text-amber-900 dark:text-amber-100 truncate">{formatCurrency(Number(item.purchasePrice))}</p>
-                          </div>
+                      <div className="text-left">
+                        <div className="text-sm text-gray-500 dark:text-gray-400">السعر</div>
+                        <div className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                          {formatCurrency(Number(item.purchasePrice))}
                         </div>
                       </div>
                     )}
-                  </div>
-                )}
 
-                {/* Description - مضغوط */}
-                {item.description && (
-                  <div className="p-2 bg-gray-50 dark:bg-gray-800 rounded-md border border-gray-200 dark:border-gray-700">
-                    <div className="flex items-start gap-2">
-                      <div className="w-4 h-4 bg-gray-500 rounded-full flex items-center justify-center mt-0.5 shrink-0">
-                        <span className="text-white text-xs font-bold">و</span>
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <span className="text-xs text-gray-700 dark:text-gray-300 font-medium">الوصف</span>
-                        <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-1 mt-0.5" data-testid={`text-description-${item.id}`}>
-                          {item.description}
-                        </p>
-                      </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // Add to favorites logic
+                        }}
+                        className="w-8 h-8 p-0 hover:bg-red-50 dark:hover:bg-red-900/20"
+                      >
+                        <Heart className="h-4 w-4 text-gray-400 hover:text-red-500 transition-colors" />
+                      </Button>
+                      
+                      <Button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleTransferClick(item, e);
+                        }}
+                        className="bg-red-500 hover:bg-red-600 text-white rounded-full px-4 py-2 text-sm font-medium"
+                        data-testid={`button-transfer-${item.id}`}
+                      >
+                        نقل المعدة
+                      </Button>
                     </div>
                   </div>
-                )}
-
-                {/* Action Buttons - مضغوط */}
-                <div className="flex gap-1.5 pt-1">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={(e) => {e.stopPropagation(); handleEquipmentClick(item);}}
-                    className="flex-1 h-8 text-xs bg-white hover:bg-blue-50 dark:bg-gray-800 dark:hover:bg-gray-700 border-blue-200 hover:border-blue-300 transition-all duration-200"
-                    data-testid={`button-details-${item.id}`}
-                  >
-                    <Eye className="h-3 w-3 mr-1" />
-                    التفاصيل
-                  </Button>
-                  <Button
-                    variant="default"
-                    size="sm"
-                    onClick={(e) => {e.stopPropagation(); handleTransferClick(item, e);}}
-                    className="flex-1 h-8 text-xs bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 transition-all duration-200"
-                    data-testid={`button-transfer-${item.id}`}
-                  >
-                    <ArrowUpDown className="h-3 w-3 mr-1" />
-                    نقل
-                  </Button>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </Card>
           ))
         )}
       </div>
 
-      {equipment.length === 0 && (
-        <Card>
-          <CardContent className="text-center py-8">
-            <Wrench className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-              لا توجد معدات
-            </h3>
-            <p className="text-gray-500 dark:text-gray-400 mb-4">
-              {searchTerm || statusFilter !== 'all' || typeFilter !== 'all' || projectFilter !== 'all'
-                ? 'لم يتم العثور على معدات تطابق معايير البحث.'
-                : 'لم يتم إضافة أي معدات بعد. ابدأ بإضافة معدة جديدة.'
-              }
-            </p>
-            {!(searchTerm || statusFilter !== 'all' || typeFilter !== 'all' || projectFilter !== 'all') && (
-              <Button 
-                onClick={() => setShowAddDialog(true)}
-                data-testid="button-add-first-equipment"
-              >
-                إضافة معدة
-              </Button>
-            )}
-          </CardContent>
-        </Card>
-      )}
 
       {/* Dialogs */}
       <AddEquipmentDialog 
@@ -513,6 +402,103 @@ export function EquipmentManagement() {
         onOpenChange={setShowTransferDialog}
         projects={projects}
       />
+
+      {/* Equipment Detail Modal - Restaurant Style */}
+      <Dialog open={showEquipmentModal} onOpenChange={setShowEquipmentModal}>
+        <DialogContent className="max-w-md mx-auto bg-white dark:bg-gray-800 rounded-3xl p-0 overflow-hidden border-0 shadow-2xl">
+          {selectedEquipment && (
+            <div className="relative">
+              {/* Close Button */}
+              <button
+                onClick={() => setShowEquipmentModal(false)}
+                className="absolute top-4 right-4 z-10 w-8 h-8 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+
+              {/* Equipment Image */}
+              <div className="relative h-64 bg-gray-100 dark:bg-gray-700 flex items-center justify-center">
+                {selectedEquipment.imageUrl ? (
+                  <img 
+                    src={selectedEquipment.imageUrl}
+                    alt={selectedEquipment.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className={`w-24 h-24 rounded-full flex items-center justify-center text-white text-2xl ${getTypeBackgroundColor(selectedEquipment.type)}`}>
+                    {getTypeIcon(selectedEquipment.type)}
+                  </div>
+                )}
+              </div>
+
+              {/* Equipment Details */}
+              <div className="p-6 space-y-4">
+                {/* Name and Status */}
+                <div className="text-center">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+                    {selectedEquipment.name}
+                  </h2>
+                  <div className="flex items-center justify-center gap-2">
+                    <Badge className={`text-xs ${getStatusColor(selectedEquipment.status)}`}>
+                      {getStatusText(selectedEquipment.status)}
+                    </Badge>
+                    <Badge variant="outline" className="text-xs">
+                      {selectedEquipment.code}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Price Display */}
+                {selectedEquipment.purchasePrice && (
+                  <div className="text-center bg-orange-100 dark:bg-orange-900/20 rounded-lg p-3">
+                    <div className="text-sm text-orange-600 dark:text-orange-400 mb-1">السعر</div>
+                    <div className="text-2xl font-bold text-orange-700 dark:text-orange-300">
+                      {formatCurrency(Number(selectedEquipment.purchasePrice))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Location Info */}
+                <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-green-500" />
+                    <div>
+                      <div className="text-sm font-medium text-gray-900 dark:text-gray-100">الموقع الحالي</div>
+                      <div className="text-sm text-gray-600 dark:text-gray-400">
+                        {selectedEquipment.currentProjectId 
+                          ? projects.find((p: any) => p.id === selectedEquipment.currentProjectId)?.name || 'مشروع غير معروف'
+                          : 'المستودع'
+                        }
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Description */}
+                {selectedEquipment.description && (
+                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">الوصف</div>
+                    <div className="text-sm text-gray-600 dark:text-gray-400">
+                      {selectedEquipment.description}
+                    </div>
+                  </div>
+                )}
+
+                {/* Action Button */}
+                <Button
+                  onClick={() => {
+                    setShowEquipmentModal(false);
+                    handleTransferClick(selectedEquipment, {} as React.MouseEvent);
+                  }}
+                  className="w-full bg-red-500 hover:bg-red-600 text-white rounded-full py-3 font-medium text-base"
+                >
+                  نقل المعدة
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* نافذة عرض الصورة بالحجم الكامل */}
       {enlargedImage && (
