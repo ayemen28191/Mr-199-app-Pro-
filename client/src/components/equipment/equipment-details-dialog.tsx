@@ -90,7 +90,7 @@ export function EquipmentDetailsDialog({ equipment, open, onOpenChange, projects
 
   const updateMutation = useMutation({
     mutationFn: (data: EquipmentFormData) => 
-      apiRequest(`/api/equipment/${equipment?.id}`, "PUT", data),
+      apiRequest(`/api/equipment/${equipment?.id || ''}`, "PUT", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['equipment'] });
       toast({
@@ -110,7 +110,7 @@ export function EquipmentDetailsDialog({ equipment, open, onOpenChange, projects
   });
 
   const deleteMutation = useMutation({
-    mutationFn: () => apiRequest(`/api/equipment/${equipment?.id}`, "DELETE"),
+    mutationFn: () => apiRequest(`/api/equipment/${equipment?.id || ''}`, "DELETE"),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['equipment'] });
       toast({
@@ -132,7 +132,7 @@ export function EquipmentDetailsDialog({ equipment, open, onOpenChange, projects
   const onSubmit = (data: EquipmentFormData) => {
     const submitData = {
       ...data,
-      purchasePrice: data.purchasePrice ? Number(data.purchasePrice) : undefined,
+      purchasePrice: data.purchasePrice || undefined,
       currentProjectId: data.currentProjectId || null,
     };
     updateMutation.mutate(submitData);
@@ -220,6 +220,30 @@ export function EquipmentDetailsDialog({ equipment, open, onOpenChange, projects
             {!isEditing ? (
               // عرض التفاصيل
               <div className="space-y-3">
+                {/* Equipment Image */}
+                <div className="flex justify-center mb-3">
+                  <div className="relative w-24 h-24 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-700 shrink-0">
+                    {equipment.imageUrl && equipment.imageUrl.trim() !== '' ? (
+                      <img 
+                        src={equipment.imageUrl} 
+                        alt={equipment.name}
+                        className="w-full h-full object-cover"
+                        onLoad={() => console.log('تم تحميل صورة المعدة في النافذة بنجاح:', equipment.name)}
+                        onError={(e) => {
+                          console.error('فشل في تحميل صورة المعدة في النافذة:', equipment.imageUrl);
+                          const target = e.target as HTMLImageElement;
+                          const parent = target.parentElement!;
+                          parent.innerHTML = `<div class="w-full h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-lg">${equipment.name.charAt(0)}</div>`;
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                        {equipment.name.charAt(0)}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
                 {/* Header with Equipment Name and Status - Compact */}
                 <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 p-3 rounded-lg border border-blue-100 dark:border-blue-800">
                   <div className="flex items-center gap-3">

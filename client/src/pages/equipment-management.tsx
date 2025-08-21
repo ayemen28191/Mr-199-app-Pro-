@@ -308,16 +308,25 @@ export function EquipmentManagement() {
                   <div className="flex items-center gap-4 flex-1">
                     {/* Equipment Image */}
                     <div className="relative w-16 h-16 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-700 shrink-0">
-                      {item.imageUrl && item.imageUrl.trim() !== '' ? (
+                      {item.imageUrl && item.imageUrl.trim() !== '' && !item.imageUrl.startsWith('data:') ? (
                         <img 
                           src={item.imageUrl} 
                           alt={item.name}
                           className="w-full h-full object-cover"
+                          onLoad={() => console.log('تم تحميل صورة المعدة بنجاح:', item.name)}
                           onError={(e) => {
                             console.error('فشل في تحميل صورة المعدة:', item.imageUrl);
                             const target = e.target as HTMLImageElement;
-                            target.parentElement!.innerHTML = `<div class="${getTypeBackgroundColor(item.type)} w-full h-full flex items-center justify-center text-white">${getTypeIcon(item.type)}</div>`;
+                            const parent = target.parentElement!;
+                            parent.innerHTML = `<div class="${getTypeBackgroundColor(item.type).replace('bg-gradient-to-br', 'bg-gradient-to-br')} w-full h-full flex items-center justify-center text-white"><span class="text-xl">${getTypeIcon(item.type)}</span></div>`;
                           }}
+                        />
+                      ) : item.imageUrl && item.imageUrl.startsWith('data:') ? (
+                        <img 
+                          src={item.imageUrl} 
+                          alt={item.name}
+                          className="w-full h-full object-cover"
+                          onLoad={() => console.log('تم تحميل صورة المعدة (base64) بنجاح:', item.name)}
                         />
                       ) : (
                         <div className={`w-full h-full flex items-center justify-center text-white ${getTypeBackgroundColor(item.type)}`}>
@@ -363,32 +372,6 @@ export function EquipmentManagement() {
                     )}
 
                     <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEditClick(item, e);
-                        }}
-                        className="w-8 h-8 p-0 hover:bg-blue-50 dark:hover:bg-blue-900/20"
-                        data-testid={`button-edit-${item.id}`}
-                      >
-                        <Edit className="h-4 w-4 text-blue-500 hover:text-blue-600 transition-colors" />
-                      </Button>
-
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteClick(item, e);
-                        }}
-                        className="w-8 h-8 p-0 hover:bg-red-50 dark:hover:bg-red-900/20"
-                        data-testid={`button-delete-${item.id}`}
-                      >
-                        <Trash2 className="h-4 w-4 text-red-500 hover:text-red-600 transition-colors" />
-                      </Button>
-                      
                       <Button
                         onClick={(e) => {
                           e.stopPropagation();
@@ -450,12 +433,13 @@ export function EquipmentManagement() {
                     src={selectedEquipment.imageUrl}
                     alt={selectedEquipment.name}
                     className="w-full h-full object-cover"
+                    onLoad={() => console.log('تم تحميل صورة المعدة في النافذة بنجاح:', selectedEquipment.name)}
                     onError={(e) => {
                       console.error('فشل في تحميل صورة المعدة في النافذة:', selectedEquipment.imageUrl);
                       const target = e.target as HTMLImageElement;
                       target.style.display = 'none';
                       const parent = target.parentElement!;
-                      parent.innerHTML = `<div class="${getTypeBackgroundColor(selectedEquipment.type)} w-24 h-24 rounded-full flex items-center justify-center text-white text-2xl">${getTypeIcon(selectedEquipment.type)}</div>`;
+                      parent.innerHTML = `<div class="${getTypeBackgroundColor(selectedEquipment.type).replace('bg-gradient-to-br', 'bg-gradient-to-br')} w-24 h-24 rounded-full flex items-center justify-center text-white text-2xl"><span>${getTypeIcon(selectedEquipment.type)}</span></div>`;
                     }}
                   />
                 ) : (
@@ -519,24 +503,33 @@ export function EquipmentManagement() {
                 )}
 
                 {/* Action Buttons */}
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-3 gap-2">
                   <Button
                     onClick={() => {
                       setShowEquipmentModal(false);
                       handleEditClick(selectedEquipment);
                     }}
-                    className="bg-blue-500 hover:bg-blue-600 text-white rounded-full py-3 font-medium text-base"
+                    className="bg-blue-500 hover:bg-blue-600 text-white rounded-full py-3 font-medium text-sm"
                   >
                     تعديل
                   </Button>
                   <Button
                     onClick={() => {
                       setShowEquipmentModal(false);
+                      handleDeleteClick(selectedEquipment);
+                    }}
+                    className="bg-red-600 hover:bg-red-700 text-white rounded-full py-3 font-medium text-sm"
+                  >
+                    حذف
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setShowEquipmentModal(false);
                       handleTransferClick(selectedEquipment);
                     }}
-                    className="bg-red-500 hover:bg-red-600 text-white rounded-full py-3 font-medium text-base"
+                    className="bg-red-500 hover:bg-red-600 text-white rounded-full py-3 font-medium text-sm"
                   >
-                    نقل المعدة
+                    نقل
                   </Button>
                 </div>
               </div>
