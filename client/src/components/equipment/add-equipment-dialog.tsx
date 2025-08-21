@@ -81,65 +81,67 @@ export function AddEquipmentDialog({ open, onOpenChange, projects }: AddEquipmen
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]" dir="rtl">
-        <DialogHeader>
-          <DialogTitle>إضافة معدة جديدة</DialogTitle>
-          <DialogDescription>
+      <DialogContent className="w-[95vw] max-w-[500px] max-h-[90vh] overflow-y-auto" dir="rtl">
+        <DialogHeader className="pb-3">
+          <DialogTitle className="text-lg">إضافة معدة جديدة</DialogTitle>
+          <DialogDescription className="text-sm text-gray-600">
             أدخل تفاصيل المعدة الجديدة
           </DialogDescription>
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Equipment Name */}
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>اسم المعدة *</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="مثال: حفار صغير"
-                        {...field} 
-                        data-testid="input-equipment-name"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-3">
+            {/* Equipment Name */}
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm font-medium">اسم المعدة *</FormLabel>
+                  <FormControl>
+                    <Input 
+                      placeholder="مثال: حفار صغير"
+                      className="h-9 text-sm"
+                      {...field} 
+                      data-testid="input-equipment-name"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-              {/* Equipment Code */}
-              <FormField
-                control={form.control}
-                name="code"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>كود المعدة *</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="مثال: EQ-001"
-                        {...field} 
-                        data-testid="input-equipment-code"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+            {/* Equipment Code */}
+            <FormField
+              control={form.control}
+              name="code"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm font-medium">كود المعدة *</FormLabel>
+                  <FormControl>
+                    <Input 
+                      placeholder="مثال: EQ-001"
+                      className="h-9 text-sm"
+                      {...field} 
+                      data-testid="input-equipment-code"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-              {/* Equipment Type */}
+            {/* Equipment Type and Status in a row for mobile */}
+            <div className="grid grid-cols-2 gap-3">
               <FormField
                 control={form.control}
                 name="type"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>نوع المعدة *</FormLabel>
+                    <FormLabel className="text-sm font-medium">النوع *</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
-                        <SelectTrigger data-testid="select-equipment-type">
+                        <SelectTrigger data-testid="select-equipment-type" className="h-9 text-sm">
                           <SelectValue placeholder="اختر النوع" />
                         </SelectTrigger>
                       </FormControl>
@@ -154,16 +156,15 @@ export function AddEquipmentDialog({ open, onOpenChange, projects }: AddEquipmen
                 )}
               />
 
-              {/* Equipment Status */}
               <FormField
                 control={form.control}
                 name="status"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>حالة المعدة *</FormLabel>
+                    <FormLabel className="text-sm font-medium">الحالة *</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
-                        <SelectTrigger data-testid="select-equipment-status">
+                        <SelectTrigger data-testid="select-equipment-status" className="h-9 text-sm">
                           <SelectValue placeholder="اختر الحالة" />
                         </SelectTrigger>
                       </FormControl>
@@ -178,17 +179,20 @@ export function AddEquipmentDialog({ open, onOpenChange, projects }: AddEquipmen
                   </FormItem>
                 )}
               />
+            </div>
 
-              {/* Purchase Date */}
+            {/* Purchase Date and Price in a row */}
+            <div className="grid grid-cols-2 gap-3">
               <FormField
                 control={form.control}
                 name="purchaseDate"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>تاريخ الشراء</FormLabel>
+                    <FormLabel className="text-sm font-medium">تاريخ الشراء</FormLabel>
                     <FormControl>
                       <Input 
                         type="date"
+                        className="h-9 text-sm"
                         {...field} 
                         data-testid="input-purchase-date"
                       />
@@ -198,17 +202,17 @@ export function AddEquipmentDialog({ open, onOpenChange, projects }: AddEquipmen
                 )}
               />
 
-              {/* Purchase Price */}
               <FormField
                 control={form.control}
                 name="purchasePrice"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>سعر الشراء</FormLabel>
+                    <FormLabel className="text-sm font-medium">سعر الشراء</FormLabel>
                     <FormControl>
                       <Input 
                         type="number"
                         placeholder="0"
+                        className="h-9 text-sm"
                         {...field} 
                         data-testid="input-purchase-price"
                       />
@@ -225,13 +229,13 @@ export function AddEquipmentDialog({ open, onOpenChange, projects }: AddEquipmen
               name="currentProjectId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>المشروع الحالي</FormLabel>
+                  <FormLabel className="text-sm font-medium">المشروع الحالي</FormLabel>
                   <Select 
                     onValueChange={(value) => field.onChange(value === "warehouse" ? null : value)}
                     defaultValue={field.value || "warehouse"}
                   >
                     <FormControl>
-                      <SelectTrigger data-testid="select-current-project">
+                      <SelectTrigger data-testid="select-current-project" className="h-9 text-sm">
                         <SelectValue placeholder="اختر المشروع (اختياري)" />
                       </SelectTrigger>
                     </FormControl>
@@ -244,7 +248,7 @@ export function AddEquipmentDialog({ open, onOpenChange, projects }: AddEquipmen
                       ))}
                     </SelectContent>
                   </Select>
-                  <FormDescription>
+                  <FormDescription className="text-xs text-gray-500">
                     اتركه فارغاً إذا كانت المعدة في المستودع
                   </FormDescription>
                   <FormMessage />
@@ -258,12 +262,12 @@ export function AddEquipmentDialog({ open, onOpenChange, projects }: AddEquipmen
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>الوصف</FormLabel>
+                  <FormLabel className="text-sm font-medium">الوصف</FormLabel>
                   <FormControl>
                     <Textarea 
                       placeholder="وصف إضافي للمعدة..."
-                      className="resize-none"
-                      rows={3}
+                      className="resize-none text-sm min-h-[60px]"
+                      rows={2}
                       {...field} 
                       data-testid="textarea-description"
                     />
@@ -273,12 +277,13 @@ export function AddEquipmentDialog({ open, onOpenChange, projects }: AddEquipmen
               )}
             />
 
-            {/* Buttons */}
-            <div className="flex justify-end space-x-2 space-x-reverse pt-4">
+            {/* Buttons - Full width on mobile */}
+            <div className="flex flex-col sm:flex-row gap-2 sm:justify-end pt-2">
               <Button 
                 type="button" 
                 variant="outline" 
                 onClick={() => onOpenChange(false)}
+                className="order-2 sm:order-1 h-9 text-sm"
                 data-testid="button-cancel"
               >
                 إلغاء
@@ -286,6 +291,7 @@ export function AddEquipmentDialog({ open, onOpenChange, projects }: AddEquipmen
               <Button 
                 type="submit" 
                 disabled={addMutation.isPending}
+                className="order-1 sm:order-2 h-9 text-sm"
                 data-testid="button-submit"
               >
                 {addMutation.isPending ? "جاري الحفظ..." : "إضافة المعدة"}

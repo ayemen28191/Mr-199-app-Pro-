@@ -146,114 +146,77 @@ export function EquipmentManagement() {
 
   return (
     <div className="p-6 max-w-7xl mx-auto" dir="rtl">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">إدارة المعدات</h1>
-          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            إدارة وتتبع المعدات والأدوات في المشاريع
-          </p>
+
+
+      {/* Search and Filters - Compact Version */}
+      <div className="mb-4 space-y-3">
+        {/* Search Bar */}
+        <div className="relative">
+          <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            placeholder="البحث بالاسم أو الكود..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pr-10 h-10 text-sm border-gray-200 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            data-testid="input-search-equipment"
+          />
         </div>
-        <Button 
-          onClick={() => setShowAddDialog(true)}
-          className="flex items-center gap-2"
-          data-testid="button-add-equipment"
-        >
-          <Plus className="h-4 w-4" />
-          إضافة معدة
-        </Button>
-      </div>
-
-      {/* Search and Filters */}
-      <Card className="mb-6 border-r-4 border-r-blue-500">
-        <CardHeader className="bg-gradient-to-r from-blue-50 to-white dark:from-blue-950 dark:to-gray-900">
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Search className="h-5 w-5 text-blue-500" />
-            البحث والفلاتر
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
-                <Search className="h-4 w-4" />
-                البحث
-              </label>
-              <div className="relative">
-                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <Input
-                  placeholder="البحث بالاسم أو الكود..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pr-10 transition-all duration-200 focus:ring-2 focus:ring-blue-500"
-                  data-testid="input-search-equipment"
-                />
+        
+        {/* Compact Filters */}
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-3">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger data-testid="select-status-filter" className="h-9 text-xs border-gray-200">
+              <div className="flex items-center gap-1 truncate">
+                <Activity className="h-3 w-3 text-gray-500 shrink-0" />
+                <SelectValue placeholder="الحالة" />
               </div>
-            </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">جميع الحالات</SelectItem>
+              <SelectItem value="active">نشط</SelectItem>
+              <SelectItem value="maintenance">صيانة</SelectItem>
+              <SelectItem value="out_of_service">خارج الخدمة</SelectItem>
+              <SelectItem value="inactive">غير نشط</SelectItem>
+            </SelectContent>
+          </Select>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
-                <Activity className="h-4 w-4" />
-                الحالة
-              </label>
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger data-testid="select-status-filter" className="transition-all duration-200 hover:border-blue-300">
-                  <SelectValue placeholder="اختر الحالة" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">جميع الحالات</SelectItem>
-                  <SelectItem value="active">نشط</SelectItem>
-                  <SelectItem value="maintenance">صيانة</SelectItem>
-                  <SelectItem value="out_of_service">خارج الخدمة</SelectItem>
-                  <SelectItem value="inactive">غير نشط</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+          <Select value={typeFilter} onValueChange={setTypeFilter}>
+            <SelectTrigger data-testid="select-type-filter" className="h-9 text-xs border-gray-200">
+              <div className="flex items-center gap-1 truncate">
+                <Wrench className="h-3 w-3 text-gray-500 shrink-0" />
+                <SelectValue placeholder="النوع" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">جميع الأنواع</SelectItem>
+              <SelectItem value="إنشائية">إنشائية</SelectItem>
+              <SelectItem value="نقل">نقل</SelectItem>
+              <SelectItem value="أداة">أداة</SelectItem>
+              <SelectItem value="construction">إنشائية</SelectItem>
+              <SelectItem value="transport">نقل</SelectItem>
+              <SelectItem value="tool">أداة</SelectItem>
+            </SelectContent>
+          </Select>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
-                <Wrench className="h-4 w-4" />
-                النوع
-              </label>
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger data-testid="select-type-filter" className="transition-all duration-200 hover:border-blue-300">
-                  <SelectValue placeholder="اختر النوع" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">جميع الأنواع</SelectItem>
-                  <SelectItem value="إنشائية">إنشائية</SelectItem>
-                  <SelectItem value="نقل">نقل</SelectItem>
-                  <SelectItem value="أداة">أداة</SelectItem>
-                  <SelectItem value="construction">إنشائية</SelectItem>
-                  <SelectItem value="transport">نقل</SelectItem>
-                  <SelectItem value="tool">أداة</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
-                <MapPin className="h-4 w-4" />
-                المشروع
-              </label>
-              <Select value={projectFilter} onValueChange={setProjectFilter}>
-                <SelectTrigger data-testid="select-project-filter" className="transition-all duration-200 hover:border-blue-300">
-                  <SelectValue placeholder="اختر المشروع" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">جميع المواقع</SelectItem>
-                  <SelectItem value="warehouse">المستودع</SelectItem>
-                  {projects.map((project: any) => (
-                    <SelectItem key={project.id} value={project.id}>
-                      {project.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          <Select value={projectFilter} onValueChange={setProjectFilter}>
+            <SelectTrigger data-testid="select-project-filter" className="h-9 text-xs border-gray-200">
+              <div className="flex items-center gap-1 truncate">
+                <MapPin className="h-3 w-3 text-gray-500 shrink-0" />
+                <SelectValue placeholder="المشروع" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">جميع المواقع</SelectItem>
+              <SelectItem value="warehouse">المستودع</SelectItem>
+              {projects.map((project: any) => (
+                <SelectItem key={project.id} value={project.id}>
+                  {project.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
 
       {/* Statistics */}
       <StatsGrid className="mb-6">
