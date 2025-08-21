@@ -195,30 +195,28 @@ const ToolsReportsDialog: React.FC<ToolsReportsDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[98vw] max-w-7xl h-[95vh] overflow-hidden flex flex-col p-0" dir="rtl">
-        {/* Header احترافي مضغوط */}
-        <DialogHeader className="flex-shrink-0 px-6 py-3 border-b bg-gradient-to-l from-slate-50 to-gray-50 dark:from-slate-900/50 dark:to-gray-900/50">
+      <DialogContent className="w-[95vw] max-w-6xl h-[90vh] overflow-hidden flex flex-col p-0" dir="rtl">
+        {/* Header احترافي متوازن */}
+        <DialogHeader className="flex-shrink-0 px-6 py-4 border-b bg-gradient-to-l from-slate-50 to-gray-50 dark:from-slate-900/50 dark:to-gray-900/50">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-md">
-                  <BarChart3 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                </div>
-                <div>
-                  <DialogTitle className="text-base font-semibold text-gray-900 dark:text-gray-100">
-                    تقارير وإحصائيات الأدوات
-                  </DialogTitle>
-                  <DialogDescription className="text-xs text-gray-600 dark:text-gray-400">
-                    لوحة تحكم شاملة متقدمة
-                  </DialogDescription>
-                </div>
+              <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                <BarChart3 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                  تقارير وإحصائيات الأدوات
+                </DialogTitle>
+                <DialogDescription className="text-sm text-gray-600 dark:text-gray-400">
+                  لوحة تحكم شاملة متقدمة
+                </DialogDescription>
               </div>
             </div>
             
-            {/* فلاتر سريعة في الهيدر */}
-            <div className="flex items-center gap-2">
+            {/* فلاتر في الهيدر */}
+            <div className="flex items-center gap-3">
               <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-                <SelectTrigger className="w-28 h-8 text-xs">
+                <SelectTrigger className="w-32 h-9 text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -230,7 +228,7 @@ const ToolsReportsDialog: React.FC<ToolsReportsDialogProps> = ({
               </Select>
               
               <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger className="w-32 h-8 text-xs">
+                <SelectTrigger className="w-40 h-9 text-sm">
                   <SelectValue placeholder="التصنيف" />
                 </SelectTrigger>
                 <SelectContent>
@@ -243,199 +241,222 @@ const ToolsReportsDialog: React.FC<ToolsReportsDialogProps> = ({
                 </SelectContent>
               </Select>
               
-              <Button variant="outline" size="sm" className="h-8 w-8 p-0">
-                <RefreshCw className="h-3 w-3" />
+              <Button variant="outline" size="sm" className="h-9 px-3">
+                <RefreshCw className="h-4 w-4" />
               </Button>
             </div>
           </div>
         </DialogHeader>
 
         {/* محتوى الصفحة */}
-        <div className="flex-1 overflow-auto p-4">
+        <div className="flex-1 overflow-auto p-6">
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
-          {/* تبويبات مضغوطة احترافية */}
-          <TabsList className="grid w-full grid-cols-4 bg-gray-100 dark:bg-gray-800 p-0.5 rounded-lg mb-3 h-9">
+          {/* تبويبات احترافية متوازنة */}
+          <TabsList className="grid w-full grid-cols-4 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg mb-4 h-12">
             <TabsTrigger 
               value="overview" 
-              className="flex items-center gap-1.5 text-xs font-medium py-1.5 px-2 h-8 rounded-md transition-all" 
+              className="flex items-center gap-2 text-sm font-medium py-2 px-3 h-10 rounded-md transition-all" 
               data-testid="tab-overview"
             >
-              <BarChart3 className="h-3 w-3" />
-              <span>عامة</span>
+              <BarChart3 className="h-4 w-4" />
+              <span>نظرة عامة</span>
             </TabsTrigger>
             <TabsTrigger 
               value="usage" 
-              className="flex items-center gap-1.5 text-xs font-medium py-1.5 px-2 h-8 rounded-md transition-all" 
+              className="flex items-center gap-2 text-sm font-medium py-2 px-3 h-10 rounded-md transition-all" 
               data-testid="tab-usage"
             >
-              <TrendingUp className="h-3 w-3" />
-              <span>استخدام</span>
+              <TrendingUp className="h-4 w-4" />
+              <span>الاستخدام</span>
             </TabsTrigger>
             <TabsTrigger 
               value="maintenance" 
-              className="flex items-center gap-1.5 text-xs font-medium py-1.5 px-2 h-8 rounded-md transition-all" 
+              className="flex items-center gap-2 text-sm font-medium py-2 px-3 h-10 rounded-md transition-all" 
               data-testid="tab-maintenance"
             >
-              <Wrench className="h-3 w-3" />
-              <span>صيانة</span>
+              <Wrench className="h-4 w-4" />
+              <span>الصيانة</span>
             </TabsTrigger>
             <TabsTrigger 
               value="categories" 
-              className="flex items-center gap-1.5 text-xs font-medium py-1.5 px-2 h-8 rounded-md transition-all" 
+              className="flex items-center gap-2 text-sm font-medium py-2 px-3 h-10 rounded-md transition-all" 
               data-testid="tab-categories"
             >
-              <Package className="h-3 w-3" />
-              <span>تصنيفات</span>
+              <Package className="h-4 w-4" />
+              <span>التصنيفات</span>
             </TabsTrigger>
           </TabsList>
 
-          {/* Overview Tab - احترافي مضغوط */}
-          <TabsContent value="overview" className="flex-1 overflow-auto space-y-3">
-            {/* الإحصائيات الرئيسية - مضغوطة */}
-            <div className="bg-gradient-to-l from-blue-50 to-slate-50 dark:from-blue-950/20 dark:to-slate-950/20 rounded-lg p-3">
+          {/* Overview Tab - احترافي متوازن */}
+          <TabsContent value="overview" className="flex-1 overflow-auto space-y-5">
+            {/* الإحصائيات الرئيسية - تصميم احترافي */}
+            <div className="bg-gradient-to-l from-blue-50 to-slate-50 dark:from-blue-950/20 dark:to-slate-950/20 rounded-xl p-4">
               {/* صف أول */}
-              <div className="grid grid-cols-2 gap-2 mb-2">
-                <div className="bg-white dark:bg-gray-800 rounded-lg p-2.5 border">
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border shadow-sm">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">إجمالي الأدوات</p>
-                      <p className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">إجمالي الأدوات</p>
+                      <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                         {toolsStats?.totalTools || 0}
                       </p>
                     </div>
-                    <Package className="h-6 w-6 text-blue-500 opacity-25" />
+                    <Package className="h-8 w-8 text-blue-500 opacity-20" />
                   </div>
                 </div>
-                <div className="bg-white dark:bg-gray-800 rounded-lg p-2.5 border">
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border shadow-sm">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">متاح للعمل</p>
-                      <p className="text-lg font-bold text-green-600 dark:text-green-400">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">متاح للعمل</p>
+                      <p className="text-2xl font-bold text-green-600 dark:text-green-400">
                         {toolsStats?.availableTools || 0}
                       </p>
                     </div>
-                    <CheckCircle className="h-6 w-6 text-green-500 opacity-25" />
+                    <CheckCircle className="h-8 w-8 text-green-500 opacity-20" />
                   </div>
                 </div>
               </div>
               
               {/* صف ثاني */}
-              <div className="grid grid-cols-2 gap-2">
-                <div className="bg-white dark:bg-gray-800 rounded-lg p-2.5 border">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border shadow-sm">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">قيد الاستخدام</p>
-                      <p className="text-lg font-bold text-orange-600 dark:text-orange-400">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">قيد الاستخدام</p>
+                      <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
                         {toolsStats?.inUseTools || 0}
                       </p>
                     </div>
-                    <Wrench className="h-6 w-6 text-orange-500 opacity-25" />
+                    <Wrench className="h-8 w-8 text-orange-500 opacity-20" />
                   </div>
                 </div>
-                <div className="bg-white dark:bg-gray-800 rounded-lg p-2.5 border">
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border shadow-sm">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">صيانة ومعطل</p>
-                      <p className="text-lg font-bold text-red-600 dark:text-red-400">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">صيانة ومعطل</p>
+                      <p className="text-2xl font-bold text-red-600 dark:text-red-400">
                         {(toolsStats?.maintenanceTools || 0) + (toolsStats?.damagedTools || 0)}
                       </p>
                     </div>
-                    <AlertTriangle className="h-6 w-6 text-red-500 opacity-25" />
+                    <AlertTriangle className="h-8 w-8 text-red-500 opacity-20" />
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* معلومات إضافية مضغوطة */}
-            <div className="grid grid-cols-2 gap-2">
-              <div className="bg-white dark:bg-gray-800 rounded-lg p-2.5 border">
-                <div className="flex items-center gap-2 mb-1">
-                  <DollarSign className="h-3 w-3 text-green-600" />
-                  <span className="text-xs font-medium">إجمالي القيمة</span>
-                </div>
-                <p className="text-sm font-bold">
-                  {(toolsStats?.totalValue || 0).toLocaleString('en-US')} <span className="text-xs text-gray-500">ر.ي</span>
-                </p>
-              </div>
+            {/* معلومات إضافية احترافية */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <DollarSign className="h-4 w-4 text-green-600" />
+                    الملخص المالي
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
+                    <span className="text-muted-foreground">إجمالي القيمة:</span>
+                    <span className="font-bold text-lg">
+                      {(toolsStats?.totalValue || 0).toLocaleString('en-US')} ر.ي
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
+                    <span className="text-muted-foreground">متوسط القيمة:</span>
+                    <span className="font-medium">
+                      {toolsStats && toolsStats.totalTools > 0 
+                        ? Math.round(toolsStats.totalValue / toolsStats.totalTools).toLocaleString('en-US')
+                        : 0} ر.ي
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
               
-              <div className="bg-white dark:bg-gray-800 rounded-lg p-2.5 border">
-                <div className="flex items-center gap-2 mb-1">
-                  <TrendingUp className="h-3 w-3 text-blue-600" />
-                  <span className="text-xs font-medium">معدل الاستخدام</span>
-                </div>
-                <p className="text-sm font-bold">
-                  {toolsStats?.averageUsage || 0}<span className="text-xs text-gray-500">%</span>
-                </p>
-              </div>
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <TrendingUp className="h-4 w-4 text-blue-600" />
+                    إحصائيات الاستخدام
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
+                    <span className="text-muted-foreground">معدل الاستخدام:</span>
+                    <span className="font-bold text-lg">
+                      {toolsStats?.averageUsage || 0}%
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="text-center p-2 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
+                      <p className="text-sm text-blue-600 font-bold">
+                        {usageReport.filter(tool => tool.usageCount > 10).length}
+                      </p>
+                      <p className="text-xs text-blue-600/70">عالي الاستخدام</p>
+                    </div>
+                    <div className="text-center p-2 bg-red-50 dark:bg-red-950/20 rounded-lg">
+                      <p className="text-sm text-red-600 font-bold">
+                        {usageReport.filter(tool => tool.usageCount === 0).length}
+                      </p>
+                      <p className="text-xs text-red-600/70">غير مستخدم</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
 
-            {/* تفاصيل سريعة */}
-            <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-2.5">
-              <div className="grid grid-cols-3 gap-2 text-center">
-                <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">عالي الاستخدام</p>
-                  <p className="text-sm font-bold text-blue-600">
-                    {usageReport.filter(tool => tool.usageCount > 10).length}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">غير مستخدم</p>
-                  <p className="text-sm font-bold text-red-600">
-                    {usageReport.filter(tool => tool.usageCount === 0).length}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">التصنيفات</p>
-                  <p className="text-sm font-bold text-purple-600">
-                    {toolsStats?.categoriesCount || 0}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* إجراءات سريعة */}
-            <div className="flex gap-2">
+            {/* إجراءات */}
+            <div className="flex gap-3">
               <Button 
                 onClick={() => downloadReport('overview')} 
-                size="sm" 
-                className="flex-1 h-7 text-xs"
+                className="flex-1"
                 data-testid="button-export-overview"
               >
-                <Download className="h-3 w-3 ml-1" />
-                تصدير عام
+                <Download className="h-4 w-4 ml-2" />
+                تصدير النظرة العامة
               </Button>
               <Button 
                 variant="outline" 
                 onClick={() => downloadReport('detailed')} 
-                size="sm" 
-                className="flex-1 h-7 text-xs"
+                className="flex-1"
                 data-testid="button-export-detailed"
               >
-                <FileText className="h-3 w-3 ml-1" />
+                <FileText className="h-4 w-4 ml-2" />
                 تقرير مفصل
               </Button>
             </div>
           </TabsContent>
 
-          {/* Usage Report Tab */}
-          <TabsContent value="usage" className="space-y-4 sm:space-y-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
-              <div className="relative flex-1 sm:max-w-md">
-                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder="البحث في الأدوات..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pr-10 w-full"
-                  data-testid="input-search-tools"
-                />
+          {/* Usage Report Tab - احترافي */}
+          <TabsContent value="usage" className="flex-1 overflow-auto space-y-5">
+            {/* هيدر تبويب الاستخدام */}
+            <div className="flex flex-col sm:flex-row gap-4 sm:justify-between sm:items-center bg-gradient-to-l from-gray-50 to-slate-50 dark:from-gray-900/50 dark:to-slate-900/50 rounded-lg p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg">
+                  <TrendingUp className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold">تقرير استخدام الأدوات</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    متابعة شاملة لاستخدام الأدوات والأداء
+                  </p>
+                </div>
               </div>
-              <Button onClick={() => downloadReport('usage')} className="w-full sm:w-auto" data-testid="button-export-usage">
-                <Download className="h-4 w-4 ml-1" />
-                <span className="hidden sm:inline">تصدير تقرير الاستخدام</span>
-                <span className="sm:hidden">تصدير التقرير</span>
-              </Button>
+              <div className="flex items-center gap-3">
+                <div className="relative">
+                  <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Input
+                    placeholder="البحث في الأدوات..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pr-10 w-64"
+                    data-testid="input-search-tools"
+                  />
+                </div>
+                <Button onClick={() => downloadReport('usage')} data-testid="button-export-usage">
+                  <Download className="h-4 w-4 ml-2" />
+                  تصدير التقرير
+                </Button>
+              </div>
             </div>
 
             <Card>
@@ -575,36 +596,64 @@ const ToolsReportsDialog: React.FC<ToolsReportsDialogProps> = ({
             </Card>
           </TabsContent>
 
-          {/* Maintenance Report Tab */}
-          <TabsContent value="maintenance" className="space-y-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
-              <h3 className="text-lg font-semibold">تقرير الصيانة والمتابعة</h3>
-              <Button onClick={() => downloadReport('maintenance')} className="w-full sm:w-auto" data-testid="button-export-maintenance">
-                <Download className="h-4 w-4 ml-1" />
-                <span className="hidden sm:inline">تصدير تقرير الصيانة</span>
-                <span className="sm:hidden">تصدير التقرير</span>
+          {/* Maintenance Report Tab - احترافي */}
+          <TabsContent value="maintenance" className="flex-1 overflow-auto space-y-5">
+            {/* هيدر تبويب الصيانة */}
+            <div className="flex flex-col sm:flex-row gap-4 sm:justify-between sm:items-center bg-gradient-to-l from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 rounded-lg p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-orange-100 dark:bg-orange-900/30 rounded-lg">
+                  <Wrench className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold">تقرير الصيانة والمتابعة</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    جدولة ومتابعة صيانة الأدوات الدورية
+                  </p>
+                </div>
+              </div>
+              <Button onClick={() => downloadReport('maintenance')} data-testid="button-export-maintenance">
+                <Download className="h-4 w-4 ml-2" />
+                تصدير تقرير الصيانة
               </Button>
             </div>
 
+            {/* إحصائيات الصيانة */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <StatsCard
-                title="أدوات تحتاج صيانة"
-                value={maintenanceReport.filter(item => item.overdue).length}
-                icon={AlertTriangle}
-                color="red"
-              />
-              <StatsCard
-                title="صيانة مجدولة"
-                value={maintenanceReport.filter(item => !item.overdue).length}
-                icon={Clock}
-                color="orange"
-              />
-              <StatsCard
-                title="إجمالي أدوات الصيانة"
-                value={maintenanceReport.length}
-                icon={Wrench}
-                color="blue"
-              />
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">تحتاج صيانة</p>
+                    <p className="text-2xl font-bold text-red-600 dark:text-red-400">
+                      {maintenanceReport.filter(item => item.overdue).length}
+                    </p>
+                  </div>
+                  <AlertTriangle className="h-8 w-8 text-red-500 opacity-20" />
+                </div>
+              </div>
+              
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">صيانة مجدولة</p>
+                    <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                      {maintenanceReport.filter(item => !item.overdue).length}
+                    </p>
+                  </div>
+                  <Clock className="h-8 w-8 text-orange-500 opacity-20" />
+                </div>
+              </div>
+              
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">إجمالي الأدوات</p>
+                    <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                      {maintenanceReport.length}
+                    </p>
+                  </div>
+                  <Wrench className="h-8 w-8 text-blue-500 opacity-20" />
+                </div>
+              </div>
             </div>
 
             <Card>
@@ -722,14 +771,24 @@ const ToolsReportsDialog: React.FC<ToolsReportsDialogProps> = ({
             </Card>
           </TabsContent>
 
-          {/* Categories Analysis Tab */}
-          <TabsContent value="categories" className="space-y-4 sm:space-y-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center">
-              <h3 className="text-lg font-semibold">تحليل التصنيفات</h3>
-              <Button onClick={() => downloadReport('categories')} className="w-full sm:w-auto" data-testid="button-export-categories">
-                <Download className="h-4 w-4 ml-1" />
-                <span className="hidden sm:inline">تصدير تحليل التصنيفات</span>
-                <span className="sm:hidden">تصدير التحليل</span>
+          {/* Categories Analysis Tab - احترافي */}
+          <TabsContent value="categories" className="flex-1 overflow-auto space-y-5">
+            {/* هيدر تبويب التصنيفات */}
+            <div className="flex flex-col sm:flex-row gap-4 sm:justify-between sm:items-center bg-gradient-to-l from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-lg p-4">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                  <Package className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold">تحليل التصنيفات</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    تحليل شامل للأدوات حسب التصنيفات والفئات
+                  </p>
+                </div>
+              </div>
+              <Button onClick={() => downloadReport('categories')} data-testid="button-export-categories">
+                <Download className="h-4 w-4 ml-2" />
+                تصدير تحليل التصنيفات
               </Button>
             </div>
 
