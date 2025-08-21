@@ -30,6 +30,8 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs';
+import { StatsCard } from '@/components/ui/stats-card';
+import { StatsGrid } from '@/components/ui/stats-grid';
 import {
   BarChart3,
   TrendingUp,
@@ -41,7 +43,9 @@ import {
   DollarSign,
   Activity,
   Target,
-  Zap
+  Zap,
+  Wrench,
+  Settings
 } from 'lucide-react';
 
 interface AnalyticsData {
@@ -267,33 +271,32 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
             <TabsContent value="overview" className="space-y-6">
               {/* Key Metrics */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatusCard
+                <StatsCard
                   title="معدل الاستخدام"
                   value={`${analyticsData.utilizationRate}%`}
                   icon={Activity}
-                  color="text-blue-600"
-                  subtitle={`${tools.filter(t => t.status === 'in_use').length} من ${tools.length} أداة`}
+                  color="blue"
+                  formatter={(value) => `${value}%`}
                 />
-                <StatusCard
+                <StatsCard
                   title="نتيجة الكفاءة"
                   value={`${analyticsData.efficiencyScore}%`}
                   icon={Target}
-                  color={analyticsData.efficiencyScore >= 80 ? "text-green-600" : "text-orange-600"}
-                  subtitle="تقييم شامل للأداء"
+                  color={analyticsData.efficiencyScore >= 80 ? "green" : "orange"}
+                  formatter={(value) => `${value}%`}
                 />
-                <StatusCard
+                <StatsCard
                   title="قيمة الاستهلاك"
-                  value={`${analyticsData.depreciationValue.toLocaleString()} ريال`}
+                  value={analyticsData.depreciationValue}
                   icon={TrendingDown}
-                  color="text-red-600"
-                  subtitle="انخفاض القيمة الإجمالية"
+                  color="red"
+                  formatter={(value) => `${value.toLocaleString()} ريال`}
                 />
-                <StatusCard
+                <StatsCard
                   title="إجمالي الأدوات"
                   value={tools.length}
                   icon={BarChart3}
-                  color="text-purple-600"
-                  subtitle="في النظام"
+                  color="purple"
                 />
               </div>
 
@@ -306,19 +309,20 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                    {Object.entries(analyticsData.statusDistribution).map(([status, count]) => (
-                      <div key={status} className="text-center p-4 border rounded-lg">
-                        <div className="text-2xl font-bold">{count}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {status === 'available' && 'متاحة'}
-                          {status === 'in_use' && 'قيد الاستخدام'}
-                          {status === 'maintenance' && 'صيانة'}
-                          {status === 'damaged' && 'تالفة'}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <StatsGrid
+                    stats={Object.entries(analyticsData.statusDistribution).map(([status, count]) => ({
+                      title: status === 'available' ? 'متاحة' : 
+                             status === 'in_use' ? 'قيد الاستخدام' :
+                             status === 'maintenance' ? 'صيانة' : 'تالفة',
+                      value: count,
+                      icon: status === 'available' ? CheckCircle :
+                            status === 'in_use' ? Wrench :
+                            status === 'maintenance' ? Settings : AlertTriangle,
+                      color: status === 'available' ? 'green' :
+                             status === 'in_use' ? 'blue' :
+                             status === 'maintenance' ? 'orange' : 'red'
+                    }))}
+                  />
                 </CardContent>
               </Card>
             </TabsContent>

@@ -24,6 +24,7 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs';
+import { StatsGrid } from '@/components/ui/stats-grid';
 import {
   Zap,
   TrendingUp,
@@ -35,7 +36,8 @@ import {
   AlertTriangle,
   BarChart3,
   PieChart,
-  Activity
+  Activity,
+  DollarSign
 } from 'lucide-react';
 
 interface PerformanceMetric {
@@ -278,41 +280,18 @@ const SmartPerformanceOptimizer: React.FC<SmartPerformanceOptimizerProps> = ({
 
             <TabsContent value="metrics" className="space-y-6">
               {/* Performance Overview */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                {performanceMetrics.map((metric) => (
-                  <Card key={metric.id}>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm font-medium">{metric.name}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className={`text-2xl font-bold ${getMetricColor(metric.currentValue, metric.targetValue)}`}>
-                            {Math.round(metric.currentValue)}{metric.unit}
-                          </span>
-                          <div className="flex items-center gap-1">
-                            {metric.trend === 'up' && <TrendingUp className="h-4 w-4 text-green-500" />}
-                            {metric.trend === 'down' && <TrendingUp className="h-4 w-4 text-red-500 rotate-180" />}
-                            {metric.trend === 'stable' && <Target className="h-4 w-4 text-gray-500" />}
-                          </div>
-                        </div>
-                        <Progress 
-                          value={(metric.currentValue / metric.targetValue) * 100} 
-                          className="h-2"
-                        />
-                        <div className="text-xs text-muted-foreground">
-                          الهدف: {metric.targetValue}{metric.unit}
-                        </div>
-                        {metric.improvementPotential > 0 && (
-                          <Badge variant="outline" className="text-xs">
-                            إمكانية تحسين: {Math.round(metric.improvementPotential)}{metric.unit}
-                          </Badge>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+              <StatsGrid 
+                stats={performanceMetrics.map((metric) => ({
+                  title: metric.name,
+                  value: Math.round(metric.currentValue),
+                  icon: metric.category === 'efficiency' ? Zap :
+                        metric.category === 'utilization' ? Activity :
+                        metric.category === 'cost' ? DollarSign : Target,
+                  color: metric.currentValue >= metric.targetValue ? "green" :
+                         metric.currentValue >= metric.targetValue * 0.7 ? "orange" : "red",
+                  formatter: (value: number) => `${value}${metric.unit}`
+                }))}
+              />
 
               {/* Detailed Analysis */}
               <Card>

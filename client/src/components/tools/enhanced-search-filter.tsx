@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Filter, X, Calendar, DollarSign, MapPin, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
+import { Search, Filter, X, Calendar, DollarSign, MapPin, AlertTriangle, CheckCircle, Clock, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { StatsCard } from '@/components/ui/stats-card';
 import {
   Select,
   SelectContent,
@@ -354,9 +355,12 @@ const EnhancedSearchFilter: React.FC<EnhancedSearchFilterProps> = ({
             </Button>
           </div>
           
-          <div className="text-sm text-gray-500 dark:text-gray-400">
-            إجمالي الأدوات: {toolStats.total}
-          </div>
+          <StatsCard
+            title="إجمالي الأدوات"
+            value={toolStats.total}
+            icon={Package}
+            color="blue"
+          />
         </div>
       </CardContent>
     </Card>
