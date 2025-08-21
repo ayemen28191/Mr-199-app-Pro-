@@ -38,6 +38,7 @@ const allPages = [
       { path: "/daily-expenses", icon: Calculator, label: "المصاريف اليومية", description: "تسجيل المصاريف اليومية للمشاريع" },
       { path: "/material-purchase", icon: Package, label: "شراء المواد", description: "إدارة مشتريات مواد البناء" },
       { path: "/tools-management", icon: Wrench, label: "إدارة الأدوات", description: "إدارة الأدوات والمعدات مع تتبع الحالة والصيانة" },
+      { path: "/equipment", icon: Settings, label: "المعدات المبسطة", description: "إدارة المعدات الأساسية مع النقل والتتبع" },
       { path: "/project-transfers", icon: ArrowLeftRight, label: "تحويلات العهدة", description: "إدارة تحويلات الأموال بين المشاريع" },
       { path: "/project-transactions", icon: FileText, label: "سجل العمليات", description: "عرض شامل لجميع المعاملات المالية" },
     ]

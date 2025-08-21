@@ -13,29 +13,17 @@ import {
   type WorkerTransfer, type WorkerBalance, type AutocompleteData, type WorkerType, type WorkerMiscExpense, type User,
   type Supplier, type SupplierPayment, type PrintSettings, type ProjectFundTransfer,
   type ReportTemplate,
-  type ToolCategory, type Tool, type ToolStock, type ToolMovement, type ToolMaintenanceLog, type ToolUsageAnalytics, type ToolReservation,
+  // Equipment types (النظام المبسط)
+  type Equipment, type EquipmentMovement, type InsertEquipment, type InsertEquipmentMovement,
   type InsertProject, type InsertWorker, type InsertFundTransfer, type InsertWorkerAttendance,
   type InsertMaterial, type InsertMaterialPurchase, type InsertTransportationExpense, type InsertDailyExpenseSummary,
   type InsertWorkerTransfer, type InsertWorkerBalance, type InsertAutocompleteData, type InsertWorkerType, type InsertWorkerMiscExpense, type InsertUser,
   type InsertSupplier, type InsertSupplierPayment, type InsertPrintSettings, type InsertProjectFundTransfer,
   type InsertReportTemplate,
-  type InsertToolCategory, type InsertTool, type InsertToolStock, type InsertToolMovement, type InsertToolMaintenanceLog, type InsertToolUsageAnalytics, type InsertToolReservation,
-  // Phase 3 types
-  type ToolPurchaseItem, type MaintenanceSchedule, type MaintenanceTask, type ToolCostTracking,
-  type InsertToolPurchaseItem, type InsertMaintenanceSchedule, type InsertMaintenanceTask, type InsertToolCostTracking,
-  // System Notifications
-  type SystemNotification, type InsertSystemNotification,
-  // Notification Read States
-  type NotificationReadState, type InsertNotificationReadState,
   projects, workers, fundTransfers, workerAttendance, materials, materialPurchases, transportationExpenses, dailyExpenseSummaries,
   workerTransfers, workerBalances, autocompleteData, workerTypes, workerMiscExpenses, users, suppliers, supplierPayments, printSettings, projectFundTransfers, reportTemplates,
-  toolCategories, tools, toolStock, toolMovements, toolMaintenanceLogs, toolUsageAnalytics, toolReservations,
-  // Phase 3 imports
-  toolPurchaseItems, maintenanceSchedules, maintenanceTasks, toolCostTracking,
-  // System Notifications
-  systemNotifications,
-  // Notification Read States
-  notificationReadStates
+  // Equipment tables (النظام المبسط)
+  equipment, equipmentMovements
 } from "@shared/schema";
 import { db } from "./db";
 import { and, eq, isNull, or, gte, lte, desc, ilike, like, isNotNull, asc, count, sum, ne, max, sql, inArray, gt } from 'drizzle-orm';
@@ -258,111 +246,28 @@ export interface IStorage {
   deleteReportTemplate(id: string): Promise<void>;
 
   // =====================================================
-  // نظام إدارة المعدات والأدوات الاحترافي
+  // نظام إدارة المعدات المبسط
   // =====================================================
 
-  // Tool Categories
-  getToolCategories(): Promise<ToolCategory[]>;
-  getToolCategory(id: string): Promise<ToolCategory | undefined>;
-  getToolCategoryByName(name: string): Promise<ToolCategory | undefined>;
-  createToolCategory(category: InsertToolCategory): Promise<ToolCategory>;
-  updateToolCategory(id: string, category: Partial<InsertToolCategory>): Promise<ToolCategory | undefined>;
-  deleteToolCategory(id: string): Promise<void>;
-
-  // Tools
-  getTools(filters?: {
-    categoryId?: string;
-    status?: string;
-    condition?: string;
-    searchTerm?: string;
+  // Equipment - Simple Management
+  getEquipment(filters?: {
     projectId?: string;
-    locationType?: string;
-  }): Promise<Tool[]>;
-  getTool(id: string): Promise<Tool | undefined>;
-  getToolBySku(sku: string): Promise<Tool | undefined>;
-  getToolByBarcode(barcode: string): Promise<Tool | undefined>;
-  getToolByQrCode(qrCode: string): Promise<Tool | undefined>;
-  createTool(tool: InsertTool): Promise<Tool>;
-  updateTool(id: string, tool: Partial<InsertTool>): Promise<Tool | undefined>;
-  deleteTool(id: string): Promise<void>;
-
-  // Tool Stock
-  getToolStock(toolId?: string, locationType?: string, locationId?: string): Promise<ToolStock[]>;
-  getToolStockByLocation(locationType: string, locationId?: string): Promise<ToolStock[]>;
-  updateToolStock(toolId: string, locationType: string, locationId: string | null, stock: Partial<InsertToolStock>): Promise<ToolStock>;
-  createOrUpdateToolStock(stock: InsertToolStock): Promise<ToolStock>;
-  
-  // Tool Movements
-  getToolMovements(filters?: {
-    toolId?: string;
-    projectId?: string;
-    movementType?: string;
-    dateFrom?: string;
-    dateTo?: string;
-  }): Promise<ToolMovement[]>;
-  getToolMovement(id: string): Promise<ToolMovement | undefined>;
-  createToolMovement(movement: InsertToolMovement): Promise<ToolMovement>;
-  updateToolMovement(id: string, movement: Partial<InsertToolMovement>): Promise<ToolMovement | undefined>;
-  deleteToolMovement(id: string): Promise<void>;
-
-  // Tool Maintenance
-  getToolMaintenanceLogs(toolId?: string, status?: string): Promise<ToolMaintenanceLog[]>;
-  getToolMaintenanceLog(id: string): Promise<ToolMaintenanceLog | undefined>;
-  createToolMaintenanceLog(log: InsertToolMaintenanceLog): Promise<ToolMaintenanceLog>;
-  updateToolMaintenanceLog(id: string, log: Partial<InsertToolMaintenanceLog>): Promise<ToolMaintenanceLog | undefined>;
-  deleteToolMaintenanceLog(id: string): Promise<void>;
-  getOverdueMaintenanceTasks(): Promise<ToolMaintenanceLog[]>;
-
-  // Tool Usage Analytics
-  getToolUsageAnalytics(toolId?: string, projectId?: string, period?: string): Promise<ToolUsageAnalytics[]>;
-  createOrUpdateToolUsageAnalytics(analytics: InsertToolUsageAnalytics): Promise<ToolUsageAnalytics>;
-  getToolUtilizationReport(dateFrom: string, dateTo: string): Promise<any[]>;
-
-  // Tool Reservations
-  getToolReservations(filters?: {
-    toolId?: string;
-    projectId?: string;
-    status?: string;
-    userId?: string;
-  }): Promise<ToolReservation[]>;
-  getToolReservation(id: string): Promise<ToolReservation | undefined>;
-  createToolReservation(reservation: InsertToolReservation): Promise<ToolReservation>;
-  updateToolReservation(id: string, reservation: Partial<InsertToolReservation>): Promise<ToolReservation | undefined>;
-  deleteToolReservation(id: string): Promise<void>;
-
-  // Advanced Tool Functions
-  transferTool(toolId: string, fromLocation: {type: string, id: string | null}, toLocation: {type: string, id: string | null}, quantity: number, userId: string, reason?: string): Promise<ToolMovement>;
-  getToolHistory(toolId: string): Promise<{movements: ToolMovement[], maintenance: ToolMaintenanceLog[]}>;
-  getToolsByProject(projectId: string): Promise<Tool[]>;
-  getLowStockTools(threshold?: number): Promise<Tool[]>;
-  getToolsNeedingMaintenance(): Promise<Tool[]>;
-  generateToolQRCode(toolId: string): Promise<string>;
-  bulkUpdateToolStatus(toolIds: string[], status: string, userId: string): Promise<void>;
-
-  // Notification Read States
-  getNotificationReadState(notificationId: string, userId?: string): Promise<NotificationReadState | undefined>;
-  markNotificationAsRead(notificationId: string, userId?: string): Promise<NotificationReadState>;
-  markAllNotificationsAsRead(notificationIds: string[], userId?: string): Promise<void>;
-  isNotificationRead(notificationId: string, userId?: string): Promise<boolean>;
-  getReadNotifications(userId?: string): Promise<string[]>;
-
-  // System Notifications
-  getSystemNotifications(filters?: {
-    userId?: string;
     status?: string;
     type?: string;
-    priority?: string;
-    limit?: number;
-  }): Promise<SystemNotification[]>;
-  getSystemNotification(id: string): Promise<SystemNotification | undefined>;
-  createSystemNotification(notification: InsertSystemNotification): Promise<SystemNotification>;
-  updateSystemNotification(id: string, notification: Partial<InsertSystemNotification>): Promise<SystemNotification | undefined>;
-  deleteSystemNotification(id: string): Promise<void>;
-  generateToolNotifications(): Promise<SystemNotification[]>;
-  
-  // Legacy methods (kept for compatibility)
-  markNotificationAsReadLegacy(id: string): Promise<void>;
-  markAllNotificationsAsReadLegacy(userId?: string): Promise<void>;
+    searchTerm?: string;
+  }): Promise<Equipment[]>;
+  getEquipmentById(id: string): Promise<Equipment | undefined>;
+  getEquipmentByCode(code: string): Promise<Equipment | undefined>;
+  getEquipmentByProject(projectId: string): Promise<Equipment[]>;
+  createEquipment(equipment: InsertEquipment): Promise<Equipment>;
+  updateEquipment(id: string, equipment: Partial<InsertEquipment>): Promise<Equipment | undefined>;
+  deleteEquipment(id: string): Promise<void>;
+
+  // Equipment Movements - Simple Tracking
+  getEquipmentMovements(equipmentId: string): Promise<EquipmentMovement[]>;
+  createEquipmentMovement(movement: InsertEquipmentMovement): Promise<EquipmentMovement>;
+
+
 }
 
 export class DatabaseStorage implements IStorage {
@@ -5139,6 +5044,159 @@ export class DatabaseStorage implements IStorage {
       console.log(`🎉 تم إصلاح ${updatedCount} أداة بنجاح`);
     } catch (error) {
       console.error('خطأ في إصلاح مواقع الأدوات:', error);
+      throw error;
+    }
+  }
+
+  // =====================================================
+  // نظام إدارة المعدات المبسط - Equipment Management
+  // =====================================================
+
+  async getEquipment(filters?: {
+    projectId?: string;
+    status?: string;
+    type?: string;
+    searchTerm?: string;
+  }): Promise<Equipment[]> {
+    try {
+      const conditions = [];
+
+      if (filters?.projectId) {
+        conditions.push(eq(equipment.currentProjectId, filters.projectId));
+      }
+
+      if (filters?.status) {
+        conditions.push(eq(equipment.status, filters.status));
+      }
+
+      if (filters?.type) {
+        conditions.push(eq(equipment.type, filters.type));
+      }
+
+      if (filters?.searchTerm) {
+        const searchTerm = `%${filters.searchTerm.trim()}%`;
+        conditions.push(or(
+          ilike(equipment.name, searchTerm),
+          ilike(equipment.code, searchTerm),
+          ilike(equipment.description, searchTerm)
+        ));
+      }
+
+      if (conditions.length > 0) {
+        return await db.select().from(equipment)
+          .where(and(...conditions))
+          .orderBy(equipment.createdAt);
+      }
+
+      return await db.select().from(equipment).orderBy(equipment.createdAt);
+    } catch (error) {
+      console.error('Error getting equipment:', error);
+      return [];
+    }
+  }
+
+  async getEquipmentById(id: string): Promise<Equipment | undefined> {
+    try {
+      const [result] = await db.select().from(equipment).where(eq(equipment.id, id));
+      return result || undefined;
+    } catch (error) {
+      console.error('Error getting equipment by id:', error);
+      return undefined;
+    }
+  }
+
+  async getEquipmentByCode(code: string): Promise<Equipment | undefined> {
+    try {
+      const [result] = await db.select().from(equipment).where(eq(equipment.code, code));
+      return result || undefined;
+    } catch (error) {
+      console.error('Error getting equipment by code:', error);
+      return undefined;
+    }
+  }
+
+  async getEquipmentByProject(projectId: string): Promise<Equipment[]> {
+    try {
+      return await db.select().from(equipment)
+        .where(eq(equipment.currentProjectId, projectId))
+        .orderBy(equipment.name);
+    } catch (error) {
+      console.error('Error getting equipment by project:', error);
+      return [];
+    }
+  }
+
+  async createEquipment(equipmentData: InsertEquipment): Promise<Equipment> {
+    try {
+      const [newEquipment] = await db
+        .insert(equipment)
+        .values(equipmentData)
+        .returning();
+      
+      if (!newEquipment) {
+        throw new Error('فشل في إنشاء المعدة');
+      }
+      
+      return newEquipment;
+    } catch (error) {
+      console.error('Error creating equipment:', error);
+      throw error;
+    }
+  }
+
+  async updateEquipment(id: string, equipmentData: Partial<InsertEquipment>): Promise<Equipment | undefined> {
+    try {
+      const [updatedEquipment] = await db
+        .update(equipment)
+        .set({
+          ...equipmentData,
+          updatedAt: new Date()
+        })
+        .where(eq(equipment.id, id))
+        .returning();
+      
+      return updatedEquipment || undefined;
+    } catch (error) {
+      console.error('Error updating equipment:', error);
+      throw error;
+    }
+  }
+
+  async deleteEquipment(id: string): Promise<void> {
+    try {
+      await db.delete(equipment).where(eq(equipment.id, id));
+    } catch (error) {
+      console.error('Error deleting equipment:', error);
+      throw error;
+    }
+  }
+
+  // Equipment Movements
+  async getEquipmentMovements(equipmentId: string): Promise<EquipmentMovement[]> {
+    try {
+      return await db.select().from(equipmentMovements)
+        .where(eq(equipmentMovements.equipmentId, equipmentId))
+        .orderBy(desc(equipmentMovements.movementDate));
+    } catch (error) {
+      console.error('Error getting equipment movements:', error);
+      return [];
+    }
+  }
+
+  async createEquipmentMovement(movementData: InsertEquipmentMovement): Promise<EquipmentMovement> {
+    try {
+      const [newMovement] = await db
+        .insert(equipmentMovements)
+        .values(movementData)
+        .returning();
+      
+      if (!newMovement) {
+        throw new Error('فشل في إنشاء حركة المعدة');
+      }
+      
+      return newMovement;
+    } catch (error) {
+      console.error('Error creating equipment movement:', error);
       throw error;
     }
   }

@@ -22,6 +22,7 @@ import SuppliersProPage from "@/pages/suppliers-professional";
 import SupplierAccountsPage from "@/pages/supplier-accounts";
 import AutocompleteAdminPage from "@/pages/autocomplete-admin";
 import ToolsManagementPage from "@/pages/tools-management";
+import { EquipmentManagement } from "@/pages/equipment-management";
 
 import Header from "@/components/layout/header";
 import BottomNavigation from "@/components/layout/bottom-navigation";
@@ -49,6 +50,7 @@ function Router() {
 
       <Route path="/tools" component={ToolsManagementPage} />
       <Route path="/tools-management" component={ToolsManagementPage} />
+      <Route path="/equipment" component={EquipmentManagement} />
       <Route path="/reports" component={Reports} />
 
       <Route component={NotFound} />

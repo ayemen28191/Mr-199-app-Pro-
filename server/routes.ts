@@ -22,12 +22,8 @@ import {
   insertWorkerMiscExpenseSchema, insertUserSchema, insertSupplierSchema, insertSupplierPaymentSchema,
   insertPrintSettingsSchema, insertProjectFundTransferSchema,
   insertReportTemplateSchema,
-  insertToolCategorySchema, insertToolSchema, updateToolSchema, insertToolStockSchema, insertToolMovementSchema, 
-  insertToolMaintenanceLogSchema, insertToolUsageAnalyticsSchema, insertToolReservationSchema,
-  // Phase 3 schemas
-  insertToolPurchaseItemSchema, insertMaintenanceScheduleSchema, insertMaintenanceTaskSchema, insertToolCostTrackingSchema,
-  // Notifications schemas
-  insertToolNotificationSchema
+  // Equipment schemas (النظام المبسط)
+  insertEquipmentSchema, insertEquipmentMovementSchema
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -3914,24 +3910,148 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/tools", async (req, res) => {
+  // Equipment API Routes (النظام المبسط)
+  app.get("/api/equipment", async (req, res) => {
     try {
-      const { categoryId, status, condition, searchTerm, projectId, locationType } = req.query;
+      const { projectId, status, type, searchTerm } = req.query;
       const filters = {
-        categoryId: categoryId as string,
-        status: status as string,
-        condition: condition as string,
-        searchTerm: searchTerm as string,
         projectId: projectId as string,
-        locationType: locationType as string,
+        status: status as string,
+        type: type as string,
+        searchTerm: searchTerm as string,
       };
 
-      const tools = await storage.getTools(filters);
-      res.json(tools);
+      const equipment = await storage.getEquipment(filters);
+      res.json(equipment);
     } catch (error) {
-      console.error("Error fetching tools:", error);
-      res.status(500).json({ message: "خطأ في جلب الأدوات" });
+      console.error("Error fetching equipment:", error);
+      res.status(500).json({ message: "خطأ في جلب المعدات" });
     }
+  });
+
+  app.get("/api/equipment/:id", async (req, res) => {
+    try {
+      const equipment = await storage.getEquipmentById(req.params.id);
+      if (!equipment) {
+        return res.status(404).json({ message: "المعدة غير موجودة" });
+      }
+      res.json(equipment);
+    } catch (error) {
+      console.error("Error fetching equipment:", error);
+      res.status(500).json({ message: "خطأ في جلب المعدة" });
+    }
+  });
+
+  app.post("/api/equipment", async (req, res) => {
+    try {
+      const result = insertEquipmentSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "بيانات المعدة غير صحيحة", 
+          errors: result.error.issues 
+        });
+      }
+
+      // فحص عدم تكرار الكود
+      const existingEquipment = await storage.getEquipmentByCode(result.data.code);
+      if (existingEquipment) {
+        return res.status(400).json({ message: "يوجد معدة بنفس الكود مسبقاً" });
+      }
+
+      const equipment = await storage.createEquipment(result.data);
+      res.status(201).json(equipment);
+    } catch (error) {
+      console.error("Error creating equipment:", error);
+      res.status(500).json({ message: "خطأ في إنشاء المعدة" });
+    }
+  });
+
+  app.put("/api/equipment/:id", async (req, res) => {
+    try {
+      const result = insertEquipmentSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "بيانات المعدة غير صحيحة", 
+          errors: result.error.issues 
+        });
+      }
+
+      const equipment = await storage.updateEquipment(req.params.id, result.data);
+      if (!equipment) {
+        return res.status(404).json({ message: "المعدة غير موجودة" });
+      }
+      
+      res.json(equipment);
+    } catch (error) {
+      console.error("Error updating equipment:", error);
+      res.status(500).json({ message: "خطأ في تحديث المعدة" });
+    }
+  });
+
+  app.delete("/api/equipment/:id", async (req, res) => {
+    try {
+      await storage.deleteEquipment(req.params.id);
+      res.status(204).send();
+    } catch (error) {
+      console.error("Error deleting equipment:", error);
+      res.status(500).json({ message: "خطأ في حذف المعدة" });
+    }
+  });
+
+  // Equipment Movement Routes
+  app.post("/api/equipment/:id/transfer", async (req, res) => {
+    try {
+      const result = insertEquipmentMovementSchema.safeParse({
+        ...req.body,
+        equipmentId: req.params.id
+      });
+      
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "بيانات النقل غير صحيحة", 
+          errors: result.error.issues 
+        });
+      }
+
+      const movement = await storage.createEquipmentMovement(result.data);
+      
+      // تحديث موقع المعدة
+      await storage.updateEquipment(req.params.id, {
+        currentProjectId: result.data.toProjectId
+      });
+
+      res.status(201).json(movement);
+    } catch (error) {
+      console.error("Error transferring equipment:", error);
+      res.status(500).json({ message: "خطأ في نقل المعدة" });
+    }
+  });
+
+  app.get("/api/equipment/:id/movements", async (req, res) => {
+    try {
+      const movements = await storage.getEquipmentMovements(req.params.id);
+      res.json(movements);
+    } catch (error) {
+      console.error("Error fetching equipment movements:", error);
+      res.status(500).json({ message: "خطأ في جلب حركات المعدة" });
+    }
+  });
+
+  // Equipment Reports
+  app.get("/api/equipment/reports/by-project/:projectId", async (req, res) => {
+    try {
+      const equipment = await storage.getEquipmentByProject(req.params.projectId);
+      res.json(equipment);
+    } catch (error) {
+      console.error("Error fetching project equipment:", error);
+      res.status(500).json({ message: "خطأ في جلب معدات المشروع" });
+    }
+  });
+
+  // Legacy tools routes - keeping old endpoints for compatibility
+  app.get("/api/tools", async (req, res) => {
+    // Redirect to equipment endpoint
+    res.redirect('/api/equipment?' + new URLSearchParams(req.query as any).toString());
   });
 
   app.get("/api/tools/:id", async (req, res) => {
