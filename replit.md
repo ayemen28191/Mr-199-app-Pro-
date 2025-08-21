@@ -18,7 +18,7 @@ A comprehensive construction project management system designed specifically for
 - **Navigation**: Bottom Navigation with a Floating Add Button.
 - **Core Pages**: Dashboard, Projects, Workers, Worker Attendance, Daily Expenses, Material Purchase, Tools Management, Reports.
 - **Advanced Features**: QR Scanner for tools, Advanced Analytics Dashboard, AI Predictive Maintenance, Tool Location Tracking, Smart Maintenance/Warranty Notifications, Intelligent Recommendations Engine, Smart Performance Optimizer, Advanced Notification System.
-- **UI/UX Decisions**: Unified and consistent interfaces across the system, optimized screen space, consistent design pattern for statistics, Material Design principles with culturally appropriate colors.
+- **UI/UX Decisions**: Unified and consistent interfaces across the system, optimized screen space, consistent design pattern for statistics using 2x2 grid layout (grid-cols-2), Material Design principles with culturally appropriate colors.
 
 ### Backend
 - **Technology Stack**: Express.js with TypeScript.

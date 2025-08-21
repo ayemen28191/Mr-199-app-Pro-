@@ -60,7 +60,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { StatsCard, StatsGrid } from '@/components/ui/stats-card';
+import { StatsCard } from '@/components/ui/stats-card';
 import { useFloatingButton } from '@/components/layout/floating-button-context';
 
 import { useToast } from '@/hooks/use-toast';
@@ -627,13 +627,12 @@ const ToolsManagementPage: React.FC = () => {
         ) : (
           <>
             {/* الإحصائيات الموحدة للأدوات */}
-            <StatsGrid>
+            <div className="grid grid-cols-2 gap-4">
               <StatsCard 
                 title="إجمالي الأدوات" 
                 value={stats.total} 
                 icon={Package}
                 color="blue"
-                trend={{ value: 0, isPositive: true }}
                 data-testid="stat-total"
               />
               <StatsCard 
@@ -641,7 +640,6 @@ const ToolsManagementPage: React.FC = () => {
                 value={stats.available} 
                 icon={CheckCircle}
                 color="green"
-                trend={{ value: 0, isPositive: true }}
                 data-testid="stat-available"
               />
               <StatsCard 
@@ -649,7 +647,6 @@ const ToolsManagementPage: React.FC = () => {
                 value={stats.inUse} 
                 icon={Settings}
                 color="orange"
-                trend={{ value: 0, isPositive: true }}
                 data-testid="stat-in-use"
               />
               <StatsCard 
@@ -657,10 +654,9 @@ const ToolsManagementPage: React.FC = () => {
                 value={stats.maintenance + stats.damaged} 
                 icon={AlertTriangle}
                 color="red"
-                trend={{ value: 0, isPositive: false }}
                 data-testid="stat-maintenance"
               />
-            </StatsGrid>
+            </div>
 
             {/* Search & Filters in One Card */}
             <Card className="shadow-sm">

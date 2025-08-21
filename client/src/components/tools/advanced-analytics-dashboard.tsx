@@ -30,7 +30,7 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs';
-import { StatsCard, StatsGrid } from '@/components/ui/stats-card';
+import { StatsCard } from '@/components/ui/stats-card';
 import {
   BarChart3,
   TrendingUp,
@@ -269,27 +269,24 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
 
             <TabsContent value="overview" className="space-y-6">
               {/* Key Metrics */}
-              <StatsGrid>
+              <div className="grid grid-cols-2 gap-4">
                 <StatsCard
                   title="معدل الاستخدام"
                   value={`${analyticsData.utilizationRate}%`}
                   icon={Activity}
                   color="blue"
-                  formatter={(value) => `${value}%`}
                 />
                 <StatsCard
                   title="نتيجة الكفاءة"
                   value={`${analyticsData.efficiencyScore}%`}
                   icon={Target}
                   color={analyticsData.efficiencyScore >= 80 ? "green" : "orange"}
-                  formatter={(value) => `${value}%`}
                 />
                 <StatsCard
                   title="قيمة الاستهلاك"
-                  value={analyticsData.depreciationValue}
+                  value={`${analyticsData.depreciationValue.toLocaleString()} ريال`}
                   icon={TrendingDown}
                   color="red"
-                  formatter={(value) => `${value.toLocaleString()} ريال`}
                 />
                 <StatsCard
                   title="إجمالي الأدوات"
@@ -297,7 +294,7 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
                   icon={BarChart3}
                   color="purple"
                 />
-              </StatsGrid>
+              </div>
 
               {/* Status Distribution */}
               <Card>
@@ -308,7 +305,7 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <StatsGrid>
+                  <div className="grid grid-cols-2 gap-4">
                     {Object.entries(analyticsData.statusDistribution).map(([status, count]) => (
                       <StatsCard
                         key={status}
@@ -324,36 +321,33 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
                                status === 'maintenance' ? 'orange' : 'red'}
                       />
                     ))}
-                  </StatsGrid>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
 
             <TabsContent value="performance" className="space-y-6">
               {/* Performance Metrics Cards */}
-              <StatsGrid>
+              <div className="grid grid-cols-2 gap-4">
                 <StatsCard
                   title="معدل الاستخدام الفعلي"
                   value={`${analyticsData.utilizationRate}%`}
                   icon={Activity}
                   color={analyticsData.utilizationRate >= 70 ? "green" : "orange"}
-                  formatter={(value: string) => value}
                 />
                 <StatsCard
                   title="نتيجة الكفاءة العامة"
                   value={`${analyticsData.efficiencyScore}%`}
                   icon={Target}
                   color={analyticsData.efficiencyScore >= 80 ? "green" : "red"}
-                  formatter={(value: string) => value}
                 />
                 <StatsCard
                   title="قيمة الاستهلاك"
-                  value={analyticsData.depreciationValue}
+                  value={`${analyticsData.depreciationValue.toLocaleString()} ريال`}
                   icon={TrendingDown}
                   color="red"
-                  formatter={(value: number) => `${value.toLocaleString()} ريال`}
                 />
-              </StatsGrid>
+              </div>
             </TabsContent>
 
             <TabsContent value="distribution" className="space-y-6">

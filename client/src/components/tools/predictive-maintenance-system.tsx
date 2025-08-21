@@ -37,7 +37,7 @@ import {
   XCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { StatsCard, StatsGrid } from '@/components/ui/stats-card';
+import { StatsCard } from '@/components/ui/stats-card';
 
 interface MaintenancePrediction {
   toolId: string;
@@ -315,8 +315,8 @@ const PredictiveMaintenanceSystem: React.FC<PredictiveMaintenanceSystemProps> = 
             </div>
           </div>
 
-          {/* Summary Stats - Using Unified StatsGrid */}
-          <StatsGrid className="mb-6">
+          {/* Summary Stats - Using Grid Layout */}
+          <div className="grid grid-cols-2 gap-4 mb-6">
             <StatsCard
               title="حالات حرجة"
               value={predictions.filter(p => p.urgencyLevel === 'critical').length}
@@ -337,12 +337,11 @@ const PredictiveMaintenanceSystem: React.FC<PredictiveMaintenanceSystemProps> = 
             />
             <StatsCard
               title="التكلفة المتوقعة (ريال)"
-              value={predictions.reduce((sum, p) => sum + p.costEstimate, 0)}
+              value={`${predictions.reduce((sum, p) => sum + p.costEstimate, 0).toLocaleString()}`}
               icon={Zap}
               color="blue"
-              formatter={(value) => value.toLocaleString()}
             />
-          </StatsGrid>
+          </div>
 
           {/* Predictions List */}
           <div className="space-y-4">

@@ -41,7 +41,7 @@ import {
   BarChart3
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { StatsCard, StatsGrid } from '@/components/ui/stats-card';
+import { StatsCard } from '@/components/ui/stats-card';
 
 interface SmartRecommendation {
   id: string;
@@ -368,8 +368,8 @@ const IntelligentRecommendationsEngine: React.FC<IntelligentRecommendationsEngin
             </div>
           </div>
 
-          {/* Summary Stats - Using Unified StatsGrid */}
-          <StatsGrid className="mb-6">
+          {/* Summary Stats - Using Grid Layout */}
+          <div className="grid grid-cols-2 gap-4 mb-6">
             <StatsCard
               title="توصية ذكية"
               value={recommendations.length}
@@ -378,10 +378,9 @@ const IntelligentRecommendationsEngine: React.FC<IntelligentRecommendationsEngin
             />
             <StatsCard
               title="وفورات متوقعة (ريال)"
-              value={Math.round(recommendations.reduce((sum, r) => sum + r.expectedSavings, 0))}
+              value={`${Math.round(recommendations.reduce((sum, r) => sum + r.expectedSavings, 0)).toLocaleString()}`}
               icon={DollarSign}
               color="green"
-              formatter={(value) => value.toLocaleString()}
             />
             <StatsCard
               title="متوسط الأثر المتوقع"
@@ -395,7 +394,7 @@ const IntelligentRecommendationsEngine: React.FC<IntelligentRecommendationsEngin
               icon={AlertCircle}
               color="orange"
             />
-          </StatsGrid>
+          </div>
 
           {/* Recommendations List */}
           <div className="space-y-4">

@@ -24,7 +24,7 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs';
-import { StatsGrid } from '@/components/ui/stats-grid';
+import { StatsCard } from '@/components/ui/stats-card';
 import {
   Zap,
   TrendingUp,
@@ -280,18 +280,20 @@ const SmartPerformanceOptimizer: React.FC<SmartPerformanceOptimizerProps> = ({
 
             <TabsContent value="metrics" className="space-y-6">
               {/* Performance Overview */}
-              <StatsGrid 
-                stats={performanceMetrics.map((metric) => ({
-                  title: metric.name,
-                  value: Math.round(metric.currentValue),
-                  icon: metric.category === 'efficiency' ? Zap :
-                        metric.category === 'utilization' ? Activity :
-                        metric.category === 'cost' ? DollarSign : Target,
-                  color: metric.currentValue >= metric.targetValue ? "green" :
-                         metric.currentValue >= metric.targetValue * 0.7 ? "orange" : "red",
-                  formatter: (value: number) => `${value}${metric.unit}`
-                }))}
-              />
+              <div className="grid grid-cols-2 gap-4">
+                {performanceMetrics.map((metric) => (
+                  <StatsCard
+                    key={metric.id}
+                    title={metric.name}
+                    value={`${Math.round(metric.currentValue)}${metric.unit}`}
+                    icon={metric.category === 'efficiency' ? Zap :
+                          metric.category === 'utilization' ? Activity :
+                          metric.category === 'cost' ? DollarSign : Target}
+                    color={metric.currentValue >= metric.targetValue ? "green" :
+                           metric.currentValue >= metric.targetValue * 0.7 ? "orange" : "red"}
+                  />
+                ))}
+              </div>
 
               {/* Target vs Current Performance */}
               <Card>
@@ -302,15 +304,17 @@ const SmartPerformanceOptimizer: React.FC<SmartPerformanceOptimizerProps> = ({
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <StatsGrid 
-                    stats={performanceMetrics.map((metric) => ({
-                      title: `هدف ${metric.name}`,
-                      value: metric.targetValue,
-                      icon: Target,
-                      color: "blue",
-                      formatter: (value: number) => `${value}${metric.unit}`
-                    }))}
-                  />
+                  <div className="grid grid-cols-2 gap-4">
+                    {performanceMetrics.map((metric) => (
+                      <StatsCard
+                        key={metric.id}
+                        title={`هدف ${metric.name}`}
+                        value={`${metric.targetValue}${metric.unit}`}
+                        icon={Target}
+                        color="blue"
+                      />
+                    ))}
+                  </div>
                 </CardContent>
               </Card>
 
@@ -323,16 +327,18 @@ const SmartPerformanceOptimizer: React.FC<SmartPerformanceOptimizerProps> = ({
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <StatsGrid 
-                    stats={performanceMetrics.map((metric) => ({
-                      title: `تحسين ${metric.name}`,
-                      value: Math.round(metric.improvementPotential),
-                      icon: TrendingUp,
-                      color: metric.improvementPotential > 30 ? "red" : 
-                             metric.improvementPotential > 15 ? "orange" : "green",
-                      formatter: (value: number) => `${value}%`
-                    }))}
-                  />
+                  <div className="grid grid-cols-2 gap-4">
+                    {performanceMetrics.map((metric) => (
+                      <StatsCard
+                        key={metric.id}
+                        title={`تحسين ${metric.name}`}
+                        value={`${Math.round(metric.improvementPotential)}%`}
+                        icon={TrendingUp}
+                        color={metric.improvementPotential > 30 ? "red" : 
+                               metric.improvementPotential > 15 ? "orange" : "green"}
+                      />
+                    ))}
+                  </div>
                 </CardContent>
               </Card>
 
