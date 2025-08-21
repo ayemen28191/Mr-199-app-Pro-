@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Search, Wrench, Truck, ArrowUpDown, PenTool, Settings, Eye, MapPin, Calendar, DollarSign, Activity, MoreVertical, Edit, Trash2, Image, X, Heart } from "lucide-react";
+import { Plus, Search, Wrench, Truck, ArrowUpDown, PenTool, Settings, Eye, MapPin, Calendar, DollarSign, Activity, MoreVertical, Edit, Trash2, Image, X, Heart, FileSpreadsheet, FileText, Printer, Download, BarChart3 } from "lucide-react";
 import { StatsCard, StatsGrid } from "@/components/ui/stats-card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useFloatingButton } from "@/components/layout/floating-button-context";
@@ -16,6 +16,8 @@ import { TransferEquipmentDialog } from "@/components/equipment/transfer-equipme
 import { Equipment } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { saveAs } from 'file-saver';
+import { useToast } from "@/hooks/use-toast";
 
 export function EquipmentManagement() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -28,9 +30,17 @@ export function EquipmentManagement() {
   const [showTransferDialog, setShowTransferDialog] = useState(false);
   const [enlargedImage, setEnlargedImage] = useState<string | null>(null);
   const [showEquipmentModal, setShowEquipmentModal] = useState(false);
+  
+  // States for Equipment Reports Section
+  const [showReportsSection, setShowReportsSection] = useState(false);
+  const [reportProjectFilter, setReportProjectFilter] = useState("all");
+  const [reportStatusFilter, setReportStatusFilter] = useState("all");
+  const [reportTypeFilter, setReportTypeFilter] = useState("all");
+  const [isExporting, setIsExporting] = useState(false);
 
   const queryClient = useQueryClient();
   const { setFloatingAction } = useFloatingButton();
+  const { toast } = useToast();
 
   // تعيين إجراء الزر العائم لإضافة معدة جديدة
   useEffect(() => {
@@ -155,6 +165,265 @@ export function EquipmentManagement() {
     return icons[type as keyof typeof icons] || <Wrench className="h-5 w-5" />;
   };
 
+  // Functions for Equipment Reports
+  const getFilteredEquipmentForReport = () => {
+    return equipment.filter((item: Equipment) => {
+      const matchesProject = reportProjectFilter === "all" || 
+        (reportProjectFilter === "warehouse" && !item.currentProjectId) ||
+        item.currentProjectId === reportProjectFilter;
+      
+      const matchesStatus = reportStatusFilter === "all" || item.status === reportStatusFilter;
+      const matchesType = reportTypeFilter === "all" || item.type === reportTypeFilter;
+      
+      return matchesProject && matchesStatus && matchesType;
+    });
+  };
+
+  const exportEquipmentToExcel = async () => {
+    const filteredEquipment = getFilteredEquipmentForReport();
+    
+    if (filteredEquipment.length === 0) {
+      toast({
+        title: "لا توجد معدات للتصدير",
+        description: "يرجى التأكد من الفلاتر المحددة",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      setIsExporting(true);
+      
+      const ExcelJS = await import('exceljs');
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('كشف المعدات');
+      
+      // Set RTL direction
+      worksheet.views = [{ rightToLeft: true }];
+      
+      // Define columns
+      worksheet.columns = [
+        { header: 'الكود', key: 'code', width: 15 },
+        { header: 'اسم المعدة', key: 'name', width: 25 },
+        { header: 'النوع', key: 'type', width: 15 },
+        { header: 'الحالة', key: 'status', width: 15 },
+        { header: 'الموقع', key: 'location', width: 25 },
+        { header: 'سعر الشراء', key: 'price', width: 15 },
+        { header: 'تاريخ الشراء', key: 'purchaseDate', width: 15 },
+        { header: 'الوصف', key: 'description', width: 30 }
+      ];
+
+      // Style the header row
+      const headerRow = worksheet.getRow(1);
+      headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2563EB' } };
+      headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
+
+      // Add data rows
+      filteredEquipment.forEach((item: Equipment) => {
+        const projectName = item.currentProjectId 
+          ? projects.find((p: any) => p.id === item.currentProjectId)?.name || 'مشروع غير معروف'
+          : 'المستودع';
+        
+        worksheet.addRow({
+          code: item.code,
+          name: item.name,
+          type: item.type === 'construction' ? 'إنشائية' : 
+                item.type === 'transport' ? 'نقل' : 
+                item.type === 'tool' ? 'أداة' : item.type,
+          status: getStatusText(item.status),
+          location: projectName,
+          price: item.purchasePrice ? `${formatCurrency(Number(item.purchasePrice))}` : 'غير محدد',
+          purchaseDate: item.purchaseDate ? formatDate(item.purchaseDate) : 'غير محدد',
+          description: item.description || 'غير محدد'
+        });
+      });
+
+      // Add borders and styling to all cells
+      worksheet.eachRow((row, rowNumber) => {
+        row.eachCell((cell) => {
+          cell.border = {
+            top: { style: 'thin' },
+            left: { style: 'thin' },
+            bottom: { style: 'thin' },
+            right: { style: 'thin' }
+          };
+          
+          if (rowNumber > 1) {
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+          }
+        });
+      });
+
+      // Add summary section
+      const summaryStartRow = worksheet.rowCount + 3;
+      worksheet.addRow([]);
+      worksheet.addRow([]);
+      worksheet.addRow(['ملخص المعدات', '', '', '', '', '', '', '']);
+      
+      const summaryHeaderRow = worksheet.getRow(summaryStartRow);
+      summaryHeaderRow.font = { bold: true, size: 14 };
+      summaryHeaderRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF3F4F6' } };
+      
+      worksheet.addRow(['إجمالي المعدات', filteredEquipment.length, '', '', '', '', '', '']);
+      worksheet.addRow(['المعدات النشطة', filteredEquipment.filter((e: Equipment) => e.status === 'active').length, '', '', '', '', '', '']);
+      worksheet.addRow(['في الصيانة', filteredEquipment.filter((e: Equipment) => e.status === 'maintenance').length, '', '', '', '', '', '']);
+      worksheet.addRow(['خارج الخدمة', filteredEquipment.filter((e: Equipment) => e.status === 'out_of_service').length, '', '', '', '', '', '']);
+
+      // Generate filename
+      const projectName = reportProjectFilter === "all" ? "جميع_المشاريع" : 
+                         reportProjectFilter === "warehouse" ? "المستودع" :
+                         projects.find((p: any) => p.id === reportProjectFilter)?.name || "مشروع_محدد";
+      
+      const filename = `كشف_المعدات_${projectName}_${new Date().toISOString().split('T')[0]}.xlsx`;
+      
+      // Save file
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], { 
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+      });
+      saveAs(blob, filename);
+      
+      toast({
+        title: "تم تصدير كشف المعدات بنجاح",
+        description: `تم حفظ الملف: ${filename}`
+      });
+      
+    } catch (error) {
+      console.error('خطأ في تصدير Excel:', error);
+      toast({
+        title: "خطأ في التصدير",
+        description: "حدث خطأ أثناء تصدير كشف المعدات",
+        variant: "destructive"
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const exportEquipmentToPDF = async () => {
+    const filteredEquipment = getFilteredEquipmentForReport();
+    
+    if (filteredEquipment.length === 0) {
+      toast({
+        title: "لا توجد معدات للتصدير",
+        description: "يرجى التأكد من الفلاتر المحددة",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      setIsExporting(true);
+      
+      // Create print content
+      const projectName = reportProjectFilter === "all" ? "جميع المشاريع" : 
+                         reportProjectFilter === "warehouse" ? "المستودع" :
+                         projects.find((p: any) => p.id === reportProjectFilter)?.name || "مشروع محدد";
+      
+      const printContent = `
+        <html dir="rtl">
+          <head>
+            <meta charset="UTF-8">
+            <title>كشف المعدات - ${projectName}</title>
+            <style>
+              body { font-family: 'Arial', sans-serif; margin: 20px; direction: rtl; }
+              .header { text-align: center; margin-bottom: 30px; }
+              .header h1 { color: #1f2937; margin-bottom: 10px; }
+              .header p { color: #6b7280; margin: 5px 0; }
+              table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+              th, td { border: 1px solid #d1d5db; padding: 8px; text-align: center; }
+              th { background-color: #2563eb; color: white; font-weight: bold; }
+              tr:nth-child(even) { background-color: #f9fafb; }
+              .summary { margin-top: 20px; padding: 15px; background-color: #f3f4f6; border-radius: 8px; }
+              .summary h3 { margin-top: 0; color: #1f2937; }
+              .summary-item { display: inline-block; margin: 5px 15px; }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <h1>كشف المعدات</h1>
+              <p>المشروع: ${projectName}</p>
+              <p>تاريخ التقرير: ${formatDate(new Date().toISOString().split('T')[0])}</p>
+              <p>إجمالي المعدات: ${filteredEquipment.length}</p>
+            </div>
+            
+            <table>
+              <thead>
+                <tr>
+                  <th>الكود</th>
+                  <th>اسم المعدة</th>
+                  <th>النوع</th>
+                  <th>الحالة</th>
+                  <th>الموقع</th>
+                  <th>سعر الشراء</th>
+                  <th>تاريخ الشراء</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${filteredEquipment.map((item: Equipment) => {
+                  const projectName = item.currentProjectId 
+                    ? projects.find((p: any) => p.id === item.currentProjectId)?.name || 'مشروع غير معروف'
+                    : 'المستودع';
+                  
+                  return `
+                    <tr>
+                      <td>${item.code}</td>
+                      <td>${item.name}</td>
+                      <td>${item.type === 'construction' ? 'إنشائية' : 
+                           item.type === 'transport' ? 'نقل' : 
+                           item.type === 'tool' ? 'أداة' : item.type}</td>
+                      <td>${getStatusText(item.status)}</td>
+                      <td>${projectName}</td>
+                      <td>${item.purchasePrice ? formatCurrency(Number(item.purchasePrice)) : 'غير محدد'}</td>
+                      <td>${item.purchaseDate ? formatDate(item.purchaseDate) : 'غير محدد'}</td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+            
+            <div class="summary">
+              <h3>ملخص المعدات</h3>
+              <div class="summary-item"><strong>إجمالي المعدات:</strong> ${filteredEquipment.length}</div>
+              <div class="summary-item"><strong>المعدات النشطة:</strong> ${filteredEquipment.filter((e: Equipment) => e.status === 'active').length}</div>
+              <div class="summary-item"><strong>في الصيانة:</strong> ${filteredEquipment.filter((e: Equipment) => e.status === 'maintenance').length}</div>
+              <div class="summary-item"><strong>خارج الخدمة:</strong> ${filteredEquipment.filter((e: Equipment) => e.status === 'out_of_service').length}</div>
+            </div>
+          </body>
+        </html>
+      `;
+
+      // Open print window
+      const printWindow = window.open('', '_blank');
+      if (printWindow) {
+        printWindow.document.write(printContent);
+        printWindow.document.close();
+        printWindow.onload = () => {
+          printWindow.print();
+          setTimeout(() => {
+            printWindow.close();
+          }, 1000);
+        };
+        
+        toast({
+          title: "جاري فتح نافذة الطباعة",
+          description: "اختر 'حفظ كـ PDF' من خيارات الطباعة"
+        });
+      }
+      
+    } catch (error) {
+      console.error('خطأ في تصدير PDF:', error);
+      toast({
+        title: "خطأ في التصدير",
+        description: "حدث خطأ أثناء تصدير كشف المعدات",
+        variant: "destructive"
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="p-6">
@@ -276,6 +545,186 @@ export function EquipmentManagement() {
           data-testid="stats-out-of-service-equipment"
         />
       </StatsGrid>
+
+      {/* Equipment Reports Section */}
+      <Card className="mb-6">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-blue-600" />
+              كشوفات المعدات
+            </CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowReportsSection(!showReportsSection)}
+              className="flex items-center gap-2"
+              data-testid="button-toggle-reports"
+            >
+              {showReportsSection ? 'إخفاء' : 'عرض'} الكشوفات
+              <Eye className="h-4 w-4" />
+            </Button>
+          </div>
+        </CardHeader>
+        
+        {showReportsSection && (
+          <CardContent className="space-y-4">
+            {/* Report Filters */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">فلترة حسب المشروع</label>
+                <Select value={reportProjectFilter} onValueChange={setReportProjectFilter}>
+                  <SelectTrigger data-testid="select-report-project-filter" className="h-9 text-sm">
+                    <div className="flex items-center gap-2 truncate">
+                      <MapPin className="h-3 w-3 text-gray-500 shrink-0" />
+                      <SelectValue placeholder="اختر المشروع" />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">جميع المشاريع</SelectItem>
+                    <SelectItem value="warehouse">المستودع</SelectItem>
+                    {projects.map((project: any) => (
+                      <SelectItem key={project.id} value={project.id}>
+                        {project.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">فلترة حسب الحالة</label>
+                <Select value={reportStatusFilter} onValueChange={setReportStatusFilter}>
+                  <SelectTrigger data-testid="select-report-status-filter" className="h-9 text-sm">
+                    <div className="flex items-center gap-2 truncate">
+                      <Activity className="h-3 w-3 text-gray-500 shrink-0" />
+                      <SelectValue placeholder="اختر الحالة" />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">جميع الحالات</SelectItem>
+                    <SelectItem value="active">نشط</SelectItem>
+                    <SelectItem value="maintenance">صيانة</SelectItem>
+                    <SelectItem value="out_of_service">خارج الخدمة</SelectItem>
+                    <SelectItem value="inactive">غير نشط</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">فلترة حسب النوع</label>
+                <Select value={reportTypeFilter} onValueChange={setReportTypeFilter}>
+                  <SelectTrigger data-testid="select-report-type-filter" className="h-9 text-sm">
+                    <div className="flex items-center gap-2 truncate">
+                      <Wrench className="h-3 w-3 text-gray-500 shrink-0" />
+                      <SelectValue placeholder="اختر النوع" />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">جميع الأنواع</SelectItem>
+                    <SelectItem value="إنشائية">إنشائية</SelectItem>
+                    <SelectItem value="نقل">نقل</SelectItem>
+                    <SelectItem value="أداة">أداة</SelectItem>
+                    <SelectItem value="construction">إنشائية</SelectItem>
+                    <SelectItem value="transport">نقل</SelectItem>
+                    <SelectItem value="tool">أداة</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Report Preview */}
+            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="font-semibold text-blue-900 dark:text-blue-100">معاينة الكشف</h4>
+                <Badge variant="outline" className="text-blue-700 border-blue-300">
+                  {getFilteredEquipmentForReport().length} معدة
+                </Badge>
+              </div>
+              
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center mb-4">
+                <div className="bg-white dark:bg-gray-700 p-3 rounded-lg">
+                  <div className="text-2xl font-bold text-blue-600">
+                    {getFilteredEquipmentForReport().length}
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">إجمالي المعدات</div>
+                </div>
+                <div className="bg-white dark:bg-gray-700 p-3 rounded-lg">
+                  <div className="text-2xl font-bold text-green-600">
+                    {getFilteredEquipmentForReport().filter((e: Equipment) => e.status === 'active').length}
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">نشطة</div>
+                </div>
+                <div className="bg-white dark:bg-gray-700 p-3 rounded-lg">
+                  <div className="text-2xl font-bold text-yellow-600">
+                    {getFilteredEquipmentForReport().filter((e: Equipment) => e.status === 'maintenance').length}
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">صيانة</div>
+                </div>
+                <div className="bg-white dark:bg-gray-700 p-3 rounded-lg">
+                  <div className="text-2xl font-bold text-red-600">
+                    {getFilteredEquipmentForReport().filter((e: Equipment) => e.status === 'out_of_service').length}
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">خارج الخدمة</div>
+                </div>
+              </div>
+
+              {/* Export Buttons */}
+              <div className="flex flex-wrap gap-3">
+                <Button
+                  onClick={exportEquipmentToExcel}
+                  disabled={isExporting || getFilteredEquipmentForReport().length === 0}
+                  className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white"
+                  data-testid="button-export-excel"
+                >
+                  {isExporting ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  ) : (
+                    <FileSpreadsheet className="h-4 w-4" />
+                  )}
+                  تصدير Excel
+                </Button>
+
+                <Button
+                  onClick={exportEquipmentToPDF}
+                  disabled={isExporting || getFilteredEquipmentForReport().length === 0}
+                  className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white"
+                  data-testid="button-export-pdf"
+                >
+                  {isExporting ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  ) : (
+                    <FileText className="h-4 w-4" />
+                  )}
+                  تصدير PDF
+                </Button>
+
+                <Button
+                  onClick={() => {
+                    const filteredEquipment = getFilteredEquipmentForReport();
+                    if (filteredEquipment.length === 0) {
+                      toast({
+                        title: "لا توجد معدات للطباعة",
+                        description: "يرجى التأكد من الفلاتر المحددة",
+                        variant: "destructive"
+                      });
+                      return;
+                    }
+                    exportEquipmentToPDF();
+                  }}
+                  variant="outline"
+                  disabled={isExporting}
+                  className="flex items-center gap-2"
+                  data-testid="button-print-report"
+                >
+                  <Printer className="h-4 w-4" />
+                  طباعة
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        )}
+      </Card>
 
       {/* Equipment List - Restaurant Style */}
       <div className="space-y-4">
