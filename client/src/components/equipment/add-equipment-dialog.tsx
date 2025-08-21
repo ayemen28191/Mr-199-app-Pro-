@@ -227,8 +227,8 @@ export function AddEquipmentDialog({ open, onOpenChange, projects }: AddEquipmen
                 <FormItem>
                   <FormLabel>المشروع الحالي</FormLabel>
                   <Select 
-                    onValueChange={(value) => field.onChange(value === "" ? null : value)}
-                    defaultValue={field.value || ""}
+                    onValueChange={(value) => field.onChange(value === "warehouse" ? null : value)}
+                    defaultValue={field.value || "warehouse"}
                   >
                     <FormControl>
                       <SelectTrigger data-testid="select-current-project">
@@ -236,7 +236,7 @@ export function AddEquipmentDialog({ open, onOpenChange, projects }: AddEquipmen
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">المستودع</SelectItem>
+                      <SelectItem value="warehouse">المستودع</SelectItem>
                       {projects.map((project) => (
                         <SelectItem key={project.id} value={project.id}>
                           {project.name}

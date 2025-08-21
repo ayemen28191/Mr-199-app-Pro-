@@ -402,8 +402,8 @@ export function EquipmentDetailsDialog({ equipment, open, onOpenChange, projects
                       <FormItem>
                         <FormLabel>المشروع الحالي</FormLabel>
                         <Select 
-                          onValueChange={(value) => field.onChange(value === "" ? null : value)}
-                          value={field.value || ""}
+                          onValueChange={(value) => field.onChange(value === "warehouse" ? null : value)}
+                          value={field.value || "warehouse"}
                         >
                           <FormControl>
                             <SelectTrigger data-testid="select-edit-project">
@@ -411,7 +411,7 @@ export function EquipmentDetailsDialog({ equipment, open, onOpenChange, projects
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">المستودع</SelectItem>
+                            <SelectItem value="warehouse">المستودع</SelectItem>
                             {projects.map((project) => (
                               <SelectItem key={project.id} value={project.id}>
                                 {project.name}

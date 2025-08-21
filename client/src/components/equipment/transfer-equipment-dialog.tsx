@@ -109,7 +109,7 @@ export function TransferEquipmentDialog({ equipment, open, onOpenChange, project
                 <div>
                   <p className="text-sm text-gray-600 dark:text-gray-400">الموقع الجديد:</p>
                   <p className="font-medium text-blue-600" data-testid="text-new-location">
-                    {form.watch('toProjectId') 
+                    {form.watch('toProjectId') && form.watch('toProjectId') !== 'warehouse'
                       ? projects.find(p => p.id === form.watch('toProjectId'))?.name || 'المستودع'
                       : 'المستودع'
                     }
@@ -126,8 +126,8 @@ export function TransferEquipmentDialog({ equipment, open, onOpenChange, project
                 <FormItem>
                   <FormLabel>المشروع المقصود</FormLabel>
                   <Select 
-                    onValueChange={(value) => field.onChange(value === "" ? null : value)}
-                    defaultValue={field.value || ""}
+                    onValueChange={(value) => field.onChange(value === "warehouse" ? null : value)}
+                    defaultValue={field.value || "warehouse"}
                   >
                     <FormControl>
                       <SelectTrigger data-testid="select-destination-project">
@@ -135,7 +135,7 @@ export function TransferEquipmentDialog({ equipment, open, onOpenChange, project
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">المستودع</SelectItem>
+                      <SelectItem value="warehouse">المستودع</SelectItem>
                       {projects
                         .filter(p => p.id !== equipment.currentProjectId)
                         .map((project) => (
