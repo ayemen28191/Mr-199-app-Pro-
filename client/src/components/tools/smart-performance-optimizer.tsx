@@ -416,35 +416,32 @@ const SmartPerformanceOptimizer: React.FC<SmartPerformanceOptimizerProps> = ({
 
             <TabsContent value="optimization" className="space-y-6">
               {/* Optimization Statistics */}
-              <StatsGrid 
-                stats={[
-                  {
-                    title: "التحسينات المتاحة",
-                    value: optimizationSuggestions.length,
-                    icon: Zap,
-                    color: "blue"
-                  },
-                  {
-                    title: "أولوية عالية",
-                    value: optimizationSuggestions.filter(s => s.impact === 'high').length,
-                    icon: AlertTriangle,
-                    color: "red"
-                  },
-                  {
-                    title: "جهد منخفض",
-                    value: optimizationSuggestions.filter(s => s.effort === 'low').length,
-                    icon: CheckCircle,
-                    color: "green"
-                  },
-                  {
-                    title: "متوسط التحسن",
-                    value: Math.round(optimizationSuggestions.reduce((sum, s) => sum + s.expectedImprovement, 0) / optimizationSuggestions.length) || 0,
-                    icon: TrendingUp,
-                    color: "purple",
-                    formatter: (value: number) => `${value}%`
-                  }
-                ]}
-              />
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <StatsCard
+                  title="التحسينات المتاحة"
+                  value={optimizationSuggestions.length}
+                  icon={Zap}
+                  color="blue"
+                />
+                <StatsCard
+                  title="أولوية عالية"
+                  value={optimizationSuggestions.filter(s => s.impact === 'high').length}
+                  icon={AlertTriangle}
+                  color="red"
+                />
+                <StatsCard
+                  title="جهد منخفض"
+                  value={optimizationSuggestions.filter(s => s.effort === 'low').length}
+                  icon={CheckCircle}
+                  color="green"
+                />
+                <StatsCard
+                  title="متوسط التحسن"
+                  value={`${Math.round(optimizationSuggestions.reduce((sum, s) => sum + s.expectedImprovement, 0) / optimizationSuggestions.length) || 0}%`}
+                  icon={TrendingUp}
+                  color="purple"
+                />
+              </div>
 
               {/* Optimization Suggestions */}
               <div className="space-y-4">
