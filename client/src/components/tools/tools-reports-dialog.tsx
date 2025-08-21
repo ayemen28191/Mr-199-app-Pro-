@@ -195,51 +195,46 @@ const ToolsReportsDialog: React.FC<ToolsReportsDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] sm:w-[90vw] max-w-6xl max-h-[90vh] overflow-y-auto" dir="rtl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 sm:gap-3 text-lg sm:text-xl">
-            <BarChart3 className="h-5 w-5 sm:h-6 sm:w-6" />
-            تقارير وإحصائيات الأدوات
-          </DialogTitle>
-          <DialogDescription className="text-sm">
-            تقارير شاملة وتحليلات ذكية لإدارة الأدوات والمعدات
-          </DialogDescription>
-        </DialogHeader>
-
-        {/* Filters - Mobile Responsive */}
-        <div className="bg-muted/30 rounded-lg p-3 sm:p-4 space-y-3">
-          {/* Mobile: Stack all filters */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                <Calendar className="h-4 w-4" />
-                <span>الفترة</span>
+      <DialogContent className="w-[98vw] max-w-7xl h-[95vh] overflow-hidden flex flex-col p-0" dir="rtl">
+        {/* Header احترافي مضغوط */}
+        <DialogHeader className="flex-shrink-0 px-6 py-3 border-b bg-gradient-to-l from-slate-50 to-gray-50 dark:from-slate-900/50 dark:to-gray-900/50">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-md">
+                  <BarChart3 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <DialogTitle className="text-base font-semibold text-gray-900 dark:text-gray-100">
+                    تقارير وإحصائيات الأدوات
+                  </DialogTitle>
+                  <DialogDescription className="text-xs text-gray-600 dark:text-gray-400">
+                    لوحة تحكم شاملة متقدمة
+                  </DialogDescription>
+                </div>
               </div>
+            </div>
+            
+            {/* فلاتر سريعة في الهيدر */}
+            <div className="flex items-center gap-2">
               <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-                <SelectTrigger className="w-full h-10">
+                <SelectTrigger className="w-28 h-8 text-xs">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="7">آخر 7 أيام</SelectItem>
-                  <SelectItem value="30">آخر 30 يوم</SelectItem>
-                  <SelectItem value="90">آخر 3 أشهر</SelectItem>
-                  <SelectItem value="365">آخر سنة</SelectItem>
-                  <SelectItem value="all">جميع الفترات</SelectItem>
+                  <SelectItem value="7">7 أيام</SelectItem>
+                  <SelectItem value="30">30 يوم</SelectItem>
+                  <SelectItem value="90">3 أشهر</SelectItem>
+                  <SelectItem value="365">سنة</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                <Filter className="h-4 w-4" />
-                <span>التصنيف</span>
-              </div>
+              
               <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger className="w-full h-10">
-                  <SelectValue placeholder="اختر تصنيف" />
+                <SelectTrigger className="w-32 h-8 text-xs">
+                  <SelectValue placeholder="التصنيف" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">جميع التصنيفات</SelectItem>
+                  <SelectItem value="all">كل التصنيفات</SelectItem>
                   {categoriesStats.map((category) => (
                     <SelectItem key={category.id} value={category.id}>
                       {category.name}
@@ -247,168 +242,178 @@ const ToolsReportsDialog: React.FC<ToolsReportsDialogProps> = ({
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-
-            <div className="space-y-2 sm:col-span-2 lg:col-span-1">
-              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                <RefreshCw className="h-4 w-4" />
-                <span>إجراءات</span>
-              </div>
-              <Button variant="outline" size="sm" className="w-full h-10">
-                <RefreshCw className="h-4 w-4 ml-1" />
-                تحديث البيانات
+              
+              <Button variant="outline" size="sm" className="h-8 w-8 p-0">
+                <RefreshCw className="h-3 w-3" />
               </Button>
             </div>
           </div>
-        </div>
+        </DialogHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 bg-muted/30 p-1 rounded-lg mb-4 sm:mb-6 h-auto">
+        {/* محتوى الصفحة */}
+        <div className="flex-1 overflow-auto p-4">
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+          {/* تبويبات مضغوطة احترافية */}
+          <TabsList className="grid w-full grid-cols-4 bg-gray-100 dark:bg-gray-800 p-0.5 rounded-lg mb-3 h-9">
             <TabsTrigger 
               value="overview" 
-              className="flex items-center justify-center gap-2 text-xs sm:text-sm font-medium py-3 px-3 min-h-[44px]" 
+              className="flex items-center gap-1.5 text-xs font-medium py-1.5 px-2 h-8 rounded-md transition-all" 
               data-testid="tab-overview"
             >
-              <BarChart3 className="h-4 w-4" />
-              <span className="hidden sm:inline">نظرة عامة</span>
-              <span className="sm:hidden">عامة</span>
+              <BarChart3 className="h-3 w-3" />
+              <span>عامة</span>
             </TabsTrigger>
             <TabsTrigger 
               value="usage" 
-              className="flex items-center justify-center gap-2 text-xs sm:text-sm font-medium py-3 px-3 min-h-[44px]" 
+              className="flex items-center gap-1.5 text-xs font-medium py-1.5 px-2 h-8 rounded-md transition-all" 
               data-testid="tab-usage"
             >
-              <TrendingUp className="h-4 w-4" />
-              <span className="hidden sm:inline">الاستخدام</span>
-              <span className="sm:hidden">استخدام</span>
+              <TrendingUp className="h-3 w-3" />
+              <span>استخدام</span>
             </TabsTrigger>
             <TabsTrigger 
               value="maintenance" 
-              className="flex items-center justify-center gap-2 text-xs sm:text-sm font-medium py-3 px-3 min-h-[44px]" 
+              className="flex items-center gap-1.5 text-xs font-medium py-1.5 px-2 h-8 rounded-md transition-all" 
               data-testid="tab-maintenance"
             >
-              <Wrench className="h-4 w-4" />
-              <span className="hidden sm:inline">الصيانة</span>
-              <span className="sm:hidden">صيانة</span>
+              <Wrench className="h-3 w-3" />
+              <span>صيانة</span>
             </TabsTrigger>
             <TabsTrigger 
               value="categories" 
-              className="flex items-center justify-center gap-2 text-xs sm:text-sm font-medium py-3 px-3 min-h-[44px]" 
+              className="flex items-center gap-1.5 text-xs font-medium py-1.5 px-2 h-8 rounded-md transition-all" 
               data-testid="tab-categories"
             >
-              <Package className="h-4 w-4" />
-              <span className="hidden sm:inline">التصنيفات</span>
-              <span className="sm:hidden">تصنيفات</span>
+              <Package className="h-3 w-3" />
+              <span>تصنيفات</span>
             </TabsTrigger>
           </TabsList>
 
-          {/* Overview Tab */}
-          <TabsContent value="overview" className="space-y-6">
-            {/* Statistics Cards - صف أول */}
-            <div className="grid grid-cols-2 gap-3 sm:gap-4">
-              <StatsCard
-                title="إجمالي الأدوات"
-                value={toolsStats?.totalTools || 0}
-                icon={Package}
-                color="blue"
-              />
-              <StatsCard
-                title="متاح"
-                value={toolsStats?.availableTools || 0}
-                icon={CheckCircle}
-                color="green"
-              />
-            </div>
-            
-            {/* Statistics Cards - صف ثاني */}
-            <div className="grid grid-cols-2 gap-3 sm:gap-4">
-              <StatsCard
-                title="قيد الاستخدام"
-                value={toolsStats?.inUseTools || 0}
-                icon={Wrench}
-                color="orange"
-              />
-              <StatsCard
-                title="صيانة ومعطل"
-                value={(toolsStats?.maintenanceTools || 0) + (toolsStats?.damagedTools || 0)}
-                icon={AlertTriangle}
-                color="red"
-              />
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Financial Overview */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <DollarSign className="h-5 w-5" />
-                    النظرة المالية
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
-                    <span className="text-muted-foreground">القيمة الإجمالية:</span>
-                    <span className="font-bold text-lg">
-                      {toolsStats?.totalValue?.toLocaleString('en-US') || 0} ر.ي
-                    </span>
+          {/* Overview Tab - احترافي مضغوط */}
+          <TabsContent value="overview" className="flex-1 overflow-auto space-y-3">
+            {/* الإحصائيات الرئيسية - مضغوطة */}
+            <div className="bg-gradient-to-l from-blue-50 to-slate-50 dark:from-blue-950/20 dark:to-slate-950/20 rounded-lg p-3">
+              {/* صف أول */}
+              <div className="grid grid-cols-2 gap-2 mb-2">
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-2.5 border">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">إجمالي الأدوات</p>
+                      <p className="text-lg font-bold text-blue-600 dark:text-blue-400">
+                        {toolsStats?.totalTools || 0}
+                      </p>
+                    </div>
+                    <Package className="h-6 w-6 text-blue-500 opacity-25" />
                   </div>
-                  <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
-                    <span className="text-muted-foreground">متوسط قيمة الأداة:</span>
-                    <span className="font-medium">
-                      {toolsStats && toolsStats.totalTools > 0 
-                        ? Math.round(toolsStats.totalValue / toolsStats.totalTools).toLocaleString('en-US')
-                        : 0} ر.ي
-                    </span>
+                </div>
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-2.5 border">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">متاح للعمل</p>
+                      <p className="text-lg font-bold text-green-600 dark:text-green-400">
+                        {toolsStats?.availableTools || 0}
+                      </p>
+                    </div>
+                    <CheckCircle className="h-6 w-6 text-green-500 opacity-25" />
                   </div>
-                  <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
-                    <span className="text-muted-foreground">عدد التصنيفات:</span>
-                    <span className="font-medium">{toolsStats?.categoriesCount || 0}</span>
+                </div>
+              </div>
+              
+              {/* صف ثاني */}
+              <div className="grid grid-cols-2 gap-2">
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-2.5 border">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">قيد الاستخدام</p>
+                      <p className="text-lg font-bold text-orange-600 dark:text-orange-400">
+                        {toolsStats?.inUseTools || 0}
+                      </p>
+                    </div>
+                    <Wrench className="h-6 w-6 text-orange-500 opacity-25" />
                   </div>
-                </CardContent>
-              </Card>
-
-              {/* Usage Overview */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <TrendingUp className="h-5 w-5" />
-                    نظرة عامة على الاستخدام
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
-                    <span className="text-muted-foreground">معدل الاستخدام:</span>
-                    <span className="font-bold text-lg">
-                      {toolsStats?.averageUsage || 0}%
-                    </span>
+                </div>
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-2.5 border">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">صيانة ومعطل</p>
+                      <p className="text-lg font-bold text-red-600 dark:text-red-400">
+                        {(toolsStats?.maintenanceTools || 0) + (toolsStats?.damagedTools || 0)}
+                      </p>
+                    </div>
+                    <AlertTriangle className="h-6 w-6 text-red-500 opacity-25" />
                   </div>
-                  <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
-                    <span className="text-muted-foreground">أدوات عالية الاستخدام:</span>
-                    <span className="font-medium">
-                      {usageReport.filter(tool => tool.usageCount > 10).length}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
-                    <span className="text-muted-foreground">أدوات غير مستخدمة:</span>
-                    <span className="font-medium">
-                      {usageReport.filter(tool => tool.usageCount === 0).length}
-                    </span>
-                  </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             </div>
 
-            {/* Actions */}
-            <div className="flex flex-col sm:flex-row gap-2">
-              <Button onClick={() => downloadReport('overview')} className="w-full sm:w-auto" data-testid="button-export-overview">
-                <Download className="h-4 w-4 ml-1" />
-                <span className="hidden sm:inline">تصدير النظرة العامة</span>
-                <span className="sm:hidden">تصدير عام</span>
+            {/* معلومات إضافية مضغوطة */}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-2.5 border">
+                <div className="flex items-center gap-2 mb-1">
+                  <DollarSign className="h-3 w-3 text-green-600" />
+                  <span className="text-xs font-medium">إجمالي القيمة</span>
+                </div>
+                <p className="text-sm font-bold">
+                  {(toolsStats?.totalValue || 0).toLocaleString('en-US')} <span className="text-xs text-gray-500">ر.ي</span>
+                </p>
+              </div>
+              
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-2.5 border">
+                <div className="flex items-center gap-2 mb-1">
+                  <TrendingUp className="h-3 w-3 text-blue-600" />
+                  <span className="text-xs font-medium">معدل الاستخدام</span>
+                </div>
+                <p className="text-sm font-bold">
+                  {toolsStats?.averageUsage || 0}<span className="text-xs text-gray-500">%</span>
+                </p>
+              </div>
+            </div>
+
+            {/* تفاصيل سريعة */}
+            <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-2.5">
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">عالي الاستخدام</p>
+                  <p className="text-sm font-bold text-blue-600">
+                    {usageReport.filter(tool => tool.usageCount > 10).length}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">غير مستخدم</p>
+                  <p className="text-sm font-bold text-red-600">
+                    {usageReport.filter(tool => tool.usageCount === 0).length}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">التصنيفات</p>
+                  <p className="text-sm font-bold text-purple-600">
+                    {toolsStats?.categoriesCount || 0}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* إجراءات سريعة */}
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => downloadReport('overview')} 
+                size="sm" 
+                className="flex-1 h-7 text-xs"
+                data-testid="button-export-overview"
+              >
+                <Download className="h-3 w-3 ml-1" />
+                تصدير عام
               </Button>
-              <Button variant="outline" onClick={() => downloadReport('detailed')} className="w-full sm:w-auto" data-testid="button-export-detailed">
-                <FileText className="h-4 w-4 ml-1" />
-                <span className="hidden sm:inline">تقرير مفصل</span>
-                <span className="sm:hidden">تقرير مفصل</span>
+              <Button 
+                variant="outline" 
+                onClick={() => downloadReport('detailed')} 
+                size="sm" 
+                className="flex-1 h-7 text-xs"
+                data-testid="button-export-detailed"
+              >
+                <FileText className="h-3 w-3 ml-1" />
+                تقرير مفصل
               </Button>
             </div>
           </TabsContent>
@@ -824,6 +829,7 @@ const ToolsReportsDialog: React.FC<ToolsReportsDialogProps> = ({
             </Card>
           </TabsContent>
         </Tabs>
+        </div>
       </DialogContent>
     </Dialog>
   );
