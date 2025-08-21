@@ -41,6 +41,7 @@ import {
   BarChart3
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { StatsCard, StatsGrid } from '@/components/ui/stats-card';
 
 interface SmartRecommendation {
   id: string;
@@ -367,39 +368,34 @@ const IntelligentRecommendationsEngine: React.FC<IntelligentRecommendationsEngin
             </div>
           </div>
 
-          {/* Summary Stats - Responsive */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <Card>
-              <CardContent className="p-4 text-center">
-                <div className="text-2xl font-bold text-purple-600">{recommendations.length}</div>
-                <div className="text-sm text-muted-foreground">توصية ذكية</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4 text-center">
-                <div className="text-2xl font-bold text-green-600">
-                  {Math.round(recommendations.reduce((sum, r) => sum + r.expectedSavings, 0)).toLocaleString()}
-                </div>
-                <div className="text-sm text-muted-foreground">وفورات متوقعة (ريال)</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4 text-center">
-                <div className="text-2xl font-bold text-blue-600">
-                  {Math.round(recommendations.reduce((sum, r) => sum + r.impactScore, 0) / recommendations.length) || 0}%
-                </div>
-                <div className="text-sm text-muted-foreground">متوسط الأثر المتوقع</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4 text-center">
-                <div className="text-2xl font-bold text-orange-600">
-                  {recommendations.filter(r => r.priority === 'high').length}
-                </div>
-                <div className="text-sm text-muted-foreground">توصيات عالية الأولوية</div>
-              </CardContent>
-            </Card>
-          </div>
+          {/* Summary Stats - Using Unified StatsGrid */}
+          <StatsGrid className="mb-6">
+            <StatsCard
+              title="توصية ذكية"
+              value={recommendations.length}
+              icon={Lightbulb}
+              color="purple"
+            />
+            <StatsCard
+              title="وفورات متوقعة (ريال)"
+              value={Math.round(recommendations.reduce((sum, r) => sum + r.expectedSavings, 0))}
+              icon={DollarSign}
+              color="green"
+              formatter={(value) => value.toLocaleString()}
+            />
+            <StatsCard
+              title="متوسط الأثر المتوقع"
+              value={`${Math.round(recommendations.reduce((sum, r) => sum + r.impactScore, 0) / recommendations.length) || 0}%`}
+              icon={Target}
+              color="blue"
+            />
+            <StatsCard
+              title="توصيات عالية الأولوية"
+              value={recommendations.filter(r => r.priority === 'high').length}
+              icon={AlertCircle}
+              color="orange"
+            />
+          </StatsGrid>
 
           {/* Recommendations List */}
           <div className="space-y-4">

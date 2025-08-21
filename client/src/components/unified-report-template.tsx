@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Building2Icon } from "lucide-react";
 import { formatDate, formatCurrency } from "@/lib/utils";
+import { StatsCard } from "@/components/ui/stats-card";
 
 interface UnifiedReportTemplateProps {
   title: string;
@@ -100,21 +101,49 @@ interface SummaryCardProps {
   icon?: React.ReactNode;
 }
 
+// استخدم StatsCard الموحد بدلاً من SummaryCard
+// export function SummaryCard({ title, value, valueColor = "text-gray-900", icon }: SummaryCardProps) {
+//   return (
+//     <Card className="print:shadow-none print:border print:border-gray-300">
+//       <CardContent className="p-4 text-center">
+//         {icon && (
+//           <div className="flex justify-center mb-2 print:hidden">
+//             {icon}
+//           </div>
+//         )}
+//         <p className="text-sm text-muted-foreground print:text-gray-600">{title}</p>
+//         <p className={`text-xl font-bold print:text-lg print:text-black ${valueColor}`}>
+//           {typeof value === 'number' ? formatCurrency(value) : value}
+//         </p>
+//       </CardContent>
+//     </Card>
+//   );
+// }
+
+// مكون بديل محسن يستخدم StatsCard الموحد
 export function SummaryCard({ title, value, valueColor = "text-gray-900", icon }: SummaryCardProps) {
+  // تحويل اللون إلى لون StatsCard
+  const colorMap: Record<string, any> = {
+    "text-gray-900": "blue",
+    "text-green-600": "green",
+    "text-red-600": "red",
+    "text-orange-600": "orange",
+    "text-blue-600": "blue",
+    "text-purple-600": "purple"
+  };
+  
+  // استخدام أيقونة افتراضية إذا لم تُوفر
+  const defaultIcon = Building2Icon;
+  
   return (
-    <Card className="print:shadow-none print:border print:border-gray-300">
-      <CardContent className="p-4 text-center">
-        {icon && (
-          <div className="flex justify-center mb-2 print:hidden">
-            {icon}
-          </div>
-        )}
-        <p className="text-sm text-muted-foreground print:text-gray-600">{title}</p>
-        <p className={`text-xl font-bold print:text-lg print:text-black ${valueColor}`}>
-          {typeof value === 'number' ? formatCurrency(value) : value}
-        </p>
-      </CardContent>
-    </Card>
+    <div className="print:border print:border-gray-300 print:rounded">
+      <StatsCard
+        title={title}
+        value={typeof value === 'number' ? formatCurrency(value) : value}
+        icon={icon as any || defaultIcon}
+        color={colorMap[valueColor] || "blue"}
+      />
+    </div>
   );
 }
 

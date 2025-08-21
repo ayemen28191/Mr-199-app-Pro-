@@ -37,6 +37,7 @@ import {
   XCircle
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { StatsCard, StatsGrid } from '@/components/ui/stats-card';
 
 interface MaintenancePrediction {
   toolId: string;
@@ -314,33 +315,34 @@ const PredictiveMaintenanceSystem: React.FC<PredictiveMaintenanceSystemProps> = 
             </div>
           </div>
 
-          {/* Summary Stats */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <Card>
-              <CardContent className="p-4 text-center">
-                <div className="text-2xl font-bold text-red-600">{predictions.filter(p => p.urgencyLevel === 'critical').length}</div>
-                <div className="text-sm text-muted-foreground">حالات حرجة</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4 text-center">
-                <div className="text-2xl font-bold text-orange-600">{predictions.filter(p => p.urgencyLevel === 'high').length}</div>
-                <div className="text-sm text-muted-foreground">أولوية عالية</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4 text-center">
-                <div className="text-2xl font-bold text-yellow-600">{predictions.filter(p => p.urgencyLevel === 'medium').length}</div>
-                <div className="text-sm text-muted-foreground">أولوية متوسطة</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4 text-center">
-                <div className="text-2xl font-bold text-blue-600">{predictions.reduce((sum, p) => sum + p.costEstimate, 0).toLocaleString()}</div>
-                <div className="text-sm text-muted-foreground">التكلفة المتوقعة (ريال)</div>
-              </CardContent>
-            </Card>
-          </div>
+          {/* Summary Stats - Using Unified StatsGrid */}
+          <StatsGrid className="mb-6">
+            <StatsCard
+              title="حالات حرجة"
+              value={predictions.filter(p => p.urgencyLevel === 'critical').length}
+              icon={AlertTriangle}
+              color="red"
+            />
+            <StatsCard
+              title="أولوية عالية"
+              value={predictions.filter(p => p.urgencyLevel === 'high').length}
+              icon={Clock}
+              color="orange"
+            />
+            <StatsCard
+              title="أولوية متوسطة"
+              value={predictions.filter(p => p.urgencyLevel === 'medium').length}
+              icon={Wrench}
+              color="amber"
+            />
+            <StatsCard
+              title="التكلفة المتوقعة (ريال)"
+              value={predictions.reduce((sum, p) => sum + p.costEstimate, 0)}
+              icon={Zap}
+              color="blue"
+              formatter={(value) => value.toLocaleString()}
+            />
+          </StatsGrid>
 
           {/* Predictions List */}
           <div className="space-y-4">
