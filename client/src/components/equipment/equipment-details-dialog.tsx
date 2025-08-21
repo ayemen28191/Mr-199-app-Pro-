@@ -50,7 +50,7 @@ export function EquipmentDetailsDialog({ equipment, open, onOpenChange, projects
     defaultValues: {
       name: "",
       code: "",
-      type: "construction",
+      type: "أدوات",
       status: "active",
       description: "",
       purchaseDate: "",
@@ -65,7 +65,7 @@ export function EquipmentDetailsDialog({ equipment, open, onOpenChange, projects
       form.reset({
         name: equipment.name || "",
         code: equipment.code || "",
-        type: equipment.type || "construction",
+        type: equipment.type || "أدوات",
         status: equipment.status || "active",
         description: equipment.description || "",
         purchaseDate: equipment.purchaseDate || "",
@@ -164,8 +164,22 @@ export function EquipmentDetailsDialog({ equipment, open, onOpenChange, projects
     return texts[status as keyof typeof texts] || status;
   };
 
-  const getTypeText = (type: string) => {
+  const getTypeText = (type: string | null) => {
+    if (!type) return 'غير محدد';
+    
     const texts = {
+      'أدوات': 'أدوات',
+      'أمتار': 'أمتار',
+      'مطارق': 'مطارق',
+      'مكينة لحام': 'مكينة لحام',
+      'جلخ كهربائي': 'جلخ كهربائي',
+      'دريل': 'دريل',
+      'تخزيق': 'تخزيق',
+      'بانات': 'بانات',
+      'مفاتيح': 'مفاتيح',
+      'أسلاك': 'أسلاك',
+      'دساميس': 'دساميس',
+      // القيم القديمة للتوافق
       'construction': 'إنشائية',
       'transport': 'نقل',
       'tool': 'أداة'
@@ -398,9 +412,17 @@ export function EquipmentDetailsDialog({ equipment, open, onOpenChange, projects
                                   </SelectTrigger>
                                 </FormControl>
                                 <SelectContent>
-                                  <SelectItem value="construction">إنشائية</SelectItem>
-                                  <SelectItem value="transport">نقل</SelectItem>
-                                  <SelectItem value="tool">أداة</SelectItem>
+                                  <SelectItem value="أدوات">أدوات</SelectItem>
+                                  <SelectItem value="أمتار">أمتار</SelectItem>
+                                  <SelectItem value="مطارق">مطارق</SelectItem>
+                                  <SelectItem value="مكينة لحام">مكينة لحام</SelectItem>
+                                  <SelectItem value="جلخ كهربائي">جلخ كهربائي</SelectItem>
+                                  <SelectItem value="دريل">دريل</SelectItem>
+                                  <SelectItem value="تخزيق">تخزيق</SelectItem>
+                                  <SelectItem value="بانات">بانات</SelectItem>
+                                  <SelectItem value="مفاتيح">مفاتيح</SelectItem>
+                                  <SelectItem value="أسلاك">أسلاك</SelectItem>
+                                  <SelectItem value="دساميس">دساميس</SelectItem>
                                 </SelectContent>
                               </Select>
                               <FormMessage />

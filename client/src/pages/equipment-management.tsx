@@ -134,6 +134,19 @@ export function EquipmentManagement() {
 
   const getTypeBackgroundColor = (type: string | null) => {
     const colors = {
+      // أدوات الملحمين للألواح الشمسية
+      'أدوات': 'bg-gradient-to-br from-red-500 to-red-600',
+      'أمتار': 'bg-gradient-to-br from-blue-500 to-blue-600',
+      'مطارق': 'bg-gradient-to-br from-gray-700 to-gray-800',
+      'مكينة لحام': 'bg-gradient-to-br from-orange-500 to-orange-600',
+      'جلخ كهربائي': 'bg-gradient-to-br from-yellow-500 to-yellow-600',
+      'دريل': 'bg-gradient-to-br from-green-500 to-green-600',
+      'تخزيق': 'bg-gradient-to-br from-purple-500 to-purple-600',
+      'بانات': 'bg-gradient-to-br from-indigo-500 to-indigo-600',
+      'مفاتيح': 'bg-gradient-to-br from-pink-500 to-pink-600',
+      'أسلاك': 'bg-gradient-to-br from-cyan-500 to-cyan-600',
+      'دساميس': 'bg-gradient-to-br from-teal-500 to-teal-600',
+      // القيم القديمة للتوافق
       'إنشائية': 'bg-gradient-to-br from-blue-500 to-blue-600',
       'نقل': 'bg-gradient-to-br from-green-500 to-green-600',
       'أداة': 'bg-gradient-to-br from-purple-500 to-purple-600',
@@ -156,6 +169,19 @@ export function EquipmentManagement() {
 
   const getTypeIcon = (type: string | null) => {
     const icons = {
+      // أدوات الملحمين للألواح الشمسية
+      'أدوات': '🔧',
+      'أمتار': '📏',
+      'مطارق': '🔨',
+      'مكينة لحام': '⚡',
+      'جلخ كهربائي': '⚙️',
+      'دريل': '🔩',
+      'تخزيق': '✂️',
+      'بانات': '🔗',
+      'مفاتيح': '🔑',
+      'أسلاك': '🔌',
+      'دساميس': '📎',
+      // القيم القديمة للتوافق
       'construction': <Wrench className="h-5 w-5" />,
       'transport': <Truck className="h-5 w-5" />,
       'tool': <PenTool className="h-5 w-5" />,
@@ -264,9 +290,7 @@ export function EquipmentManagement() {
         const row = worksheet.addRow([
           item.code,
           item.name,
-          item.type === 'construction' ? 'إنشائية' : 
-          item.type === 'transport' ? 'نقل' : 
-          item.type === 'tool' ? 'أداة' : item.type,
+          item.type || 'غير محدد',
           getStatusText(item.status),
           projectName,
           item.purchasePrice ? formatCurrency(Number(item.purchasePrice)) : 'غير محدد',
@@ -844,12 +868,17 @@ export function EquipmentManagement() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">جميع الأنواع</SelectItem>
-              <SelectItem value="إنشائية">إنشائية</SelectItem>
-              <SelectItem value="نقل">نقل</SelectItem>
-              <SelectItem value="أداة">أداة</SelectItem>
-              <SelectItem value="construction">إنشائية</SelectItem>
-              <SelectItem value="transport">نقل</SelectItem>
-              <SelectItem value="tool">أداة</SelectItem>
+              <SelectItem value="أدوات">أدوات</SelectItem>
+              <SelectItem value="أمتار">أمتار</SelectItem>
+              <SelectItem value="مطارق">مطارق</SelectItem>
+              <SelectItem value="مكينة لحام">مكينة لحام</SelectItem>
+              <SelectItem value="جلخ كهربائي">جلخ كهربائي</SelectItem>
+              <SelectItem value="دريل">دريل</SelectItem>
+              <SelectItem value="تخزيق">تخزيق</SelectItem>
+              <SelectItem value="بانات">بانات</SelectItem>
+              <SelectItem value="مفاتيح">مفاتيح</SelectItem>
+              <SelectItem value="أسلاك">أسلاك</SelectItem>
+              <SelectItem value="دساميس">دساميس</SelectItem>
             </SelectContent>
           </Select>
 
@@ -981,12 +1010,17 @@ export function EquipmentManagement() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">جميع الأنواع</SelectItem>
-                    <SelectItem value="إنشائية">إنشائية</SelectItem>
-                    <SelectItem value="نقل">نقل</SelectItem>
-                    <SelectItem value="أداة">أداة</SelectItem>
-                    <SelectItem value="construction">إنشائية</SelectItem>
-                    <SelectItem value="transport">نقل</SelectItem>
-                    <SelectItem value="tool">أداة</SelectItem>
+                    <SelectItem value="أدوات">أدوات</SelectItem>
+                    <SelectItem value="أمتار">أمتار</SelectItem>
+                    <SelectItem value="مطارق">مطارق</SelectItem>
+                    <SelectItem value="مكينة لحام">مكينة لحام</SelectItem>
+                    <SelectItem value="جلخ كهربائي">جلخ كهربائي</SelectItem>
+                    <SelectItem value="دريل">دريل</SelectItem>
+                    <SelectItem value="تخزيق">تخزيق</SelectItem>
+                    <SelectItem value="بانات">بانات</SelectItem>
+                    <SelectItem value="مفاتيح">مفاتيح</SelectItem>
+                    <SelectItem value="أسلاك">أسلاك</SelectItem>
+                    <SelectItem value="دساميس">دساميس</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

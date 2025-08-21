@@ -45,7 +45,7 @@ export function AddEquipmentDialog({ open, onOpenChange, projects }: AddEquipmen
     defaultValues: {
       name: "",
       code: "", // سيتم توليده تلقائياً
-      type: "construction",
+      type: "أدوات",
       status: "active",
       description: "",
       purchaseDate: "",
@@ -176,9 +176,17 @@ export function AddEquipmentDialog({ open, onOpenChange, projects }: AddEquipmen
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="construction">إنشائية</SelectItem>
-                        <SelectItem value="transport">نقل</SelectItem>
-                        <SelectItem value="tool">أداة</SelectItem>
+                        <SelectItem value="أدوات">أدوات</SelectItem>
+                        <SelectItem value="أمتار">أمتار</SelectItem>
+                        <SelectItem value="مطارق">مطارق</SelectItem>
+                        <SelectItem value="مكينة لحام">مكينة لحام</SelectItem>
+                        <SelectItem value="جلخ كهربائي">جلخ كهربائي</SelectItem>
+                        <SelectItem value="دريل">دريل</SelectItem>
+                        <SelectItem value="تخزيق">تخزيق</SelectItem>
+                        <SelectItem value="بانات">بانات</SelectItem>
+                        <SelectItem value="مفاتيح">مفاتيح</SelectItem>
+                        <SelectItem value="أسلاك">أسلاك</SelectItem>
+                        <SelectItem value="دساميس">دساميس</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
