@@ -3244,6 +3244,11 @@ export class DatabaseStorage implements IStorage {
     searchTerm?: string;
   }): Promise<Equipment[]> {
     try {
+      console.time('getEquipment');
+      
+      // تحديد الحد الأقصى للنتائج لتحسين الأداء
+      const LIMIT = 200;
+      
       const conditions = [];
 
       if (filters?.projectId) {
@@ -3268,14 +3273,22 @@ export class DatabaseStorage implements IStorage {
         );
       }
 
+      let result;
       if (conditions.length > 0) {
-        return await db.select().from(equipment)
+        result = await db.select().from(equipment)
           .where(and(...conditions))
-          .orderBy(equipment.code);
+          .orderBy(equipment.code)
+          .limit(LIMIT);
       } else {
-        return await db.select().from(equipment)
-          .orderBy(equipment.code);
+        result = await db.select().from(equipment)
+          .orderBy(equipment.code)
+          .limit(LIMIT);
       }
+      
+      console.timeEnd('getEquipment');
+      console.log(`📦 تم جلب ${result.length} معدة`);
+      
+      return result;
     } catch (error) {
       console.error('Error getting equipment list:', error);
       return [];

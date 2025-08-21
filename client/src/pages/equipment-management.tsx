@@ -37,7 +37,7 @@ export function EquipmentManagement() {
     return () => setFloatingAction(null);
   }, [setFloatingAction]);
 
-  // جلب المعدات مع الفلاتر
+  // جلب المعدات مع الفلاتر - محسن للأداء
   const { data: equipment = [], isLoading } = useQuery({
     queryKey: ['equipment', searchTerm, statusFilter, typeFilter, projectFilter],
     queryFn: async () => {
@@ -54,7 +54,10 @@ export function EquipmentManagement() {
       const response = await fetch(`/api/equipment?${params}`);
       if (!response.ok) throw new Error('فشل في جلب المعدات');
       return response.json();
-    }
+    },
+    // تحسين الأداء - تقليل التحديث المتكرر
+    staleTime: 30 * 1000, // البيانات تعتبر محدثة لمدة 30 ثانية
+    cacheTime: 5 * 60 * 1000, // الاحتفاظ بالبيانات في الذاكرة لـ 5 دقائق
   });
 
   // جلب المشاريع لقائمة الفلاتر
