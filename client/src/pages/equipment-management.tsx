@@ -37,7 +37,7 @@ export function EquipmentManagement() {
     return () => setFloatingAction(null);
   }, [setFloatingAction]);
 
-  // جلب المعدات مع الفلاتر - محسن للأداء
+  // جلب المعدات مع الفلاتر - محسن للأداء العالي
   const { data: equipment = [], isLoading } = useQuery({
     queryKey: ['equipment', searchTerm, statusFilter, typeFilter, projectFilter],
     queryFn: async () => {
@@ -55,19 +55,25 @@ export function EquipmentManagement() {
       if (!response.ok) throw new Error('فشل في جلب المعدات');
       return response.json();
     },
-    // تحسين الأداء - تقليل التحديث المتكرر
-    staleTime: 30 * 1000, // البيانات تعتبر محدثة لمدة 30 ثانية
-    gcTime: 5 * 60 * 1000, // الاحتفاظ بالبيانات في الذاكرة لـ 5 دقائق
+    // تحسين كبير للأداء - تخزين طويل الأمد وتقليل الطلبات
+    staleTime: 2 * 60 * 1000, // البيانات تعتبر محدثة لمدة دقيقتين
+    gcTime: 10 * 60 * 1000, // الاحتفاظ بالبيانات في الذاكرة لـ 10 دقائق
+    refetchOnWindowFocus: false, // عدم إعادة التحديث عند العودة للتطبيق
+    refetchOnMount: false, // عدم إعادة التحديث عند إعادة التحميل
   });
 
-  // جلب المشاريع لقائمة الفلاتر
+  // جلب المشاريع لقائمة الفلاتر - محسن للأداء العالي
   const { data: projects = [] } = useQuery({
     queryKey: ['projects'],
     queryFn: async () => {
       const response = await fetch('/api/projects');
       if (!response.ok) throw new Error('فشل في جلب المشاريع');
       return response.json();
-    }
+    },
+    staleTime: 5 * 60 * 1000, // البيانات طازجة لـ 5 دقائق
+    gcTime: 15 * 60 * 1000, // الاحتفاظ بالبيانات لـ 15 دقيقة
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
   });
 
   const handleEquipmentClick = (item: Equipment) => {

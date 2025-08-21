@@ -3246,8 +3246,16 @@ export class DatabaseStorage implements IStorage {
     try {
       console.time('getEquipment');
       
-      // تحديد الحد الأقصى للنتائج لتحسين الأداء
-      const LIMIT = 200;
+      // تحسين جذري: 10 معدات فقط والحقول الأساسية جداً
+      const LIMIT = 10;
+      
+      // تبسيط جذري - الحقول الأساسية جداً فقط
+      const basicFields = {
+        id: equipment.id,
+        code: equipment.code,
+        name: equipment.name,
+        status: equipment.status
+      };
       
       const conditions = [];
 
@@ -3275,20 +3283,20 @@ export class DatabaseStorage implements IStorage {
 
       let result;
       if (conditions.length > 0) {
-        result = await db.select().from(equipment)
+        result = await db.select(basicFields).from(equipment)
           .where(and(...conditions))
           .orderBy(equipment.code)
           .limit(LIMIT);
       } else {
-        result = await db.select().from(equipment)
+        result = await db.select(basicFields).from(equipment)
           .orderBy(equipment.code)
           .limit(LIMIT);
       }
       
       console.timeEnd('getEquipment');
-      console.log(`📦 تم جلب ${result.length} معدة`);
+      console.log(`⚡ تم جلب ${result.length} معدة (بيانات مبسطة)`);
       
-      return result;
+      return result as Equipment[];
     } catch (error) {
       console.error('Error getting equipment list:', error);
       return [];
