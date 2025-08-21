@@ -40,7 +40,7 @@ export function EquipmentManagement() {
   }, [setFloatingAction]);
 
   // جلب المعدات مع الفلاتر - محسن للأداء العالي
-  const { data: equipment = [], isLoading } = useQuery({
+  const { data: equipment = [], isLoading, refetch } = useQuery({
     queryKey: ['equipment', searchTerm, statusFilter, typeFilter, projectFilter],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -57,11 +57,11 @@ export function EquipmentManagement() {
       if (!response.ok) throw new Error('فشل في جلب المعدات');
       return response.json();
     },
-    // تحسين الأداء للعمليات السريعة
-    staleTime: 30 * 1000, // البيانات تعتبر محدثة لمدة 30 ثانية
+    // تحسين للتحديث الفوري بعد النقل
+    staleTime: 0, // تحديث فوري
     gcTime: 5 * 60 * 1000, // الاحتفاظ بالبيانات لـ 5 دقائق
-    refetchOnWindowFocus: false,
-    refetchOnMount: false
+    refetchOnWindowFocus: true, // إعادة تحميل عند التركيز
+    refetchOnMount: true // إعادة تحميل عند التحميل
   });
 
   // جلب المشاريع لقائمة الفلاتر - محسن للأداء العالي
@@ -308,7 +308,7 @@ export function EquipmentManagement() {
                   <div className="flex items-center gap-4 flex-1">
                     {/* Equipment Image */}
                     <div className="relative w-16 h-16 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-700 shrink-0">
-                      {item.imageUrl && item.imageUrl.trim() !== '' && !item.imageUrl.startsWith('data:') ? (
+                      {item.imageUrl && item.imageUrl.trim() !== '' ? (
                         <img 
                           src={item.imageUrl} 
                           alt={item.name}
@@ -320,13 +320,6 @@ export function EquipmentManagement() {
                             const parent = target.parentElement!;
                             parent.innerHTML = `<div class="${getTypeBackgroundColor(item.type).replace('bg-gradient-to-br', 'bg-gradient-to-br')} w-full h-full flex items-center justify-center text-white"><span class="text-xl">${getTypeIcon(item.type)}</span></div>`;
                           }}
-                        />
-                      ) : item.imageUrl && item.imageUrl.startsWith('data:') ? (
-                        <img 
-                          src={item.imageUrl} 
-                          alt={item.name}
-                          className="w-full h-full object-cover"
-                          onLoad={() => console.log('تم تحميل صورة المعدة (base64) بنجاح:', item.name)}
                         />
                       ) : (
                         <div className={`w-full h-full flex items-center justify-center text-white ${getTypeBackgroundColor(item.type)}`}>

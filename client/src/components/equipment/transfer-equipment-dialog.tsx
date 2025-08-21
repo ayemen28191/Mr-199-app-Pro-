@@ -48,8 +48,14 @@ export function TransferEquipmentDialog({ equipment, open, onOpenChange, project
     mutationFn: (data: TransferFormData) => 
       apiRequest(`/api/equipment/${equipment?.id}/transfer`, "POST", data),
     onSuccess: () => {
+      // إعادة تحميل جميع البيانات المتعلقة بالمعدات
       queryClient.invalidateQueries({ queryKey: ['equipment'] });
       queryClient.invalidateQueries({ queryKey: ['equipment-movements'] });
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      
+      // إعادة تحميل فورية لضمان التحديث
+      queryClient.refetchQueries({ queryKey: ['equipment'] });
+      
       toast({
         title: "نجح النقل",
         description: "تم نقل المعدة بنجاح",
