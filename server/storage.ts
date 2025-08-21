@@ -3253,7 +3253,6 @@ export class DatabaseStorage implements IStorage {
     searchTerm?: string;
   }): Promise<Equipment[]> {
     try {
-      let query = db.select().from(equipment);
       const conditions = [];
 
       if (filters?.projectId) {
@@ -3279,10 +3278,13 @@ export class DatabaseStorage implements IStorage {
       }
 
       if (conditions.length > 0) {
-        query = db.select().from(equipment).where(and(...conditions));
+        return await db.select().from(equipment)
+          .where(and(...conditions))
+          .orderBy(equipment.code);
+      } else {
+        return await db.select().from(equipment)
+          .orderBy(equipment.code);
       }
-
-      return await query.orderBy(equipment.code);
     } catch (error) {
       console.error('Error getting equipment list:', error);
       return [];
