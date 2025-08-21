@@ -29,7 +29,8 @@ import {
   Camera,
   Upload,
   X,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Eye
 } from "lucide-react";
 import { StatsCard, StatsGrid } from "@/components/ui/stats-card";
 import type { Project, InsertProject } from "@shared/schema";
@@ -67,6 +68,7 @@ export default function ProjectsPage() {
   const editFileInputRef = useRef<HTMLInputElement>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [editSelectedImage, setEditSelectedImage] = useState<string | null>(null);
+  const [enlargedImage, setEnlargedImage] = useState<string | null>(null);
 
   // تعيين إجراء الزر العائم لإضافة مشروع جديد
   useEffect(() => {
@@ -553,13 +555,32 @@ export default function ProjectsPage() {
             <Card key={project.id} className="relative overflow-hidden hover:shadow-lg transition-shadow">
               {/* Project Image */}
               {project.imageUrl ? (
-                <div className="relative h-48 overflow-hidden">
+                <div className="relative h-48 overflow-hidden cursor-pointer group">
                   <img 
                     src={project.imageUrl} 
                     alt={project.name}
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEnlargedImage(project.imageUrl!);
+                    }}
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                    }}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <div className="absolute bottom-3 left-3 flex items-center gap-1">
+                      <div className="w-4 h-4 bg-blue-500/80 rounded-full flex items-center justify-center">
+                        <ImageIcon className="h-2 w-2 text-white" />
+                      </div>
+                      <span className="text-xs text-white font-medium">صورة المشروع</span>
+                    </div>
+                    <div className="absolute top-3 left-3">
+                      <Eye className="text-white h-4 w-4" />
+                    </div>
+                  </div>
                   <Badge className={`absolute top-3 right-3 ${getStatusColor(project.status)}`}>
                     {getStatusText(project.status)}
                   </Badge>
@@ -821,6 +842,29 @@ export default function ProjectsPage() {
           </Form>
         </DialogContent>
       </Dialog>
+
+      {/* نافذة عرض الصورة بالحجم الكامل */}
+      {enlargedImage && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
+          onClick={() => setEnlargedImage(null)}
+        >
+          <div className="relative max-w-4xl max-h-full">
+            <button
+              onClick={() => setEnlargedImage(null)}
+              className="absolute -top-10 right-0 text-white hover:text-gray-300 transition-colors"
+            >
+              <X className="h-8 w-8" />
+            </button>
+            <img 
+              src={enlargedImage}
+              alt="صورة مكبرة"
+              className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }
