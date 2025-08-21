@@ -14,7 +14,7 @@ import { StatsCard, StatsGrid } from "@/components/ui/stats-card";
 import { useSelectedProject } from "@/hooks/use-selected-project";
 import ProjectSelector from "@/components/project-selector";
 
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
 import { LoadingCard, LoadingSpinner } from "@/components/ui/loading-spinner";
 import { useFloatingButton } from "@/components/layout/floating-button-context";
 import { useEffect } from "react";
@@ -263,6 +263,11 @@ export default function Dashboard() {
 
   // دالة تنسيق العملة
   const formatCurrency = (amount: number) => {
+    if (typeof amount !== 'number') {
+      const num = parseFloat(String(amount));
+      if (isNaN(num)) return '0 ر.ي';
+      amount = num;
+    }
     return new Intl.NumberFormat('en-US', {
       style: 'decimal',
       minimumFractionDigits: 0,
