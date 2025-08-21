@@ -1074,31 +1074,40 @@ export default function SupplierAccountsPage() {
                   ))}
                 </div>
 
-                {/* ملخص الإجماليات - محسن للهواتف */}
-                <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200 mt-4">
-                  <h3 className="text-base font-bold text-blue-900 mb-3 text-center flex items-center justify-center gap-2">
-                    <Wallet className="w-5 h-5" />
-                    ملخص الحساب
-                  </h3>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="text-center p-3 bg-white rounded-lg shadow-sm">
-                      <p className="text-xs text-gray-600">إجمالي المشتريات</p>
-                      <p className="text-base font-bold text-blue-600" dir="ltr">{formatCurrency(totals.totalAmount)}</p>
-                    </div>
-                    <div className="text-center p-3 bg-white rounded-lg shadow-sm">
-                      <p className="text-xs text-gray-600">عدد الفواتير</p>
-                      <p className="text-base font-bold text-gray-800" dir="ltr">{purchases.length.toLocaleString('en-US')}</p>
-                    </div>
-                    <div className="text-center p-3 bg-white rounded-lg shadow-sm">
-                      <p className="text-xs text-gray-600">إجمالي المدفوع</p>
-                      <p className="text-base font-bold text-green-600" dir="ltr">{formatCurrency(totals.paidAmount)}</p>
-                    </div>
-                    <div className="text-center p-3 bg-white rounded-lg shadow-sm">
-                      <p className="text-xs text-gray-600">إجمالي المتبقي</p>
-                      <p className="text-base font-bold text-red-600" dir="ltr">{formatCurrency(totals.remainingAmount)}</p>
-                    </div>
-                  </div>
-                </div>
+                {/* ملخص الحساب بنظام الإحصائيات الموحد */}
+                <StatsGrid className="mt-4">
+                  <StatsCard 
+                    title="إجمالي المشتريات" 
+                    value={totals.totalAmount} 
+                    icon={DollarSign}
+                    color="blue"
+                    format="currency"
+                    trend={{ value: 0, isPositive: true }}
+                  />
+                  <StatsCard 
+                    title="عدد الفواتير" 
+                    value={purchases.length} 
+                    icon={Receipt}
+                    color="gray"
+                    trend={{ value: 0, isPositive: true }}
+                  />
+                  <StatsCard 
+                    title="إجمالي المدفوع" 
+                    value={totals.paidAmount} 
+                    icon={CreditCard}
+                    color="green"
+                    format="currency"
+                    trend={{ value: 0, isPositive: true }}
+                  />
+                  <StatsCard 
+                    title="إجمالي المتبقي" 
+                    value={totals.remainingAmount} 
+                    icon={AlertCircle}
+                    color="red"
+                    format="currency"
+                    trend={{ value: 0, isPositive: false }}
+                  />
+                </StatsGrid>
               </div>
             )}
           </CardContent>

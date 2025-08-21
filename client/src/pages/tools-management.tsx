@@ -60,7 +60,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { StatsCard } from '@/components/ui/stats-card';
+import { StatsCard, StatsGrid } from '@/components/ui/stats-card';
 import { useFloatingButton } from '@/components/layout/floating-button-context';
 
 import { useToast } from '@/hooks/use-toast';
@@ -626,25 +626,41 @@ const ToolsManagementPage: React.FC = () => {
           <ProjectLocationTracking />
         ) : (
           <>
-            {/* Mobile-Friendly Stats Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="bg-white dark:bg-gray-800 rounded-lg p-3 text-center shadow-sm border border-blue-100 dark:border-blue-800" data-testid="stat-total">
-                <div className="text-lg sm:text-xl font-bold text-blue-600 dark:text-blue-400">{stats.total}</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400 font-medium">إجمالي الأدوات</div>
-              </div>
-              <div className="bg-white dark:bg-gray-800 rounded-lg p-3 text-center shadow-sm border border-green-100 dark:border-green-800" data-testid="stat-available">
-                <div className="text-lg sm:text-xl font-bold text-green-600 dark:text-green-400">{stats.available}</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400 font-medium">متاح للاستخدام</div>
-              </div>
-              <div className="bg-white dark:bg-gray-800 rounded-lg p-3 text-center shadow-sm border border-orange-100 dark:border-orange-800" data-testid="stat-in-use">
-                <div className="text-lg sm:text-xl font-bold text-orange-600 dark:text-orange-400">{stats.inUse}</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400 font-medium">قيد الاستخدام</div>
-              </div>
-              <div className="bg-white dark:bg-gray-800 rounded-lg p-3 text-center shadow-sm border border-red-100 dark:border-red-800" data-testid="stat-maintenance">
-                <div className="text-lg sm:text-xl font-bold text-red-600 dark:text-red-400">{stats.maintenance + stats.damaged}</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400 font-medium">يحتاج صيانة</div>
-              </div>
-            </div>
+            {/* الإحصائيات الموحدة للأدوات */}
+            <StatsGrid>
+              <StatsCard 
+                title="إجمالي الأدوات" 
+                value={stats.total} 
+                icon={Package}
+                color="blue"
+                trend={{ value: 0, isPositive: true }}
+                data-testid="stat-total"
+              />
+              <StatsCard 
+                title="متاح للاستخدام" 
+                value={stats.available} 
+                icon={CheckCircle}
+                color="green"
+                trend={{ value: 0, isPositive: true }}
+                data-testid="stat-available"
+              />
+              <StatsCard 
+                title="قيد الاستخدام" 
+                value={stats.inUse} 
+                icon={Settings}
+                color="orange"
+                trend={{ value: 0, isPositive: true }}
+                data-testid="stat-in-use"
+              />
+              <StatsCard 
+                title="يحتاج صيانة" 
+                value={stats.maintenance + stats.damaged} 
+                icon={AlertTriangle}
+                color="red"
+                trend={{ value: 0, isPositive: false }}
+                data-testid="stat-maintenance"
+              />
+            </StatsGrid>
 
             {/* Search & Filters in One Card */}
             <Card className="shadow-sm">
