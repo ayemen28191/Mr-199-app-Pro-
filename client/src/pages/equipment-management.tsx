@@ -57,7 +57,7 @@ export function EquipmentManagement() {
     },
     // تحسين الأداء - تقليل التحديث المتكرر
     staleTime: 30 * 1000, // البيانات تعتبر محدثة لمدة 30 ثانية
-    cacheTime: 5 * 60 * 1000, // الاحتفاظ بالبيانات في الذاكرة لـ 5 دقائق
+    gcTime: 5 * 60 * 1000, // الاحتفاظ بالبيانات في الذاكرة لـ 5 دقائق
   });
 
   // جلب المشاريع لقائمة الفلاتر
@@ -147,6 +147,9 @@ export function EquipmentManagement() {
       </div>
     );
   }
+
+  // إضافة تصحيح لمراقبة البيانات
+  console.log('🔧 بيانات المعدات في Frontend:', { equipment, count: equipment?.length, isLoading });
 
   return (
     <div className="p-6 max-w-7xl mx-auto" dir="rtl">
@@ -256,7 +259,24 @@ export function EquipmentManagement() {
 
       {/* Equipment Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {equipment.map((item: Equipment) => (
+        {equipment.length === 0 ? (
+          <div className="col-span-full text-center py-12">
+            <div className="text-gray-400 mb-4">
+              <Wrench className="h-16 w-16 mx-auto opacity-50" />
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+              لا توجد معدات
+            </h3>
+            <p className="text-gray-500 dark:text-gray-400 mb-6">
+              لم يتم العثور على أي معدات تطابق الفلاتر المحددة
+            </p>
+            <Button onClick={() => setShowAddDialog(true)} className="bg-blue-600 hover:bg-blue-700 text-white">
+              <Plus className="h-4 w-4 mr-2" />
+              إضافة معدة جديدة
+            </Button>
+          </div>
+        ) : (
+          equipment.map((item: Equipment) => (
           <Card 
             key={item.id} 
             className={`transition-all duration-300 hover:shadow-lg border-r-4 cursor-pointer ${getStatusBorderColor(item.status)}`}
@@ -438,7 +458,8 @@ export function EquipmentManagement() {
               </div>
             </CardContent>
           </Card>
-        ))}
+          ))
+        )}
       </div>
 
       {equipment.length === 0 && (
