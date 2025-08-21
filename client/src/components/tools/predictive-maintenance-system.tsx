@@ -315,7 +315,7 @@ const PredictiveMaintenanceSystem: React.FC<PredictiveMaintenanceSystemProps> = 
             </div>
           </div>
 
-          {/* Summary Stats - Using Grid Layout */}
+          {/* Summary Stats - صف أول */}
           <div className="grid grid-cols-2 gap-4 mb-6">
             <StatsCard
               title="حالات حرجة"
@@ -329,6 +329,10 @@ const PredictiveMaintenanceSystem: React.FC<PredictiveMaintenanceSystemProps> = 
               icon={Clock}
               color="orange"
             />
+          </div>
+          
+          {/* Summary Stats - صف ثاني */}
+          <div className="grid grid-cols-2 gap-4 mb-6">
             <StatsCard
               title="أولوية متوسطة"
               value={predictions.filter(p => p.urgencyLevel === 'medium').length}

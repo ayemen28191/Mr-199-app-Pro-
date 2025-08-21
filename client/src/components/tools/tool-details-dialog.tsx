@@ -822,6 +822,7 @@ const ToolDetailsDialog: React.FC<ToolDetailsDialogProps> = ({
 
           {/* Analytics Tab */}
           <TabsContent value="analytics" className="space-y-6">
+            {/* صف أول */}
             <div className="grid grid-cols-2 gap-4">
               <StatsCard
                 title="مرات الاستخدام"
@@ -835,6 +836,10 @@ const ToolDetailsDialog: React.FC<ToolDetailsDialogProps> = ({
                 icon={Move}
                 color="green"
               />
+            </div>
+            
+            {/* صف ثاني */}
+            <div className="grid grid-cols-2 gap-4">
               <StatsCard
                 title="أيام التشغيل"
                 value={Math.floor((Date.now() - new Date(tool.createdAt).getTime()) / (1000 * 60 * 60 * 24))}

@@ -268,7 +268,7 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
             </TabsList>
 
             <TabsContent value="overview" className="space-y-6">
-              {/* Key Metrics */}
+              {/* Key Metrics - صف أول */}
               <div className="grid grid-cols-2 gap-4">
                 <StatsCard
                   title="معدل الاستخدام"
@@ -282,6 +282,10 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
                   icon={Target}
                   color={analyticsData.efficiencyScore >= 80 ? "green" : "orange"}
                 />
+              </div>
+              
+              {/* Key Metrics - صف ثاني */}
+              <div className="grid grid-cols-2 gap-4">
                 <StatsCard
                   title="قيمة الاستهلاك"
                   value={`${analyticsData.depreciationValue.toLocaleString()} ريال`}

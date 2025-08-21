@@ -626,7 +626,7 @@ const ToolsManagementPage: React.FC = () => {
           <ProjectLocationTracking />
         ) : (
           <>
-            {/* الإحصائيات الموحدة للأدوات */}
+            {/* الإحصائيات الموحدة للأدوات - صف واحد بإحصائيتين */}
             <div className="grid grid-cols-2 gap-4">
               <StatsCard 
                 title="إجمالي الأدوات" 
@@ -642,6 +642,10 @@ const ToolsManagementPage: React.FC = () => {
                 color="green"
                 data-testid="stat-available"
               />
+            </div>
+            
+            {/* صف ثان بالإحصائيات المتبقية */}
+            <div className="grid grid-cols-2 gap-4">
               <StatsCard 
                 title="قيد الاستخدام" 
                 value={stats.inUse} 

@@ -368,7 +368,7 @@ const IntelligentRecommendationsEngine: React.FC<IntelligentRecommendationsEngin
             </div>
           </div>
 
-          {/* Summary Stats - Using Grid Layout */}
+          {/* Summary Stats - صف أول */}
           <div className="grid grid-cols-2 gap-4 mb-6">
             <StatsCard
               title="توصية ذكية"
@@ -382,6 +382,10 @@ const IntelligentRecommendationsEngine: React.FC<IntelligentRecommendationsEngin
               icon={DollarSign}
               color="green"
             />
+          </div>
+          
+          {/* Summary Stats - صف ثاني */}
+          <div className="grid grid-cols-2 gap-4 mb-6">
             <StatsCard
               title="متوسط الأثر المتوقع"
               value={`${Math.round(recommendations.reduce((sum, r) => sum + r.impactScore, 0) / recommendations.length) || 0}%`}

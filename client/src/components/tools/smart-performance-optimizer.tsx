@@ -279,9 +279,25 @@ const SmartPerformanceOptimizer: React.FC<SmartPerformanceOptimizerProps> = ({
             </TabsList>
 
             <TabsContent value="metrics" className="space-y-6">
-              {/* Performance Overview */}
+              {/* Performance Overview - صف أول */}
               <div className="grid grid-cols-2 gap-4">
-                {performanceMetrics.map((metric) => (
+                {performanceMetrics.slice(0, 2).map((metric) => (
+                  <StatsCard
+                    key={metric.id}
+                    title={metric.name}
+                    value={`${Math.round(metric.currentValue)}${metric.unit}`}
+                    icon={metric.category === 'efficiency' ? Zap :
+                          metric.category === 'utilization' ? Activity :
+                          metric.category === 'cost' ? DollarSign : Target}
+                    color={metric.currentValue >= metric.targetValue ? "green" :
+                           metric.currentValue >= metric.targetValue * 0.7 ? "orange" : "red"}
+                  />
+                ))}
+              </div>
+              
+              {/* Performance Overview - صف ثاني */}
+              <div className="grid grid-cols-2 gap-4">
+                {performanceMetrics.slice(2, 4).map((metric) => (
                   <StatsCard
                     key={metric.id}
                     title={metric.name}
