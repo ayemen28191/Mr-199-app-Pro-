@@ -304,8 +304,8 @@ const ToolsReportsDialog: React.FC<ToolsReportsDialogProps> = ({
 
           {/* Overview Tab */}
           <TabsContent value="overview" className="space-y-6">
-            {/* Statistics Cards - Mobile Responsive */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+            {/* Statistics Cards - صف أول */}
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
               <StatsCard
                 title="إجمالي الأدوات"
                 value={toolsStats?.totalTools || 0}
@@ -318,6 +318,10 @@ const ToolsReportsDialog: React.FC<ToolsReportsDialogProps> = ({
                 icon={CheckCircle}
                 color="green"
               />
+            </div>
+            
+            {/* Statistics Cards - صف ثاني */}
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
               <StatsCard
                 title="قيد الاستخدام"
                 value={toolsStats?.inUseTools || 0}
