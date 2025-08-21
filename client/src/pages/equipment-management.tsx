@@ -18,6 +18,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { saveAs } from 'file-saver';
 import { useToast } from "@/hooks/use-toast";
+import { EXCEL_STYLES, COMPANY_INFO, addReportHeader } from "@/components/excel-export-utils";
 
 export function EquipmentManagement() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -196,86 +197,183 @@ export function EquipmentManagement() {
       
       const ExcelJS = await import('exceljs');
       const workbook = new ExcelJS.Workbook();
+      
+      // إعداد معلومات المصنف
+      workbook.creator = COMPANY_INFO.name;
+      workbook.lastModifiedBy = 'نظام إدارة المعدات';
+      workbook.created = new Date();
+      workbook.modified = new Date();
+      
       const worksheet = workbook.addWorksheet('كشف المعدات');
       
       // Set RTL direction
       worksheet.views = [{ rightToLeft: true }];
       
-      // Define columns
-      worksheet.columns = [
-        { header: 'الكود', key: 'code', width: 15 },
-        { header: 'اسم المعدة', key: 'name', width: 25 },
-        { header: 'النوع', key: 'type', width: 15 },
-        { header: 'الحالة', key: 'status', width: 15 },
-        { header: 'الموقع', key: 'location', width: 25 },
-        { header: 'سعر الشراء', key: 'price', width: 15 },
-        { header: 'تاريخ الشراء', key: 'purchaseDate', width: 15 },
-        { header: 'الوصف', key: 'description', width: 30 }
-      ];
+      // إضافة رأس التقرير الاحترافي
+      const reportProjectName = reportProjectFilter === "all" ? "جميع المشاريع" : 
+                                reportProjectFilter === "warehouse" ? "المستودع" :
+                                projects.find((p: any) => p.id === reportProjectFilter)?.name || "مشروع محدد";
+      
+      let currentRow = addReportHeader(
+        worksheet,
+        'كشف المعدات التفصيلي',
+        `المشروع: ${reportProjectName}`,
+        [
+          `تاريخ الإصدار: ${formatDate(new Date().toISOString().split('T')[0])}`,
+          `إجمالي المعدات: ${filteredEquipment.length}`,
+          `المعدات النشطة: ${filteredEquipment.filter((e: Equipment) => e.status === 'active').length}`,
+          `في الصيانة: ${filteredEquipment.filter((e: Equipment) => e.status === 'maintenance').length}`
+        ]
+      );
+      
+      // إضافة رأس الجدول
+      const headers = ['الكود', 'اسم المعدة', 'النوع', 'الحالة', 'الموقع', 'سعر الشراء', 'تاريخ الشراء', 'الوصف'];
+      const headerRow = worksheet.addRow(headers);
+      
+      headers.forEach((_, index) => {
+        const cell = headerRow.getCell(index + 1);
+        cell.font = EXCEL_STYLES.fonts.header;
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_STYLES.colors.headerBg } };
+        cell.border = {
+          top: EXCEL_STYLES.borders.medium,
+          bottom: EXCEL_STYLES.borders.medium,
+          left: EXCEL_STYLES.borders.thin,
+          right: EXCEL_STYLES.borders.thin
+        };
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      });
+      
+      // تحديد عرض الأعمدة
+      worksheet.getColumn(1).width = 15; // الكود
+      worksheet.getColumn(2).width = 25; // اسم المعدة
+      worksheet.getColumn(3).width = 15; // النوع
+      worksheet.getColumn(4).width = 15; // الحالة
+      worksheet.getColumn(5).width = 25; // الموقع
+      worksheet.getColumn(6).width = 18; // سعر الشراء
+      worksheet.getColumn(7).width = 15; // تاريخ الشراء
+      worksheet.getColumn(8).width = 30; // الوصف
+      
+      currentRow++;
 
-      // Style the header row
-      const headerRow = worksheet.getRow(1);
-      headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-      headerRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF2563EB' } };
-      headerRow.alignment = { horizontal: 'center', vertical: 'middle' };
-
-      // Add data rows
-      filteredEquipment.forEach((item: Equipment) => {
+      // إضافة بيانات المعدات
+      filteredEquipment.forEach((item: Equipment, index: number) => {
         const projectName = item.currentProjectId 
           ? projects.find((p: any) => p.id === item.currentProjectId)?.name || 'مشروع غير معروف'
           : 'المستودع';
         
-        worksheet.addRow({
-          code: item.code,
-          name: item.name,
-          type: item.type === 'construction' ? 'إنشائية' : 
-                item.type === 'transport' ? 'نقل' : 
-                item.type === 'tool' ? 'أداة' : item.type,
-          status: getStatusText(item.status),
-          location: projectName,
-          price: item.purchasePrice ? `${formatCurrency(Number(item.purchasePrice))}` : 'غير محدد',
-          purchaseDate: item.purchaseDate ? formatDate(item.purchaseDate) : 'غير محدد',
-          description: item.description || 'غير محدد'
-        });
-      });
-
-      // Add borders and styling to all cells
-      worksheet.eachRow((row, rowNumber) => {
-        row.eachCell((cell) => {
+        const row = worksheet.addRow([
+          item.code,
+          item.name,
+          item.type === 'construction' ? 'إنشائية' : 
+          item.type === 'transport' ? 'نقل' : 
+          item.type === 'tool' ? 'أداة' : item.type,
+          getStatusText(item.status),
+          projectName,
+          item.purchasePrice ? formatCurrency(Number(item.purchasePrice)) : 'غير محدد',
+          item.purchaseDate ? formatDate(item.purchaseDate) : 'غير محدد',
+          item.description || 'غير محدد'
+        ]);
+        
+        // تنسيق الصفوف
+        row.eachCell((cell, colNumber) => {
+          cell.font = EXCEL_STYLES.fonts.data;
           cell.border = {
-            top: { style: 'thin' },
-            left: { style: 'thin' },
-            bottom: { style: 'thin' },
-            right: { style: 'thin' }
+            top: EXCEL_STYLES.borders.thin,
+            bottom: EXCEL_STYLES.borders.thin,
+            left: EXCEL_STYLES.borders.thin,
+            right: EXCEL_STYLES.borders.thin
           };
+          cell.alignment = { horizontal: 'center', vertical: 'middle' };
           
-          if (rowNumber > 1) {
-            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+          // تنسيق خاص لعمود السعر
+          if (colNumber === 6 && item.purchasePrice) {
+            cell.numFmt = '#,##0 "ريال"';
+            cell.alignment = { horizontal: 'left', vertical: 'middle' };
+          }
+          
+          // تنسيق خاص للوصف
+          if (colNumber === 8) {
+            cell.alignment = { horizontal: 'right', vertical: 'middle' };
+          }
+          
+          // ألوان متناوبة للصفوف
+          if ((index as number) % 2 === 0) {
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF9FAFB' } };
           }
         });
+        currentRow++;
       });
 
-      // Add summary section
-      const summaryStartRow = worksheet.rowCount + 3;
+      // إضافة ملخص المعدات
+      currentRow += 2;
       worksheet.addRow([]);
+      currentRow++;
+      
+      // رأس الملخص
+      const summaryTitleRow = worksheet.addRow(['ملخص المعدات']);
+      worksheet.mergeCells(`A${currentRow}:H${currentRow}`);
+      const summaryTitleCell = summaryTitleRow.getCell(1);
+      summaryTitleCell.font = { ...EXCEL_STYLES.fonts.title, size: 14 };
+      summaryTitleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      summaryTitleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: EXCEL_STYLES.colors.totalsBg } };
+      summaryTitleCell.border = {
+        top: EXCEL_STYLES.borders.medium,
+        bottom: EXCEL_STYLES.borders.medium,
+        left: EXCEL_STYLES.borders.medium,
+        right: EXCEL_STYLES.borders.medium
+      };
+      currentRow++;
+      
+      // بيانات الملخص
+      const summaryData = [
+        ['إجمالي المعدات', filteredEquipment.length],
+        ['المعدات النشطة', filteredEquipment.filter((e: Equipment) => e.status === 'active').length],
+        ['في الصيانة', filteredEquipment.filter((e: Equipment) => e.status === 'maintenance').length],
+        ['خارج الخدمة', filteredEquipment.filter((e: Equipment) => e.status === 'out_of_service').length],
+        ['غير نشطة', filteredEquipment.filter((e: Equipment) => e.status === 'inactive').length]
+      ];
+      
+      summaryData.forEach(([label, value]) => {
+        const row = worksheet.addRow([label, '', '', '', '', '', '', value]);
+        const labelCell = row.getCell(1);
+        const valueCell = row.getCell(8);
+        
+        labelCell.font = EXCEL_STYLES.fonts.totals;
+        valueCell.font = EXCEL_STYLES.fonts.totals;
+        
+        [labelCell, valueCell].forEach(cell => {
+          cell.border = {
+            top: EXCEL_STYLES.borders.thin,
+            bottom: EXCEL_STYLES.borders.thin,
+            left: EXCEL_STYLES.borders.thin,
+            right: EXCEL_STYLES.borders.thin
+          };
+        });
+        
+        labelCell.alignment = { horizontal: 'right', vertical: 'middle' };
+        valueCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        currentRow++;
+      });
+      
+      // إضافة ذيل التقرير
+      currentRow += 2;
       worksheet.addRow([]);
-      worksheet.addRow(['ملخص المعدات', '', '', '', '', '', '', '']);
+      currentRow++;
       
-      const summaryHeaderRow = worksheet.getRow(summaryStartRow);
-      summaryHeaderRow.font = { bold: true, size: 14 };
-      summaryHeaderRow.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF3F4F6' } };
-      
-      worksheet.addRow(['إجمالي المعدات', filteredEquipment.length, '', '', '', '', '', '']);
-      worksheet.addRow(['المعدات النشطة', filteredEquipment.filter((e: Equipment) => e.status === 'active').length, '', '', '', '', '', '']);
-      worksheet.addRow(['في الصيانة', filteredEquipment.filter((e: Equipment) => e.status === 'maintenance').length, '', '', '', '', '', '']);
-      worksheet.addRow(['خارج الخدمة', filteredEquipment.filter((e: Equipment) => e.status === 'out_of_service').length, '', '', '', '', '', '']);
+      const footerRow = worksheet.addRow([
+        `تم إنشاء هذا التقرير بواسطة ${COMPANY_INFO.name} - ${formatDate(new Date().toISOString().split('T')[0])}`
+      ]);
+      worksheet.mergeCells(`A${currentRow}:H${currentRow}`);
+      const footerCell = footerRow.getCell(1);
+      footerCell.font = EXCEL_STYLES.fonts.footer;
+      footerCell.alignment = { horizontal: 'center', vertical: 'middle' };
 
       // Generate filename
-      const projectName = reportProjectFilter === "all" ? "جميع_المشاريع" : 
-                         reportProjectFilter === "warehouse" ? "المستودع" :
-                         projects.find((p: any) => p.id === reportProjectFilter)?.name || "مشروع_محدد";
+      const filenameProjectName = reportProjectFilter === "all" ? "جميع_المشاريع" : 
+                                  reportProjectFilter === "warehouse" ? "المستودع" :
+                                  projects.find((p: any) => p.id === reportProjectFilter)?.name?.replace(/\s/g, '_') || "مشروع_محدد";
       
-      const filename = `كشف_المعدات_${projectName}_${new Date().toISOString().split('T')[0]}.xlsx`;
+      const filename = `كشف_المعدات_${filenameProjectName}_${new Date().toISOString().split('T')[0]}.xlsx`;
       
       // Save file
       const buffer = await workbook.xlsx.writeBuffer();
@@ -317,35 +415,218 @@ export function EquipmentManagement() {
       setIsExporting(true);
       
       // Create print content
-      const projectName = reportProjectFilter === "all" ? "جميع المشاريع" : 
-                         reportProjectFilter === "warehouse" ? "المستودع" :
-                         projects.find((p: any) => p.id === reportProjectFilter)?.name || "مشروع محدد";
+      const pdfProjectName = reportProjectFilter === "all" ? "جميع المشاريع" : 
+                             reportProjectFilter === "warehouse" ? "المستودع" :
+                             projects.find((p: any) => p.id === reportProjectFilter)?.name || "مشروع محدد";
       
       const printContent = `
         <html dir="rtl">
           <head>
             <meta charset="UTF-8">
-            <title>كشف المعدات - ${projectName}</title>
+            <title>كشف المعدات - ${pdfProjectName}</title>
             <style>
-              body { font-family: 'Arial', sans-serif; margin: 20px; direction: rtl; }
-              .header { text-align: center; margin-bottom: 30px; }
-              .header h1 { color: #1f2937; margin-bottom: 10px; }
-              .header p { color: #6b7280; margin: 5px 0; }
-              table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-              th, td { border: 1px solid #d1d5db; padding: 8px; text-align: center; }
-              th { background-color: #2563eb; color: white; font-weight: bold; }
-              tr:nth-child(even) { background-color: #f9fafb; }
-              .summary { margin-top: 20px; padding: 15px; background-color: #f3f4f6; border-radius: 8px; }
-              .summary h3 { margin-top: 0; color: #1f2937; }
-              .summary-item { display: inline-block; margin: 5px 15px; }
+              @page {
+                margin: 2cm 1.5cm;
+                size: A4;
+              }
+              body { 
+                font-family: 'Arial', sans-serif; 
+                margin: 0; 
+                padding: 0; 
+                direction: rtl; 
+                background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+                color: #1e293b;
+                line-height: 1.6;
+              }
+              
+              /* رأس احترافي */
+              .company-header {
+                background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+                color: white;
+                padding: 25px;
+                text-align: center;
+                border-radius: 12px;
+                margin-bottom: 30px;
+                box-shadow: 0 8px 25px rgba(30, 64, 175, 0.3);
+              }
+              .company-name {
+                font-size: 24px;
+                font-weight: bold;
+                margin: 0 0 10px 0;
+                text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+              }
+              .company-subtitle {
+                font-size: 14px;
+                opacity: 0.9;
+                margin: 0;
+              }
+              
+              /* عنوان التقرير */
+              .report-header {
+                background: white;
+                padding: 20px;
+                border-radius: 10px;
+                text-align: center;
+                margin-bottom: 25px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                border-left: 6px solid #3b82f6;
+              }
+              .report-title {
+                font-size: 22px;
+                color: #1e293b;
+                margin: 0 0 15px 0;
+                font-weight: bold;
+              }
+              
+              /* معلومات التقرير */
+              .report-info {
+                display: flex;
+                justify-content: space-around;
+                background: #f8fafc;
+                padding: 15px;
+                border-radius: 8px;
+                margin-bottom: 25px;
+                border: 1px solid #e2e8f0;
+              }
+              .info-item {
+                text-align: center;
+                color: #475569;
+                font-weight: 600;
+              }
+              .info-label {
+                display: block;
+                font-size: 12px;
+                color: #64748b;
+                margin-bottom: 5px;
+              }
+              .info-value {
+                display: block;
+                font-size: 16px;
+                color: #1e293b;
+                font-weight: bold;
+              }
+              
+              /* الجدول */
+              table {
+                width: 100%;
+                border-collapse: collapse;
+                margin-bottom: 25px;
+                background: white;
+                border-radius: 12px;
+                overflow: hidden;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+              }
+              th {
+                background: linear-gradient(135deg, #334155 0%, #475569 100%);
+                color: white;
+                padding: 15px 10px;
+                text-align: center;
+                font-weight: bold;
+                font-size: 13px;
+                text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+              }
+              td {
+                padding: 12px 8px;
+                text-align: center;
+                border-bottom: 1px solid #e2e8f0;
+                font-size: 12px;
+                vertical-align: middle;
+              }
+              tr:nth-child(even) td {
+                background-color: #f8fafc;
+              }
+              tr:hover td {
+                background-color: #e0f2fe;
+              }
+              
+              /* الملخص */
+              .summary {
+                background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+                padding: 20px;
+                border-radius: 12px;
+                margin-top: 25px;
+                border-left: 6px solid #10b981;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+              }
+              .summary h3 {
+                margin-top: 0;
+                color: #1e293b;
+                font-size: 18px;
+                margin-bottom: 15px;
+                text-align: center;
+              }
+              .summary-grid {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 15px;
+                margin-top: 15px;
+              }
+              .summary-item {
+                background: white;
+                padding: 12px;
+                border-radius: 8px;
+                text-align: center;
+                border: 1px solid #e2e8f0;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+              }
+              .summary-value {
+                display: block;
+                font-size: 20px;
+                font-weight: bold;
+                color: #1e293b;
+              }
+              .summary-label {
+                display: block;
+                font-size: 12px;
+                color: #64748b;
+                margin-top: 5px;
+              }
+              
+              /* الذيل */
+              .footer {
+                background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+                color: white;
+                text-align: center;
+                padding: 20px;
+                border-radius: 10px;
+                margin-top: 30px;
+                font-size: 12px;
+              }
+              .footer-info {
+                margin: 5px 0;
+              }
             </style>
           </head>
           <body>
-            <div class="header">
-              <h1>كشف المعدات</h1>
-              <p>المشروع: ${projectName}</p>
-              <p>تاريخ التقرير: ${formatDate(new Date().toISOString().split('T')[0])}</p>
-              <p>إجمالي المعدات: ${filteredEquipment.length}</p>
+            <!-- رأس الشركة -->
+            <div class="company-header">
+              <div class="company-name">شركة الفتيني للمقاولات والاستشارات الهندسية</div>
+              <div class="company-subtitle">Al-Fathi Construction & Engineering Consultancy Company</div>
+            </div>
+            
+            <!-- عنوان التقرير -->
+            <div class="report-header">
+              <div class="report-title">كشف المعدات التفصيلي</div>
+            </div>
+            
+            <!-- معلومات التقرير -->
+            <div class="report-info">
+              <div class="info-item">
+                <span class="info-label">المشروع</span>
+                <span class="info-value">${pdfProjectName}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">تاريخ التقرير</span>
+                <span class="info-value">${formatDate(new Date().toISOString().split('T')[0])}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">إجمالي المعدات</span>
+                <span class="info-value">${filteredEquipment.length}</span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">المعدات النشطة</span>
+                <span class="info-value">${filteredEquipment.filter((e: Equipment) => e.status === 'active').length}</span>
+              </div>
             </div>
             
             <table>
@@ -362,7 +643,7 @@ export function EquipmentManagement() {
               </thead>
               <tbody>
                 ${filteredEquipment.map((item: Equipment) => {
-                  const projectName = item.currentProjectId 
+                  const itemProjectName = item.currentProjectId 
                     ? projects.find((p: any) => p.id === item.currentProjectId)?.name || 'مشروع غير معروف'
                     : 'المستودع';
                   
@@ -374,7 +655,7 @@ export function EquipmentManagement() {
                            item.type === 'transport' ? 'نقل' : 
                            item.type === 'tool' ? 'أداة' : item.type}</td>
                       <td>${getStatusText(item.status)}</td>
-                      <td>${projectName}</td>
+                      <td>${itemProjectName}</td>
                       <td>${item.purchasePrice ? formatCurrency(Number(item.purchasePrice)) : 'غير محدد'}</td>
                       <td>${item.purchaseDate ? formatDate(item.purchaseDate) : 'غير محدد'}</td>
                     </tr>
@@ -383,12 +664,38 @@ export function EquipmentManagement() {
               </tbody>
             </table>
             
+            <!-- الملخص الاحترافي -->
             <div class="summary">
               <h3>ملخص المعدات</h3>
-              <div class="summary-item"><strong>إجمالي المعدات:</strong> ${filteredEquipment.length}</div>
-              <div class="summary-item"><strong>المعدات النشطة:</strong> ${filteredEquipment.filter((e: Equipment) => e.status === 'active').length}</div>
-              <div class="summary-item"><strong>في الصيانة:</strong> ${filteredEquipment.filter((e: Equipment) => e.status === 'maintenance').length}</div>
-              <div class="summary-item"><strong>خارج الخدمة:</strong> ${filteredEquipment.filter((e: Equipment) => e.status === 'out_of_service').length}</div>
+              <div class="summary-grid">
+                <div class="summary-item">
+                  <span class="summary-value">${filteredEquipment.length}</span>
+                  <span class="summary-label">إجمالي المعدات</span>
+                </div>
+                <div class="summary-item">
+                  <span class="summary-value">${filteredEquipment.filter((e: Equipment) => e.status === 'active').length}</span>
+                  <span class="summary-label">المعدات النشطة</span>
+                </div>
+                <div class="summary-item">
+                  <span class="summary-value">${filteredEquipment.filter((e: Equipment) => e.status === 'maintenance').length}</span>
+                  <span class="summary-label">في الصيانة</span>
+                </div>
+                <div class="summary-item">
+                  <span class="summary-value">${filteredEquipment.filter((e: Equipment) => e.status === 'out_of_service').length}</span>
+                  <span class="summary-label">خارج الخدمة</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- ذيل احترافي -->
+            <div class="footer">
+              <div class="footer-info">تم إنشاء هذا التقرير بواسطة نظام إدارة المشاريع الإنشائية</div>
+              <div class="footer-info">شركة الفتيني للمقاولات والاستشارات الهندسية</div>
+              <div class="footer-info">تاريخ الطباعة: ${formatDate(new Date().toISOString().split('T')[0])} - ${new Date().toLocaleTimeString('ar-SA', { 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                hour12: false 
+              })}</div>
             </div>
           </body>
         </html>
