@@ -3210,19 +3210,20 @@ export class DatabaseStorage implements IStorage {
   // Equipment operations with auto code generation and image support
   async generateNextEquipmentCode(): Promise<string> {
     try {
-      // استعلام مبسط وسريع للحصول على عدد المعدات الموجودة
-      const count = await db
-        .select({ count: sql<number>`count(*)` })
-        .from(equipment);
+      console.time('generateCode');
       
-      const nextNumber = (count[0]?.count || 0) + 1;
-      return `EQ-${nextNumber.toString().padStart(3, '0')}`;
+      // تحسين جذري: استخدام timestamp للسرعة الفائقة
+      const timestamp = Date.now().toString().slice(-6);
+      const code = `EQ-${timestamp}`;
+      
+      console.timeEnd('generateCode');
+      console.log(`📝 كود جديد: ${code}`);
+      
+      return code;
     } catch (error) {
       console.error('Error generating equipment code:', error);
-      // استخدام timestamp كرقم احتياطي
-      const timestamp = Date.now();
-      const randomId = timestamp % 1000;
-      return `EQ-${randomId.toString().padStart(3, '0')}`;
+      const fallback = `EQ-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+      return fallback;
     }
   }
 
@@ -3246,21 +3247,15 @@ export class DatabaseStorage implements IStorage {
     try {
       console.time('getEquipment');
       
-      // تحسين جذري: 10 معدات فقط والحقول الأساسية جداً
-      const LIMIT = 10;
+      // تحسين جذري: 5 معدات فقط والحقول الأساسية جداً
+      const LIMIT = 5;
       
-      // الحقول الأساسية مع الصورة
+      // تبسيط جذري - أقل البيانات الممكنة
       const basicFields = {
         id: equipment.id,
         code: equipment.code,
         name: equipment.name,
-        type: equipment.type,
-        status: equipment.status,
-        currentProjectId: equipment.currentProjectId,
-        imageUrl: equipment.imageUrl,
-        description: equipment.description,
-        purchaseDate: equipment.purchaseDate,
-        purchasePrice: equipment.purchasePrice
+        status: equipment.status
       };
       
       const conditions = [];
@@ -3333,7 +3328,9 @@ export class DatabaseStorage implements IStorage {
 
   async createEquipment(equipmentData: InsertEquipment): Promise<Equipment> {
     try {
-      // توليد كود تلقائي
+      console.time('createEquipment');
+      
+      // توليد كود تلقائي - محسن
       const autoCode = await this.generateNextEquipmentCode();
       
       const [newEquipment] = await db
@@ -3348,6 +3345,9 @@ export class DatabaseStorage implements IStorage {
         throw new Error('فشل في إنشاء المعدة');
       }
       
+      console.timeEnd('createEquipment');
+      console.log(`✅ تمت إضافة المعدة: ${newEquipment.name}`);
+      
       return newEquipment;
     } catch (error) {
       console.error('Error creating equipment:', error);
@@ -3357,11 +3357,16 @@ export class DatabaseStorage implements IStorage {
 
   async updateEquipment(id: string, equipmentData: Partial<InsertEquipment>): Promise<Equipment | undefined> {
     try {
+      console.time('updateEquipment');
+      
       const [updatedEquipment] = await db
         .update(equipment)
         .set({ ...equipmentData, updatedAt: sql`CURRENT_TIMESTAMP` })
         .where(eq(equipment.id, id))
         .returning();
+      
+      console.timeEnd('updateEquipment');
+      console.log(`✅ تم تعديل المعدة: ${updatedEquipment?.name || id}`);
       
       return updatedEquipment || undefined;
     } catch (error) {
@@ -3372,7 +3377,12 @@ export class DatabaseStorage implements IStorage {
 
   async deleteEquipment(id: string): Promise<void> {
     try {
+      console.time('deleteEquipment');
+      
       await db.delete(equipment).where(eq(equipment.id, id));
+      
+      console.timeEnd('deleteEquipment');
+      console.log(`🗑️ تم حذف المعدة: ${id}`);
     } catch (error) {
       console.error('Error deleting equipment:', error);
       throw error;

@@ -55,11 +55,11 @@ export function EquipmentManagement() {
       if (!response.ok) throw new Error('فشل في جلب المعدات');
       return response.json();
     },
-    // تحسين كبير للأداء - تخزين طويل الأمد وتقليل الطلبات
-    staleTime: 2 * 60 * 1000, // البيانات تعتبر محدثة لمدة دقيقتين
-    gcTime: 10 * 60 * 1000, // الاحتفاظ بالبيانات في الذاكرة لـ 10 دقائق
-    refetchOnWindowFocus: false, // عدم إعادة التحديث عند العودة للتطبيق
-    refetchOnMount: false, // عدم إعادة التحديث عند إعادة التحميل
+    // تحسين الأداء للعمليات السريعة
+    staleTime: 30 * 1000, // البيانات تعتبر محدثة لمدة 30 ثانية
+    gcTime: 5 * 60 * 1000, // الاحتفاظ بالبيانات لـ 5 دقائق
+    refetchOnWindowFocus: false,
+    refetchOnMount: false
   });
 
   // جلب المشاريع لقائمة الفلاتر - محسن للأداء العالي
