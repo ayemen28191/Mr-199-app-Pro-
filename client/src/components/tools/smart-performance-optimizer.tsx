@@ -293,35 +293,96 @@ const SmartPerformanceOptimizer: React.FC<SmartPerformanceOptimizerProps> = ({
                 }))}
               />
 
-              {/* Detailed Analysis */}
+              {/* Target vs Current Performance */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Target className="h-5 w-5" />
+                    مقارنة الأداء الحالي بالأهداف
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <StatsGrid 
+                    stats={performanceMetrics.map((metric) => ({
+                      title: `هدف ${metric.name}`,
+                      value: metric.targetValue,
+                      icon: Target,
+                      color: "blue",
+                      formatter: (value: number) => `${value}${metric.unit}`
+                    }))}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Improvement Potential */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <TrendingUp className="h-5 w-5" />
+                    إمكانيات التحسين
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <StatsGrid 
+                    stats={performanceMetrics.map((metric) => ({
+                      title: `تحسين ${metric.name}`,
+                      value: Math.round(metric.improvementPotential),
+                      icon: TrendingUp,
+                      color: metric.improvementPotential > 30 ? "red" : 
+                             metric.improvementPotential > 15 ? "orange" : "green",
+                      formatter: (value: number) => `${value}%`
+                    }))}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* Action Items Summary */}
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <BarChart3 className="h-5 w-5" />
-                    تحليل مفصل للأداء
+                    خطط العمل المقترحة
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
+                  <div className="grid gap-4 md:grid-cols-2">
                     {performanceMetrics.map((metric) => (
-                      <div key={metric.id} className="border rounded p-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-semibold">{metric.name}</h4>
-                          <Badge variant="outline">{metric.category}</Badge>
+                      <div key={metric.id} className="p-4 border border-l-4 rounded-lg bg-gradient-to-r from-gray-50 to-white dark:from-gray-900 dark:to-gray-800"
+                           style={{ borderLeftColor: metric.category === 'efficiency' ? '#16a34a' :
+                                                      metric.category === 'utilization' ? '#2563eb' :
+                                                      metric.category === 'cost' ? '#dc2626' : '#7c3aed' }}>
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-semibold text-lg">{metric.name}</h4>
+                          <Badge variant="outline" className="capitalize">
+                            {metric.category === 'efficiency' ? 'كفاءة' :
+                             metric.category === 'utilization' ? 'استخدام' :
+                             metric.category === 'cost' ? 'تكلفة' : 'جودة'}
+                          </Badge>
                         </div>
-                        <div className="text-sm text-muted-foreground mb-3">
-                          القيمة الحالية: {Math.round(metric.currentValue)}{metric.unit} | 
-                          الهدف: {metric.targetValue}{metric.unit}
+                        <div className="mb-4">
+                          <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
+                            <span>التقدم نحو الهدف</span>
+                            <span>{Math.round((metric.currentValue / metric.targetValue) * 100)}%</span>
+                          </div>
+                          <Progress value={(metric.currentValue / metric.targetValue) * 100} className="h-2" />
                         </div>
-                        <div className="space-y-1">
-                          <h5 className="text-sm font-medium">إجراءات التحسين المقترحة:</h5>
+                        <div className="space-y-2">
+                          <h5 className="text-sm font-medium flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4 text-green-500" />
+                            إجراءات التحسين:
+                          </h5>
                           <ul className="text-sm space-y-1">
-                            {metric.optimizationActions.map((action, index) => (
-                              <li key={index} className="flex items-center gap-2">
-                                <CheckCircle className="h-3 w-3 text-green-500" />
+                            {metric.optimizationActions.slice(0, 2).map((action, index) => (
+                              <li key={index} className="flex items-center gap-2 text-muted-foreground">
+                                <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
                                 {action}
                               </li>
                             ))}
+                            {metric.optimizationActions.length > 2 && (
+                              <li className="text-xs text-blue-600">
+                                +{metric.optimizationActions.length - 2} إجراء إضافي
+                              </li>
+                            )}
                           </ul>
                         </div>
                       </div>
@@ -332,79 +393,139 @@ const SmartPerformanceOptimizer: React.FC<SmartPerformanceOptimizerProps> = ({
             </TabsContent>
 
             <TabsContent value="optimization" className="space-y-6">
+              {/* Optimization Statistics */}
+              <StatsGrid 
+                stats={[
+                  {
+                    title: "التحسينات المتاحة",
+                    value: optimizationSuggestions.length,
+                    icon: Zap,
+                    color: "blue"
+                  },
+                  {
+                    title: "أولوية عالية",
+                    value: optimizationSuggestions.filter(s => s.impact === 'high').length,
+                    icon: AlertTriangle,
+                    color: "red"
+                  },
+                  {
+                    title: "جهد منخفض",
+                    value: optimizationSuggestions.filter(s => s.effort === 'low').length,
+                    icon: CheckCircle,
+                    color: "green"
+                  },
+                  {
+                    title: "متوسط التحسن",
+                    value: Math.round(optimizationSuggestions.reduce((sum, s) => sum + s.expectedImprovement, 0) / optimizationSuggestions.length) || 0,
+                    icon: TrendingUp,
+                    color: "purple",
+                    formatter: (value: number) => `${value}%`
+                  }
+                ]}
+              />
+
+              {/* Optimization Suggestions */}
               <div className="space-y-4">
-                {optimizationSuggestions.map((suggestion) => (
-                  <Card key={suggestion.id}>
-                    <CardHeader>
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg">{suggestion.title}</CardTitle>
-                        <div className="flex items-center gap-2">
-                          <Badge className={getImpactColor(suggestion.impact)}>
-                            أثر {suggestion.impact === 'high' ? 'عالي' : suggestion.impact === 'medium' ? 'متوسط' : 'منخفض'}
-                          </Badge>
-                          <Badge variant="outline">
-                            جهد {suggestion.effort === 'high' ? 'عالي' : suggestion.effort === 'medium' ? 'متوسط' : 'منخفض'}
-                          </Badge>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-muted-foreground mb-4">{suggestion.description}</p>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        <div>
-                          <h4 className="font-semibold text-sm mb-2">التحسن المتوقع:</h4>
-                          <div className="flex items-center gap-2">
-                            <TrendingUp className="h-4 w-4 text-green-500" />
-                            <span className="text-lg font-bold text-green-600">
-                              +{Math.round(suggestion.expectedImprovement)}%
-                            </span>
-                          </div>
-                        </div>
-                        <div>
-                          <h4 className="font-semibold text-sm mb-2">المقاييس المتأثرة:</h4>
-                          <div className="flex flex-wrap gap-1">
-                            {suggestion.affectedMetrics.map((metricId) => {
-                              const metric = performanceMetrics.find(m => m.id === metricId);
-                              return metric ? (
-                                <Badge key={metricId} variant="outline" className="text-xs">
-                                  {metric.name}
-                                </Badge>
-                              ) : null;
-                            })}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <h4 className="font-semibold text-sm">خطوات التنفيذ:</h4>
-                        <ul className="text-sm space-y-1">
-                          {suggestion.steps.map((step, index) => (
-                            <li key={index} className="flex items-center gap-2">
-                              <div className="w-5 h-5 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs">
-                                {index + 1}
-                              </div>
-                              {step}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-
-                      <div className="flex gap-2 mt-4">
-                        <Button 
-                          size="sm" 
-                          className="bg-orange-600 hover:bg-orange-700"
-                          onClick={() => setActiveOptimization(suggestion.id)}
-                        >
-                          بدء التحسين
-                        </Button>
-                        <Button size="sm" variant="outline">
-                          تفاصيل أكثر
-                        </Button>
-                      </div>
+                {optimizationSuggestions.length === 0 ? (
+                  <Card>
+                    <CardContent className="text-center py-8">
+                      <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold mb-2">أداء ممتاز!</h3>
+                      <p className="text-muted-foreground">
+                        جميع المقاييس ضمن النطاق المثالي. لا توجد تحسينات مطلوبة حالياً.
+                      </p>
                     </CardContent>
                   </Card>
-                ))}
+                ) : (
+                  optimizationSuggestions.map((suggestion) => (
+                    <Card key={suggestion.id} className="hover:shadow-lg transition-shadow">
+                      <CardHeader>
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                          <CardTitle className="text-lg flex items-center gap-2">
+                            <Zap className="h-5 w-5 text-orange-500" />
+                            {suggestion.title}
+                          </CardTitle>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Badge className={getImpactColor(suggestion.impact)}>
+                              أثر {suggestion.impact === 'high' ? 'عالي' : suggestion.impact === 'medium' ? 'متوسط' : 'منخفض'}
+                            </Badge>
+                            <Badge variant="outline">
+                              جهد {suggestion.effort === 'high' ? 'عالي' : suggestion.effort === 'medium' ? 'متوسط' : 'منخفض'}
+                            </Badge>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <p className="text-muted-foreground mb-4">{suggestion.description}</p>
+                        
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+                          <div className="space-y-2">
+                            <h4 className="font-semibold text-sm">التحسن المتوقع:</h4>
+                            <div className="flex items-center gap-2">
+                              <TrendingUp className="h-4 w-4 text-green-500" />
+                              <span className="text-lg font-bold text-green-600">
+                                +{Math.round(suggestion.expectedImprovement)}%
+                              </span>
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <h4 className="font-semibold text-sm">المقاييس المتأثرة:</h4>
+                            <div className="flex flex-wrap gap-1">
+                              {suggestion.affectedMetrics.map((metricId) => {
+                                const metric = performanceMetrics.find(m => m.id === metricId);
+                                return metric ? (
+                                  <Badge key={metricId} variant="outline" className="text-xs">
+                                    {metric.name}
+                                  </Badge>
+                                ) : null;
+                              })}
+                            </div>
+                          </div>
+                          <div className="space-y-2">
+                            <h4 className="font-semibold text-sm">الفئة:</h4>
+                            <Badge variant="secondary" className="text-xs">
+                              {suggestion.category === 'efficiency' ? 'كفاءة' :
+                               suggestion.category === 'utilization' ? 'استخدام' :
+                               suggestion.category === 'cost' ? 'تكلفة' : suggestion.category}
+                            </Badge>
+                          </div>
+                        </div>
+
+                        <div className="space-y-3">
+                          <h4 className="font-semibold text-sm flex items-center gap-2">
+                            <Settings className="h-4 w-4" />
+                            خطوات التنفيذ:
+                          </h4>
+                          <div className="grid gap-2">
+                            {suggestion.steps.map((step, index) => (
+                              <div key={index} className="flex items-center gap-3 p-2 bg-gray-50 dark:bg-gray-800 rounded-md">
+                                <div className="w-6 h-6 bg-blue-500 text-white rounded-full flex items-center justify-center text-xs font-semibold">
+                                  {index + 1}
+                                </div>
+                                <span className="text-sm">{step}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row gap-2 mt-6">
+                          <Button 
+                            size="sm" 
+                            className="bg-orange-600 hover:bg-orange-700 w-full sm:w-auto"
+                            onClick={() => setActiveOptimization(suggestion.id)}
+                          >
+                            <Zap className="h-4 w-4 ml-2" />
+                            بدء التحسين
+                          </Button>
+                          <Button size="sm" variant="outline" className="w-full sm:w-auto">
+                            <BarChart3 className="h-4 w-4 ml-2" />
+                            تفاصيل أكثر
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))
+                )}
               </div>
             </TabsContent>
 

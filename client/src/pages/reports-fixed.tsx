@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { StatsCard, StatsGrid } from "@/components/ui/stats-card";
 import { 
   FileSpreadsheet, 
   Printer, 
@@ -316,25 +317,26 @@ export default function ReportsFixed(): JSX.Element {
               <CardTitle>إحصائيات استخدام التقارير</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="text-center p-4 bg-blue-50 rounded-lg">
-                  <FileText className="w-8 h-8 text-blue-600 mx-auto mb-2" />
-                  <p className="text-2xl font-bold text-blue-600">{reportTemplates.length}</p>
-                  <p className="text-sm text-gray-600">قوالب متاحة</p>
-                </div>
-                <div className="text-center p-4 bg-green-50 rounded-lg">
-                  <Download className="w-8 h-8 text-green-600 mx-auto mb-2" />
-                  <p className="text-2xl font-bold text-green-600">{recentReports.length}</p>
-                  <p className="text-sm text-gray-600">تقارير هذا الشهر</p>
-                </div>
-                <div className="text-center p-4 bg-orange-50 rounded-lg">
-                  <TrendingUp className="w-8 h-8 text-orange-600 mx-auto mb-2" />
-                  <p className="text-2xl font-bold text-orange-600">
-                    {reportTemplates.filter(t => t.isActive).length}
-                  </p>
-                  <p className="text-sm text-gray-600">قوالب نشطة</p>
-                </div>
-              </div>
+              <StatsGrid>
+                <StatsCard
+                  title="قوالب متاحة"
+                  value={reportTemplates.length}
+                  icon={FileText}
+                  color="blue"
+                />
+                <StatsCard
+                  title="تقارير هذا الشهر"
+                  value={recentReports.length}
+                  icon={Download}
+                  color="green"
+                />
+                <StatsCard
+                  title="قوالب نشطة"
+                  value={reportTemplates.filter(t => t.isActive).length}
+                  icon={TrendingUp}
+                  color="orange"
+                />
+              </StatsGrid>
             </CardContent>
           </Card>
         </TabsContent>

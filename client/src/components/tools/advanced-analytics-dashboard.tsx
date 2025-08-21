@@ -30,8 +30,7 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs';
-import { StatsCard } from '@/components/ui/stats-card';
-import { StatsGrid } from '@/components/ui/stats-grid';
+import { StatsCard, StatsGrid } from '@/components/ui/stats-card';
 import {
   BarChart3,
   TrendingUp,
@@ -309,46 +308,52 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <StatsGrid
-                    stats={Object.entries(analyticsData.statusDistribution).map(([status, count]) => ({
-                      title: status === 'available' ? 'متاحة' : 
-                             status === 'in_use' ? 'قيد الاستخدام' :
-                             status === 'maintenance' ? 'صيانة' : 'تالفة',
-                      value: count,
-                      icon: status === 'available' ? CheckCircle :
-                            status === 'in_use' ? Wrench :
-                            status === 'maintenance' ? Settings : AlertTriangle,
-                      color: status === 'available' ? 'green' :
-                             status === 'in_use' ? 'blue' :
-                             status === 'maintenance' ? 'orange' : 'red'
-                    }))}
-                  />
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {Object.entries(analyticsData.statusDistribution).map(([status, count]) => (
+                      <StatsCard
+                        key={status}
+                        title={status === 'available' ? 'متاحة' : 
+                               status === 'in_use' ? 'قيد الاستخدام' :
+                               status === 'maintenance' ? 'صيانة' : 'تالفة'}
+                        value={count}
+                        icon={status === 'available' ? CheckCircle :
+                              status === 'in_use' ? Wrench :
+                              status === 'maintenance' ? Settings : AlertTriangle}
+                        color={status === 'available' ? 'green' :
+                               status === 'in_use' ? 'blue' :
+                               status === 'maintenance' ? 'orange' : 'red'}
+                      />
+                    ))}
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
 
             <TabsContent value="performance" className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>مؤشرات الأداء الرئيسية</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center p-4 border rounded">
-                      <span>معدل الاستخدام الفعلي</span>
-                      <Badge variant={analyticsData.utilizationRate >= 70 ? "default" : "secondary"}>
-                        {analyticsData.utilizationRate}%
-                      </Badge>
-                    </div>
-                    <div className="flex justify-between items-center p-4 border rounded">
-                      <span>نتيجة الكفاءة العامة</span>
-                      <Badge variant={analyticsData.efficiencyScore >= 80 ? "default" : "destructive"}>
-                        {analyticsData.efficiencyScore}%
-                      </Badge>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              {/* Performance Metrics Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <StatsCard
+                  title="معدل الاستخدام الفعلي"
+                  value={`${analyticsData.utilizationRate}%`}
+                  icon={Activity}
+                  color={analyticsData.utilizationRate >= 70 ? "green" : "orange"}
+                  formatter={(value: string) => value}
+                />
+                <StatsCard
+                  title="نتيجة الكفاءة العامة"
+                  value={`${analyticsData.efficiencyScore}%`}
+                  icon={Target}
+                  color={analyticsData.efficiencyScore >= 80 ? "green" : "red"}
+                  formatter={(value: string) => value}
+                />
+                <StatsCard
+                  title="قيمة الاستهلاك"
+                  value={analyticsData.depreciationValue}
+                  icon={TrendingDown}
+                  color="red"
+                  formatter={(value: number) => `${value.toLocaleString()} ريال`}
+                />
+              </div>
             </TabsContent>
 
             <TabsContent value="distribution" className="space-y-6">
