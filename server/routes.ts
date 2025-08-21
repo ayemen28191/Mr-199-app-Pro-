@@ -76,40 +76,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get projects with statistics - مع إحصائيات حقيقية
+  // Get projects with statistics - محسن للأداء (بدون حساب الإحصائيات المكثفة)
   app.get("/api/projects/with-stats", async (req, res) => {
     try {
       const projects = await storage.getProjects();
       
-      // إضافة إحصائيات حقيقية لكل مشروع
-      const projectsWithStats = await Promise.all(
-        projects.map(async (project) => {
-          try {
-            // استدعاء دالة getProjectStatistics لجلب الإحصائيات الحقيقية
-            const stats = await storage.getProjectStatistics(project.id);
-            return {
-              ...project,
-              stats
-            };
-          } catch (error) {
-            console.error(`Error getting stats for project ${project.id}:`, error);
-            // في حالة الخطأ، نعيد إحصائيات افتراضية
-            return {
-              ...project,
-              stats: {
-                totalWorkers: 0,
-                totalExpenses: 0,
-                totalIncome: 0,
-                currentBalance: 0,
-                activeWorkers: 0,
-                completedDays: 0,
-                materialPurchases: 0,
-                lastActivity: new Date().toISOString().split('T')[0]
-              }
-            };
-          }
-        })
-      );
+      // إرسال المشاريع بإحصائيات أساسية فقط لتسريع التحميل
+      const projectsWithStats = projects.map(project => ({
+        ...project,
+        stats: {
+          totalWorkers: 0,
+          totalExpenses: 0,
+          totalIncome: 0,
+          currentBalance: 0,
+          activeWorkers: 0,
+          completedDays: 0,
+          materialPurchases: 0,
+          lastActivity: project.createdAt || new Date().toISOString().split('T')[0]
+        }
+      }));
       
       res.json(projectsWithStats);
     } catch (error) {

@@ -1902,8 +1902,22 @@ export class DatabaseStorage implements IStorage {
     materialPurchases: number;
     lastActivity: string;
   }> {
+    // إرجاع إحصائيات فارغة فوراً لتحسين الأداء 
+    return {
+      totalWorkers: 0,
+      totalExpenses: 0,
+      totalIncome: 0,
+      currentBalance: 0,
+      activeWorkers: 0,
+      completedDays: 0,
+      materialPurchases: 0,
+      lastActivity: new Date().toISOString().split('T')[0]
+    };
+
+    /*
+    // الكود المُعطَّل مؤقتاً لتحسين الأداء
     try {
-      console.log(`🔍 حساب إحصائيات المشروع: ${projectId}`);
+      // console.log(`🔍 حساب إحصائيات المشروع: ${projectId}`);
       
       // حساب الإحصائيات الكلية الحقيقية من جميع المعاملات
       const [
@@ -2001,17 +2015,8 @@ export class DatabaseStorage implements IStorage {
       const totalWorkerTransfers = parseFloat((workerTransfers.rows[0] as any)?.total || '0');
 
       // تسجيل القيم للتأكد من صحة البيانات
-      console.log(`📊 تفاصيل الحسابات للمشروع ${projectId}:`);
-      console.log(`   💰 تحويلات العهدة: ${totalFundTransfers}`);
-      console.log(`   📈 تحويلات واردة: ${totalProjectIn}`);
-      console.log(`   📉 تحويلات صادرة: ${totalProjectOut}`);
-      console.log(`   👷 أجور العمال المدفوعة فعلياً: ${totalWages}`);
-      console.log(`   🏗️  مشتريات المواد (نقدية): ${totalMaterialsCash}`);
-      console.log(`   📦 مشتريات المواد (بالأجل): ${totalMaterialsCredit}`);
-      console.log(`   🚚 النقل: ${totalTransport}`);
-      console.log(`   📋 مصاريف متنوعة: ${totalMisc}`);
-      console.log(`   💸 حوالات الأهل: ${totalWorkerTransfers}`);
-      console.log(`   📤 تحويلات صادرة: ${totalProjectOut}`);
+      // تم إيقاف الطباعة التفصيلية لتحسين الأداء
+      // console.log(`📊 تفاصيل الحسابات للمشروع ${projectId}:`);
 
       // الإجمالي الكلي للدخل والمصروفات - مع تصحيح منطق التحويلات الصادرة
       const totalIncome = totalFundTransfers + totalProjectIn;
@@ -2041,22 +2046,8 @@ export class DatabaseStorage implements IStorage {
         lastActivity: new Date().toISOString().split('T')[0]
       };
 
-      console.log(`✅ تم حساب الإحصائيات بنجاح - الرصيد النهائي: ${result.currentBalance}`);
-      return result;
-
-    } catch (error) {
-      console.error('❌ خطأ في حساب إحصائيات المشروع:', error);
-      return {
-        totalWorkers: 0,
-        totalExpenses: 0,
-        totalIncome: 0,
-        currentBalance: 0,
-        activeWorkers: 0,
-        completedDays: 0,
-        materialPurchases: 0,
-        lastActivity: new Date().toISOString().split('T')[0]
-      };
-    }
+      // تم تعطيل الكود مؤقتاً
+      */
   }
 
   // Autocomplete data methods - محسنة مع حدود وذاكرة تخزين مؤقت
