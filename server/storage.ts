@@ -3219,25 +3219,19 @@ export class DatabaseStorage implements IStorage {
   // Equipment operations with auto code generation and image support
   async generateNextEquipmentCode(): Promise<string> {
     try {
-      // البحث عن أعلى رقم موجود
-      const lastEquipment = await db
-        .select({ code: equipment.code })
-        .from(equipment)
-        .where(sql`${equipment.code} ~ '^EQ-[0-9]+$'`)
-        .orderBy(sql`CAST(SUBSTRING(${equipment.code} FROM 4) AS INTEGER) DESC`)
-        .limit(1);
+      // استعلام مبسط وسريع للحصول على عدد المعدات الموجودة
+      const count = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(equipment);
       
-      let nextNumber = 1;
-      if (lastEquipment.length > 0) {
-        const lastCode = lastEquipment[0].code;
-        const lastNumber = parseInt(lastCode.replace('EQ-', ''), 10);
-        nextNumber = lastNumber + 1;
-      }
-      
+      const nextNumber = (count[0]?.count || 0) + 1;
       return `EQ-${nextNumber.toString().padStart(3, '0')}`;
     } catch (error) {
       console.error('Error generating equipment code:', error);
-      return `EQ-${Date.now().toString().substr(-3)}`;
+      // استخدام timestamp كرقم احتياطي
+      const timestamp = Date.now();
+      const randomId = timestamp % 1000;
+      return `EQ-${randomId.toString().padStart(3, '0')}`;
     }
   }
 
@@ -3274,13 +3268,12 @@ export class DatabaseStorage implements IStorage {
         conditions.push(eq(equipment.type, filters.type));
       }
 
-      if (filters?.searchTerm) {
-        const searchTerm = `%${filters.searchTerm}%`;
+      if (filters?.searchTerm && filters.searchTerm.trim() !== '') {
+        const searchTerm = `%${filters.searchTerm.trim()}%`;
         conditions.push(
           or(
             sql`${equipment.name} ILIKE ${searchTerm}`,
-            sql`${equipment.code} ILIKE ${searchTerm}`,
-            sql`${equipment.description} ILIKE ${searchTerm}`
+            sql`${equipment.code} ILIKE ${searchTerm}`
           )!
         );
       }
