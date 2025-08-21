@@ -701,21 +701,73 @@ export function EquipmentManagement() {
         </html>
       `;
 
-      // Open print window
-      const printWindow = window.open('', '_blank');
-      if (printWindow) {
-        printWindow.document.write(printContent);
-        printWindow.document.close();
-        printWindow.onload = () => {
-          printWindow.print();
+      // Create a more reliable print approach
+      try {
+        // Create blob and object URL for better handling
+        const blob = new Blob([printContent], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        
+        const printWindow = window.open(url, '_blank', 'width=1200,height=800,scrollbars=yes,resizable=yes');
+        
+        if (printWindow) {
+          // Wait for content to fully load before triggering print
           setTimeout(() => {
-            printWindow.close();
-          }, 1000);
-        };
+            try {
+              printWindow.print();
+              
+              // Clean up the URL after printing
+              setTimeout(() => {
+                URL.revokeObjectURL(url);
+                printWindow.close();
+              }, 2000);
+              
+            } catch (printError) {
+              console.warn('خطأ في الطباعة المباشرة، جاري فتح النافذة للمعاينة:', printError);
+              // إذا فشلت الطباعة المباشرة، اتركها مفتوحة للمستخدم
+              toast({
+                title: "تم فتح المعاينة",
+                description: "استخدم Ctrl+P أو ⌘+P للطباعة، أو اختر 'طباعة' من القائمة",
+                duration: 5000
+              });
+            }
+          }, 1500);
+          
+          toast({
+            title: "جاري إعداد الطباعة",
+            description: "انتظر قليلاً ليتم تحميل المحتوى وفتح نافذة الطباعة"
+          });
+          
+        } else {
+          // Fallback: Create downloadable HTML file
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `كشف_المعدات_${pdfProjectName}_${new Date().toISOString().split('T')[0]}.html`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+          
+          toast({
+            title: "تم تنزيل الملف",
+            description: "افتح الملف الذي تم تنزيله واطبعه باستخدام متصفحك"
+          });
+        }
+        
+      } catch (windowError) {
+        console.error('خطأ في فتح نافذة الطباعة:', windowError);
+        
+        // Alternative approach: Use data URL
+        const dataUrl = 'data:text/html;charset=utf-8,' + encodeURIComponent(printContent);
+        const link = document.createElement('a');
+        link.href = dataUrl;
+        link.download = `كشف_المعدات_${pdfProjectName}_${new Date().toISOString().split('T')[0]}.html`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
         
         toast({
-          title: "جاري فتح نافذة الطباعة",
-          description: "اختر 'حفظ كـ PDF' من خيارات الطباعة"
+          title: "تم إنشاء ملف HTML",
+          description: "افتح الملف المحفوظ واطبعه أو احفظه كـ PDF"
         });
       }
       
