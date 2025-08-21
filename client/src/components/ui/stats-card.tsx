@@ -5,8 +5,10 @@ interface StatsCardProps {
   title: string;
   value: string | number;
   icon: LucideIcon;
-  color: "blue" | "green" | "orange" | "red" | "purple" | "teal" | "indigo" | "emerald" | "amber";
+  color?: "blue" | "green" | "orange" | "red" | "purple" | "teal" | "indigo" | "emerald" | "amber";
   formatter?: (value: number) => string;
+  className?: string;
+  "data-testid"?: string;
 }
 
 const colorVariants = {
@@ -75,8 +77,16 @@ const colorVariants = {
   }
 };
 
-export function StatsCard({ title, value, icon: Icon, color, formatter }: StatsCardProps) {
-  const colors = colorVariants[color] || colorVariants.blue; // fallback to blue if color not found
+export function StatsCard({ 
+  title, 
+  value, 
+  icon: Icon, 
+  color = "blue", 
+  formatter, 
+  className = "",
+  "data-testid": dataTestId
+}: StatsCardProps) {
+  const colors = colorVariants[color];
   const displayValue = typeof value === 'number' && formatter ? formatter(value) : value.toString();
   
   return (

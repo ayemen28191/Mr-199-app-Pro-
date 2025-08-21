@@ -435,10 +435,11 @@ export type ReportTemplate = typeof reportTemplates.$inferSelect;
 // Equipment (المعدات)
 export const equipment = pgTable("equipment", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  code: text("code").unique().notNull(), // رقم/كود المعدة
+  code: text("code").unique().notNull(), // رقم/كود المعدة - سيتم توليده تلقائياً
   name: text("name").notNull(), // اسم المعدة
   type: text("type"), // نوعها (حفار، مولد...)
   description: text("description"),
+  imageUrl: text("image_url"), // رابط صورة المعدة
   purchaseDate: date("purchase_date"),
   purchasePrice: decimal("purchase_price", { precision: 12, scale: 2 }),
   status: text("status").notNull().default("active"), // نشط / صيانة / خارج الخدمة / غير نشط
@@ -462,8 +463,11 @@ export const equipmentMovements = pgTable("equipment_movements", {
 // Equipment insert schemas
 export const insertEquipmentSchema = createInsertSchema(equipment).omit({
   id: true,
+  code: true, // سيتم توليده تلقائياً
   createdAt: true,
   updatedAt: true,
+}).extend({
+  purchasePrice: z.coerce.string().optional(), // تحويل إلى string للتوافق مع نوع decimal
 });
 
 export const insertEquipmentMovementSchema = createInsertSchema(equipmentMovements).omit({

@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Search, Wrench, Truck, ArrowUpDown, PenTool, Settings, Eye, MapPin, Calendar, DollarSign, Activity, MoreVertical, Edit, Trash2 } from "lucide-react";
+import { Plus, Search, Wrench, Truck, ArrowUpDown, PenTool, Settings, Eye, MapPin, Calendar, DollarSign, Activity, MoreVertical, Edit, Trash2, Image, X } from "lucide-react";
 import { StatsCard, StatsGrid } from "@/components/ui/stats-card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useFloatingButton } from "@/components/layout/floating-button-context";
@@ -25,6 +25,7 @@ export function EquipmentManagement() {
   const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showTransferDialog, setShowTransferDialog] = useState(false);
+  const [enlargedImage, setEnlargedImage] = useState<string | null>(null);
 
   const queryClient = useQueryClient();
   const { setFloatingAction } = useFloatingButton();
@@ -224,31 +225,27 @@ export function EquipmentManagement() {
           title="إجمالي المعدات"
           value={equipment.length}
           icon={Wrench}
-          trend={{ value: 0, isPositive: true }}
           className="border-r-4 border-r-blue-500"
           data-testid="stats-total-equipment"
         />
         <StatsCard
           title="نشطة"
-          value={equipment.filter(e => e.status === 'active').length}
+          value={equipment.filter((e: Equipment) => e.status === 'active').length}
           icon={Activity}
-          trend={{ value: 0, isPositive: true }}
           className="border-r-4 border-r-green-500 bg-gradient-to-r from-green-50 to-white dark:from-green-950 dark:to-gray-900"
           data-testid="stats-active-equipment"
         />
         <StatsCard
           title="في الصيانة"
-          value={equipment.filter(e => e.status === 'maintenance').length}
+          value={equipment.filter((e: Equipment) => e.status === 'maintenance').length}
           icon={Settings}
-          trend={{ value: 0, isPositive: true }}
           className="border-r-4 border-r-yellow-500 bg-gradient-to-r from-yellow-50 to-white dark:from-yellow-950 dark:to-gray-900"
           data-testid="stats-maintenance-equipment"
         />
         <StatsCard
           title="خارج الخدمة"
-          value={equipment.filter(e => e.status === 'out_of_service').length}
+          value={equipment.filter((e: Equipment) => e.status === 'out_of_service').length}
           icon={Truck}
-          trend={{ value: 0, isPositive: false }}
           className="border-r-4 border-r-red-500 bg-gradient-to-r from-red-50 to-white dark:from-red-950 dark:to-gray-900"
           data-testid="stats-out-of-service-equipment"
         />
@@ -319,6 +316,38 @@ export function EquipmentManagement() {
 
             <CardContent className="pt-0">
               <div className="space-y-3">
+                {/* صورة المعدة مع العرض المصغر */}
+                {item.imageUrl && (
+                  <div className="p-3 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 rounded-lg border border-purple-100 dark:border-purple-800">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center">
+                        <Image className="h-3 w-3 text-white" />
+                      </div>
+                      <span className="text-xs text-purple-700 dark:text-purple-300 font-medium">صورة المعدة</span>
+                    </div>
+                    <div 
+                      className="relative w-full h-20 bg-gray-100 dark:bg-gray-800 rounded-lg border border-purple-200 dark:border-purple-700 overflow-hidden cursor-pointer hover:scale-105 transition-transform duration-200"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEnlargedImage(item.imageUrl!);
+                      }}
+                    >
+                      <img 
+                        src={item.imageUrl} 
+                        alt={`صورة ${item.name}`}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-10 transition-all duration-200 flex items-center justify-center">
+                        <Eye className="text-white opacity-0 hover:opacity-100 transition-opacity duration-200" size={16} />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Location Info Card */}
                 <div className="p-3 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border border-green-100 dark:border-green-800">
                   <div className="flex items-center gap-2">
@@ -329,7 +358,7 @@ export function EquipmentManagement() {
                   </div>
                   <p className="text-sm font-semibold text-green-900 dark:text-green-100 mt-1" data-testid={`text-location-${item.id}`}>
                     {item.currentProjectId 
-                      ? projects.find(p => p.id === item.currentProjectId)?.name || 'مشروع غير معروف'
+                      ? projects.find((p: any) => p.id === item.currentProjectId)?.name || 'مشروع غير معروف'
                       : 'المستودع'
                     }
                   </p>
@@ -448,6 +477,30 @@ export function EquipmentManagement() {
         onOpenChange={setShowTransferDialog}
         projects={projects}
       />
+
+      {/* نافذة عرض الصورة بالحجم الكامل */}
+      {enlargedImage && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
+          onClick={() => setEnlargedImage(null)}
+        >
+          <div className="relative max-w-4xl max-h-full">
+            <button
+              onClick={() => setEnlargedImage(null)}
+              className="absolute -top-10 right-0 text-white hover:text-gray-300 transition-colors"
+              data-testid="button-close-image"
+            >
+              <X size={24} />
+            </button>
+            <img 
+              src={enlargedImage} 
+              alt="صورة المعدة بالحجم الكامل"
+              className="max-w-full max-h-full object-contain rounded-lg"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -14,13 +14,14 @@ import { apiRequest } from "@/lib/queryClient";
 
 const equipmentSchema = z.object({
   name: z.string().min(1, "اسم المعدة مطلوب"),
-  code: z.string().min(1, "كود المعدة مطلوب"),
+  code: z.string().optional(), // الكود سيكون تلقائياً
   type: z.string().min(1, "نوع المعدة مطلوب"),
   status: z.string().min(1, "حالة المعدة مطلوبة"),
   description: z.string().optional(),
   purchaseDate: z.string().optional(),
   purchasePrice: z.string().optional(),
   currentProjectId: z.string().nullable().optional(),
+  imageUrl: z.string().optional(),
 });
 
 type EquipmentFormData = z.infer<typeof equipmentSchema>;
@@ -39,13 +40,14 @@ export function AddEquipmentDialog({ open, onOpenChange, projects }: AddEquipmen
     resolver: zodResolver(equipmentSchema),
     defaultValues: {
       name: "",
-      code: "",
+      code: "", // سيتم توليده تلقائياً
       type: "construction",
       status: "active",
       description: "",
       purchaseDate: "",
       purchasePrice: "",
       currentProjectId: null,
+      imageUrl: "",
     },
   });
 
@@ -73,7 +75,7 @@ export function AddEquipmentDialog({ open, onOpenChange, projects }: AddEquipmen
   const onSubmit = (data: EquipmentFormData) => {
     const submitData = {
       ...data,
-      purchasePrice: data.purchasePrice ? Number(data.purchasePrice) : undefined,
+      purchasePrice: data.purchasePrice ? data.purchasePrice : undefined,
       currentProjectId: data.currentProjectId || null,
     };
     addMutation.mutate(submitData);
@@ -104,26 +106,6 @@ export function AddEquipmentDialog({ open, onOpenChange, projects }: AddEquipmen
                       className="h-9 text-sm"
                       {...field} 
                       data-testid="input-equipment-name"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* Equipment Code */}
-            <FormField
-              control={form.control}
-              name="code"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-sm font-medium">كود المعدة *</FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="مثال: EQ-001"
-                      className="h-9 text-sm"
-                      {...field} 
-                      data-testid="input-equipment-code"
                     />
                   </FormControl>
                   <FormMessage />
@@ -250,6 +232,29 @@ export function AddEquipmentDialog({ open, onOpenChange, projects }: AddEquipmen
                   </Select>
                   <FormDescription className="text-xs text-gray-500">
                     اتركه فارغاً إذا كانت المعدة في المستودع
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Equipment Image */}
+            <FormField
+              control={form.control}
+              name="imageUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm font-medium">صورة المعدة</FormLabel>
+                  <FormControl>
+                    <Input 
+                      placeholder="رابط صورة المعدة (اختياري)"
+                      className="h-9 text-sm"
+                      {...field} 
+                      data-testid="input-equipment-image"
+                    />
+                  </FormControl>
+                  <FormDescription className="text-xs text-gray-500">
+                    أدخل رابط صورة المعدة إذا كان متوفراً
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

@@ -81,12 +81,18 @@ app.use((req, res, next) => {
         type VARCHAR NOT NULL,
         status VARCHAR NOT NULL DEFAULT 'active',
         description TEXT,
+        image_url TEXT,
         purchase_date DATE,
         purchase_price DECIMAL(12, 2),
         current_project_id VARCHAR REFERENCES projects(id),
         created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
       )
+    `);
+    
+    // إضافة عمود الصورة إذا لم يكن موجوداً
+    await db.execute(sql`
+      ALTER TABLE equipment ADD COLUMN IF NOT EXISTS image_url TEXT
     `);
     
     await db.execute(sql`
