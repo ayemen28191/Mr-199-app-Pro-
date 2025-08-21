@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { Camera, Upload, X, Image as ImageIcon } from "lucide-react";
 
 const equipmentSchema = z.object({
   name: z.string().min(1, "اسم المعدة مطلوب"),
@@ -35,6 +36,9 @@ interface AddEquipmentDialogProps {
 export function AddEquipmentDialog({ open, onOpenChange, projects }: AddEquipmentDialogProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   const form = useForm<EquipmentFormData>({
     resolver: zodResolver(equipmentSchema),
@@ -51,6 +55,49 @@ export function AddEquipmentDialog({ open, onOpenChange, projects }: AddEquipmen
     },
   });
 
+  // وظيفة معالجة اختيار الصورة
+  const handleImageSelect = (file: File) => {
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        setSelectedImage(result);
+        setImageFile(file);
+        form.setValue('imageUrl', result);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      toast({
+        title: "خطأ",
+        description: "يرجى اختيار ملف صورة صالح",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // وظيفة فتح الكاميرا أو المعرض
+  const handleImageCapture = (useCamera: boolean) => {
+    if (fileInputRef.current) {
+      fileInputRef.current.accept = "image/*";
+      if (useCamera) {
+        fileInputRef.current.setAttribute('capture', 'environment');
+      } else {
+        fileInputRef.current.removeAttribute('capture');
+      }
+      fileInputRef.current.click();
+    }
+  };
+
+  // وظيفة حذف الصورة
+  const handleRemoveImage = () => {
+    setSelectedImage(null);
+    setImageFile(null);
+    form.setValue('imageUrl', '');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const addMutation = useMutation({
     mutationFn: (data: EquipmentFormData) => apiRequest("/api/equipment", "POST", data),
     onSuccess: () => {
@@ -61,6 +108,7 @@ export function AddEquipmentDialog({ open, onOpenChange, projects }: AddEquipmen
         variant: "default",
       });
       form.reset();
+      handleRemoveImage(); // إعادة تعيين الصورة
       onOpenChange(false);
     },
     onError: (error: any) => {
@@ -246,15 +294,72 @@ export function AddEquipmentDialog({ open, onOpenChange, projects }: AddEquipmen
                 <FormItem>
                   <FormLabel className="text-sm font-medium">صورة المعدة</FormLabel>
                   <FormControl>
-                    <Input 
-                      placeholder="رابط صورة المعدة (اختياري)"
-                      className="h-9 text-sm"
-                      {...field} 
-                      data-testid="input-equipment-image"
-                    />
+                    <div className="space-y-3">
+                      {/* Hidden file input */}
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleImageSelect(file);
+                        }}
+                        data-testid="input-file-image"
+                      />
+                      
+                      {/* Image capture buttons */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleImageCapture(true)}
+                          className="h-9 text-xs"
+                          data-testid="button-camera"
+                        >
+                          <Camera className="h-4 w-4 mr-1" />
+                          تصوير بالكاميرا
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleImageCapture(false)}
+                          className="h-9 text-xs"
+                          data-testid="button-gallery"
+                        >
+                          <Upload className="h-4 w-4 mr-1" />
+                          اختيار من المعرض
+                        </Button>
+                      </div>
+                      
+                      {/* Image preview */}
+                      {selectedImage && (
+                        <div className="relative w-full h-32 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+                          <img 
+                            src={selectedImage} 
+                            alt="معاينة الصورة"
+                            className="w-full h-full object-cover"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleRemoveImage}
+                            className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 transition-colors"
+                            data-testid="button-remove-image"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                          <div className="absolute bottom-2 left-2 bg-black bg-opacity-60 text-white text-xs px-2 py-1 rounded">
+                            <ImageIcon className="h-3 w-3 inline mr-1" />
+                            {imageFile?.name || 'صورة محددة'}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </FormControl>
                   <FormDescription className="text-xs text-gray-500">
-                    أدخل رابط صورة المعدة إذا كان متوفراً
+                    يمكنك تصوير صورة جديدة أو اختيار صورة من المعرض
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
