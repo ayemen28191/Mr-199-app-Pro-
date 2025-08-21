@@ -21,7 +21,6 @@ import WorkerAccountsPage from "@/pages/worker-accounts";
 import SuppliersProPage from "@/pages/suppliers-professional";
 import SupplierAccountsPage from "@/pages/supplier-accounts";
 import AutocompleteAdminPage from "@/pages/autocomplete-admin";
-import ToolsManagementPage from "@/pages/tools-management";
 import { EquipmentManagement } from "@/pages/equipment-management";
 
 import Header from "@/components/layout/header";
@@ -48,8 +47,6 @@ function Router() {
       <Route path="/project-transactions" component={ProjectTransactionsPage} />
       <Route path="/autocomplete-admin" component={AutocompleteAdminPage} />
 
-      <Route path="/tools" component={ToolsManagementPage} />
-      <Route path="/tools-management" component={ToolsManagementPage} />
       <Route path="/equipment" component={EquipmentManagement} />
       <Route path="/reports" component={Reports} />
 
