@@ -35,7 +35,7 @@ import {
 } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
-import { StatsCard } from '@/components/ui/stats-card';
+import { StatsCard, StatsGrid } from '@/components/ui/stats-card';
 
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
@@ -822,7 +822,7 @@ const ToolDetailsDialog: React.FC<ToolDetailsDialogProps> = ({
 
           {/* Analytics Tab */}
           <TabsContent value="analytics" className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <StatsGrid>
               <StatsCard
                 title="مرات الاستخدام"
                 value={movements.filter(m => m.movementType === 'استخدام').length}
@@ -847,7 +847,7 @@ const ToolDetailsDialog: React.FC<ToolDetailsDialogProps> = ({
                 icon={BarChart3}
                 color="purple"
               />
-            </div>
+            </StatsGrid>
 
             <Card>
               <CardHeader>

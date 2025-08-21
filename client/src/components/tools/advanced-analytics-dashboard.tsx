@@ -269,7 +269,7 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
 
             <TabsContent value="overview" className="space-y-6">
               {/* Key Metrics */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <StatsGrid>
                 <StatsCard
                   title="معدل الاستخدام"
                   value={`${analyticsData.utilizationRate}%`}
@@ -297,7 +297,7 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
                   icon={BarChart3}
                   color="purple"
                 />
-              </div>
+              </StatsGrid>
 
               {/* Status Distribution */}
               <Card>
@@ -308,7 +308,7 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <StatsGrid>
                     {Object.entries(analyticsData.statusDistribution).map(([status, count]) => (
                       <StatsCard
                         key={status}
@@ -324,14 +324,14 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
                                status === 'maintenance' ? 'orange' : 'red'}
                       />
                     ))}
-                  </div>
+                  </StatsGrid>
                 </CardContent>
               </Card>
             </TabsContent>
 
             <TabsContent value="performance" className="space-y-6">
               {/* Performance Metrics Cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <StatsGrid>
                 <StatsCard
                   title="معدل الاستخدام الفعلي"
                   value={`${analyticsData.utilizationRate}%`}
@@ -353,7 +353,7 @@ const AdvancedAnalyticsDashboard: React.FC<AdvancedAnalyticsDashboardProps> = ({
                   color="red"
                   formatter={(value: number) => `${value.toLocaleString()} ريال`}
                 />
-              </div>
+              </StatsGrid>
             </TabsContent>
 
             <TabsContent value="distribution" className="space-y-6">
