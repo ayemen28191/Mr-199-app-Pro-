@@ -22,6 +22,7 @@ export const projects = pgTable("projects", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
   status: text("status").notNull().default("active"), // active, completed, paused
+  imageUrl: text("image_url"), // صورة المشروع
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

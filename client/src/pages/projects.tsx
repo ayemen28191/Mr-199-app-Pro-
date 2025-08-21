@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,7 +25,11 @@ import {
   Clock,
   MapPin,
   BarChart3,
-  Building2
+  Building2,
+  Camera,
+  Upload,
+  X,
+  Image as ImageIcon
 } from "lucide-react";
 import { StatsCard, StatsGrid } from "@/components/ui/stats-card";
 import type { Project, InsertProject } from "@shared/schema";
@@ -57,6 +61,12 @@ export default function ProjectsPage() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const { setFloatingAction } = useFloatingButton();
+  
+  // Image handling states
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const editFileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [editSelectedImage, setEditSelectedImage] = useState<string | null>(null);
 
   // تعيين إجراء الزر العائم لإضافة مشروع جديد
   useEffect(() => {
@@ -100,6 +110,7 @@ export default function ProjectsPage() {
     defaultValues: {
       name: "",
       status: "active",
+      imageUrl: "",
     },
   });
 
@@ -109,6 +120,7 @@ export default function ProjectsPage() {
     defaultValues: {
       name: "",
       status: "active",
+      imageUrl: "",
     },
   });
 
@@ -126,6 +138,84 @@ export default function ProjectsPage() {
     }
   };
 
+  // Image handling functions for create form
+  const handleImageSelect = (file: File) => {
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        setSelectedImage(result);
+        createForm.setValue('imageUrl', result);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      toast({
+        title: "خطأ",
+        description: "يرجى اختيار ملف صورة صالح",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleImageCapture = (useCamera: boolean) => {
+    if (fileInputRef.current) {
+      fileInputRef.current.accept = "image/*";
+      if (useCamera) {
+        fileInputRef.current.setAttribute('capture', 'environment');
+      } else {
+        fileInputRef.current.removeAttribute('capture');
+      }
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setSelectedImage(null);
+    createForm.setValue('imageUrl', '');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  // Image handling functions for edit form
+  const handleEditImageSelect = (file: File) => {
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        setEditSelectedImage(result);
+        editForm.setValue('imageUrl', result);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      toast({
+        title: "خطأ",
+        description: "يرجى اختيار ملف صورة صالح",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEditImageCapture = (useCamera: boolean) => {
+    if (editFileInputRef.current) {
+      editFileInputRef.current.accept = "image/*";
+      if (useCamera) {
+        editFileInputRef.current.setAttribute('capture', 'environment');
+      } else {
+        editFileInputRef.current.removeAttribute('capture');
+      }
+      editFileInputRef.current.click();
+    }
+  };
+
+  const handleEditRemoveImage = () => {
+    setEditSelectedImage(null);
+    editForm.setValue('imageUrl', '');
+    if (editFileInputRef.current) {
+      editFileInputRef.current.value = '';
+    }
+  };
+
   // Create project mutation
   const createProjectMutation = useMutation({
     mutationFn: (data: InsertProject) =>
@@ -139,6 +229,10 @@ export default function ProjectsPage() {
       toast({ title: "تم إنشاء المشروع بنجاح" });
       setIsCreateDialogOpen(false);
       createForm.reset();
+      setSelectedImage(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     },
     onError: (error: any) => {
       toast({
@@ -163,6 +257,10 @@ export default function ProjectsPage() {
       setIsEditDialogOpen(false);
       setEditingProject(null);
       editForm.reset();
+      setEditSelectedImage(null);
+      if (editFileInputRef.current) {
+        editFileInputRef.current.value = '';
+      }
     },
     onError: (error: any) => {
       toast({
@@ -210,7 +308,9 @@ export default function ProjectsPage() {
     editForm.reset({
       name: project.name,
       status: project.status,
+      imageUrl: project.imageUrl || '',
     });
+    setEditSelectedImage(project.imageUrl || null);
     setIsEditDialogOpen(true);
   };
 
@@ -363,6 +463,69 @@ export default function ProjectsPage() {
                     </FormItem>
                   )}
                 />
+
+                {/* Image Upload Section */}
+                <div className="space-y-4">
+                  <FormLabel>صورة المشروع (اختيارية)</FormLabel>
+                  
+                  {selectedImage ? (
+                    <div className="relative">
+                      <img 
+                        src={selectedImage} 
+                        alt="صورة المشروع" 
+                        className="w-full h-48 object-cover rounded-lg border"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="absolute top-2 right-2"
+                        onClick={handleRemoveImage}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                      <ImageIcon className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                      <p className="text-sm text-gray-500 mb-4">اختر صورة للمشروع</p>
+                      <div className="flex gap-2 justify-center">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleImageCapture(true)}
+                        >
+                          <Camera className="h-4 w-4 mr-2" />
+                          كاميرا
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleImageCapture(false)}
+                        >
+                          <Upload className="h-4 w-4 mr-2" />
+                          رفع صورة
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        handleImageSelect(file);
+                      }
+                    }}
+                  />
+                </div>
+
                 <DialogFooter>
                   <Button type="submit" disabled={createProjectMutation.isPending}>
                     {createProjectMutation.isPending ? "جاري الإنشاء..." : "إنشاء المشروع"}
@@ -388,7 +551,22 @@ export default function ProjectsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {projects.map((project) => (
             <Card key={project.id} className="relative overflow-hidden hover:shadow-lg transition-shadow">
-              <CardHeader className="pb-3">
+              {/* Project Image */}
+              {project.imageUrl ? (
+                <div className="relative h-48 overflow-hidden">
+                  <img 
+                    src={project.imageUrl} 
+                    alt={project.name}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                  <Badge className={`absolute top-3 right-3 ${getStatusColor(project.status)}`}>
+                    {getStatusText(project.status)}
+                  </Badge>
+                </div>
+              ) : null}
+              
+              <CardHeader className={project.imageUrl ? "pb-3" : "pb-3"}>
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
                     <CardTitle className="text-lg line-clamp-2">{project.name}</CardTitle>
@@ -397,9 +575,11 @@ export default function ProjectsPage() {
                       تم الإنشاء: {formatDate(project.createdAt)}
                     </CardDescription>
                   </div>
-                  <Badge className={getStatusColor(project.status)}>
-                    {getStatusText(project.status)}
-                  </Badge>
+                  {!project.imageUrl && (
+                    <Badge className={getStatusColor(project.status)}>
+                      {getStatusText(project.status)}
+                    </Badge>
+                  )}
                 </div>
               </CardHeader>
               
@@ -569,6 +749,69 @@ export default function ProjectsPage() {
                   </FormItem>
                 )}
               />
+
+              {/* Image Upload Section */}
+              <div className="space-y-4">
+                <FormLabel>صورة المشروع (اختيارية)</FormLabel>
+                
+                {editSelectedImage ? (
+                  <div className="relative">
+                    <img 
+                      src={editSelectedImage} 
+                      alt="صورة المشروع" 
+                      className="w-full h-48 object-cover rounded-lg border"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="absolute top-2 right-2"
+                      onClick={handleEditRemoveImage}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                    <ImageIcon className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                    <p className="text-sm text-gray-500 mb-4">اختر صورة للمشروع</p>
+                    <div className="flex gap-2 justify-center">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEditImageCapture(true)}
+                      >
+                        <Camera className="h-4 w-4 mr-2" />
+                        كاميرا
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEditImageCapture(false)}
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        رفع صورة
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                
+                <input
+                  ref={editFileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      handleEditImageSelect(file);
+                    }
+                  }}
+                />
+              </div>
+
               <DialogFooter>
                 <Button type="submit" disabled={updateProjectMutation.isPending}>
                   {updateProjectMutation.isPending ? "جاري التحديث..." : "حفظ التغييرات"}
