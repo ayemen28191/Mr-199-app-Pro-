@@ -225,63 +225,102 @@ export function EquipmentDetailsDialog({ equipment, open, onOpenChange, projects
                       </div>
                     </CardTitle>
                   </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-sm font-medium text-gray-600 dark:text-gray-400">اسم المعدة</label>
-                        <p className="text-lg font-semibold" data-testid="text-equipment-name">{equipment.name}</p>
+                  <CardContent className="p-6">
+                    {/* Header with Equipment Name and Status */}
+                    <div className="flex items-center justify-between mb-6 pb-4 border-b">
+                      <div className="flex items-center gap-3">
+                        <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                          {equipment.name.charAt(0)}
+                        </div>
+                        <div>
+                          <h3 className="text-xl font-bold text-gray-900 dark:text-white" data-testid="text-equipment-name">
+                            {equipment.name}
+                          </h3>
+                          <p className="text-sm text-gray-500 dark:text-gray-400" data-testid="text-equipment-code">
+                            {equipment.code}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-600 dark:text-gray-400">كود المعدة</label>
-                        <p className="text-lg font-semibold" data-testid="text-equipment-code">{equipment.code}</p>
+                      <Badge className={`${getStatusColor(equipment.status)} px-3 py-1 text-sm font-medium`} data-testid="badge-equipment-status">
+                        {getStatusText(equipment.status)}
+                      </Badge>
+                    </div>
+
+                    {/* Main Information Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                      {/* Type Card */}
+                      <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 p-4 rounded-lg border border-purple-100 dark:border-purple-800">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                            <span className="text-white text-sm font-bold">ن</span>
+                          </div>
+                          <label className="text-sm font-medium text-purple-700 dark:text-purple-300">النوع</label>
+                        </div>
+                        <p className="text-lg font-semibold text-purple-900 dark:text-purple-100" data-testid="text-equipment-type">
+                          {getTypeText(equipment.type)}
+                        </p>
                       </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-600 dark:text-gray-400">النوع</label>
-                        <p className="text-lg" data-testid="text-equipment-type">{getTypeText(equipment.type)}</p>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-600 dark:text-gray-400">الحالة</label>
-                        <Badge className={getStatusColor(equipment.status)} data-testid="badge-equipment-status">
-                          {getStatusText(equipment.status)}
-                        </Badge>
-                      </div>
-                      <div>
-                        <label className="text-sm font-medium text-gray-600 dark:text-gray-400">الموقع الحالي</label>
-                        <p className="text-lg" data-testid="text-current-location">
+
+                      {/* Location Card */}
+                      <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 p-4 rounded-lg border border-green-100 dark:border-green-800">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                            <span className="text-white text-sm font-bold">م</span>
+                          </div>
+                          <label className="text-sm font-medium text-green-700 dark:text-green-300">الموقع الحالي</label>
+                        </div>
+                        <p className="text-lg font-semibold text-green-900 dark:text-green-100" data-testid="text-current-location">
                           {equipment.currentProjectId 
                             ? projects.find(p => p.id === equipment.currentProjectId)?.name || 'مشروع غير معروف'
                             : 'المستودع'
                           }
                         </p>
                       </div>
+
+                      {/* Purchase Date Card */}
                       {equipment.purchaseDate && (
-                        <div>
-                          <label className="text-sm font-medium text-gray-600 dark:text-gray-400">تاريخ الشراء</label>
-                          <p className="text-lg" data-testid="text-purchase-date">
+                        <div className="bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                              <span className="text-white text-sm font-bold">ت</span>
+                            </div>
+                            <label className="text-sm font-medium text-blue-700 dark:text-blue-300">تاريخ الشراء</label>
+                          </div>
+                          <p className="text-lg font-semibold text-blue-900 dark:text-blue-100" data-testid="text-purchase-date">
                             {format(new Date(equipment.purchaseDate), 'dd/MM/yyyy', { locale: ar })}
                           </p>
                         </div>
                       )}
+
+                      {/* Purchase Price Card */}
                       {equipment.purchasePrice && (
-                        <div>
-                          <label className="text-sm font-medium text-gray-600 dark:text-gray-400">سعر الشراء</label>
-                          <p className="text-lg" data-testid="text-purchase-price">
+                        <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 p-4 rounded-lg border border-amber-100 dark:border-amber-800">
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="w-8 h-8 bg-amber-500 rounded-full flex items-center justify-center">
+                              <span className="text-white text-sm font-bold">س</span>
+                            </div>
+                            <label className="text-sm font-medium text-amber-700 dark:text-amber-300">سعر الشراء</label>
+                          </div>
+                          <p className="text-lg font-semibold text-amber-900 dark:text-amber-100" data-testid="text-purchase-price">
                             {equipment.purchasePrice.toLocaleString()} ر.س
                           </p>
                         </div>
                       )}
                     </div>
                     
+                    {/* Description Section */}
                     {equipment.description && (
-                      <>
-                        <Separator />
-                        <div>
-                          <label className="text-sm font-medium text-gray-600 dark:text-gray-400">الوصف</label>
-                          <p className="text-gray-700 dark:text-gray-300 mt-1" data-testid="text-equipment-description">
-                            {equipment.description}
-                          </p>
+                      <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg border border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center gap-2 mb-3">
+                          <div className="w-8 h-8 bg-gray-500 rounded-full flex items-center justify-center">
+                            <span className="text-white text-sm font-bold">و</span>
+                          </div>
+                          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">الوصف</label>
                         </div>
-                      </>
+                        <p className="text-gray-700 dark:text-gray-300 leading-relaxed" data-testid="text-equipment-description">
+                          {equipment.description}
+                        </p>
+                      </div>
                     )}
                   </CardContent>
                 </Card>

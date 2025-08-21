@@ -356,45 +356,59 @@ export function EquipmentManagement() {
 
             <CardContent className="pt-0">
               <div className="space-y-3">
-                {/* Location Info */}
-                <div className="flex items-center gap-2 text-sm">
-                  <MapPin className="h-4 w-4 text-gray-500" />
-                  <span className="text-gray-600 dark:text-gray-400">الموقع:</span>
-                  <span className="font-medium" data-testid={`text-location-${item.id}`}>
+                {/* Location Info Card */}
+                <div className="p-3 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg border border-green-100 dark:border-green-800">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                      <MapPin className="h-3 w-3 text-white" />
+                    </div>
+                    <span className="text-xs text-green-700 dark:text-green-300 font-medium">الموقع الحالي</span>
+                  </div>
+                  <p className="text-sm font-semibold text-green-900 dark:text-green-100 mt-1" data-testid={`text-location-${item.id}`}>
                     {item.currentProjectId 
                       ? projects.find(p => p.id === item.currentProjectId)?.name || 'مشروع غير معروف'
                       : 'المستودع'
                     }
-                  </span>
+                  </p>
                 </div>
 
                 {/* Purchase Info */}
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  {item.purchaseDate && (
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-gray-500" />
-                      <div>
-                        <p className="text-xs text-gray-500">تاريخ الشراء</p>
-                        <p className="font-medium">{formatDate(item.purchaseDate)}</p>
+                {(item.purchaseDate || item.purchasePrice) && (
+                  <div className="grid grid-cols-2 gap-3">
+                    {item.purchaseDate && (
+                      <div className="p-2 bg-gradient-to-r from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
+                        <div className="flex items-center gap-1 mb-1">
+                          <Calendar className="h-3 w-3 text-blue-500" />
+                          <span className="text-xs text-blue-700 dark:text-blue-300 font-medium">تاريخ الشراء</span>
+                        </div>
+                        <p className="text-xs font-semibold text-blue-900 dark:text-blue-100">{formatDate(item.purchaseDate)}</p>
                       </div>
-                    </div>
-                  )}
-                  {item.purchasePrice && (
-                    <div className="flex items-center gap-2">
-                      <DollarSign className="h-4 w-4 text-gray-500" />
-                      <div>
-                        <p className="text-xs text-gray-500">السعر</p>
-                        <p className="font-medium">{formatCurrency(Number(item.purchasePrice))}</p>
+                    )}
+                    {item.purchasePrice && (
+                      <div className="p-2 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-lg border border-amber-100 dark:border-amber-800">
+                        <div className="flex items-center gap-1 mb-1">
+                          <DollarSign className="h-3 w-3 text-amber-500" />
+                          <span className="text-xs text-amber-700 dark:text-amber-300 font-medium">السعر</span>
+                        </div>
+                        <p className="text-xs font-semibold text-amber-900 dark:text-amber-100">{formatCurrency(Number(item.purchasePrice))}</p>
                       </div>
-                    </div>
-                  )}
-                </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Description */}
                 {item.description && (
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 line-clamp-2" data-testid={`text-description-${item.id}`}>
-                    {item.description}
-                  </p>
+                  <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="w-4 h-4 bg-gray-500 rounded-full flex items-center justify-center">
+                        <span className="text-white text-xs font-bold">و</span>
+                      </div>
+                      <span className="text-xs text-gray-700 dark:text-gray-300 font-medium">الوصف</span>
+                    </div>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 line-clamp-2" data-testid={`text-description-${item.id}`}>
+                      {item.description}
+                    </p>
+                  </div>
                 )}
 
                 {/* Action Buttons */}
@@ -403,17 +417,17 @@ export function EquipmentManagement() {
                     variant="outline"
                     size="sm"
                     onClick={(e) => {e.stopPropagation(); handleEquipmentClick(item);}}
-                    className="flex-1"
+                    className="flex-1 bg-white hover:bg-blue-50 dark:bg-gray-800 dark:hover:bg-gray-700 border-blue-200 hover:border-blue-300 transition-all duration-200"
                     data-testid={`button-details-${item.id}`}
                   >
                     <Eye className="h-4 w-4 mr-1" />
                     التفاصيل
                   </Button>
                   <Button
-                    variant="outline"
+                    variant="default"
                     size="sm"
                     onClick={(e) => {e.stopPropagation(); handleTransferClick(item, e);}}
-                    className="flex-1"
+                    className="flex-1 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 transition-all duration-200"
                     data-testid={`button-transfer-${item.id}`}
                   >
                     <ArrowUpDown className="h-4 w-4 mr-1" />
