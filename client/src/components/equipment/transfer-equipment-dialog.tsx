@@ -49,12 +49,13 @@ export function TransferEquipmentDialog({ equipment, open, onOpenChange, project
       apiRequest(`/api/equipment/${equipment?.id}/transfer`, "POST", data),
     onSuccess: () => {
       // إعادة تحميل جميع البيانات المتعلقة بالمعدات
-      queryClient.invalidateQueries({ queryKey: ['equipment'] });
-      queryClient.invalidateQueries({ queryKey: ['equipment-movements'] });
+      queryClient.invalidateQueries({ 
+        predicate: (query) => Array.isArray(query.queryKey) && query.queryKey[0] === 'equipment'
+      });
+      queryClient.invalidateQueries({ 
+        predicate: (query) => Array.isArray(query.queryKey) && query.queryKey[0] === 'equipment-movements'
+      });
       queryClient.invalidateQueries({ queryKey: ['projects'] });
-      
-      // إعادة تحميل فورية لضمان التحديث
-      queryClient.refetchQueries({ queryKey: ['equipment'] });
       
       toast({
         title: "نجح النقل",

@@ -119,7 +119,9 @@ export function EquipmentManagement() {
       return await apiRequest(`/api/equipment/${id}`, "DELETE");
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['equipment'] });
+      queryClient.invalidateQueries({ 
+        predicate: (query) => Array.isArray(query.queryKey) && query.queryKey[0] === 'equipment'
+      });
       toast({
         title: "تم حذف المعدة بنجاح",
         description: "تم حذف المعدة من النظام نهائياً"
