@@ -474,19 +474,26 @@ export default function ProjectTransactionsSimple() {
                   color: "red",
                 },
                 {
-                  title: "المشتريات الآجلة",
-                  value: formatCurrency(totals.deferred || 0),
-                  icon: Clock,
-                  color: "amber",
-                },
-                {
                   title: "الرصيد النهائي",
                   value: formatCurrency(totals.balance || 0),
                   icon: DollarSign,
                   color: totals.balance >= 0 ? "blue" : "orange",
                 }
               ]} 
-              columns={5}
+              columns={4}
+            />
+            
+            {/* إحصائية المشتريات الآجلة منفصلة */}
+            <StatsGrid 
+              stats={[
+                {
+                  title: "المشتريات الآجلة",
+                  value: `${formatCurrency(totals.deferred || 0)} (لا تُحسب في الرصيد)`,
+                  icon: Clock,
+                  color: "amber",
+                }
+              ]} 
+              columns={1}
             />
 
             {/* جدول العمليات */}
