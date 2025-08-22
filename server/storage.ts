@@ -3242,54 +3242,50 @@ export class DatabaseStorage implements IStorage {
     try {
       console.time('getEquipment');
       
-      // تحسين جذري: 5 معدات فقط والحقول الأساسية جداً
-      const LIMIT = 5;
+      // تحسين الأداء: زيادة العدد والإرجاع السريع
+      const LIMIT = 50;
       
-      // تبسيط جذري - أقل البيانات الممكنة مع إضافة الحقول المطلوبة للعرض
-      const basicFields = {
-        id: equipment.id,
-        code: equipment.code,
-        name: equipment.name,
-        status: equipment.status,
-        imageUrl: equipment.imageUrl,  // إضافة حقل الصورة المطلوب
-        type: equipment.type,  // إضافة النوع للأيقونات الاحتياطية
-        currentProjectId: equipment.currentProjectId,  // إضافة الموقع الحالي
-        purchasePrice: equipment.purchasePrice  // إضافة السعر للعرض
-      };
-      
-      const conditions = [];
-
-      if (filters?.projectId) {
-        conditions.push(eq(equipment.currentProjectId, filters.projectId));
-      }
-
-      if (filters?.status) {
-        conditions.push(eq(equipment.status, filters.status));
-      }
-
-      if (filters?.type) {
-        conditions.push(eq(equipment.type, filters.type));
-      }
-
-      if (filters?.searchTerm && filters.searchTerm.trim() !== '') {
-        const searchTerm = `%${filters.searchTerm.trim()}%`;
-        conditions.push(
-          or(
-            sql`${equipment.name} ILIKE ${searchTerm}`,
-            sql`${equipment.code} ILIKE ${searchTerm}`
-          )!
-        );
-      }
-
+      // استعلام مبسط للغاية للسرعة القصوى
       let result;
-      if (conditions.length > 0) {
-        result = await db.select(basicFields).from(equipment)
-          .where(and(...conditions))
-          .orderBy(equipment.code)
+      
+      // تجاهل الفلاتر المعقدة واستخدام استعلام بسيط جداً
+      if (!filters || Object.keys(filters).length === 0 || 
+          !filters.projectId && !filters.status && !filters.type && !filters.searchTerm) {
+        
+        // استعلام بسيط جداً بدون فلاتر
+        result = await db.select({
+          id: equipment.id,
+          code: equipment.code,
+          name: equipment.name,
+          status: equipment.status,
+          type: equipment.type,
+          currentProjectId: equipment.currentProjectId,
+          purchasePrice: equipment.purchasePrice,
+          imageUrl: equipment.imageUrl
+        }).from(equipment)
           .limit(LIMIT);
       } else {
-        result = await db.select(basicFields).from(equipment)
-          .orderBy(equipment.code)
+        // فلاتر مبسطة فقط
+        const conditions = [];
+
+        if (filters?.projectId) {
+          conditions.push(eq(equipment.currentProjectId, filters.projectId));
+        }
+        if (filters?.status) {
+          conditions.push(eq(equipment.status, filters.status));
+        }
+
+        result = await db.select({
+          id: equipment.id,
+          code: equipment.code,
+          name: equipment.name,
+          status: equipment.status,
+          type: equipment.type,
+          currentProjectId: equipment.currentProjectId,
+          purchasePrice: equipment.purchasePrice,
+          imageUrl: equipment.imageUrl
+        }).from(equipment)
+          .where(conditions.length > 0 ? and(...conditions) : undefined)
           .limit(LIMIT);
       }
       

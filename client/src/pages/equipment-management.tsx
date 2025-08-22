@@ -68,11 +68,11 @@ export function EquipmentManagement() {
       if (!response.ok) throw new Error('فشل في جلب المعدات');
       return response.json();
     },
-    // تحسين للتحديث الفوري بعد النقل
-    staleTime: 0, // تحديث فوري
-    gcTime: 5 * 60 * 1000, // الاحتفاظ بالبيانات لـ 5 دقائق
-    refetchOnWindowFocus: true, // إعادة تحميل عند التركيز
-    refetchOnMount: true // إعادة تحميل عند التحميل
+    // تحسين الأداء - تقليل الطلبات غير الضرورية
+    staleTime: 2 * 60 * 1000, // البيانات طازجة لـ 2 دقيقة
+    gcTime: 10 * 60 * 1000, // الاحتفاظ بالبيانات لـ 10 دقائق
+    refetchOnWindowFocus: false, // عدم التحديث عند التركيز
+    refetchOnMount: false // عدم التحديث في كل تحميل
   });
 
   // جلب المشاريع لقائمة الفلاتر - محسن للأداء العالي
