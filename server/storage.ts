@@ -3278,14 +3278,18 @@ export class DatabaseStorage implements IStorage {
         return this.applyFiltersToCache(this.equipmentCache.data, filters);
       }
       
-      // استعلام فائق السرعة - 3 حقول فقط
+      // استعلام فائق السرعة - الحقول الأساسية + الصورة
       const result = await db.select({
         id: equipment.id,
         code: equipment.code,
         name: equipment.name,
         status: equipment.status,
         currentProjectId: equipment.currentProjectId,
-        type: equipment.type
+        type: equipment.type,
+        imageUrl: equipment.imageUrl,
+        description: equipment.description,
+        purchasePrice: equipment.purchasePrice,
+        purchaseDate: equipment.purchaseDate
       }).from(equipment)
         .limit(50); // حد أقصى 50
       
