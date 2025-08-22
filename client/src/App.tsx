@@ -52,6 +52,7 @@ function Router() {
       <Route path="/autocomplete-admin" component={AutocompleteAdminPage} />
 
       <Route path="/equipment" component={EquipmentManagement} />
+      <Route path="/equipment-management" component={EquipmentManagement} />
       <Route path="/reports" component={Reports} />
       <Route path="/advanced-reports" component={AdvancedReports} />
       <Route path="/workers-unified-reports" component={WorkersUnifiedReports} />
