@@ -32,6 +32,11 @@
     },
     "locales": {
       "ar": "./locales/ar.json"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "1eb4d7bc-13a7-4286-966f-2b103b2ac2fd"
+      }
     }
   }
 }
