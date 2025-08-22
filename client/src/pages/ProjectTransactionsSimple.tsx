@@ -4,10 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Search, Filter, TrendingUp, TrendingDown, Building2, Clock } from 'lucide-react';
+import { Search, Filter, TrendingUp, TrendingDown, Building2, Clock, DollarSign } from 'lucide-react';
 import { format } from 'date-fns';
 import { ar } from 'date-fns/locale';
 import { formatCurrency } from '@/lib/utils';
+import { StatsGrid } from '@/components/ui/stats-grid';
 
 interface Project {
   id: string;
@@ -451,94 +452,42 @@ export default function ProjectTransactionsSimple() {
 
         {selectedProject && (
           <>
-            {/* الإجماليات */}
-            <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
-              <Card className="bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 shadow-sm">
-                <CardContent className="p-3 sm:p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs sm:text-sm font-medium text-green-600 dark:text-green-400 truncate">
-                        الدخل المباشر
-                      </p>
-                      <p className="text-lg sm:text-xl font-bold text-green-700 dark:text-green-300 truncate">
-                        {formatCurrency(totals.income || 0)}
-                      </p>
-                    </div>
-                    <TrendingUp className="h-6 w-6 sm:h-7 sm:w-7 text-green-500 flex-shrink-0" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-cyan-50 dark:bg-cyan-900/20 border-cyan-200 dark:border-cyan-800 shadow-sm">
-                <CardContent className="p-3 sm:p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs sm:text-sm font-medium text-cyan-600 dark:text-cyan-400 truncate">
-                        من مشاريع أخرى
-                      </p>
-                      <p className="text-lg sm:text-xl font-bold text-cyan-700 dark:text-cyan-300 truncate">
-                        {formatCurrency(totals.transferFromProject || 0)}
-                      </p>
-                    </div>
-                    <Building2 className="h-6 w-6 sm:h-7 sm:w-7 text-cyan-500 flex-shrink-0" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 shadow-sm">
-                <CardContent className="p-3 sm:p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs sm:text-sm font-medium text-red-600 dark:text-red-400 truncate">
-                        إجمالي المصاريف
-                      </p>
-                      <p className="text-lg sm:text-xl font-bold text-red-700 dark:text-red-300 truncate">
-                        {formatCurrency(totals.expenses || 0)}
-                      </p>
-                    </div>
-                    <TrendingDown className="h-6 w-6 sm:h-7 sm:w-7 text-red-500 flex-shrink-0" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800 shadow-sm">
-                <CardContent className="p-3 sm:p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs sm:text-sm font-medium text-yellow-600 dark:text-yellow-400 truncate">
-                        المشتريات الآجلة
-                      </p>
-                      <p className="text-lg sm:text-xl font-bold text-yellow-700 dark:text-yellow-300 truncate">
-                        {formatCurrency(totals.deferred || 0)}
-                      </p>
-                      <p className="text-xs text-yellow-500 dark:text-yellow-400 mt-1 truncate">
-                        (لا تُحسب في الرصيد)
-                      </p>
-                    </div>
-                    <Clock className="h-6 w-6 sm:h-7 sm:w-7 text-yellow-500 flex-shrink-0" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className={`${totals.balance >= 0 ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800' : 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800'} shadow-sm xs:col-span-2 lg:col-span-1`}>
-                <CardContent className="p-3 sm:p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="min-w-0 flex-1">
-                      <p className={`text-xs sm:text-sm font-medium ${totals.balance >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-orange-600 dark:text-orange-400'} truncate`}>
-                        الرصيد النهائي
-                      </p>
-                      <p className={`text-lg sm:text-xl font-bold ${totals.balance >= 0 ? 'text-blue-700 dark:text-blue-300' : 'text-orange-700 dark:text-orange-300'} truncate`}>
-                        {formatCurrency(totals.balance || 0)}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
-                        (بدون المشتريات الآجلة)
-                      </p>
-                    </div>
-                    <TrendingUp className={`h-6 w-6 sm:h-7 sm:w-7 ${totals.balance >= 0 ? 'text-blue-500' : 'text-orange-500'} flex-shrink-0`} />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            {/* الإحصائيات باستخدام StatsGrid */}
+            <StatsGrid 
+              stats={[
+                {
+                  title: "الدخل المباشر",
+                  value: formatCurrency(totals.income || 0),
+                  icon: TrendingUp,
+                  color: "green",
+                },
+                {
+                  title: "من مشاريع أخرى",
+                  value: formatCurrency(totals.transferFromProject || 0),
+                  icon: Building2,
+                  color: "teal",
+                },
+                {
+                  title: "إجمالي المصاريف",
+                  value: formatCurrency(totals.expenses || 0),
+                  icon: TrendingDown,
+                  color: "red",
+                },
+                {
+                  title: "المشتريات الآجلة",
+                  value: formatCurrency(totals.deferred || 0),
+                  icon: Clock,
+                  color: "amber",
+                },
+                {
+                  title: "الرصيد النهائي",
+                  value: formatCurrency(totals.balance || 0),
+                  icon: DollarSign,
+                  color: totals.balance >= 0 ? "blue" : "orange",
+                }
+              ]} 
+              columns={5}
+            />
 
             {/* جدول العمليات */}
             <Card className="shadow-sm">
