@@ -16,7 +16,7 @@ import { Camera, Upload, X, Image as ImageIcon } from "lucide-react";
 const equipmentSchema = z.object({
   name: z.string().min(1, "اسم المعدة مطلوب"),
   code: z.string().optional(), // الكود سيكون تلقائياً
-  type: z.string().min(1, "نوع المعدة مطلوب"),
+  type: z.string().min(1, "فئة المعدة مطلوبة"),
   status: z.string().min(1, "حالة المعدة مطلوبة"),
   description: z.string().optional(),
   purchaseDate: z.string().optional(),
@@ -168,11 +168,11 @@ export function AddEquipmentDialog({ open, onOpenChange, projects }: AddEquipmen
                 name="type"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm font-medium">النوع *</FormLabel>
+                    <FormLabel className="text-sm font-medium">الفئة *</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger data-testid="select-equipment-type" className="h-9 text-sm">
-                          <SelectValue placeholder="اختر النوع" />
+                          <SelectValue placeholder="اختر الفئة" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
