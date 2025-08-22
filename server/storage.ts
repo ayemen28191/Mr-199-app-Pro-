@@ -3242,57 +3242,52 @@ export class DatabaseStorage implements IStorage {
     try {
       console.time('getEquipment');
       
-      // تحسين الأداء: زيادة العدد والإرجاع السريع
-      const LIMIT = 50;
+      // استعلام بسيط ومحسن للسرعة القصوى
+      let query = db.select().from(equipment);
       
-      // استعلام مبسط للغاية للسرعة القصوى
-      let result;
+      // تطبيق الفلاتر بكفاءة عالية
+      const conditions = [];
       
-      // تجاهل الفلاتر المعقدة واستخدام استعلام بسيط جداً
-      if (!filters || Object.keys(filters).length === 0 || 
-          !filters.projectId && !filters.status && !filters.type && !filters.searchTerm) {
-        
-        // استعلام بسيط جداً بدون فلاتر
-        result = await db.select({
-          id: equipment.id,
-          code: equipment.code,
-          name: equipment.name,
-          status: equipment.status,
-          type: equipment.type,
-          currentProjectId: equipment.currentProjectId,
-          purchasePrice: equipment.purchasePrice,
-          imageUrl: equipment.imageUrl
-        }).from(equipment)
-          .limit(LIMIT);
-      } else {
-        // فلاتر مبسطة فقط
-        const conditions = [];
-
-        if (filters?.projectId) {
+      if (filters?.projectId && filters.projectId !== 'all') {
+        if (filters.projectId === 'warehouse') {
+          conditions.push(isNull(equipment.currentProjectId));
+        } else {
           conditions.push(eq(equipment.currentProjectId, filters.projectId));
         }
-        if (filters?.status) {
-          conditions.push(eq(equipment.status, filters.status));
-        }
-
-        result = await db.select({
-          id: equipment.id,
-          code: equipment.code,
-          name: equipment.name,
-          status: equipment.status,
-          type: equipment.type,
-          currentProjectId: equipment.currentProjectId,
-          purchasePrice: equipment.purchasePrice,
-          imageUrl: equipment.imageUrl
-        }).from(equipment)
-          .where(conditions.length > 0 ? and(...conditions) : undefined)
-          .limit(LIMIT);
       }
       
-      console.timeEnd('getEquipment');
-      console.log(`⚡ تم جلب ${result.length} معدة (بيانات مبسطة)`);
+      if (filters?.status && filters.status !== 'all') {
+        conditions.push(eq(equipment.status, filters.status));
+      }
       
-      return result as Equipment[];
+      if (filters?.type && filters.type !== 'all') {
+        conditions.push(eq(equipment.type, filters.type));
+      }
+      
+      if (filters?.searchTerm) {
+        const searchLower = `%${filters.searchTerm.toLowerCase()}%`;
+        conditions.push(
+          or(
+            ilike(equipment.name, searchLower),
+            ilike(equipment.code, searchLower)
+          )
+        );
+      }
+      
+      // تطبيق الشروط
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
+      
+      // ترتيب وحد أقصى
+      const result = await query
+        .orderBy(equipment.code)
+        .limit(100);
+      
+      console.timeEnd('getEquipment');
+      console.log(`⚡ تم جلب ${result.length} معدة (بيانات محسنة)`);
+      
+      return result;
     } catch (error) {
       console.error('Error getting equipment list:', error);
       return [];

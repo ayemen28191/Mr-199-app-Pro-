@@ -69,11 +69,14 @@ export function EquipmentManagement() {
       if (!response.ok) throw new Error('فشل في جلب المعدات');
       return response.json();
     },
-    // تحسين الأداء - تقليل الطلبات غير الضرورية
-    staleTime: 2 * 60 * 1000, // البيانات طازجة لـ 2 دقيقة
-    gcTime: 10 * 60 * 1000, // الاحتفاظ بالبيانات لـ 10 دقائق
+    // تحسين أداء فائق - ذاكرة تخزين مؤقت قوية
+    staleTime: 10 * 60 * 1000, // البيانات طازجة لـ 10 دقائق
+    gcTime: 30 * 60 * 1000, // الاحتفاظ بالبيانات لـ 30 دقيقة
     refetchOnWindowFocus: false, // عدم التحديث عند التركيز
-    refetchOnMount: false // عدم التحديث في كل تحميل
+    refetchOnMount: false, // عدم التحديث في كل تحميل
+    refetchOnReconnect: false, // عدم التحديث عند إعادة الاتصال
+    retry: 1, // محاولة واحدة فقط عند الفشل
+    retryDelay: 1000, // تأخير قصير بين المحاولات
   });
 
   // جلب المشاريع لقائمة الفلاتر - محسن للأداء العالي
@@ -84,10 +87,13 @@ export function EquipmentManagement() {
       if (!response.ok) throw new Error('فشل في جلب المشاريع');
       return response.json();
     },
-    staleTime: 5 * 60 * 1000, // البيانات طازجة لـ 5 دقائق
-    gcTime: 15 * 60 * 1000, // الاحتفاظ بالبيانات لـ 15 دقيقة
+    staleTime: 15 * 60 * 1000, // البيانات طازجة لـ 15 دقيقة
+    gcTime: 60 * 60 * 1000, // الاحتفاظ بالبيانات لـ 60 دقيقة
     refetchOnWindowFocus: false,
     refetchOnMount: false,
+    refetchOnReconnect: false,
+    retry: 1,
+    retryDelay: 1000,
   });
 
   const handleEquipmentClick = (item: Equipment) => {
