@@ -106,10 +106,34 @@ export function EquipmentManagement() {
     setShowDetailsDialog(true);
   };
 
+  // Mutation للحذف
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return await apiRequest(`/api/equipment/${id}`, "DELETE");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['equipment'] });
+      toast({
+        title: "تم حذف المعدة بنجاح",
+        description: "تم حذف المعدة من النظام نهائياً"
+      });
+      setShowEquipmentModal(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "خطأ في حذف المعدة", 
+        description: error.message || "حدث خطأ أثناء حذف المعدة",
+        variant: "destructive"
+      });
+    }
+  });
+
   const handleDeleteClick = (item: Equipment, e?: React.MouseEvent) => {
     e?.stopPropagation();
-    // Add delete logic here
-    console.log('Delete equipment:', item.name);
+    
+    if (confirm(`هل أنت متأكد من حذف المعدة "${item.name}" نهائياً؟\n\nلا يمكن التراجع عن هذا الإجراء.`)) {
+      deleteMutation.mutate(item.id);
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -1351,9 +1375,10 @@ export function EquipmentManagement() {
                       setShowEquipmentModal(false);
                       handleDeleteClick(selectedEquipment);
                     }}
-                    className="bg-red-600 hover:bg-red-700 text-white rounded-full py-3 font-medium text-sm"
+                    disabled={deleteMutation.isPending}
+                    className="bg-red-600 hover:bg-red-700 disabled:bg-red-400 disabled:cursor-not-allowed text-white rounded-full py-3 font-medium text-sm"
                   >
-                    حذف
+                    {deleteMutation.isPending ? "جاري الحذف..." : "حذف"}
                   </Button>
                   <Button
                     onClick={() => {
