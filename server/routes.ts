@@ -76,12 +76,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get projects with statistics - مع حساب الإحصائيات الحقيقية
+  // Get projects with statistics - محسن للأداء الفائق
   app.get("/api/projects/with-stats", async (req, res) => {
     try {
+      console.time('projects-with-stats');
+      
       const projects = await storage.getProjects();
       
-      // حساب الإحصائيات الحقيقية لكل مشروع
+      // حساب الإحصائيات بشكل متوازي مع تحسين فائق
       const projectsWithStats = await Promise.all(
         projects.map(async (project) => {
           const stats = await storage.getProjectStatistics(project.id);
@@ -91,6 +93,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           };
         })
       );
+      
+      console.timeEnd('projects-with-stats');
+      console.log(`⚡ تم جلب ${projectsWithStats.length} مشروع مع الإحصائيات`);
       
       res.json(projectsWithStats);
     } catch (error) {

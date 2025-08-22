@@ -272,6 +272,14 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  // Cache للمعدات - تحسين الأداء الفائق
+  private equipmentCache: { data: any[], timestamp: number } | null = null;
+  
+  // Cache للإحصائيات - تحسين الأداء الفائق للمشاريع 
+  private projectStatsCache: Map<string, { data: any, timestamp: number }> = new Map();
+  
+  private readonly CACHE_DURATION = 2 * 60 * 1000; // 2 دقائق cache
+
   // Projects
   async getProjects(): Promise<Project[]> {
     return await db.select().from(projects);
@@ -1903,6 +1911,17 @@ export class DatabaseStorage implements IStorage {
     lastActivity: string;
   }> {
     try {
+      console.time(`getProjectStatistics-${projectId}`);
+      
+      // فحص Cache أولاً - تحسين الأداء الفائق
+      const now = Date.now();
+      const cachedStats = this.projectStatsCache.get(projectId);
+      if (cachedStats && (now - cachedStats.timestamp) < this.CACHE_DURATION) {
+        console.log(`⚡ استخدام Cache للمشروع ${projectId} - سرعة فائقة!`);
+        console.timeEnd(`getProjectStatistics-${projectId}`);
+        return cachedStats.data;
+      }
+      
       console.log(`🔍 حساب إحصائيات المشروع: ${projectId}`);
       
       // حساب الإحصائيات الكلية الحقيقية من جميع المعاملات
@@ -2027,6 +2046,15 @@ export class DatabaseStorage implements IStorage {
         materialPurchases: materialCount,
         lastActivity: new Date().toISOString().split('T')[0]
       };
+
+      // حفظ في Cache للاستخدام السريع لاحقاً
+      this.projectStatsCache.set(projectId, {
+        data: result,
+        timestamp: now
+      });
+      
+      console.timeEnd(`getProjectStatistics-${projectId}`);
+      console.log(`⚡ تم حساب وحفظ إحصائيات المشروع ${projectId} في Cache`);
 
       return result;
     } catch (error) {
@@ -3232,10 +3260,6 @@ export class DatabaseStorage implements IStorage {
       return undefined;
     }
   }
-
-  // Cache للمعدات المبسطة
-  private equipmentCache: { data: any[], timestamp: number } | null = null;
-  private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 دقائق
 
   async getEquipment(filters?: {
     projectId?: string;
