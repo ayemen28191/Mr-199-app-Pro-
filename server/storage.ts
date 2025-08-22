@@ -1902,22 +1902,8 @@ export class DatabaseStorage implements IStorage {
     materialPurchases: number;
     lastActivity: string;
   }> {
-    // إرجاع إحصائيات فارغة فوراً لتحسين الأداء 
-    return {
-      totalWorkers: 0,
-      totalExpenses: 0,
-      totalIncome: 0,
-      currentBalance: 0,
-      activeWorkers: 0,
-      completedDays: 0,
-      materialPurchases: 0,
-      lastActivity: new Date().toISOString().split('T')[0]
-    };
-
-    /*
-    // الكود المُعطَّل مؤقتاً لتحسين الأداء
     try {
-      // console.log(`🔍 حساب إحصائيات المشروع: ${projectId}`);
+      console.log(`🔍 حساب إحصائيات المشروع: ${projectId}`);
       
       // حساب الإحصائيات الكلية الحقيقية من جميع المعاملات
       const [
@@ -2014,10 +2000,6 @@ export class DatabaseStorage implements IStorage {
       const totalMisc = parseFloat((miscExpenses.rows[0] as any)?.total || '0');
       const totalWorkerTransfers = parseFloat((workerTransfers.rows[0] as any)?.total || '0');
 
-      // تسجيل القيم للتأكد من صحة البيانات
-      // تم إيقاف الطباعة التفصيلية لتحسين الأداء
-      // console.log(`📊 تفاصيل الحسابات للمشروع ${projectId}:`);
-
       // الإجمالي الكلي للدخل والمصروفات - مع تصحيح منطق التحويلات الصادرة
       const totalIncome = totalFundTransfers + totalProjectIn;
       const totalExpenses = totalWages + totalMaterialsCash + totalTransport + totalMisc + totalWorkerTransfers + totalProjectOut;
@@ -2037,7 +2019,7 @@ export class DatabaseStorage implements IStorage {
 
       const result = {
         totalWorkers: totalWorkers,
-        totalExpenses: Math.round(totalExpenses * 100) / 100, // المصاريف الحقيقية فقط (بدون التحويلات)
+        totalExpenses: Math.round(totalExpenses * 100) / 100,
         totalIncome: Math.round(totalIncome * 100) / 100,
         currentBalance: Math.round(currentBalance * 100) / 100,
         activeWorkers: totalWorkers, // نفترض أن جميع العمال نشطين
@@ -2046,8 +2028,21 @@ export class DatabaseStorage implements IStorage {
         lastActivity: new Date().toISOString().split('T')[0]
       };
 
-      // تم تعطيل الكود مؤقتاً
-      */
+      return result;
+    } catch (error) {
+      console.error('خطأ في حساب إحصائيات المشروع:', error);
+      // إرجاع إحصائيات فارغة في حالة الخطأ
+      return {
+        totalWorkers: 0,
+        totalExpenses: 0,
+        totalIncome: 0,
+        currentBalance: 0,
+        activeWorkers: 0,
+        completedDays: 0,
+        materialPurchases: 0,
+        lastActivity: new Date().toISOString().split('T')[0]
+      };
+    }
   }
 
   // Autocomplete data methods - محسنة مع حدود وذاكرة تخزين مؤقت
