@@ -368,20 +368,7 @@ export default function Reports() {
   const currentCategory = reportCategories.find(cat => cat.id === selectedCategory);
 
   return (
-    <div className="p-6 space-y-6" data-testid="reports-page">
-      {/* رأس الصفحة */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">نظام التقارير الاحترافي</h1>
-          <p className="text-muted-foreground mt-1">إدارة شاملة لجميع تقارير المشروع</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => window.location.reload()} data-testid="button-refresh">
-            <RefreshCw className="w-4 h-4 mr-2" />
-            تحديث البيانات
-          </Button>
-        </div>
-      </div>
+    <div className="p-2 md:p-6 space-y-4 md:space-y-6" data-testid="reports-page">
 
       {/* اختيار المشروع */}
       <ProjectSelector
@@ -399,49 +386,64 @@ export default function Reports() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <StatsGrid 
-              stats={[
-                {
-                  title: "إجمالي الدخل",
-                  value: reportStats.totalIncome,
-                  icon: TrendingUp,
-                  color: "green",
-                  formatter: formatCurrency,
-                  "data-testid": "stat-total-income"
-                },
-                {
-                  title: "إجمالي المصروفات",
-                  value: reportStats.totalExpenses,
-                  icon: TrendingDown,
-                  color: "red",
-                  formatter: formatCurrency,
-                  "data-testid": "stat-total-expenses"
-                },
-                {
-                  title: "الرصيد الحالي",
-                  value: reportStats.currentBalance,
-                  icon: DollarSign,
-                  color: reportStats.currentBalance >= 0 ? "green" : "red",
-                  formatter: formatCurrency,
-                  "data-testid": "stat-current-balance"
-                },
-                {
-                  title: "عدد العمال",
-                  value: reportStats.totalWorkers,
-                  icon: Users,
-                  color: "blue",
-                  "data-testid": "stat-total-workers"
-                }
-              ]} 
-              columns={4}
-            />
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+              <Card className="bg-gradient-to-br from-green-50 to-green-100 border-green-200">
+                <CardContent className="p-3 md:p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <p className="text-xs md:text-sm font-medium text-green-700">إجمالي الدخل</p>
+                      <p className="text-sm md:text-lg font-bold text-green-900">{formatCurrency(reportStats.totalIncome.toString())}</p>
+                    </div>
+                    <TrendingUp className="h-6 w-6 md:h-8 md:w-8 text-green-600" />
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-gradient-to-br from-red-50 to-red-100 border-red-200">
+                <CardContent className="p-3 md:p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <p className="text-xs md:text-sm font-medium text-red-700">إجمالي المصروفات</p>
+                      <p className="text-sm md:text-lg font-bold text-red-900">{formatCurrency(reportStats.totalExpenses.toString())}</p>
+                    </div>
+                    <TrendingDown className="h-6 w-6 md:h-8 md:w-8 text-red-600" />
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className={`bg-gradient-to-br ${reportStats.currentBalance >= 0 ? 'from-emerald-50 to-emerald-100 border-emerald-200' : 'from-rose-50 to-rose-100 border-rose-200'}`}>
+                <CardContent className="p-3 md:p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <p className={`text-xs md:text-sm font-medium ${reportStats.currentBalance >= 0 ? 'text-emerald-700' : 'text-rose-700'}`}>الرصيد الحالي</p>
+                      <p className={`text-sm md:text-lg font-bold ${reportStats.currentBalance >= 0 ? 'text-emerald-900' : 'text-rose-900'}`}>
+                        {formatCurrency(reportStats.currentBalance.toString())}
+                      </p>
+                    </div>
+                    <DollarSign className={`h-6 w-6 md:h-8 md:w-8 ${reportStats.currentBalance >= 0 ? 'text-emerald-600' : 'text-rose-600'}`} />
+                  </div>
+                </CardContent>
+              </Card>
+              
+              <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
+                <CardContent className="p-3 md:p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-1">
+                      <p className="text-xs md:text-sm font-medium text-blue-700">عدد العمال</p>
+                      <p className="text-sm md:text-lg font-bold text-blue-900">{reportStats.totalWorkers}</p>
+                    </div>
+                    <Users className="h-6 w-6 md:h-8 md:w-8 text-blue-600" />
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </CardContent>
         </Card>
       )}
 
       {/* فئات التقارير */}
       <Tabs value={selectedCategory} onValueChange={setSelectedCategory}>
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 gap-1 md:gap-0">
           {reportCategories.map((category) => {
             const Icon = category.icon;
             return (
@@ -452,7 +454,7 @@ export default function Reports() {
                 data-testid={`tab-${category.id}`}
               >
                 <Icon className="w-4 h-4" />
-                {category.name}
+                <span className="hidden sm:inline">{category.name}</span>
               </TabsTrigger>
             );
           })}

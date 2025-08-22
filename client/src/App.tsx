@@ -22,6 +22,8 @@ import SuppliersProPage from "@/pages/suppliers-professional";
 import SupplierAccountsPage from "@/pages/supplier-accounts";
 import AutocompleteAdminPage from "@/pages/autocomplete-admin";
 import { EquipmentManagement } from "@/pages/equipment-management";
+import AdvancedReports from "@/pages/advanced-reports";
+import WorkersUnifiedReports from "@/pages/workers-unified-reports";
 
 import Header from "@/components/layout/header";
 import BottomNavigation from "@/components/layout/bottom-navigation";
@@ -36,12 +38,14 @@ function Router() {
       <Route path="/projects" component={ProjectsPage} />
       <Route path="/workers" component={WorkersPage} />
       <Route path="/worker-accounts" component={WorkerAccountsPage} />
+      <Route path="/suppliers" component={SuppliersProPage} />
       <Route path="/suppliers-pro" component={SuppliersProPage} />
       <Route path="/supplier-accounts" component={SupplierAccountsPage} />
       <Route path="/worker-attendance" component={WorkerAttendance} />
 
       <Route path="/daily-expenses" component={DailyExpenses} />
       <Route path="/material-purchase" component={MaterialPurchase} />
+      <Route path="/material-purchases" component={MaterialPurchase} />
 
       <Route path="/project-transfers" component={ProjectTransfers} />
       <Route path="/project-transactions" component={ProjectTransactionsPage} />
@@ -49,6 +53,8 @@ function Router() {
 
       <Route path="/equipment" component={EquipmentManagement} />
       <Route path="/reports" component={Reports} />
+      <Route path="/advanced-reports" component={AdvancedReports} />
+      <Route path="/workers-unified-reports" component={WorkersUnifiedReports} />
 
       <Route component={NotFound} />
     </Switch>
