@@ -65,83 +65,26 @@ function Router() {
 }
 
 function App() {
-  const [isLoading, setIsLoading] = useState(true);
-  const [loadingProgress, setLoadingProgress] = useState(0);
-
   useEffect(() => {
-    // التحقق من وجود خيار تخطي التحميل الدائم (للمطورين)
-    const skipLoadingPermanent = localStorage.getItem('skipLoading') === 'true';
-    if (skipLoadingPermanent) {
-      setIsLoading(false);
-      return;
-    }
-
-    // التحقق من إذا كانت هذه أول زيارة في الجلسة الحالية
-    const hasShownLoadingThisSession = sessionStorage.getItem('hasShownLoading') === 'true';
-    if (hasShownLoadingThisSession) {
-      setIsLoading(false);
-      return;
-    }
-
-    // إذا كانت أول زيارة، عرض شاشة التحميل
-    sessionStorage.setItem('hasShownLoading', 'true');
-
-    // محاكاة تحميل التطبيق
-    const loadingSteps = [
-      { progress: 20, message: "جاري تحميل الإعدادات..." },
-      { progress: 40, message: "جاري الاتصال بقاعدة البيانات..." },
-      { progress: 60, message: "جاري تحميل المشاريع..." },
-      { progress: 80, message: "جاري تحضير الواجهة..." },
-      { progress: 100, message: "مرحباً بك!" }
-    ];
-
-    let currentStep = 0;
-    const interval = setInterval(() => {
-      if (currentStep < loadingSteps.length) {
-        setLoadingProgress(loadingSteps[currentStep].progress);
-        currentStep++;
-      } else {
-        clearInterval(interval);
-        // إنهاء التحميل بعد ثانية واحدة
-        setTimeout(() => setIsLoading(false), 1000);
+    // إضافة تأخير بسيط للتأكد من أن HTML loader يظهر أولاً
+    const timer = setTimeout(() => {
+      // إخفاء الـ HTML loader وإظهار React app
+      const htmlLoader = document.getElementById('initial-loader');
+      const root = document.getElementById('root');
+      
+      if (htmlLoader) {
+        htmlLoader.classList.add('fade-out');
+        setTimeout(() => {
+          htmlLoader.style.display = 'none';
+          if (root) {
+            root.classList.add('loaded');
+          }
+        }, 500);
       }
-    }, 600);
+    }, 1500); // إظهار HTML loader لمدة 1.5 ثانية
 
-    // إضافة مفتاح للتخطي السريع (مفيد للمطورين)
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' || (e.ctrlKey && e.key === 's')) {
-        clearInterval(interval);
-        setIsLoading(false);
-        // تخطي دائم إذا ضغط Ctrl+S
-        if (e.ctrlKey && e.key === 's') {
-          localStorage.setItem('skipLoading', 'true');
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyPress);
-
-    return () => {
-      clearInterval(interval);
-      window.removeEventListener('keydown', handleKeyPress);
-    };
+    return () => clearTimeout(timer);
   }, []);
-
-  if (isLoading) {
-    return (
-      <ProfessionalLoader 
-        showProgress={true}
-        progress={loadingProgress}
-        message={
-          loadingProgress <= 20 ? "جاري تحميل الإعدادات..." :
-          loadingProgress <= 40 ? "جاري الاتصال بقاعدة البيانات..." :
-          loadingProgress <= 60 ? "جاري تحميل المشاريع..." :
-          loadingProgress <= 80 ? "جاري تحضير الواجهة..." :
-          "مرحباً بك!"
-        }
-      />
-    );
-  }
 
   return (
     <QueryClientProvider client={queryClient}>
