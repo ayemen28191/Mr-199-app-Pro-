@@ -6,12 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Search, Wrench, Truck, ArrowUpDown, PenTool, Settings, Eye, MapPin, Calendar, DollarSign, Activity, MoreVertical, Edit, Trash2, Image, X, Heart, FileSpreadsheet, FileText, Printer, Download, BarChart3 } from "lucide-react";
+import { Plus, Search, Wrench, Truck, ArrowUpDown, PenTool, Settings, Eye, MapPin, Calendar, DollarSign, Activity, MoreVertical, Edit, Trash2, Image, X, Heart, FileSpreadsheet, FileText, Printer, Download, BarChart3, History } from "lucide-react";
 import { StatsCard, StatsGrid } from "@/components/ui/stats-card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useFloatingButton } from "@/components/layout/floating-button-context";
 import { AddEquipmentDialog } from "@/components/equipment/add-equipment-dialog";
 import { TransferEquipmentDialog } from "@/components/equipment/transfer-equipment-dialog";
+import { EquipmentMovementHistoryDialog } from "@/components/equipment/equipment-movement-history-dialog";
 import { Equipment } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -28,6 +29,7 @@ export function EquipmentManagement() {
   const [selectedEquipment, setSelectedEquipment] = useState<Equipment | null>(null);
   const [showDetailsDialog, setShowDetailsDialog] = useState(false);
   const [showTransferDialog, setShowTransferDialog] = useState(false);
+  const [showMovementHistoryDialog, setShowMovementHistoryDialog] = useState(false);
   const [enlargedImage, setEnlargedImage] = useState<string | null>(null);
   const [showEquipmentModal, setShowEquipmentModal] = useState(false);
   
@@ -103,6 +105,12 @@ export function EquipmentManagement() {
     e?.stopPropagation();
     setSelectedEquipment(item);
     setShowDetailsDialog(true);
+  };
+
+  const handleMovementHistoryClick = (item: Equipment, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setSelectedEquipment(item);
+    setShowMovementHistoryDialog(true);
   };
 
   // Mutation للحذف
@@ -1269,6 +1277,13 @@ export function EquipmentManagement() {
         projects={projects}
       />
 
+      <EquipmentMovementHistoryDialog
+        equipment={selectedEquipment}
+        open={showMovementHistoryDialog}
+        onOpenChange={setShowMovementHistoryDialog}
+        projects={projects}
+      />
+
       {/* Equipment Detail Modal - Restaurant Style */}
       <Dialog open={showEquipmentModal} onOpenChange={setShowEquipmentModal}>
         <DialogContent className="max-w-md mx-auto bg-white dark:bg-gray-800 rounded-3xl p-0 overflow-hidden border-0 shadow-2xl">
@@ -1359,7 +1374,7 @@ export function EquipmentManagement() {
                 )}
 
                 {/* Action Buttons */}
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   <Button
                     onClick={() => {
                       setShowEquipmentModal(false);
@@ -1368,6 +1383,16 @@ export function EquipmentManagement() {
                     className="bg-blue-500 hover:bg-blue-600 text-white rounded-full py-3 font-medium text-sm"
                   >
                     تعديل
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setShowEquipmentModal(false);
+                      handleMovementHistoryClick(selectedEquipment);
+                    }}
+                    className="bg-purple-500 hover:bg-purple-600 text-white rounded-full py-3 font-medium text-sm flex items-center gap-1 justify-center"
+                  >
+                    <History className="w-4 h-4" />
+                    السجل
                   </Button>
                   <Button
                     onClick={() => {
