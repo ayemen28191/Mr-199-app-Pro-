@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -31,27 +31,30 @@ interface AddEquipmentDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   projects: any[];
+  equipment?: any; // للتعديل - إضافة المعدة للتحرير
 }
 
-export function AddEquipmentDialog({ open, onOpenChange, projects }: AddEquipmentDialogProps) {
+export function AddEquipmentDialog({ open, onOpenChange, projects, equipment }: AddEquipmentDialogProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
 
+  const isEditing = !!equipment;
+
   const form = useForm<EquipmentFormData>({
     resolver: zodResolver(equipmentSchema),
     defaultValues: {
-      name: "",
-      code: "", // سيتم توليده تلقائياً
-      type: "أدوات كهربائية",
-      status: "active",
-      description: "",
-      purchaseDate: "",
-      purchasePrice: "",
-      currentProjectId: null,
-      imageUrl: "",
+      name: equipment?.name || "",
+      code: equipment?.code || "", 
+      type: equipment?.type || "أدوات كهربائية",
+      status: equipment?.status || "active",
+      description: equipment?.description || "",
+      purchaseDate: equipment?.purchaseDate || "",
+      purchasePrice: equipment?.purchasePrice?.toString() || "",
+      currentProjectId: equipment?.currentProjectId || null,
+      imageUrl: equipment?.imageUrl || "",
     },
   });
 
@@ -98,13 +101,19 @@ export function AddEquipmentDialog({ open, onOpenChange, projects }: AddEquipmen
     }
   };
 
-  const addMutation = useMutation({
-    mutationFn: (data: EquipmentFormData) => apiRequest("/api/equipment", "POST", data),
+  const saveMutation = useMutation({
+    mutationFn: (data: EquipmentFormData) => {
+      if (isEditing && equipment?.id) {
+        return apiRequest(`/api/equipment/${equipment.id}`, "PUT", data);
+      } else {
+        return apiRequest("/api/equipment", "POST", data);
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['equipment'] });
       toast({
         title: "نجح الحفظ",
-        description: "تم إضافة المعدة بنجاح",
+        description: isEditing ? "تم تحديث المعدة بنجاح" : "تم إضافة المعدة بنجاح",
         variant: "default",
       });
       form.reset();
@@ -114,11 +123,31 @@ export function AddEquipmentDialog({ open, onOpenChange, projects }: AddEquipmen
     onError: (error: any) => {
       toast({
         title: "خطأ",
-        description: error.message || "فشل في إضافة المعدة",
+        description: error.message || (isEditing ? "حدث خطأ أثناء تحديث المعدة" : "حدث خطأ أثناء إضافة المعدة"),
         variant: "destructive",
       });
     },
   });
+
+  // تعبئة النموذج في حالة التعديل
+  useEffect(() => {
+    if (equipment && isEditing) {
+      form.reset({
+        name: equipment.name || "",
+        code: equipment.code || "", 
+        type: equipment.type || "أدوات كهربائية",
+        status: equipment.status || "active",
+        description: equipment.description || "",
+        purchaseDate: equipment.purchaseDate || "",
+        purchasePrice: equipment.purchasePrice?.toString() || "",
+        currentProjectId: equipment.currentProjectId || null,
+        imageUrl: equipment.imageUrl || "",
+      });
+      if (equipment.imageUrl) {
+        setSelectedImage(equipment.imageUrl);
+      }
+    }
+  }, [equipment, isEditing, form]);
 
   const onSubmit = (data: EquipmentFormData) => {
     const submitData = {
@@ -126,16 +155,16 @@ export function AddEquipmentDialog({ open, onOpenChange, projects }: AddEquipmen
       purchasePrice: data.purchasePrice ? data.purchasePrice : undefined,
       currentProjectId: data.currentProjectId || null,
     };
-    addMutation.mutate(submitData);
+    saveMutation.mutate(submitData);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[95vw] max-w-[500px] max-h-[90vh] overflow-y-auto" dir="rtl">
         <DialogHeader className="pb-3">
-          <DialogTitle className="text-lg">إضافة معدة جديدة</DialogTitle>
+          <DialogTitle className="text-lg">{isEditing ? "تعديل المعدة" : "إضافة معدة جديدة"}</DialogTitle>
           <DialogDescription className="text-sm text-gray-600">
-            أدخل تفاصيل المعدة الجديدة
+            {isEditing ? "قم بتحديث بيانات المعدة" : "أدخل تفاصيل المعدة الجديدة"}
           </DialogDescription>
         </DialogHeader>
 
@@ -407,11 +436,11 @@ export function AddEquipmentDialog({ open, onOpenChange, projects }: AddEquipmen
               </Button>
               <Button 
                 type="submit" 
-                disabled={addMutation.isPending}
+                disabled={saveMutation.isPending}
                 className="order-1 sm:order-2 h-9 text-sm"
                 data-testid="button-submit"
               >
-                {addMutation.isPending ? "جاري الحفظ..." : "إضافة المعدة"}
+                {saveMutation.isPending ? "جاري الحفظ..." : (isEditing ? "تحديث المعدة" : "إضافة المعدة")}
               </Button>
             </div>
           </form>

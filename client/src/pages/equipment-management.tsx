@@ -11,7 +11,6 @@ import { StatsCard, StatsGrid } from "@/components/ui/stats-card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useFloatingButton } from "@/components/layout/floating-button-context";
 import { AddEquipmentDialog } from "@/components/equipment/add-equipment-dialog";
-import { EquipmentDetailsDialog } from "@/components/equipment/equipment-details-dialog";
 import { TransferEquipmentDialog } from "@/components/equipment/transfer-equipment-dialog";
 import { Equipment } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
@@ -1256,11 +1255,11 @@ export function EquipmentManagement() {
         projects={projects}
       />
 
-      <EquipmentDetailsDialog
-        equipment={selectedEquipment}
+      <AddEquipmentDialog 
         open={showDetailsDialog}
         onOpenChange={setShowDetailsDialog}
         projects={projects}
+        equipment={selectedEquipment}
       />
 
       <TransferEquipmentDialog
