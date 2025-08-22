@@ -3233,6 +3233,10 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  // Cache للمعدات المبسطة
+  private equipmentCache: { data: any[], timestamp: number } | null = null;
+  private readonly CACHE_DURATION = 5 * 60 * 1000; // 5 دقائق
+
   async getEquipment(filters?: {
     projectId?: string;
     status?: string;
@@ -3242,56 +3246,79 @@ export class DatabaseStorage implements IStorage {
     try {
       console.time('getEquipment');
       
-      // استعلام بسيط ومحسن للسرعة القصوى مع limit صغير
-      let query = db.select().from(equipment);
-      
-      // تطبيق الفلاتر بكفاءة عالية
-      const conditions = [];
-      
-      if (filters?.projectId && filters.projectId !== 'all') {
-        if (filters.projectId === 'warehouse') {
-          conditions.push(isNull(equipment.currentProjectId));
-        } else {
-          conditions.push(eq(equipment.currentProjectId, filters.projectId));
-        }
+      // فحص Cache أولاً
+      const now = Date.now();
+      if (this.equipmentCache && (now - this.equipmentCache.timestamp) < this.CACHE_DURATION) {
+        console.log('⚡ استخدام Cache المحلي - سرعة فائقة!');
+        console.timeEnd('getEquipment');
+        return this.applyFiltersToCache(this.equipmentCache.data, filters);
       }
       
-      if (filters?.status && filters.status !== 'all') {
-        conditions.push(eq(equipment.status, filters.status));
-      }
+      // استعلام فائق السرعة - 3 حقول فقط
+      const result = await db.select({
+        id: equipment.id,
+        code: equipment.code,
+        name: equipment.name,
+        status: equipment.status,
+        currentProjectId: equipment.currentProjectId,
+        type: equipment.type
+      }).from(equipment)
+        .limit(50); // حد أقصى 50
       
-      if (filters?.type && filters.type !== 'all') {
-        conditions.push(eq(equipment.type, filters.type));
-      }
-      
-      if (filters?.searchTerm) {
-        const searchLower = `%${filters.searchTerm.toLowerCase()}%`;
-        conditions.push(
-          or(
-            ilike(equipment.name, searchLower),
-            ilike(equipment.code, searchLower)
-          )
-        );
-      }
-      
-      // تطبيق الشروط
-      if (conditions.length > 0) {
-        query = query.where(and(...conditions));
-      }
-      
-      // ترتيب ولكن limit صغير فقط (20 معدة)
-      const result = await query
-        .orderBy(equipment.code)
-        .limit(20);
+      // حفظ في Cache
+      this.equipmentCache = {
+        data: result,
+        timestamp: now
+      };
       
       console.timeEnd('getEquipment');
-      console.log(`⚡ تم جلب ${result.length} معدة (محسن ومحدود)`);
+      console.log(`⚡ تم جلب ${result.length} معدة وحفظها في Cache`);
       
-      return result;
+      return this.applyFiltersToCache(result, filters);
     } catch (error) {
       console.error('Error getting equipment list:', error);
       return [];
     }
+  }
+
+  private applyFiltersToCache(data: any[], filters?: {
+    projectId?: string;
+    status?: string;
+    type?: string;
+    searchTerm?: string;
+  }): any[] {
+    if (!filters) return data;
+
+    return data.filter(item => {
+      // فلتر المشروع
+      if (filters.projectId && filters.projectId !== 'all') {
+        if (filters.projectId === 'warehouse') {
+          if (item.currentProjectId) return false;
+        } else if (item.currentProjectId !== filters.projectId) {
+          return false;
+        }
+      }
+
+      // فلتر الحالة
+      if (filters.status && filters.status !== 'all' && item.status !== filters.status) {
+        return false;
+      }
+
+      // فلتر النوع
+      if (filters.type && filters.type !== 'all' && item.type !== filters.type) {
+        return false;
+      }
+
+      // فلتر البحث
+      if (filters.searchTerm) {
+        const searchLower = filters.searchTerm.toLowerCase();
+        const nameMatch = item.name?.toLowerCase().includes(searchLower);
+        const codeMatch = item.code?.toLowerCase().includes(searchLower);
+        if (!nameMatch && !codeMatch) return false;
+      }
+
+      return true;
+    });
   }
 
   async getEquipmentByCode(code: string): Promise<Equipment | undefined> {

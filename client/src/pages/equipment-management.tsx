@@ -69,15 +69,14 @@ export function EquipmentManagement() {
       if (!response.ok) throw new Error('فشل في جلب المعدات');
       return response.json();
     },
-    // تحسين أداء فائق - ذاكرة تخزين مؤقت قوية جداً
-    staleTime: 15 * 60 * 1000, // البيانات طازجة لـ 15 دقيقة
-    gcTime: 60 * 60 * 1000, // الاحتفاظ بالبيانات لـ 60 دقيقة
-    refetchOnWindowFocus: false, // عدم التحديث عند التركيز
-    refetchOnMount: false, // عدم التحديث في كل تحميل
-    refetchOnReconnect: false, // عدم التحديث عند إعادة الاتصال
-    retry: 1, // محاولة واحدة فقط عند الفشل
-    retryDelay: 500, // تأخير قصير جداً بين المحاولات
-    networkMode: 'online', // فقط عندما يكون الاتصال متاح
+    // تحسين أداء فائق مع Cache محلي
+    staleTime: 30 * 60 * 1000, // البيانات طازجة لـ 30 دقيقة!
+    gcTime: 2 * 60 * 60 * 1000, // الاحتفاظ بالبيانات لـ 2 ساعة
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    refetchOnReconnect: false,
+    retry: 0, // بدون إعادة محاولة - سرعة قصوى
+    enabled: true
   });
 
   // جلب المشاريع لقائمة الفلاتر - محسن للأداء العالي
