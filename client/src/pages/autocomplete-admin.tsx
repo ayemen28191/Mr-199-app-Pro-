@@ -138,25 +138,8 @@ export default function AutocompleteAdminPage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800" dir="rtl">
       <div className="container mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6">
         
-        {/* Header Section */}
-        <div className="text-center mb-6 sm:mb-8">
-          <div className="flex items-center justify-center gap-3 mb-3">
-            <div className="p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl shadow-lg">
-              <Settings className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
-            </div>
-            <div>
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">
-                إعدادات الإكمال التلقائي
-              </h1>
-              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-300">
-                إدارة وصيانة نظام الاقتراحات التلقائية
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* الإحصائيات الرئيسية مع تصميم محسّن للهواتف */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+        {/* الإحصائيات الرئيسية - صفان بكارتين في كل صف */}
+        <div className="grid grid-cols-2 gap-3 sm:gap-4">
           <Card className="border-0 shadow-lg bg-gradient-to-br from-blue-500 to-blue-600 text-white hover:shadow-xl transition-all duration-300">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
