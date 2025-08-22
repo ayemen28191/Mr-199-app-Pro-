@@ -1,0 +1,4 @@
+run = "cd mobile-construction-app && npx expo start --tunnel"
+
+[deployment]
+run = ["sh", "-c", "cd mobile-construction-app && npx expo start --tunnel"]

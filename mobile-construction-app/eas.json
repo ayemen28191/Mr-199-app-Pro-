@@ -1,0 +1,20 @@
+{
+  "cli": { "version": ">= 11.0.0" },
+  "build": {
+    "preview": {
+      "android": { 
+        "buildType": "apk",
+        "node": "18.x.x"
+      }
+    },
+    "production": {
+      "android": { 
+        "buildType": "app-bundle",
+        "node": "18.x.x"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
