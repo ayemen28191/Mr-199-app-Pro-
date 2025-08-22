@@ -146,14 +146,16 @@ export function ProfessionalLoader({
         </motion.p>
 
         {/* نصيحة تخطي التحميل (مخفية للمطورين) */}
-        <motion.p 
-          className="text-xs text-muted-foreground/50 mt-2 opacity-0 hover:opacity-100 transition-opacity duration-300"
+        <motion.div 
+          className="text-xs text-muted-foreground/50 mt-2 text-center space-y-1"
           initial={{ opacity: 0 }}
           animate={{ opacity: 0.3 }}
           transition={{ delay: 2, duration: 0.6 }}
         >
-          اضغط Esc لتخطي التحميل
-        </motion.p>
+          <p className="opacity-0 hover:opacity-100 transition-opacity duration-300">
+            Esc: تخطي الآن | Ctrl+S: تخطي دائماً
+          </p>
+        </motion.div>
       </div>
     </div>
   );

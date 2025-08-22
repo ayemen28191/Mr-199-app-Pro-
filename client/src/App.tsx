@@ -69,12 +69,22 @@ function App() {
   const [loadingProgress, setLoadingProgress] = useState(0);
 
   useEffect(() => {
-    // التحقق من وجود خيار تخطي التحميل في localStorage (للمطورين)
-    const skipLoading = localStorage.getItem('skipLoading') === 'true';
-    if (skipLoading) {
+    // التحقق من وجود خيار تخطي التحميل الدائم (للمطورين)
+    const skipLoadingPermanent = localStorage.getItem('skipLoading') === 'true';
+    if (skipLoadingPermanent) {
       setIsLoading(false);
       return;
     }
+
+    // التحقق من إذا كانت هذه أول زيارة في الجلسة الحالية
+    const hasShownLoadingThisSession = sessionStorage.getItem('hasShownLoading') === 'true';
+    if (hasShownLoadingThisSession) {
+      setIsLoading(false);
+      return;
+    }
+
+    // إذا كانت أول زيارة، عرض شاشة التحميل
+    sessionStorage.setItem('hasShownLoading', 'true');
 
     // محاكاة تحميل التطبيق
     const loadingSteps = [
@@ -102,7 +112,10 @@ function App() {
       if (e.key === 'Escape' || (e.ctrlKey && e.key === 's')) {
         clearInterval(interval);
         setIsLoading(false);
-        localStorage.setItem('skipLoading', 'true');
+        // تخطي دائم إذا ضغط Ctrl+S
+        if (e.ctrlKey && e.key === 's') {
+          localStorage.setItem('skipLoading', 'true');
+        }
       }
     };
 
