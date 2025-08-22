@@ -5,11 +5,7 @@
   "build": {
     "preview": {
       "android": { 
-        "buildType": "apk",
-        "env": {
-          "EXPO_PUBLIC_SUPABASE_URL": "",
-          "EXPO_PUBLIC_SUPABASE_ANON": ""
-        }
+        "buildType": "apk"
       }
     },
     "production": {
