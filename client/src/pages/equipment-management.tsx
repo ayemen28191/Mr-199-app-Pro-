@@ -253,7 +253,7 @@ export function EquipmentManagement() {
       );
       
       // إضافة رأس الجدول
-      const headers = ['الكود', 'اسم المعدة', 'النوع', 'الحالة', 'الموقع', 'سعر الشراء', 'تاريخ الشراء', 'الوصف'];
+      const headers = ['الكود', 'اسم المعدة', 'الفئة', 'الحالة', 'الموقع', 'سعر الشراء', 'تاريخ الشراء', 'الوصف'];
       const headerRow = worksheet.addRow(headers);
       
       headers.forEach((_, index) => {
@@ -272,7 +272,7 @@ export function EquipmentManagement() {
       // تحديد عرض الأعمدة
       worksheet.getColumn(1).width = 15; // الكود
       worksheet.getColumn(2).width = 25; // اسم المعدة
-      worksheet.getColumn(3).width = 15; // النوع
+      worksheet.getColumn(3).width = 15; // الفئة
       worksheet.getColumn(4).width = 15; // الحالة
       worksheet.getColumn(5).width = 25; // الموقع
       worksheet.getColumn(6).width = 18; // سعر الشراء
@@ -658,7 +658,7 @@ export function EquipmentManagement() {
                 <tr>
                   <th>الكود</th>
                   <th>اسم المعدة</th>
-                  <th>النوع</th>
+                  <th>الفئة</th>
                   <th>الحالة</th>
                   <th>الموقع</th>
                   <th>سعر الشراء</th>
@@ -863,11 +863,11 @@ export function EquipmentManagement() {
             <SelectTrigger data-testid="select-type-filter" className="h-9 text-xs border-gray-200">
               <div className="flex items-center gap-1 truncate">
                 <Wrench className="h-3 w-3 text-gray-500 shrink-0" />
-                <SelectValue placeholder="النوع" />
+                <SelectValue placeholder="الفئة" />
               </div>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">جميع الأنواع</SelectItem>
+              <SelectItem value="all">جميع الفئات</SelectItem>
               <SelectItem value="أدوات">أدوات</SelectItem>
               <SelectItem value="أمتار">أمتار</SelectItem>
               <SelectItem value="مطارق">مطارق</SelectItem>
@@ -1000,16 +1000,16 @@ export function EquipmentManagement() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">فلترة حسب النوع</label>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">فلترة حسب الفئة</label>
                 <Select value={reportTypeFilter} onValueChange={setReportTypeFilter}>
                   <SelectTrigger data-testid="select-report-type-filter" className="h-9 text-sm">
                     <div className="flex items-center gap-2 truncate">
                       <Wrench className="h-3 w-3 text-gray-500 shrink-0" />
-                      <SelectValue placeholder="اختر النوع" />
+                      <SelectValue placeholder="اختر الفئة" />
                     </div>
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">جميع الأنواع</SelectItem>
+                    <SelectItem value="all">جميع الفئات</SelectItem>
                     <SelectItem value="أدوات">أدوات</SelectItem>
                     <SelectItem value="أمتار">أمتار</SelectItem>
                     <SelectItem value="مطارق">مطارق</SelectItem>
