@@ -868,17 +868,16 @@ export function EquipmentManagement() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">جميع الفئات</SelectItem>
-              <SelectItem value="أدوات">أدوات</SelectItem>
-              <SelectItem value="أمتار">أمتار</SelectItem>
-              <SelectItem value="مطارق">مطارق</SelectItem>
-              <SelectItem value="مكينة لحام">مكينة لحام</SelectItem>
-              <SelectItem value="جلخ كهربائي">جلخ كهربائي</SelectItem>
-              <SelectItem value="دريل">دريل</SelectItem>
-              <SelectItem value="تخزيق">تخزيق</SelectItem>
-              <SelectItem value="بانات">بانات</SelectItem>
-              <SelectItem value="مفاتيح">مفاتيح</SelectItem>
-              <SelectItem value="أسلاك">أسلاك</SelectItem>
-              <SelectItem value="دساميس">دساميس</SelectItem>
+              <SelectItem value="أدوات كهربائية">أدوات كهربائية</SelectItem>
+              <SelectItem value="أدوات يدوية">أدوات يدوية</SelectItem>
+              <SelectItem value="أدوات قياس">أدوات قياس</SelectItem>
+              <SelectItem value="معدات لحام">معدات لحام</SelectItem>
+              <SelectItem value="معدات حفر">معدات حفر</SelectItem>
+              <SelectItem value="معدات قطع">معدات قطع</SelectItem>
+              <SelectItem value="أدوات ربط">أدوات ربط</SelectItem>
+              <SelectItem value="مواد كهربائية">مواد كهربائية</SelectItem>
+              <SelectItem value="معدات أمان">معدات أمان</SelectItem>
+              <SelectItem value="أدوات نقل">أدوات نقل</SelectItem>
             </SelectContent>
           </Select>
 
@@ -1010,17 +1009,16 @@ export function EquipmentManagement() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">جميع الفئات</SelectItem>
-                    <SelectItem value="أدوات">أدوات</SelectItem>
-                    <SelectItem value="أمتار">أمتار</SelectItem>
-                    <SelectItem value="مطارق">مطارق</SelectItem>
-                    <SelectItem value="مكينة لحام">مكينة لحام</SelectItem>
-                    <SelectItem value="جلخ كهربائي">جلخ كهربائي</SelectItem>
-                    <SelectItem value="دريل">دريل</SelectItem>
-                    <SelectItem value="تخزيق">تخزيق</SelectItem>
-                    <SelectItem value="بانات">بانات</SelectItem>
-                    <SelectItem value="مفاتيح">مفاتيح</SelectItem>
-                    <SelectItem value="أسلاك">أسلاك</SelectItem>
-                    <SelectItem value="دساميس">دساميس</SelectItem>
+                    <SelectItem value="أدوات كهربائية">أدوات كهربائية</SelectItem>
+                    <SelectItem value="أدوات يدوية">أدوات يدوية</SelectItem>
+                    <SelectItem value="أدوات قياس">أدوات قياس</SelectItem>
+                    <SelectItem value="معدات لحام">معدات لحام</SelectItem>
+                    <SelectItem value="معدات حفر">معدات حفر</SelectItem>
+                    <SelectItem value="معدات قطع">معدات قطع</SelectItem>
+                    <SelectItem value="أدوات ربط">أدوات ربط</SelectItem>
+                    <SelectItem value="مواد كهربائية">مواد كهربائية</SelectItem>
+                    <SelectItem value="معدات أمان">معدات أمان</SelectItem>
+                    <SelectItem value="أدوات نقل">أدوات نقل</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
