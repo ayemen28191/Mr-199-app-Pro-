@@ -392,36 +392,17 @@ export default function ProjectTransactionsSimple() {
   const selectedProjectName = projects.find(p => p.id === selectedProject)?.name || '';
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4" dir="rtl">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* العنوان */}
-        <Card>
-          <CardHeader className="text-center">
-            <CardTitle className="text-3xl font-bold text-gray-900 dark:text-white flex items-center justify-center gap-2">
-              <Building2 className="h-8 w-8" />
-              سجل العمليات المالية
-            </CardTitle>
-            <p className="text-gray-600 dark:text-gray-400">
-              عرض وتحليل جميع المعاملات المالية للمشاريع
-            </p>
-          </CardHeader>
-        </Card>
-
-        {/* اختيار المشروع والفلاتر */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Filter className="h-5 w-5" />
-              اختيار المشروع والفلاتر
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-2 sm:p-4" dir="rtl">
+      <div className="max-w-7xl mx-auto space-y-3 sm:space-y-4">
+        {/* اختيار المشروع والفلاتر - مضغوط */}
+        <Card className="shadow-sm">
+          <CardContent className="p-3 sm:p-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {/* اختيار المشروع */}
               <div>
-                <label className="block text-sm font-medium mb-2">المشروع</label>
+                <label className="block text-xs font-medium mb-1 text-gray-600 dark:text-gray-400">المشروع</label>
                 <Select value={selectedProject} onValueChange={setSelectedProject}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-9 text-sm">
                     <SelectValue placeholder="اختر مشروعاً" />
                   </SelectTrigger>
                   <SelectContent>
@@ -436,9 +417,9 @@ export default function ProjectTransactionsSimple() {
 
               {/* نوع العملية */}
               <div>
-                <label className="block text-sm font-medium mb-2">نوع العملية</label>
+                <label className="block text-xs font-medium mb-1 text-gray-600 dark:text-gray-400">نوع العملية</label>
                 <Select value={filterType} onValueChange={setFilterType}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-9 text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -452,15 +433,15 @@ export default function ProjectTransactionsSimple() {
               </div>
 
               {/* البحث */}
-              <div>
-                <label className="block text-sm font-medium mb-2">البحث</label>
+              <div className="sm:col-span-2 lg:col-span-1">
+                <label className="block text-xs font-medium mb-1 text-gray-600 dark:text-gray-400">البحث</label>
                 <div className="relative">
-                  <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                  <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-3 w-3" />
                   <Input
                     placeholder="ابحث في الوصف..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pr-10"
+                    className="pr-8 h-9 text-sm"
                   />
                 </div>
               </div>
@@ -471,119 +452,119 @@ export default function ProjectTransactionsSimple() {
         {selectedProject && (
           <>
             {/* الإجماليات */}
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-              <Card className="bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
-                <CardContent className="pt-6">
+            <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+              <Card className="bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 shadow-sm">
+                <CardContent className="p-3 sm:p-4">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-green-600 dark:text-green-400">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs sm:text-sm font-medium text-green-600 dark:text-green-400 truncate">
                         الدخل المباشر
                       </p>
-                      <p className="text-2xl font-bold text-green-700 dark:text-green-300">
+                      <p className="text-lg sm:text-xl font-bold text-green-700 dark:text-green-300 truncate">
                         {formatCurrency(totals.income || 0)}
                       </p>
                     </div>
-                    <TrendingUp className="h-8 w-8 text-green-500" />
+                    <TrendingUp className="h-6 w-6 sm:h-7 sm:w-7 text-green-500 flex-shrink-0" />
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-cyan-50 dark:bg-cyan-900/20 border-cyan-200 dark:border-cyan-800">
-                <CardContent className="pt-6">
+              <Card className="bg-cyan-50 dark:bg-cyan-900/20 border-cyan-200 dark:border-cyan-800 shadow-sm">
+                <CardContent className="p-3 sm:p-4">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-cyan-600 dark:text-cyan-400">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs sm:text-sm font-medium text-cyan-600 dark:text-cyan-400 truncate">
                         من مشاريع أخرى
                       </p>
-                      <p className="text-2xl font-bold text-cyan-700 dark:text-cyan-300">
+                      <p className="text-lg sm:text-xl font-bold text-cyan-700 dark:text-cyan-300 truncate">
                         {formatCurrency(totals.transferFromProject || 0)}
                       </p>
                     </div>
-                    <Building2 className="h-8 w-8 text-cyan-500" />
+                    <Building2 className="h-6 w-6 sm:h-7 sm:w-7 text-cyan-500 flex-shrink-0" />
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
-                <CardContent className="pt-6">
+              <Card className="bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 shadow-sm">
+                <CardContent className="p-3 sm:p-4">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-red-600 dark:text-red-400">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs sm:text-sm font-medium text-red-600 dark:text-red-400 truncate">
                         إجمالي المصاريف
                       </p>
-                      <p className="text-2xl font-bold text-red-700 dark:text-red-300">
+                      <p className="text-lg sm:text-xl font-bold text-red-700 dark:text-red-300 truncate">
                         {formatCurrency(totals.expenses || 0)}
                       </p>
                     </div>
-                    <TrendingDown className="h-8 w-8 text-red-500" />
+                    <TrendingDown className="h-6 w-6 sm:h-7 sm:w-7 text-red-500 flex-shrink-0" />
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className="bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800">
-                <CardContent className="pt-6">
+              <Card className="bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800 shadow-sm">
+                <CardContent className="p-3 sm:p-4">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-yellow-600 dark:text-yellow-400">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs sm:text-sm font-medium text-yellow-600 dark:text-yellow-400 truncate">
                         المشتريات الآجلة
                       </p>
-                      <p className="text-2xl font-bold text-yellow-700 dark:text-yellow-300">
+                      <p className="text-lg sm:text-xl font-bold text-yellow-700 dark:text-yellow-300 truncate">
                         {formatCurrency(totals.deferred || 0)}
                       </p>
-                      <p className="text-xs text-yellow-500 dark:text-yellow-400 mt-1">
+                      <p className="text-xs text-yellow-500 dark:text-yellow-400 mt-1 truncate">
                         (لا تُحسب في الرصيد)
                       </p>
                     </div>
-                    <Clock className="h-8 w-8 text-yellow-500" />
+                    <Clock className="h-6 w-6 sm:h-7 sm:w-7 text-yellow-500 flex-shrink-0" />
                   </div>
                 </CardContent>
               </Card>
 
-              <Card className={`${totals.balance >= 0 ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800' : 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800'}`}>
-                <CardContent className="pt-6">
+              <Card className={`${totals.balance >= 0 ? 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800' : 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800'} shadow-sm xs:col-span-2 lg:col-span-1`}>
+                <CardContent className="p-3 sm:p-4">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <p className={`text-sm font-medium ${totals.balance >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-orange-600 dark:text-orange-400'}`}>
+                    <div className="min-w-0 flex-1">
+                      <p className={`text-xs sm:text-sm font-medium ${totals.balance >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-orange-600 dark:text-orange-400'} truncate`}>
                         الرصيد النهائي
                       </p>
-                      <p className={`text-2xl font-bold ${totals.balance >= 0 ? 'text-blue-700 dark:text-blue-300' : 'text-orange-700 dark:text-orange-300'}`}>
+                      <p className={`text-lg sm:text-xl font-bold ${totals.balance >= 0 ? 'text-blue-700 dark:text-blue-300' : 'text-orange-700 dark:text-orange-300'} truncate`}>
                         {formatCurrency(totals.balance || 0)}
                       </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
                         (بدون المشتريات الآجلة)
                       </p>
                     </div>
-                    <TrendingUp className={`h-8 w-8 ${totals.balance >= 0 ? 'text-blue-500' : 'text-orange-500'}`} />
+                    <TrendingUp className={`h-6 w-6 sm:h-7 sm:w-7 ${totals.balance >= 0 ? 'text-blue-500' : 'text-orange-500'} flex-shrink-0`} />
                   </div>
                 </CardContent>
               </Card>
             </div>
 
             {/* جدول العمليات */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span>سجل العمليات - {selectedProjectName}</span>
-                  <Badge variant="outline">
+            <Card className="shadow-sm">
+              <CardHeader className="p-3 sm:p-4 pb-2 sm:pb-3">
+                <CardTitle className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                  <span className="text-base sm:text-lg font-semibold truncate">سجل العمليات {selectedProjectName && `- ${selectedProjectName}`}</span>
+                  <Badge variant="outline" className="text-xs px-2 py-1">
                     {filteredTransactions.length} عملية
                   </Badge>
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-0">
                 {filteredTransactions.length === 0 ? (
-                  <div className="text-center py-8">
-                    <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-6 border border-blue-200 dark:border-blue-800">
-                      <Building2 className="h-12 w-12 text-blue-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold text-blue-800 dark:text-blue-300 mb-2">
+                  <div className="text-center py-6 sm:py-8 px-4">
+                    <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 sm:p-6 border border-blue-200 dark:border-blue-800">
+                      <Building2 className="h-10 w-10 sm:h-12 sm:w-12 text-blue-400 mx-auto mb-3 sm:mb-4" />
+                      <h3 className="text-base sm:text-lg font-semibold text-blue-800 dark:text-blue-300 mb-2">
                         لا توجد عمليات مالية
                       </h3>
-                      <p className="text-blue-600 dark:text-blue-400 mb-4">
+                      <p className="text-sm sm:text-base text-blue-600 dark:text-blue-400 mb-3 sm:mb-4">
                         {selectedProject ? 
                           'هذا المشروع لا يحتوي على عمليات مالية مسجلة بعد' : 
                           'يرجى اختيار مشروع لعرض العمليات المالية الخاصة به'
                         }
                       </p>
-                      <div className="text-sm text-blue-500 dark:text-blue-400">
+                      <div className="text-xs sm:text-sm text-blue-500 dark:text-blue-400">
                         💡 نصيحة: تأكد من إدخال البيانات التالية للمشروع:
                         <ul className="list-disc list-inside mt-2 space-y-1">
                           <li>تحويلات العهدة</li>
@@ -596,18 +577,73 @@ export default function ProjectTransactionsSimple() {
                     </div>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full table-auto">
-                      <thead>
-                        <tr className="border-b bg-gray-50 dark:bg-gray-800">
-                          <th className="text-right py-3 px-4 font-medium">التاريخ</th>
-                          <th className="text-right py-3 px-4 font-medium">النوع</th>
-                          <th className="text-right py-3 px-4 font-medium">الفئة</th>
-                          <th className="text-right py-3 px-4 font-medium">المبلغ</th>
-                          <th className="text-right py-3 px-4 font-medium">الوصف</th>
-                        </tr>
-                      </thead>
-                      <tbody>
+                  <>
+                    <div className="sm:hidden space-y-2 p-3">
+                      {/* عرض بطاقات للهواتف */}
+                      {filteredTransactions.map((transaction, index) => (
+                        <Card key={transaction.id} className="bg-white dark:bg-gray-800 shadow-sm border">
+                          <CardContent className="p-3">
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <Badge 
+                                    variant={
+                                      transaction.type === 'income' ? 'default' : 
+                                      transaction.type === 'transfer_from_project' ? 'secondary' : 
+                                      transaction.type === 'deferred' ? 'outline' : 'destructive'
+                                    } 
+                                    className={`text-xs px-2 py-0.5 flex-shrink-0 ${
+                                      transaction.type === 'income' ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' :
+                                      transaction.type === 'transfer_from_project' ? 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-300' :
+                                      transaction.type === 'deferred' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300' :
+                                      'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
+                                    }`}
+                                  >
+                                    {transaction.type === 'income' ? 'دخل' : 
+                                     transaction.type === 'transfer_from_project' ? 'تحويل' : 
+                                     transaction.type === 'deferred' ? 'آجل' : 'مصروف'}
+                                  </Badge>
+                                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                                    {format(new Date(transaction.date), 'dd/MM/yyyy', { locale: ar })}
+                                  </span>
+                                </div>
+                                <p className="text-sm font-medium text-gray-600 dark:text-gray-300 truncate">
+                                  {transaction.category}
+                                </p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
+                                  {transaction.description}
+                                </p>
+                              </div>
+                              <div className="text-left flex-shrink-0 ml-2">
+                                <p className={`text-sm font-bold ${
+                                  transaction.type === 'income' || transaction.type === 'transfer_from_project' 
+                                    ? 'text-green-600 dark:text-green-400' 
+                                    : transaction.type === 'deferred' 
+                                    ? 'text-yellow-600 dark:text-yellow-400'
+                                    : 'text-red-600 dark:text-red-400'
+                                }`}>
+                                  {formatCurrency(transaction.amount)}
+                                </p>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                    
+                    <div className="hidden sm:block overflow-x-auto">
+                      {/* جدول للأجهزة الأكبر */}
+                      <table className="w-full table-auto">
+                        <thead>
+                          <tr className="border-b bg-gray-50 dark:bg-gray-800">
+                            <th className="text-right py-2 px-3 text-sm font-medium">التاريخ</th>
+                            <th className="text-right py-2 px-3 text-sm font-medium">النوع</th>
+                            <th className="text-right py-2 px-3 text-sm font-medium">الفئة</th>
+                            <th className="text-right py-2 px-3 text-sm font-medium">المبلغ</th>
+                            <th className="text-right py-2 px-3 text-sm font-medium">الوصف</th>
+                          </tr>
+                        </thead>
+                        <tbody>
                         {filteredTransactions.map((transaction, index) => (
                           <tr key={transaction.id} className={`border-b ${index % 2 === 0 ? 'bg-white dark:bg-gray-900' : 'bg-gray-50 dark:bg-gray-800'} hover:bg-gray-100 dark:hover:bg-gray-700`}>
                             <td className="py-3 px-4 text-sm">
@@ -657,9 +693,10 @@ export default function ProjectTransactionsSimple() {
                             </td>
                           </tr>
                         ))}
-                      </tbody>
-                    </table>
-                  </div>
+                        </tbody>
+                      </table>
+                    </div>
+                  </>
                 )}
               </CardContent>
             </Card>
