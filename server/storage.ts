@@ -3242,7 +3242,7 @@ export class DatabaseStorage implements IStorage {
     try {
       console.time('getEquipment');
       
-      // استعلام بسيط ومحسن للسرعة القصوى
+      // استعلام بسيط ومحسن للسرعة القصوى مع limit صغير
       let query = db.select().from(equipment);
       
       // تطبيق الفلاتر بكفاءة عالية
@@ -3279,13 +3279,13 @@ export class DatabaseStorage implements IStorage {
         query = query.where(and(...conditions));
       }
       
-      // ترتيب وحد أقصى
+      // ترتيب ولكن limit صغير فقط (20 معدة)
       const result = await query
         .orderBy(equipment.code)
-        .limit(100);
+        .limit(20);
       
       console.timeEnd('getEquipment');
-      console.log(`⚡ تم جلب ${result.length} معدة (بيانات محسنة)`);
+      console.log(`⚡ تم جلب ${result.length} معدة (محسن ومحدود)`);
       
       return result;
     } catch (error) {

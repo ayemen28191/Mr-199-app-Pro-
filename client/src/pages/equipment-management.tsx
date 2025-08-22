@@ -51,8 +51,8 @@ export function EquipmentManagement() {
     return () => setFloatingAction(null);
   }, [setFloatingAction]);
 
-  // جلب المعدات مع الفلاتر - محسن للأداء العالي
-  const { data: equipment = [], isLoading, refetch } = useQuery({
+  // جلب المعدات مع الفلاتر - محسن للأداء الفائق والسرعة
+  const { data: equipment = [], isLoading, refetch, isFetching } = useQuery({
     queryKey: ['equipment', searchTerm, statusFilter, typeFilter, projectFilter],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -69,14 +69,15 @@ export function EquipmentManagement() {
       if (!response.ok) throw new Error('فشل في جلب المعدات');
       return response.json();
     },
-    // تحسين أداء فائق - ذاكرة تخزين مؤقت قوية
-    staleTime: 10 * 60 * 1000, // البيانات طازجة لـ 10 دقائق
-    gcTime: 30 * 60 * 1000, // الاحتفاظ بالبيانات لـ 30 دقيقة
+    // تحسين أداء فائق - ذاكرة تخزين مؤقت قوية جداً
+    staleTime: 15 * 60 * 1000, // البيانات طازجة لـ 15 دقيقة
+    gcTime: 60 * 60 * 1000, // الاحتفاظ بالبيانات لـ 60 دقيقة
     refetchOnWindowFocus: false, // عدم التحديث عند التركيز
     refetchOnMount: false, // عدم التحديث في كل تحميل
     refetchOnReconnect: false, // عدم التحديث عند إعادة الاتصال
     retry: 1, // محاولة واحدة فقط عند الفشل
-    retryDelay: 1000, // تأخير قصير بين المحاولات
+    retryDelay: 500, // تأخير قصير جداً بين المحاولات
+    networkMode: 'online', // فقط عندما يكون الاتصال متاح
   });
 
   // جلب المشاريع لقائمة الفلاتر - محسن للأداء العالي
