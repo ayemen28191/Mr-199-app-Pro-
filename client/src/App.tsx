@@ -3,6 +3,8 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { ProfessionalLoader } from "@/components/ui/professional-loader";
+import React, { useState, useEffect } from "react";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
 
@@ -63,6 +65,71 @@ function Router() {
 }
 
 function App() {
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadingProgress, setLoadingProgress] = useState(0);
+
+  useEffect(() => {
+    // التحقق من وجود خيار تخطي التحميل في localStorage (للمطورين)
+    const skipLoading = localStorage.getItem('skipLoading') === 'true';
+    if (skipLoading) {
+      setIsLoading(false);
+      return;
+    }
+
+    // محاكاة تحميل التطبيق
+    const loadingSteps = [
+      { progress: 20, message: "جاري تحميل الإعدادات..." },
+      { progress: 40, message: "جاري الاتصال بقاعدة البيانات..." },
+      { progress: 60, message: "جاري تحميل المشاريع..." },
+      { progress: 80, message: "جاري تحضير الواجهة..." },
+      { progress: 100, message: "مرحباً بك!" }
+    ];
+
+    let currentStep = 0;
+    const interval = setInterval(() => {
+      if (currentStep < loadingSteps.length) {
+        setLoadingProgress(loadingSteps[currentStep].progress);
+        currentStep++;
+      } else {
+        clearInterval(interval);
+        // إنهاء التحميل بعد ثانية واحدة
+        setTimeout(() => setIsLoading(false), 1000);
+      }
+    }, 600);
+
+    // إضافة مفتاح للتخطي السريع (مفيد للمطورين)
+    const handleKeyPress = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' || (e.ctrlKey && e.key === 's')) {
+        clearInterval(interval);
+        setIsLoading(false);
+        localStorage.setItem('skipLoading', 'true');
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyPress);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('keydown', handleKeyPress);
+    };
+  }, []);
+
+  if (isLoading) {
+    return (
+      <ProfessionalLoader 
+        showProgress={true}
+        progress={loadingProgress}
+        message={
+          loadingProgress <= 20 ? "جاري تحميل الإعدادات..." :
+          loadingProgress <= 40 ? "جاري الاتصال بقاعدة البيانات..." :
+          loadingProgress <= 60 ? "جاري تحميل المشاريع..." :
+          loadingProgress <= 80 ? "جاري تحضير الواجهة..." :
+          "مرحباً بك!"
+        }
+      />
+    );
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
