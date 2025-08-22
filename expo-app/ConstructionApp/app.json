@@ -1,0 +1,42 @@
+{
+  "expo": {
+    "name": "نظام إدارة المشاريع الإنشائية",
+    "slug": "construction-management",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#3b82f6"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#3b82f6"
+      },
+      "package": "com.constructionapp.management",
+      "versionCode": 1,
+      "edgeToEdgeEnabled": true
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "your-project-id-here"
+      }
+    },
+    "locales": {
+      "ar": "./locales/ar.json"
+    }
+  }
+}
