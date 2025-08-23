@@ -9,12 +9,195 @@ import {
   Modal,
   TextInput,
   Image,
+  ActivityIndicator,
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useProject } from '../context/ProjectContext';
 import { formatCurrency, formatDate } from '../lib/utils';
 import * as Icons from '../components/Icons';
-import type { Project, ProjectWithStats } from '../types';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+
+// مخطط التحقق مطابق للويب
+const insertProjectSchema = z.object({
+  name: z.string().min(3, 'اسم المشروع يجب أن يكون 3 أحرف على الأقل'),
+  status: z.enum(['active', 'completed', 'paused']).default('active'),
+  imageUrl: z.string().optional().default(''),
+});
+
+type InsertProject = z.infer<typeof insertProjectSchema>;
+
+interface ProjectStats {
+  totalWorkers: number;
+  totalExpenses: number;
+  totalIncome: number;
+  currentBalance: number;
+  activeWorkers: number;
+  completedDays: number;
+  materialPurchases: number;
+  lastActivity: string;
+}
+
+interface ProjectWithStats {
+  id: string;
+  name: string;
+  status: 'active' | 'completed' | 'paused';
+  imageUrl?: string;
+  createdAt: string;
+  stats: ProjectStats;
+}
+
+const ProjectCard = ({ 
+  project, 
+  onEdit, 
+  onDelete, 
+  isSelected, 
+  onSelect 
+}: {
+  project: ProjectWithStats;
+  onEdit: (project: ProjectWithStats) => void;
+  onDelete: (projectId: string) => void;
+  isSelected: boolean;
+  onSelect: (project: ProjectWithStats) => void;
+}) => {
+  const { colors } = useTheme();
+  
+  // حساب النسب المالية
+  const financialPercentage = project.stats.totalIncome > 0 
+    ? ((project.stats.currentBalance / project.stats.totalIncome) * 100)
+    : 0;
+
+  return (
+    <TouchableOpacity 
+      style={[
+        styles.projectCard,
+        { 
+          backgroundColor: colors.background,
+          borderColor: isSelected ? colors.primary : colors.border,
+          borderWidth: isSelected ? 2 : 1,
+        }
+      ]}
+      onPress={() => onSelect(project)}
+    >
+      {/* صورة المشروع مع overlay */}
+      <View style={styles.projectImageContainer}>
+        {project.imageUrl ? (
+          <Image source={{ uri: project.imageUrl }} style={styles.projectImage} />
+        ) : (
+          <View style={[styles.projectImagePlaceholder, { backgroundColor: colors.muted }]}>
+            <Icons.Building2 size={40} color={colors.textSecondary} />
+          </View>
+        )}
+        
+        {/* Status Badge */}
+        <View style={[
+          styles.statusBadge,
+          { 
+            backgroundColor: project.status === 'active' ? '#10b981' : 
+                             project.status === 'completed' ? '#3b82f6' : '#f59e0b'
+          }
+        ]}>
+          <Text style={styles.statusText}>
+            {project.status === 'active' ? 'نشط' : 
+             project.status === 'completed' ? 'مكتمل' : 'متوقف'}
+          </Text>
+        </View>
+      </View>
+
+      {/* معلومات المشروع */}
+      <View style={styles.projectContent}>
+        <View style={styles.projectHeader}>
+          <Text style={[styles.projectTitle, { color: colors.text }]}>
+            {project.name}
+          </Text>
+          <View style={styles.actionButtons}>
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: colors.primary + '20' }]}
+              onPress={() => onEdit(project)}
+            >
+              <Icons.Edit size={16} color={colors.primary} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.actionButton, { backgroundColor: '#ef4444' + '20' }]}
+              onPress={() => onDelete(project.id)}
+            >
+              <Icons.Trash2 size={16} color="#ef4444" />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* إحصائيات مالية في بطاقات ملونة */}
+        <View style={styles.financialCards}>
+          <View style={[styles.financialCard, { backgroundColor: '#10b981' + '15' }]}>
+            <Icons.TrendingUp size={16} color="#10b981" />
+            <View style={styles.financialCardContent}>
+              <Text style={[styles.financialCardLabel, { color: '#065f46' }]}>الإيرادات</Text>
+              <Text style={[styles.financialCardValue, { color: '#065f46' }]}>
+                {formatCurrency(project.stats.totalIncome)}
+              </Text>
+            </View>
+          </View>
+          
+          <View style={[styles.financialCard, { backgroundColor: '#ef4444' + '15' }]}>
+            <Icons.TrendingDown size={16} color="#ef4444" />
+            <View style={styles.financialCardContent}>
+              <Text style={[styles.financialCardLabel, { color: '#991b1b' }]}>المصاريف</Text>
+              <Text style={[styles.financialCardValue, { color: '#991b1b' }]}>
+                {formatCurrency(project.stats.totalExpenses)}
+              </Text>
+            </View>
+          </View>
+          
+          <View style={[styles.financialCard, { backgroundColor: colors.primary + '15' }]}>
+            <Icons.DollarSign size={16} color={colors.primary} />
+            <View style={styles.financialCardContent}>
+              <Text style={[styles.financialCardLabel, { color: colors.primary }]}>الرصيد</Text>
+              <Text style={[styles.financialCardValue, { color: colors.primary }]}>
+                {formatCurrency(project.stats.currentBalance)}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* شبكة إحصائيات 3×1 مطابقة للويب */}
+        <View style={styles.statsGrid}>
+          <View style={styles.statItem}>
+            <Icons.Users size={18} color={colors.primary} />
+            <Text style={[styles.statValue, { color: colors.text }]}>
+              {project.stats.totalWorkers}
+            </Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>العمال</Text>
+          </View>
+          
+          <View style={styles.statItem}>
+            <Icons.Package size={18} color="#10b981" />
+            <Text style={[styles.statValue, { color: colors.text }]}>
+              {project.stats.materialPurchases}
+            </Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>المشتريات</Text>
+          </View>
+          
+          <View style={styles.statItem}>
+            <Icons.Calendar size={18} color="#f59e0b" />
+            <Text style={[styles.statValue, { color: colors.text }]}>
+              {project.stats.completedDays}
+            </Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>أيام العمل</Text>
+          </View>
+        </View>
+
+        {/* آخر نشاط */}
+        <View style={styles.lastActivity}>
+          <Icons.Clock size={14} color={colors.textSecondary} />
+          <Text style={[styles.lastActivityText, { color: colors.textSecondary }]}>
+            آخر نشاط: {formatDate(project.stats.lastActivity)}
+          </Text>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+};
 
 export default function ProjectsScreen() {
   const { colors } = useTheme();
@@ -23,14 +206,26 @@ export default function ProjectsScreen() {
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [newProjectName, setNewProjectName] = useState('');
   const [editingProject, setEditingProject] = useState<ProjectWithStats | null>(null);
-  const [editForm, setEditForm] = useState({
-    name: '',
-    status: 'active' as const,
-    imageUrl: ''
+
+  // أشكال React Hook Form مطابقة للويب
+  const createForm = useForm<InsertProject>({
+    resolver: zodResolver(insertProjectSchema),
+    defaultValues: {
+      name: '',
+      status: 'active',
+      imageUrl: '',
+    },
   });
-  const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
+
+  const editForm = useForm<InsertProject>({
+    resolver: zodResolver(insertProjectSchema),
+    defaultValues: {
+      name: '',
+      status: 'active',
+      imageUrl: '',
+    },
+  });
 
   // تحميل المشاريع
   const loadProjects = async () => {
@@ -48,44 +243,20 @@ export default function ProjectsScreen() {
     }
   };
 
-  // التحقق من النموذج
-  const validateForm = (data: {name: string, status: string}) => {
-    const errors: {[key: string]: string} = {};
-    if (!data.name.trim()) {
-      errors.name = 'اسم المشروع مطلوب';
-    }
-    if (data.name.trim().length < 3) {
-      errors.name = 'اسم المشروع يجب أن يكون 3 أحرف على الأقل';
-    }
-    return errors;
-  };
-
-  // إضافة مشروع جديد مع validation
-  const addProject = async () => {
-    const errors = validateForm({name: newProjectName, status: 'active'});
-    if (Object.keys(errors).length > 0) {
-      setFormErrors(errors);
-      Alert.alert('خطأ في النموذج', errors.name || 'يرجى تصحيح الأخطاء');
-      return;
-    }
-    setFormErrors({});
-
+  // إضافة مشروع جديد مع React Hook Form
+  const onCreateSubmit = async (data: InsertProject) => {
     try {
       const response = await fetch('/api/projects', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          name: newProjectName.trim(),
-          status: 'active',
-        }),
+        body: JSON.stringify(data),
       });
 
       if (response.ok) {
-        setNewProjectName('');
+        createForm.reset();
         setShowAddModal(false);
-        setFormErrors({});
         loadProjects();
         Alert.alert('نجح', 'تم إضافة المشروع بنجاح');
       } else {
@@ -98,34 +269,23 @@ export default function ProjectsScreen() {
     }
   };
 
-  // حفظ تعديل المشروع مطابق للويب
-  const saveProject = async () => {
+  // تحديث مشروع مع React Hook Form
+  const onEditSubmit = async (data: InsertProject) => {
     if (!editingProject) return;
     
-    const errors = validateForm(editForm);
-    if (Object.keys(errors).length > 0) {
-      setFormErrors(errors);
-      Alert.alert('خطأ في النموذج', errors.name || 'يرجى تصحيح الأخطاء');
-      return;
-    }
-
     try {
       const response = await fetch(`/api/projects/${editingProject.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          name: editForm.name.trim(),
-          status: editForm.status,
-          imageUrl: editForm.imageUrl,
-        }),
+        body: JSON.stringify(data),
       });
 
       if (response.ok) {
-        setShowEditModal(false);
+        editForm.reset();
         setEditingProject(null);
-        setFormErrors({});
+        setShowEditModal(false);
         loadProjects();
         Alert.alert('نجح', 'تم تحديث المشروع بنجاح');
       } else {
@@ -138,413 +298,292 @@ export default function ProjectsScreen() {
     }
   };
 
-  // حساب الإحصائيات العامة مطابق للويب
-  const calculateOverallStats = () => {
-    return projects.reduce((acc, project) => {
-      return {
-        totalProjects: acc.totalProjects + 1,
-        activeProjects: acc.activeProjects + (project.status === 'active' ? 1 : 0),
-        totalIncome: acc.totalIncome + (project.stats?.totalIncome || 0),
-        totalExpenses: acc.totalExpenses + (project.stats?.totalExpenses || 0),
-        totalWorkers: acc.totalWorkers + (project.stats?.totalWorkers || 0),
-        materialPurchases: acc.materialPurchases + (project.stats?.materialPurchases || 0),
-      };
-    }, {
-      totalProjects: 0,
-      activeProjects: 0,
-      totalIncome: 0,
-      totalExpenses: 0,
-      totalWorkers: 0,
-      materialPurchases: 0,
+  // حذف مشروع مع تأكيد
+  const handleDeleteProject = async (projectId: string) => {
+    const project = projects.find(p => p.id === projectId);
+    Alert.alert(
+      'حذف المشروع',
+      `هل أنت متأكد من حذف المشروع "${project?.name}"؟ هذا الإجراء لا يمكن التراجع عنه.`,
+      [
+        { text: 'إلغاء', style: 'cancel' },
+        {
+          text: 'حذف',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const response = await fetch(`/api/projects/${projectId}`, {
+                method: 'DELETE',
+              });
+
+              if (response.ok) {
+                loadProjects();
+                Alert.alert('نجح', 'تم حذف المشروع بنجاح');
+              } else {
+                Alert.alert('خطأ', 'فشل في حذف المشروع');
+              }
+            } catch (error) {
+              console.error('خطأ في حذف المشروع:', error);
+              Alert.alert('خطأ', 'حدث خطأ أثناء حذف المشروع');
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  // تحديد مشروع
+  const handleSelectProject = (project: ProjectWithStats) => {
+    setSelectedProject(project.id, project.name);
+  };
+
+  // فتح نموذج التعديل
+  const handleEditProject = (project: ProjectWithStats) => {
+    setEditingProject(project);
+    editForm.reset({
+      name: project.name,
+      status: project.status,
+      imageUrl: project.imageUrl || '',
     });
+    setShowEditModal(true);
   };
 
   useEffect(() => {
     loadProjects();
   }, []);
 
-  // بطاقة المشروع - مطابقة للويب 100%
-  const ProjectCard = ({ project }: { project: ProjectWithStats }) => {
-    const getStatusColor = (status: string) => {
-      switch (status) {
-        case 'active': return '#22c55e';
-        case 'completed': return '#3b82f6';
-        case 'paused': return '#f59e0b';
-        default: return '#6b7280';
-      }
-    };
-
-    const getStatusText = (status: string) => {
-      switch (status) {
-        case 'active': return 'نشط';
-        case 'completed': return 'مكتمل';
-        case 'paused': return 'متوقف';
-        default: return 'غير محدد';
-      }
-    };
-
-    const handleEdit = () => {
-      setEditingProject(project);
-      setEditForm({
-        name: project.name,
-        status: project.status,
-        imageUrl: project.imageUrl || ''
-      });
-      setShowEditModal(true);
-    };
-
-    const handleDelete = () => {
-      Alert.alert(
-        'تأكيد الحذف',
-        `هل أنت متأكد من حذف المشروع "${project.name}"؟ سيتم حذف جميع البيانات المرتبطة بهذا المشروع ولا يمكن التراجع عن هذا الإجراء.`,
-        [
-          { text: 'إلغاء', style: 'cancel' },
-          { 
-            text: 'حذف المشروع', 
-            style: 'destructive',
-            onPress: () => {
-              console.log('Delete project:', project.id);
-              Alert.alert('تم الحذف', 'تم حذف المشروع بنجاح');
-            }
-          }
-        ]
-      );
-    };
-
-    return (
-      <View style={[styles.projectCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-        {/* صورة المشروع */}
-        {project.imageUrl ? (
-          <View style={styles.imageContainer}>
-            <Image source={{ uri: project.imageUrl }} style={styles.projectImage} />
-            <View style={styles.imageOverlay}>
-              <View style={[styles.statusBadge, { backgroundColor: getStatusColor(project.status) }]}>
-                <Text style={styles.statusText}>{getStatusText(project.status)}</Text>
-              </View>
-            </View>
-          </View>
-        ) : null}
-
-        {/* عنوان المشروع */}
-        <View style={styles.projectHeader}>
-          <View style={styles.projectInfo}>
-            <Text style={[styles.projectName, { color: colors.text }]}>{project.name}</Text>
-            <View style={styles.dateRow}>
-              <Icons.MapPin size={12} color={colors.textSecondary} />
-              <Text style={[styles.dateText, { color: colors.textSecondary }]}>
-                تم الإنشاء: {formatDate(project.createdAt)}
-              </Text>
-            </View>
-          </View>
-          {!project.imageUrl && (
-            <View style={[styles.statusBadge, { backgroundColor: getStatusColor(project.status) }]}>
-              <Text style={styles.statusText}>{getStatusText(project.status)}</Text>
-            </View>
-          )}
-        </View>
-
-        {/* الملخص المالي - 2 أعمدة مع gradients مطابقة للويب */}
-        <View style={styles.financialSummary}>
-          <View style={[styles.financeCard, styles.incomeGradient]}>
-            <View style={styles.financeHeader}>
-              <Icons.TrendingUp size={16} color="#16a34a" />
-              <Text style={[styles.financeLabel, { color: '#15803d' }]}>الدخل</Text>
-            </View>
-            <Text style={[styles.financeValue, { color: '#14532d' }]}>
-              {formatCurrency(project.stats.totalIncome)}
-            </Text>
-          </View>
-
-          <View style={[styles.financeCard, styles.expenseGradient]}>
-            <View style={styles.financeHeader}>
-              <Icons.DollarSign size={16} color="#dc2626" />
-              <Text style={[styles.financeLabel, { color: '#dc2626' }]}>المصروفات</Text>
-            </View>
-            <Text style={[styles.financeValue, { color: '#7f1d1d' }]}>
-              {formatCurrency(project.stats.totalExpenses)}
-            </Text>
-          </View>
-        </View>
-
-        {/* الرصيد الحالي مع gradient مطابق للويب */}
-        <View style={[styles.balanceCard, styles.balanceGradient]}>
-          <View style={styles.financeHeader}>
-            <Icons.BarChart size={16} color="#2563eb" />
-            <Text style={[styles.financeLabel, { color: '#1d4ed8' }]}>الرصيد الحالي</Text>
-          </View>
-          <Text style={[styles.balanceValue, { color: '#1e3a8a' }]}>
-            {formatCurrency(project.stats.currentBalance)}
-          </Text>
-        </View>
-
-        {/* شبكة الإحصائيات 3×1 */}
-        <View style={styles.statsGrid}>
-          <View style={styles.statCell}>
-            <Icons.UserCheck size={12} color={colors.textSecondary} />
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>العمال</Text>
-            <Text style={[styles.statValue, { color: colors.text }]}>{project.stats.totalWorkers}</Text>
-          </View>
-
-          <View style={styles.statCell}>
-            <Icons.Package size={12} color={colors.textSecondary} />
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>المشتريات</Text>
-            <Text style={[styles.statValue, { color: colors.text }]}>{project.stats.materialPurchases}</Text>
-          </View>
-
-          <View style={styles.statCell}>
-            <Icons.Calendar size={12} color={colors.textSecondary} />
-            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>أيام العمل</Text>
-            <Text style={[styles.statValue, { color: colors.text }]}>{project.stats.completedDays}</Text>
-          </View>
-        </View>
-
-        {/* آخر نشاط */}
-        {project.stats.lastActivity && (
-          <View style={styles.lastActivity}>
-            <Icons.Clock size={12} color={colors.textSecondary} />
-            <Text style={[styles.lastActivityText, { color: colors.textSecondary }]}>
-              آخر نشاط: {formatDate(project.stats.lastActivity)}
-            </Text>
-          </View>
-        )}
-
-        {/* أزرار الإجراءات */}
-        <View style={styles.actionButtons}>
-          <TouchableOpacity 
-            style={[styles.actionButton, styles.editButton, { borderColor: colors.border }]}
-            onPress={handleEdit}
-          >
-            <Icons.Edit size={12} color={colors.primary} />
-            <Text style={[styles.actionButtonText, { color: colors.primary }]}>تعديل</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={[styles.actionButton, styles.deleteButton, { borderColor: colors.border }]}
-            onPress={handleDelete}
-          >
-            <Icons.Trash size={12} color="#dc2626" />
-            <Text style={[styles.actionButtonText, { color: '#dc2626' }]}>حذف</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  };
-
   if (loading) {
     return (
-      <View style={[styles.container, styles.center, { backgroundColor: colors.background }]}>
-        <Text style={[styles.loadingText, { color: colors.text }]}>جاري التحميل...</Text>
+      <View style={[styles.container, styles.centered, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.primary} />
+        <Text style={[styles.loadingText, { color: colors.text }]}>جاري تحميل المشاريع...</Text>
       </View>
     );
   }
 
-  // حساب الإحصائيات للعرض
-  const overallStats = calculateOverallStats();
-  const currentBalance = overallStats.totalIncome - overallStats.totalExpenses;
-
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* عنوان الصفحة مع زر الإضافة */}
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>إدارة المشاريع</Text>
+      {/* Header */}
+      <View style={[styles.header, { backgroundColor: colors.background }]}>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>المشاريع</Text>
         <TouchableOpacity
           style={[styles.addButton, { backgroundColor: colors.primary }]}
           onPress={() => setShowAddModal(true)}
         >
-          <Text style={styles.addButtonText}>+ إضافة مشروع</Text>
+          <Icons.Plus size={20} color="white" />
+          <Text style={styles.addButtonText}>إضافة مشروع</Text>
         </TouchableOpacity>
       </View>
 
-      {/* شبكة الإحصائيات العامة مطابقة للويب 100% */}
-      <View style={styles.statsGrid}>
-        <View style={[styles.statCard, styles.blueGradient]}>
-          <View style={styles.statContent}>
-            <View style={styles.statIconContainer}>
-              <Icons.Building size={20} color="#2563eb" />
-            </View>
-            <View style={styles.statTextContainer}>
-              <Text style={[styles.statTitle, { color: colors.text }]}>إجمالي المصاريع</Text>
-              <Text style={[styles.statValue, { color: colors.text }]}>{overallStats.totalProjects}</Text>
-            </View>
-          </View>
-        </View>
-        
-        <View style={[styles.statCard, styles.greenGradient]}>
-          <View style={styles.statContent}>
-            <View style={styles.statIconContainer}>
-              <Icons.TrendingUp size={20} color="#16a34a" />
-            </View>
-            <View style={styles.statTextContainer}>
-              <Text style={[styles.statTitle, { color: colors.text }]}>المشاريع النشطة</Text>
-              <Text style={[styles.statValue, { color: colors.text }]}>{overallStats.activeProjects}</Text>
-            </View>
-          </View>
-        </View>
-        
-        <View style={[styles.statCard, currentBalance >= 0 ? styles.greenGradient : styles.redGradient]}>
-          <View style={styles.statContent}>
-            <View style={styles.statIconContainer}>
-              <Icons.DollarSign size={20} color={currentBalance >= 0 ? "#16a34a" : "#dc2626"} />
-            </View>
-            <View style={styles.statTextContainer}>
-              <Text style={[styles.statTitle, { color: colors.text }]}>الرصيد الإجمالي</Text>
-              <Text style={[styles.statValue, { color: colors.text }]}>{formatCurrency(currentBalance)}</Text>
-            </View>
-          </View>
-        </View>
-        
-        <View style={[styles.statCard, styles.purpleGradient]}>
-          <View style={styles.statContent}>
-            <View style={styles.statIconContainer}>
-              <Icons.UserCheck size={20} color="#7c3aed" />
-            </View>
-            <View style={styles.statTextContainer}>
-              <Text style={[styles.statTitle, { color: colors.text }]}>إجمالي العمال</Text>
-              <Text style={[styles.statValue, { color: colors.text }]}>{overallStats.totalWorkers}</Text>
-            </View>
-          </View>
-        </View>
-      </View>
-
       {/* قائمة المشاريع */}
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {projects.map((project) => (
-          <ProjectCard key={project.id} project={project} />
-        ))}
+      <ScrollView style={styles.projectsList} showsVerticalScrollIndicator={false}>
+        {projects.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Icons.Building2 size={48} color={colors.textSecondary} />
+            <Text style={[styles.emptyStateText, { color: colors.textSecondary }]}>
+              لا توجد مشاريع حتى الآن
+            </Text>
+            <Text style={[styles.emptyStateSubtext, { color: colors.textSecondary }]}>
+              ابدأ بإضافة مشروع جديد
+            </Text>
+          </View>
+        ) : (
+          projects.map((project) => (
+            <ProjectCard
+              key={project.id}
+              project={project}
+              onEdit={handleEditProject}
+              onDelete={handleDeleteProject}
+              isSelected={selectedProjectId === project.id}
+              onSelect={handleSelectProject}
+            />
+          ))
+        )}
       </ScrollView>
 
-      {/* مودال إضافة مشروع */}
+      {/* نموذج إضافة مشروع */}
       <Modal
         visible={showAddModal}
-        transparent={true}
         animationType="slide"
+        presentationStyle="pageSheet"
         onRequestClose={() => setShowAddModal(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
+        <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
+          <View style={styles.modalHeader}>
             <Text style={[styles.modalTitle, { color: colors.text }]}>إضافة مشروع جديد</Text>
-            
-            <TextInput
-              style={[
-                styles.input, 
-                { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border },
-                formErrors.name ? styles.inputError : {}
-              ]}
-              placeholder="اسم المشروع"
-              placeholderTextColor={colors.textSecondary}
-              value={newProjectName}
-              onChangeText={setNewProjectName}
-              textAlign="right"
-            />
-            {formErrors.name && (
-              <Text style={[styles.errorText, { color: '#dc2626' }]}>{formErrors.name}</Text>
-            )}
+            <TouchableOpacity onPress={() => setShowAddModal(false)}>
+              <Icons.X size={24} color={colors.textSecondary} />
+            </TouchableOpacity>
+          </View>
 
-            <View style={styles.modalButtons}>
+          <View style={styles.modalContent}>
+            <Controller
+              control={createForm.control}
+              name="name"
+              render={({ field: { onChange, value }, fieldState: { error } }) => (
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.inputLabel, { color: colors.text }]}>اسم المشروع</Text>
+                  <TextInput
+                    style={[
+                      styles.textInput,
+                      { 
+                        backgroundColor: colors.background,
+                        borderColor: error ? '#ef4444' : colors.border,
+                        color: colors.text
+                      }
+                    ]}
+                    value={value}
+                    onChangeText={onChange}
+                    placeholder="أدخل اسم المشروع"
+                    placeholderTextColor={colors.textSecondary}
+                  />
+                  {error && (
+                    <Text style={styles.errorText}>{error.message}</Text>
+                  )}
+                </View>
+              )}
+            />
+
+            <Controller
+              control={createForm.control}
+              name="status"
+              render={({ field: { onChange, value } }) => (
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.inputLabel, { color: colors.text }]}>حالة المشروع</Text>
+                  <View style={styles.statusSelector}>
+                    {(['active', 'completed', 'paused'] as const).map((status) => (
+                      <TouchableOpacity
+                        key={status}
+                        style={[
+                          styles.statusOption,
+                          {
+                            backgroundColor: value === status ? colors.primary : colors.background,
+                            borderColor: colors.border
+                          }
+                        ]}
+                        onPress={() => onChange(status)}
+                      >
+                        <Text style={[
+                          styles.statusOptionText,
+                          { color: value === status ? 'white' : colors.text }
+                        ]}>
+                          {status === 'active' ? 'نشط' : 
+                           status === 'completed' ? 'مكتمل' : 'متوقف'}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              )}
+            />
+
+            <View style={styles.modalActions}>
               <TouchableOpacity
-                style={[styles.button, styles.cancelButton, { backgroundColor: colors.surface }]}
-                onPress={() => {
-                  setShowAddModal(false);
-                  setFormErrors({});
-                  setNewProjectName('');
-                }}
+                style={[styles.cancelButton, { borderColor: colors.border }]}
+                onPress={() => setShowAddModal(false)}
               >
-                <Text style={[styles.buttonText, { color: colors.textSecondary }]}>إلغاء</Text>
+                <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>إلغاء</Text>
               </TouchableOpacity>
+              
               <TouchableOpacity
-                style={[styles.button, styles.confirmButton, { backgroundColor: colors.primary }]}
-                onPress={addProject}
+                style={[styles.submitButton, { backgroundColor: colors.primary }]}
+                onPress={createForm.handleSubmit(onCreateSubmit)}
               >
-                <Text style={[styles.buttonText, { color: 'white' }]}>إضافة</Text>
+                <Text style={styles.submitButtonText}>إضافة المشروع</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
 
-      {/* مودال تعديل المشروع مطابق للويب 100% */}
+      {/* نموذج تعديل مشروع */}
       <Modal
         visible={showEditModal}
-        transparent={true}
         animationType="slide"
+        presentationStyle="pageSheet"
         onRequestClose={() => setShowEditModal(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
+        <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
+          <View style={styles.modalHeader}>
             <Text style={[styles.modalTitle, { color: colors.text }]}>تعديل المشروع</Text>
-            
-            {/* اسم المشروع */}
-            <View style={styles.formField}>
-              <Text style={[styles.fieldLabel, { color: colors.text }]}>اسم المشروع</Text>
-              <TextInput
-                style={[
-                  styles.input, 
-                  { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border },
-                  formErrors.name ? styles.inputError : {}
-                ]}
-                placeholder="اسم المشروع"
-                placeholderTextColor={colors.textSecondary}
-                value={editForm.name}
-                onChangeText={(text) => setEditForm({...editForm, name: text})}
-                textAlign="right"
-              />
-              {formErrors.name && (
-                <Text style={[styles.errorText, { color: '#dc2626' }]}>{formErrors.name}</Text>
-              )}
-            </View>
+            <TouchableOpacity onPress={() => setShowEditModal(false)}>
+              <Icons.X size={24} color={colors.textSecondary} />
+            </TouchableOpacity>
+          </View>
 
-            {/* حالة المشروع */}
-            <View style={styles.formField}>
-              <Text style={[styles.fieldLabel, { color: colors.text }]}>حالة المشروع</Text>
-              <View style={styles.statusButtons}>
-                {[{value: 'active', label: 'نشط'}, {value: 'completed', label: 'مكتمل'}, {value: 'paused', label: 'متوقف'}].map((status) => (
-                  <TouchableOpacity
-                    key={status.value}
+          <View style={styles.modalContent}>
+            <Controller
+              control={editForm.control}
+              name="name"
+              render={({ field: { onChange, value }, fieldState: { error } }) => (
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.inputLabel, { color: colors.text }]}>اسم المشروع</Text>
+                  <TextInput
                     style={[
-                      styles.statusButton,
-                      { borderColor: colors.border },
-                      editForm.status === status.value ? { backgroundColor: colors.primary } : { backgroundColor: colors.surface }
+                      styles.textInput,
+                      { 
+                        backgroundColor: colors.background,
+                        borderColor: error ? '#ef4444' : colors.border,
+                        color: colors.text
+                      }
                     ]}
-                    onPress={() => setEditForm({...editForm, status: status.value as any})}
-                  >
-                    <Text style={[
-                      styles.statusButtonText,
-                      { color: editForm.status === status.value ? '#fff' : colors.text }
-                    ]}>{status.label}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
+                    value={value}
+                    onChangeText={onChange}
+                    placeholder="أدخل اسم المشروع"
+                    placeholderTextColor={colors.textSecondary}
+                  />
+                  {error && (
+                    <Text style={styles.errorText}>{error.message}</Text>
+                  )}
+                </View>
+              )}
+            />
 
-            {/* رابط الصورة */}
-            <View style={styles.formField}>
-              <Text style={[styles.fieldLabel, { color: colors.text }]}>رابط الصورة (اختياري)</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
-                placeholder="https://example.com/image.jpg"
-                placeholderTextColor={colors.textSecondary}
-                value={editForm.imageUrl}
-                onChangeText={(text) => setEditForm({...editForm, imageUrl: text})}
-                textAlign="right"
-              />
-            </View>
+            <Controller
+              control={editForm.control}
+              name="status"
+              render={({ field: { onChange, value } }) => (
+                <View style={styles.inputGroup}>
+                  <Text style={[styles.inputLabel, { color: colors.text }]}>حالة المشروع</Text>
+                  <View style={styles.statusSelector}>
+                    {(['active', 'completed', 'paused'] as const).map((status) => (
+                      <TouchableOpacity
+                        key={status}
+                        style={[
+                          styles.statusOption,
+                          {
+                            backgroundColor: value === status ? colors.primary : colors.background,
+                            borderColor: colors.border
+                          }
+                        ]}
+                        onPress={() => onChange(status)}
+                      >
+                        <Text style={[
+                          styles.statusOptionText,
+                          { color: value === status ? 'white' : colors.text }
+                        ]}>
+                          {status === 'active' ? 'نشط' : 
+                           status === 'completed' ? 'مكتمل' : 'متوقف'}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              )}
+            />
 
-            <View style={styles.modalButtons}>
+            <View style={styles.modalActions}>
               <TouchableOpacity
-                style={[styles.button, styles.cancelButton, { backgroundColor: colors.surface }]}
-                onPress={() => {
-                  setShowEditModal(false);
-                  setEditingProject(null);
-                  setFormErrors({});
-                }}
+                style={[styles.cancelButton, { borderColor: colors.border }]}
+                onPress={() => setShowEditModal(false)}
               >
-                <Text style={[styles.buttonText, { color: colors.textSecondary }]}>إلغاء</Text>
+                <Text style={[styles.cancelButtonText, { color: colors.textSecondary }]}>إلغاء</Text>
               </TouchableOpacity>
+              
               <TouchableOpacity
-                style={[styles.button, styles.saveButton, { backgroundColor: colors.primary }]}
-                onPress={saveProject}
+                style={[styles.submitButton, { backgroundColor: colors.primary }]}
+                onPress={editForm.handleSubmit(onEditSubmit)}
               >
-                <Text style={[styles.buttonText, { color: '#fff' }]}>حفظ التعديلات</Text>
+                <Text style={styles.submitButtonText}>حفظ التغييرات</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -557,361 +596,259 @@ export default function ProjectsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
   },
-  center: {
+  centered: {
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingText: {
+    marginTop: 10,
     fontSize: 16,
-    fontWeight: '600',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
   },
-  title: {
-    fontSize: 22,
+  headerTitle: {
+    fontSize: 24,
     fontWeight: 'bold',
   },
   addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
+    gap: 8,
   },
   addButtonText: {
     color: 'white',
     fontWeight: '600',
+    fontSize: 14,
+  },
+  projectsList: {
+    flex: 1,
+    paddingHorizontal: 20,
   },
   projectCard: {
     borderRadius: 12,
-    borderWidth: 1,
-    marginBottom: 16,
-    shadowOffset: { width: 0, height: 2 },
+    marginVertical: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    overflow: 'hidden',
+    shadowRadius: 3.84,
+    elevation: 5,
   },
-  projectHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    padding: 16,
-    paddingBottom: 12,
+  projectImageContainer: {
+    position: 'relative',
+    height: 120,
   },
-  projectName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 4,
+  projectImage: {
+    width: '100%',
+    height: '100%',
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+  },
+  projectImagePlaceholder: {
+    width: '100%',
+    height: '100%',
+    borderTopLeftRadius: 12,
+    borderTopRightRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   statusBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 6,
+    borderRadius: 12,
   },
   statusText: {
     color: 'white',
     fontSize: 12,
     fontWeight: '600',
   },
-  statsRow: {
+  projectContent: {
+    padding: 16,
+  },
+  projectHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 12,
   },
-  statItem: {
-    alignItems: 'center',
-  },
-  statNumber: {
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  statLabel: {
-    fontSize: 11,
-    marginTop: 2,
-  },
-  projectFooter: {
-    borderTopWidth: 1,
-    borderTopColor: '#e5e5e5',
-    paddingTop: 8,
-  },
-  footerText: {
-    fontSize: 12,
-    textAlign: 'center',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    width: '90%',
-    padding: 20,
-    borderRadius: 12,
-  },
-  modalTitle: {
+  projectTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  input: {
-    height: 48,
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    marginBottom: 20,
-    fontSize: 16,
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  button: {
     flex: 1,
-    height: 44,
-    borderRadius: 8,
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  actionButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    marginHorizontal: 8,
   },
-  cancelButton: {
-    borderWidth: 1,
-    borderColor: '#e5e5e5',
-  },
-  confirmButton: {},
-  buttonText: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  
-  // Styles للتصميم الجديد المطابق للويب
-  imageContainer: {
-    height: 192,
-    position: 'relative',
-  },
-  projectImage: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
-  },
-  imageOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.2)',
-    justifyContent: 'space-between',
-    padding: 12,
-  },
-  projectInfo: {
-    flex: 1,
-  },
-  dateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginTop: 4,
-  },
-  dateText: {
-    fontSize: 12,
-  },
-  financialSummary: {
-    flexDirection: 'row',
-    gap: 12,
-    paddingHorizontal: 16,
-    marginBottom: 12,
-  },
-  financeCard: {
-    flex: 1,
-    padding: 12,
-    borderRadius: 8,
-  },
-  financeHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 4,
-  },
-  financeLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  financeValue: {
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  balanceCard: {
-    marginHorizontal: 16,
-    padding: 12,
-    borderRadius: 8,
+  financialCards: {
+    gap: 8,
     marginBottom: 16,
   },
-  balanceValue: {
-    fontSize: 18,
+  financialCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+    gap: 12,
+  },
+  financialCardContent: {
+    flex: 1,
+  },
+  financialCardLabel: {
+    fontSize: 12,
+    fontWeight: '500',
+    marginBottom: 2,
+  },
+  financialCardValue: {
+    fontSize: 16,
     fontWeight: 'bold',
   },
   statsGrid: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
+    justifyContent: 'space-between',
     marginBottom: 12,
   },
-  statCell: {
+  statItem: {
     flex: 1,
     alignItems: 'center',
     gap: 4,
   },
   statValue: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  statLabel: {
+    fontSize: 12,
     textAlign: 'center',
   },
   lastActivity: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 16,
-    marginBottom: 16,
   },
   lastActivityText: {
     fontSize: 12,
   },
-  actionButtons: {
+  emptyState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 60,
+    gap: 12,
+  },
+  emptyStateText: {
+    fontSize: 18,
+    fontWeight: '600',
+  },
+  emptyStateSubtext: {
+    fontSize: 14,
+  },
+  modalContainer: {
+    flex: 1,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  modalContent: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+  },
+  inputGroup: {
+    marginBottom: 20,
+  },
+  inputLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  textInput: {
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 16,
+    textAlign: 'right',
+  },
+  statusSelector: {
     flexDirection: 'row',
     gap: 8,
-    paddingHorizontal: 16,
-    paddingBottom: 16,
   },
-  actionButton: {
+  statusOption: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    paddingVertical: 8,
+    paddingVertical: 10,
     paddingHorizontal: 12,
     borderRadius: 8,
     borderWidth: 1,
-  },
-  editButton: {
-    backgroundColor: 'transparent',
-  },
-  deleteButton: {
-    backgroundColor: 'transparent',
-  },
-  actionButtonText: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  
-  // Gradient styles مطابقة للويب 100%
-  incomeGradient: {
-    backgroundColor: '#dcfce7',
-    borderLeftWidth: 4,
-    borderLeftColor: '#16a34a',
-  },
-  expenseGradient: {
-    backgroundColor: '#fecaca',
-    borderLeftWidth: 4,
-    borderLeftColor: '#dc2626',
-  },
-  balanceGradient: {
-    backgroundColor: '#dbeafe',
-    borderLeftWidth: 4,
-    borderLeftColor: '#2563eb',
-  },
-  
-  // StatsGrid styles مطابق للويب 100%
-  statCard: {
-    flex: 1,
-    margin: 4,
-    borderRadius: 8,
-    padding: 12,
-    minHeight: 80,
-  },
-  blueGradient: {
-    backgroundColor: '#dbeafe',
-    borderLeftWidth: 4,
-    borderLeftColor: '#2563eb',
-  },
-  greenGradient: {
-    backgroundColor: '#dcfce7',
-    borderLeftWidth: 4,
-    borderLeftColor: '#16a34a',
-  },
-  redGradient: {
-    backgroundColor: '#fecaca',
-    borderLeftWidth: 4,
-    borderLeftColor: '#dc2626',
-  },
-  purpleGradient: {
-    backgroundColor: '#f3e8ff',
-    borderLeftWidth: 4,
-    borderLeftColor: '#7c3aed',
-  },
-  statContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  statIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
     alignItems: 'center',
   },
-  statTextContainer: {
-    flex: 1,
-  },
-  statTitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    marginBottom: 2,
-  },
-  
-  // Form styles مطابقة للويب 100%
-  formField: {
-    marginBottom: 16,
-  },
-  fieldLabel: {
+  statusOptionText: {
     fontSize: 14,
     fontWeight: '600',
-    marginBottom: 6,
   },
-  statusButtons: {
+  errorText: {
+    color: '#ef4444',
+    fontSize: 12,
+    marginTop: 4,
+  },
+  modalActions: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 12,
+    marginTop: 20,
   },
-  statusButton: {
+  cancelButton: {
     flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 6,
+    paddingVertical: 12,
+    borderRadius: 8,
     borderWidth: 1,
     alignItems: 'center',
   },
-  statusButtonText: {
-    fontSize: 12,
+  cancelButtonText: {
+    fontSize: 16,
     fontWeight: '600',
   },
-  saveButton: {
-    backgroundColor: '#2563eb',
+  submitButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
   },
-  inputError: {
-    borderColor: '#dc2626',
-    borderWidth: 2,
-  },
-  errorText: {
-    fontSize: 12,
-    marginTop: 4,
-    fontWeight: '500',
+  submitButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

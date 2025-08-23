@@ -620,7 +620,7 @@ export default function WorkersScreen() {
                 placeholder="اسم العامل"
                 placeholderTextColor={colors.textSecondary}
                 value={editForm.name}
-                onChangeText={(text) => setEditForm({...editForm, name: text})}
+                onChangeText={(text: string) => setEditForm({...editForm, name: text})}
                 textAlign="right"
               />
               {formErrors.name && (
@@ -640,7 +640,7 @@ export default function WorkersScreen() {
                 placeholder="نوع العمل"
                 placeholderTextColor={colors.textSecondary}
                 value={editForm.type}
-                onChangeText={(text) => setEditForm({...editForm, type: text})}
+                onChangeText={(text: string) => setEditForm({...editForm, type: text})}
                 textAlign="right"
               />
               {formErrors.type && (
@@ -660,7 +660,7 @@ export default function WorkersScreen() {
                 placeholder="الأجر اليومي"
                 placeholderTextColor={colors.textSecondary}
                 value={editForm.dailyWage}
-                onChangeText={(text) => setEditForm({...editForm, dailyWage: text})}
+                onChangeText={(text: string) => setEditForm({...editForm, dailyWage: text})}
                 keyboardType="numeric"
                 textAlign="right"
               />
@@ -881,7 +881,7 @@ const styles = StyleSheet.create({
     gap: 8,
     marginBottom: 16,
   },
-  statCard: {
+  statCardNew: {
     flex: 1,
     minWidth: '45%',
     padding: 12,

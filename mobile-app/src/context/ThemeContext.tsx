@@ -14,6 +14,8 @@ interface ThemeContextType {
     success: string;
     warning: string;
     error: string;
+    muted: string;
+    info: string;
   };
 }
 
@@ -28,6 +30,8 @@ const lightColors = {
   success: '#22c55e',
   warning: '#f59e0b',
   error: '#ef4444',
+  muted: '#f1f5f9',
+  info: '#0ea5e9',
 };
 
 const darkColors = {
@@ -41,6 +45,8 @@ const darkColors = {
   success: '#22c55e',
   warning: '#f59e0b',
   error: '#ef4444',
+  muted: '#334155',
+  info: '#0ea5e9',
 };
 
 const ThemeContext = createContext<ThemeContextType | null>(null);

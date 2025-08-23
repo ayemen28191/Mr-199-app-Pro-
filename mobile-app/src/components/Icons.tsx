@@ -107,4 +107,61 @@ export const Filter = ({ size = 20, color = '#000' }: IconProps) => (
   <Text style={{ fontSize: size, color }}>🔍</Text>
 );
 
+// أيقونات إضافية مطلوبة للشاشات
+export const Building2 = ({ size = 20, color = '#000' }: IconProps) => (
+  <Text style={{ fontSize: size, color }}>🏗️</Text>
+);
+
+export const Trash2 = ({ size = 20, color = '#000' }: IconProps) => (
+  <Text style={{ fontSize: size, color }}>🗑️</Text>
+);
+
+export const Users = ({ size = 20, color = '#000' }: IconProps) => (
+  <Text style={{ fontSize: size, color }}>👥</Text>
+);
+
+export const X = ({ size = 20, color = '#000' }: IconProps) => (
+  <Text style={{ fontSize: size, color }}>✖️</Text>
+);
+
+export const Edit2 = ({ size = 20, color = '#000' }: IconProps) => (
+  <Text style={{ fontSize: size, color }}>✏️</Text>
+);
+
+export const Eye = ({ size = 20, color = '#000' }: IconProps) => (
+  <Text style={{ fontSize: size, color }}>👁️</Text>
+);
+
+export const Download = ({ size = 20, color = '#000' }: IconProps) => (
+  <Text style={{ fontSize: size, color }}>⬇️</Text>
+);
+
+export const FileText = ({ size = 20, color = '#000' }: IconProps) => (
+  <Text style={{ fontSize: size, color }}>📄</Text>
+);
+
+export const Printer = ({ size = 20, color = '#000' }: IconProps) => (
+  <Text style={{ fontSize: size, color }}>🖨️</Text>
+);
+
+export const CheckCircle = ({ size = 20, color = '#000' }: IconProps) => (
+  <Text style={{ fontSize: size, color }}>✅</Text>
+);
+
+export const AlertCircle = ({ size = 20, color = '#000' }: IconProps) => (
+  <Text style={{ fontSize: size, color }}>⚠️</Text>
+);
+
+export const Share = ({ size = 20, color = '#000' }: IconProps) => (
+  <Text style={{ fontSize: size, color }}>📤</Text>
+);
+
+export const Mail = ({ size = 20, color = '#000' }: IconProps) => (
+  <Text style={{ fontSize: size, color }}>📧</Text>
+);
+
+export const MoreHorizontal = ({ size = 20, color = '#000' }: IconProps) => (
+  <Text style={{ fontSize: size, color }}>⋯</Text>
+);
+
 export const secondary = '#6b7280';
