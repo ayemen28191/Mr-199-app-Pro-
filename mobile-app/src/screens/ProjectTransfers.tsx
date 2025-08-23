@@ -73,7 +73,7 @@ interface TransferStats {
   avgApprovalTime: number;
 }
 
-export default function ProjectTransfersScreen() {
+export default function ProjectTransfers() {
   const { colors } = useTheme();
   const { selectedProjectId, selectedProject } = useProject();
   

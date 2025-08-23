@@ -7,8 +7,7 @@ import { I18nManager } from 'react-native';
 import DashboardScreen from '../screens/DashboardScreen';
 import ProjectsScreen from '../screens/ProjectsScreen';
 import WorkersScreen from '../screens/WorkersScreen';
-import SuppliersScreen from '../screens/SuppliersScreen';
-import MoreScreen from '../screens/MoreScreen';
+import SuppliersProfessionalScreen from '../screens/SuppliersProfessionalScreen';
 
 // Import icons (using simple text for now)
 import { Ionicons } from '@expo/vector-icons';
@@ -81,21 +80,11 @@ const TabNavigator = () => {
       />
       <Tab.Screen
         name="Suppliers"
-        component={SuppliersScreen}
+        component={SuppliersProfessionalScreen}
         options={{
           title: 'الموردين',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="car" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="More"
-        component={MoreScreen}
-        options={{
-          title: 'المزيد',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="menu" size={size} color={color} />
           ),
         }}
       />

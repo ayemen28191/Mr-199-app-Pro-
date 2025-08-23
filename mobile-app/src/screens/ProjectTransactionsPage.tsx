@@ -56,7 +56,7 @@ const formatCurrency = (amount: number): string => {
   }).format(amount).replace('SAR', 'ريال');
 };
 
-const ProjectTransactionsPageScreen: React.FC = () => {
+const ProjectTransactionsPage: React.FC = () => {
   const { selectedProject } = useContext(ProjectContext);
   const [transactions, setTransactions] = useState<DetailedTransaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -978,4 +978,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default ProjectTransactionsPageScreen;
+export default ProjectTransactionsPage;
