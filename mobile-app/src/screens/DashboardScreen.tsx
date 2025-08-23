@@ -62,7 +62,7 @@ interface ProjectWithStats extends Project {
 
 export default function DashboardScreen() {
   const { colors } = useTheme();
-  const { selectedProjectId, selectProject } = useProject();
+  const { selectedProjectId, setSelectedProject } = useProject();
   const [projects, setProjects] = useState<ProjectWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [workerTypes, setWorkerTypes] = useState<WorkerType[]>([]);
@@ -290,7 +290,7 @@ export default function DashboardScreen() {
   const ProjectCard = ({ project }: { project: ProjectWithStats }) => (
     <TouchableOpacity
       style={[styles.projectCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
-      onPress={() => selectProject(project.id)}
+      onPress={() => setSelectedProject(project.id, project.name)}
     >
       <View style={styles.projectHeader}>
         <Text style={[styles.projectName, { color: colors.text }]}>{project.name}</Text>
@@ -342,12 +342,14 @@ export default function DashboardScreen() {
         {/* اختيار المشروع - مطابق للويب */}
         <ProjectSelector
           selectedProjectId={selectedProjectId}
-          onProjectChange={(projectId, projectName) => selectProject(projectId)}
+          onProjectChange={(projectId, projectName) => setSelectedProject(projectId, projectName)}
           projects={projects}
         />
 
         {/* إحصائيات المشروع المحدد - مطابق للويب */}
-        {selectedProject && (
+        {selectedProjectId && (() => {
+          const selectedProject = projects.find(p => p.id === selectedProjectId);
+          return selectedProject && (
           <View style={[styles.projectCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
             <View style={styles.projectHeader}>
               <Text style={[styles.projectTitle, { color: colors.text }]}>{selectedProject.name}</Text>
@@ -405,7 +407,7 @@ export default function DashboardScreen() {
               />
             </StatsGrid>
           </View>
-        )}
+        )})()}
 
         {/* الإجراءات السريعة - مطابق للويب */}
         <QuickActions onNavigate={(route) => console.log('Navigate to:', route)} />
@@ -432,28 +434,28 @@ export default function DashboardScreen() {
               style={[styles.input, { borderColor: colors.border, color: colors.text }]}
               placeholder="اسم العامل"
               value={workerData.name}
-              onChangeText={(text) => setWorkerData({...workerData, name: text})}
+              onChangeText={(text: string) => setWorkerData({...workerData, name: text})}
             />
             
             <TextInput
               style={[styles.input, { borderColor: colors.border, color: colors.text }]}
               placeholder="رقم الهاتف (اختياري)"
               value={workerData.phone}
-              onChangeText={(text) => setWorkerData({...workerData, phone: text})}
+              onChangeText={(text: string) => setWorkerData({...workerData, phone: text})}
             />
             
             <TextInput
               style={[styles.input, { borderColor: colors.border, color: colors.text }]}
               placeholder="نوع العمل"
               value={workerData.type}
-              onChangeText={(text) => setWorkerData({...workerData, type: text})}
+              onChangeText={(text: string) => setWorkerData({...workerData, type: text})}
             />
             
             <TextInput
               style={[styles.input, { borderColor: colors.border, color: colors.text }]}
               placeholder="الأجر اليومي"
               value={workerData.dailyWage}
-              onChangeText={(text) => setWorkerData({...workerData, dailyWage: text})}
+              onChangeText={(text: string) => setWorkerData({...workerData, dailyWage: text})}
               keyboardType="numeric"
             />
 
@@ -490,14 +492,14 @@ export default function DashboardScreen() {
               style={[styles.input, { borderColor: colors.border, color: colors.text }]}
               placeholder="اسم المشروع"
               value={projectData.name}
-              onChangeText={(text) => setProjectData({...projectData, name: text})}
+              onChangeText={(text: string) => setProjectData({...projectData, name: text})}
             />
             
             <TextInput
               style={[styles.input, { borderColor: colors.border, color: colors.text }]}
               placeholder="وصف المشروع (اختياري)"
               value={projectData.description}
-              onChangeText={(text) => setProjectData({...projectData, description: text})}
+              onChangeText={(text: string) => setProjectData({...projectData, description: text})}
               multiline
             />
 
@@ -535,33 +537,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  projectCard: {
-    borderRadius: 12,
-    borderWidth: 1,
-    padding: 16,
-    marginBottom: 16,
-  },
-  projectHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
   projectTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     flex: 1,
     textAlign: 'right',
-  },
-  statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-  },
-  statusText: {
-    color: '#ffffff',
-    fontSize: 12,
-    fontWeight: 'bold',
   },
   modalOverlay: {
     flex: 1,
