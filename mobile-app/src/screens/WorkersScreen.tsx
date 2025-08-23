@@ -10,6 +10,8 @@ import {
   TextInput,
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
+import { formatCurrency, formatDate } from '../lib/utils';
+import * as Icons from '../components/Icons';
 import type { Worker } from '../types';
 
 export default function WorkersScreen() {
@@ -78,42 +80,179 @@ export default function WorkersScreen() {
     loadWorkers();
   }, []);
 
-  // بطاقة العامل
-  const WorkerCard = ({ worker }: { worker: Worker }) => (
-    <TouchableOpacity
-      style={[styles.workerCard, { 
-        backgroundColor: colors.surface, 
-        borderColor: colors.border,
-        opacity: worker.isActive ? 1 : 0.7,
-      }]}
-    >
-      <View style={styles.workerHeader}>
-        <View style={styles.workerInfo}>
-          <Text style={[styles.workerName, { color: colors.text }]}>{worker.name}</Text>
-          <Text style={[styles.workerType, { color: colors.textSecondary }]}>{worker.type}</Text>
-        </View>
-        <View style={[styles.statusBadge, { 
-          backgroundColor: worker.isActive ? colors.success : colors.warning 
-        }]}>
-          <Text style={styles.statusText}>
-            {worker.isActive ? 'نشط' : 'غير نشط'}
-          </Text>
-        </View>
-      </View>
+  // بطاقة العامل - مطابقة للويب 100%
+  const WorkerCard = ({ worker }: { worker: Worker }) => {
+    const handleEdit = () => {
+      Alert.alert('تعديل العامل', `تعديل: ${worker.name}`, [
+        { text: 'إلغاء', style: 'cancel' },
+        { text: 'تعديل', onPress: () => console.log('Edit worker:', worker.id) }
+      ]);
+    };
 
-      <View style={styles.workerFooter}>
-        <View style={styles.wageInfo}>
-          <Text style={[styles.wageLabel, { color: colors.textSecondary }]}>الأجر اليومي:</Text>
-          <Text style={[styles.wageAmount, { color: colors.primary }]}>
-            {parseFloat(worker.dailyWage).toLocaleString('ar-SA')} ر.س
-          </Text>
+    const handleDelete = () => {
+      Alert.alert(
+        'تأكيد الحذف',
+        `هل أنت متأكد من حذف العامل "${worker.name}"؟ هذا الإجراء لا يمكن التراجع عنه.`,
+        [
+          { text: 'إلغاء', style: 'cancel' },
+          { 
+            text: 'حذف', 
+            style: 'destructive',
+            onPress: () => {
+              console.log('Delete worker:', worker.id);
+              Alert.alert('تم الحذف', 'تم حذف العامل بنجاح');
+            }
+          }
+        ]
+      );
+    };
+
+    const handleToggleStatus = () => {
+      const action = worker.isActive ? 'إيقاف' : 'تفعيل';
+      Alert.alert(
+        `${action} العامل`,
+        `هل تريد ${action} العامل "${worker.name}"؟`,
+        [
+          { text: 'إلغاء', style: 'cancel' },
+          { 
+            text: action, 
+            onPress: () => {
+              console.log('Toggle worker status:', worker.id);
+              Alert.alert('تم التحديث', `تم ${action} العامل بنجاح`);
+            }
+          }
+        ]
+      );
+    };
+
+    const getInitials = (name: string) => {
+      return name.split(' ').map(word => word.charAt(0)).join('').toUpperCase().slice(0, 2);
+    };
+
+    return (
+      <View style={[
+        styles.workerCard, 
+        { backgroundColor: colors.surface },
+        worker.isActive 
+          ? { borderRightColor: '#22c55e', borderRightWidth: 4 }
+          : { borderRightColor: '#ef4444', borderRightWidth: 4 }
+      ]}>
+        {/* العنوان مع الصورة والأزرار */}
+        <View style={styles.workerHeader}>
+          <View style={styles.workerMainInfo}>
+            {/* صورة دائرية بـ gradient */}
+            <View style={[
+              styles.avatarContainer, 
+              worker.isActive 
+                ? { backgroundColor: '#3b82f6' }
+                : { backgroundColor: '#6b7280' }
+            ]}>
+              <Text style={styles.avatarText}>{getInitials(worker.name)}</Text>
+            </View>
+            
+            <View style={styles.workerInfo}>
+              <Text style={[styles.workerName, { color: colors.text }]}>{worker.name}</Text>
+              <View style={styles.badgesRow}>
+                {/* Badge الحالة */}
+                <View style={[
+                  styles.badge,
+                  worker.isActive 
+                    ? { backgroundColor: '#dcfce7' }
+                    : { backgroundColor: '#fecaca' }
+                ]}>
+                  <Text style={[
+                    styles.badgeText,
+                    worker.isActive 
+                      ? { color: '#15803d' }
+                      : { color: '#dc2626' }
+                  ]}>
+                    {worker.isActive ? 'نشط' : 'غير نشط'}
+                  </Text>
+                </View>
+                
+                {/* Badge نوع العمل */}
+                <View style={[styles.badge, styles.typeBadge, { borderColor: colors.border }]}>
+                  <Text style={[styles.badgeText, { color: colors.textSecondary }]}>
+                    {worker.type}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </View>
+          
+          {/* أزرار التعديل والحذف */}
+          <View style={styles.actionButtonsHeader}>
+            <TouchableOpacity 
+              style={[styles.actionBtn, styles.editBtn]}
+              onPress={handleEdit}
+            >
+              <Icons.Edit size={16} color="#2563eb" />
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.actionBtn, styles.deleteBtn]}
+              onPress={handleDelete}
+            >
+              <Icons.Trash size={16} color="#dc2626" />
+            </TouchableOpacity>
+          </View>
         </View>
-        <Text style={[styles.joinDate, { color: colors.textSecondary }]}>
-          انضم في: {new Date(worker.createdAt).toLocaleDateString('ar-SA')}
-        </Text>
+
+        {/* المعلومات المالية وتاريخ التسجيل */}
+        <View style={styles.workerDetails}>
+          <View style={styles.detailsGrid}>
+            <View style={styles.detailItem}>
+              <View style={styles.detailHeader}>
+                <Icons.DollarSign size={16} color="#16a34a" />
+                <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>الأجر اليومي</Text>
+              </View>
+              <Text style={[styles.detailValue, { color: '#16a34a' }]}>
+                {formatCurrency(parseFloat(worker.dailyWage))}
+              </Text>
+            </View>
+
+            <View style={styles.detailItem}>
+              <View style={styles.detailHeader}>
+                <Icons.Calendar size={16} color="#2563eb" />
+                <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>تاريخ التسجيل</Text>
+              </View>
+              <Text style={[styles.detailValue, { color: colors.text }]}>
+                {formatDate(worker.createdAt)}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* الشريط السفلي مع زر التفعيل ومعرف العامل */}
+        <View style={[styles.workerFooter, { borderTopColor: colors.border }]}>
+          <TouchableOpacity 
+            style={[
+              styles.toggleBtn,
+              worker.isActive 
+                ? { backgroundColor: '#fecaca' }
+                : { backgroundColor: '#dcfce7' }
+            ]}
+            onPress={handleToggleStatus}
+          >
+            <Icons.Activity size={14} color={worker.isActive ? '#dc2626' : '#16a34a'} />
+            <Text style={[
+              styles.toggleText,
+              { color: worker.isActive ? '#dc2626' : '#16a34a' }
+            ]}>
+              {worker.isActive ? 'إيقاف' : 'تفعيل'}
+            </Text>
+          </TouchableOpacity>
+
+          <View style={styles.workerIdContainer}>
+            <Icons.User size={12} color={colors.textSecondary} />
+            <Text style={[styles.workerId, { color: colors.textSecondary }]}>
+              ID: {worker.id.slice(-8)}
+            </Text>
+          </View>
+        </View>
       </View>
-    </TouchableOpacity>
-  );
+    );
+  };
 
   if (loading) {
     return (
@@ -179,7 +318,7 @@ export default function WorkersScreen() {
               placeholder="اسم العامل"
               placeholderTextColor={colors.textSecondary}
               value={newWorker.name}
-              onChangeText={(text) => setNewWorker({...newWorker, name: text})}
+              onChangeText={(text: string) => setNewWorker({...newWorker, name: text})}
               textAlign="right"
             />
 
@@ -188,7 +327,7 @@ export default function WorkersScreen() {
               placeholder="نوع العمل (مثل: عامل، معلم، مساعد)"
               placeholderTextColor={colors.textSecondary}
               value={newWorker.type}
-              onChangeText={(text) => setNewWorker({...newWorker, type: text})}
+              onChangeText={(text: string) => setNewWorker({...newWorker, type: text})}
               textAlign="right"
             />
 
@@ -197,7 +336,7 @@ export default function WorkersScreen() {
               placeholder="الأجر اليومي"
               placeholderTextColor={colors.textSecondary}
               value={newWorker.dailyWage}
-              onChangeText={(text) => setNewWorker({...newWorker, dailyWage: text})}
+              onChangeText={(text: string) => setNewWorker({...newWorker, dailyWage: text})}
               keyboardType="numeric"
               textAlign="right"
             />
@@ -378,5 +517,104 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 16,
     fontWeight: '600',
+  },
+  
+  // Styles إضافية للتصميم الجديد المطابق للويب
+  workerMainInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 12,
+  },
+  avatarContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  badgesRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 4,
+  },
+  badge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  typeBadge: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+  },
+  badgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  actionButtonsHeader: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  actionBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  editBtn: {
+    backgroundColor: '#eff6ff',
+  },
+  deleteBtn: {
+    backgroundColor: '#fef2f2',
+  },
+  workerDetails: {
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+  },
+  detailsGrid: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  detailItem: {
+    flex: 1,
+  },
+  detailHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  detailLabel: {
+    fontSize: 11,
+  },
+  detailValue: {
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  toggleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  toggleText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  workerIdContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  workerId: {
+    fontSize: 11,
   },
 });

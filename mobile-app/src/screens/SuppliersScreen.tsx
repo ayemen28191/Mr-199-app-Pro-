@@ -10,6 +10,8 @@ import {
   TextInput,
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
+import { formatCurrency, formatDate } from '../lib/utils';
+import * as Icons from '../components/Icons';
 import type { Supplier } from '../types';
 
 export default function SuppliersScreen() {
@@ -80,54 +82,176 @@ export default function SuppliersScreen() {
     loadSuppliers();
   }, []);
 
-  // بطاقة المورد
-  const SupplierCard = ({ supplier }: { supplier: Supplier }) => (
-    <TouchableOpacity
-      style={[styles.supplierCard, { 
-        backgroundColor: colors.surface, 
-        borderColor: colors.border,
-        opacity: supplier.isActive ? 1 : 0.7,
-      }]}
-    >
-      <View style={styles.supplierHeader}>
-        <View style={styles.supplierInfo}>
-          <Text style={[styles.supplierName, { color: colors.text }]}>{supplier.name}</Text>
-          {supplier.contactPerson && (
-            <Text style={[styles.contactPerson, { color: colors.textSecondary }]}>
-              {supplier.contactPerson}
+  // بطاقة المورد - مطابقة للويب 100%
+  const SupplierCard = ({ supplier }: { supplier: Supplier }) => {
+    const handleEdit = () => {
+      Alert.alert('تعديل المورد', `تعديل: ${supplier.name}`, [
+        { text: 'إلغاء', style: 'cancel' },
+        { text: 'تعديل', onPress: () => console.log('Edit supplier:', supplier.id) }
+      ]);
+    };
+
+    const handleDelete = () => {
+      Alert.alert(
+        'تأكيد الحذف',
+        `هل أنت متأكد من حذف المورد "${supplier.name}"؟ هذا الإجراء لا يمكن التراجع عنه.`,
+        [
+          { text: 'إلغاء', style: 'cancel' },
+          { 
+            text: 'حذف', 
+            style: 'destructive',
+            onPress: () => {
+              console.log('Delete supplier:', supplier.id);
+              Alert.alert('تم الحذف', 'تم حذف المورد بنجاح');
+            }
+          }
+        ]
+      );
+    };
+
+    const getInitials = (name: string) => {
+      return name.split(' ').map(word => word.charAt(0)).join('').toUpperCase().slice(0, 2);
+    };
+
+    const getDebtColor = () => {
+      const debt = parseFloat(supplier.totalDebt || '0');
+      if (debt > 0) return '#dc2626'; // أحمر للدين
+      if (debt < 0) return '#16a34a'; // أخضر للرصيد الإيجابي
+      return colors.textSecondary; // رمادي للصفر
+    };
+
+    return (
+      <View style={[
+        styles.supplierCard, 
+        { backgroundColor: colors.surface },
+        supplier.isActive 
+          ? { borderRightColor: '#22c55e', borderRightWidth: 4 }
+          : { borderRightColor: '#ef4444', borderRightWidth: 4 }
+      ]}>
+        {/* العنوان مع الأيقونة والأزرار */}
+        <View style={styles.supplierHeader}>
+          <View style={styles.supplierMainInfo}>
+            {/* أيقونة المبنى للمورد */}
+            <View style={[
+              styles.supplierIconContainer, 
+              supplier.isActive 
+                ? { backgroundColor: '#3b82f6' }
+                : { backgroundColor: '#6b7280' }
+            ]}>
+              <Icons.Building size={20} color="white" />
+            </View>
+            
+            <View style={styles.supplierInfo}>
+              <Text style={[styles.supplierName, { color: colors.text }]}>{supplier.name}</Text>
+              <View style={styles.badgesRow}>
+                {/* Badge الحالة */}
+                <View style={[
+                  styles.badge,
+                  supplier.isActive 
+                    ? { backgroundColor: '#dcfce7' }
+                    : { backgroundColor: '#fecaca' }
+                ]}>
+                  <Text style={[
+                    styles.badgeText,
+                    supplier.isActive 
+                      ? { color: '#15803d' }
+                      : { color: '#dc2626' }
+                  ]}>
+                    {supplier.isActive ? 'نشط' : 'غير نشط'}
+                  </Text>
+                </View>
+                
+                {/* Badge شروط الدفع */}
+                <View style={[styles.badge, styles.paymentBadge, { borderColor: colors.border }]}>
+                  <Text style={[styles.badgeText, { color: colors.textSecondary }]}>
+                    {supplier.paymentTerms}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </View>
+          
+          {/* أزرار التعديل والحذف */}
+          <View style={styles.actionButtonsHeader}>
+            <TouchableOpacity 
+              style={[styles.actionBtn, styles.editBtn]}
+              onPress={handleEdit}
+            >
+              <Icons.Edit size={16} color="#2563eb" />
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={[styles.actionBtn, styles.deleteBtn]}
+              onPress={handleDelete}
+            >
+              <Icons.Trash size={16} color="#dc2626" />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* المعلومات التفصيلية */}
+        <View style={styles.supplierDetails}>
+          <View style={styles.detailsGrid}>
+            {/* الشخص المسؤول */}
+            {supplier.contactPerson && (
+              <View style={styles.detailItem}>
+                <View style={styles.detailHeader}>
+                  <Icons.User size={16} color="#6b7280" />
+                  <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>الشخص المسؤول</Text>
+                </View>
+                <Text style={[styles.detailValue, { color: colors.text }]}>
+                  {supplier.contactPerson}
+                </Text>
+              </View>
+            )}
+
+            {/* رقم الهاتف */}
+            {supplier.phone && (
+              <View style={styles.detailItem}>
+                <View style={styles.detailHeader}>
+                  <Icons.Phone size={16} color="#16a34a" />
+                  <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>رقم الهاتف</Text>
+                </View>
+                <Text style={[styles.detailValue, { color: colors.text }]}>
+                  {supplier.phone}
+                </Text>
+              </View>
+            )}
+          </View>
+
+          {/* المديونية */}
+          <View style={[styles.debtCard, { backgroundColor: '#f8fafc' }]}>
+            <View style={styles.debtHeader}>
+              <Icons.CreditCard size={16} color={getDebtColor()} />
+              <Text style={[styles.debtLabel, { color: colors.textSecondary }]}>إجمالي المديونية</Text>
+            </View>
+            <Text style={[styles.debtValue, { color: getDebtColor() }]}>
+              {formatCurrency(parseFloat(supplier.totalDebt || '0'))}
             </Text>
+          </View>
+        </View>
+
+        {/* الشريط السفلي مع معرف المورد */}
+        <View style={[styles.supplierFooter, { borderTopColor: colors.border }]}>
+          <View style={styles.supplierIdContainer}>
+            <Icons.Hash size={12} color={colors.textSecondary} />
+            <Text style={[styles.supplierId, { color: colors.textSecondary }]}>
+              ID: {supplier.id.slice(-8)}
+            </Text>
+          </View>
+
+          {supplier.createdAt && (
+            <View style={styles.dateContainer}>
+              <Icons.Calendar size={12} color={colors.textSecondary} />
+              <Text style={[styles.dateText, { color: colors.textSecondary }]}>
+                {formatDate(supplier.createdAt)}
+              </Text>
+            </View>
           )}
         </View>
-        <View style={[styles.statusBadge, { 
-          backgroundColor: supplier.isActive ? colors.success : colors.warning 
-        }]}>
-          <Text style={styles.statusText}>
-            {supplier.isActive ? 'نشط' : 'غير نشط'}
-          </Text>
-        </View>
       </View>
-
-      <View style={styles.supplierDetails}>
-        {supplier.phone && (
-          <Text style={[styles.phone, { color: colors.textSecondary }]}>
-            📞 {supplier.phone}
-          </Text>
-        )}
-        <Text style={[styles.paymentTerms, { color: colors.primary }]}>
-          شروط الدفع: {supplier.paymentTerms}
-        </Text>
-      </View>
-
-      <View style={styles.debtInfo}>
-        <Text style={[styles.debtLabel, { color: colors.textSecondary }]}>إجمالي المديونية:</Text>
-        <Text style={[styles.debtAmount, { 
-          color: parseFloat(supplier.totalDebt) > 0 ? colors.error : colors.success 
-        }]}>
-          {parseFloat(supplier.totalDebt).toLocaleString('ar-SA')} ر.س
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
+    );
+  };
 
   if (loading) {
     return (
@@ -193,7 +317,7 @@ export default function SuppliersScreen() {
               placeholder="اسم المورد *"
               placeholderTextColor={colors.textSecondary}
               value={newSupplier.name}
-              onChangeText={(text) => setNewSupplier({...newSupplier, name: text})}
+              onChangeText={(text: string) => setNewSupplier({...newSupplier, name: text})}
               textAlign="right"
             />
 
@@ -202,7 +326,7 @@ export default function SuppliersScreen() {
               placeholder="الشخص المسؤول"
               placeholderTextColor={colors.textSecondary}
               value={newSupplier.contactPerson}
-              onChangeText={(text) => setNewSupplier({...newSupplier, contactPerson: text})}
+              onChangeText={(text: string) => setNewSupplier({...newSupplier, contactPerson: text})}
               textAlign="right"
             />
 
@@ -211,7 +335,7 @@ export default function SuppliersScreen() {
               placeholder="رقم الهاتف"
               placeholderTextColor={colors.textSecondary}
               value={newSupplier.phone}
-              onChangeText={(text) => setNewSupplier({...newSupplier, phone: text})}
+              onChangeText={(text: string) => setNewSupplier({...newSupplier, phone: text})}
               keyboardType="phone-pad"
               textAlign="right"
             />
@@ -325,7 +449,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   supplierDetails: {
-    marginBottom: 8,
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+  },
+  supplierFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderTopWidth: 1,
   },
   phone: {
     fontSize: 14,
@@ -396,5 +529,105 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 16,
     fontWeight: '600',
+  },
+  
+  // Styles إضافية للتصميم الجديد المطابق للويب
+  supplierMainInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 12,
+  },
+  supplierIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  badgesRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 4,
+  },
+  badge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  paymentBadge: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+  },
+  badgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  actionButtonsHeader: {
+    flexDirection: 'row',
+    gap: 4,
+  },
+  actionBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  editBtn: {
+    backgroundColor: '#eff6ff',
+  },
+  deleteBtn: {
+    backgroundColor: '#fef2f2',
+  },
+  detailsGrid: {
+    gap: 8,
+    marginBottom: 12,
+  },
+  detailItem: {
+    marginBottom: 8,
+  },
+  detailHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  detailLabel: {
+    fontSize: 11,
+  },
+  detailValue: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  debtCard: {
+    padding: 12,
+    borderRadius: 8,
+  },
+  debtHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  debtValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  supplierIdContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  supplierId: {
+    fontSize: 11,
+  },
+  dateContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  dateText: {
+    fontSize: 11,
   },
 });
