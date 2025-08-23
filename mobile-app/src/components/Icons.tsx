@@ -67,4 +67,20 @@ export const ArrowRight = ({ size = 20, color = '#000' }: IconProps) => (
   <Text style={{ fontSize: size, color }}>→</Text>
 );
 
+export const MapPin = ({ size = 20, color = '#000' }: IconProps) => (
+  <Text style={{ fontSize: size, color }}>📍</Text>
+);
+
+export const Edit = ({ size = 20, color = '#000' }: IconProps) => (
+  <Text style={{ fontSize: size, color }}>✏️</Text>
+);
+
+export const Trash = ({ size = 20, color = '#000' }: IconProps) => (
+  <Text style={{ fontSize: size, color }}>🗑️</Text>
+);
+
+export const Activity = ({ size = 20, color = '#000' }: IconProps) => (
+  <Text style={{ fontSize: size, color }}>📊</Text>
+);
+
 export const secondary = '#6b7280';
