@@ -14,7 +14,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../context/ThemeContext';
 import { useProject } from '../context/ProjectContext';
-import * as Icons from 'lucide-react-native';
+import * as Icons from '../components/Icons';
 import { AutocompleteInput } from '../components/AutocompleteInput';
 
 interface Equipment {
@@ -707,7 +707,7 @@ export default function EquipmentManagementScreen() {
             ) : (
               <FlatList
                 data={filteredEquipment}
-                keyExtractor={(item) => item.id}
+                keyExtractor={(item: Equipment) => item.id}
                 showsVerticalScrollIndicator={false}
                 renderItem={({ item: equipment }: { item: Equipment }) => (
                   <View style={[styles.modernEquipmentCard, { backgroundColor: colors.surface }]}>
@@ -826,7 +826,7 @@ export default function EquipmentManagementScreen() {
             ) : (
               <FlatList
                 data={movements}
-                keyExtractor={(item) => item.id}
+                keyExtractor={(item: EquipmentMovement) => item.id}
                 showsVerticalScrollIndicator={false}
                 renderItem={({ item: movement }: { item: EquipmentMovement }) => (
                   <View style={[styles.modernMovementCard, { backgroundColor: colors.surface }]}>
@@ -891,7 +891,7 @@ export default function EquipmentManagementScreen() {
             ) : (
               <FlatList
                 data={maintenanceRecords}
-                keyExtractor={(item) => item.id}
+                keyExtractor={(item: MaintenanceRecord) => item.id}
                 showsVerticalScrollIndicator={false}
                 renderItem={({ item: record }: { item: MaintenanceRecord }) => {
                   const IconComponent = Icons[getMaintenanceTypeIcon(record.maintenanceType) as keyof typeof Icons] as any;
@@ -2061,7 +2061,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0,0,0,0.1)',
   },
-  statusSection: {
+  equipmentStatusSection: {
     paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0,0,0,0.1)',

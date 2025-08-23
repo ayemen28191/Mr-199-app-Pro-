@@ -15,7 +15,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../context/ThemeContext';
 import { useProject } from '../context/ProjectContext';
-import * as Icons from 'lucide-react-native';
+import * as Icons from '../components/Icons';
 import { AutocompleteInput } from '../components/AutocompleteInput';
 
 interface Worker {
