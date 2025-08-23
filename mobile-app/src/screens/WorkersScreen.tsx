@@ -12,7 +12,7 @@ import {
 import { useTheme } from '../context/ThemeContext';
 import { formatCurrency, formatDate } from '../lib/utils';
 import * as Icons from '../components/Icons';
-import type { Worker } from '../types';
+import type { Worker } from '../types/schema';
 
 export default function WorkersScreen() {
   const { colors } = useTheme();

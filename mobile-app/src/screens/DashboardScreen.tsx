@@ -21,30 +21,13 @@ import { formatCurrency } from '../lib/utils';
 
 const { width } = Dimensions.get('window');
 
-interface Project {
-  id: string;
-  name: string;
-  status: string;
-  createdAt: string;
-  description?: string;
-}
-
-interface Worker {
-  id: string;
-  name: string;
-  type: string;
-  dailyWage: string;
-  isActive: boolean;
-  phone?: string;
-}
-
-interface WorkerType {
-  id: string;
-  name: string;
-  usageCount: number;
-  lastUsed: string;
-  createdAt: string;
-}
+import type { 
+  Project, 
+  Worker, 
+  AutocompleteData as WorkerType,
+  DailyExpenseSummary,
+  DashboardStats
+} from '../types/schema';
 
 interface ProjectStats {
   totalWorkers: string;

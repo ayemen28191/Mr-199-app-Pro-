@@ -19,7 +19,11 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
-// مخطط التحقق مطابق للويب
+import type { 
+  Project
+} from '../types/schema';
+
+// مخطط التحقق للمشروع
 const insertProjectSchema = z.object({
   name: z.string().min(3, 'اسم المشروع يجب أن يكون 3 أحرف على الأقل'),
   status: z.enum(['active', 'completed', 'paused']).default('active'),
@@ -28,6 +32,7 @@ const insertProjectSchema = z.object({
 
 type InsertProject = z.infer<typeof insertProjectSchema>;
 
+// استخدام الأنواع الموحدة من shared/schema
 interface ProjectStats {
   totalWorkers: number;
   totalExpenses: number;
@@ -39,12 +44,7 @@ interface ProjectStats {
   lastActivity: string;
 }
 
-interface ProjectWithStats {
-  id: string;
-  name: string;
-  status: 'active' | 'completed' | 'paused';
-  imageUrl?: string;
-  createdAt: string;
+interface ProjectWithStats extends Project {
   stats: ProjectStats;
 }
 

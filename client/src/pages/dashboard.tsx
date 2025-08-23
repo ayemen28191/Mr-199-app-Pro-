@@ -20,37 +20,13 @@ import { useFloatingButton } from "@/components/layout/floating-button-context";
 import { useEffect } from "react";
 // import type { Project, DailyExpenseSummary, Worker, insertProjectSchema, insertWorkerSchema } from "@shared/schema";
 
-// تعريفات الأنواع محلياً لتجنب مشاكل الاستيراد
-interface Project {
-  id: string;
-  name: string;
-  status: string;
-  createdAt: string;
-}
-
-interface DailyExpenseSummary {
-  date: string;
-  totalIncome: number;
-  totalExpenses: number;
-  remainingBalance: number;
-}
-
-interface Worker {
-  id: string;
-  name: string;
-  type: string;
-  dailyWage: string;
-  isActive: boolean;
-}
 import { apiRequest } from "@/lib/queryClient";
-
-interface WorkerType {
-  id: string;
-  name: string;
-  usageCount: number;
-  lastUsed: string;
-  createdAt: string;
-}
+import type { 
+  Project, 
+  DailyExpenseSummary, 
+  Worker, 
+  AutocompleteData as WorkerType 
+} from "@shared/schema";
 
 interface ProjectStats {
   totalWorkers: string;

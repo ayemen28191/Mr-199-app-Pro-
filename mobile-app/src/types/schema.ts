@@ -1,5 +1,6 @@
 // أنواع البيانات الموحدة مع النظام الويب - مطابقة 100%
-// تم إنشاؤها بناءً على shared/schema.ts
+// Re-export all types from shared schema for mobile app
+export * from '../../../shared/schema';
 
 export interface User {
   id: string;

@@ -12,7 +12,7 @@ import {
 import { useTheme } from '../context/ThemeContext';
 import { formatCurrency, formatDate } from '../lib/utils';
 import * as Icons from '../components/Icons';
-import type { Supplier } from '../types';
+import type { Supplier } from '../types/schema';
 
 export default function SuppliersScreen() {
   const { colors } = useTheme();
