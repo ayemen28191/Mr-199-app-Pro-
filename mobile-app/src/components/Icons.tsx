@@ -83,4 +83,28 @@ export const Activity = ({ size = 20, color = '#000' }: IconProps) => (
   <Text style={{ fontSize: size, color }}>📊</Text>
 );
 
+export const Building = ({ size = 20, color = '#000' }: IconProps) => (
+  <Text style={{ fontSize: size, color }}>🏢</Text>
+);
+
+export const Phone = ({ size = 20, color = '#000' }: IconProps) => (
+  <Text style={{ fontSize: size, color }}>📞</Text>
+);
+
+export const CreditCard = ({ size = 20, color = '#000' }: IconProps) => (
+  <Text style={{ fontSize: size, color }}>💳</Text>
+);
+
+export const Hash = ({ size = 20, color = '#000' }: IconProps) => (
+  <Text style={{ fontSize: size, color }}>#</Text>
+);
+
+export const Search = ({ size = 20, color = '#000' }: IconProps) => (
+  <Text style={{ fontSize: size, color }}>🔍</Text>
+);
+
+export const Filter = ({ size = 20, color = '#000' }: IconProps) => (
+  <Text style={{ fontSize: size, color }}>🔍</Text>
+);
+
 export const secondary = '#6b7280';

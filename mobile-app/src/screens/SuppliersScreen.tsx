@@ -389,31 +389,104 @@ export default function SuppliersScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* الإحصائيات */}
-      <View style={styles.statsContainer}>
-        <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <Text style={[styles.statNumber, { color: colors.text }]}>{suppliers.length}</Text>
-          <Text style={[styles.statLabel, { color: colors.textSecondary }]}>إجمالي الموردين</Text>
+      {/* الإحصائيات المتقدمة مطابقة للويب */}
+      <View style={styles.statsGridContainer}>
+        {/* StatsGrid مع gradients مطابق للويب */}
+        <View style={[styles.statCardAdvanced, styles.gradientBlue]}>
+          <View style={styles.statContent}>
+            <View style={styles.statIconContainer}>
+              <Icons.Building size={20} color="white" />
+            </View>
+            <View style={styles.statInfo}>
+              <Text style={styles.statValueAdvanced}>{calculateStats().total}</Text>
+              <Text style={styles.statLabelAdvanced}>إجمالي الموردين</Text>
+            </View>
+          </View>
         </View>
-        <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <Text style={[styles.statNumber, { color: colors.success }]}>
-            {suppliers.filter(s => s.isActive).length}
-          </Text>
-          <Text style={[styles.statLabel, { color: colors.textSecondary }]}>الموردين النشطون</Text>
+
+        <View style={[styles.statCardAdvanced, styles.gradientGreen]}>
+          <View style={styles.statContent}>
+            <View style={styles.statIconContainer}>
+              <Icons.TrendingUp size={20} color="white" />
+            </View>
+            <View style={styles.statInfo}>
+              <Text style={styles.statValueAdvanced}>{calculateStats().active}</Text>
+              <Text style={styles.statLabelAdvanced}>الموردين النشطين</Text>
+            </View>
+          </View>
         </View>
-        <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-          <Text style={[styles.statNumber, { color: colors.error }]}>
-            {suppliers.reduce((sum, s) => sum + parseFloat(s.totalDebt), 0).toLocaleString('ar-SA')}
-          </Text>
-          <Text style={[styles.statLabel, { color: colors.textSecondary }]}>إجمالي المديونية</Text>
+
+        <View style={[styles.statCardAdvanced, styles.gradientRed]}>
+          <View style={styles.statContent}>
+            <View style={styles.statIconContainer}>
+              <Icons.CreditCard size={20} color="white" />
+            </View>
+            <View style={styles.statInfo}>
+              <Text style={styles.statValueAdvanced}>{formatCurrency(calculateStats().totalDebt)}</Text>
+              <Text style={styles.statLabelAdvanced}>إجمالي المديونية</Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={[styles.statCardAdvanced, styles.gradientPurple]}>
+          <View style={styles.statContent}>
+            <View style={styles.statIconContainer}>
+              <Icons.Activity size={20} color="white" />
+            </View>
+            <View style={styles.statInfo}>
+              <Text style={styles.statValueAdvanced}>{calculateStats().inactive}</Text>
+              <Text style={styles.statLabelAdvanced}>غير النشطين</Text>
+            </View>
+          </View>
+        </View>
+      </View>
+
+      {/* شريط البحث والفلترة المتقدم مطابق للويب */}
+      <View style={[styles.searchContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        <View style={styles.searchInputContainer}>
+          <Icons.Search size={20} color={colors.textSecondary} />
+          <TextInput
+            style={[styles.searchInput, { color: colors.text }]}
+            placeholder="البحث في الموردين (الاسم، الشخص المسؤول، رقم الهاتف)..."
+            placeholderTextColor={colors.textSecondary}
+            value={searchTerm}
+            onChangeText={setSearchTerm}
+            textAlign="right"
+          />
         </View>
       </View>
 
       {/* قائمة الموردين */}
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {suppliers.map((supplier) => (
-          <SupplierCard key={supplier.id} supplier={supplier} />
-        ))}
+      <ScrollView showsVerticalScrollIndicator={false} style={styles.suppliersList}>
+        {filteredSuppliers.length === 0 ? (
+          // Empty State متطور مطابق للويب
+          <View style={[styles.emptyState, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={[styles.emptyStateIcon, { backgroundColor: colors.background }]}>
+              <Icons.Building size={48} color={colors.textSecondary} />
+            </View>
+            <Text style={[styles.emptyStateTitle, { color: colors.text }]}>
+              {searchTerm ? "لا توجد نتائج" : "لا توجد موردين"}
+            </Text>
+            <Text style={[styles.emptyStateDescription, { color: colors.textSecondary }]}>
+              {searchTerm 
+                ? "لم يتم العثور على موردين يطابقون كلمات البحث المدخلة. جرب كلمات أخرى."
+                : "ابدأ ببناء قاعدة بيانات الموردين الخاصة بك عن طريق إضافة أول مورد."}
+            </Text>
+            {!searchTerm && (
+              <TouchableOpacity
+                style={[styles.emptyStateButton, { backgroundColor: colors.primary }]}
+                onPress={() => setShowAddModal(true)}
+              >
+                <Icons.Plus size={16} color="white" />
+                <Text style={styles.emptyStateButtonText}>إضافة مورد جديد</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        ) : (
+          filteredSuppliers.map((supplier) => (
+            <SupplierCard key={supplier.id} supplier={supplier} />
+          ))
+        )}
       </ScrollView>
 
       {/* مودال إضافة مورد */}
@@ -427,8 +500,14 @@ export default function SuppliersScreen() {
           <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
             <Text style={[styles.modalTitle, { color: colors.text }]}>إضافة مورد جديد</Text>
             
+            {formErrors.name && (
+              <Text style={styles.errorText}>{formErrors.name}</Text>
+            )}
             <TextInput
-              style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
+              style={[
+                styles.input, 
+                { backgroundColor: colors.surface, color: colors.text, borderColor: formErrors.name ? '#dc2626' : colors.border }
+              ]}
               placeholder="اسم المورد *"
               placeholderTextColor={colors.textSecondary}
               value={newSupplier.name}
@@ -445,8 +524,14 @@ export default function SuppliersScreen() {
               textAlign="right"
             />
 
+            {formErrors.phone && (
+              <Text style={styles.errorText}>{formErrors.phone}</Text>
+            )}
             <TextInput
-              style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
+              style={[
+                styles.input, 
+                { backgroundColor: colors.surface, color: colors.text, borderColor: formErrors.phone ? '#dc2626' : colors.border }
+              ]}
               placeholder="رقم الهاتف"
               placeholderTextColor={colors.textSecondary}
               value={newSupplier.phone}
@@ -458,7 +543,10 @@ export default function SuppliersScreen() {
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={[styles.button, styles.cancelButton, { backgroundColor: colors.surface }]}
-                onPress={() => setShowAddModal(false)}
+                onPress={() => {
+                  setShowAddModal(false);
+                  setFormErrors({});
+                }}
               >
                 <Text style={[styles.buttonText, { color: colors.textSecondary }]}>إلغاء</Text>
               </TouchableOpacity>
@@ -467,6 +555,124 @@ export default function SuppliersScreen() {
                 onPress={addSupplier}
               >
                 <Text style={[styles.buttonText, { color: 'white' }]}>إضافة</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* مودال التعديل المتقدم مطابق للويب */}
+      <Modal
+        visible={showEditModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowEditModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContentLarge, { backgroundColor: colors.background }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>تعديل بيانات المورد</Text>
+            
+            {formErrors.name && (
+              <Text style={styles.errorText}>{formErrors.name}</Text>
+            )}
+            <TextInput
+              style={[
+                styles.input, 
+                { backgroundColor: colors.surface, color: colors.text, borderColor: formErrors.name ? '#dc2626' : colors.border }
+              ]}
+              placeholder="اسم المورد *"
+              placeholderTextColor={colors.textSecondary}
+              value={editForm.name}
+              onChangeText={(text: string) => setEditForm({...editForm, name: text})}
+              textAlign="right"
+            />
+
+            <TextInput
+              style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
+              placeholder="الشخص المسؤول"
+              placeholderTextColor={colors.textSecondary}
+              value={editForm.contactPerson}
+              onChangeText={(text: string) => setEditForm({...editForm, contactPerson: text})}
+              textAlign="right"
+            />
+
+            {formErrors.phone && (
+              <Text style={styles.errorText}>{formErrors.phone}</Text>
+            )}
+            <TextInput
+              style={[
+                styles.input, 
+                { backgroundColor: colors.surface, color: colors.text, borderColor: formErrors.phone ? '#dc2626' : colors.border }
+              ]}
+              placeholder="رقم الهاتف"
+              placeholderTextColor={colors.textSecondary}
+              value={editForm.phone}
+              onChangeText={(text: string) => setEditForm({...editForm, phone: text})}
+              keyboardType="phone-pad"
+              textAlign="right"
+            />
+
+            <TextInput
+              style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
+              placeholder="شروط الدفع"
+              placeholderTextColor={colors.textSecondary}
+              value={editForm.paymentTerms}
+              onChangeText={(text: string) => setEditForm({...editForm, paymentTerms: text})}
+              textAlign="right"
+            />
+
+            <TextInput
+              style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
+              placeholder="العنوان"
+              placeholderTextColor={colors.textSecondary}
+              value={editForm.address}
+              onChangeText={(text: string) => setEditForm({...editForm, address: text})}
+              textAlign="right"
+            />
+
+            <TextInput
+              style={[styles.textareaInput, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
+              placeholder="ملاحظات"
+              placeholderTextColor={colors.textSecondary}
+              value={editForm.notes}
+              onChangeText={(text: string) => setEditForm({...editForm, notes: text})}
+              textAlign="right"
+              multiline={true}
+              numberOfLines={3}
+            />
+
+            {/* مفتاح الحالة */}
+            <View style={styles.switchContainer}>
+              <Text style={[styles.switchLabel, { color: colors.text }]}>المورد نشط</Text>
+              <TouchableOpacity
+                style={[
+                  styles.switch,
+                  editForm.isActive ? { backgroundColor: '#22c55e' } : { backgroundColor: '#d1d5db' }
+                ]}
+                onPress={() => setEditForm({...editForm, isActive: !editForm.isActive})}
+              >
+                <View style={[
+                  styles.switchThumb,
+                  editForm.isActive ? styles.switchThumbActive : styles.switchThumbInactive
+                ]} />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.button, styles.cancelButton, { backgroundColor: colors.surface }]}
+                onPress={() => {
+                  setShowEditModal(false);
+                  setFormErrors({});
+                }}
+              >
+                <Text style={[styles.buttonText, { color: colors.textSecondary }]}>إلغاء</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.button, styles.confirmButton, { backgroundColor: colors.primary }]}
+                onPress={saveSupplierEdit}
+              >
+                <Text style={[styles.buttonText, { color: 'white' }]}>حفظ التغييرات</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -744,5 +950,186 @@ const styles = StyleSheet.create({
   },
   dateText: {
     fontSize: 11,
+  },
+  
+  // Styles الجديدة للمكونات المتقدمة المطابقة للويب
+  statsGridContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 16,
+  },
+  statCardAdvanced: {
+    flex: 1,
+    minWidth: '45%',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 8,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  gradientBlue: {
+    backgroundColor: '#3b82f6',
+  },
+  gradientGreen: {
+    backgroundColor: '#22c55e',
+  },
+  gradientRed: {
+    backgroundColor: '#ef4444',
+  },
+  gradientPurple: {
+    backgroundColor: '#8b5cf6',
+  },
+  statContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  statIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  statInfo: {
+    flex: 1,
+  },
+  statValueAdvanced: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: 'white',
+    marginBottom: 2,
+  },
+  statLabelAdvanced: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.9)',
+  },
+  
+  // Search Container Styles
+  searchContainer: {
+    borderRadius: 12,
+    borderWidth: 1,
+    marginBottom: 16,
+    padding: 12,
+  },
+  searchInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    paddingVertical: 8,
+  },
+  
+  // Empty State Styles
+  suppliersList: {
+    flex: 1,
+  },
+  emptyState: {
+    borderRadius: 12,
+    borderWidth: 1,
+    padding: 32,
+    alignItems: 'center',
+    marginTop: 32,
+  },
+  emptyStateIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  emptyStateTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  emptyStateDescription: {
+    fontSize: 14,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 20,
+    maxWidth: 280,
+  },
+  emptyStateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  emptyStateButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  
+  // Modal متقدم Styles
+  modalContentLarge: {
+    width: '95%',
+    maxHeight: '90%',
+    padding: 20,
+    borderRadius: 12,
+  },
+  textareaInput: {
+    minHeight: 80,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 16,
+    fontSize: 16,
+    textAlignVertical: 'top',
+  },
+  switchContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingVertical: 8,
+  },
+  switchLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  switch: {
+    width: 50,
+    height: 26,
+    borderRadius: 13,
+    justifyContent: 'center',
+    paddingHorizontal: 2,
+  },
+  switchThumb: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: 'white',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+  },
+  switchThumbActive: {
+    alignSelf: 'flex-end',
+  },
+  switchThumbInactive: {
+    alignSelf: 'flex-start',
+  },
+  errorText: {
+    color: '#dc2626',
+    fontSize: 12,
+    marginBottom: 8,
+    textAlign: 'right',
   },
 });
