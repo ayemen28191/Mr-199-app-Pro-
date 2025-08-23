@@ -84,7 +84,7 @@ export function StatsCard({
   formatter 
 }: StatsCardProps) {
   const { colors: themeColors, isDark } = useTheme();
-  const colors = colorVariants[color];
+  const colors = colorVariants[color] || colorVariants.blue; // fallback للأمان
   const displayValue = typeof value === 'number' && formatter ? formatter(value) : value.toString();
   
   return (

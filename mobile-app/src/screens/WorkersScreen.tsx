@@ -162,7 +162,7 @@ export default function WorkersScreen() {
       total: workers.length,
       active: workers.filter(w => w.isActive).length,
       inactive: workers.filter(w => !w.isActive).length,
-      avgWage: workers.length > 0 ? workers.reduce((sum, w) => sum + parseFloat(w.dailyWage), 0) / workers.length : 0
+      avgWage: workers.length > 0 ? workers.reduce((sum, w) => sum + parseFloat(w.dailyWage.toString()), 0) / workers.length : 0
     };
   };
 
@@ -341,7 +341,7 @@ export default function WorkersScreen() {
                 <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>الأجر اليومي</Text>
               </View>
               <Text style={[styles.detailValue, { color: '#16a34a' }]}>
-                {formatCurrency(parseFloat(worker.dailyWage))}
+                {formatCurrency(parseFloat(worker.dailyWage.toString()))}
               </Text>
             </View>
 

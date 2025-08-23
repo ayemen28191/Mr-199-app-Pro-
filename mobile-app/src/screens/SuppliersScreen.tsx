@@ -163,7 +163,7 @@ export default function SuppliersScreen() {
       total: suppliers.length,
       active: suppliers.filter(s => s.isActive).length,
       inactive: suppliers.filter(s => !s.isActive).length,
-      totalDebt: suppliers.reduce((sum, s) => sum + (parseFloat(s.totalDebt?.toString() || '0') || 0), 0)
+      totalDebt: suppliers.reduce((sum, s) => sum + (parseFloat(s.totalDebt.toString() || '0') || 0), 0)
     };
   };
 
@@ -229,7 +229,7 @@ export default function SuppliersScreen() {
     };
 
     const getDebtColor = () => {
-      const debt = parseFloat(supplier.totalDebt || '0');
+      const debt = parseFloat(supplier.totalDebt?.toString() || '0');
       if (debt > 0) return '#dc2626'; // أحمر للدين
       if (debt < 0) return '#16a34a'; // أخضر للرصيد الإيجابي
       return colors.textSecondary; // رمادي للصفر
@@ -341,7 +341,7 @@ export default function SuppliersScreen() {
               <Text style={[styles.debtLabel, { color: colors.textSecondary }]}>إجمالي المديونية</Text>
             </View>
             <Text style={[styles.debtValue, { color: getDebtColor() }]}>
-              {formatCurrency(parseFloat(supplier.totalDebt || '0'))}
+              {formatCurrency(parseFloat(supplier.totalDebt.toString() || '0'))}
             </Text>
           </View>
         </View>

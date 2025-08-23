@@ -25,9 +25,9 @@ import type {
   Project, 
   Worker, 
   AutocompleteData as WorkerType,
-  DailyExpenseSummary,
-  DashboardStats
+  DailyExpenseSummary
 } from '../types/schema';
+import { DashboardStats } from '../services/api';
 
 interface ProjectStats {
   totalWorkers: string;

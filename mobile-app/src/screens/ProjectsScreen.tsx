@@ -341,7 +341,7 @@ export default function ProjectsScreen() {
     setEditingProject(project);
     editForm.reset({
       name: project.name,
-      status: project.status,
+      status: project.status as "active" | "completed" | "paused",
       imageUrl: project.imageUrl || '',
     });
     setShowEditModal(true);

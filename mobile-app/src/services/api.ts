@@ -6,11 +6,36 @@ import {
   Equipment, 
   Material, 
   MaterialPurchase,
-  Supplier,
-  DashboardStats,
-  ApiResponse,
-  PaginatedResponse
+  Supplier
 } from '../types/schema';
+
+// API-specific types
+export interface DashboardStats {
+  totalProjects: number;
+  activeProjects: number;
+  totalWorkers: number;
+  activeWorkers: number;
+  totalSuppliers: number;
+  totalEquipment: number;
+  totalIncome: number;
+  totalExpenses: number;
+  currentBalance: number;
+}
+
+export interface ApiResponse<T = any> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  message?: string;
+}
+
+export interface PaginatedResponse<T = any> {
+  data: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
 
 const API_BASE_URL = 'http://localhost:5000/api';
 
