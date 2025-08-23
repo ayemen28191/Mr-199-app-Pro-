@@ -359,47 +359,97 @@ export default function DashboardScreen() {
               </View>
             </View>
 
-            {/* إحصائيات المشروع في شبكة 2x3 مطابقة للويب 100% */}
-            <View style={styles.statsContainer}>
-              <StatsCard
-                title="إجمالي التوريد"
-                value={selectedProject.stats?.totalIncome || 0}
-                icon={<Icons.TrendingUp size={20} color="#2563eb" />}
-                color="blue"
-                formatter={formatCurrency}
-              />
-              <StatsCard
-                title="إجمالي المنصرف"
-                value={selectedProject.stats?.totalExpenses || 0}
-                icon={<Icons.TrendingDown size={20} color="#dc2626" />}
-                color="red"
-                formatter={formatCurrency}
-              />
-              <StatsCard
-                title="المتبقي الحالي"
-                value={selectedProject.stats?.currentBalance || 0}
-                icon={<Icons.DollarSign size={20} color="#16a34a" />}
-                color="green"
-                formatter={formatCurrency}
-              />
-              <StatsCard
-                title="العمال النشطين"
-                value={selectedProject.stats?.activeWorkers || "0"}
-                icon={<Icons.UserCheck size={20} color="#9333ea" />}
-                color="purple"
-              />
-              <StatsCard
-                title="أيام العمل المكتملة"
-                value={selectedProject.stats?.completedDays || "0"}
-                icon={<Icons.Calendar size={20} color="#0d9488" />}
-                color="teal"
-              />
-              <StatsCard
-                title="مشتريات المواد"
-                value={selectedProject.stats?.materialPurchases || "0"}
-                icon={<Icons.Package size={20} color="#4338ca" />}
-                color="indigo"
-              />
+            {/* إحصائيات المشروع مع gradients متقدمة مطابقة للويب 100% */}
+            <View style={styles.statsGridContainer}>
+              {/* التوريد - أزرق */}
+              <View style={[styles.statCardAdvanced, styles.gradientBlue]}>
+                <View style={styles.statContent}>
+                  <View style={styles.statIconContainer}>
+                    <Icons.TrendingUp size={20} color="white" />
+                  </View>
+                  <View style={styles.statInfo}>
+                    <Text style={styles.statValueAdvanced}>
+                      {formatCurrency(selectedProject.stats?.totalIncome || 0)}
+                    </Text>
+                    <Text style={styles.statLabelAdvanced}>إجمالي التوريد</Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* المنصرف - أحمر */}
+              <View style={[styles.statCardAdvanced, styles.gradientRed]}>
+                <View style={styles.statContent}>
+                  <View style={styles.statIconContainer}>
+                    <Icons.TrendingDown size={20} color="white" />
+                  </View>
+                  <View style={styles.statInfo}>
+                    <Text style={styles.statValueAdvanced}>
+                      {formatCurrency(selectedProject.stats?.totalExpenses || 0)}
+                    </Text>
+                    <Text style={styles.statLabelAdvanced}>إجمالي المنصرف</Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* الرصيد الحالي - أخضر */}
+              <View style={[styles.statCardAdvanced, styles.gradientGreen]}>
+                <View style={styles.statContent}>
+                  <View style={styles.statIconContainer}>
+                    <Icons.DollarSign size={20} color="white" />
+                  </View>
+                  <View style={styles.statInfo}>
+                    <Text style={styles.statValueAdvanced}>
+                      {formatCurrency(selectedProject.stats?.currentBalance || 0)}
+                    </Text>
+                    <Text style={styles.statLabelAdvanced}>المتبقي الحالي</Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* العمال النشطين - بنفسجي */}
+              <View style={[styles.statCardAdvanced, styles.gradientPurple]}>
+                <View style={styles.statContent}>
+                  <View style={styles.statIconContainer}>
+                    <Icons.UserCheck size={20} color="white" />
+                  </View>
+                  <View style={styles.statInfo}>
+                    <Text style={styles.statValueAdvanced}>
+                      {selectedProject.stats?.activeWorkers || "0"}
+                    </Text>
+                    <Text style={styles.statLabelAdvanced}>العمال النشطين</Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* أيام العمل - كحلي */}
+              <View style={[styles.statCardAdvanced, styles.gradientTeal]}>
+                <View style={styles.statContent}>
+                  <View style={styles.statIconContainer}>
+                    <Icons.Calendar size={20} color="white" />
+                  </View>
+                  <View style={styles.statInfo}>
+                    <Text style={styles.statValueAdvanced}>
+                      {selectedProject.stats?.completedDays || "0"}
+                    </Text>
+                    <Text style={styles.statLabelAdvanced}>أيام العمل المكتملة</Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* مشتريات المواد - زهري */}
+              <View style={[styles.statCardAdvanced, styles.gradientIndigo]}>
+                <View style={styles.statContent}>
+                  <View style={styles.statIconContainer}>
+                    <Icons.Package size={20} color="white" />
+                  </View>
+                  <View style={styles.statInfo}>
+                    <Text style={styles.statValueAdvanced}>
+                      {selectedProject.stats?.materialPurchases || "0"}
+                    </Text>
+                    <Text style={styles.statLabelAdvanced}>مشتريات المواد</Text>
+                  </View>
+                </View>
+              </View>
             </View>
           </View>
         )})()}
@@ -634,5 +684,69 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     marginHorizontal: -6,
+  },
+  
+  // Styles جديدة للـ Dashboard مطابقة للويب
+  statsGridContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginVertical: 12,
+  },
+  statCardAdvanced: {
+    flex: 1,
+    minWidth: '48%',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 8,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+  },
+  gradientBlue: {
+    backgroundColor: '#3b82f6',
+  },
+  gradientRed: {
+    backgroundColor: '#ef4444',
+  },
+  gradientGreen: {
+    backgroundColor: '#22c55e',
+  },
+  gradientPurple: {
+    backgroundColor: '#8b5cf6',
+  },
+  gradientTeal: {
+    backgroundColor: '#0d9488',
+  },
+  gradientIndigo: {
+    backgroundColor: '#4338ca',
+  },
+  statContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  statIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  statInfo: {
+    flex: 1,
+  },
+  statValueAdvanced: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: 'white',
+    marginBottom: 2,
+  },
+  statLabelAdvanced: {
+    fontSize: 11,
+    color: 'rgba(255, 255, 255, 0.9)',
   },
 });
