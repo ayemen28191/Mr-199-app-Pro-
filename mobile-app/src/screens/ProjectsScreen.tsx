@@ -22,7 +22,15 @@ export default function ProjectsScreen() {
   const [projects, setProjects] = useState<ProjectWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [newProjectName, setNewProjectName] = useState('');
+  const [editingProject, setEditingProject] = useState<ProjectWithStats | null>(null);
+  const [editForm, setEditForm] = useState({
+    name: '',
+    status: 'active' as const,
+    imageUrl: ''
+  });
+  const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
 
   // تحميل المشاريع
   const loadProjects = async () => {
@@ -40,12 +48,27 @@ export default function ProjectsScreen() {
     }
   };
 
-  // إضافة مشروع جديد
+  // التحقق من النموذج
+  const validateForm = (data: {name: string, status: string}) => {
+    const errors: {[key: string]: string} = {};
+    if (!data.name.trim()) {
+      errors.name = 'اسم المشروع مطلوب';
+    }
+    if (data.name.trim().length < 3) {
+      errors.name = 'اسم المشروع يجب أن يكون 3 أحرف على الأقل';
+    }
+    return errors;
+  };
+
+  // إضافة مشروع جديد مع validation
   const addProject = async () => {
-    if (!newProjectName.trim()) {
-      Alert.alert('تنبيه', 'يرجى إدخال اسم المشروع');
+    const errors = validateForm({name: newProjectName, status: 'active'});
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      Alert.alert('خطأ في النموذج', errors.name || 'يرجى تصحيح الأخطاء');
       return;
     }
+    setFormErrors({});
 
     try {
       const response = await fetch('/api/projects', {
@@ -62,15 +85,78 @@ export default function ProjectsScreen() {
       if (response.ok) {
         setNewProjectName('');
         setShowAddModal(false);
+        setFormErrors({});
         loadProjects();
         Alert.alert('نجح', 'تم إضافة المشروع بنجاح');
       } else {
-        Alert.alert('خطأ', 'فشل في إضافة المشروع');
+        const errorData = await response.json();
+        Alert.alert('خطأ', errorData.message || 'فشل في إضافة المشروع');
       }
     } catch (error) {
       console.error('خطأ في إضافة المشروع:', error);
       Alert.alert('خطأ', 'حدث خطأ أثناء إضافة المشروع');
     }
+  };
+
+  // حفظ تعديل المشروع مطابق للويب
+  const saveProject = async () => {
+    if (!editingProject) return;
+    
+    const errors = validateForm(editForm);
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      Alert.alert('خطأ في النموذج', errors.name || 'يرجى تصحيح الأخطاء');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/projects/${editingProject.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: editForm.name.trim(),
+          status: editForm.status,
+          imageUrl: editForm.imageUrl,
+        }),
+      });
+
+      if (response.ok) {
+        setShowEditModal(false);
+        setEditingProject(null);
+        setFormErrors({});
+        loadProjects();
+        Alert.alert('نجح', 'تم تحديث المشروع بنجاح');
+      } else {
+        const errorData = await response.json();
+        Alert.alert('خطأ', errorData.message || 'فشل في تحديث المشروع');
+      }
+    } catch (error) {
+      console.error('خطأ في تحديث المشروع:', error);
+      Alert.alert('خطأ', 'حدث خطأ أثناء تحديث المشروع');
+    }
+  };
+
+  // حساب الإحصائيات العامة مطابق للويب
+  const calculateOverallStats = () => {
+    return projects.reduce((acc, project) => {
+      return {
+        totalProjects: acc.totalProjects + 1,
+        activeProjects: acc.activeProjects + (project.status === 'active' ? 1 : 0),
+        totalIncome: acc.totalIncome + (project.stats?.totalIncome || 0),
+        totalExpenses: acc.totalExpenses + (project.stats?.totalExpenses || 0),
+        totalWorkers: acc.totalWorkers + (project.stats?.totalWorkers || 0),
+        materialPurchases: acc.materialPurchases + (project.stats?.materialPurchases || 0),
+      };
+    }, {
+      totalProjects: 0,
+      activeProjects: 0,
+      totalIncome: 0,
+      totalExpenses: 0,
+      totalWorkers: 0,
+      materialPurchases: 0,
+    });
   };
 
   useEffect(() => {
@@ -98,10 +184,13 @@ export default function ProjectsScreen() {
     };
 
     const handleEdit = () => {
-      Alert.alert('تعديل المشروع', `تعديل: ${project.name}`, [
-        { text: 'إلغاء', style: 'cancel' },
-        { text: 'تعديل', onPress: () => console.log('Edit project:', project.id) }
-      ]);
+      setEditingProject(project);
+      setEditForm({
+        name: project.name,
+        status: project.status,
+        imageUrl: project.imageUrl || ''
+      });
+      setShowEditModal(true);
     };
 
     const handleDelete = () => {
@@ -154,9 +243,9 @@ export default function ProjectsScreen() {
           )}
         </View>
 
-        {/* الملخص المالي - 2 أعمدة */}
+        {/* الملخص المالي - 2 أعمدة مع gradients مطابقة للويب */}
         <View style={styles.financialSummary}>
-          <View style={[styles.financeCard, { backgroundColor: '#dcfce7' }]}>
+          <View style={[styles.financeCard, styles.incomeGradient]}>
             <View style={styles.financeHeader}>
               <Icons.TrendingUp size={16} color="#16a34a" />
               <Text style={[styles.financeLabel, { color: '#15803d' }]}>الدخل</Text>
@@ -166,7 +255,7 @@ export default function ProjectsScreen() {
             </Text>
           </View>
 
-          <View style={[styles.financeCard, { backgroundColor: '#fecaca' }]}>
+          <View style={[styles.financeCard, styles.expenseGradient]}>
             <View style={styles.financeHeader}>
               <Icons.DollarSign size={16} color="#dc2626" />
               <Text style={[styles.financeLabel, { color: '#dc2626' }]}>المصروفات</Text>
@@ -177,8 +266,8 @@ export default function ProjectsScreen() {
           </View>
         </View>
 
-        {/* الرصيد الحالي */}
-        <View style={[styles.balanceCard, { backgroundColor: '#dbeafe' }]}>
+        {/* الرصيد الحالي مع gradient مطابق للويب */}
+        <View style={[styles.balanceCard, styles.balanceGradient]}>
           <View style={styles.financeHeader}>
             <Icons.BarChart size={16} color="#2563eb" />
             <Text style={[styles.financeLabel, { color: '#1d4ed8' }]}>الرصيد الحالي</Text>
@@ -249,6 +338,10 @@ export default function ProjectsScreen() {
     );
   }
 
+  // حساب الإحصائيات للعرض
+  const overallStats = calculateOverallStats();
+  const currentBalance = overallStats.totalIncome - overallStats.totalExpenses;
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* عنوان الصفحة مع زر الإضافة */}
@@ -260,6 +353,57 @@ export default function ProjectsScreen() {
         >
           <Text style={styles.addButtonText}>+ إضافة مشروع</Text>
         </TouchableOpacity>
+      </View>
+
+      {/* شبكة الإحصائيات العامة مطابقة للويب 100% */}
+      <View style={styles.statsGrid}>
+        <View style={[styles.statCard, styles.blueGradient]}>
+          <View style={styles.statContent}>
+            <View style={styles.statIconContainer}>
+              <Icons.Building size={20} color="#2563eb" />
+            </View>
+            <View style={styles.statTextContainer}>
+              <Text style={[styles.statTitle, { color: colors.text }]}>إجمالي المصاريع</Text>
+              <Text style={[styles.statValue, { color: colors.text }]}>{overallStats.totalProjects}</Text>
+            </View>
+          </View>
+        </View>
+        
+        <View style={[styles.statCard, styles.greenGradient]}>
+          <View style={styles.statContent}>
+            <View style={styles.statIconContainer}>
+              <Icons.TrendingUp size={20} color="#16a34a" />
+            </View>
+            <View style={styles.statTextContainer}>
+              <Text style={[styles.statTitle, { color: colors.text }]}>المشاريع النشطة</Text>
+              <Text style={[styles.statValue, { color: colors.text }]}>{overallStats.activeProjects}</Text>
+            </View>
+          </View>
+        </View>
+        
+        <View style={[styles.statCard, currentBalance >= 0 ? styles.greenGradient : styles.redGradient]}>
+          <View style={styles.statContent}>
+            <View style={styles.statIconContainer}>
+              <Icons.DollarSign size={20} color={currentBalance >= 0 ? "#16a34a" : "#dc2626"} />
+            </View>
+            <View style={styles.statTextContainer}>
+              <Text style={[styles.statTitle, { color: colors.text }]}>الرصيد الإجمالي</Text>
+              <Text style={[styles.statValue, { color: colors.text }]}>{formatCurrency(currentBalance)}</Text>
+            </View>
+          </View>
+        </View>
+        
+        <View style={[styles.statCard, styles.purpleGradient]}>
+          <View style={styles.statContent}>
+            <View style={styles.statIconContainer}>
+              <Icons.UserCheck size={20} color="#7c3aed" />
+            </View>
+            <View style={styles.statTextContainer}>
+              <Text style={[styles.statTitle, { color: colors.text }]}>إجمالي العمال</Text>
+              <Text style={[styles.statValue, { color: colors.text }]}>{overallStats.totalWorkers}</Text>
+            </View>
+          </View>
+        </View>
       </View>
 
       {/* قائمة المشاريع */}
@@ -281,18 +425,29 @@ export default function ProjectsScreen() {
             <Text style={[styles.modalTitle, { color: colors.text }]}>إضافة مشروع جديد</Text>
             
             <TextInput
-              style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
+              style={[
+                styles.input, 
+                { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border },
+                formErrors.name ? styles.inputError : {}
+              ]}
               placeholder="اسم المشروع"
               placeholderTextColor={colors.textSecondary}
               value={newProjectName}
               onChangeText={setNewProjectName}
               textAlign="right"
             />
+            {formErrors.name && (
+              <Text style={[styles.errorText, { color: '#dc2626' }]}>{formErrors.name}</Text>
+            )}
 
             <View style={styles.modalButtons}>
               <TouchableOpacity
                 style={[styles.button, styles.cancelButton, { backgroundColor: colors.surface }]}
-                onPress={() => setShowAddModal(false)}
+                onPress={() => {
+                  setShowAddModal(false);
+                  setFormErrors({});
+                  setNewProjectName('');
+                }}
               >
                 <Text style={[styles.buttonText, { color: colors.textSecondary }]}>إلغاء</Text>
               </TouchableOpacity>
@@ -301,6 +456,95 @@ export default function ProjectsScreen() {
                 onPress={addProject}
               >
                 <Text style={[styles.buttonText, { color: 'white' }]}>إضافة</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* مودال تعديل المشروع مطابق للويب 100% */}
+      <Modal
+        visible={showEditModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowEditModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>تعديل المشروع</Text>
+            
+            {/* اسم المشروع */}
+            <View style={styles.formField}>
+              <Text style={[styles.fieldLabel, { color: colors.text }]}>اسم المشروع</Text>
+              <TextInput
+                style={[
+                  styles.input, 
+                  { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border },
+                  formErrors.name ? styles.inputError : {}
+                ]}
+                placeholder="اسم المشروع"
+                placeholderTextColor={colors.textSecondary}
+                value={editForm.name}
+                onChangeText={(text) => setEditForm({...editForm, name: text})}
+                textAlign="right"
+              />
+              {formErrors.name && (
+                <Text style={[styles.errorText, { color: '#dc2626' }]}>{formErrors.name}</Text>
+              )}
+            </View>
+
+            {/* حالة المشروع */}
+            <View style={styles.formField}>
+              <Text style={[styles.fieldLabel, { color: colors.text }]}>حالة المشروع</Text>
+              <View style={styles.statusButtons}>
+                {[{value: 'active', label: 'نشط'}, {value: 'completed', label: 'مكتمل'}, {value: 'paused', label: 'متوقف'}].map((status) => (
+                  <TouchableOpacity
+                    key={status.value}
+                    style={[
+                      styles.statusButton,
+                      { borderColor: colors.border },
+                      editForm.status === status.value ? { backgroundColor: colors.primary } : { backgroundColor: colors.surface }
+                    ]}
+                    onPress={() => setEditForm({...editForm, status: status.value as any})}
+                  >
+                    <Text style={[
+                      styles.statusButtonText,
+                      { color: editForm.status === status.value ? '#fff' : colors.text }
+                    ]}>{status.label}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* رابط الصورة */}
+            <View style={styles.formField}>
+              <Text style={[styles.fieldLabel, { color: colors.text }]}>رابط الصورة (اختياري)</Text>
+              <TextInput
+                style={[styles.input, { backgroundColor: colors.surface, color: colors.text, borderColor: colors.border }]}
+                placeholder="https://example.com/image.jpg"
+                placeholderTextColor={colors.textSecondary}
+                value={editForm.imageUrl}
+                onChangeText={(text) => setEditForm({...editForm, imageUrl: text})}
+                textAlign="right"
+              />
+            </View>
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.button, styles.cancelButton, { backgroundColor: colors.surface }]}
+                onPress={() => {
+                  setShowEditModal(false);
+                  setEditingProject(null);
+                  setFormErrors({});
+                }}
+              >
+                <Text style={[styles.buttonText, { color: colors.textSecondary }]}>إلغاء</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.button, styles.saveButton, { backgroundColor: colors.primary }]}
+                onPress={saveProject}
+              >
+                <Text style={[styles.buttonText, { color: '#fff' }]}>حفظ التعديلات</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -564,5 +808,110 @@ const styles = StyleSheet.create({
   actionButtonText: {
     fontSize: 12,
     fontWeight: '600',
+  },
+  
+  // Gradient styles مطابقة للويب 100%
+  incomeGradient: {
+    backgroundColor: '#dcfce7',
+    borderLeftWidth: 4,
+    borderLeftColor: '#16a34a',
+  },
+  expenseGradient: {
+    backgroundColor: '#fecaca',
+    borderLeftWidth: 4,
+    borderLeftColor: '#dc2626',
+  },
+  balanceGradient: {
+    backgroundColor: '#dbeafe',
+    borderLeftWidth: 4,
+    borderLeftColor: '#2563eb',
+  },
+  
+  // StatsGrid styles مطابق للويب 100%
+  statCard: {
+    flex: 1,
+    margin: 4,
+    borderRadius: 8,
+    padding: 12,
+    minHeight: 80,
+  },
+  blueGradient: {
+    backgroundColor: '#dbeafe',
+    borderLeftWidth: 4,
+    borderLeftColor: '#2563eb',
+  },
+  greenGradient: {
+    backgroundColor: '#dcfce7',
+    borderLeftWidth: 4,
+    borderLeftColor: '#16a34a',
+  },
+  redGradient: {
+    backgroundColor: '#fecaca',
+    borderLeftWidth: 4,
+    borderLeftColor: '#dc2626',
+  },
+  purpleGradient: {
+    backgroundColor: '#f3e8ff',
+    borderLeftWidth: 4,
+    borderLeftColor: '#7c3aed',
+  },
+  statContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  statIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  statTextContainer: {
+    flex: 1,
+  },
+  statTitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  
+  // Form styles مطابقة للويب 100%
+  formField: {
+    marginBottom: 16,
+  },
+  fieldLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    marginBottom: 6,
+  },
+  statusButtons: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  statusButton: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  statusButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  saveButton: {
+    backgroundColor: '#2563eb',
+  },
+  inputError: {
+    borderColor: '#dc2626',
+    borderWidth: 2,
+  },
+  errorText: {
+    fontSize: 12,
+    marginTop: 4,
+    fontWeight: '500',
   },
 });

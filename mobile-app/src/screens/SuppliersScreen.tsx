@@ -19,12 +19,27 @@ export default function SuppliersScreen() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
   const [newSupplier, setNewSupplier] = useState({
     name: '',
     contactPerson: '',
     phone: '',
     paymentTerms: 'نقد',
   });
+  const [editForm, setEditForm] = useState({
+    name: '',
+    contactPerson: '',
+    phone: '',
+    paymentTerms: 'نقد',
+    isActive: true,
+    address: '',
+    notes: ''
+  });
+  const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
+  
+  // فلاتر متقدمة مطابقة للويب
+  const [searchTerm, setSearchTerm] = useState('');
 
   // تحميل الموردين
   const loadSuppliers = async () => {
@@ -42,12 +57,30 @@ export default function SuppliersScreen() {
     }
   };
 
-  // إضافة مورد جديد
+  // التحقق من النموذج مطابق للويب
+  const validateSupplierForm = (data: {name: string, contactPerson?: string, phone?: string}) => {
+    const errors: {[key: string]: string} = {};
+    if (!data.name.trim()) {
+      errors.name = 'اسم المورد مطلوب';
+    }
+    if (data.name.trim().length < 2) {
+      errors.name = 'اسم المورد يجب أن يكون حرفين على الأقل';
+    }
+    if (data.phone && data.phone.trim() && !/^[0-9+\-\s()]+$/.test(data.phone.trim())) {
+      errors.phone = 'رقم هاتف غير صحيح';
+    }
+    return errors;
+  };
+
+  // إضافة مورد جديد مع validation
   const addSupplier = async () => {
-    if (!newSupplier.name.trim()) {
-      Alert.alert('تنبيه', 'يرجى إدخال اسم المورد');
+    const errors = validateSupplierForm(newSupplier);
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      Alert.alert('خطأ في النموذج', 'يرجى تصحيح الأخطاء');
       return;
     }
+    setFormErrors({});
 
     try {
       const response = await fetch('/api/suppliers', {
@@ -67,16 +100,80 @@ export default function SuppliersScreen() {
       if (response.ok) {
         setNewSupplier({ name: '', contactPerson: '', phone: '', paymentTerms: 'نقد' });
         setShowAddModal(false);
+        setFormErrors({});
         loadSuppliers();
         Alert.alert('نجح', 'تم إضافة المورد بنجاح');
       } else {
-        Alert.alert('خطأ', 'فشل في إضافة المورد');
+        const errorData = await response.json();
+        Alert.alert('خطأ', errorData.message || 'فشل في إضافة المورد');
       }
     } catch (error) {
       console.error('خطأ في إضافة المورد:', error);
       Alert.alert('خطأ', 'حدث خطأ أثناء إضافة المورد');
     }
   };
+
+  // حفظ تعديل المورد مطابق للويب
+  const saveSupplierEdit = async () => {
+    if (!editingSupplier) return;
+    
+    const errors = validateSupplierForm(editForm);
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      Alert.alert('خطأ في النموذج', 'يرجى تصحيح الأخطاء');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/suppliers/${editingSupplier.id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: editForm.name.trim(),
+          contactPerson: editForm.contactPerson.trim() || undefined,
+          phone: editForm.phone.trim() || undefined,
+          paymentTerms: editForm.paymentTerms,
+          isActive: editForm.isActive,
+          address: editForm.address.trim() || undefined,
+          notes: editForm.notes.trim() || undefined,
+        }),
+      });
+
+      if (response.ok) {
+        setShowEditModal(false);
+        setEditingSupplier(null);
+        setFormErrors({});
+        loadSuppliers();
+        Alert.alert('نجح', 'تم تحديث بيانات المورد بنجاح');
+      } else {
+        const errorData = await response.json();
+        Alert.alert('خطأ', errorData.message || 'فشل في تحديث المورد');
+      }
+    } catch (error) {
+      console.error('خطأ في تحديث المورد:', error);
+      Alert.alert('خطأ', 'حدث خطأ أثناء تحديث المورد');
+    }
+  };
+  
+  // حساب الإحصائيات مطابق للويب
+  const calculateStats = () => {
+    return {
+      total: suppliers.length,
+      active: suppliers.filter(s => s.isActive).length,
+      inactive: suppliers.filter(s => !s.isActive).length,
+      totalDebt: suppliers.reduce((sum, s) => sum + (parseFloat(s.totalDebt?.toString() || '0') || 0), 0)
+    };
+  };
+
+  // فلترة الموردين مطابقة للويب
+  const filteredSuppliers = suppliers.filter(supplier => {
+    const matchesSearch = supplier.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (supplier.contactPerson && supplier.contactPerson.toLowerCase().includes(searchTerm.toLowerCase())) ||
+                         (supplier.phone && supplier.phone.includes(searchTerm));
+    return matchesSearch;
+  });
 
   useEffect(() => {
     loadSuppliers();
@@ -85,13 +182,20 @@ export default function SuppliersScreen() {
   // بطاقة المورد - مطابقة للويب 100%
   const SupplierCard = ({ supplier }: { supplier: Supplier }) => {
     const handleEdit = () => {
-      Alert.alert('تعديل المورد', `تعديل: ${supplier.name}`, [
-        { text: 'إلغاء', style: 'cancel' },
-        { text: 'تعديل', onPress: () => console.log('Edit supplier:', supplier.id) }
-      ]);
+      setEditingSupplier(supplier);
+      setEditForm({
+        name: supplier.name,
+        contactPerson: supplier.contactPerson || '',
+        phone: supplier.phone || '',
+        paymentTerms: supplier.paymentTerms || 'نقد',
+        isActive: supplier.isActive,
+        address: supplier.address || '',
+        notes: supplier.notes || ''
+      });
+      setShowEditModal(true);
     };
 
-    const handleDelete = () => {
+    const handleDelete = async () => {
       Alert.alert(
         'تأكيد الحذف',
         `هل أنت متأكد من حذف المورد "${supplier.name}"؟ هذا الإجراء لا يمكن التراجع عنه.`,
@@ -100,9 +204,20 @@ export default function SuppliersScreen() {
           { 
             text: 'حذف', 
             style: 'destructive',
-            onPress: () => {
-              console.log('Delete supplier:', supplier.id);
-              Alert.alert('تم الحذف', 'تم حذف المورد بنجاح');
+            onPress: async () => {
+              try {
+                const response = await fetch(`/api/suppliers/${supplier.id}`, {
+                  method: 'DELETE'
+                });
+                if (response.ok) {
+                  Alert.alert('تم بنجاح', 'تم حذف المورد بنجاح');
+                  loadSuppliers();
+                } else {
+                  Alert.alert('خطأ', 'فشل في حذف المورد');
+                }
+              } catch (error) {
+                Alert.alert('خطأ', 'حدث خطأ في حذف المورد');
+              }
             }
           }
         ]
