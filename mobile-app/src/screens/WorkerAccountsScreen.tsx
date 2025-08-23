@@ -9,10 +9,12 @@ import {
   Modal,
   TextInput,
   ActivityIndicator,
-  Picker,
+  FlatList,
+  Dimensions,
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useProject } from '../context/ProjectContext';
+import { Icons } from '../components/Icons';
 
 interface Worker {
   id: string;
@@ -37,11 +39,25 @@ interface WorkerTransfer {
   workerId: string;
   workerName: string;
   amount: number;
-  transferType: 'family_transfer' | 'personal_payment' | 'advance_payment' | 'bonus';
+  transferMethod: 'cash' | 'bank' | 'hawaleh';
   recipientName?: string;
+  recipientPhone?: string;
   transferNumber?: string;
   transferDate: string;
   notes?: string;
+}
+
+interface AutocompleteData {
+  id: string;
+  category: string;
+  value: string;
+  usageCount: number;
+}
+
+interface Project {
+  id: string;
+  name: string;
+  status: string;
 }
 
 interface PaymentHistory {
@@ -64,19 +80,30 @@ export default function WorkerAccountsScreen() {
   const [paymentModalVisible, setPaymentModalVisible] = useState(false);
   const [selectedTab, setSelectedTab] = useState<'balances' | 'transfers' | 'payments'>('balances');
   
-  // البيانات
+  // البيانات المحسنة
   const [workers, setWorkers] = useState<Worker[]>([]);
   const [workerBalances, setWorkerBalances] = useState<WorkerBalance[]>([]);
   const [workerTransfers, setWorkerTransfers] = useState<WorkerTransfer[]>([]);
   const [paymentHistory, setPaymentHistory] = useState<PaymentHistory[]>([]);
   const [selectedWorker, setSelectedWorker] = useState<Worker | null>(null);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [autocompleteData, setAutocompleteData] = useState<AutocompleteData[]>([]);
   
-  // نموذج التحويل
+  // حالات التصفية والبحث المتقدمة
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterType, setFilterType] = useState<'all' | 'positive' | 'negative' | 'zero'>('all');
+  const [selectedPeriod, setSelectedPeriod] = useState<'month' | 'quarter' | 'year'>('month');
+  const [showFilters, setShowFilters] = useState(false);
+  const [sortBy, setSortBy] = useState<'name' | 'balance' | 'earned' | 'paid'>('name');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  
+  // نموذج التحويل المحسن
   const [transferForm, setTransferForm] = useState({
     workerId: '',
     amount: '',
-    transferType: 'family_transfer' as WorkerTransfer['transferType'],
+    transferMethod: 'cash' as WorkerTransfer['transferMethod'],
     recipientName: '',
+    recipientPhone: '',
     transferNumber: '',
     notes: '',
   });
@@ -89,37 +116,49 @@ export default function WorkerAccountsScreen() {
     description: '',
   });
 
-  // تحميل البيانات
+  // تحميل البيانات المحسن مع Autocomplete
   const loadData = async () => {
     try {
       setLoading(true);
       
-      // تحميل العمال
-      const workersResponse = await fetch('/api/workers');
-      if (workersResponse.ok) {
-        const workersData = await workersResponse.json();
+      // تحميل جميع البيانات بالتوازي
+      const [workersRes, balancesRes, transfersRes, paymentsRes, projectsRes, autocompleteRes] = await Promise.all([
+        fetch('/api/workers'),
+        fetch(`/api/worker-balances?projectId=${selectedProjectId || ''}`),
+        fetch(`/api/worker-transfers?projectId=${selectedProjectId || ''}`),
+        fetch(`/api/worker-payments?projectId=${selectedProjectId || ''}`),
+        fetch('/api/projects'),
+        fetch('/api/autocomplete-data')
+      ]);
+      
+      if (workersRes.ok) {
+        const workersData = await workersRes.json();
         setWorkers(workersData);
       }
       
-      // تحميل أرصدة العمال
-      const balancesResponse = await fetch(`/api/worker-balances?projectId=${selectedProjectId || ''}`);
-      if (balancesResponse.ok) {
-        const balancesData = await balancesResponse.json();
+      if (balancesRes.ok) {
+        const balancesData = await balancesRes.json();
         setWorkerBalances(balancesData);
       }
       
-      // تحميل تحويلات العمال
-      const transfersResponse = await fetch(`/api/worker-transfers?projectId=${selectedProjectId || ''}`);
-      if (transfersResponse.ok) {
-        const transfersData = await transfersResponse.json();
+      if (transfersRes.ok) {
+        const transfersData = await transfersRes.json();
         setWorkerTransfers(transfersData);
       }
       
-      // تحميل تاريخ الدفعات
-      const paymentsResponse = await fetch(`/api/worker-payments?projectId=${selectedProjectId || ''}`);
-      if (paymentsResponse.ok) {
-        const paymentsData = await paymentsResponse.json();
+      if (paymentsRes.ok) {
+        const paymentsData = await paymentsRes.json();
         setPaymentHistory(paymentsData);
+      }
+      
+      if (projectsRes.ok) {
+        const projectsData = await projectsRes.json();
+        setProjects(projectsData);
+      }
+      
+      if (autocompleteRes.ok) {
+        const autocompleteData = await autocompleteRes.json();
+        setAutocompleteData(autocompleteData);
       }
       
     } catch (error) {
@@ -129,15 +168,30 @@ export default function WorkerAccountsScreen() {
       setLoading(false);
     }
   };
+  
+  // حفظ بيانات الإكمال التلقائي
+  const saveAutocompleteValue = async (category: string, value: string) => {
+    if (!value.trim()) return;
+    
+    try {
+      await fetch('/api/autocomplete-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ category, value: value.trim() })
+      });
+    } catch (error) {
+      console.warn('فشل في حفظ بيانات الإكمال التلقائي:', error);
+    }
+  };
 
   useEffect(() => {
     loadData();
   }, [selectedProjectId]);
 
-  // إضافة تحويل جديد
+  // إضافة تحويل محسن مع حفظ بيانات الإكمال التلقائي
   const addTransfer = async () => {
-    if (!transferForm.workerId || !transferForm.amount) {
-      Alert.alert('خطأ', 'يرجى ملء البيانات المطلوبة');
+    if (!transferForm.workerId || !transferForm.amount || !transferForm.recipientName) {
+      Alert.alert('خطأ', 'يرجى ملء جميع البيانات المطلوبة');
       return;
     }
 
@@ -149,6 +203,15 @@ export default function WorkerAccountsScreen() {
 
     setSaving(true);
     try {
+      // حفظ بيانات الإكمال التلقائي
+      await saveAutocompleteValue('worker_transfer_recipient', transferForm.recipientName);
+      if (transferForm.recipientPhone) {
+        await saveAutocompleteValue('worker_transfer_phone', transferForm.recipientPhone);
+      }
+      if (transferForm.transferNumber) {
+        await saveAutocompleteValue('worker_transfer_number', transferForm.transferNumber);
+      }
+
       const response = await fetch('/api/worker-transfers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -233,13 +296,84 @@ export default function WorkerAccountsScreen() {
     }
   };
 
+  // دوال التصفية والبحث المتقدمة
+  const getFilteredWorkerBalances = () => {
+    let filtered = [...workerBalances];
+    
+    // تطبيق فلتر البحث
+    if (searchTerm) {
+      filtered = filtered.filter(balance => 
+        balance.workerName.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    
+    // تطبيق فلتر نوع الرصيد
+    switch (filterType) {
+      case 'positive':
+        filtered = filtered.filter(balance => balance.currentBalance > 0);
+        break;
+      case 'negative':
+        filtered = filtered.filter(balance => balance.currentBalance < 0);
+        break;
+      case 'zero':
+        filtered = filtered.filter(balance => balance.currentBalance === 0);
+        break;
+    }
+    
+    // تطبيق الترتيب
+    filtered.sort((a, b) => {
+      let aValue: any, bValue: any;
+      
+      switch (sortBy) {
+        case 'name':
+          aValue = a.workerName;
+          bValue = b.workerName;
+          break;
+        case 'balance':
+          aValue = a.currentBalance;
+          bValue = b.currentBalance;
+          break;
+        case 'earned':
+          aValue = a.totalEarned;
+          bValue = b.totalEarned;
+          break;
+        case 'paid':
+          aValue = a.totalPaid;
+          bValue = b.totalPaid;
+          break;
+        default:
+          return 0;
+      }
+      
+      if (typeof aValue === 'string') {
+        aValue = aValue.toLowerCase();
+        bValue = bValue.toLowerCase();
+      }
+      
+      if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
+      return 0;
+    });
+    
+    return filtered;
+  };
+  
+  // حفظ واسترجاع بيانات الإكمال التلقائي
+  const getAutocompleteData = (category: string) => {
+    return autocompleteData
+      .filter(item => item.category === category)
+      .sort((a, b) => b.usageCount - a.usageCount)
+      .map(item => item.value);
+  };
+  
   // إعادة تعيين نموذج التحويل
   const resetTransferForm = () => {
     setTransferForm({
       workerId: '',
       amount: '',
-      transferType: 'family_transfer',
+      transferMethod: 'cash',
       recipientName: '',
+      recipientPhone: '',
       transferNumber: '',
       notes: '',
     });
@@ -273,6 +407,58 @@ export default function WorkerAccountsScreen() {
     setPaymentModalVisible(true);
   };
 
+  // مكون AutocompleteInput متطور
+  const AutocompleteInput: React.FC<{
+    value: string;
+    onChangeText: (text: string) => void;
+    placeholder: string;
+    category: string;
+    style?: any;
+  }> = ({ value, onChangeText, placeholder, category, style }) => {
+    const [suggestions, setSuggestions] = useState<string[]>([]);
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    
+    useEffect(() => {
+      if (value.length > 0) {
+        const filtered = getAutocompleteData(category)
+          .filter(item => item.toLowerCase().includes(value.toLowerCase()))
+          .slice(0, 5);
+        setSuggestions(filtered);
+        setShowSuggestions(filtered.length > 0);
+      } else {
+        setShowSuggestions(false);
+      }
+    }, [value, category]);
+    
+    return (
+      <View style={style}>
+        <TextInput
+          style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          placeholderTextColor={colors.textSecondary}
+        />
+        {showSuggestions && (
+          <View style={[styles.suggestionsContainer, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            {suggestions.map((suggestion, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[styles.suggestionItem, { borderBottomColor: colors.border }]}
+                onPress={() => {
+                  onChangeText(suggestion);
+                  setShowSuggestions(false);
+                }}
+              >
+                <Text style={[styles.suggestionText, { color: colors.text }]}>{suggestion}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+      </View>
+    );
+  };
+  
   // تنسيق العملة
   const formatCurrency = (amount: number) => {
     return `${amount.toLocaleString('ar-SA')} ر.س`;
@@ -294,122 +480,222 @@ export default function WorkerAccountsScreen() {
     );
   }
 
+  const { width } = Dimensions.get('window');
+  const filteredBalances = getFilteredWorkerBalances();
+  
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* عنوان الشاشة */}
-      <View style={styles.header}>
-        <Text style={[styles.title, { color: colors.text }]}>حسابات العمال</Text>
-        <View style={styles.headerActions}>
-          <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: colors.primary }]}
-            onPress={() => openTransferModal()}
-          >
-            <Text style={[styles.actionButtonText, { color: colors.surface }]}>تحويل</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.actionButton, { backgroundColor: colors.success }]}
-            onPress={() => openPaymentModal()}
-          >
-            <Text style={[styles.actionButtonText, { color: colors.surface }]}>دفع</Text>
-          </TouchableOpacity>
+      {/* Header مع Gradient متطور */}
+      <View style={[styles.headerGradient, {
+        background: `linear-gradient(135deg, ${colors.primary}15 0%, ${colors.secondary || colors.primary}15 100%)`
+      }]}>
+        <View style={styles.headerContent}>
+          <View style={styles.headerTitleSection}>
+            <Text style={[styles.pageTitle, { color: colors.text }]}>💼 حسابات العمال</Text>
+            <Text style={[styles.pageSubtitle, { color: colors.textSecondary }]}>
+              إدارة الأرصدة والتحويلات المالية
+            </Text>
+          </View>
+          
+          {/* بطاقة الإحصائيات السريعة */}
+          <View style={styles.quickStatsContainer}>
+            <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>عدد العمال</Text>
+              <Text style={[styles.statValue, { color: colors.primary }]}>{filteredBalances.length}</Text>
+            </View>
+            <View style={[styles.statCard, { backgroundColor: colors.surface }]}>
+              <Text style={[styles.statLabel, { color: colors.textSecondary }]}>إجمالي الأرصدة</Text>
+              <Text style={[styles.statValue, { color: colors.success }]}>
+                {formatCurrency(filteredBalances.reduce((sum, b) => sum + b.currentBalance, 0))}
+              </Text>
+            </View>
+          </View>
+          
+          {/* شريط البحث والتصفية */}
+          <View style={styles.searchFilterContainer}>
+            <View style={[styles.searchContainer, { backgroundColor: colors.surface }]}>
+              <Icons.Search size={20} color={colors.textSecondary} />
+              <TextInput
+                style={[styles.searchInput, { color: colors.text }]}
+                value={searchTerm}
+                onChangeText={setSearchTerm}
+                placeholder="ابحث في العمال..."
+                placeholderTextColor={colors.textSecondary}
+              />
+            </View>
+            
+            <TouchableOpacity
+              style={[styles.filterButton, { backgroundColor: showFilters ? colors.primary : colors.surface }]}
+              onPress={() => setShowFilters(!showFilters)}
+            >
+              <Icons.Filter size={20} color={showFilters ? colors.surface : colors.text} />
+            </TouchableOpacity>
+          </View>
+          
+          {/* فلاتر متقدمة */}
+          {showFilters && (
+            <View style={[styles.filtersContainer, { backgroundColor: colors.surface }]}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <View style={styles.filterRow}>
+                  <Text style={[styles.filterLabel, { color: colors.text }]}>نوع الرصيد:</Text>
+                  {['all', 'positive', 'negative', 'zero'].map((type) => (
+                    <TouchableOpacity
+                      key={type}
+                      style={[styles.filterChip, {
+                        backgroundColor: filterType === type ? colors.primary : colors.background,
+                        borderColor: colors.border
+                      }]}
+                      onPress={() => setFilterType(type as any)}
+                    >
+                      <Text style={[styles.filterChipText, {
+                        color: filterType === type ? colors.surface : colors.text
+                      }]}>
+                        {type === 'all' ? 'الكل' : 
+                         type === 'positive' ? 'موجب' :
+                         type === 'negative' ? 'سالب' : 'صفر'}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </ScrollView>
+            </View>
+          )}
         </View>
       </View>
 
-      {/* التبويبات */}
-      <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[styles.tab, selectedTab === 'balances' && { backgroundColor: colors.primary }]}
-          onPress={() => setSelectedTab('balances')}
-        >
-          <Text style={[styles.tabText, { 
-            color: selectedTab === 'balances' ? colors.surface : colors.text 
-          }]}>
-            الأرصدة
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, selectedTab === 'transfers' && { backgroundColor: colors.primary }]}
-          onPress={() => setSelectedTab('transfers')}
-        >
-          <Text style={[styles.tabText, { 
-            color: selectedTab === 'transfers' ? colors.surface : colors.text 
-          }]}>
-            التحويلات ({workerTransfers.length})
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, selectedTab === 'payments' && { backgroundColor: colors.primary }]}
-          onPress={() => setSelectedTab('payments')}
-        >
-          <Text style={[styles.tabText, { 
-            color: selectedTab === 'payments' ? colors.surface : colors.text 
-          }]}>
-            المدفوعات ({paymentHistory.length})
-          </Text>
-        </TouchableOpacity>
+      {/* تبويبات متطورة */}
+      <View style={[styles.modernTabContainer, { backgroundColor: colors.surface }]}>
+        {[
+          { key: 'balances', icon: 'Wallet', label: 'الأرصدة', count: filteredBalances.length },
+          { key: 'transfers', icon: 'Send', label: 'التحويلات', count: workerTransfers.length },
+          { key: 'payments', icon: 'CreditCard', label: 'المدفوعات', count: paymentHistory.length }
+        ].map((tab) => {
+          const IconComponent = Icons[tab.icon as keyof typeof Icons] as any;
+          const isActive = selectedTab === tab.key;
+          
+          return (
+            <TouchableOpacity
+              key={tab.key}
+              style={[styles.modernTab, {
+                backgroundColor: isActive ? colors.primary : 'transparent',
+                borderColor: isActive ? colors.primary : colors.border
+              }]}
+              onPress={() => setSelectedTab(tab.key as any)}
+            >
+              <IconComponent size={20} color={isActive ? colors.surface : colors.text} />
+              <Text style={[styles.modernTabText, {
+                color: isActive ? colors.surface : colors.text
+              }]}>
+                {tab.label}
+              </Text>
+              <View style={[styles.tabBadge, {
+                backgroundColor: isActive ? colors.surface : colors.primary
+              }]}>
+                <Text style={[styles.tabBadgeText, {
+                  color: isActive ? colors.primary : colors.surface
+                }]}>
+                  {tab.count}
+                </Text>
+              </View>
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
-      {/* المحتوى */}
-      <ScrollView style={styles.content}>
+      {/* المحتوى المحسن */}
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {selectedTab === 'balances' && (
-          <View>
-            {workerBalances.map((balance) => (
-              <View key={balance.workerId} style={[styles.balanceCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-                <View style={styles.balanceHeader}>
-                  <Text style={[styles.workerName, { color: colors.text }]}>{balance.workerName}</Text>
-                  <Text style={[styles.currentBalance, { color: getBalanceColor(balance.currentBalance) }]}>
-                    {formatCurrency(balance.currentBalance)}
-                  </Text>
-                </View>
-                
-                <View style={styles.balanceDetails}>
-                  <View style={styles.balanceRow}>
-                    <Text style={[styles.balanceLabel, { color: colors.textSecondary }]}>إجمالي المكتسب:</Text>
-                    <Text style={[styles.balanceValue, { color: colors.success }]}>
-                      {formatCurrency(balance.totalEarned)}
-                    </Text>
-                  </View>
-                  
-                  <View style={styles.balanceRow}>
-                    <Text style={[styles.balanceLabel, { color: colors.textSecondary }]}>إجمالي المدفوع:</Text>
-                    <Text style={[styles.balanceValue, { color: colors.error }]}>
-                      {formatCurrency(balance.totalPaid)}
-                    </Text>
-                  </View>
-                  
-                  {balance.lastPaymentDate && (
-                    <View style={styles.balanceRow}>
-                      <Text style={[styles.balanceLabel, { color: colors.textSecondary }]}>آخر دفعة:</Text>
-                      <Text style={[styles.balanceValue, { color: colors.text }]}>
-                        {new Date(balance.lastPaymentDate).toLocaleDateString('ar-SA')}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-
-                <View style={styles.balanceActions}>
-                  <TouchableOpacity
-                    style={[styles.miniActionButton, { backgroundColor: colors.primary }]}
-                    onPress={() => {
-                      const worker = workers.find(w => w.id === balance.workerId);
-                      if (worker) openTransferModal(worker);
-                    }}
-                  >
-                    <Text style={[styles.miniActionText, { color: colors.surface }]}>تحويل</Text>
-                  </TouchableOpacity>
-                  
-                  <TouchableOpacity
-                    style={[styles.miniActionButton, { backgroundColor: colors.success }]}
-                    onPress={() => {
-                      const worker = workers.find(w => w.id === balance.workerId);
-                      if (worker) openPaymentModal(worker);
-                    }}
-                  >
-                    <Text style={[styles.miniActionText, { color: colors.surface }]}>دفع</Text>
-                  </TouchableOpacity>
-                </View>
+          <View style={styles.contentContainer}>
+            {filteredBalances.length === 0 ? (
+              <View style={[styles.emptyStateContainer, { backgroundColor: colors.surface }]}>
+                <Icons.Users size={80} color={colors.textSecondary} />
+                <Text style={[styles.emptyStateTitle, { color: colors.text }]}>لا توجد بيانات</Text>
+                <Text style={[styles.emptyStateMessage, { color: colors.textSecondary }]}>
+                  {searchTerm || filterType !== 'all' ? 'لا توجد نتائج للبحث أو التصفية' : 'لم يتم إضافة عمال بعد'}
+                </Text>
               </View>
-            ))}
+            ) : (
+              <FlatList
+                data={filteredBalances}
+                keyExtractor={(item) => item.workerId}
+                showsVerticalScrollIndicator={false}
+                renderItem={({ item: balance }) => (
+                  <View style={[styles.modernBalanceCard, { backgroundColor: colors.surface }]}>
+                    <View style={styles.balanceCardHeader}>
+                      <View style={styles.workerInfoSection}>
+                        <View style={[styles.workerAvatar, { backgroundColor: colors.primary + '20' }]}>
+                          <Icons.User size={24} color={colors.primary} />
+                        </View>
+                        <View style={styles.workerDetails}>
+                          <Text style={[styles.modernWorkerName, { color: colors.text }]}>{balance.workerName}</Text>
+                          <Text style={[styles.workerRole, { color: colors.textSecondary }]}>
+                            {workers.find(w => w.id === balance.workerId)?.type || 'غير محدد'}
+                          </Text>
+                        </View>
+                      </View>
+                      
+                      <View style={styles.balanceSection}>
+                        <Text style={[styles.modernCurrentBalance, { color: getBalanceColor(balance.currentBalance) }]}>
+                          {formatCurrency(balance.currentBalance)}
+                        </Text>
+                        <Text style={[styles.balanceStatus, { color: colors.textSecondary }]}>الرصيد الحالي</Text>
+                      </View>
+                    </View>
+                    
+                    <View style={styles.balanceStatsGrid}>
+                      <View style={[styles.statItem, { borderRightColor: colors.border }]}>
+                        <Icons.TrendingUp size={18} color={colors.success} />
+                        <Text style={[styles.statAmount, { color: colors.success }]}>
+                          {formatCurrency(balance.totalEarned)}
+                        </Text>
+                        <Text style={[styles.statLabel, { color: colors.textSecondary }]}>إجمالي المكتسب</Text>
+                      </View>
+                      
+                      <View style={styles.statItem}>
+                        <Icons.TrendingDown size={18} color={colors.error} />
+                        <Text style={[styles.statAmount, { color: colors.error }]}>
+                          {formatCurrency(balance.totalPaid)}
+                        </Text>
+                        <Text style={[styles.statLabel, { color: colors.textSecondary }]}>إجمالي المدفوع</Text>
+                      </View>
+                    </View>
+                    
+                    {balance.lastPaymentDate && (
+                      <View style={[styles.lastPaymentInfo, { backgroundColor: colors.background }]}>
+                        <Icons.Calendar size={16} color={colors.textSecondary} />
+                        <Text style={[styles.lastPaymentText, { color: colors.textSecondary }]}>
+                          آخر دفعة: {new Date(balance.lastPaymentDate).toLocaleDateString('ar-SA')}
+                        </Text>
+                      </View>
+                    )}
+
+                    <View style={styles.modernBalanceActions}>
+                      <TouchableOpacity
+                        style={[styles.modernActionButton, { backgroundColor: colors.primary + '15', borderColor: colors.primary }]}
+                        onPress={() => {
+                          const worker = workers.find(w => w.id === balance.workerId);
+                          if (worker) openTransferModal(worker);
+                        }}
+                      >
+                        <Icons.Send size={18} color={colors.primary} />
+                        <Text style={[styles.modernActionText, { color: colors.primary }]}>تحويل مالي</Text>
+                      </TouchableOpacity>
+                      
+                      <TouchableOpacity
+                        style={[styles.modernActionButton, { backgroundColor: colors.success + '15', borderColor: colors.success }]}
+                        onPress={() => {
+                          const worker = workers.find(w => w.id === balance.workerId);
+                          if (worker) openPaymentModal(worker);
+                        }}
+                      >
+                        <Icons.CreditCard size={18} color={colors.success} />
+                        <Text style={[styles.modernActionText, { color: colors.success }]}>دفع مباشر</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                )}
+              />
+            )}
           </View>
         )}
 
@@ -540,38 +826,64 @@ export default function WorkerAccountsScreen() {
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: colors.text }]}>نوع التحويل</Text>
-                <View style={[styles.pickerContainer, { backgroundColor: colors.background, borderColor: colors.border }]}>
-                  <Picker
-                    selectedValue={transferForm.transferType}
-                    style={[styles.picker, { color: colors.text }]}
-                    onValueChange={(value) => setTransferForm(prev => ({ ...prev, transferType: value }))}
-                  >
-                    <Picker.Item label="تحويل عائلة" value="family_transfer" />
-                    <Picker.Item label="دفعة شخصية" value="personal_payment" />
-                    <Picker.Item label="سلفة" value="advance_payment" />
-                    <Picker.Item label="مكافأة" value="bonus" />
-                  </Picker>
+                <Text style={[styles.label, { color: colors.text }]}>طريقة التحويل</Text>
+                <View style={styles.transferMethodContainer}>
+                  {[
+                    { key: 'cash', label: 'نقدي', icon: 'Banknote' },
+                    { key: 'bank', label: 'بنكي', icon: 'Building' },
+                    { key: 'hawaleh', label: 'حوالة', icon: 'Send' }
+                  ].map((method) => {
+                    const IconComponent = Icons[method.icon as keyof typeof Icons] as any;
+                    const isSelected = transferForm.transferMethod === method.key;
+                    
+                    return (
+                      <TouchableOpacity
+                        key={method.key}
+                        style={[styles.transferMethodButton, {
+                          backgroundColor: isSelected ? colors.primary : colors.background,
+                          borderColor: isSelected ? colors.primary : colors.border
+                        }]}
+                        onPress={() => setTransferForm(prev => ({ ...prev, transferMethod: method.key as any }))}
+                      >
+                        <IconComponent size={20} color={isSelected ? colors.surface : colors.text} />
+                        <Text style={[styles.transferMethodText, {
+                          color: isSelected ? colors.surface : colors.text
+                        }]}>
+                          {method.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
               </View>
 
               <View style={styles.inputGroup}>
-                <Text style={[styles.label, { color: colors.text }]}>اسم المستلم</Text>
-                <TextInput
-                  style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                <Text style={[styles.label, { color: colors.text }]}>اسم المستلم *</Text>
+                <AutocompleteInput
                   value={transferForm.recipientName}
                   onChangeText={(text) => setTransferForm(prev => ({ ...prev, recipientName: text }))}
-                  placeholder="اسم المستلم (اختياري)"
+                  placeholder="اسم المستلم"
+                  category="worker_transfer_recipient"
+                />
+              </View>
+              
+              <View style={styles.inputGroup}>
+                <Text style={[styles.label, { color: colors.text }]}>رقم هاتف المستلم</Text>
+                <AutocompleteInput
+                  value={transferForm.recipientPhone}
+                  onChangeText={(text) => setTransferForm(prev => ({ ...prev, recipientPhone: text }))}
+                  placeholder="رقم الهاتف (اختياري)"
+                  category="worker_transfer_phone"
                 />
               </View>
 
               <View style={styles.inputGroup}>
                 <Text style={[styles.label, { color: colors.text }]}>رقم التحويل</Text>
-                <TextInput
-                  style={[styles.input, { backgroundColor: colors.background, color: colors.text, borderColor: colors.border }]}
+                <AutocompleteInput
                   value={transferForm.transferNumber}
                   onChangeText={(text) => setTransferForm(prev => ({ ...prev, transferNumber: text }))}
                   placeholder="رقم التحويل (اختياري)"
+                  category="worker_transfer_number"
                 />
               </View>
 
@@ -697,6 +1009,23 @@ export default function WorkerAccountsScreen() {
           </View>
         </View>
       </Modal>
+      
+      {/* Floating Action Buttons */}
+      <View style={styles.floatingActions}>
+        <TouchableOpacity
+          style={[styles.floatingButton, styles.secondaryFab, { backgroundColor: colors.success }]}
+          onPress={() => openPaymentModal()}
+        >
+          <Icons.CreditCard size={24} color={colors.surface} />
+        </TouchableOpacity>
+        
+        <TouchableOpacity
+          style={[styles.floatingButton, styles.primaryFab, { backgroundColor: colors.primary }]}
+          onPress={() => openTransferModal()}
+        >
+          <Icons.Send size={24} color={colors.surface} />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
