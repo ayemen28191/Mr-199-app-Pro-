@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -7,22 +7,107 @@ import {
   TouchableOpacity,
   Alert,
   Dimensions,
+  Modal,
+  TextInput,
 } from 'react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useProject } from '../context/ProjectContext';
-import supabase from '../services/supabaseClient';
-import type { ProjectWithStats } from '../types';
+import { StatsCard, StatsGrid } from '../components/StatsCard';
+import { FloatingActionButton } from '../components/FloatingActionButton';
+import ProjectSelector from '../components/ProjectSelector';
+import QuickActions from '../components/QuickActions';
+import * as Icons from '../components/Icons';
 
 const { width } = Dimensions.get('window');
 
+interface Project {
+  id: string;
+  name: string;
+  status: string;
+  createdAt: string;
+  description?: string;
+}
+
+interface Worker {
+  id: string;
+  name: string;
+  type: string;
+  dailyWage: string;
+  isActive: boolean;
+  phone?: string;
+}
+
+interface WorkerType {
+  id: string;
+  name: string;
+  usageCount: number;
+  lastUsed: string;
+  createdAt: string;
+}
+
+interface ProjectStats {
+  totalWorkers: string;
+  totalExpenses: number;
+  totalIncome: number;
+  currentBalance: number;
+  activeWorkers: string;
+  completedDays: string;
+  materialPurchases: string;
+  lastActivity: string;
+}
+
+interface ProjectWithStats extends Project {
+  stats: ProjectStats;
+}
+
 export default function DashboardScreen() {
   const { colors } = useTheme();
-  const { selectedProjectId } = useProject();
+  const { selectedProjectId, selectProject } = useProject();
   const [projects, setProjects] = useState<ProjectWithStats[]>([]);
   const [loading, setLoading] = useState(true);
+  const [workerTypes, setWorkerTypes] = useState<WorkerType[]>([]);
+  
+  // نماذج إضافة العامل والمشروع
+  const [showWorkerModal, setShowWorkerModal] = useState(false);
+  const [showProjectModal, setShowProjectModal] = useState(false);
+  const [showAddTypeDialog, setShowAddTypeDialog] = useState(false);
+  const [newTypeName, setNewTypeName] = useState("");
+  
+  const [workerData, setWorkerData] = useState({
+    name: '',
+    phone: '',
+    type: '',
+    dailyWage: ''
+  });
+
+  const [projectData, setProjectData] = useState({
+    name: '',
+    status: 'active',
+    description: ''
+  });
+
+  // دالة مساعدة لحفظ القيم في autocomplete_data - مطابقة للويب
+  const saveAutocompleteValue = async (category: string, value: string | null | undefined) => {
+    if (!value || typeof value !== 'string' || !value.trim()) return;
+    try {
+      const response = await fetch('/api/autocomplete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          category, 
+          value: value.trim() 
+        })
+      });
+      if (!response.ok) {
+        console.log(`Failed to save autocomplete value for ${category}`);
+      }
+    } catch (error) {
+      console.log(`Failed to save autocomplete value for ${category}:`, error);
+    }
+  };
 
   // تحميل المشاريع مع الإحصائيات
-  const loadProjects = async () => {
+  const loadProjects = useCallback(async () => {
     try {
       const response = await fetch('/api/projects/with-stats');
       if (response.ok) {
@@ -35,32 +120,187 @@ export default function DashboardScreen() {
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  // تحميل أنواع العمال
+  const loadWorkerTypes = useCallback(async () => {
+    try {
+      const response = await fetch('/api/worker-types');
+      if (response.ok) {
+        const typesData = await response.json();
+        setWorkerTypes(typesData);
+      }
+    } catch (error) {
+      console.error('خطأ في تحميل أنواع العمال:', error);
+    }
+  }, []);
+
+  // إضافة عامل جديد - مطابق للويب 100%
+  const addWorker = async () => {
+    if (!workerData.name.trim() || !workerData.type || !workerData.dailyWage) {
+      Alert.alert('خطأ', 'يرجى ملء جميع البيانات المطلوبة');
+      return;
+    }
+
+    const parsedWage = parseFloat(workerData.dailyWage);
+    
+    if (isNaN(parsedWage) || parsedWage <= 0) {
+      Alert.alert('خطأ', 'يرجى إدخال مبلغ صحيح للأجر اليومي');
+      return;
+    }
+
+    try {
+      // حفظ القيم في autocomplete_data قبل العملية الأساسية
+      await Promise.all([
+        saveAutocompleteValue('workerNames', workerData.name),
+        saveAutocompleteValue('workerTypes', workerData.type)
+      ]);
+
+      const response = await fetch('/api/workers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: workerData.name.trim(),
+          phone: workerData.phone || null,
+          type: workerData.type,
+          dailyWage: parsedWage.toString(),
+          isActive: true,
+        })
+      });
+
+      if (response.ok) {
+        Alert.alert('نجح الحفظ', 'تم إضافة العامل بنجاح');
+        setShowWorkerModal(false);
+        setWorkerData({ name: '', phone: '', type: '', dailyWage: '' });
+        loadProjects(); // إعادة تحميل للحصول على الإحصائيات المحدثة
+        loadWorkerTypes(); // إعادة تحميل أنواع العمال
+      } else {
+        const errorText = await response.text();
+        throw new Error(errorText || 'فشل في إضافة العامل');
+      }
+    } catch (error: any) {
+      Alert.alert('خطأ', error.message || 'حدث خطأ أثناء إضافة العامل');
+    }
+  };
+
+  // إضافة مشروع جديد - مطابق للويب 100%
+  const addProject = async () => {
+    if (!projectData.name.trim()) {
+      Alert.alert('خطأ', 'يرجى إدخال اسم المشروع');
+      return;
+    }
+
+    try {
+      // حفظ القيم في autocomplete_data قبل العملية الأساسية
+      await Promise.all([
+        saveAutocompleteValue('projectNames', projectData.name),
+        saveAutocompleteValue('projectDescriptions', projectData.description)
+      ]);
+
+      const response = await fetch('/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: projectData.name.trim(),
+          status: projectData.status,
+          imageUrl: projectData.description ? projectData.description : null
+        })
+      });
+
+      if (response.ok) {
+        Alert.alert('نجح الحفظ', 'تم إضافة المشروع بنجاح');
+        setShowProjectModal(false);
+        setProjectData({ name: '', status: 'active', description: '' });
+        loadProjects();
+      } else {
+        const errorText = await response.text();
+        throw new Error(errorText || 'فشل في إضافة المشروع');
+      }
+    } catch (error: any) {
+      Alert.alert('خطأ', error.message || 'حدث خطأ أثناء إضافة المشروع');
+    }
+  };
+
+  // إضافة نوع عامل جديد - مطابق للويب 100%
+  const addWorkerType = async () => {
+    if (!newTypeName.trim()) {
+      Alert.alert('خطأ', 'يرجى إدخال اسم نوع العامل');
+      return;
+    }
+
+    try {
+      // حفظ قيم أنواع العمال في autocomplete_data
+      await saveAutocompleteValue('workerTypes', newTypeName.trim());
+      
+      const response = await fetch('/api/worker-types', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: newTypeName.trim() })
+      });
+
+      if (response.ok) {
+        const newType = await response.json();
+        Alert.alert('تم الحفظ', 'تم إضافة نوع العامل بنجاح');
+        setWorkerData({...workerData, type: newType.name});
+        setNewTypeName('');
+        setShowAddTypeDialog(false);
+        loadWorkerTypes();
+      } else {
+        const errorText = await response.text();
+        throw new Error(errorText || 'فشل في إضافة نوع العامل');
+      }
+    } catch (error: any) {
+      Alert.alert('خطأ', error.message || 'حدث خطأ أثناء إضافة نوع العامل');
+    }
   };
 
   useEffect(() => {
     loadProjects();
-  }, []);
+    loadWorkerTypes();
+  }, [loadProjects, loadWorkerTypes]);
 
-  // بطاقة الإحصائيات
-  const StatCard = ({ title, value, color }: { title: string; value: string | number; color: string }) => (
-    <View style={[styles.statCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
-      <Text style={[styles.statValue, { color }]}>{value}</Text>
-      <Text style={[styles.statTitle, { color: colors.textSecondary }]}>{title}</Text>
-    </View>
-  );
+  // حساب الإحصائيات العامة
+  const generalStats = {
+    totalProjects: projects.length,
+    activeProjects: projects.filter(p => p.status === 'active').length,
+    totalIncome: projects.reduce((sum, p) => sum + p.stats.totalIncome, 0),
+    totalExpenses: projects.reduce((sum, p) => sum + p.stats.totalExpenses, 0),
+    currentBalance: projects.reduce((sum, p) => sum + p.stats.currentBalance, 0),
+    totalWorkers: projects.reduce((sum, p) => sum + parseInt(p.stats.totalWorkers), 0),
+    activeWorkers: projects.reduce((sum, p) => sum + parseInt(p.stats.activeWorkers), 0),
+  };
 
-  // بطاقة المشروع
+  // إعدادات الزر العائم
+  const floatingActions = [
+    {
+      icon: <Icons.User size={24} color="#ffffff" />,
+      label: 'إضافة عامل',
+      onPress: () => setShowWorkerModal(true),
+      color: colors.success,
+    },
+    {
+      icon: <Icons.FolderPlus size={24} color="#ffffff" />,
+      label: 'إضافة مشروع',
+      onPress: () => setShowProjectModal(true),
+      color: colors.primary,
+    },
+  ];
+
+  // بطاقة المشروع مطابقة للويب
   const ProjectCard = ({ project }: { project: ProjectWithStats }) => (
     <TouchableOpacity
       style={[styles.projectCard, { backgroundColor: colors.surface, borderColor: colors.border }]}
+      onPress={() => selectProject(project.id)}
     >
       <View style={styles.projectHeader}>
         <Text style={[styles.projectName, { color: colors.text }]}>{project.name}</Text>
         <View style={[styles.statusBadge, { 
-          backgroundColor: project.status === 'active' ? colors.success : colors.warning 
+          backgroundColor: project.status === 'active' ? colors.success : 
+                          project.status === 'completed' ? colors.primary : colors.warning 
         }]}>
           <Text style={styles.statusText}>
-            {project.status === 'active' ? 'نشط' : project.status === 'completed' ? 'مكتمل' : 'متوقف'}
+            {project.status === 'active' ? 'نشط' : 
+             project.status === 'completed' ? 'مكتمل' : 'متوقف'}
           </Text>
         </View>
       </View>
@@ -68,7 +308,7 @@ export default function DashboardScreen() {
       <View style={styles.statsRow}>
         <View style={styles.statItem}>
           <Text style={[styles.statNumber, { color: colors.primary }]}>
-            {project.stats.currentBalance.toLocaleString('ar-SA')}
+            {project.stats.currentBalance.toLocaleString('ar-SA')} ر.س
           </Text>
           <Text style={[styles.statLabel, { color: colors.textSecondary }]}>الرصيد الحالي</Text>
         </View>
@@ -97,40 +337,188 @@ export default function DashboardScreen() {
   }
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: colors.background }]}>
-      {/* الإحصائيات العامة */}
-      <View style={styles.statsContainer}>
-        <StatCard
-          title="إجمالي المشاريع"
-          value={projects.length}
-          color={colors.primary}
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        {/* اختيار المشروع - مطابق للويب */}
+        <ProjectSelector
+          selectedProjectId={selectedProjectId}
+          onProjectChange={(projectId, projectName) => selectProject(projectId)}
+          projects={projects}
         />
-        <StatCard
-          title="المشاريع النشطة"
-          value={projects.filter(p => p.status === 'active').length}
-          color={colors.success}
-        />
-      </View>
 
-      <View style={styles.statsContainer}>
-        <StatCard
-          title="إجمالي الدخل"
-          value={`${projects.reduce((sum, p) => sum + p.stats.totalIncome, 0).toLocaleString('ar-SA')} ر.س`}
-          color={colors.success}
-        />
-        <StatCard
-          title="إجمالي المصاريف"
-          value={`${projects.reduce((sum, p) => sum + p.stats.totalExpenses, 0).toLocaleString('ar-SA')} ر.س`}
-          color={colors.error}
-        />
-      </View>
+        {/* إحصائيات المشروع المحدد - مطابق للويب */}
+        {selectedProject && (
+          <View style={[styles.projectCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <View style={styles.projectHeader}>
+              <Text style={[styles.projectTitle, { color: colors.text }]}>{selectedProject.name}</Text>
+              <View style={[styles.statusBadge, { backgroundColor: colors.success }]}>
+                <Text style={styles.statusText}>نشط</Text>
+              </View>
+            </View>
 
-      {/* المشاريع */}
-      <Text style={[styles.sectionTitle, { color: colors.text }]}>المشاريع</Text>
-      {projects.map((project) => (
-        <ProjectCard key={project.id} project={project} />
-      ))}
-    </ScrollView>
+            {/* إحصائيات المشروع في شبكة 2x3 مطابقة للويب */}
+            <StatsGrid>
+              <StatsCard
+                title="إجمالي التوريد"
+                value={selectedProject.stats?.totalIncome || 0}
+                icon={<Icons.TrendingUp size={20} color="#2563eb" />}
+                color="blue"
+                formatter={(value: number) => `${value.toLocaleString('ar-SA')} ر.ي`}
+              />
+              <StatsCard
+                title="إجمالي المنصرف"
+                value={selectedProject.stats?.totalExpenses || 0}
+                icon={<Icons.TrendingDown size={20} color="#dc2626" />}
+                color="red"
+                formatter={(value: number) => `${value.toLocaleString('ar-SA')} ر.ي`}
+              />
+            </StatsGrid>
+
+            <StatsGrid>
+              <StatsCard
+                title="المتبقي الحالي"
+                value={selectedProject.stats?.currentBalance || 0}
+                icon={<Icons.DollarSign size={20} color="#16a34a" />}
+                color="green"
+                formatter={(value: number) => `${value.toLocaleString('ar-SA')} ر.ي`}
+              />
+              <StatsCard
+                title="العمال النشطين"
+                value={selectedProject.stats?.activeWorkers || "0"}
+                icon={<Icons.UserCheck size={20} color="#9333ea" />}
+                color="purple"
+              />
+            </StatsGrid>
+
+            <StatsGrid>
+              <StatsCard
+                title="أيام العمل المكتملة"
+                value={selectedProject.stats?.completedDays || "0"}
+                icon={<Icons.Calendar size={20} color="#0d9488" />}
+                color="teal"
+              />
+              <StatsCard
+                title="مشتريات المواد"
+                value={selectedProject.stats?.materialPurchases || "0"}
+                icon={<Icons.Package size={20} color="#4338ca" />}
+                color="indigo"
+              />
+            </StatsGrid>
+          </View>
+        )}
+
+        {/* الإجراءات السريعة - مطابق للويب */}
+        <QuickActions onNavigate={(route) => console.log('Navigate to:', route)} />
+
+        {/* مساحة إضافية للزر العائم */}
+        <View style={{ height: 100 }} />
+      </ScrollView>
+
+      {/* الزر العائم مطابق للويب */}
+      <FloatingActionButton actions={floatingActions} />
+
+      {/* نموذج إضافة عامل */}
+      <Modal
+        visible={showWorkerModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowWorkerModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>إضافة عامل جديد</Text>
+            
+            <TextInput
+              style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+              placeholder="اسم العامل"
+              value={workerData.name}
+              onChangeText={(text) => setWorkerData({...workerData, name: text})}
+            />
+            
+            <TextInput
+              style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+              placeholder="رقم الهاتف (اختياري)"
+              value={workerData.phone}
+              onChangeText={(text) => setWorkerData({...workerData, phone: text})}
+            />
+            
+            <TextInput
+              style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+              placeholder="نوع العمل"
+              value={workerData.type}
+              onChangeText={(text) => setWorkerData({...workerData, type: text})}
+            />
+            
+            <TextInput
+              style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+              placeholder="الأجر اليومي"
+              value={workerData.dailyWage}
+              onChangeText={(text) => setWorkerData({...workerData, dailyWage: text})}
+              keyboardType="numeric"
+            />
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.button, { backgroundColor: colors.primary }]}
+                onPress={addWorker}
+              >
+                <Text style={styles.buttonText}>حفظ</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.button, { backgroundColor: colors.border }]}
+                onPress={() => setShowWorkerModal(false)}
+              >
+                <Text style={[styles.buttonText, { color: colors.text }]}>إلغاء</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* نموذج إضافة مشروع */}
+      <Modal
+        visible={showProjectModal}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowProjectModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { backgroundColor: colors.surface }]}>
+            <Text style={[styles.modalTitle, { color: colors.text }]}>إضافة مشروع جديد</Text>
+            
+            <TextInput
+              style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+              placeholder="اسم المشروع"
+              value={projectData.name}
+              onChangeText={(text) => setProjectData({...projectData, name: text})}
+            />
+            
+            <TextInput
+              style={[styles.input, { borderColor: colors.border, color: colors.text }]}
+              placeholder="وصف المشروع (اختياري)"
+              value={projectData.description}
+              onChangeText={(text) => setProjectData({...projectData, description: text})}
+              multiline
+            />
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.button, { backgroundColor: colors.primary }]}
+                onPress={addProject}
+              >
+                <Text style={styles.buttonText}>حفظ</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.button, { backgroundColor: colors.border }]}
+                onPress={() => setShowProjectModal(false)}
+              >
+                <Text style={[styles.buttonText, { color: colors.text }]}>إلغاء</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </View>
   );
 }
 
@@ -147,39 +535,86 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
   },
-  statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  statCard: {
-    flex: 1,
-    padding: 16,
+  projectCard: {
     borderRadius: 12,
     borderWidth: 1,
-    marginHorizontal: 4,
+    padding: 16,
+    marginBottom: 16,
+  },
+  projectHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  projectTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    flex: 1,
+    textAlign: 'right',
+  },
+  statusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  statusText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  statValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 4,
+  modalContent: {
+    width: width * 0.9,
+    borderRadius: 12,
+    padding: 20,
+    maxHeight: '80%',
   },
-  statTitle: {
-    fontSize: 12,
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 20,
     textAlign: 'center',
   },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+  input: {
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 12,
     marginBottom: 16,
-    marginTop: 8,
+    fontSize: 16,
+    textAlign: 'right',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 20,
+  },
+  button: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    minWidth: 100,
+  },
+  buttonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
   projectCard: {
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,
     marginBottom: 12,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   projectHeader: {
     flexDirection: 'row',
@@ -191,16 +626,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     flex: 1,
+    textAlign: 'right',
   },
   statusBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 6,
+    borderRadius: 12,
   },
   statusText: {
-    color: 'white',
+    color: '#ffffff',
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: 'bold',
   },
   statsRow: {
     flexDirection: 'row',
@@ -210,11 +646,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statNumber: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
+    marginBottom: 2,
   },
   statLabel: {
-    fontSize: 12,
-    marginTop: 2,
+    fontSize: 10,
+    textAlign: 'center',
   },
 });
