@@ -14,8 +14,8 @@ import DailyExpenses from "@/pages/daily-expenses";
 import MaterialPurchase from "@/pages/material-purchase";
 import Reports from "@/pages/reports";
 
-import ProjectTransfers from "@/pages/ProjectTransfers";
-import ProjectTransactionsPage from "@/pages/ProjectTransactionsSimple";
+import ProjectTransfers from "@/pages/project-transfers";
+import ProjectTransactionsPage from "@/pages/project-transactions-simple";
 
 import ProjectsPage from "@/pages/projects";
 import WorkersPage from "@/pages/workers";
