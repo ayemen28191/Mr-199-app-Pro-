@@ -130,6 +130,8 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     padding: 16,
     marginBottom: 12,
+    marginHorizontal: 6,
+    width: '45%',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -162,7 +164,6 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'space-between',
     marginHorizontal: -6,
   },
 });

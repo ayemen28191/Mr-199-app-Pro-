@@ -17,6 +17,7 @@ import { FloatingActionButton } from '../components/FloatingActionButton';
 import ProjectSelector from '../components/ProjectSelector';
 import QuickActions from '../components/QuickActions';
 import * as Icons from '../components/Icons';
+import { formatCurrency } from '../lib/utils';
 
 const { width } = Dimensions.get('window');
 
@@ -358,31 +359,28 @@ export default function DashboardScreen() {
               </View>
             </View>
 
-            {/* إحصائيات المشروع في شبكة 2x3 مطابقة للويب */}
-            <StatsGrid>
+            {/* إحصائيات المشروع في شبكة 2x3 مطابقة للويب 100% */}
+            <View style={styles.statsContainer}>
               <StatsCard
                 title="إجمالي التوريد"
                 value={selectedProject.stats?.totalIncome || 0}
                 icon={<Icons.TrendingUp size={20} color="#2563eb" />}
                 color="blue"
-                formatter={(value: number) => `${value.toLocaleString('ar-SA')} ر.ي`}
+                formatter={formatCurrency}
               />
               <StatsCard
                 title="إجمالي المنصرف"
                 value={selectedProject.stats?.totalExpenses || 0}
                 icon={<Icons.TrendingDown size={20} color="#dc2626" />}
                 color="red"
-                formatter={(value: number) => `${value.toLocaleString('ar-SA')} ر.ي`}
+                formatter={formatCurrency}
               />
-            </StatsGrid>
-
-            <StatsGrid>
               <StatsCard
                 title="المتبقي الحالي"
                 value={selectedProject.stats?.currentBalance || 0}
                 icon={<Icons.DollarSign size={20} color="#16a34a" />}
                 color="green"
-                formatter={(value: number) => `${value.toLocaleString('ar-SA')} ر.ي`}
+                formatter={formatCurrency}
               />
               <StatsCard
                 title="العمال النشطين"
@@ -390,9 +388,6 @@ export default function DashboardScreen() {
                 icon={<Icons.UserCheck size={20} color="#9333ea" />}
                 color="purple"
               />
-            </StatsGrid>
-
-            <StatsGrid>
               <StatsCard
                 title="أيام العمل المكتملة"
                 value={selectedProject.stats?.completedDays || "0"}
@@ -405,7 +400,7 @@ export default function DashboardScreen() {
                 icon={<Icons.Package size={20} color="#4338ca" />}
                 color="indigo"
               />
-            </StatsGrid>
+            </View>
           </View>
         )})()}
 
@@ -633,5 +628,11 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: 10,
     textAlign: 'center',
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginHorizontal: -6,
   },
 });
