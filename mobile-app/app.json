@@ -1,35 +1,50 @@
 {
   "expo": {
-    "name": "BuildApp",
-    "slug": "BuildApp",
+    "name": "نظام إدارة المشاريع الإنشائية",
+    "slug": "construction-management-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#2563eb"
     },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.constructionmanagement.mobile"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#2563eb"
       },
-      "edgeToEdgeEnabled": true,
-      "package": "com.binarjoinanalytic1.BuildApp"
+      "package": "com.constructionmanagement.mobile"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "extra": {
       "eas": {
-        "projectId": "346e2104-2233-4657-a531-d318e9f27747"
+        "projectId": "27b14db2-17e6-4ff8-ad8e-68a3c950546a"
       }
-    }
+    },
+    "plugins": [
+      "expo-font",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "minSdkVersion": 25
+          }
+        }
+      ],
+      "@logrocket/react-native"
+    ],
+    "owner": "binarjoinanalytic1"
   }
 }
