@@ -1108,4 +1108,15 @@ const styles = StyleSheet.create({
   },
 });
 
+const SuppliersProfessionalScreen: React.FC = () => {
+  return (
+    <SafeAreaView style={{ flex: 1 }}>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <Text style={{ fontSize: 18, fontWeight: 'bold' }}>شاشة الموردين</Text>
+        <Text style={{ fontSize: 14, marginTop: 10 }}>قيد التطوير...</Text>
+      </View>
+    </SafeAreaView>
+  );
+};
+
 export default SuppliersProfessionalScreen;

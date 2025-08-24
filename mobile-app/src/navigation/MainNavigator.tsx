@@ -10,7 +10,7 @@ import WorkersScreen from '../screens/WorkersScreen';
 import SuppliersProfessionalScreen from '../screens/SuppliersProfessionalScreen';
 import MoreScreen from '../screens/MoreScreen';
 
-// Import icons (using simple text for now)
+// توحيد الأيقونات مع تطبيق الويب
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 
