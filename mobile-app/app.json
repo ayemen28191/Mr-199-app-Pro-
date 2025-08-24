@@ -34,8 +34,7 @@
       }
     },
     "plugins": [
-      "expo-font",
-      "@logrocket/react-native"
+      "expo-font"
     ],
     "owner": "binarjoinanalytic1"
   }
