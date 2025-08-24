@@ -30,6 +30,196 @@ import {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
+  // إضافة مسار تطبيق الموبايل في البداية لتجنب تداخل مع Vite
+  app.get("/mobile*", (req, res) => {
+    try {
+      // إعداد HTML لتطبيق الموبايل
+      const mobileAppHtml = `
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>نظام إدارة المشاريع - الموبايل</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            direction: rtl;
+        }
+        
+        .mobile-container {
+            max-width: 375px;
+            width: 100%;
+            min-height: 100vh;
+            background: white;
+            border-radius: 25px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+            position: relative;
+            border: 8px solid #333;
+        }
+        
+        .status-bar {
+            height: 44px;
+            background: #000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .mobile-header {
+            background: linear-gradient(135deg, #2196F3, #1976D2);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .mobile-header h1 {
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+        
+        .mobile-header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .mobile-content {
+            padding: 30px 20px;
+            text-align: center;
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 25px;
+        }
+        
+        .icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+            opacity: 0.8;
+        }
+        
+        .message {
+            font-size: 16px;
+            line-height: 1.6;
+            color: #333;
+        }
+        
+        .buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 15px 20px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: block;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #2196F3, #1976D2);
+        }
+        
+        .btn-secondary:hover {
+            box-shadow: 0 5px 15px rgba(33, 150, 243, 0.4);
+        }
+        
+        .footer {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        @media (max-width: 400px) {
+            .mobile-container {
+                width: 100vw;
+                min-height: 100vh;
+                border-radius: 0;
+                border: none;
+            }
+            
+            body {
+                margin: 0;
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="mobile-container">
+        <div class="status-bar">
+            <span>⚡ 📱</span>
+            <span>🔋 تطبيق الموبايل</span>
+        </div>
+        
+        <div class="mobile-header">
+            <h1>نظام إدارة المشاريع الإنشائية</h1>
+            <p>📱 تطبيق الموبايل - النسخة التجريبية</p>
+        </div>
+        
+        <div class="mobile-content">
+            <div class="icon">📱</div>
+            <div class="message">
+                <h2>✅ تم تفعيل تطبيق الموبايل بنجاح!</h2>
+                <p>هذا هو تطبيق الموبايل الخاص بك. للحصول على التطبيق الكامل مع جميع الميزات، يرجى استخدام أحد الخيارات أدناه.</p>
+            </div>
+            
+            <div class="buttons">
+                <a href="/" class="btn">🖥️ فتح تطبيق الويب الكامل</a>
+                <a href="exp://127.0.0.1:19006" class="btn btn-secondary">📱 فتح التطبيق في Expo Go</a>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>🏗️ نظام إدارة المشاريع الإنشائية © 2025</p>
+            <p>✅ يعمل على: ${req.headers.host}</p>
+        </div>
+    </div>
+</body>
+</html>`;
+      
+      res.send(mobileAppHtml);
+    } catch (error) {
+      console.error("Error serving mobile app:", error);
+      res.status(500).json({ message: "خطأ في تشغيل تطبيق الموبايل" });
+    }
+  });
+  
   // تم نقل تتبع الإشعارات المقروءة إلى قاعدة البيانات - حل مشكلة اختفاء الحالة عند إعادة التشغيل
   
   // Fund Transfers (تحويلات العهدة)
@@ -4037,189 +4227,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // تم إزالة جميع مسارات الأدوات القديمة - استخدم /api/equipment بدلاً منها
-
-  // إضافة مسار تطبيق الموبايل
-  app.get("/mobile*", (req, res) => {
-    try {
-      // إعداد HTML لتطبيق الموبايل
-      const mobileAppHtml = `
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>نظام إدارة المشاريع - الموبايل</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            direction: rtl;
-        }
-        
-        .mobile-container {
-            width: 375px;
-            height: 812px;
-            background: white;
-            border-radius: 25px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            overflow: hidden;
-            position: relative;
-            border: 8px solid #333;
-        }
-        
-        .status-bar {
-            height: 44px;
-            background: #000;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 20px;
-            color: white;
-            font-size: 14px;
-            font-weight: bold;
-        }
-        
-        .mobile-header {
-            background: linear-gradient(135deg, #2196F3, #1976D2);
-            color: white;
-            padding: 20px;
-            text-align: center;
-        }
-        
-        .mobile-header h1 {
-            font-size: 18px;
-            margin-bottom: 5px;
-        }
-        
-        .mobile-header p {
-            font-size: 14px;
-            opacity: 0.9;
-        }
-        
-        .mobile-content {
-            padding: 30px 20px;
-            text-align: center;
-            height: calc(100% - 164px);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            gap: 25px;
-        }
-        
-        .icon {
-            font-size: 60px;
-            margin-bottom: 20px;
-            opacity: 0.8;
-        }
-        
-        .message {
-            font-size: 16px;
-            line-height: 1.6;
-            color: #333;
-        }
-        
-        .buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            margin-top: 20px;
-        }
-        
-        .btn {
-            background: linear-gradient(135deg, #4CAF50, #45a049);
-            color: white;
-            border: none;
-            padding: 15px 20px;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: block;
-        }
-        
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
-        }
-        
-        .btn-secondary {
-            background: linear-gradient(135deg, #2196F3, #1976D2);
-        }
-        
-        .btn-secondary:hover {
-            box-shadow: 0 5px 15px rgba(33, 150, 243, 0.4);
-        }
-        
-        .footer {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            right: 20px;
-            text-align: center;
-            font-size: 12px;
-            color: #666;
-        }
-        
-        @media (max-width: 400px) {
-            .mobile-container {
-                width: 100vw;
-                height: 100vh;
-                border-radius: 0;
-                border: none;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="mobile-container">
-        <div class="status-bar">
-            <span>9:41</span>
-            <span>🔋 100%</span>
-        </div>
-        
-        <div class="mobile-header">
-            <h1>نظام إدارة المشاريع الإنشائية</h1>
-            <p>تطبيق الموبايل - النسخة التجريبية</p>
-        </div>
-        
-        <div class="mobile-content">
-            <div class="icon">📱</div>
-            <div class="message">
-                <h2>مرحباً بك في تطبيق الموبايل!</h2>
-                <p>للحصول على أفضل تجربة، يرجى استخدام تطبيق الويب الرئيسي أو تحميل تطبيق Expo Go لتشغيل النسخة الكاملة.</p>
-            </div>
-            
-            <div class="buttons">
-                <a href="/" class="btn">🖥️ فتح تطبيق الويب</a>
-                <a href="exp://127.0.0.1:19006" class="btn btn-secondary">📱 فتح في Expo Go</a>
-            </div>
-        </div>
-        
-        <div class="footer">
-            <p>🏗️ نظام إدارة المشاريع الإنشائية © 2025</p>
-        </div>
-    </div>
-</body>
-</html>`;
-      
-      res.send(mobileAppHtml);
-    } catch (error) {
-      console.error("Error serving mobile app:", error);
-      res.status(500).json({ message: "خطأ في تشغيل تطبيق الموبايل" });
-    }
-  });
 
   const httpServer = createServer(app);
   return httpServer;
