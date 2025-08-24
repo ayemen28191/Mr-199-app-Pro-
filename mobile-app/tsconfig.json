@@ -4,7 +4,11 @@
     "strict": true,
     "baseUrl": ".",
     "target": "es5",
-    "lib": ["dom", "dom.iterable", "es6"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "es6"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
@@ -19,15 +23,17 @@
     "declaration": false,
     "declarationMap": false,
     "paths": {
-      "@/*": ["./src/*"],
-      "@shared/*": ["../shared/*"]
+      "@/*": [
+        "./src/*"
+      ],
+      "@shared/*": [
+        "../shared/*"
+      ]
     }
   },
   "include": [
     "**/*.ts",
     "**/*.tsx",
-    ".expo/types/**/*.ts",
-    "expo-env.d.ts",
     "../shared/**/*.ts"
   ],
   "exclude": [
