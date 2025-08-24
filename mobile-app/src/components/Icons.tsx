@@ -165,44 +165,12 @@ export const MoreHorizontal = ({ size = 20, color = '#000' }: IconProps) => (
 );
 
 // أيقونات إضافية للمعدات والحضور
-export const Package = ({ size = 20, color = '#000' }: IconProps) => (
-  <Text style={{ fontSize: size, color }}>📦</Text>
-);
-
-export const MapPin = ({ size = 20, color = '#000' }: IconProps) => (
-  <Text style={{ fontSize: size, color }}>📍</Text>
-);
-
 export const QrCode = ({ size = 20, color = '#000' }: IconProps) => (
   <Text style={{ fontSize: size, color }}>🔲</Text>
 );
 
 export const Move = ({ size = 20, color = '#000' }: IconProps) => (
   <Text style={{ fontSize: size, color }}>↔️</Text>
-);
-
-export const ArrowRight = ({ size = 20, color = '#000' }: IconProps) => (
-  <Text style={{ fontSize: size, color }}>→</Text>
-);
-
-export const Settings = ({ size = 20, color = '#000' }: IconProps) => (
-  <Text style={{ fontSize: size, color }}>⚙️</Text>
-);
-
-export const User = ({ size = 20, color = '#000' }: IconProps) => (
-  <Text style={{ fontSize: size, color }}>👤</Text>
-);
-
-export const Clock = ({ size = 20, color = '#000' }: IconProps) => (
-  <Text style={{ fontSize: size, color }}>🕐</Text>
-);
-
-export const DollarSign = ({ size = 20, color = '#000' }: IconProps) => (
-  <Text style={{ fontSize: size, color }}>💰</Text>
-);
-
-export const Calendar = ({ size = 20, color = '#000' }: IconProps) => (
-  <Text style={{ fontSize: size, color }}>📅</Text>
 );
 
 export const Wrench = ({ size = 20, color = '#000' }: IconProps) => (
@@ -215,14 +183,6 @@ export const Tool = ({ size = 20, color = '#000' }: IconProps) => (
 
 export const Clipboard = ({ size = 20, color = '#000' }: IconProps) => (
   <Text style={{ fontSize: size, color }}>📋</Text>
-);
-
-export const Activity = ({ size = 20, color = '#000' }: IconProps) => (
-  <Text style={{ fontSize: size, color }}>📊</Text>
-);
-
-export const TrendingUp = ({ size = 20, color = '#000' }: IconProps) => (
-  <Text style={{ fontSize: size, color }}>📈</Text>
 );
 
 export const Database = ({ size = 20, color = '#000' }: IconProps) => (
