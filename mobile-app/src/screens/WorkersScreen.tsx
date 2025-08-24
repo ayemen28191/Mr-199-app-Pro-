@@ -28,7 +28,6 @@ export default function WorkersScreen() {
   });
   const [editForm, setEditForm] = useState({
     name: '',
-    phone: '', // إضافة حقل الهاتف
     type: '',
     dailyWage: '',
     isActive: true
@@ -98,9 +97,8 @@ export default function WorkersScreen() {
         },
         body: JSON.stringify({
           name: newWorker.name.trim(),
-          phone: '', // إضافة هذا الحقل للتطابق مع الويب
           type: newWorker.type.trim(),
-          dailyWage: parseFloat(newWorker.dailyWage).toString(), // تحويل إلى string
+          dailyWage: parseFloat(newWorker.dailyWage).toString(),
           isActive: true,
         }),
       });
@@ -141,9 +139,8 @@ export default function WorkersScreen() {
         },
         body: JSON.stringify({
           name: editForm.name.trim(),
-          phone: editForm.phone || '', // إضافة هذا الحقل
           type: editForm.type.trim(),
-          dailyWage: parseFloat(editForm.dailyWage).toString(), // تحويل إلى string
+          dailyWage: parseFloat(editForm.dailyWage).toString(),
           isActive: editForm.isActive,
         }),
       });
@@ -196,7 +193,6 @@ export default function WorkersScreen() {
       setEditingWorker(worker);
       setEditForm({
         name: worker.name,
-        phone: worker.phone || '', // إضافة الهاتف
         type: worker.type,
         dailyWage: worker.dailyWage.toString(),
         isActive: worker.isActive
@@ -942,6 +938,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     marginBottom: 2,
+  },
+  statValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
   },
   
   // Filter styles مطابقة للويب 100%
