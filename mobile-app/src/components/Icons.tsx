@@ -251,4 +251,37 @@ export const ChevronLeft = ({ size = 20, color = '#000' }: IconProps) => (
   <Text style={{ fontSize: size, color }}>‹</Text>
 );
 
+// أيقونات إضافية مطلوبة للحضور والمصاريف
+export const UserX = ({ size = 20, color = '#000' }: IconProps) => (
+  <Text style={{ fontSize: size, color }}>👤❌</Text>
+);
+
+export const Timer = ({ size = 20, color = '#000' }: IconProps) => (
+  <Text style={{ fontSize: size, color }}>⏱️</Text>
+);
+
+export const ClockOff = ({ size = 20, color = '#000' }: IconProps) => (
+  <Text style={{ fontSize: size, color }}>🕐❌</Text>
+);
+
+export const Save = ({ size = 20, color = '#000' }: IconProps) => (
+  <Text style={{ fontSize: size, color }}>💾</Text>
+);
+
+export const Coffee = ({ size = 20, color = '#000' }: IconProps) => (
+  <Text style={{ fontSize: size, color }}>☕</Text>
+);
+
+export const UserPlus = ({ size = 20, color = '#000' }: IconProps) => (
+  <Text style={{ fontSize: size, color }}>👤➕</Text>
+);
+
+export const ArrowDown = ({ size = 20, color = '#000' }: IconProps) => (
+  <Text style={{ fontSize: size, color }}>↓</Text>
+);
+
+export const Car = ({ size = 20, color = '#000' }: IconProps) => (
+  <Text style={{ fontSize: size, color }}>🚗</Text>
+);
+
 export const secondary = '#6b7280';

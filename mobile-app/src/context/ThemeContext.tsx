@@ -20,32 +20,32 @@ interface ThemeContextType {
 }
 
 const lightColors = {
-  primary: '#2563eb',
-  secondary: '#64748b',
-  background: '#ffffff',
-  surface: '#f8fafc',
-  text: '#1e293b',
-  textSecondary: '#64748b',
-  border: '#e2e8f0',
-  success: '#22c55e',
+  primary: 'hsl(207, 90%, 54%)',      // يطابق الويب
+  secondary: 'hsl(45, 100%, 51%)',     // يطابق الويب  
+  background: 'hsl(0, 0%, 98%)',       // يطابق الويب
+  surface: 'hsl(0, 0%, 100%)',         // يطابق الويب
+  text: 'hsl(0, 0%, 9%)',              // يطابق الويب
+  textSecondary: 'hsl(215, 16%, 47%)', // يطابق الويب
+  border: 'hsl(214, 32%, 91%)',        // يطابق الويب
+  success: 'hsl(142, 76%, 36%)',       // يطابق الويب
   warning: '#f59e0b',
-  error: '#ef4444',
-  muted: '#f1f5f9',
+  error: 'hsl(0, 84%, 60%)',           // يطابق الويب
+  muted: 'hsl(210, 40%, 96%)',         // يطابق الويب
   info: '#0ea5e9',
 };
 
 const darkColors = {
-  primary: '#3b82f6',
-  secondary: '#94a3b8',
-  background: '#0f172a',
-  surface: '#1e293b',
-  text: '#f1f5f9',
-  textSecondary: '#94a3b8',
-  border: '#334155',
-  success: '#22c55e',
+  primary: 'hsl(207, 90%, 54%)',        // يطابق الويب
+  secondary: 'hsl(45, 100%, 51%)',       // يطابق الويب
+  background: 'hsl(240, 10%, 3.9%)',     // يطابق الويب
+  surface: 'hsl(240, 10%, 3.9%)',        // يطابق الويب
+  text: 'hsl(0, 0%, 98%)',               // يطابق الويب
+  textSecondary: 'hsl(240, 5%, 64.9%)',  // يطابق الويب
+  border: 'hsl(240, 3.7%, 15.9%)',       // يطابق الويب
+  success: 'hsl(142, 76%, 36%)',         // يطابق الويب
   warning: '#f59e0b',
-  error: '#ef4444',
-  muted: '#334155',
+  error: 'hsl(0, 62%, 30%)',             // يطابق الويب
+  muted: 'hsl(240, 3.7%, 15.9%)',        // يطابق الويب
   info: '#0ea5e9',
 };
 
