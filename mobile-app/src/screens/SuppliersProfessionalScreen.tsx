@@ -13,9 +13,9 @@ import {
   FlatList
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Icon from 'react-native-vector-icons/MaterialIcons';
-import { ProjectContext } from '../context/ProjectContext';
-import { supabase } from '../services/supabaseClient';
+import * as Icons from '../components/Icons';
+import { useTheme } from '../context/ThemeContext';
+import { useProject } from '../context/ProjectContext';
 
 interface Supplier {
   id: string;
@@ -46,16 +46,16 @@ interface SupplierPerformance {
 }
 
 const formatCurrency = (amount: number): string => {
-  return new Intl.NumberFormat('ar-SA', {
-    style: 'currency',
-    currency: 'SAR',
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(amount).replace('SAR', 'ريال');
+  return new Intl.NumberFormat('en-US', {
+    style: 'decimal',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(amount) + ' ر.ي';
 };
 
-const SuppliersProfessionalScreen: React.FC = () => {
-  const { selectedProject } = useContext(ProjectContext);
+export default function SuppliersProfessionalScreen() {
+  const { selectedProjectId } = useProject();
+  const { colors } = useTheme();
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [performanceData, setPerformanceData] = useState<{ [key: string]: SupplierPerformance }>({});
   const [loading, setLoading] = useState(true);
@@ -82,105 +82,36 @@ const SuppliersProfessionalScreen: React.FC = () => {
     try {
       setLoading(true);
       
-      if (!selectedProject?.id) {
-        setSuppliers([]);
-        setPerformanceData({});
-        return;
+      // استخدام عنوان API الكامل مطابق للنسخة الويب
+      const API_BASE = __DEV__ ? 'http://localhost:5000' : 'https://your-production-domain.com';
+      const response = await fetch(`${API_BASE}/api/suppliers`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
-
-      // جلب بيانات الموردين من قاعدة البيانات
-      const { data: suppliersData, error } = await supabase
-        .from('suppliers')
-        .select('*')
-        .eq('project_id', selectedProject.id)
-        .order('name');
-
-      if (error) throw error;
-
-      // حساب إحصائيات كل مورد
-      const enrichedSuppliers: Supplier[] = [];
+      
+      const suppliersData = await response.json();
+      setSuppliers(suppliersData);
+      
+      // حساب بيانات الأداء (مبسط للآن)
       const performanceMap: { [key: string]: SupplierPerformance } = {};
-
-      for (const supplier of suppliersData || []) {
-        // حساب إجمالي الطلبات والمبلغ
-        const { data: orders } = await supabase
-          .from('material_purchases')
-          .select('total_amount, purchase_date, delivery_date')
-          .eq('supplier_id', supplier.id);
-
-        const totalOrders = orders?.length || 0;
-        const totalAmount = orders?.reduce((sum, order) => sum + (parseFloat(order.total_amount) || 0), 0) || 0;
-        const lastOrderDate = orders && orders.length > 0 
-          ? orders.sort((a, b) => new Date(b.purchase_date).getTime() - new Date(a.purchase_date).getTime())[0].purchase_date
-          : '';
-
-        // حساب أداء المورد
-        const ordersWithDelivery = orders?.filter(order => order.delivery_date) || [];
-        const onTimeDeliveries = ordersWithDelivery.filter(order => 
-          new Date(order.delivery_date) <= new Date(order.purchase_date)
-        ).length;
-        const onTimeDelivery = ordersWithDelivery.length > 0 ? (onTimeDeliveries / ordersWithDelivery.length) * 100 : 100;
-        
-        const qualityRating = 85 + Math.random() * 15; // محاكاة تقييم الجودة
-        const priceCompetitiveness = 80 + Math.random() * 20; // محاكاة تنافسية الأسعار
-        const communicationRating = 75 + Math.random() * 25; // محاكاة تقييم التواصل
-        const overallScore = (onTimeDelivery + qualityRating + priceCompetitiveness + communicationRating) / 4;
-
-        enrichedSuppliers.push({
-          id: supplier.id,
-          name: supplier.name,
-          contactPhone: supplier.contact_phone || '',
-          email: supplier.email,
-          address: supplier.address,
-          category: supplier.category || 'أخرى',
-          rating: Math.round(overallScore / 20), // تحويل إلى نجوم من 5
-          totalOrders,
-          totalAmount,
-          lastOrderDate,
-          isActive: supplier.is_active !== false,
-          paymentTerms: supplier.payment_terms || 'نقدي',
-          notes: supplier.notes
-        });
-
+      suppliersData.forEach((supplier: Supplier) => {
         performanceMap[supplier.id] = {
           supplierId: supplier.id,
-          onTimeDelivery,
-          qualityRating,
-          priceCompetitiveness,
-          communicationRating,
-          overallScore,
-          ordersFulfilled: onTimeDeliveries,
-          ordersDelayed: ordersWithDelivery.length - onTimeDeliveries,
-          averageDeliveryTime: 3 + Math.random() * 7 // محاكاة متوسط وقت التوصيل
+          onTimeDelivery: 95, // قيم افتراضية للآن
+          qualityRating: 4.5,
+          priceCompetitiveness: 4.0,
+          communicationRating: 4.2,
+          overallScore: 4.3,
+          ordersFulfilled: supplier.totalOrders,
+          ordersDelayed: Math.floor(supplier.totalOrders * 0.05),
+          averageDeliveryTime: 3
         };
-      }
-
-      setSuppliers(enrichedSuppliers);
+      });
       setPerformanceData(performanceMap);
     } catch (error) {
       console.error('خطأ في جلب الموردين:', error);
-      Alert.alert('خطأ', 'فشل في تحميل بيانات الموردين');
-      
-      // بيانات تجريبية
-      const mockSuppliers: Supplier[] = [
-        {
-          id: '1',
-          name: 'مؤسسة الأسمنت الحديث',
-          contactPhone: '+966501234567',
-          email: 'cement@modern.sa',
-          address: 'الرياض، المملكة العربية السعودية',
-          category: 'مواد البناء',
-          rating: 5,
-          totalOrders: 15,
-          totalAmount: 45000,
-          lastOrderDate: '2025-08-20',
-          isActive: true,
-          paymentTerms: 'آجل 30 يوم',
-          notes: 'مورد موثوق وجودة عالية'
-        },
-        {
-          id: '2',
-          name: 'معمل الحديد المتطور',
+      Alert.alert('خطأ', 'فشل في تحميل بيانات الموردين - تأكد من اتصال الشبكة');
           contactPhone: '+966507654321',
           category: 'المعادن',
           rating: 4,

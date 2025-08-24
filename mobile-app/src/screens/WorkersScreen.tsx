@@ -28,6 +28,7 @@ export default function WorkersScreen() {
   });
   const [editForm, setEditForm] = useState({
     name: '',
+    phone: '', // إضافة حقل الهاتف
     type: '',
     dailyWage: '',
     isActive: true
@@ -42,14 +43,17 @@ export default function WorkersScreen() {
   // تحميل العمال
   const loadWorkers = async () => {
     try {
-      const response = await fetch('/api/workers');
+      const API_BASE = __DEV__ ? 'http://localhost:5000' : 'https://your-production-domain.com';
+      const response = await fetch(`${API_BASE}/api/workers`);
       if (response.ok) {
         const workersData = await response.json();
         setWorkers(workersData);
+      } else {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
     } catch (error) {
       console.error('خطأ في تحميل العمال:', error);
-      Alert.alert('خطأ', 'فشل في تحميل العمال');
+      Alert.alert('خطأ', 'فشل في تحميل العمال - تأكد من اتصال الشبكة');
     } finally {
       setLoading(false);
     }
@@ -86,15 +90,17 @@ export default function WorkersScreen() {
     setFormErrors({});
 
     try {
-      const response = await fetch('/api/workers', {
+      const API_BASE = __DEV__ ? 'http://localhost:5000' : 'https://your-production-domain.com';
+      const response = await fetch(`${API_BASE}/api/workers`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           name: newWorker.name.trim(),
+          phone: '', // إضافة هذا الحقل للتطابق مع الويب
           type: newWorker.type.trim(),
-          dailyWage: parseFloat(newWorker.dailyWage),
+          dailyWage: parseFloat(newWorker.dailyWage).toString(), // تحويل إلى string
           isActive: true,
         }),
       });
@@ -127,15 +133,17 @@ export default function WorkersScreen() {
     }
 
     try {
-      const response = await fetch(`/api/workers/${editingWorker.id}`, {
+      const API_BASE = __DEV__ ? 'http://localhost:5000' : 'https://your-production-domain.com';
+      const response = await fetch(`${API_BASE}/api/workers/${editingWorker.id}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           name: editForm.name.trim(),
+          phone: editForm.phone || '', // إضافة هذا الحقل
           type: editForm.type.trim(),
-          dailyWage: parseFloat(editForm.dailyWage),
+          dailyWage: parseFloat(editForm.dailyWage).toString(), // تحويل إلى string
           isActive: editForm.isActive,
         }),
       });
@@ -188,6 +196,7 @@ export default function WorkersScreen() {
       setEditingWorker(worker);
       setEditForm({
         name: worker.name,
+        phone: worker.phone || '', // إضافة الهاتف
         type: worker.type,
         dailyWage: worker.dailyWage.toString(),
         isActive: worker.isActive
