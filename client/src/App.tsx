@@ -65,6 +65,8 @@ function Router() {
 }
 
 function App() {
+  const [isLoading, setIsLoading] = useState(true);
+  
   useEffect(() => {
     // إضافة تأخير بسيط للتأكد من أن HTML loader يظهر أولاً
     const timer = setTimeout(() => {

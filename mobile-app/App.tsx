@@ -20,12 +20,19 @@ const initializeLogRocket = () => {
   if (Constants.appOwnership !== 'expo') {
     try {
       const LogRocket = require('@logrocket/react-native');
-      LogRocket.init('mfxetx/binarjoinanalytic');
+      const Updates = require('expo-updates');
+      
+      LogRocket.init('mfxetx/binarjoinanalytic', {
+        updateId: Updates.isEmbeddedLaunch ? null : Updates.updateId,
+        expoChannel: Updates.channel,
+      });
       
       // تسجيل بدء تشغيل التطبيق
       Analytics.startSession('app_launch', {
         platform: Platform.OS,
-        version: Constants.expoConfig?.version || '1.0.0'
+        version: Constants.expoConfig?.version || '1.0.0',
+        updateId: Updates.updateId,
+        channel: Updates.channel
       });
       
       console.log('✅ تم تفعيل LogRocket بنجاح');

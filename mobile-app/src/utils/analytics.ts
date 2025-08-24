@@ -35,9 +35,19 @@ class AnalyticsService {
     email?: string;
     role?: string;
     company?: string;
+    subscriptionPlan?: string;
   }) {
     if (this.isInitialized && this.logRocket) {
-      this.logRocket.identify(userId, userInfo);
+      const userData = {
+        name: userInfo?.name || 'غير محدد',
+        email: userInfo?.email || '',
+        role: userInfo?.role || 'مستخدم',
+        company: userInfo?.company || 'شركة إنشائية',
+        subscriptionPlan: userInfo?.subscriptionPlan || 'basic',
+        ...userInfo
+      };
+      
+      this.logRocket.identify(userId, userData);
       console.log('👤 تم تسجيل المستخدم:', userId);
     }
   }
