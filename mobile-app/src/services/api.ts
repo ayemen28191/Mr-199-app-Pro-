@@ -37,7 +37,10 @@ export interface PaginatedResponse<T = any> {
   totalPages: number;
 }
 
-const API_BASE_URL = 'http://localhost:5000/api';
+// تحديد عنوان API بناءً على البيئة
+const API_BASE_URL = __DEV__ 
+  ? 'http://localhost:5000/api'  // للتطوير
+  : 'https://your-production-domain.com/api'; // للإنتاج
 
 class ApiService {
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {

@@ -234,4 +234,21 @@ export const Check = ({ size = 20, color = '#000' }: IconProps) => (
   <Text style={{ fontSize: size, color }}>✓</Text>
 );
 
+// أيقونات إضافية مطلوبة لشاشة المزيد
+export const Calculator = ({ size = 20, color = '#000' }: IconProps) => (
+  <Text style={{ fontSize: size, color }}>🧮</Text>
+);
+
+export const ArrowLeftRight = ({ size = 20, color = '#000' }: IconProps) => (
+  <Text style={{ fontSize: size, color }}>↔️</Text>
+);
+
+export const FileSpreadsheet = ({ size = 20, color = '#000' }: IconProps) => (
+  <Text style={{ fontSize: size, color }}>📊</Text>
+);
+
+export const ChevronLeft = ({ size = 20, color = '#000' }: IconProps) => (
+  <Text style={{ fontSize: size, color }}>‹</Text>
+);
+
 export const secondary = '#6b7280';

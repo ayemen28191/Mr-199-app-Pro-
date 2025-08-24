@@ -8,6 +8,7 @@ import DashboardScreen from '../screens/DashboardScreen';
 import ProjectsScreen from '../screens/ProjectsScreen';
 import WorkersScreen from '../screens/WorkersScreen';
 import SuppliersProfessionalScreen from '../screens/SuppliersProfessionalScreen';
+import MoreScreen from '../screens/MoreScreen';
 
 // Import icons (using simple text for now)
 import { Ionicons } from '@expo/vector-icons';
@@ -85,6 +86,16 @@ const TabNavigator = () => {
           title: 'الموردين',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="car" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="More"
+        component={MoreScreen}
+        options={{
+          title: 'المزيد',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="ellipsis-horizontal" size={size} color={color} />
           ),
         }}
       />

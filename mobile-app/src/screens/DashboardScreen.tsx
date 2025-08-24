@@ -74,7 +74,8 @@ export default function DashboardScreen() {
   const saveAutocompleteValue = async (category: string, value: string | null | undefined) => {
     if (!value || typeof value !== 'string' || !value.trim()) return;
     try {
-      const response = await fetch('/api/autocomplete', {
+      const API_BASE = __DEV__ ? 'http://localhost:5000' : 'https://your-production-domain.com';
+      const response = await fetch(`${API_BASE}/api/autocomplete`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -93,14 +94,18 @@ export default function DashboardScreen() {
   // تحميل المشاريع مع الإحصائيات
   const loadProjects = useCallback(async () => {
     try {
-      const response = await fetch('/api/projects/with-stats');
+      // استخدام عنوان API الكامل للتطبيق المحمول
+      const API_BASE = __DEV__ ? 'http://localhost:5000' : 'https://your-production-domain.com';
+      const response = await fetch(`${API_BASE}/api/projects/with-stats`);
       if (response.ok) {
         const projectsData = await response.json();
         setProjects(projectsData);
+      } else {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
     } catch (error) {
       console.error('خطأ في تحميل المشاريع:', error);
-      Alert.alert('خطأ', 'فشل في تحميل المشاريع');
+      Alert.alert('خطأ', 'فشل في تحميل المشاريع - تأكد من اتصال الشبكة');
     } finally {
       setLoading(false);
     }
@@ -109,7 +114,8 @@ export default function DashboardScreen() {
   // تحميل أنواع العمال
   const loadWorkerTypes = useCallback(async () => {
     try {
-      const response = await fetch('/api/worker-types');
+      const API_BASE = __DEV__ ? 'http://localhost:5000' : 'https://your-production-domain.com';
+      const response = await fetch(`${API_BASE}/api/worker-types`);
       if (response.ok) {
         const typesData = await response.json();
         setWorkerTypes(typesData);
@@ -140,7 +146,8 @@ export default function DashboardScreen() {
         saveAutocompleteValue('workerTypes', workerData.type)
       ]);
 
-      const response = await fetch('/api/workers', {
+      const API_BASE = __DEV__ ? 'http://localhost:5000' : 'https://your-production-domain.com';
+      const response = await fetch(`${API_BASE}/api/workers`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -181,7 +188,8 @@ export default function DashboardScreen() {
         saveAutocompleteValue('projectDescriptions', projectData.description)
       ]);
 
-      const response = await fetch('/api/projects', {
+      const API_BASE = __DEV__ ? 'http://localhost:5000' : 'https://your-production-domain.com';
+      const response = await fetch(`${API_BASE}/api/projects`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -216,7 +224,8 @@ export default function DashboardScreen() {
       // حفظ قيم أنواع العمال في autocomplete_data
       await saveAutocompleteValue('workerTypes', newTypeName.trim());
       
-      const response = await fetch('/api/worker-types', {
+      const API_BASE = __DEV__ ? 'http://localhost:5000' : 'https://your-production-domain.com';
+      const response = await fetch(`${API_BASE}/api/worker-types`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newTypeName.trim() })
