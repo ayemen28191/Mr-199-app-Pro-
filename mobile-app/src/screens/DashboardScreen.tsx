@@ -18,6 +18,7 @@ import ProjectSelector from '../components/ProjectSelector';
 import QuickActions from '../components/QuickActions';
 import * as Icons from '../components/Icons';
 import { formatCurrency } from '../lib/utils';
+import { Analytics } from '../utils/analytics';
 
 const { width } = Dimensions.get('window');
 
@@ -50,6 +51,14 @@ export default function DashboardScreen() {
   const [projects, setProjects] = useState<ProjectWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [workerTypes, setWorkerTypes] = useState<WorkerType[]>([]);
+
+  // تتبع دخول المستخدم لشاشة Dashboard
+  useEffect(() => {
+    Analytics.logScreenView('Dashboard', {
+      selected_project: selectedProjectId,
+      timestamp: new Date().toISOString()
+    });
+  }, [selectedProjectId]);
   
   // نماذج إضافة العامل والمشروع
   const [showWorkerModal, setShowWorkerModal] = useState(false);
