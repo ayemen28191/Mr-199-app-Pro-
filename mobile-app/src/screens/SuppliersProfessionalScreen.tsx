@@ -112,46 +112,69 @@ export default function SuppliersProfessionalScreen() {
     } catch (error) {
       console.error('خطأ في جلب الموردين:', error);
       Alert.alert('خطأ', 'فشل في تحميل بيانات الموردين - تأكد من اتصال الشبكة');
-          contactPhone: '+966507654321',
-          category: 'المعادن',
-          rating: 4,
-          totalOrders: 8,
-          totalAmount: 32000,
-          lastOrderDate: '2025-08-18',
-          isActive: true,
-          paymentTerms: 'نقدي',
-        }
-      ];
-      
-      setSuppliers(mockSuppliers);
-      setPerformanceData({
-        '1': {
-          supplierId: '1',
-          onTimeDelivery: 95,
-          qualityRating: 92,
-          priceCompetitiveness: 88,
-          communicationRating: 90,
-          overallScore: 91.25,
-          ordersFulfilled: 14,
-          ordersDelayed: 1,
-          averageDeliveryTime: 2.5
-        },
-        '2': {
-          supplierId: '2',
-          onTimeDelivery: 87,
-          qualityRating: 89,
-          priceCompetitiveness: 85,
-          communicationRating: 83,
-          overallScore: 86,
-          ordersFulfilled: 7,
-          ordersDelayed: 1,
-          averageDeliveryTime: 4.2
-        }
-      });
+      // استخدام البيانات التجريبية في حالة الخطأ
+      loadMockData();
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
+  };
+
+  const mockSuppliers: Supplier[] = [
+    {
+      id: '1',
+      name: 'شركة الحديد والصلب',
+      contactPhone: '+966507654321',
+      category: 'المعادن',
+      rating: 4,
+      totalOrders: 8,
+      totalAmount: 32000,
+      lastOrderDate: '2025-08-18',
+      isActive: true,
+      paymentTerms: 'نقدي',
+    },
+    {
+      id: '2',
+      name: 'مؤسسة الخرسانة المتقدمة',
+      contactPhone: '+966501234567',
+      category: 'الخرسانة',
+      rating: 4,
+      totalOrders: 12,
+      totalAmount: 45000,
+      lastOrderDate: '2025-08-20',
+      isActive: true,
+      paymentTerms: 'آجل 30 يوم',
+    }
+  ];
+
+  const loadMockData = () => {
+    setSuppliers(mockSuppliers);
+    setPerformanceData({
+      '1': {
+        supplierId: '1',
+        onTimeDelivery: 95,
+        qualityRating: 92,
+        priceCompetitiveness: 88,
+        communicationRating: 90,
+        overallScore: 91.25,
+        ordersFulfilled: 14,
+        ordersDelayed: 1,
+        averageDeliveryTime: 2.5
+      },
+      '2': {
+        supplierId: '2',
+        onTimeDelivery: 87,
+        qualityRating: 89,
+        priceCompetitiveness: 85,
+        communicationRating: 83,
+        overallScore: 86,
+        ordersFulfilled: 7,
+        ordersDelayed: 1,
+        averageDeliveryTime: 4.2
+      }
+    });
+    setLoading(false);
+    setRefreshing(false);
   };
 
   const filteredAndSortedSuppliers = () => {
