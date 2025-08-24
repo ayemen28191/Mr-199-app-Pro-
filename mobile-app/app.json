@@ -28,16 +28,13 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
+    "extra": {
+      "eas": {
+        "projectId": "cea5c163-b7fa-444e-af73-88cafbca13d7"
+      }
+    },
     "plugins": [
       "expo-font",
-      [
-        "expo-build-properties",
-        {
-          "android": {
-            "minSdkVersion": 25
-          }
-        }
-      ],
       "@logrocket/react-native"
     ],
     "owner": "binarjoinanalytic1"
