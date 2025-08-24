@@ -30,11 +30,12 @@
     },
     "extra": {
       "eas": {
-        "projectId": "construction-mobile-app"
+        "projectId": "99f9c6ac-4868-43c9-bbdb-1354631c468b"
       }
     },
     "plugins": [
       "expo-font"
-    ]
+    ],
+    "owner": "binarjoinanalytic1"
   }
 }
