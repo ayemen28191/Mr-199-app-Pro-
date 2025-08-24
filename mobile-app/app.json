@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "نظام إدارة المشاريع الإنشائية",
-    "slug": "construction-management-mobile",
+    "slug": "BuildApp",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -30,7 +30,7 @@
     },
     "extra": {
       "eas": {
-        "projectId": "cea5c163-b7fa-444e-af73-88cafbca13d7"
+        "projectId": "346e2104-2233-4657-a531-d318e9f27747"
       }
     },
     "plugins": [
