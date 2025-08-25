@@ -1,41 +1,41 @@
 {
   "expo": {
     "name": "نظام إدارة المشاريع الإنشائية",
-    "slug": "BuildApp",
+    "slug": "construction-management-mobile",
+    "scheme": "construction-mgmt",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": false,
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#2563eb"
+      "backgroundColor": "#ffffff"
     },
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.constructionmanagement.mobile"
+      "bundleIdentifier": "com.constructionmgmt.mobile"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#2563eb"
+        "backgroundColor": "#FFFFFF"
       },
-      "package": "com.constructionmanagement.mobile"
+      "package": "com.constructionmgmt.mobile",
+      "versionCode": 1
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
     },
-    "extra": {
-      "eas": {
-        "projectId": "346e2104-2233-4657-a531-d318e9f27747"
-      }
-    },
-    "plugins": [
-      "expo-font"
-    ],
-    "owner": "binarjoinanalytic1"
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ]
   }
 }
