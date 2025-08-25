@@ -14,7 +14,10 @@
       "backgroundColor": "#ffffff"
     },
     "assetBundlePatterns": [
-      "**/*"
+      "assets/images/**/*",
+      "assets/icon.png",
+      "assets/adaptive-icon.png",
+      "assets/splash.png"
     ],
     "ios": {
       "supportsTablet": true,
@@ -43,7 +46,15 @@
       }
     },
     "plugins": [
-      "expo-build-properties",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableProguardInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true
+          }
+        }
+      ],
       "expo-font"
     ]
   }

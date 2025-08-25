@@ -1,29 +1,15 @@
 /**
- * مكون LogRocket للتحليلات والمراقبة
- * يوفر وظائف تسجيل الأحداث وتتبع المستخدمين
+ * مكون التحليلات المبسط
+ * يوفر وظائف تسجيل الأحداث بدون مكتبات خارجية ثقيلة
  */
 
-import Constants from 'expo-constants';
-
 class AnalyticsService {
-  private logRocket: any = null;
-  private isInitialized = false;
+  private isEnabled: boolean = false;
 
   constructor() {
-    this.initializeLogRocket();
-  }
-
-  private initializeLogRocket() {
-    if (Constants.appOwnership !== 'expo') {
-      try {
-        this.logRocket = require('@logrocket/react-native');
-        this.isInitialized = true;
-        console.log('✅ خدمة التحليلات LogRocket جاهزة');
-      } catch (error) {
-        console.warn('⚠️ فشل في تهيئة LogRocket:', error);
-      }
-    } else {
-      console.log('ℹ️ خدمة التحليلات معطلة في Expo Go');
+    this.isEnabled = process.env.EXPO_PUBLIC_ANALYTICS_ENABLED === 'true';
+    if (this.isEnabled) {
+      console.log('✅ خدمة التحليلات المبسطة جاهزة');
     }
   }
 
@@ -37,18 +23,8 @@ class AnalyticsService {
     company?: string;
     subscriptionPlan?: string;
   }) {
-    if (this.isInitialized && this.logRocket) {
-      const userData = {
-        name: userInfo?.name || 'غير محدد',
-        email: userInfo?.email || '',
-        role: userInfo?.role || 'مستخدم',
-        company: userInfo?.company || 'شركة إنشائية',
-        subscriptionPlan: userInfo?.subscriptionPlan || 'basic',
-        ...userInfo
-      };
-      
-      this.logRocket.identify(userId, userData);
-      console.log('👤 تم تسجيل المستخدم:', userId);
+    if (this.isEnabled) {
+      console.log('👤 تم تسجيل المستخدم:', userId, userInfo);
     }
   }
 
@@ -56,8 +32,7 @@ class AnalyticsService {
    * تسجيل حدث مخصص
    */
   logEvent(eventName: string, properties?: Record<string, any>) {
-    if (this.isInitialized && this.logRocket) {
-      this.logRocket.track(eventName, properties);
+    if (this.isEnabled) {
       console.log('📊 تم تسجيل الحدث:', eventName, properties);
     }
   }
@@ -66,11 +41,8 @@ class AnalyticsService {
    * تسجيل خطأ
    */
   logError(error: Error, context?: Record<string, any>) {
-    if (this.isInitialized && this.logRocket) {
-      this.logRocket.captureException(error, {
-        extra: context
-      });
-      console.log('❌ تم تسجيل خطأ:', error.message);
+    if (this.isEnabled) {
+      console.error('❌ خطأ:', error.message, context);
     }
   }
 
