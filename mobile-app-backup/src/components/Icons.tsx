@@ -4,6 +4,7 @@ import { Text } from 'react-native';
 interface IconProps {
   size?: number;
   color?: string;
+  fill?: string;
 }
 
 // أيقونات مطابقة لـ Lucide React
@@ -122,6 +123,26 @@ export const Users = ({ size = 20, color = '#000' }: IconProps) => (
 
 export const X = ({ size = 20, color = '#000' }: IconProps) => (
   <Text style={{ fontSize: size, color }}>✖️</Text>
+);
+
+export const Star = ({ size = 20, color = '#000', fill }: IconProps) => (
+  <Text style={{ fontSize: size, color: fill || color }}>⭐</Text>
+);
+
+export const Store = ({ size = 20, color = '#000' }: IconProps) => (
+  <Text style={{ fontSize: size, color }}>🏪</Text>
+);
+
+export const RefreshCw = ({ size = 20, color = '#000' }: IconProps) => (
+  <Text style={{ fontSize: size, color }}>🔄</Text>
+);
+
+export const Check = ({ size = 20, color = '#000' }: IconProps) => (
+  <Text style={{ fontSize: size, color }}>✅</Text>
+);
+
+export const Mail = ({ size = 20, color = '#000' }: IconProps) => (
+  <Text style={{ fontSize: size, color }}>✉️</Text>
 );
 
 export const Edit2 = ({ size = 20, color = '#000' }: IconProps) => (
