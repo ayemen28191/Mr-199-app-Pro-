@@ -10,6 +10,19 @@ import WorkersScreen from '../screens/WorkersScreen';
 import SuppliersProfessionalScreen from '../screens/SuppliersProfessionalScreen';
 import MoreScreen from '../screens/MoreScreen';
 
+// Import sub-screens from More menu
+import WorkerAttendanceScreen from '../screens/WorkerAttendanceScreen';
+import WorkerAccountsScreen from '../screens/WorkerAccountsScreen';
+import DailyExpensesScreen from '../screens/DailyExpensesScreen';
+import MaterialPurchaseScreen from '../screens/MaterialPurchaseScreen';
+import EquipmentManagementScreen from '../screens/EquipmentManagementScreen';
+import ProjectTransfers from '../screens/ProjectTransfers';
+import ProjectTransactionsPage from '../screens/ProjectTransactionsPage';
+import SupplierAccountsScreen from '../screens/SupplierAccountsScreen';
+import ReportsScreen from '../screens/ReportsScreen';
+import AdvancedReportsScreen from '../screens/AdvancedReportsScreen';
+import AutocompleteAdminScreen from '../screens/AutocompleteAdminScreen';
+
 // توحيد الأيقونات مع تطبيق الويب
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
@@ -107,6 +120,63 @@ const MainNavigator = () => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="Main" component={TabNavigator} />
+      
+      {/* Sub-screens from More menu */}
+      <Stack.Screen 
+        name="WorkerAttendance" 
+        component={WorkerAttendanceScreen}
+        options={{ headerShown: true, title: 'حضور العمال' }} 
+      />
+      <Stack.Screen 
+        name="WorkerAccounts" 
+        component={WorkerAccountsScreen}
+        options={{ headerShown: true, title: 'حسابات العمال' }} 
+      />
+      <Stack.Screen 
+        name="DailyExpenses" 
+        component={DailyExpensesScreen}
+        options={{ headerShown: true, title: 'المصاريف اليومية' }} 
+      />
+      <Stack.Screen 
+        name="MaterialPurchase" 
+        component={MaterialPurchaseScreen}
+        options={{ headerShown: true, title: 'شراء المواد' }} 
+      />
+      <Stack.Screen 
+        name="Equipment" 
+        component={EquipmentManagementScreen}
+        options={{ headerShown: true, title: 'إدارة المعدات' }} 
+      />
+      <Stack.Screen 
+        name="ProjectTransfers" 
+        component={ProjectTransfers}
+        options={{ headerShown: true, title: 'تحويلات العهدة' }} 
+      />
+      <Stack.Screen 
+        name="ProjectTransactions" 
+        component={ProjectTransactionsPage}
+        options={{ headerShown: true, title: 'سجل العمليات' }} 
+      />
+      <Stack.Screen 
+        name="SupplierAccounts" 
+        component={SupplierAccountsScreen}
+        options={{ headerShown: true, title: 'حسابات الموردين' }} 
+      />
+      <Stack.Screen 
+        name="Reports" 
+        component={ReportsScreen}
+        options={{ headerShown: true, title: 'التقارير الأساسية' }} 
+      />
+      <Stack.Screen 
+        name="AdvancedReports" 
+        component={AdvancedReportsScreen}
+        options={{ headerShown: true, title: 'التقارير المتقدمة' }} 
+      />
+      <Stack.Screen 
+        name="AutocompleteAdmin" 
+        component={AutocompleteAdminScreen}
+        options={{ headerShown: true, title: 'إعدادات الإكمال التلقائي' }} 
+      />
     </Stack.Navigator>
   );
 };
