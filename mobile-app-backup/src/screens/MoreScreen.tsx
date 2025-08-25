@@ -120,8 +120,41 @@ export default function MoreScreen({ navigation }: any) {
   ];
 
   const handleOptionPress = (route: string) => {
-    // التنقل للشاشة المحددة
-    navigation.navigate(route);
+    // التنقل للشاشة المحددة بناءً على النوع
+    switch (route) {
+      case 'WorkerAttendance':
+        navigation.navigate('WorkerAttendanceScreen');
+        break;
+      case 'DailyExpenses':
+        navigation.navigate('DailyExpensesScreen');
+        break;
+      case 'MaterialPurchase':
+        navigation.navigate('MaterialPurchaseScreen');
+        break;
+      case 'Equipment':
+        navigation.navigate('EquipmentManagementScreen');
+        break;
+      case 'Reports':
+        navigation.navigate('ReportsScreen');
+        break;
+      case 'AdvancedReports':
+        navigation.navigate('AdvancedReportsScreen');
+        break;
+      case 'WorkerAccounts':
+        navigation.navigate('WorkerAccountsScreen');
+        break;
+      case 'ProjectTransfers':
+        navigation.navigate('ProjectTransfers');
+        break;
+      case 'AutocompleteAdmin':
+        navigation.navigate('AutocompleteAdminScreen');
+        break;
+      default:
+        console.warn(`Route ${route} not implemented yet`);
+        // عرض رسالة للمستخدم
+        navigation.navigate('NotFoundScreen', { routeName: route });
+        break;
+    }
   };
 
   const renderOption = (option: MoreOption, index: number) => (

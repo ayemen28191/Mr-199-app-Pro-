@@ -19,6 +19,10 @@ import QuickActions from '../components/QuickActions';
 import * as Icons from '../components/Icons';
 import { formatCurrency } from '../lib/utils';
 import { Analytics } from '../utils/analytics';
+import { useApi } from '../hooks/useApi';
+import LoadingSpinner from '../components/UI/LoadingSpinner';
+import PullToRefresh from '../components/UI/PullToRefresh';
+import { toastManager } from '../components/UI/Toast';
 
 const { width } = Dimensions.get('window');
 
@@ -48,7 +52,9 @@ interface ProjectWithStats extends Project {
 export default function DashboardScreen() {
   const { colors } = useTheme();
   const { selectedProjectId, setSelectedProject } = useProject();
+  const { getDashboardStats, getProjects, createProject, createWorker, isLoading } = useApi();
   const [projects, setProjects] = useState<ProjectWithStats[]>([]);
+  const [dashboardStats, setDashboardStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [workerTypes, setWorkerTypes] = useState<WorkerType[]>([]);
 
@@ -83,7 +89,7 @@ export default function DashboardScreen() {
   const saveAutocompleteValue = async (category: string, value: string | null | undefined) => {
     if (!value || typeof value !== 'string' || !value.trim()) return;
     try {
-      const API_BASE = __DEV__ ? 'http://localhost:5000' : 'https://your-production-domain.com';
+      const API_BASE = process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : 'https://your-production-domain.com';
       const response = await fetch(`${API_BASE}/api/autocomplete`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -100,30 +106,30 @@ export default function DashboardScreen() {
     }
   };
 
-  // تحميل المشاريع مع الإحصائيات
+  // تحميل المشاريع مع الإحصائيات باستخدام نظام API الموحد
   const loadProjects = useCallback(async () => {
     try {
-      // استخدام عنوان API الكامل للتطبيق المحمول
-      const API_BASE = __DEV__ ? 'http://localhost:5000' : 'https://your-production-domain.com';
-      const response = await fetch(`${API_BASE}/api/projects/with-stats`);
-      if (response.ok) {
-        const projectsData = await response.json();
+      const projectsData = await getProjects();
+      if (projectsData) {
         setProjects(projectsData);
-      } else {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        // تحميل إحصائيات Dashboard أيضاً
+        const stats = await getDashboardStats(selectedProjectId || undefined);
+        if (stats) {
+          setDashboardStats(stats);
+        }
       }
     } catch (error) {
       console.error('خطأ في تحميل المشاريع:', error);
-      Alert.alert('خطأ', 'فشل في تحميل المشاريع - تأكد من اتصال الشبكة');
+      toastManager.show('فشل في تحميل المشاريع - تأكد من اتصال الشبكة', 'error');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [getProjects, getDashboardStats, selectedProjectId]);
 
   // تحميل أنواع العمال
   const loadWorkerTypes = useCallback(async () => {
     try {
-      const API_BASE = __DEV__ ? 'http://localhost:5000' : 'https://your-production-domain.com';
+      const API_BASE = process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : 'https://your-production-domain.com';
       const response = await fetch(`${API_BASE}/api/worker-types`);
       if (response.ok) {
         const typesData = await response.json();
@@ -155,7 +161,7 @@ export default function DashboardScreen() {
         saveAutocompleteValue('workerTypes', workerData.type)
       ]);
 
-      const API_BASE = __DEV__ ? 'http://localhost:5000' : 'https://your-production-domain.com';
+      const API_BASE = process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : 'https://your-production-domain.com';
       const response = await fetch(`${API_BASE}/api/workers`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -197,7 +203,7 @@ export default function DashboardScreen() {
         saveAutocompleteValue('projectDescriptions', projectData.description)
       ]);
 
-      const API_BASE = __DEV__ ? 'http://localhost:5000' : 'https://your-production-domain.com';
+      const API_BASE = process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : 'https://your-production-domain.com';
       const response = await fetch(`${API_BASE}/api/projects`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -233,7 +239,7 @@ export default function DashboardScreen() {
       // حفظ قيم أنواع العمال في autocomplete_data
       await saveAutocompleteValue('workerTypes', newTypeName.trim());
       
-      const API_BASE = __DEV__ ? 'http://localhost:5000' : 'https://your-production-domain.com';
+      const API_BASE = process.env.NODE_ENV === 'development' ? 'http://localhost:5000' : 'https://your-production-domain.com';
       const response = await fetch(`${API_BASE}/api/worker-types`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

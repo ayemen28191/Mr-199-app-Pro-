@@ -8,6 +8,9 @@ import { ThemeProvider } from './src/context/ThemeContext';
 import { ProjectProvider } from './src/context/ProjectContext';
 import MainNavigator from './src/navigation/MainNavigator';
 import { Analytics } from './src/utils/analytics';
+import ErrorBoundary from './src/components/ErrorBoundary';
+import { ToastContainer } from './src/components/UI/Toast';
+import AppStatusBar from './src/components/AppStatusBar';
 
 // تفعيل RTL للغة العربية
 if (Platform.OS !== 'web') {
@@ -51,12 +54,16 @@ export default function App() {
   }, []);
 
   return (
-    <ThemeProvider>
-      <ProjectProvider>
-        <NavigationContainer>
-          <MainNavigator />
-        </NavigationContainer>
-      </ProjectProvider>
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <ProjectProvider>
+          <AppStatusBar />
+          <NavigationContainer>
+            <MainNavigator />
+            <ToastContainer />
+          </NavigationContainer>
+        </ProjectProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
