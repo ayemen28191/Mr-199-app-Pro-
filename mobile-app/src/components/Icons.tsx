@@ -284,4 +284,12 @@ export const Car = ({ size = 20, color = '#000' }: IconProps) => (
   <Text style={{ fontSize: size, color }}>🚗</Text>
 );
 
+export const Star = ({ size = 20, color = '#000', fill }: IconProps & { fill?: string }) => (
+  <Text style={{ fontSize: size, color: fill || color }}>⭐</Text>
+);
+
+export const Store = ({ size = 20, color = '#000' }: IconProps) => (
+  <Text style={{ fontSize: size, color }}>🏪</Text>
+);
+
 export const secondary = '#6b7280';

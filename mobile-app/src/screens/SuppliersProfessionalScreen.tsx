@@ -223,17 +223,17 @@ export default function SuppliersProfessionalScreen() {
 
   useEffect(() => {
     fetchSuppliers();
-  }, [selectedProject]);
+  }, [selectedProjectId]);
 
   const getRatingStars = (rating: number) => {
     const stars = [];
     for (let i = 1; i <= 5; i++) {
       stars.push(
-        <Icon
+        <Icons.Star
           key={i}
-          name={i <= rating ? 'star' : 'star-border'}
           size={12}
           color={i <= rating ? '#F59E0B' : '#D1D5DB'}
+          fill={i <= rating ? '#F59E0B' : 'none'}
         />
       );
     }
@@ -315,11 +315,11 @@ export default function SuppliersProfessionalScreen() {
 
         <View style={styles.supplierFooter}>
           <View style={styles.contactInfo}>
-            <Icon name="phone" size={12} color="#6B7280" />
+            <Icons.Phone size={12} color="#6B7280" />
             <Text style={styles.contactText}>{item.contactPhone}</Text>
           </View>
           <View style={styles.lastOrderInfo}>
-            <Icon name="schedule" size={12} color="#6B7280" />
+            <Icons.Clock size={12} color="#6B7280" />
             <Text style={styles.lastOrderText}>
               آخر طلب: {item.lastOrderDate ? new Date(item.lastOrderDate).toLocaleDateString('ar-SA') : 'لا يوجد'}
             </Text>
@@ -329,11 +329,11 @@ export default function SuppliersProfessionalScreen() {
     );
   };
 
-  if (!selectedProject) {
+  if (!selectedProjectId) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.emptyContainer}>
-          <Icon name="store" size={64} color="#9CA3AF" />
+          <Icons.Store size={64} color="#9CA3AF" />
           <Text style={styles.emptyTitle}>يرجى اختيار مشروع</Text>
           <Text style={styles.emptySubtitle}>اختر مشروعاً لعرض الموردين المحترفين</Text>
         </View>
@@ -361,10 +361,10 @@ export default function SuppliersProfessionalScreen() {
         <Text style={styles.title}>الموردون المحترفون</Text>
         <View style={styles.headerActions}>
           <TouchableOpacity onPress={() => setShowFilterModal(true)} style={styles.headerButton}>
-            <Icon name="filter-list" size={20} color="#6B7280" />
+            <Icons.Filter size={20} color="#6B7280" />
           </TouchableOpacity>
           <TouchableOpacity onPress={onRefresh} style={styles.headerButton}>
-            <Icon name="refresh" size={20} color="#6B7280" />
+            <Icons.RefreshCw size={20} color="#6B7280" />
           </TouchableOpacity>
         </View>
       </View>
@@ -401,7 +401,9 @@ export default function SuppliersProfessionalScreen() {
           value={searchTerm}
           onChangeText={setSearchTerm}
         />
-        <Icon name="search" size={20} color="#6B7280" style={styles.searchIcon} />
+        <View style={styles.searchIcon}>
+          <Icons.Search size={20} color="#6B7280" />
+        </View>
       </View>
 
       {/* Suppliers List */}
@@ -413,7 +415,7 @@ export default function SuppliersProfessionalScreen() {
 
         {filteredSuppliers.length === 0 ? (
           <View style={styles.emptySuppliers}>
-            <Icon name="store" size={48} color="#9CA3AF" />
+            <Icons.Store size={48} color="#9CA3AF" />
             <Text style={styles.emptySuppliersTitle}>لا توجد موردين</Text>
             <Text style={styles.emptySuppliersSubtitle}>
               لا توجد موردين مطابقين للبحث أو الفلاتر المحددة
@@ -446,7 +448,7 @@ export default function SuppliersProfessionalScreen() {
                 onPress={() => setShowFilterModal(false)}
                 style={styles.closeButton}
               >
-                <Icon name="close" size={24} color="#6B7280" />
+                <Icons.X size={24} color="#6B7280" />
               </TouchableOpacity>
             </View>
             
@@ -492,7 +494,7 @@ export default function SuppliersProfessionalScreen() {
                   <Text style={[styles.sortOptionText, sortBy === option.value && styles.selectedSortOptionText]}>
                     {option.label}
                   </Text>
-                  {sortBy === option.value && <Icon name="check" size={20} color="#3B82F6" />}
+                  {sortBy === option.value && <Icons.Check size={20} color="#3B82F6" />}
                 </TouchableOpacity>
               ))}
             </View>
@@ -523,7 +525,7 @@ export default function SuppliersProfessionalScreen() {
                   onPress={() => setShowDetailsModal(false)}
                   style={styles.closeButton}
                 >
-                  <Icon name="close" size={24} color="#6B7280" />
+                  <Icons.X size={24} color="#6B7280" />
                 </TouchableOpacity>
               </View>
               
@@ -543,18 +545,18 @@ export default function SuppliersProfessionalScreen() {
                 <View style={styles.detailsSection}>
                   <Text style={styles.detailsSectionTitle}>معلومات الاتصال</Text>
                   <View style={styles.detailsItem}>
-                    <Icon name="phone" size={16} color="#6B7280" />
+                    <Icons.Phone size={16} color="#6B7280" />
                     <Text style={styles.detailsText}>{selectedSupplier.contactPhone}</Text>
                   </View>
                   {selectedSupplier.email && (
                     <View style={styles.detailsItem}>
-                      <Icon name="email" size={16} color="#6B7280" />
+                      <Icons.Mail size={16} color="#6B7280" />
                       <Text style={styles.detailsText}>{selectedSupplier.email}</Text>
                     </View>
                   )}
                   {selectedSupplier.address && (
                     <View style={styles.detailsItem}>
-                      <Icon name="location-on" size={16} color="#6B7280" />
+                      <Icons.MapPin size={16} color="#6B7280" />
                       <Text style={styles.detailsText}>{selectedSupplier.address}</Text>
                     </View>
                   )}
@@ -1131,15 +1133,3 @@ const styles = StyleSheet.create({
   },
 });
 
-const SuppliersProfessionalScreen: React.FC = () => {
-  return (
-    <SafeAreaView style={{ flex: 1 }}>
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <Text style={{ fontSize: 18, fontWeight: 'bold' }}>شاشة الموردين</Text>
-        <Text style={{ fontSize: 14, marginTop: 10 }}>قيد التطوير...</Text>
-      </View>
-    </SafeAreaView>
-  );
-};
-
-export default SuppliersProfessionalScreen;
