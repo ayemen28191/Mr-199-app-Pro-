@@ -12,7 +12,8 @@
         "gradleCommand": ":app:assembleDebug"
       },
       "env": {
-        "NODE_ENV": "development"
+        "NODE_ENV": "development",
+        "EXPO_PUBLIC_DEBUG_MODE": "true"
       }
     },
     "preview": {
@@ -22,7 +23,8 @@
         "gradleCommand": ":app:assembleRelease"
       },
       "env": {
-        "NODE_ENV": "production"
+        "NODE_ENV": "production",
+        "EXPO_PUBLIC_DEBUG_MODE": "false"
       },
       "autoIncrement": true
     },
@@ -32,12 +34,18 @@
         "buildType": "app-bundle"
       },
       "env": {
-        "NODE_ENV": "production"
+        "NODE_ENV": "production",
+        "EXPO_PUBLIC_DEBUG_MODE": "false"
       },
       "autoIncrement": true
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "android": {
+        "serviceAccountKeyPath": "./android-service-account.json",
+        "track": "internal"
+      }
+    }
   }
 }
