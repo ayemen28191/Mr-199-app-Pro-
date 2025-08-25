@@ -11,28 +11,44 @@
     "resolveJsonModule": true,
     "noEmit": true,
     "target": "esnext",
-    "lib": ["dom", "dom.iterable", "es6"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "es6"
+    ],
     "allowJs": true,
     "isolatedModules": true,
     "forceConsistentCasingInFileNames": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"],
-      "@/components/*": ["./src/components/*"],
-      "@/screens/*": ["./src/screens/*"],
-      "@/services/*": ["./src/services/*"],
-      "@/types/*": ["./src/types/*"],
-      "@/utils/*": ["./src/utils/*"],
-      "@/context/*": ["./src/context/*"]
+      "@/*": [
+        "./src/*"
+      ],
+      "@/components/*": [
+        "./src/components/*"
+      ],
+      "@/screens/*": [
+        "./src/screens/*"
+      ],
+      "@/services/*": [
+        "./src/services/*"
+      ],
+      "@/types/*": [
+        "./src/types/*"
+      ],
+      "@/utils/*": [
+        "./src/utils/*"
+      ],
+      "@/context/*": [
+        "./src/context/*"
+      ]
     }
   },
   "include": [
     "**/*.ts",
     "**/*.tsx",
     "**/*.js",
-    "**/*.jsx",
-    ".expo/types/**/*.ts",
-    "expo-env.d.ts"
+    "**/*.jsx"
   ],
   "exclude": [
     "node_modules"
