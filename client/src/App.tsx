@@ -34,35 +34,134 @@ import BottomNavigation from "@/components/layout/bottom-navigation";
 import FloatingAddButton from "@/components/layout/floating-add-button";
 import { FloatingButtonProvider } from "@/components/layout/floating-button-context";
 import { AuthProvider } from "@/components/AuthProvider";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
+import RegisterPage from "@/pages/RegisterPage";
 
 function Router() {
   return (
     <Switch>
       <Route path="/login" component={LoginPage} />
-      <Route path="/" component={Dashboard} />
+      <Route path="/register" component={RegisterPage} />
+      
+      <Route path="/">
+        <ProtectedRoute>
+          <Dashboard />
+        </ProtectedRoute>
+      </Route>
 
-      <Route path="/projects" component={ProjectsPage} />
-      <Route path="/workers" component={WorkersPage} />
-      <Route path="/worker-accounts" component={WorkerAccountsPage} />
-      <Route path="/suppliers" component={SuppliersProPage} />
-      <Route path="/suppliers-pro" component={SuppliersProPage} />
-      <Route path="/supplier-accounts" component={SupplierAccountsPage} />
-      <Route path="/worker-attendance" component={WorkerAttendance} />
+      <Route path="/projects">
+        <ProtectedRoute>
+          <ProjectsPage />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/workers">
+        <ProtectedRoute>
+          <WorkersPage />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/worker-accounts">
+        <ProtectedRoute>
+          <WorkerAccountsPage />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/suppliers">
+        <ProtectedRoute>
+          <SuppliersProPage />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/suppliers-pro">
+        <ProtectedRoute>
+          <SuppliersProPage />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/supplier-accounts">
+        <ProtectedRoute>
+          <SupplierAccountsPage />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/worker-attendance">
+        <ProtectedRoute>
+          <WorkerAttendance />
+        </ProtectedRoute>
+      </Route>
 
-      <Route path="/daily-expenses" component={DailyExpenses} />
-      <Route path="/material-purchase" component={MaterialPurchase} />
-      <Route path="/material-purchases" component={MaterialPurchase} />
+      <Route path="/daily-expenses">
+        <ProtectedRoute>
+          <DailyExpenses />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/material-purchase">
+        <ProtectedRoute>
+          <MaterialPurchase />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/material-purchases">
+        <ProtectedRoute>
+          <MaterialPurchase />
+        </ProtectedRoute>
+      </Route>
 
-      <Route path="/project-transfers" component={ProjectTransfers} />
-      <Route path="/project-transactions" component={ProjectTransactionsPage} />
-      <Route path="/autocomplete-admin" component={AutocompleteAdminPage} />
+      <Route path="/project-transfers">
+        <ProtectedRoute>
+          <ProjectTransfers />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/project-transactions">
+        <ProtectedRoute>
+          <ProjectTransactionsPage />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/autocomplete-admin">
+        <ProtectedRoute>
+          <AutocompleteAdminPage />
+        </ProtectedRoute>
+      </Route>
 
-      <Route path="/equipment" component={EquipmentManagement} />
-      <Route path="/equipment-management" component={EquipmentManagement} />
-      <Route path="/reports" component={Reports} />
-      <Route path="/advanced-reports" component={AdvancedReports} />
-      <Route path="/workers-unified-reports" component={WorkersUnifiedReports} />
-      <Route path="/notifications" component={NotificationsPage} />
+      <Route path="/equipment">
+        <ProtectedRoute>
+          <EquipmentManagement />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/equipment-management">
+        <ProtectedRoute>
+          <EquipmentManagement />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/reports">
+        <ProtectedRoute>
+          <Reports />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/advanced-reports">
+        <ProtectedRoute>
+          <AdvancedReports />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/workers-unified-reports">
+        <ProtectedRoute>
+          <WorkersUnifiedReports />
+        </ProtectedRoute>
+      </Route>
+      
+      <Route path="/notifications">
+        <ProtectedRoute>
+          <NotificationsPage />
+        </ProtectedRoute>
+      </Route>
 
       <Route component={NotFound} />
     </Switch>

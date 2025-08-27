@@ -52,28 +52,35 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const accessToken = localStorage.getItem('accessToken');
         
         if (savedUser && accessToken) {
-          // التحقق من صحة الرمز المميز
-          const response = await fetch('/api/auth/me', {
-            headers: {
-              'Authorization': `Bearer ${accessToken}`,
-            },
-          });
+          try {
+            // التحقق من صحة الرمز المميز
+            const response = await fetch('/api/auth/me', {
+              headers: {
+                'Authorization': `Bearer ${accessToken}`,
+              },
+            });
 
-          if (response.ok) {
+            if (response.ok) {
+              const userData = JSON.parse(savedUser);
+              setUser(userData);
+            } else {
+              // الرمز غير صالح، محاولة التجديد
+              const refreshed = await refreshToken();
+              if (!refreshed) {
+                // فشل التجديد، تسجيل خروج
+                await logout();
+              }
+            }
+          } catch (apiError) {
+            console.warn('API غير متوفر، تسجيل مؤقت للمستخدم المحفوظ');
+            // في حالة عدم توفر API، تسجيل دخول مؤقت بالبيانات المحفوظة
             const userData = JSON.parse(savedUser);
             setUser(userData);
-          } else {
-            // الرمز غير صالح، محاولة التجديد
-            const refreshed = await refreshToken();
-            if (!refreshed) {
-              // فشل التجديد، تسجيل خروج
-              logout();
-            }
           }
         }
       } catch (error) {
         console.error('خطأ في تحقق المصادقة:', error);
-        logout();
+        await logout();
       } finally {
         setIsLoading(false);
       }
