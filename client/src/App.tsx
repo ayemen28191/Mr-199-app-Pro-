@@ -33,133 +33,188 @@ import Header from "@/components/layout/header";
 import BottomNavigation from "@/components/layout/bottom-navigation";
 import FloatingAddButton from "@/components/layout/floating-add-button";
 import { FloatingButtonProvider } from "@/components/layout/floating-button-context";
-import { AuthProvider } from "@/components/AuthProvider";
+import { AuthProvider, useAuth } from "@/components/AuthProvider";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import RegisterPage from "@/pages/RegisterPage";
+
+function AuthLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <>
+      <Header />
+      <main className="pb-20">
+        {children}
+      </main>
+      <BottomNavigation />
+      <FloatingAddButton />
+    </>
+  );
+}
 
 function Router() {
   return (
     <Switch>
+      {/* صفحات غير محمية - بدون شريط علوي أو سفلي */}
       <Route path="/login" component={LoginPage} />
       <Route path="/register" component={RegisterPage} />
       
+      {/* صفحات محمية - مع شريط علوي وسفلي */}
       <Route path="/">
         <ProtectedRoute>
-          <Dashboard />
+          <AuthLayout>
+            <Dashboard />
+          </AuthLayout>
         </ProtectedRoute>
       </Route>
 
       <Route path="/projects">
         <ProtectedRoute>
-          <ProjectsPage />
+          <AuthLayout>
+            <ProjectsPage />
+          </AuthLayout>
         </ProtectedRoute>
       </Route>
       
       <Route path="/workers">
         <ProtectedRoute>
-          <WorkersPage />
+          <AuthLayout>
+            <WorkersPage />
+          </AuthLayout>
         </ProtectedRoute>
       </Route>
       
       <Route path="/worker-accounts">
         <ProtectedRoute>
-          <WorkerAccountsPage />
+          <AuthLayout>
+            <WorkerAccountsPage />
+          </AuthLayout>
         </ProtectedRoute>
       </Route>
       
       <Route path="/suppliers">
         <ProtectedRoute>
-          <SuppliersProPage />
+          <AuthLayout>
+            <SuppliersProPage />
+          </AuthLayout>
         </ProtectedRoute>
       </Route>
       
       <Route path="/suppliers-pro">
         <ProtectedRoute>
-          <SuppliersProPage />
+          <AuthLayout>
+            <SuppliersProPage />
+          </AuthLayout>
         </ProtectedRoute>
       </Route>
       
       <Route path="/supplier-accounts">
         <ProtectedRoute>
-          <SupplierAccountsPage />
+          <AuthLayout>
+            <SupplierAccountsPage />
+          </AuthLayout>
         </ProtectedRoute>
       </Route>
       
       <Route path="/worker-attendance">
         <ProtectedRoute>
-          <WorkerAttendance />
+          <AuthLayout>
+            <WorkerAttendance />
+          </AuthLayout>
         </ProtectedRoute>
       </Route>
 
       <Route path="/daily-expenses">
         <ProtectedRoute>
-          <DailyExpenses />
+          <AuthLayout>
+            <DailyExpenses />
+          </AuthLayout>
         </ProtectedRoute>
       </Route>
       
       <Route path="/material-purchase">
         <ProtectedRoute>
-          <MaterialPurchase />
+          <AuthLayout>
+            <MaterialPurchase />
+          </AuthLayout>
         </ProtectedRoute>
       </Route>
       
       <Route path="/material-purchases">
         <ProtectedRoute>
-          <MaterialPurchase />
+          <AuthLayout>
+            <MaterialPurchase />
+          </AuthLayout>
         </ProtectedRoute>
       </Route>
 
       <Route path="/project-transfers">
         <ProtectedRoute>
-          <ProjectTransfers />
+          <AuthLayout>
+            <ProjectTransfers />
+          </AuthLayout>
         </ProtectedRoute>
       </Route>
       
       <Route path="/project-transactions">
         <ProtectedRoute>
-          <ProjectTransactionsPage />
+          <AuthLayout>
+            <ProjectTransactionsPage />
+          </AuthLayout>
         </ProtectedRoute>
       </Route>
       
       <Route path="/autocomplete-admin">
         <ProtectedRoute>
-          <AutocompleteAdminPage />
+          <AuthLayout>
+            <AutocompleteAdminPage />
+          </AuthLayout>
         </ProtectedRoute>
       </Route>
 
       <Route path="/equipment">
         <ProtectedRoute>
-          <EquipmentManagement />
+          <AuthLayout>
+            <EquipmentManagement />
+          </AuthLayout>
         </ProtectedRoute>
       </Route>
       
       <Route path="/equipment-management">
         <ProtectedRoute>
-          <EquipmentManagement />
+          <AuthLayout>
+            <EquipmentManagement />
+          </AuthLayout>
         </ProtectedRoute>
       </Route>
       
       <Route path="/reports">
         <ProtectedRoute>
-          <Reports />
+          <AuthLayout>
+            <Reports />
+          </AuthLayout>
         </ProtectedRoute>
       </Route>
       
       <Route path="/advanced-reports">
         <ProtectedRoute>
-          <AdvancedReports />
+          <AuthLayout>
+            <AdvancedReports />
+          </AuthLayout>
         </ProtectedRoute>
       </Route>
       
       <Route path="/workers-unified-reports">
         <ProtectedRoute>
-          <WorkersUnifiedReports />
+          <AuthLayout>
+            <WorkersUnifiedReports />
+          </AuthLayout>
         </ProtectedRoute>
       </Route>
       
       <Route path="/notifications">
         <ProtectedRoute>
-          <NotificationsPage />
+          <AuthLayout>
+            <NotificationsPage />
+          </AuthLayout>
         </ProtectedRoute>
       </Route>
 
@@ -198,12 +253,7 @@ function App() {
         <TooltipProvider>
           <FloatingButtonProvider>
             <div className="min-h-screen bg-background text-foreground" dir="rtl">
-              <Header />
-              <main className="pb-20">
-                <Router />
-              </main>
-              <BottomNavigation />
-              <FloatingAddButton />
+              <Router />
               <Toaster />
             </div>
           </FloatingButtonProvider>
