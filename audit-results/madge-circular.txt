@@ -1,9 +1,0 @@
-npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
-npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
-- Finding files
-Processed 166 files (22.5s) (85 warnings)
-
-✖ Found 1 circular dependency!
-
-1) dist/public/assets/index-DAUyl4OT.js > dist/public/assets/index.es-R9DUPlyg.js
-
