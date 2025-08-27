@@ -522,14 +522,111 @@ export const toolMovements = pgTable("tool_movements", {
   notes: text("notes"),
 });
 
-// Notification Read States (حالة قراءة الإشعارات)
+// =====================================================
+// نظام الإشعارات المتكامل - Advanced Notifications System
+// =====================================================
+
+// Notifications (الإشعارات الرئيسية)
+export const notifications = pgTable("notifications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  projectId: varchar("project_id").references(() => projects.id), // المشروع (optional)
+  type: text("type").notNull(), // 'safety','task','payroll','announcement','message','system'
+  title: text("title").notNull(),
+  body: text("body").notNull(),
+  payload: jsonb("payload"), // معلومات إضافية: task_id, attachments, etc
+  priority: integer("priority").notNull().default(3), // 1=emergency, 2=high, 3=medium, 4=low, 5=info
+  recipients: jsonb("recipients"), // قائمة معرفات المستقبلين أو المجموعات
+  channelPreference: jsonb("channel_preference").default('{"push":true,"email":true,"sms":false}'), // تفضيلات القنوات
+  createdBy: varchar("created_by").references(() => users.id),
+  scheduledAt: timestamp("scheduled_at"), // للإشعارات المجدولة
+  deliveredTo: jsonb("delivered_to"), // mapping user_id -> {delivered_at,channel,status}
+  readBy: jsonb("read_by"), // mapping user_id -> read_at
+  meta: jsonb("meta"), // معلومات إضافية
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Notification Templates (قوالب الإشعارات)
+export const notificationTemplates = pgTable("notification_templates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull().unique(), // اسم القالب
+  type: text("type").notNull(), // نوع الإشعار
+  titleTemplate: text("title_template").notNull(), // قالب العنوان مع متغيرات
+  bodyTemplate: text("body_template").notNull(), // قالب النص مع متغيرات
+  priority: integer("priority").notNull().default(3),
+  channelPreference: jsonb("channel_preference").default('{"push":true,"email":false,"sms":false}'),
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// Notification Settings (إعدادات الإشعارات للمستخدمين)
+export const notificationSettings = pgTable("notification_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id),
+  notificationType: text("notification_type").notNull(), // نوع الإشعار
+  pushEnabled: boolean("push_enabled").default(true).notNull(),
+  emailEnabled: boolean("email_enabled").default(true).notNull(),
+  smsEnabled: boolean("sms_enabled").default(false).notNull(),
+  doNotDisturbStart: text("dnd_start"), // وقت بداية عدم الإزعاج HH:MM
+  doNotDisturbEnd: text("dnd_end"), // وقت نهاية عدم الإزعاج HH:MM
+  projectScope: jsonb("project_scope"), // المشاريع المحددة أو "all"
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  uniqueUserNotificationType: sql`UNIQUE (user_id, notification_type)`
+}));
+
+// Notification Read States (حالة قراءة الإشعارات) - محدث
 export const notificationReadStates = pgTable("notification_read_states", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull(), // معرف المستخدم
   notificationId: varchar("notification_id").notNull(), // معرف الإشعار
-  notificationType: text("notification_type").notNull(), // نوع الإشعار
   isRead: boolean("is_read").default(false).notNull(),
   readAt: timestamp("read_at"),
+  actionTaken: text("action_taken"), // الإجراء المتخذ: "acknowledged", "dismissed", "acted"
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  uniqueUserNotification: sql`UNIQUE (user_id, notification_id)`
+}));
+
+// Notification Queue (طابور الإشعارات للإرسال)
+export const notificationQueue = pgTable("notification_queue", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  notificationId: varchar("notification_id").notNull().references(() => notifications.id, { onDelete: 'cascade' }),
+  userId: varchar("user_id").notNull(),
+  channel: text("channel").notNull(), // 'push', 'email', 'sms'
+  status: text("status").default("pending").notNull(), // 'pending', 'sent', 'failed', 'retrying'
+  attempts: integer("attempts").default(0).notNull(),
+  maxAttempts: integer("max_attempts").default(3).notNull(),
+  lastAttemptAt: timestamp("last_attempt_at"),
+  sentAt: timestamp("sent_at"),
+  errorMessage: text("error_message"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Channels (قنوات التواصل - للرسائل المباشرة)
+export const channels = pgTable("channels", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  type: text("type").notNull(), // 'project', 'private', 'group'
+  projectId: varchar("project_id").references(() => projects.id), // للقنوات الخاصة بالمشاريع
+  participants: jsonb("participants"), // قائمة معرفات المشاركين
+  isActive: boolean("is_active").default(true).notNull(),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// Messages (الرسائل)
+export const messages = pgTable("messages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  channelId: varchar("channel_id").notNull().references(() => channels.id, { onDelete: 'cascade' }),
+  senderId: varchar("sender_id").notNull().references(() => users.id),
+  content: text("content").notNull(),
+  messageType: text("message_type").default("text").notNull(), // 'text', 'image', 'file', 'system'
+  attachments: jsonb("attachments"), // ملفات مرفقة
+  replyToId: varchar("reply_to_id"), // الرد على رسالة - سنضيف المرجع لاحقاً
+  isEdited: boolean("is_edited").default(false).notNull(),
+  editedAt: timestamp("edited_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -554,10 +651,48 @@ export const insertToolMovementSchema = createInsertSchema(toolMovements).omit({
   movementDate: true,
 });
 
+// Notification schemas
+export const insertNotificationSchema = createInsertSchema(notifications).omit({
+  id: true,
+  createdAt: true,
+  deliveredTo: true,
+  readBy: true,
+});
+
+export const insertNotificationTemplateSchema = createInsertSchema(notificationTemplates).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertNotificationSettingsSchema = createInsertSchema(notificationSettings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertNotificationReadStateSchema = createInsertSchema(notificationReadStates).omit({
   id: true,
   createdAt: true,
   readAt: true,
+});
+
+export const insertNotificationQueueSchema = createInsertSchema(notificationQueue).omit({
+  id: true,
+  createdAt: true,
+  lastAttemptAt: true,
+  sentAt: true,
+});
+
+export const insertChannelSchema = createInsertSchema(channels).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertMessageSchema = createInsertSchema(messages).omit({
+  id: true,
+  createdAt: true,
+  editedAt: true,
 });
 
 // Export types
@@ -567,5 +702,54 @@ export type Tool = typeof tools.$inferSelect;
 export type InsertTool = z.infer<typeof insertToolSchema>;
 export type ToolMovement = typeof toolMovements.$inferSelect;
 export type InsertToolMovement = z.infer<typeof insertToolMovementSchema>;
+
+// Notification types
+export type Notification = typeof notifications.$inferSelect;
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+export type NotificationTemplate = typeof notificationTemplates.$inferSelect;
+export type InsertNotificationTemplate = z.infer<typeof insertNotificationTemplateSchema>;
+export type NotificationSettings = typeof notificationSettings.$inferSelect;
+export type InsertNotificationSettings = z.infer<typeof insertNotificationSettingsSchema>;
 export type NotificationReadState = typeof notificationReadStates.$inferSelect;
 export type InsertNotificationReadState = z.infer<typeof insertNotificationReadStateSchema>;
+export type NotificationQueue = typeof notificationQueue.$inferSelect;
+export type InsertNotificationQueue = z.infer<typeof insertNotificationQueueSchema>;
+export type Channel = typeof channels.$inferSelect;
+export type InsertChannel = z.infer<typeof insertChannelSchema>;
+export type Message = typeof messages.$inferSelect;
+export type InsertMessage = z.infer<typeof insertMessageSchema>;
+
+// إعداد أنواع الإشعارات
+export const NotificationTypes = {
+  SAFETY: 'safety' as const,
+  TASK: 'task' as const,
+  PAYROLL: 'payroll' as const,
+  ANNOUNCEMENT: 'announcement' as const,
+  MESSAGE: 'message' as const,
+  SYSTEM: 'system' as const,
+  MAINTENANCE: 'maintenance' as const,
+  ATTENDANCE: 'attendance' as const,
+} as const;
+
+export type NotificationType = typeof NotificationTypes[keyof typeof NotificationTypes];
+
+// أولويات الإشعارات
+export const NotificationPriority = {
+  EMERGENCY: 1,
+  HIGH: 2,
+  MEDIUM: 3,
+  LOW: 4,
+  INFO: 5,
+} as const;
+
+export type NotificationPriorityType = typeof NotificationPriority[keyof typeof NotificationPriority];
+
+// حالات الإرسال
+export const NotificationStatus = {
+  PENDING: 'pending' as const,
+  SENT: 'sent' as const,
+  FAILED: 'failed' as const,
+  RETRYING: 'retrying' as const,
+} as const;
+
+export type NotificationStatusType = typeof NotificationStatus[keyof typeof NotificationStatus];

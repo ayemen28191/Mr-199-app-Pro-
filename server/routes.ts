@@ -25,10 +25,16 @@ import {
   insertPrintSettingsSchema, insertProjectFundTransferSchema,
   insertReportTemplateSchema,
   // Equipment schemas (النظام المبسط)
-  insertEquipmentSchema, insertEquipmentMovementSchema
+  insertEquipmentSchema, insertEquipmentMovementSchema,
+  // Notification schemas
+  insertNotificationSchema
 } from "@shared/schema";
+import { NotificationService } from "./services/NotificationService";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  
+  // إنشاء مثيل من خدمة الإشعارات المتقدمة
+  const notificationService = new NotificationService();
   
   // إضافة مسار تطبيق الموبايل في البداية لتجنب تداخل مع Vite
   app.get("/mobile*", (req, res) => {
@@ -3726,27 +3732,158 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Basic Notifications API - Simple system notifications
+  // =====================================================
+  // نظام إدارة الإشعارات المتقدم - Advanced Notification System
+  // =====================================================
+
+  // جلب الإشعارات للمستخدم مع الفلترة
   app.get("/api/notifications", async (req, res) => {
     try {
-      // إرجاع قائمة فارغة من الإشعارات - نظام بسيط
-      const notifications: any[] = [
-        {
+      const userId = (req.query.userId as string) || 'default';
+      const type = req.query.type as string;
+      const unreadOnly = req.query.unreadOnly === 'true';
+      const projectId = req.query.projectId as string;
+      const limit = parseInt(req.query.limit as string) || 50;
+      const offset = parseInt(req.query.offset as string) || 0;
+
+      const result = await notificationService.getUserNotifications(userId, {
+        type,
+        unreadOnly,
+        projectId,
+        limit,
+        offset
+      });
+
+      // إذا لم توجد إشعارات، أرجع إشعار ترحيب
+      if (result.notifications.length === 0) {
+        const welcomeNotification = {
           id: 'system-welcome',
           type: 'system',
           title: 'مرحباً بك',
           message: 'مرحباً بك في نظام إدارة المشاريع الإنشائية',
-          priority: 'info',
+          priority: 3,
           createdAt: new Date().toISOString(),
-          status: 'unread',
+          isRead: false,
           actionRequired: false,
-        }
-      ];
+        };
+        return res.json({
+          notifications: [welcomeNotification],
+          unreadCount: 1,
+          total: 1
+        });
+      }
 
-      res.json(notifications);
+      res.json(result);
     } catch (error) {
       console.error("Error fetching notifications:", error);
       res.status(500).json({ message: "خطأ في جلب الإشعارات" });
+    }
+  });
+
+  // إنشاء إشعار جديد
+  app.post("/api/notifications", async (req, res) => {
+    try {
+      const notification = await notificationService.createNotification(req.body);
+      res.status(201).json(notification);
+    } catch (error) {
+      console.error("Error creating notification:", error);
+      res.status(500).json({ message: "خطأ في إنشاء الإشعار" });
+    }
+  });
+
+  // إنشاء إشعار أمني طارئ
+  app.post("/api/notifications/safety", async (req, res) => {
+    try {
+      const notification = await notificationService.createSafetyAlert(req.body);
+      res.status(201).json(notification);
+    } catch (error) {
+      console.error("Error creating safety alert:", error);
+      res.status(500).json({ message: "خطأ في إنشاء التنبيه الأمني" });
+    }
+  });
+
+  // إنشاء إشعار مهمة
+  app.post("/api/notifications/task", async (req, res) => {
+    try {
+      const notification = await notificationService.createTaskNotification(req.body);
+      res.status(201).json(notification);
+    } catch (error) {
+      console.error("Error creating task notification:", error);
+      res.status(500).json({ message: "خطأ في إنشاء إشعار المهمة" });
+    }
+  });
+
+  // إنشاء إشعار راتب
+  app.post("/api/notifications/payroll", async (req, res) => {
+    try {
+      const notification = await notificationService.createPayrollNotification(req.body);
+      res.status(201).json(notification);
+    } catch (error) {
+      console.error("Error creating payroll notification:", error);
+      res.status(500).json({ message: "خطأ في إنشاء إشعار الراتب" });
+    }
+  });
+
+  // إنشاء إعلان عام
+  app.post("/api/notifications/announcement", async (req, res) => {
+    try {
+      const notification = await notificationService.createAnnouncement(req.body);
+      res.status(201).json(notification);
+    } catch (error) {
+      console.error("Error creating announcement:", error);
+      res.status(500).json({ message: "خطأ في إنشاء الإعلان" });
+    }
+  });
+
+  // تعليم إشعار كمقروء
+  app.post("/api/notifications/:notificationId/mark-read", async (req, res) => {
+    try {
+      const { notificationId } = req.params;
+      const userId = (req.body.userId as string) || 'default';
+      
+      await notificationService.markAsRead(notificationId, userId);
+      res.json({ message: "تم تعليم الإشعار كمقروء" });
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+      res.status(500).json({ message: "خطأ في تعليم الإشعار كمقروء" });
+    }
+  });
+
+  // تعليم جميع الإشعارات كمقروءة
+  app.post("/api/notifications/mark-all-read", async (req, res) => {
+    try {
+      const userId = (req.body.userId as string) || 'default';
+      const projectId = req.body.projectId as string;
+      
+      await notificationService.markAllAsRead(userId, projectId);
+      res.json({ message: "تم تعليم جميع الإشعارات كمقروءة" });
+    } catch (error) {
+      console.error("Error marking all notifications as read:", error);
+      res.status(500).json({ message: "خطأ في تعليم جميع الإشعارات كمقروءة" });
+    }
+  });
+
+  // حذف إشعار
+  app.delete("/api/notifications/:notificationId", async (req, res) => {
+    try {
+      const { notificationId } = req.params;
+      await notificationService.deleteNotification(notificationId);
+      res.json({ message: "تم حذف الإشعار" });
+    } catch (error) {
+      console.error("Error deleting notification:", error);
+      res.status(500).json({ message: "خطأ في حذف الإشعار" });
+    }
+  });
+
+  // جلب إحصائيات الإشعارات
+  app.get("/api/notifications/stats", async (req, res) => {
+    try {
+      const userId = (req.query.userId as string) || 'default';
+      const stats = await notificationService.getNotificationStats(userId);
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching notification stats:", error);
+      res.status(500).json({ message: "خطأ في جلب إحصائيات الإشعارات" });
     }
   });
 

@@ -5,6 +5,7 @@ import { setupVite, serveStatic, log } from "./vite";
 import { databaseManager } from "./database-manager";
 import { sql } from "drizzle-orm";
 import { db } from "./db";
+import { createNotificationTables, createTestNotifications } from "./create-notification-tables";
 
 import { exec } from "child_process";
 import { promisify } from "util";
@@ -199,6 +200,17 @@ app.use((req, res, next) => {
           log("✅ تم التأكد من وجود جميع أعمدة جدول tool_movements");
         } catch (error) {
           log("ℹ️  أعمدة tool_movements موجودة مسبقاً أو تم إنشاؤها");
+        }
+
+        // إنشاء جداول الإشعارات المتقدمة
+        try {
+          log("🔔 بدء إنشاء جداول الإشعارات المتقدمة...");
+          await createNotificationTables();
+          await createTestNotifications();
+          log("✅ تم إنشاء نظام الإشعارات المتقدم بنجاح");
+        } catch (error) {
+          log("⚠️ تحذير: فشل في إنشاء جداول الإشعارات - سيعمل النظام بالوضع البسيط");
+          console.log("🔍 تفاصيل الخطأ:", error);
         }
         
         // تشغيل الاختبار الشامل لجميع الوظائف
