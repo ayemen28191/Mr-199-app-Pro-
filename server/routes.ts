@@ -3680,105 +3680,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // =====================================================
-  // API Routes لنظام إدارة المعدات والأدوات الاحترافي
+  // API Routes لنظام إدارة الإشعارات
   // =====================================================
 
-  // Tool Categories Routes
-  app.get("/api/tool-categories", async (req, res) => {
+  // Notification Read States
+  app.get("/api/notifications/:userId/read-state", async (req, res) => {
     try {
-      const categories = await storage.getToolCategories();
-      res.json(categories);
+      const { notificationId, notificationType } = req.query;
+      
+      if (!notificationId || !notificationType) {
+        return res.status(400).json({ message: "notificationId and notificationType are required" });
+      }
+      
+      const isRead = await storage.isNotificationRead(
+        req.params.userId,
+        notificationId as string,
+        notificationType as string
+      );
+      
+      res.json({ isRead });
     } catch (error) {
-      console.error("Error fetching tool categories:", error);
-      res.status(500).json({ message: "خطأ في جلب تصنيفات الأدوات" });
+      console.error('Error checking notification read state:', error);
+      res.status(500).json({ message: "خطأ في فحص حالة قراءة الإشعار" });
     }
   });
 
-  app.post("/api/tool-categories", async (req, res) => {
+  app.post("/api/notifications/:userId/mark-read", async (req, res) => {
     try {
-      const result = insertToolCategorySchema.safeParse(req.body);
-      if (!result.success) {
-        return res.status(400).json({ 
-          message: "بيانات تصنيف الأداة غير صحيحة", 
-          errors: result.error.issues 
-        });
+      const { notificationId, notificationType } = req.body;
+      
+      if (!notificationId || !notificationType) {
+        return res.status(400).json({ message: "notificationId and notificationType are required" });
       }
-
-      // فحص عدم تكرار اسم التصنيف
-      const existingCategory = await storage.getToolCategoryByName(result.data.name);
-      if (existingCategory) {
-        return res.status(400).json({ message: "يوجد تصنيف بنفس الاسم مسبقاً" });
-      }
-
-      const category = await storage.createToolCategory(result.data);
-      res.status(201).json(category);
+      
+      await storage.markNotificationAsRead(
+        req.params.userId,
+        notificationId,
+        notificationType
+      );
+      
+      res.json({ message: "تم تعليم الإشعار كمقروء" });
     } catch (error) {
-      console.error("Error creating tool category:", error);
-      res.status(500).json({ message: "خطأ في إنشاء تصنيف الأداة" });
+      console.error('Error marking notification as read:', error);
+      res.status(500).json({ message: "خطأ في تعليم الإشعار كمقروء" });
     }
   });
 
-  app.put("/api/tool-categories/:id", async (req, res) => {
-    try {
-      const result = insertToolCategorySchema.partial().safeParse(req.body);
-      if (!result.success) {
-        return res.status(400).json({ 
-          message: "بيانات تصنيف الأداة غير صحيحة", 
-          errors: result.error.issues 
-        });
-      }
-
-      const category = await storage.updateToolCategory(req.params.id, result.data);
-      if (!category) {
-        return res.status(404).json({ message: "تصنيف الأداة غير موجود" });
-      }
-      res.json(category);
-    } catch (error) {
-      console.error("Error updating tool category:", error);
-      res.status(500).json({ message: "خطأ في تحديث تصنيف الأداة" });
-    }
-  });
-
-  app.delete("/api/tool-categories/:id", async (req, res) => {
-    try {
-      await storage.deleteToolCategory(req.params.id);
-      res.status(204).send();
-    } catch (error) {
-      console.error("Error deleting tool category:", error);
-      res.status(500).json({ message: "خطأ في حذف تصنيف الأداة" });
-    }
-  });
-
-  // General Notifications API - Alias for tool-notifications
+  // Basic Notifications API - Simple system notifications
   app.get("/api/notifications", async (req, res) => {
     try {
-      const tools = await storage.getTools();
-      const notifications: any[] = [];
-
-      // فحص الصيانة المتأخرة - باستخدام for loop لدعم await
-      for (const tool of tools) {
-        if (tool.nextMaintenanceDate) {
-          const maintenanceDate = new Date(tool.nextMaintenanceDate);
-          const today = new Date();
-          const daysDiff = Math.ceil((maintenanceDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-          
-          if (daysDiff < 0) {
-            const notificationId = `maintenance-${tool.id}`;
-            notifications.push({
-              id: notificationId,
-              type: 'maintenance',
-              title: 'صيانة متأخرة',
-              message: `الأداة "${tool.name}" متأخرة عن موعد الصيانة بـ ${Math.abs(daysDiff)} يوم`,
-              toolId: tool.id,
-              toolName: tool.name,
-              priority: 'critical',
-              createdAt: new Date().toISOString(),
-              status: await storage.isNotificationRead(notificationId) ? 'read' : 'unread',
-              actionRequired: true,
-            });
-          }
+      // إرجاع قائمة فارغة من الإشعارات - نظام بسيط
+      const notifications: any[] = [
+        {
+          id: 'system-welcome',
+          type: 'system',
+          title: 'مرحباً بك',
+          message: 'مرحباً بك في نظام إدارة المشاريع الإنشائية',
+          priority: 'info',
+          createdAt: new Date().toISOString(),
+          status: 'unread',
+          actionRequired: false,
         }
-      }
+      ];
 
       res.json(notifications);
     } catch (error) {
@@ -3786,447 +3749,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "خطأ في جلب الإشعارات" });
     }
   });
-
-  // Tool Usage Analytics API
-  app.get("/api/tool-usage-analytics", async (req, res) => {
-    try {
-      const tools = await storage.getTools();
-      const movements = await storage.getToolMovements();
-      
-      // حساب إحصائيات الاستخدام
-      const analytics = {
-        totalTools: tools.length,
-        activeTools: tools.filter(t => t.status === 'in_use').length,
-        totalMovements: movements.length,
-        averageUsage: tools.length > 0 ? Math.round((movements.length / tools.length) * 100) / 100 : 0,
-        categoryDistribution: tools.reduce((acc: any, tool) => {
-          const category = tool.categoryId || 'غير مصنف';
-          acc[category] = (acc[category] || 0) + 1;
-          return acc;
-        }, {}),
-        statusDistribution: tools.reduce((acc: any, tool) => {
-          acc[tool.status] = (acc[tool.status] || 0) + 1;
-          return acc;
-        }, {}),
-        conditionDistribution: tools.reduce((acc: any, tool) => {
-          acc[tool.condition] = (acc[tool.condition] || 0) + 1;
-          return acc;
-        }, {}),
-        recentActivity: movements.slice(-10).reverse()
-      };
-
-      res.json(analytics);
-    } catch (error) {
-      console.error("Error fetching tool usage analytics:", error);
-      res.status(500).json({ message: "خطأ في جلب تحليلات استخدام الأدوات" });
-    }
-  });
-
-  // Tool Movements with limit API
-  app.get("/api/tool-movements/:limit", async (req, res) => {
-    try {
-      const limit = parseInt(req.params.limit) || 30;
-      const movements = await storage.getToolMovements();
-      const limitedMovements = movements.slice(-limit).reverse();
-      res.json(limitedMovements);
-    } catch (error) {
-      console.error("Error fetching tool movements:", error);
-      res.status(500).json({ message: "خطأ في جلب تحركات الأدوات" });
-    }
-  });
-
-  // Tools Routes
-  // Tool Notifications API Routes - Must come before /api/tools/:id
-  app.get("/api/tool-notifications", async (req, res) => {
-    try {
-      const tools = await storage.getTools();
-      const notifications: any[] = [];
-
-      // فحص الصيانة المتأخرة - باستخدام for loop لدعم await
-      for (const tool of tools) {
-        if (tool.nextMaintenanceDate) {
-          const maintenanceDate = new Date(tool.nextMaintenanceDate);
-          const today = new Date();
-          const daysDiff = Math.ceil((maintenanceDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-          
-          if (daysDiff < 0) {
-            const notificationId = `maintenance-${tool.id}`;
-            notifications.push({
-              id: notificationId,
-              type: 'maintenance',
-              title: 'صيانة متأخرة',
-              message: `الأداة "${tool.name}" متأخرة عن موعد الصيانة بـ ${Math.abs(daysDiff)} يوم`,
-              toolId: tool.id,
-              toolName: tool.name,
-              priority: 'critical',
-              timestamp: new Date().toISOString(),
-              isRead: await storage.isNotificationRead(notificationId),
-              actionRequired: true,
-            });
-          } else if (daysDiff <= 3) {
-            const notificationId = `maintenance-soon-${tool.id}`;
-            notifications.push({
-              id: notificationId,
-              type: 'maintenance',
-              title: 'صيانة قريبة',
-              message: `الأداة "${tool.name}" تحتاج صيانة خلال ${daysDiff} أيام`,
-              toolId: tool.id,
-              toolName: tool.name,
-              priority: 'high',
-              timestamp: new Date().toISOString(),
-              isRead: await storage.isNotificationRead(notificationId),
-              actionRequired: true,
-            });
-          }
-        }
-
-        // فحص انتهاء الضمان
-        if (tool.warrantyExpiry) {
-          const warrantyDate = new Date(tool.warrantyExpiry);
-          const today = new Date();
-          const daysDiff = Math.ceil((warrantyDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-          
-          if (daysDiff <= 30 && daysDiff > 0) {
-            const notificationId = `warranty-${tool.id}`;
-            notifications.push({
-              id: notificationId,
-              type: 'warranty',
-              title: 'انتهاء الضمان قريباً',
-              message: `ضمان الأداة "${tool.name}" ينتهي خلال ${daysDiff} يوم`,
-              toolId: tool.id,
-              toolName: tool.name,
-              priority: 'medium',
-              timestamp: new Date().toISOString(),
-              isRead: await storage.isNotificationRead(notificationId),
-              actionRequired: false,
-            });
-          } else if (daysDiff <= 0) {
-            const notificationId = `warranty-expired-${tool.id}`;
-            notifications.push({
-              id: notificationId,
-              type: 'warranty',
-              title: 'انتهى الضمان',
-              message: `انتهى ضمان الأداة "${tool.name}"`,
-              toolId: tool.id,
-              toolName: tool.name,
-              priority: 'low',
-              timestamp: new Date().toISOString(),
-              isRead: await storage.isNotificationRead(notificationId),
-              actionRequired: false,
-            });
-          }
-        }
-
-        // فحص الأدوات المعطلة
-        if (tool.status === 'damaged') {
-          const notificationId = `damaged-${tool.id}`;
-          notifications.push({
-            id: notificationId,
-            type: 'damaged',
-            title: 'أداة معطلة',
-            message: `الأداة "${tool.name}" بحالة تالفة وتحتاج إصلاح أو استبدال`,
-            toolId: tool.id,
-            toolName: tool.name,
-            priority: 'high',
-            timestamp: new Date().toISOString(),
-            isRead: await storage.isNotificationRead(notificationId),
-            actionRequired: true,
-          });
-        }
-      }
-
-      res.json(notifications);
-    } catch (error) {
-      console.error("Error fetching notifications:", error);
-      res.status(500).json({ message: "خطأ في جلب الإشعارات" });
-    }
-  });
-
-  // Use the existing readNotifications Set defined at the top
-
-  app.post("/api/notifications/:id/mark-read", async (req, res) => {
-    try {
-      const { id } = req.params;
-      const { userId } = req.body; // إمكانية تخصيص المستخدم
-      
-      // استخدام قاعدة البيانات بدلاً من الذاكرة
-      const readState = await storage.markNotificationAsRead(id, userId);
-      
-      console.log(`✅ تم حفظ الإشعار ${id} كمقروء في قاعدة البيانات`);
-      res.json({ 
-        success: true, 
-        message: "تم تحديد الإشعار كمقروء",
-        notificationId: id,
-        readState
-      });
-    } catch (error) {
-      console.error("Error marking notification as read:", error);
-      res.status(500).json({ message: "خطأ في تحديد الإشعار كمقروء" });
-    }
-  });
-
-  app.post("/api/notifications/mark-all-read", async (req, res) => {
-    try {
-      const { userId } = req.body; // إمكانية تخصيص المستخدم
-      
-      // الحصول على جميع معرفات الإشعارات الحالية
-      const tools = await storage.getTools();
-      const notificationIds: string[] = [];
-
-      // فحص الصيانة المتأخرة وجمع معرفات الإشعارات
-      for (const tool of tools) {
-        if (tool.nextMaintenanceDate) {
-          const maintenanceDate = new Date(tool.nextMaintenanceDate);
-          const today = new Date();
-          const daysDiff = Math.ceil((maintenanceDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-          
-          if (daysDiff < 0) {
-            notificationIds.push(`maintenance-${tool.id}`);
-          } else if (daysDiff <= 3) {
-            notificationIds.push(`maintenance-soon-${tool.id}`);
-          }
-        }
-
-        // فحص انتهاء الضمان
-        if (tool.warrantyEndDate) {
-          const warrantyDate = new Date(tool.warrantyEndDate);
-          const today = new Date();
-          const daysDiff = Math.ceil((warrantyDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-          
-          if (daysDiff <= 30 && daysDiff > 0) {
-            notificationIds.push(`warranty-${tool.id}`);
-          } else if (daysDiff <= 0) {
-            notificationIds.push(`warranty-expired-${tool.id}`);
-          }
-        }
-
-        // فحص الأدوات المعطلة
-        if (tool.status === 'damaged') {
-          notificationIds.push(`damaged-${tool.id}`);
-        }
-      }
-
-      // تحديد جميع الإشعارات كمقروءة في قاعدة البيانات
-      await storage.markAllNotificationsAsRead(notificationIds, userId);
-
-      console.log(`✅ تم حفظ ${notificationIds.length} إشعار كمقروء في قاعدة البيانات`);
-      res.json({ 
-        success: true, 
-        message: "تم تحديد جميع الإشعارات كمقروءة",
-        markedCount: notificationIds.length
-      });
-    } catch (error) {
-      console.error("Error marking all notifications as read:", error);
-      res.status(500).json({ message: "خطأ في تحديد الإشعارات كمقروءة" });
-    }
-  });
-
-  // Additional notification status endpoints
-  app.get("/api/notifications/:id/read-status", async (req, res) => {
-    try {
-      const { id } = req.params;
-      const { userId } = req.query;
-      
-      const isRead = await storage.isNotificationRead(id, userId as string);
-      const readState = await storage.getNotificationReadState(id, userId as string);
-      
-      res.json({ 
-        notificationId: id,
-        isRead,
-        readState 
-      });
-    } catch (error) {
-      console.error("Error checking notification read status:", error);
-      res.status(500).json({ message: "خطأ في فحص حالة الإشعار" });
-    }
-  });
-
-  app.get("/api/notifications/read-list", async (req, res) => {
-    try {
-      const { userId } = req.query;
-      
-      const readNotificationIds = await storage.getReadNotifications(userId as string);
-      
-      res.json({ 
-        readNotifications: readNotificationIds,
-        count: readNotificationIds.length
-      });
-    } catch (error) {
-      console.error("Error fetching read notifications list:", error);
-      res.status(500).json({ message: "خطأ في جلب قائمة الإشعارات المقروءة" });
-    }
-  });
-
-  // Maintenance Schedule API Routes
-  app.get("/api/maintenance-schedules", async (req, res) => {
-    try {
-      // إرجاع قائمة فارغة مؤقتاً - سيتم ربطها بقاعدة البيانات لاحقاً
-      res.json([]);
-    } catch (error) {
-      console.error("Error fetching maintenance schedules:", error);
-      res.status(500).json({ message: "خطأ في جلب جداول الصيانة" });
-    }
-  });
-
-  app.post("/api/maintenance-schedules", async (req, res) => {
-    try {
-      // معالجة إنشاء جدول صيانة جديد
-      const scheduleData = req.body;
-      
-      // إنشاء ID فريد للجدول
-      const newSchedule = {
-        id: `schedule_${Date.now()}`,
-        ...scheduleData,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
-      };
-      
-      res.json(newSchedule);
-    } catch (error) {
-      console.error("Error creating maintenance schedule:", error);
-      res.status(500).json({ message: "خطأ في إنشاء جدول الصيانة" });
-    }
-  });
-
-  // Equipment API Routes (النظام المبسط)
-  app.get("/api/equipment", async (req, res) => {
-    try {
-      const { projectId, status, type, searchTerm } = req.query;
-      const filters = {
-        projectId: projectId as string,
-        status: status as string,
-        type: type as string,
-        searchTerm: searchTerm as string,
-      };
-
-      const equipment = await storage.getEquipment(filters);
-      res.json(equipment);
-    } catch (error) {
-      console.error("Error fetching equipment:", error);
-      res.status(500).json({ message: "خطأ في جلب المعدات" });
-    }
-  });
-
-  app.get("/api/equipment/:id", async (req, res) => {
-    try {
-      const equipment = await storage.getEquipmentById(req.params.id);
-      if (!equipment) {
-        return res.status(404).json({ message: "المعدة غير موجودة" });
-      }
-      res.json(equipment);
-    } catch (error) {
-      console.error("Error fetching equipment:", error);
-      res.status(500).json({ message: "خطأ في جلب المعدة" });
-    }
-  });
-
-  app.post("/api/equipment", async (req, res) => {
-    try {
-      const result = insertEquipmentSchema.safeParse(req.body);
-      if (!result.success) {
-        return res.status(400).json({ 
-          message: "بيانات المعدة غير صحيحة", 
-          errors: result.error.issues 
-        });
-      }
-
-      // فحص عدم تكرار الكود
-      const existingEquipment = await storage.getEquipmentByCode(result.data.code);
-      if (existingEquipment) {
-        return res.status(400).json({ message: "يوجد معدة بنفس الكود مسبقاً" });
-      }
-
-      const equipment = await storage.createEquipment(result.data);
-      res.status(201).json(equipment);
-    } catch (error) {
-      console.error("Error creating equipment:", error);
-      res.status(500).json({ message: "خطأ في إنشاء المعدة" });
-    }
-  });
-
-  app.put("/api/equipment/:id", async (req, res) => {
-    try {
-      const result = insertEquipmentSchema.safeParse(req.body);
-      if (!result.success) {
-        return res.status(400).json({ 
-          message: "بيانات المعدة غير صحيحة", 
-          errors: result.error.issues 
-        });
-      }
-
-      const equipment = await storage.updateEquipment(req.params.id, result.data);
-      if (!equipment) {
-        return res.status(404).json({ message: "المعدة غير موجودة" });
-      }
-      
-      res.json(equipment);
-    } catch (error) {
-      console.error("Error updating equipment:", error);
-      res.status(500).json({ message: "خطأ في تحديث المعدة" });
-    }
-  });
-
-  app.delete("/api/equipment/:id", async (req, res) => {
-    try {
-      await storage.deleteEquipment(req.params.id);
-      res.status(204).send();
-    } catch (error) {
-      console.error("Error deleting equipment:", error);
-      res.status(500).json({ message: "خطأ في حذف المعدة" });
-    }
-  });
-
-  // Equipment Movement Routes
-  app.post("/api/equipment/:id/transfer", async (req, res) => {
-    try {
-      const result = insertEquipmentMovementSchema.safeParse({
-        ...req.body,
-        equipmentId: req.params.id
-      });
-      
-      if (!result.success) {
-        return res.status(400).json({ 
-          message: "بيانات النقل غير صحيحة", 
-          errors: result.error.issues 
-        });
-      }
-
-      const movement = await storage.createEquipmentMovement(result.data);
-      
-      // تحديث موقع المعدة
-      await storage.updateEquipment(req.params.id, {
-        currentProjectId: result.data.toProjectId
-      });
-
-      res.status(201).json(movement);
-    } catch (error) {
-      console.error("Error transferring equipment:", error);
-      res.status(500).json({ message: "خطأ في نقل المعدة" });
-    }
-  });
-
-  app.get("/api/equipment/:id/movements", async (req, res) => {
-    try {
-      const movements = await storage.getEquipmentMovements(req.params.id);
-      res.json(movements);
-    } catch (error) {
-      console.error("Error fetching equipment movements:", error);
-      res.status(500).json({ message: "خطأ في جلب حركات المعدة" });
-    }
-  });
-
-  // Equipment Reports
-  app.get("/api/equipment/reports/by-project/:projectId", async (req, res) => {
-    try {
-      const equipment = await storage.getEquipmentByProject(req.params.projectId);
-      res.json(equipment);
-    } catch (error) {
-      console.error("Error fetching project equipment:", error);
-      res.status(500).json({ message: "خطأ في جلب معدات المشروع" });
-    }
-  });
-
-  // تم إزالة جميع مسارات الأدوات القديمة - استخدم /api/equipment بدلاً منها
 
   const httpServer = createServer(app);
   return httpServer;

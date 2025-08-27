@@ -26,6 +26,7 @@ import AutocompleteAdminPage from "@/pages/autocomplete-admin";
 import { EquipmentManagement } from "@/pages/equipment-management";
 import AdvancedReports from "@/pages/advanced-reports";
 import WorkersUnifiedReports from "@/pages/workers-unified-reports";
+import NotificationsPage from "@/pages/notifications";
 
 import Header from "@/components/layout/header";
 import BottomNavigation from "@/components/layout/bottom-navigation";
@@ -58,6 +59,7 @@ function Router() {
       <Route path="/reports" component={Reports} />
       <Route path="/advanced-reports" component={AdvancedReports} />
       <Route path="/workers-unified-reports" component={WorkersUnifiedReports} />
+      <Route path="/notifications" component={NotificationsPage} />
 
       <Route component={NotFound} />
     </Switch>

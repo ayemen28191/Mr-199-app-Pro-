@@ -4,7 +4,7 @@ import {
   Home, Users, Receipt, BarChart, CreditCard, Building2, Truck, Filter, FileText,
   MoreHorizontal, Calculator, FileSpreadsheet, UserCheck, DollarSign, Package,
   ClipboardCheck, TrendingUp, Settings, PlusCircle, ArrowLeftRight, Target,
-  BookOpen, Calendar, Wrench, User, MapPin, Globe, X
+  BookOpen, Calendar, Wrench, User, MapPin, Globe, X, Bell
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -57,11 +57,17 @@ const allPages = [
 
     ]
   },
+  // الإشعارات والتنبيهات
+  {
+    category: "الإشعارات والتنبيهات",
+    pages: [
+      { path: "/notifications", icon: Bell, label: "الإشعارات", description: "عرض وإدارة إشعارات النظام" },
+    ]
+  },
   // الإعدادات والإدارة
   {
     category: "الإعدادات والإدارة",
     pages: [
-
       { path: "/autocomplete-admin", icon: Wrench, label: "إعدادات الإكمال التلقائي", description: "إدارة بيانات الإكمال التلقائي" },
     ]
   }
