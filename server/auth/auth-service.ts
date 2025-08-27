@@ -89,9 +89,9 @@ export async function loginUser(request: LoginRequest): Promise<LoginResult> {
         resource: 'auth',
         ipAddress,
         userAgent,
-        result: 'failure',
+        status: 'failure',
         errorMessage: 'مستخدم غير موجود',
-        details: { email },
+        metadata: { email },
       });
 
       return {

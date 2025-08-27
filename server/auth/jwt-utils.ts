@@ -68,7 +68,6 @@ export async function generateTokenPair(
   const accessToken = jwt.sign(accessPayload, JWT_CONFIG.accessTokenSecret, {
     expiresIn: JWT_CONFIG.accessTokenExpiry,
     issuer: JWT_CONFIG.issuer,
-    algorithm: JWT_CONFIG.algorithm,
   });
 
   // إنشاء Refresh Token
@@ -83,7 +82,6 @@ export async function generateTokenPair(
   const refreshToken = jwt.sign(refreshPayload, JWT_CONFIG.refreshTokenSecret, {
     expiresIn: JWT_CONFIG.refreshTokenExpiry,
     issuer: JWT_CONFIG.issuer,
-    algorithm: JWT_CONFIG.algorithm,
   });
 
   // حفظ الجلسة في قاعدة البيانات
@@ -229,7 +227,7 @@ export async function refreshAccessToken(refreshToken: string): Promise<TokenPai
     payload.email,
     user[0].role,
     session[0].ipAddress,
-    session[0].browserName || '',
+    session[0].userAgent || '',
     { deviceType: session[0].deviceType }
   );
 }
