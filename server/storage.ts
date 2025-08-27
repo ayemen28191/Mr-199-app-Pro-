@@ -3691,7 +3691,7 @@ export class DatabaseStorage implements IStorage {
         .where(and(
           eq(notificationReadStates.userId, userId),
           eq(notificationReadStates.notificationId, notificationId),
-          eq(notificationReadStates.notificationType, notificationType)
+          eq(notificationReadStates.notificationId, notificationType)
         ));
       return state?.isRead || false;
     } catch (error) {
@@ -3706,7 +3706,7 @@ export class DatabaseStorage implements IStorage {
         .where(and(
           eq(notificationReadStates.userId, userId),
           eq(notificationReadStates.notificationId, notificationId),
-          eq(notificationReadStates.notificationType, notificationType)
+          eq(notificationReadStates.notificationId, notificationType)
         ));
       return state || undefined;
     } catch (error) {
@@ -3725,9 +3725,8 @@ export class DatabaseStorage implements IStorage {
           .where(eq(notificationReadStates.id, existingState.id));
       } else {
         await db.insert(notificationReadStates).values({
-          userId,
-          notificationId,
-          notificationType,
+          userId: userId,
+          notificationId: notificationId,
           isRead: true,
           readAt: new Date()
         });
@@ -3757,7 +3756,7 @@ export class DatabaseStorage implements IStorage {
       const conditions = [eq(notificationReadStates.userId, userId), eq(notificationReadStates.isRead, true)];
       
       if (notificationType) {
-        conditions.push(eq(notificationReadStates.notificationType, notificationType));
+        conditions.push(eq(notificationReadStates.notificationId, notificationType));
       }
 
       return await db.select().from(notificationReadStates)

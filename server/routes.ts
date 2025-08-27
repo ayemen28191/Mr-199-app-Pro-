@@ -3894,6 +3894,251 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // =====================================================
+  // Equipment APIs - إدارة المعدات
+  // =====================================================
+
+  // Get all equipment with optional filters
+  app.get("/api/equipment", async (req, res) => {
+    try {
+      const { projectId, status, type, searchTerm } = req.query;
+      const filters = {
+        projectId: projectId as string,
+        status: status as string,
+        type: type as string,
+        searchTerm: searchTerm as string
+      };
+      
+      console.log(`🔍 جلب المعدات مع فلاتر:`, filters);
+      const equipment = await storage.getEquipment(filters);
+      console.log(`✅ تم جلب ${equipment.length} معدة`);
+      res.json(equipment);
+    } catch (error) {
+      console.error("خطأ في جلب المعدات:", error);
+      res.status(500).json({ message: "خطأ في جلب المعدات" });
+    }
+  });
+
+  // Get equipment by ID
+  app.get("/api/equipment/:id", async (req, res) => {
+    try {
+      const equipment = await storage.getEquipmentById(req.params.id);
+      if (!equipment) {
+        return res.status(404).json({ message: "المعدة غير موجودة" });
+      }
+      res.json(equipment);
+    } catch (error) {
+      console.error("خطأ في جلب المعدة:", error);
+      res.status(500).json({ message: "خطأ في جلب المعدة" });
+    }
+  });
+
+  // Create new equipment
+  app.post("/api/equipment", async (req, res) => {
+    try {
+      const result = insertEquipmentSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "بيانات المعدة غير صحيحة", 
+          errors: result.error.issues 
+        });
+      }
+      
+      // Equipment creation logic - code will be generated automatically if not provided
+      
+      const equipment = await storage.createEquipment(result.data);
+      console.log(`✅ تم إنشاء معدة جديدة: ${equipment.name}`);
+      res.status(201).json(equipment);
+    } catch (error) {
+      console.error("خطأ في إنشاء المعدة:", error);
+      res.status(500).json({ message: "خطأ في إنشاء المعدة" });
+    }
+  });
+
+  // Update equipment
+  app.patch("/api/equipment/:id", async (req, res) => {
+    try {
+      const result = insertEquipmentSchema.partial().safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "بيانات المعدة غير صحيحة", 
+          errors: result.error.issues 
+        });
+      }
+      
+      const equipment = await storage.updateEquipment(req.params.id, result.data);
+      if (!equipment) {
+        return res.status(404).json({ message: "المعدة غير موجودة" });
+      }
+      
+      console.log(`✅ تم تحديث المعدة: ${equipment.name}`);
+      res.json(equipment);
+    } catch (error) {
+      console.error("خطأ في تحديث المعدة:", error);
+      res.status(500).json({ message: "خطأ في تحديث المعدة" });
+    }
+  });
+
+  // Delete equipment
+  app.delete("/api/equipment/:id", async (req, res) => {
+    try {
+      const equipment = await storage.getEquipmentById(req.params.id);
+      if (!equipment) {
+        return res.status(404).json({ message: "المعدة غير موجودة" });
+      }
+      
+      await storage.deleteEquipment(req.params.id);
+      console.log(`✅ تم حذف المعدة: ${equipment.name}`);
+      res.status(204).send();
+    } catch (error) {
+      console.error("خطأ في حذف المعدة:", error);
+      res.status(500).json({ message: "خطأ في حذف المعدة" });
+    }
+  });
+
+  // Get equipment movements for specific equipment
+  app.get("/api/equipment/:id/movements", async (req, res) => {
+    try {
+      const movements = await storage.getEquipmentMovements(req.params.id);
+      console.log(`✅ تم جلب ${movements.length} حركة للمعدة`);
+      res.json(movements);
+    } catch (error) {
+      console.error("خطأ في جلب حركات المعدة:", error);
+      res.status(500).json({ message: "خطأ في جلب حركات المعدة" });
+    }
+  });
+
+  // Create equipment movement
+  app.post("/api/equipment/:id/movements", async (req, res) => {
+    try {
+      const movementData = { ...req.body, equipmentId: req.params.id };
+      const result = insertEquipmentMovementSchema.safeParse(movementData);
+      
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "بيانات حركة المعدة غير صحيحة", 
+          errors: result.error.issues 
+        });
+      }
+      
+      const movement = await storage.createEquipmentMovement(result.data);
+      console.log(`✅ تم إنشاء حركة معدة جديدة: ${movement.reason || 'حركة جديدة'}`);
+      res.status(201).json(movement);
+    } catch (error) {
+      console.error("خطأ في إنشاء حركة المعدة:", error);
+      res.status(500).json({ message: "خطأ في إنشاء حركة المعدة" });
+    }
+  });
+
+  // Generate next equipment code
+  app.get("/api/equipment/generate-code", async (req, res) => {
+    try {
+      const nextCode = await storage.generateNextEquipmentCode();
+      res.json({ code: nextCode });
+    } catch (error) {
+      console.error("خطأ في توليد كود المعدة:", error);
+      res.status(500).json({ message: "خطأ في توليد كود المعدة" });
+    }
+  });
+
+  // =====================================================
+  // Worker Attendance APIs - نظام حضور العمال  
+  // =====================================================
+
+  // Get worker attendance for project with optional date filter
+  app.get("/api/worker-attendance", async (req, res) => {
+    try {
+      const { projectId, date } = req.query;
+      
+      if (!projectId) {
+        return res.status(400).json({ message: "معرف المشروع مطلوب" });
+      }
+      
+      console.log(`🔍 جلب حضور العمال للمشروع: ${projectId}, التاريخ: ${date || 'الكل'}`);
+      const attendance = await storage.getWorkerAttendance(projectId as string, date as string);
+      console.log(`✅ تم جلب ${attendance.length} سجل حضور`);
+      res.json(attendance);
+    } catch (error) {
+      console.error("خطأ في جلب حضور العمال:", error);
+      res.status(500).json({ message: "خطأ في جلب حضور العمال" });
+    }
+  });
+
+  // Get specific worker attendance record
+  app.get("/api/worker-attendance/:id", async (req, res) => {
+    try {
+      const attendance = await storage.getWorkerAttendanceById(req.params.id);
+      if (!attendance) {
+        return res.status(404).json({ message: "سجل الحضور غير موجود" });
+      }
+      res.json(attendance);
+    } catch (error) {
+      console.error("خطأ في جلب سجل الحضور:", error);
+      res.status(500).json({ message: "خطأ في جلب سجل الحضور" });
+    }
+  });
+
+  // Create worker attendance record
+  app.post("/api/worker-attendance", async (req, res) => {
+    try {
+      const result = insertWorkerAttendanceSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "بيانات الحضور غير صحيحة", 
+          errors: result.error.issues 
+        });
+      }
+      
+      const attendance = await storage.createWorkerAttendance(result.data);
+      console.log(`✅ تم تسجيل حضور عامل جديد للمشروع: ${attendance.projectId}`);
+      res.status(201).json(attendance);
+    } catch (error) {
+      console.error("خطأ في تسجيل الحضور:", error);
+      res.status(500).json({ message: "خطأ في تسجيل الحضور" });
+    }
+  });
+
+  // Update worker attendance record
+  app.patch("/api/worker-attendance/:id", async (req, res) => {
+    try {
+      const result = insertWorkerAttendanceSchema.partial().safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "بيانات الحضور غير صحيحة", 
+          errors: result.error.issues 
+        });
+      }
+      
+      const attendance = await storage.updateWorkerAttendance(req.params.id, result.data);
+      if (!attendance) {
+        return res.status(404).json({ message: "سجل الحضور غير موجود" });
+      }
+      
+      console.log(`✅ تم تحديث سجل الحضور: ${attendance.id}`);
+      res.json(attendance);
+    } catch (error) {
+      console.error("خطأ في تحديث الحضور:", error);
+      res.status(500).json({ message: "خطأ في تحديث الحضور" });
+    }
+  });
+
+  // Delete worker attendance record  
+  app.delete("/api/worker-attendance/:id", async (req, res) => {
+    try {
+      const attendance = await storage.getWorkerAttendanceById(req.params.id);
+      if (!attendance) {
+        return res.status(404).json({ message: "سجل الحضور غير موجود" });
+      }
+      
+      await storage.deleteWorkerAttendance(req.params.id);
+      console.log(`✅ تم حذف سجل الحضور: ${req.params.id}`);
+      res.status(204).send();
+    } catch (error) {
+      console.error("خطأ في حذف سجل الحضور:", error);
+      res.status(500).json({ message: "خطأ في حذف سجل الحضور" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
