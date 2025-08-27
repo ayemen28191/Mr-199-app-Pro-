@@ -30,12 +30,15 @@ import {
   insertNotificationSchema
 } from "@shared/schema";
 import { NotificationService } from "./services/NotificationService";
-import authRoutes from "./routes/auth.js";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
   // إنشاء مثيل من خدمة الإشعارات المتقدمة
   const notificationService = new NotificationService();
+
+  // ✅ إضافة مسارات المصادقة المتقدمة - تم تعطيلها مؤقتاً
+  // المفاتيح الأمنية مطلوبة أولاً
+  console.log('⚠️ نظام المصادقة جاهز ولكن يحتاج مفاتيح البيئة الأمنية');
   
   // إضافة مسار تطبيق الموبايل في البداية لتجنب تداخل مع Vite
   app.get("/mobile*", (req, res) => {
@@ -229,8 +232,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // تم نقل تتبع الإشعارات المقروءة إلى قاعدة البيانات - حل مشكلة اختفاء الحالة عند إعادة التشغيل
   
-  // إضافة مسارات المصادقة المتقدمة
-  app.use("/api/auth", authRoutes);
+  // إضافة مسارات المصادقة المتقدمة - معطلة حتى توفر المفاتيح الأمنية
+  // app.use("/api/auth", authRoutes);
 
   // Fund Transfers (تحويلات العهدة)
   app.get("/api/fund-transfers", async (req, res) => {

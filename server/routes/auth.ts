@@ -2,7 +2,7 @@
  * مسارات API لنظام المصادقة المتقدم
  */
 
-import { Router } from 'express';
+import { Router, Request } from 'express';
 import { z } from 'zod';
 import {
   loginUser,
@@ -16,7 +16,7 @@ import {
   changePassword,
   refreshAccessToken,
   verifyAccessToken,
-} from '../auth/auth-service.js';
+} from '../auth/auth-service';
 
 const router = Router();
 
@@ -48,6 +48,16 @@ const changePasswordSchema = z.object({
   currentPassword: z.string().min(1, 'كلمة المرور الحالية مطلوبة'),
   newPassword: z.string().min(8, 'كلمة المرور الجديدة يجب أن تكون على الأقل 8 أحرف'),
 });
+
+// تعريف الأنواع المخصصة
+interface AuthenticatedRequest extends Request {
+  user?: {
+    userId: string;
+    email: string;
+    role: string;
+    sessionId: string;
+  };
+}
 
 // دالة مساعدة للحصول على معلومات الطلب
 function getRequestInfo(req: any) {
@@ -210,7 +220,7 @@ router.post('/refresh', async (req, res) => {
 /**
  * Middleware للتحقق من المصادقة
  */
-async function authenticateToken(req: any, res: any, next: any) {
+async function authenticateToken(req: AuthenticatedRequest, res: any, next: any) {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
@@ -244,7 +254,7 @@ async function authenticateToken(req: any, res: any, next: any) {
  * إعداد المصادقة الثنائية
  * POST /api/auth/setup-mfa (Protected)
  */
-router.post('/setup-mfa', authenticateToken, async (req, res) => {
+router.post('/setup-mfa', authenticateToken, async (req: AuthenticatedRequest, res) => {
   try {
     const userId = req.user.userId;
     const email = req.user.email;
@@ -266,7 +276,7 @@ router.post('/setup-mfa', authenticateToken, async (req, res) => {
  * تفعيل المصادقة الثنائية
  * POST /api/auth/enable-mfa (Protected)
  */
-router.post('/enable-mfa', authenticateToken, async (req, res) => {
+router.post('/enable-mfa', authenticateToken, async (req: AuthenticatedRequest, res) => {
   try {
     const validation = enableTOTPSchema.safeParse(req.body);
     if (!validation.success) {
@@ -299,7 +309,7 @@ router.post('/enable-mfa', authenticateToken, async (req, res) => {
  * الحصول على الجلسات النشطة
  * GET /api/auth/sessions (Protected)
  */
-router.get('/sessions', authenticateToken, async (req, res) => {
+router.get('/sessions', authenticateToken, async (req: AuthenticatedRequest, res) => {
   try {
     const userId = req.user.userId;
     const sessions = await getActiveSessions(userId);
@@ -322,7 +332,7 @@ router.get('/sessions', authenticateToken, async (req, res) => {
  * إنهاء جلسة معينة
  * DELETE /api/auth/sessions/:sessionId (Protected)
  */
-router.delete('/sessions/:sessionId', authenticateToken, async (req, res) => {
+router.delete('/sessions/:sessionId', authenticateToken, async (req: AuthenticatedRequest, res) => {
   try {
     const userId = req.user.userId;
     const { sessionId } = req.params;
@@ -347,7 +357,7 @@ router.delete('/sessions/:sessionId', authenticateToken, async (req, res) => {
  * إنهاء جميع الجلسات الأخرى
  * DELETE /api/auth/sessions (Protected)
  */
-router.delete('/sessions', authenticateToken, async (req, res) => {
+router.delete('/sessions', authenticateToken, async (req: AuthenticatedRequest, res) => {
   try {
     const userId = req.user.userId;
     const currentSessionId = req.user.sessionId;
@@ -373,7 +383,7 @@ router.delete('/sessions', authenticateToken, async (req, res) => {
  * تغيير كلمة المرور
  * PUT /api/auth/password (Protected)
  */
-router.put('/password', authenticateToken, async (req, res) => {
+router.put('/password', authenticateToken, async (req: AuthenticatedRequest, res) => {
   try {
     const validation = changePasswordSchema.safeParse(req.body);
     if (!validation.success) {
@@ -412,7 +422,7 @@ router.put('/password', authenticateToken, async (req, res) => {
  * تسجيل الخروج
  * POST /api/auth/logout (Protected)
  */
-router.post('/logout', authenticateToken, async (req, res) => {
+router.post('/logout', authenticateToken, async (req: AuthenticatedRequest, res) => {
   try {
     const sessionId = req.user.sessionId;
 
@@ -436,7 +446,7 @@ router.post('/logout', authenticateToken, async (req, res) => {
  * الحصول على معلومات المستخدم الحالي
  * GET /api/auth/me (Protected)
  */
-router.get('/me', authenticateToken, async (req, res) => {
+router.get('/me', authenticateToken, async (req: AuthenticatedRequest, res) => {
   try {
     res.json({
       success: true,
