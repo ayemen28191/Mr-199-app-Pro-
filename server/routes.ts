@@ -30,6 +30,7 @@ import {
   insertNotificationSchema
 } from "@shared/schema";
 import { NotificationService } from "./services/NotificationService";
+import authRoutes from "./routes/auth.js";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
@@ -228,6 +229,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // تم نقل تتبع الإشعارات المقروءة إلى قاعدة البيانات - حل مشكلة اختفاء الحالة عند إعادة التشغيل
   
+  // إضافة مسارات المصادقة المتقدمة
+  app.use("/api/auth", authRoutes);
+
   // Fund Transfers (تحويلات العهدة)
   app.get("/api/fund-transfers", async (req, res) => {
     try {

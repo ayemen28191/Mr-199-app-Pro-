@@ -921,6 +921,10 @@ export const insertMessageSchema = createInsertSchema(messages).omit({
   editedAt: true,
 });
 
+// =================================
+// جداول المصادقة المتقدمة موجودة بالأعلى
+// =================================
+
 // Export types
 export type ToolCategory = typeof toolCategories.$inferSelect;
 export type InsertToolCategory = z.infer<typeof insertToolCategorySchema>;

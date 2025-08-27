@@ -7,6 +7,7 @@ import { ProfessionalLoader } from "@/components/ui/professional-loader";
 import React, { useState, useEffect } from "react";
 import NotFound from "@/pages/not-found";
 import Dashboard from "@/pages/dashboard";
+import LoginPage from "@/pages/LoginPage";
 
 import WorkerAttendance from "@/pages/worker-attendance";
 
@@ -32,10 +33,12 @@ import Header from "@/components/layout/header";
 import BottomNavigation from "@/components/layout/bottom-navigation";
 import FloatingAddButton from "@/components/layout/floating-add-button";
 import { FloatingButtonProvider } from "@/components/layout/floating-button-context";
+import { AuthProvider } from "@/components/AuthProvider";
 
 function Router() {
   return (
     <Switch>
+      <Route path="/login" component={LoginPage} />
       <Route path="/" component={Dashboard} />
 
       <Route path="/projects" component={ProjectsPage} />
@@ -92,19 +95,21 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <FloatingButtonProvider>
-          <div className="min-h-screen bg-background text-foreground" dir="rtl">
-            <Header />
-            <main className="pb-20">
-              <Router />
-            </main>
-            <BottomNavigation />
-            <FloatingAddButton />
-            <Toaster />
-          </div>
-        </FloatingButtonProvider>
-      </TooltipProvider>
+      <AuthProvider>
+        <TooltipProvider>
+          <FloatingButtonProvider>
+            <div className="min-h-screen bg-background text-foreground" dir="rtl">
+              <Header />
+              <main className="pb-20">
+                <Router />
+              </main>
+              <BottomNavigation />
+              <FloatingAddButton />
+              <Toaster />
+            </div>
+          </FloatingButtonProvider>
+        </TooltipProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
