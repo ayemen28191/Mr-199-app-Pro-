@@ -59,6 +59,37 @@ interface AuthenticatedRequest extends Request {
   };
 }
 
+// Middleware للمصادقة
+const requireAuth = async (req: AuthenticatedRequest, res: any, next: any) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({
+        success: false,
+        message: 'لم يتم العثور على رمز المصادقة'
+      });
+    }
+
+    const token = authHeader.substring(7);
+    const decoded = await verifyAccessToken(token);
+    
+    if (!decoded.success || !decoded.user) {
+      return res.status(401).json({
+        success: false,
+        message: 'رمز المصادقة غير صالح'
+      });
+    }
+
+    req.user = decoded.user;
+    next();
+  } catch (error) {
+    return res.status(401).json({
+      success: false,
+      message: 'خطأ في التحقق من المصادقة'
+    });
+  }
+};
+
 // دالة مساعدة للحصول على معلومات الطلب
 function getRequestInfo(req: any) {
   return {
@@ -256,8 +287,8 @@ async function authenticateToken(req: AuthenticatedRequest, res: any, next: any)
  */
 router.post('/setup-mfa', authenticateToken, async (req: AuthenticatedRequest, res) => {
   try {
-    const userId = req.user.userId;
-    const email = req.user.email;
+    const userId = req.user!.userId;
+    const email = req.user!.email;
 
     const result = await setupTOTP(userId, email);
 
@@ -287,7 +318,7 @@ router.post('/enable-mfa', authenticateToken, async (req: AuthenticatedRequest, 
       });
     }
 
-    const userId = req.user.userId;
+    const userId = req.user!.userId;
     const { totpCode } = validation.data;
     const requestInfo = getRequestInfo(req);
 
@@ -311,7 +342,7 @@ router.post('/enable-mfa', authenticateToken, async (req: AuthenticatedRequest, 
  */
 router.get('/sessions', authenticateToken, async (req: AuthenticatedRequest, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user!.userId;
     const sessions = await getActiveSessions(userId);
 
     res.json({
@@ -334,7 +365,7 @@ router.get('/sessions', authenticateToken, async (req: AuthenticatedRequest, res
  */
 router.delete('/sessions/:sessionId', authenticateToken, async (req: AuthenticatedRequest, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user!.userId;
     const { sessionId } = req.params;
 
     const success = await terminateSession(userId, sessionId, 'user_terminated');
@@ -359,7 +390,7 @@ router.delete('/sessions/:sessionId', authenticateToken, async (req: Authenticat
  */
 router.delete('/sessions', authenticateToken, async (req: AuthenticatedRequest, res) => {
   try {
-    const userId = req.user.userId;
+    const userId = req.user!.userId;
     const currentSessionId = req.user.sessionId;
 
     const terminatedCount = await terminateAllOtherSessions(userId, currentSessionId);
@@ -394,7 +425,7 @@ router.put('/password', authenticateToken, async (req: AuthenticatedRequest, res
       });
     }
 
-    const userId = req.user.userId;
+    const userId = req.user!.userId;
     const { currentPassword, newPassword } = validation.data;
     const requestInfo = getRequestInfo(req);
 

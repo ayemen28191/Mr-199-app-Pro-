@@ -359,7 +359,7 @@ export async function registerUser(request: RegisterRequest) {
       userAgent,
       status: 'error',
       errorMessage: (error as Error).message,
-      details: { email, name },
+      metadata: { email, name },
     });
 
     return {

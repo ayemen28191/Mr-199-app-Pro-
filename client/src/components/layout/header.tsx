@@ -1,7 +1,17 @@
-import { Bell, UserCircle, HardHat, Settings, Home, Building2, Users, Truck, UserCheck, DollarSign, Calculator, Package, ArrowLeftRight, FileText, CreditCard, FileSpreadsheet, Wrench } from "lucide-react";
+import { Bell, UserCircle, HardHat, Settings, Home, Building2, Users, Truck, UserCheck, DollarSign, Calculator, Package, ArrowLeftRight, FileText, CreditCard, FileSpreadsheet, Wrench, LogOut, User, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
 import { NotificationCenter } from "@/components/notifications/NotificationCenter";
+import { useAuth } from "@/components/AuthProvider";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 
 // مطابقة الصفحات مع العناوين والأيقونات
 const pageInfo: Record<string, { title: string; icon: any }> = {
@@ -25,6 +35,9 @@ const pageInfo: Record<string, { title: string; icon: any }> = {
 
 export default function Header() {
   const [location, setLocation] = useLocation();
+  const { user, logout, isAuthenticated } = useAuth();
+  const { toast } = useToast();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   
   // الحصول على معلومات الصفحة الحالية
   const currentPage = pageInfo[location] || { title: 'إدارة المشاريع الإنشائية', icon: HardHat };
@@ -49,9 +62,96 @@ export default function Header() {
               <Settings className="h-4 w-4" />
             </Button>
             <NotificationCenter />
-            <Button variant="ghost" size="sm" className="p-2 rounded-full hover:bg-primary/80">
-              <UserCircle className="h-5 w-5" />
-            </Button>
+            
+            {/* قائمة المستخدم المنسدلة */}
+            {isAuthenticated ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="p-2 rounded-full hover:bg-primary/80 relative"
+                    data-testid="user-menu-trigger"
+                  >
+                    <UserCircle className="h-5 w-5" />
+                    {user && (
+                      <div className="absolute -bottom-1 -right-1 bg-green-500 rounded-full w-3 h-3 border-2 border-primary" />
+                    )}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56" dir="rtl">
+                  <div className="px-3 py-2 text-sm">
+                    <div className="font-medium text-foreground">
+                      {user?.name || 'المستخدم'}
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {user?.email}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      <span className="inline-flex items-center gap-1">
+                        <Shield className="h-3 w-3" />
+                        {user?.role === 'admin' ? 'مدير النظام' : 'مستخدم'}
+                      </span>
+                    </div>
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={() => setLocation('/profile')}
+                    className="cursor-pointer"
+                    data-testid="menu-profile"
+                  >
+                    <User className="mr-2 h-4 w-4" />
+                    <span>الملف الشخصي</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem 
+                    onClick={() => setLocation('/settings')}
+                    className="cursor-pointer"
+                    data-testid="menu-settings"
+                  >
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>الإعدادات</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem 
+                    onClick={async () => {
+                      setIsLoggingOut(true);
+                      try {
+                        await logout();
+                        toast({
+                          title: "تم تسجيل الخروج بنجاح",
+                          description: "شكراً لاستخدام النظام",
+                        });
+                        setLocation('/login');
+                      } catch (error) {
+                        toast({
+                          title: "خطأ في تسجيل الخروج",
+                          description: "حدث خطأ أثناء تسجيل الخروج",
+                          variant: "destructive",
+                        });
+                      } finally {
+                        setIsLoggingOut(false);
+                      }
+                    }}
+                    className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-900/50"
+                    disabled={isLoggingOut}
+                    data-testid="menu-logout"
+                  >
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>{isLoggingOut ? 'جارِ تسجيل الخروج...' : 'تسجيل الخروج'}</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="p-2 rounded-full hover:bg-primary/80"
+                onClick={() => setLocation('/login')}
+                data-testid="login-button"
+              >
+                <UserCircle className="h-5 w-5" />
+              </Button>
+            )}
           </div>
         </div>
       </div>
