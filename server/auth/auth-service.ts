@@ -197,7 +197,7 @@ export async function loginUser(request: LoginRequest): Promise<LoginResult> {
       ipAddress,
       userAgent,
       status: 'success',
-      details: {
+      metadata: {
         sessionId: tokens.sessionId,
         deviceInfo
       },
@@ -238,7 +238,7 @@ export async function loginUser(request: LoginRequest): Promise<LoginResult> {
       userAgent,
       status: 'error',
       errorMessage: (error as Error).message,
-      details: { email },
+      metadata: { email },
     });
 
     return {
@@ -317,9 +317,10 @@ export async function registerUser(request: RegisterRequest) {
       .values({
         userId,
         type: 'email_verification',
-        code: hashedCode,
-        plainCode: code, // في التطوير فقط
+        code: code,
+        codeHash: hashedCode,
         email,
+        sentVia: 'email',
         expiresAt,
         ipAddress,
         userAgent,
@@ -333,7 +334,7 @@ export async function registerUser(request: RegisterRequest) {
       ipAddress,
       userAgent,
       status: 'success',
-      details: { email, name, role },
+      metadata: { email, name, role },
     });
 
     return {
@@ -466,7 +467,7 @@ export async function setupTOTP(userId: string, email: string) {
       .update(users)
       .set({ 
         totpSecret: secret,
-        mfaEnabled: false, // يحتاج تأكيد
+        // mfaEnabled حقل غير موجود في جدول users
       })
       .where(eq(users.id, userId));
 
