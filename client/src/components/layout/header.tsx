@@ -1,6 +1,7 @@
 import { Bell, UserCircle, HardHat, Settings, Home, Building2, Users, Truck, UserCheck, DollarSign, Calculator, Package, ArrowLeftRight, FileText, CreditCard, FileSpreadsheet, Wrench } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLocation } from "wouter";
+import { NotificationsDropdown } from "@/components/notifications-dropdown";
 
 // مطابقة الصفحات مع العناوين والأيقونات
 const pageInfo: Record<string, { title: string; icon: any }> = {
@@ -19,6 +20,7 @@ const pageInfo: Record<string, { title: string; icon: any }> = {
   '/reports': { title: 'التقارير', icon: FileSpreadsheet },
   '/autocomplete-admin': { title: 'إعدادات الإكمال التلقائي', icon: Wrench },
   '/tools-management': { title: 'إدارة الأدوات والمعدات', icon: Wrench },
+  '/notifications': { title: 'الإشعارات', icon: Bell },
 };
 
 export default function Header() {
@@ -46,9 +48,7 @@ export default function Header() {
             >
               <Settings className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="sm" className="p-2 rounded-full hover:bg-primary/80">
-              <Bell className="h-4 w-4" />
-            </Button>
+            <NotificationsDropdown />
             <Button variant="ghost" size="sm" className="p-2 rounded-full hover:bg-primary/80">
               <UserCircle className="h-5 w-5" />
             </Button>
