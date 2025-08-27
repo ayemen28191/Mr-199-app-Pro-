@@ -36,12 +36,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // إنشاء مثيل من خدمة الإشعارات المتقدمة
   const notificationService = new NotificationService();
 
-  // ✅ استخدام نظام المصادقة الأساسي مؤقتاً حتى إصلاح قاعدة البيانات
-  console.log('🔄 استخدام نظام المصادقة الأساسي - الجداول المتقدمة غير موجودة');
-  
-  // TODO: تفعيل النظام المتقدم بعد إنشاء الجداول
-  // const authRoutes = await import('./routes/auth.js');
-  // app.use("/api/auth", authRoutes.default);
+  // ✅ تفعيل نظام المصادقة المتقدم
+  try {
+    const authRoutes = await import('./routes/auth.js');
+    app.use("/api/auth", authRoutes.default);
+    console.log('✅ تم تفعيل نظام المصادقة المتقدم بنجاح');
+  } catch (error) {
+    console.log('⚠️ خطأ في تحميل مسارات المصادقة:', error.message);
+    console.log('💡 تأكد من تنفيذ استعلامات قاعدة البيانات في Supabase');
+  }
   
   // إضافة مسار تطبيق الموبايل في البداية لتجنب تداخل مع Vite
   app.get("/mobile*", (req, res) => {
@@ -3279,88 +3282,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // مسارات المصادقة والمستخدمين  
-  app.post("/api/auth/register", async (req, res) => {
-    try {
-      const { email, password, firstName, lastName, role = 'admin' } = req.body;
-      
-      if (!email || !password) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'الإيميل وكلمة المرور مطلوبان' 
-        });
-      }
-
-      const result = await authSystem.register({
-        email,
-        password,
-        firstName,
-        lastName,
-        role,
-        isActive: true
-      });
-
-      res.json(result);
-    } catch (error) {
-      console.error('خطأ في التسجيل:', error);  
-      res.status(500).json({ 
-        success: false, 
-        message: 'خطأ في إنشاء الحساب' 
-      });
-    }
-  });
-
-  app.post("/api/auth/login", async (req, res) => {
-    try {
-      const { email, password } = req.body;
-      
-      if (!email || !password) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'الإيميل وكلمة المرور مطلوبان' 
-        });
-      }
-
-      const result = await authSystem.login(email, password);
-      
-      if (result.success && result.user) {
-        // إنشاء session
-        (req.session as any).auth = authSystem.createSession(result.user);
-      }
-
-      res.json(result);
-    } catch (error) {
-      console.error('خطأ في تسجيل الدخول:', error);
-      res.status(500).json({ 
-        success: false, 
-        message: 'خطأ في تسجيل الدخول' 
-      });
-    }
-  });
-
-  app.post("/api/auth/logout", (req, res) => {
-    req.session.destroy((err) => {
-      if (err) {
-        return res.status(500).json({ 
-          success: false, 
-          message: 'خطأ في تسجيل الخروج' 
-        });
-      }
-      res.json({ success: true, message: 'تم تسجيل الخروج بنجاح' });
-    });
-  });
-
-  app.get("/api/auth/me", (req, res) => {
-    const user = authSystem.getCurrentUser(req);
-    if (user) {
-      res.json({ success: true, user });
-    } else {
-      res.status(401).json({ 
-        success: false, 
-        message: 'غير مسجل دخول' 
-      });
-    }
-  });
+  // ملاحظة: تم نقل مسارات المصادقة إلى النظام المتقدم أعلاه
+  // النظام الأساسي تم إزالته حسب طلب المستخدم
 
   // مسارات النسخ الاحتياطي
   app.post("/api/backup/create", async (req, res) => {

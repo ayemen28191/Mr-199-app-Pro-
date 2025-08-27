@@ -59,36 +59,8 @@ interface AuthenticatedRequest extends Request {
   };
 }
 
-// Middleware للمصادقة
-const requireAuth = async (req: AuthenticatedRequest, res: any, next: any) => {
-  try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({
-        success: false,
-        message: 'لم يتم العثور على رمز المصادقة'
-      });
-    }
-
-    const token = authHeader.substring(7);
-    const decoded = await verifyAccessToken(token);
-    
-    if (!decoded.success || !decoded.user) {
-      return res.status(401).json({
-        success: false,
-        message: 'رمز المصادقة غير صالح'
-      });
-    }
-
-    req.user = decoded.user;
-    next();
-  } catch (error) {
-    return res.status(401).json({
-      success: false,
-      message: 'خطأ في التحقق من المصادقة'
-    });
-  }
-};
+// استيراد middleware من ملف منفصل
+import { requireAuth, requirePermission, requireRole } from '../middleware/auth.js';
 
 // دالة مساعدة للحصول على معلومات الطلب
 function getRequestInfo(req: any) {
@@ -248,44 +220,13 @@ router.post('/refresh', async (req, res) => {
   }
 });
 
-/**
- * Middleware للتحقق من المصادقة
- */
-async function authenticateToken(req: AuthenticatedRequest, res: any, next: any) {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
-
-  if (!token) {
-    return res.status(401).json({
-      success: false,
-      message: 'رمز المصادقة مطلوب'
-    });
-  }
-
-  try {
-    const payload = await verifyAccessToken(token);
-    if (!payload) {
-      return res.status(403).json({
-        success: false,
-        message: 'رمز المصادقة غير صالح'
-      });
-    }
-
-    req.user = payload;
-    next();
-  } catch (error) {
-    return res.status(403).json({
-      success: false,
-      message: 'رمز المصادقة غير صالح'
-    });
-  }
-}
+// تم نقل middleware إلى ملف منفصل
 
 /**
  * إعداد المصادقة الثنائية
  * POST /api/auth/setup-mfa (Protected)
  */
-router.post('/setup-mfa', authenticateToken, async (req: AuthenticatedRequest, res) => {
+router.post('/setup-mfa', requireAuth, async (req: AuthenticatedRequest, res) => {
   try {
     const userId = req.user!.userId;
     const email = req.user!.email;
@@ -307,7 +248,7 @@ router.post('/setup-mfa', authenticateToken, async (req: AuthenticatedRequest, r
  * تفعيل المصادقة الثنائية
  * POST /api/auth/enable-mfa (Protected)
  */
-router.post('/enable-mfa', authenticateToken, async (req: AuthenticatedRequest, res) => {
+router.post('/enable-mfa', requireAuth, async (req: AuthenticatedRequest, res) => {
   try {
     const validation = enableTOTPSchema.safeParse(req.body);
     if (!validation.success) {
@@ -340,7 +281,7 @@ router.post('/enable-mfa', authenticateToken, async (req: AuthenticatedRequest, 
  * الحصول على الجلسات النشطة
  * GET /api/auth/sessions (Protected)
  */
-router.get('/sessions', authenticateToken, async (req: AuthenticatedRequest, res) => {
+router.get('/sessions', requireAuth, async (req: AuthenticatedRequest, res) => {
   try {
     const userId = req.user!.userId;
     const sessions = await getActiveSessions(userId);
@@ -363,7 +304,7 @@ router.get('/sessions', authenticateToken, async (req: AuthenticatedRequest, res
  * إنهاء جلسة معينة
  * DELETE /api/auth/sessions/:sessionId (Protected)
  */
-router.delete('/sessions/:sessionId', authenticateToken, async (req: AuthenticatedRequest, res) => {
+router.delete('/sessions/:sessionId', requireAuth, async (req: AuthenticatedRequest, res) => {
   try {
     const userId = req.user!.userId;
     const { sessionId } = req.params;
@@ -388,10 +329,10 @@ router.delete('/sessions/:sessionId', authenticateToken, async (req: Authenticat
  * إنهاء جميع الجلسات الأخرى
  * DELETE /api/auth/sessions (Protected)
  */
-router.delete('/sessions', authenticateToken, async (req: AuthenticatedRequest, res) => {
+router.delete('/sessions', requireAuth, async (req: AuthenticatedRequest, res) => {
   try {
     const userId = req.user!.userId;
-    const currentSessionId = req.user.sessionId;
+    const currentSessionId = req.user!.sessionId;
 
     const terminatedCount = await terminateAllOtherSessions(userId, currentSessionId);
 
@@ -414,7 +355,7 @@ router.delete('/sessions', authenticateToken, async (req: AuthenticatedRequest, 
  * تغيير كلمة المرور
  * PUT /api/auth/password (Protected)
  */
-router.put('/password', authenticateToken, async (req: AuthenticatedRequest, res) => {
+router.put('/password', requireAuth, async (req: AuthenticatedRequest, res) => {
   try {
     const validation = changePasswordSchema.safeParse(req.body);
     if (!validation.success) {
@@ -453,11 +394,11 @@ router.put('/password', authenticateToken, async (req: AuthenticatedRequest, res
  * تسجيل الخروج
  * POST /api/auth/logout (Protected)
  */
-router.post('/logout', authenticateToken, async (req: AuthenticatedRequest, res) => {
+router.post('/logout', requireAuth, async (req: AuthenticatedRequest, res) => {
   try {
-    const sessionId = req.user.sessionId;
+    const sessionId = req.user!.sessionId;
 
-    const success = await terminateSession(req.user.userId, sessionId, 'user_logout');
+    const success = await terminateSession(req.user!.userId, sessionId, 'user_logout');
 
     res.json({
       success,
@@ -477,7 +418,7 @@ router.post('/logout', authenticateToken, async (req: AuthenticatedRequest, res)
  * الحصول على معلومات المستخدم الحالي
  * GET /api/auth/me (Protected)
  */
-router.get('/me', authenticateToken, async (req: AuthenticatedRequest, res) => {
+router.get('/me', requireAuth, async (req: AuthenticatedRequest, res) => {
   try {
     res.json({
       success: true,
