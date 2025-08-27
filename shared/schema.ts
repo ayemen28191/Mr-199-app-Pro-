@@ -1,18 +1,42 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, decimal, timestamp, date, boolean, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, decimal, timestamp, date, boolean, jsonb, serial, inet, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Users table (جدول المستخدمين)
+// Users table (جدول المستخدمين) - محدث لدعم المصادقة المتقدمة
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   email: text("email").notNull().unique(),
   password: text("password").notNull(), // سيتم تشفيرها
   firstName: text("first_name"),
   lastName: text("last_name"),
-  role: text("role").notNull().default("admin"), // admin, manager, user
+  phone: varchar("phone", { length: 50 }),
+  avatarUrl: text("avatar_url"),
+  
+  // المصادقة التقليدية
+  role: text("role").notNull().default("admin"), // admin, manager, user (للتوافق العكسي)
   isActive: boolean("is_active").default(true).notNull(),
+  
+  // المصادقة المتقدمة
+  isSuperAdmin: boolean("is_super_admin").default(false).notNull(),
+  isVerified: boolean("is_verified").default(false).notNull(),
+  
+  // تأكيد البيانات
+  emailVerifiedAt: timestamp("email_verified_at"),
+  phoneVerifiedAt: timestamp("phone_verified_at"),
+  
+  // المصادقة متعددة العوامل
+  totpSecret: text("totp_secret"), // مشفر
+  totpEnabled: boolean("totp_enabled").default(false).notNull(),
+  backupCodes: jsonb("backup_codes"), // رموز احتياطية مشفرة
+  
+  // حماية من الهجمات
+  loginAttempts: integer("login_attempts").default(0).notNull(),
+  lockedUntil: timestamp("locked_until"),
+  
+  // تواريخ مهمة
   lastLogin: timestamp("last_login"),
+  passwordChangedAt: timestamp("password_changed_at").defaultNow().notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -371,6 +395,208 @@ export type InsertSupplier = z.infer<typeof insertSupplierSchema>;
 export type InsertSupplierPayment = z.infer<typeof insertSupplierPaymentSchema>;
 export type InsertPrintSettings = z.infer<typeof insertPrintSettingsSchema>;
 export type InsertProjectFundTransfer = z.infer<typeof insertProjectFundTransferSchema>;
+
+// ================================
+// جداول نظام المصادقة والأمان المتقدم
+// ================================
+
+// جدول الأدوار (Roles)
+export const authRoles = pgTable("auth_roles", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 100 }).notNull().unique(),
+  displayName: varchar("display_name", { length: 255 }).notNull(),
+  description: text("description"),
+  isSystem: boolean("is_system").default(false).notNull(),
+  color: varchar("color", { length: 7 }).default("#3B82F6").notNull(), // لون للواجهة
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  createdBy: varchar("created_by").references(() => users.id),
+});
+
+// جدول الصلاحيات (Permissions)
+export const authPermissions = pgTable("auth_permissions", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 100 }).notNull().unique(), // مثل: projects.create
+  displayName: varchar("display_name", { length: 255 }).notNull(),
+  description: text("description"),
+  category: varchar("category", { length: 100 }).notNull(), // مثل: projects, users, financial
+  resource: varchar("resource", { length: 100 }).notNull(), // مثل: project, user, expense
+  action: varchar("action", { length: 50 }).notNull(), // مثل: create, read, update, delete
+  isDangerous: boolean("is_dangerous").default(false).notNull(), // للصلاحيات الحساسة
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// جدول ربط الأدوار بالصلاحيات (Role-Permission Relations)
+export const authRolePermissions = pgTable("auth_role_permissions", {
+  id: serial("id").primaryKey(),
+  roleId: integer("role_id").notNull().references(() => authRoles.id, { onDelete: "cascade" }),
+  permissionId: integer("permission_id").notNull().references(() => authPermissions.id, { onDelete: "cascade" }),
+  grantedBy: varchar("granted_by").references(() => users.id),
+  grantedAt: timestamp("granted_at").defaultNow().notNull(),
+});
+
+// جدول ربط المستخدمين بالأدوار (User-Role Relations)
+export const authUserRoles = pgTable("auth_user_roles", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  roleId: integer("role_id").notNull().references(() => authRoles.id, { onDelete: "cascade" }),
+  grantedBy: varchar("granted_by").references(() => users.id),
+  grantedAt: timestamp("granted_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at"), // للأدوار المؤقتة
+  isActive: boolean("is_active").default(true).notNull(),
+});
+
+// جدول الصلاحيات المباشرة للمستخدمين (User-Permission Overrides)
+export const authUserPermissions = pgTable("auth_user_permissions", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  permissionId: integer("permission_id").notNull().references(() => authPermissions.id, { onDelete: "cascade" }),
+  granted: boolean("granted").default(true).notNull(), // true = منح، false = منع صراحة
+  grantedBy: varchar("granted_by").references(() => users.id),
+  grantedAt: timestamp("granted_at").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at"), // للصلاحيات المؤقتة
+  reason: text("reason"), // سبب منح أو منع الصلاحية
+  isActive: boolean("is_active").default(true).notNull(),
+});
+
+// جدول الجلسات والأجهزة (User Sessions & Devices)
+export const authUserSessions = pgTable("auth_user_sessions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  
+  // معلومات الجهاز
+  deviceId: varchar("device_id", { length: 255 }).notNull(), // fingerprint للجهاز
+  deviceName: varchar("device_name", { length: 255 }),
+  deviceType: varchar("device_type", { length: 50 }), // web, mobile, desktop
+  browserName: varchar("browser_name", { length: 100 }),
+  browserVersion: varchar("browser_version", { length: 50 }),
+  osName: varchar("os_name", { length: 100 }),
+  osVersion: varchar("os_version", { length: 50 }),
+  
+  // معلومات الموقع والشبكة
+  ipAddress: text("ip_address"), // استخدم text بدلاً من inet للتوافق
+  country: varchar("country", { length: 100 }),
+  city: varchar("city", { length: 100 }),
+  timezone: varchar("timezone", { length: 50 }),
+  
+  // معلومات الجلسة
+  refreshTokenHash: text("refresh_token_hash").notNull(),
+  accessTokenHash: text("access_token_hash"),
+  lastActivity: timestamp("last_activity").defaultNow().notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  isRevoked: boolean("is_revoked").default(false).notNull(),
+  revokedAt: timestamp("revoked_at"),
+  revokedReason: varchar("revoked_reason", { length: 100 }),
+  
+  // تتبع النشاط
+  loginMethod: varchar("login_method", { length: 50 }).notNull().default("password"), // password, totp, backup_code
+  isTrustedDevice: boolean("is_trusted_device").default(false).notNull(),
+  securityFlags: jsonb("security_flags"), // معلومات أمان إضافية
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// جدول سجل التدقيق (Audit Log)
+export const authAuditLog = pgTable("auth_audit_log", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "set null" }),
+  sessionId: varchar("session_id").references(() => authUserSessions.id, { onDelete: "set null" }),
+  
+  // تفاصيل الحدث
+  action: varchar("action", { length: 100 }).notNull(), // login, logout, create_user, etc.
+  resource: varchar("resource", { length: 100 }), // user, project, role, etc.
+  resourceId: varchar("resource_id"), // ID الكائن المتأثر
+  
+  // تفاصيل الطلب
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  method: varchar("method", { length: 10 }), // GET, POST, PUT, DELETE
+  url: text("url"),
+  
+  // البيانات والنتائج
+  requestData: jsonb("request_data"), // البيانات المرسلة
+  responseData: jsonb("response_data"), // البيانات المرجعة
+  oldValues: jsonb("old_values"), // القيم القديمة (للتحديثات)
+  newValues: jsonb("new_values"), // القيم الجديدة (للتحديثات)
+  
+  // حالة العملية
+  status: varchar("status", { length: 20 }).notNull().default("success"), // success, failed, error
+  errorMessage: text("error_message"),
+  duration: integer("duration"), // مدة العملية بالميلي ثانية
+  
+  // سياق إضافي
+  riskLevel: varchar("risk_level", { length: 20 }).default("low").notNull(), // low, medium, high, critical
+  tags: text("tags").array(), // علامات للتصنيف والبحث
+  metadata: jsonb("metadata"), // معلومات إضافية
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// جدول رموز التحقق (Verification Codes)
+export const authVerificationCodes = pgTable("auth_verification_codes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id, { onDelete: "cascade" }),
+  
+  // تفاصيل الكود
+  code: varchar("code", { length: 10 }).notNull(), // الكود المرسل (مشفر)
+  codeHash: text("code_hash").notNull(), // hash للتحقق
+  type: varchar("type", { length: 50 }).notNull(), // email_verification, password_reset, phone_verification
+  
+  // معلومات الإرسال
+  email: text("email"),
+  phone: varchar("phone", { length: 50 }),
+  sentVia: varchar("sent_via", { length: 20 }).notNull(), // email, sms, voice
+  
+  // حالة الكود
+  isUsed: boolean("is_used").default(false).notNull(),
+  usedAt: timestamp("used_at"),
+  attempts: integer("attempts").default(0).notNull(),
+  maxAttempts: integer("max_attempts").default(3).notNull(),
+  
+  // انتهاء الصلاحية
+  expiresAt: timestamp("expires_at").notNull(),
+  
+  // أمان إضافي
+  ipAddress: text("ip_address"),
+  userAgent: text("user_agent"),
+  metadata: jsonb("metadata"),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// جدول إعدادات الأمان للمستخدمين (User Security Settings)
+export const authUserSecuritySettings = pgTable("auth_user_security_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }).unique(),
+  
+  // إعدادات كلمة المرور
+  passwordExpiryDays: integer("password_expiry_days").default(90),
+  requirePasswordChange: boolean("require_password_change").default(false).notNull(),
+  passwordHistory: jsonb("password_history"), // آخر كلمات المرور (مشفرة)
+  
+  // إعدادات المصادقة
+  sessionTimeout: integer("session_timeout").default(30).notNull(), // بالدقائق
+  maxSessions: integer("max_sessions").default(5).notNull(),
+  requireMfaForSensitive: boolean("require_mfa_for_sensitive").default(false).notNull(),
+  
+  // إعدادات الأجهزة الموثقة
+  trustDeviceDays: integer("trust_device_days").default(30).notNull(),
+  autoRevokeInactive: boolean("auto_revoke_inactive").default(true).notNull(),
+  inactivityDays: integer("inactivity_days").default(90).notNull(),
+  
+  // إعدادات التنبيهات
+  notifyLoginFromNewDevice: boolean("notify_login_from_new_device").default(true).notNull(),
+  notifyPasswordChange: boolean("notify_password_change").default(true).notNull(),
+  notifyPermissionChange: boolean("notify_permission_change").default(true).notNull(),
+  
+  // إعدادات الخصوصية
+  allowSessionSharing: boolean("allow_session_sharing").default(false).notNull(),
+  logDetailLevel: varchar("log_detail_level", { length: 20 }).default("standard").notNull(), // minimal, standard, detailed
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
 
 
 
@@ -753,3 +979,43 @@ export const NotificationStatus = {
 } as const;
 
 export type NotificationStatusType = typeof NotificationStatus[keyof typeof NotificationStatus];
+
+// ================================
+// مخططات الإدراج للجداول الأمنية (Insert Schemas)
+// ================================
+
+export const insertAuthRoleSchema = createInsertSchema(authRoles).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertAuthPermissionSchema = createInsertSchema(authPermissions).omit({ id: true, createdAt: true });
+export const insertAuthRolePermissionSchema = createInsertSchema(authRolePermissions).omit({ id: true, grantedAt: true });
+export const insertAuthUserRoleSchema = createInsertSchema(authUserRoles).omit({ id: true, grantedAt: true });
+export const insertAuthUserPermissionSchema = createInsertSchema(authUserPermissions).omit({ id: true, grantedAt: true });
+export const insertAuthUserSessionSchema = createInsertSchema(authUserSessions).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertAuthAuditLogSchema = createInsertSchema(authAuditLog).omit({ id: true, createdAt: true });
+export const insertAuthVerificationCodeSchema = createInsertSchema(authVerificationCodes).omit({ id: true, createdAt: true });
+export const insertAuthUserSecuritySettingsSchema = createInsertSchema(authUserSecuritySettings).omit({ id: true, createdAt: true, updatedAt: true });
+
+// ================================
+// تعريفات الأنواع للجداول الأمنية (Type Definitions)
+// ================================
+
+// Select Types (أنواع القراءة)
+export type AuthRole = typeof authRoles.$inferSelect;
+export type AuthPermission = typeof authPermissions.$inferSelect;
+export type AuthRolePermission = typeof authRolePermissions.$inferSelect;
+export type AuthUserRole = typeof authUserRoles.$inferSelect;
+export type AuthUserPermission = typeof authUserPermissions.$inferSelect;
+export type AuthUserSession = typeof authUserSessions.$inferSelect;
+export type AuthAuditLog = typeof authAuditLog.$inferSelect;
+export type AuthVerificationCode = typeof authVerificationCodes.$inferSelect;
+export type AuthUserSecuritySettings = typeof authUserSecuritySettings.$inferSelect;
+
+// Insert Types (أنواع الإدراج)
+export type InsertAuthRole = z.infer<typeof insertAuthRoleSchema>;
+export type InsertAuthPermission = z.infer<typeof insertAuthPermissionSchema>;
+export type InsertAuthRolePermission = z.infer<typeof insertAuthRolePermissionSchema>;
+export type InsertAuthUserRole = z.infer<typeof insertAuthUserRoleSchema>;
+export type InsertAuthUserPermission = z.infer<typeof insertAuthUserPermissionSchema>;
+export type InsertAuthUserSession = z.infer<typeof insertAuthUserSessionSchema>;
+export type InsertAuthAuditLog = z.infer<typeof insertAuthAuditLogSchema>;
+export type InsertAuthVerificationCode = z.infer<typeof insertAuthVerificationCodeSchema>;
+export type InsertAuthUserSecuritySettings = z.infer<typeof insertAuthUserSecuritySettingsSchema>;
