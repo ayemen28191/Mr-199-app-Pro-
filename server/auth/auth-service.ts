@@ -307,6 +307,8 @@ export async function registerUser(request: RegisterRequest) {
         sessionTimeout: 120, // ساعتين
         maxSessions: 5,
         trustDeviceDays: 30,
+        requirePasswordChange: false,
+        requireMfaForSensitive: false,
       });
 
     // إنشاء رمز التحقق من البريد الإلكتروني
@@ -552,12 +554,21 @@ export async function enableTOTP(userId: string, totpCode: string, ipAddress?: s
 /**
  * تسجيل حدث في سجل التدقيق
  */
-export async function logAuditEvent(event: InsertAuthAuditLog) {
+export async function logAuditEvent(event: any) {
   try {
-    await db.insert(authAuditLog).values({
-      ...event,
+    // تنظيف البيانات لتتطابق مع الجدول الموجود
+    const cleanEvent = {
+      userId: event.userId,
+      action: event.action,
+      resource: event.resource,
+      ipAddress: event.ipAddress,
+      userAgent: event.userAgent,
+      status: event.status || 'success',
+      metadata: event.metadata ? JSON.stringify(event.metadata) : null,
       createdAt: new Date(),
-    });
+    };
+    
+    await db.insert(authAuditLog).values(cleanEvent);
   } catch (error) {
     console.error('خطأ في تسجيل حدث التدقيق:', error);
   }
