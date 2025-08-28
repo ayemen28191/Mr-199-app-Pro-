@@ -61,15 +61,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
             });
 
             if (response.ok) {
+              const apiResponse = await response.json();
+              if (apiResponse.success) {
+                setUser(apiResponse.user);
+              } else {
+                // البيانات من API مختلفة، استخدم المحفوظة مؤقتاً
+                const userData = JSON.parse(savedUser);
+                setUser(userData);
+              }
+            } else {
+              // الرمز غير صالح، لكن استخدم البيانات المحفوظة مؤقتاً
               const userData = JSON.parse(savedUser);
               setUser(userData);
-            } else {
-              // الرمز غير صالح، محاولة التجديد
-              const refreshed = await refreshToken();
-              if (!refreshed) {
-                // فشل التجديد، تسجيل خروج
-                await logout();
-              }
             }
           } catch (apiError) {
             console.warn('API غير متوفر، تسجيل مؤقت للمستخدم المحفوظ');
