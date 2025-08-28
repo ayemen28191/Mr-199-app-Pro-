@@ -68,7 +68,6 @@ export async function generateTokenPair(
   const accessToken = jwt.sign(accessPayload, JWT_CONFIG.accessTokenSecret, {
     expiresIn: JWT_CONFIG.accessTokenExpiry,
     issuer: JWT_CONFIG.issuer,
-    algorithm: JWT_CONFIG.algorithm,
   });
 
   // إنشاء Refresh Token
@@ -83,7 +82,6 @@ export async function generateTokenPair(
   const refreshToken = jwt.sign(refreshPayload, JWT_CONFIG.refreshTokenSecret, {
     expiresIn: JWT_CONFIG.refreshTokenExpiry,
     issuer: JWT_CONFIG.issuer,
-    algorithm: JWT_CONFIG.algorithm,
   });
 
   // حفظ الجلسة في قاعدة البيانات
@@ -111,7 +109,7 @@ export async function generateTokenPair(
 /**
  * التحقق من صحة Access Token
  */
-export async function verifyAccessToken(token: string): Promise<JWTPayload | null> {
+export async function verifyAccessToken(token: string): Promise<{ success: boolean; user?: any } | null> {
   try {
     const payload = jwt.verify(token, JWT_CONFIG.accessTokenSecret, {
       issuer: JWT_CONFIG.issuer,
@@ -143,7 +141,15 @@ export async function verifyAccessToken(token: string): Promise<JWTPayload | nul
       .set({ lastActivity: new Date() })
       .where(eq(authUserSessions.accessTokenHash, token));
 
-    return payload;
+    return {
+      success: true,
+      user: {
+        userId: payload.userId,
+        email: payload.email,
+        role: payload.role,
+        sessionId: payload.sessionId
+      }
+    };
   } catch (error) {
     console.error('خطأ في التحقق من Access Token:', error);
     return null;
@@ -179,7 +185,15 @@ export async function verifyRefreshToken(token: string): Promise<JWTPayload | nu
       return null;
     }
 
-    return payload;
+    return {
+      success: true,
+      user: {
+        userId: payload.userId,
+        email: payload.email,
+        role: payload.role,
+        sessionId: payload.sessionId
+      }
+    };
   } catch (error) {
     console.error('خطأ في التحقق من Refresh Token:', error);
     return null;

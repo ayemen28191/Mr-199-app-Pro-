@@ -439,4 +439,4 @@ router.get('/me', requireAuth, async (req: AuthenticatedRequest, res) => {
 });
 
 export default router;
-export { authenticateToken };
+// export { authenticateToken };

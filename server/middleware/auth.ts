@@ -30,7 +30,7 @@ export const requireAuth = async (req: AuthRequest, res: Response, next: NextFun
     const token = authHeader.substring(7);
     const decoded = await verifyAccessToken(token);
     
-    if (!decoded.success || !decoded.user) {
+    if (!decoded || !decoded.success || !decoded.user) {
       return res.status(401).json({
         success: false,
         message: 'رمز المصادقة غير صالح'
