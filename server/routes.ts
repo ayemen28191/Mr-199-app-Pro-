@@ -41,7 +41,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const authRoutes = await import('./routes/auth.js');
     app.use("/api/auth", authRoutes.default);
     console.log('✅ تم تفعيل نظام المصادقة المتقدم بنجاح');
-  } catch (error) {
+  } catch (error: any) {
     console.log('⚠️ خطأ في تحميل مسارات المصادقة:', error.message);
     console.log('💡 تأكد من تنفيذ استعلامات قاعدة البيانات في Supabase');
   }
