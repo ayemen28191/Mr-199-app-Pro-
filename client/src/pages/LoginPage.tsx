@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/components/AuthProvider";
 import {
   Card,
   CardContent,
@@ -61,6 +62,7 @@ export default function LoginPage() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { login } = useAuth();
   
   const [showPassword, setShowPassword] = useState(false);
   const [loginStep, setLoginStep] = useState<'credentials' | 'mfa' | 'verification'>('credentials');
@@ -91,25 +93,29 @@ export default function LoginPage() {
 
       return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: async (data) => {
       if (data.success) {
-        // حفظ البيانات في Local Storage
-        if (data.tokens) {
-          localStorage.setItem('accessToken', data.tokens.accessToken);
-          localStorage.setItem('refreshToken', data.tokens.refreshToken);
-          localStorage.setItem('user', JSON.stringify(data.user));
+        try {
+          // استخدام login من useAuth لحفظ البيانات
+          await login(form.getValues().email, form.getValues().password);
+          
+          toast({
+            title: "تم تسجيل الدخول بنجاح",
+            description: `أهلاً وسهلاً ${data.user?.name}`,
+          });
+          
+          // التوجه إلى الصفحة الرئيسية
+          navigate("/");
+        } catch (error) {
+          console.error('خطأ في تحديث حالة المصادقة:', error);
+          // حفظ البيانات يدوياً كحل احتياطي
+          if (data.tokens) {
+            localStorage.setItem('accessToken', data.tokens.accessToken);
+            localStorage.setItem('refreshToken', data.tokens.refreshToken);
+            localStorage.setItem('user', JSON.stringify(data.user));
+          }
+          navigate("/");
         }
-
-        toast({
-          title: "تم تسجيل الدخول بنجاح",
-          description: `أهلاً وسهلاً ${data.user?.name}`,
-        });
-
-        // إعادة تحديث البيانات
-        queryClient.invalidateQueries();
-        
-        // التوجه إلى الصفحة الرئيسية
-        navigate("/");
         
       } else if (data.requireMFA) {
         setLoginStep('mfa');

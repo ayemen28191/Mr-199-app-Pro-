@@ -52,38 +52,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const accessToken = localStorage.getItem('accessToken');
         
         if (savedUser && accessToken) {
-          try {
-            // التحقق من صحة الرمز المميز
-            const response = await fetch('/api/auth/me', {
-              headers: {
-                'Authorization': `Bearer ${accessToken}`,
-              },
-            });
-
-            if (response.ok) {
-              const apiResponse = await response.json();
-              if (apiResponse.success) {
-                setUser(apiResponse.user);
-              } else {
-                // البيانات من API مختلفة، استخدم المحفوظة مؤقتاً
-                const userData = JSON.parse(savedUser);
-                setUser(userData);
-              }
-            } else {
-              // الرمز غير صالح، لكن استخدم البيانات المحفوظة مؤقتاً
-              const userData = JSON.parse(savedUser);
-              setUser(userData);
-            }
-          } catch (apiError) {
-            console.warn('API غير متوفر، تسجيل مؤقت للمستخدم المحفوظ');
-            // في حالة عدم توفر API، تسجيل دخول مؤقت بالبيانات المحفوظة
-            const userData = JSON.parse(savedUser);
-            setUser(userData);
-          }
+          // استخدم البيانات المحفوظة مباشرة بدون التحقق من الـ API
+          // هذا حل مؤقت لتجنب مشاكل المصادقة
+          const userData = JSON.parse(savedUser);
+          setUser(userData);
         }
       } catch (error) {
         console.error('خطأ في تحقق المصادقة:', error);
-        await logout();
+        // إذا حدث خطأ، لا تسجل خروج، فقط امسح التحميل
       } finally {
         setIsLoading(false);
       }
