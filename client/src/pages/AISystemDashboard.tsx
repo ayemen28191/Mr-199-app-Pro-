@@ -32,19 +32,19 @@ export default function AISystemDashboard() {
   const [isSystemRunning, setIsSystemRunning] = useState(false);
 
   // جلب حالة النظام
-  const { data: systemStatus } = useQuery({
+  const { data: systemStatus } = useQuery<any>({
     queryKey: ['/api/ai-system/status'],
     refetchInterval: 10000, // تحديث كل 10 ثوانِ
   });
 
   // جلب مقاييس النظام
-  const { data: metrics } = useQuery({
+  const { data: metrics } = useQuery<SystemMetrics>({
     queryKey: ['/api/ai-system/metrics'],
     refetchInterval: 5000, // تحديث كل 5 ثوانِ
   });
 
   // جلب التوصيات
-  const { data: recommendations = [] } = useQuery({
+  const { data: recommendations = [] } = useQuery<any[]>({
     queryKey: ['/api/ai-system/recommendations'],
     refetchInterval: 30000, // تحديث كل 30 ثانية
   });
@@ -52,10 +52,7 @@ export default function AISystemDashboard() {
   // متحكم في تشغيل/إيقاف النظام
   const systemToggleMutation = useMutation({
     mutationFn: async (action: 'start' | 'stop') => {
-      return apiRequest('/api/ai-system/toggle', {
-        method: 'POST',
-        body: { action }
-      });
+      return apiRequest('/api/ai-system/toggle', 'POST', { action });
     },
     onSuccess: (data) => {
       setIsSystemRunning(data.status === 'running');
@@ -78,10 +75,7 @@ export default function AISystemDashboard() {
   // تنفيذ التوصيات
   const executeRecommendationMutation = useMutation({
     mutationFn: async (recommendationId: string) => {
-      return apiRequest('/api/ai-system/execute-recommendation', {
-        method: 'POST',
-        body: { recommendationId }
-      });
+      return apiRequest('/api/ai-system/execute-recommendation', 'POST', { recommendationId });
     },
     onSuccess: (data) => {
       toast({

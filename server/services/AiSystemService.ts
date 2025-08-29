@@ -16,6 +16,7 @@ export class AiSystemService {
   private static instance: AiSystemService | null = null;
   private lastAnalysisTime: number = 0;
   private analysisInterval: number = 5 * 60 * 1000; // كل 5 دقائق
+  private isSystemRunning: boolean = true; // حالة النظام (تشغيل/إيقاف)
   
   // وقت بدء النظام للحسابات
   private readonly systemStartTime = Date.now();
@@ -25,6 +26,27 @@ export class AiSystemService {
       AiSystemService.instance = new AiSystemService();
     }
     return AiSystemService.instance;
+  }
+
+  /**
+   * تشغيل النظام الذكي
+   */
+  public startSystem() {
+    this.isSystemRunning = true;
+  }
+
+  /**
+   * إيقاف النظام الذكي
+   */
+  public stopSystem() {
+    this.isSystemRunning = false;
+  }
+
+  /**
+   * التحقق من حالة التشغيل
+   */
+  public isRunning(): boolean {
+    return this.isSystemRunning;
   }
 
   /**
@@ -60,9 +82,9 @@ export class AiSystemService {
       }
 
       return {
-        status: "running",
+        status: this.isSystemRunning ? "running" : "stopped",
         uptime,
-        health,
+        health: this.isSystemRunning ? health : 0,
         version: "2.1.0",
         lastUpdate: new Date().toISOString()
       };
@@ -77,6 +99,16 @@ export class AiSystemService {
    */
   async getSystemMetrics() {
     try {
+      // إذا كان النظام متوقفاً، أرجع مقاييس الإيقاف
+      if (!this.isSystemRunning) {
+        return {
+          system: { status: "stopped", uptime: 0, health: 0, version: "2.1.0" },
+          database: { tables: 0, health: 0, issues: 0, performance: 0 },
+          ai: { decisions: 0, accuracy: 0, learning: 0, predictions: 0 },
+          automation: { tasksCompleted: 0, successRate: 0, timeSaved: 0, errors: 0 }
+        };
+      }
+
       // جلب البيانات الحقيقية من قاعدة البيانات
       const projects = await storage.getProjects();
       const workers = await storage.getWorkers();

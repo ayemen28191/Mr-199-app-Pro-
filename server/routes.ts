@@ -95,8 +95,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { action } = req.body;
       
       if (action === 'start') {
-        // محاكاة بدء تشغيل النظام الذكي
-        console.log('🤖 بدء تشغيل النظام الذكي...');
+        // تشغيل النظام الذكي فعلياً
+        aiSystemService.startSystem();
+        console.log('🤖 تم تشغيل النظام الذكي');
         res.json({ 
           success: true, 
           message: "تم بدء تشغيل النظام الذكي بنجاح",
@@ -104,8 +105,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           timestamp: new Date().toISOString()
         });
       } else if (action === 'stop') {
-        // محاكاة إيقاف النظام الذكي
-        console.log('🤖 إيقاف النظام الذكي...');
+        // إيقاف النظام الذكي فعلياً
+        aiSystemService.stopSystem();
+        console.log('🤖 تم إيقاف النظام الذكي');
         res.json({ 
           success: true, 
           message: "تم إيقاف النظام الذكي بنجاح",
