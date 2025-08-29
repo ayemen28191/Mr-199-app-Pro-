@@ -302,37 +302,33 @@ export async function registerUser(request: RegisterRequest) {
     // إعدادات الأمان الافتراضية - سيتم إنشاؤها لاحقاً عند الحاجة
     console.log('✅ تم إنشاء المستخدم:', userId);
 
-    // إنشاء رمز التحقق من البريد الإلكتروني - مبسط
-    const { code, hashedCode, expiresAt } = generateVerificationCode(6);
-    console.log('📧 رمز التحقق للاختبار:', code); // للاختبار فقط
+    // تفعيل الحساب مباشرة للاختبار
+    await db
+      .update(users)
+      .set({ 
+        emailVerifiedAt: new Date(), // تفعيل مباشر 
+        isActive: true 
+      })
+      .where(eq(users.id, userId));
 
-    // تسجيل الحدث - مبسط
-    console.log('📝 تم تسجيل مستخدم جديد:', email);
+    console.log('📝 تم تسجيل مستخدم جديد وتفعيله:', email);
 
     return {
       success: true,
-      message: 'تم إنشاء الحساب بنجاح. يرجى التحقق من بريدك الإلكتروني',
+      message: 'تم إنشاء الحساب وتفعيله بنجاح!',
       user: {
         id: userId,
         email,
         name,
         role,
-      },
-      verificationCode: code // في التطوير فقط
+      }
     };
 
   } catch (error) {
     console.error('خطأ في التسجيل:', error);
     
-    await logAuditEvent({
-      action: 'registration_error',
-      resource: 'auth',
-      ipAddress,
-      userAgent,
-      status: 'error',
-      errorMessage: (error as Error).message,
-      metadata: { email, name },
-    });
+    // تسجيل الخطأ بطريقة مبسطة
+    console.log('❌ خطأ في إنشاء الحساب:', email, (error as Error).message);
 
     return {
       success: false,
