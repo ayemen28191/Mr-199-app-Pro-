@@ -229,18 +229,25 @@ function App() {
   useEffect(() => {
     // إضافة تأخير بسيط للتأكد من أن HTML loader يظهر أولاً
     const timer = setTimeout(() => {
-      // إخفاء الـ HTML loader وإظهار React app
-      const htmlLoader = document.getElementById('initial-loader');
-      const root = document.getElementById('root');
-      
-      if (htmlLoader) {
-        htmlLoader.classList.add('fade-out');
-        setTimeout(() => {
-          htmlLoader.style.display = 'none';
-          if (root) {
-            root.classList.add('loaded');
-          }
-        }, 500);
+      try {
+        // إخفاء الـ HTML loader وإظهار React app بشكل آمن
+        const htmlLoader = document.getElementById('initial-loader');
+        const root = document.getElementById('root');
+        
+        if (htmlLoader && htmlLoader.parentNode) {
+          htmlLoader.classList.add('fade-out');
+          setTimeout(() => {
+            if (htmlLoader.parentNode) {
+              htmlLoader.style.display = 'none';
+            }
+            if (root && root.parentNode) {
+              root.classList.add('loaded');
+            }
+          }, 500);
+        }
+      } catch (error) {
+        console.warn('تحذير: خطأ في إخفاء الـ loader:', error);
+        // تجاهل الخطأ والمتابعة
       }
     }, 1500); // إظهار HTML loader لمدة 1.5 ثانية
 
