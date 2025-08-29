@@ -123,9 +123,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // جلب التوصيات من قاعدة البيانات أولاً
       let recommendations = await storage.getAiSystemRecommendations({ status: 'active' });
       
-      // إذا لم توجد توصيات أو كانت قديمة، إنشاء توصيات جديدة
-      if (recommendations.length === 0) {
-        console.log('🔄 لم توجد توصيات نشطة، جاري توليد توصيات جديدة...');
+      // التحقق من تاريخ آخر توصية لتجنب التوليد المتكرر
+      const lastRecommendationTime = recommendations.length > 0 
+        ? new Date(Math.max(...recommendations.map(r => new Date(r.createdAt || '').getTime())))
+        : null;
+      
+      const shouldGenerateNew = !lastRecommendationTime || 
+        (Date.now() - lastRecommendationTime.getTime()) > 30 * 60 * 1000; // 30 دقيقة
+      
+      // إذا لم توجد توصيات أو كانت قديمة جداً، إنشاء توصيات جديدة
+      if (recommendations.length === 0 || shouldGenerateNew) {
+        console.log('🔄 توليد توصيات جديدة...');
         await aiSystemService.generateRecommendations();
         recommendations = await storage.getAiSystemRecommendations({ status: 'active' });
       }
@@ -192,6 +200,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('خطأ في تنفيذ التوصية:', error);
       res.status(500).json({ message: error instanceof Error ? error.message : "خطأ في تنفيذ التوصية" });
+    }
+  });
+
+  // مسح جميع التوصيات (لحل مشكلة التكرار)
+  app.post("/api/ai-system/clear-recommendations", async (req, res) => {
+    try {
+      const allRecommendations = await storage.getAiSystemRecommendations({});
+      console.log(`🧹 مسح ${allRecommendations.length} توصية مكررة`);
+      
+      for (const rec of allRecommendations) {
+        await storage.dismissAiSystemRecommendation(rec.id);
+      }
+      
+      res.json({ 
+        message: `تم مسح ${allRecommendations.length} توصية بنجاح`,
+        cleared: allRecommendations.length 
+      });
+    } catch (error: any) {
+      console.error('خطأ في مسح التوصيات:', error);
+      res.status(500).json({ message: "خطأ في مسح التوصيات" });
     }
   });
 

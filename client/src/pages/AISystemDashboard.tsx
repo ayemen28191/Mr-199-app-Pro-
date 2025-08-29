@@ -505,7 +505,8 @@ export default function AISystemDashboard() {
   // جلب التوصيات
   const { data: recommendations = [] } = useQuery<any[]>({
     queryKey: ['/api/ai-system/recommendations'],
-    refetchInterval: 30000, // تحديث كل 30 ثانية
+    refetchInterval: 60000, // تحديث كل دقيقة لتجنب التكرار المفرط
+    staleTime: 30000, // البيانات تبقى "طازجة" لـ 30 ثانية
   });
 
   // متحكم في تشغيل/إيقاف النظام
@@ -758,9 +759,17 @@ export default function AISystemDashboard() {
                       </CardTitle>
                       <CardDescription className="text-xs">تحليل عميق وتوصيات مخصصة من الذكاء الاصطناعي</CardDescription>
                     </div>
-                    <Button size="sm" variant="outline" onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/ai-system/recommendations'] })}>
-                      <RefreshCw className="w-3 h-3" />
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/ai-system/recommendations'] })}
+                        className="text-xs"
+                      >
+                        <RefreshCw className="w-3 h-3 mr-1" />
+                        تحديث
+                      </Button>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>

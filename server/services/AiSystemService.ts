@@ -218,24 +218,39 @@ export class AiSystemService {
       
       const recommendations = [];
 
-      // === التوصيات المالية ===
+      // === توليد توصيات ذكية محدودة العدد ===
+      // إضافة 1-2 توصيات مالية مهمة فقط
       await this.addFinancialRecommendations(recommendations, projects, stats);
       
-      // === توصيات إدارة العمالة ===
-      await this.addWorkforceRecommendations(recommendations, workers, projects);
+      // إضافة 1-2 توصيات إدارة العمالة مهمة فقط
+      if (recommendations.length < 3) {
+        await this.addWorkforceRecommendations(recommendations, workers, projects);
+      }
       
-      // === توصيات الأداء والتحسين ===
-      await this.addPerformanceRecommendations(recommendations, stats);
+      // إضافة 1-2 توصيات أداء مهمة فقط
+      if (recommendations.length < 5) {
+        await this.addPerformanceRecommendations(recommendations, stats);
+      }
       
-      // === توصيات الأمان والامتثال ===
-      await this.addSecurityRecommendations(recommendations, projects.length, workers.length);
+      // إضافة توصية أمان واحدة فقط عند الحاجة
+      if (recommendations.length < 6) {
+        await this.addSecurityRecommendations(recommendations, projects.length, workers.length);
+      }
       
-      // === توصيات إدارة الموردين ===
-      await this.addSupplierRecommendations(recommendations, suppliers, stats);
+      // إضافة توصية موردين واحدة فقط عند الحاجة
+      if (recommendations.length < 7) {
+        await this.addSupplierRecommendations(recommendations, suppliers, stats);
+      }
+
+      // تحديد الحد الأقصى لعدد التوصيات (8 توصيات كحد أقصى)
+      if (recommendations.length > 8) {
+        recommendations.splice(8);
+      }
 
       // مسح التوصيات القديمة أولاً لتجنب التكرار
       try {
         const oldRecommendations = await storage.getAiSystemRecommendations({ status: 'active' });
+        console.log(`🧹 مسح ${oldRecommendations.length} توصية قديمة لتجنب التكرار`);
         for (const oldRec of oldRecommendations) {
           await storage.dismissAiSystemRecommendation(oldRec.id);
         }
@@ -324,11 +339,14 @@ export class AiSystemService {
   }
 
   /**
-   * إضافة التوصيات المالية
+   * إضافة التوصيات المالية (حد أقصى 2 توصيات)
    */
   private async addFinancialRecommendations(recommendations: any[], projects: any[], stats: any) {
-    // توصية الميزانية الأساسية
-    if (stats.riskProjects > stats.totalProjects * 0.3) {
+    let addedCount = 0;
+    
+    // توصية الميزانية الأساسية (أولوية عالية)
+    if (stats.riskProjects > stats.totalProjects * 0.3 && addedCount < 2) {
+      addedCount++;
       recommendations.push({
         recommendationType: 'financial',
         title: '🚨 تحذير: مشاريع في خطر مالي',
@@ -357,8 +375,9 @@ export class AiSystemService {
       });
     }
 
-    // توصية الربحية
-    if (stats.profitableProjects < stats.totalProjects * 0.6) {
+    // توصية الربحية (إذا لم نصل للحد الأقصى)
+    if (stats.profitableProjects < stats.totalProjects * 0.6 && addedCount < 2) {
+      addedCount++;
       recommendations.push({
         recommendationType: 'financial',
         title: '📈 تحسين معدل الربحية',
