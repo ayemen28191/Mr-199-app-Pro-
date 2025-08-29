@@ -375,7 +375,7 @@ export default function NotificationsPage() {
                       <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 mb-2">
                         <Clock className="h-3 w-3" />
                         <span>
-                          {new Date(notification.createdAt).toLocaleDateString('ar-SA', {
+                          {new Date(notification.createdAt).toLocaleDateString('en-GB', {
                             month: 'short',
                             day: 'numeric',
                             hour: '2-digit',
