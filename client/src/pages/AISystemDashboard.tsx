@@ -11,7 +11,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { 
   Activity, Brain, Database, Settings, Play, Pause, AlertCircle, CheckCircle,
-  TrendingUp, Zap, Shield, Cpu, BarChart3, Clock, Server, RefreshCw, Loader2
+  TrendingUp, Zap, Shield, Cpu, BarChart3, Clock, Server, RefreshCw, Loader2,
+  ChevronDown, ChevronUp, AlertTriangle
 } from 'lucide-react';
 
 interface SystemMetrics {
@@ -31,6 +32,7 @@ export default function AISystemDashboard() {
   const { toast } = useToast();
   const [isSystemRunning, setIsSystemRunning] = useState(false);
   const [executingRecommendation, setExecutingRecommendation] = useState<string | null>(null);
+  const [showIssues, setShowIssues] = useState(false);
 
   // جلب حالة النظام
   const { data: systemStatus } = useQuery<any>({
@@ -397,11 +399,48 @@ export default function AISystemDashboard() {
                       <Progress value={metrics.database.performance} className="h-1.5" />
                     </div>
                     <Separator />
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm">المشاكل المكتشفة</span>
-                      <Badge variant={metrics.database.issues > 0 ? "destructive" : "secondary"} className="text-xs">
-                        {metrics.database.issues}
-                      </Badge>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm">المشاكل المكتشفة</span>
+                        <div className="flex items-center gap-2">
+                          <Badge variant={metrics.database.issues > 0 ? "destructive" : "secondary"} className="text-xs">
+                            {metrics.database.issues}
+                          </Badge>
+                          {metrics.database.issues > 0 && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-6 w-6 p-0"
+                              onClick={() => setShowIssues(!showIssues)}
+                              data-testid="button-toggle-issues"
+                            >
+                              {showIssues ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {showIssues && metrics.database.issues > 0 && (
+                        <div className="space-y-1 mt-2">
+                          <div className="p-2 bg-red-50 border border-red-200 rounded text-xs">
+                            <div className="flex items-center gap-2 mb-1">
+                              <AlertTriangle className="w-3 h-3 text-red-600" />
+                              <span className="font-medium text-red-800">مشاكل الأداء</span>
+                            </div>
+                            <ul className="text-red-700 space-y-1">
+                              <li>• بطء في بعض الاستعلامات المعقدة</li>
+                              <li>• استهلاك عالي للذاكرة في بعض العمليات</li>
+                              <li>• حاجة إلى تحسين فهارس قاعدة البيانات</li>
+                            </ul>
+                            <div className="mt-2 pt-1 border-t border-red-300">
+                              <span className="text-red-600 font-medium">الحلول المقترحة:</span>
+                              <div className="mt-1 text-red-700">
+                                • تفعيل التنظيف التلقائي لقاعدة البيانات
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </CardContent>
