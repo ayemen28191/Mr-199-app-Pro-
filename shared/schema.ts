@@ -707,46 +707,6 @@ export type Equipment = typeof equipment.$inferSelect;
 export type InsertEquipmentMovement = z.infer<typeof insertEquipmentMovementSchema>;
 export type EquipmentMovement = typeof equipmentMovements.$inferSelect;
 
-// =====================================================
-// نظام إدارة فئات الأدوات
-// =====================================================
-
-// Tool Categories (فئات الأدوات)
-export const toolCategories = pgTable("tool_categories", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  name: text("name").notNull().unique(), // اسم الفئة
-  description: text("description"), // وصف الفئة
-  isActive: boolean("is_active").default(true).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-});
-
-// Tools (الأدوات)
-export const tools = pgTable("tools", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  code: text("code").unique().notNull(), // رمز الأداة
-  name: text("name").notNull(), // اسم الأداة
-  categoryId: varchar("category_id").references(() => toolCategories.id),
-  description: text("description"),
-  purchasePrice: decimal("purchase_price", { precision: 12, scale: 2 }),
-  currentValue: decimal("current_value", { precision: 12, scale: 2 }),
-  condition: text("condition").default("good"), // جيد، متوسط، سيء
-  location: text("location"), // الموقع الحالي
-  isActive: boolean("is_active").default(true).notNull(),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-// Tool Movements (حركات الأدوات)
-export const toolMovements = pgTable("tool_movements", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  toolId: varchar("tool_id").notNull().references(() => tools.id, { onDelete: 'cascade' }),
-  fromLocation: text("from_location"),
-  toLocation: text("to_location"),
-  movementDate: timestamp("movement_date").defaultNow().notNull(),
-  reason: text("reason"),
-  performedBy: text("performed_by").notNull(),
-  notes: text("notes"),
-});
 
 // =====================================================
 // نظام الإشعارات المتكامل - Advanced Notifications System
@@ -856,26 +816,6 @@ export const messages = pgTable("messages", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
-// Tool Categories insert schemas
-export const insertToolCategorySchema = createInsertSchema(toolCategories).omit({
-  id: true,
-  createdAt: true,
-});
-
-export const insertToolSchema = createInsertSchema(tools).omit({
-  id: true,
-  code: true, // سيتم توليده تلقائياً
-  createdAt: true,
-  updatedAt: true,
-}).extend({
-  purchasePrice: z.coerce.string().optional(),
-  currentValue: z.coerce.string().optional(),
-});
-
-export const insertToolMovementSchema = createInsertSchema(toolMovements).omit({
-  id: true,
-  movementDate: true,
-});
 
 // Notification schemas
 export const insertNotificationSchema = createInsertSchema(notifications).omit({
@@ -926,12 +866,6 @@ export const insertMessageSchema = createInsertSchema(messages).omit({
 // =================================
 
 // Export types
-export type ToolCategory = typeof toolCategories.$inferSelect;
-export type InsertToolCategory = z.infer<typeof insertToolCategorySchema>;
-export type Tool = typeof tools.$inferSelect;
-export type InsertTool = z.infer<typeof insertToolSchema>;
-export type ToolMovement = typeof toolMovements.$inferSelect;
-export type InsertToolMovement = z.infer<typeof insertToolMovementSchema>;
 
 // Notification types
 export type Notification = typeof notifications.$inferSelect;

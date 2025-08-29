@@ -15,9 +15,9 @@ import {
   type ReportTemplate,
   // Equipment types (النظام المبسط)
   type Equipment, type EquipmentMovement, type InsertEquipment, type InsertEquipmentMovement,
-  // Tools and Notifications types
-  type ToolCategory, type Tool, type ToolMovement, type NotificationReadState,
-  type InsertToolCategory, type InsertTool, type InsertToolMovement, type InsertNotificationReadState,
+  // Notifications types
+  type NotificationReadState,
+  type InsertNotificationReadState,
   type InsertProject, type InsertWorker, type InsertFundTransfer, type InsertWorkerAttendance,
   type InsertMaterial, type InsertMaterialPurchase, type InsertTransportationExpense, type InsertDailyExpenseSummary,
   type InsertWorkerTransfer, type InsertWorkerBalance, type InsertAutocompleteData, type InsertWorkerType, type InsertWorkerMiscExpense, type InsertUser,
@@ -27,8 +27,8 @@ import {
   workerTransfers, workerBalances, autocompleteData, workerTypes, workerMiscExpenses, users, suppliers, supplierPayments, printSettings, projectFundTransfers, reportTemplates,
   // Equipment tables (النظام المبسط)
   equipment, equipmentMovements,
-  // Tools and Notifications tables
-  toolCategories, tools, toolMovements, notificationReadStates
+  // Notifications tables
+  notificationReadStates
 } from "@shared/schema";
 import { db } from "./db";
 import { and, eq, isNull, or, gte, lte, desc, ilike, like, isNotNull, asc, count, sum, ne, max, sql, inArray, gt } from 'drizzle-orm';
@@ -273,33 +273,6 @@ export interface IStorage {
   getEquipmentMovements(equipmentId: string): Promise<EquipmentMovement[]>;
   createEquipmentMovement(movement: InsertEquipmentMovement): Promise<EquipmentMovement>;
 
-  // =====================================================
-  // نظام إدارة فئات الأدوات
-  // =====================================================
-
-  // Tool Categories
-  getToolCategories(): Promise<ToolCategory[]>;
-  getToolCategoryByName(name: string): Promise<ToolCategory | undefined>;
-  createToolCategory(category: InsertToolCategory): Promise<ToolCategory>;
-  updateToolCategory(id: string, category: Partial<InsertToolCategory>): Promise<ToolCategory | undefined>;
-  deleteToolCategory(id: string): Promise<void>;
-
-  // Tools
-  getTools(filters?: {
-    categoryId?: string;
-    condition?: string;
-    isActive?: boolean;
-    searchTerm?: string;
-  }): Promise<Tool[]>;
-  getToolById(id: string): Promise<Tool | undefined>;
-  getToolByCode(code: string): Promise<Tool | undefined>;
-  createTool(tool: InsertTool): Promise<Tool>;
-  updateTool(id: string, tool: Partial<InsertTool>): Promise<Tool | undefined>;
-  deleteTool(id: string): Promise<void>;
-
-  // Tool Movements
-  getToolMovements(toolId?: string, dateFrom?: string, dateTo?: string): Promise<ToolMovement[]>;
-  createToolMovement(movement: InsertToolMovement): Promise<ToolMovement>;
 
   // =====================================================
   // نظام إدارة الإشعارات
@@ -3507,178 +3480,6 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  // =====================================================
-  // تنفيذ دوال إدارة فئات الأدوات
-  // =====================================================
-
-  // Tool Categories Implementation
-  async getToolCategories(): Promise<ToolCategory[]> {
-    try {
-      return await db.select().from(toolCategories).where(eq(toolCategories.isActive, true)).orderBy(toolCategories.name);
-    } catch (error) {
-      console.error('Error getting tool categories:', error);
-      return [];
-    }
-  }
-
-  async getToolCategoryByName(name: string): Promise<ToolCategory | undefined> {
-    try {
-      const [category] = await db.select().from(toolCategories).where(eq(toolCategories.name, name));
-      return category || undefined;
-    } catch (error) {
-      console.error('Error getting tool category by name:', error);
-      return undefined;
-    }
-  }
-
-  async createToolCategory(category: InsertToolCategory): Promise<ToolCategory> {
-    try {
-      const [newCategory] = await db.insert(toolCategories).values(category).returning();
-      return newCategory;
-    } catch (error) {
-      console.error('Error creating tool category:', error);
-      throw error;
-    }
-  }
-
-  async updateToolCategory(id: string, category: Partial<InsertToolCategory>): Promise<ToolCategory | undefined> {
-    try {
-      const [updated] = await db.update(toolCategories).set(category).where(eq(toolCategories.id, id)).returning();
-      return updated || undefined;
-    } catch (error) {
-      console.error('Error updating tool category:', error);
-      throw error;
-    }
-  }
-
-  async deleteToolCategory(id: string): Promise<void> {
-    try {
-      await db.delete(toolCategories).where(eq(toolCategories.id, id));
-    } catch (error) {
-      console.error('Error deleting tool category:', error);
-      throw error;
-    }
-  }
-
-  // Tools Implementation
-  async getTools(filters?: {
-    categoryId?: string;
-    condition?: string;
-    isActive?: boolean;
-    searchTerm?: string;
-  }): Promise<Tool[]> {
-    try {
-      const conditions = [];
-      
-      if (filters?.categoryId) {
-        conditions.push(eq(tools.categoryId, filters.categoryId));
-      }
-      if (filters?.condition) {
-        conditions.push(eq(tools.condition, filters.condition));
-      }
-      if (filters?.isActive !== undefined) {
-        conditions.push(eq(tools.isActive, filters.isActive));
-      }
-      if (filters?.searchTerm) {
-        conditions.push(or(
-          ilike(tools.name, `%${filters.searchTerm}%`),
-          ilike(tools.code, `%${filters.searchTerm}%`)
-        ));
-      }
-
-      return await db.select().from(tools)
-        .where(conditions.length > 0 ? and(...conditions) : undefined)
-        .orderBy(tools.name);
-    } catch (error) {
-      console.error('Error getting tools:', error);
-      return [];
-    }
-  }
-
-  async getToolById(id: string): Promise<Tool | undefined> {
-    try {
-      const [tool] = await db.select().from(tools).where(eq(tools.id, id));
-      return tool || undefined;
-    } catch (error) {
-      console.error('Error getting tool by id:', error);
-      return undefined;
-    }
-  }
-
-  async getToolByCode(code: string): Promise<Tool | undefined> {
-    try {
-      const [tool] = await db.select().from(tools).where(eq(tools.code, code));
-      return tool || undefined;
-    } catch (error) {
-      console.error('Error getting tool by code:', error);
-      return undefined;
-    }
-  }
-
-  async createTool(tool: InsertTool): Promise<Tool> {
-    try {
-      // Generate unique code for the tool
-      const toolCode = `TOOL-${Date.now()}`;
-      const [newTool] = await db.insert(tools).values({ ...tool, code: toolCode }).returning();
-      return newTool;
-    } catch (error) {
-      console.error('Error creating tool:', error);
-      throw error;
-    }
-  }
-
-  async updateTool(id: string, tool: Partial<InsertTool>): Promise<Tool | undefined> {
-    try {
-      const [updated] = await db.update(tools).set(tool).where(eq(tools.id, id)).returning();
-      return updated || undefined;
-    } catch (error) {
-      console.error('Error updating tool:', error);
-      throw error;
-    }
-  }
-
-  async deleteTool(id: string): Promise<void> {
-    try {
-      await db.delete(tools).where(eq(tools.id, id));
-    } catch (error) {
-      console.error('Error deleting tool:', error);
-      throw error;
-    }
-  }
-
-  // Tool Movements Implementation
-  async getToolMovements(toolId?: string, dateFrom?: string, dateTo?: string): Promise<ToolMovement[]> {
-    try {
-      const conditions = [];
-      
-      if (toolId) {
-        conditions.push(eq(toolMovements.toolId, toolId));
-      }
-      if (dateFrom) {
-        conditions.push(gte(toolMovements.movementDate, new Date(dateFrom)));
-      }
-      if (dateTo) {
-        conditions.push(lte(toolMovements.movementDate, new Date(dateTo)));
-      }
-
-      return await db.select().from(toolMovements)
-        .where(conditions.length > 0 ? and(...conditions) : undefined)
-        .orderBy(desc(toolMovements.movementDate));
-    } catch (error) {
-      console.error('Error getting tool movements:', error);
-      return [];
-    }
-  }
-
-  async createToolMovement(movement: InsertToolMovement): Promise<ToolMovement> {
-    try {
-      const [newMovement] = await db.insert(toolMovements).values(movement).returning();
-      return newMovement;
-    } catch (error) {
-      console.error('Error creating tool movement:', error);
-      throw error;
-    }
-  }
 
   // =====================================================
   // تنفيذ دوال إدارة الإشعارات
