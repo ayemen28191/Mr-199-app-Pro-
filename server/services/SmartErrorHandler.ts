@@ -415,11 +415,11 @@ export class SmartErrorHandler {
           severity, category, fingerprint, status, occurrence_count,
           first_seen, last_seen, notification_sent, created_at, updated_at
         ) VALUES (
-          ${error.errorType}, ${error.errorCode}, ${error.tableName}, ${error.columnName},
+          ${error.errorType}, ${error.errorCode || null}, ${error.tableName}, ${error.columnName || null},
           ${error.operation}, ${error.originalMessage}, ${error.arabicMessage},
-          ${JSON.stringify(error.context)}, ${String(error.context.attemptedValue)},
-          ${error.context.userId}, ${error.context.projectId}, ${error.context.stackTrace},
-          ${error.context.queryExecuted}, ${error.context.executionTime},
+          ${JSON.stringify(error.context)}, ${String(error.context.attemptedValue || '')},
+          ${error.context.userId || null}, ${error.context.projectId || null}, ${error.context.stackTrace || null},
+          ${error.context.queryExecuted || null}, ${error.context.executionTime || null},
           ${error.severity}, ${error.category}, ${error.fingerprint}, 'new', 1,
           NOW(), NOW(), true, NOW(), NOW()
         )
