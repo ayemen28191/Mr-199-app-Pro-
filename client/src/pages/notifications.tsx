@@ -147,104 +147,139 @@ export default function NotificationsPage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto p-4 sm:p-6 space-y-6 min-h-screen" dir="rtl">
-        <div className="grid gap-4">
-          {[1, 2, 3].map(i => (
-            <Card key={i} className="animate-pulse">
-              <CardHeader>
-                <div className="h-4 bg-gray-300 rounded w-1/4"></div>
-                <div className="h-3 bg-gray-300 rounded w-1/2"></div>
-              </CardHeader>
-              <CardContent>
-                <div className="h-3 bg-gray-300 rounded w-3/4"></div>
-              </CardContent>
-            </Card>
-          ))}
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-slate-900 dark:to-slate-800" dir="rtl">
+        <div className="container mx-auto p-3 space-y-3">
+          {/* شريط تحميل الإحصائيات */}
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-3 shadow-lg animate-pulse">
+            <div className="grid grid-cols-2 gap-2">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="bg-gray-200 dark:bg-gray-700 rounded-lg h-16"></div>
+              ))}
+            </div>
+          </div>
+          
+          {/* شريط تحميل الفلاتر */}
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-3 shadow-lg animate-pulse">
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-32 mb-2"></div>
+            <div className="flex gap-1">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="h-8 bg-gray-200 dark:bg-gray-700 rounded flex-1"></div>
+              ))}
+            </div>
+          </div>
+          
+          {/* بطاقات الإشعارات */}
+          <div className="space-y-2">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="bg-white dark:bg-slate-800 rounded-xl p-3 shadow-lg animate-pulse">
+                <div className="flex gap-3">
+                  <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-lg"></div>
+                  <div className="flex-1">
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2"></div>
+                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-2"></div>
+                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50/30 dark:from-slate-900 dark:to-blue-900/10" dir="rtl">
-      <div className="container mx-auto p-4 sm:p-6 space-y-6">
-        {/* إحصائيات سريعة */}
-        <div className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-lg rounded-2xl p-4 border border-white/20 shadow-xl">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div className="bg-blue-500/10 px-4 py-3 rounded-lg text-center">
-              <div className="text-xl font-bold text-blue-600">{stats.total}</div>
-              <div className="text-xs text-gray-600">إجمالي الإشعارات</div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-slate-900 dark:to-slate-800" dir="rtl">
+      <div className="container mx-auto p-3 space-y-3">
+        {/* إحصائيات سريعة محسّنة */}
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-3 shadow-lg border border-blue-100 dark:border-slate-700">
+          <div className="grid grid-cols-2 gap-2">
+            <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-3 py-2 rounded-lg text-center">
+              <div className="text-lg font-bold">{stats.total}</div>
+              <div className="text-xs opacity-90">إجمالي الإشعارات</div>
             </div>
-            <div className="bg-orange-500/10 px-4 py-3 rounded-lg text-center">
-              <div className="text-xl font-bold text-orange-600">{stats.unread}</div>
-              <div className="text-xs text-gray-600">غير مقروء</div>
+            <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-3 py-2 rounded-lg text-center">
+              <div className="text-lg font-bold">{stats.unread}</div>
+              <div className="text-xs opacity-90">غير مقروء</div>
             </div>
-            <div className="bg-red-500/10 px-4 py-3 rounded-lg text-center">
-              <div className="text-xl font-bold text-red-600">{stats.critical}</div>
-              <div className="text-xs text-gray-600">حرج</div>
+            <div className="bg-gradient-to-r from-yellow-500 to-yellow-600 text-white px-3 py-2 rounded-lg text-center">
+              <div className="text-lg font-bold">{stats.high}</div>
+              <div className="text-xs opacity-90">عالي الأولوية</div>
             </div>
-            <div className="bg-yellow-500/10 px-4 py-3 rounded-lg text-center">
-              <div className="text-xl font-bold text-yellow-600">{stats.high}</div>
-              <div className="text-xs text-gray-600">عالي الأولوية</div>
+            <div className="bg-gradient-to-r from-red-500 to-red-600 text-white px-3 py-2 rounded-lg text-center">
+              <div className="text-lg font-bold">{stats.critical}</div>
+              <div className="text-xs opacity-90">حرج</div>
             </div>
           </div>
         </div>
 
-        {/* فلاتر الإشعارات */}
-        <div className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-lg rounded-2xl p-4 border border-white/20 shadow-lg">
-          <div className="flex items-center gap-2 mb-3">
-            <Filter className="h-4 w-4 text-gray-600" />
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">تصفية الإشعارات</span>
+        {/* فلاتر الإشعارات محسّنة */}
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-3 shadow-lg border border-blue-100 dark:border-slate-700">
+          <div className="flex items-center gap-2 mb-2">
+            <Filter className="h-4 w-4 text-blue-600" />
+            <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">تصفية الإشعارات</span>
           </div>
           
-          {/* فلاتر الحالة */}
-          <div className="grid grid-cols-2 sm:flex gap-2 mb-3">
+          {/* فلاتر الحالة - تصميم مضغوط */}
+          <div className="flex gap-1 mb-2">
             <Button
               variant={filter === 'all' ? 'default' : 'outline'}
               onClick={() => setFilter('all')}
               size="sm"
-              className="gap-2"
+              className={cn(
+                "flex-1 gap-1 text-xs h-8",
+                filter === 'all' 
+                  ? "bg-blue-500 hover:bg-blue-600 text-white" 
+                  : "border-blue-200 text-blue-700 hover:bg-blue-50"
+              )}
               data-testid="filter-all"
             >
-              <Bell className="h-4 w-4" />
-              <span className="hidden sm:inline">جميع الإشعارات</span>
-              <span className="sm:hidden">الكل</span>
-              <Badge variant="secondary" className="text-xs">{stats.total}</Badge>
+              <Bell className="h-3 w-3" />
+              الكل
+              <span className="bg-white/20 px-1 rounded text-xs">{stats.total}</span>
             </Button>
             <Button
               variant={filter === 'unread' ? 'default' : 'outline'}
               onClick={() => setFilter('unread')}
               size="sm"
-              className="gap-2"
+              className={cn(
+                "flex-1 gap-1 text-xs h-8",
+                filter === 'unread' 
+                  ? "bg-orange-500 hover:bg-orange-600 text-white" 
+                  : "border-orange-200 text-orange-700 hover:bg-orange-50"
+              )}
               data-testid="filter-unread"
             >
-              <BellOff className="h-4 w-4" />
-              <span className="hidden sm:inline">غير مقروءة</span>
-              <span className="sm:hidden">جديد</span>
-              <Badge variant="secondary" className="text-xs">{stats.unread}</Badge>
+              <BellOff className="h-3 w-3" />
+              جديد
+              <span className="bg-white/20 px-1 rounded text-xs">{stats.unread}</span>
             </Button>
             <Button
               variant={filter === 'read' ? 'default' : 'outline'}
               onClick={() => setFilter('read')}
               size="sm"
-              className="gap-2"
+              className={cn(
+                "flex-1 gap-1 text-xs h-8",
+                filter === 'read' 
+                  ? "bg-green-500 hover:bg-green-600 text-white" 
+                  : "border-green-200 text-green-700 hover:bg-green-50"
+              )}
               data-testid="filter-read"
             >
-              <CheckCircle className="h-4 w-4" />
-              <span className="hidden sm:inline">مقروءة</span>
-              <span className="sm:hidden">مقروء</span>
-              <Badge variant="secondary" className="text-xs">{stats.total - stats.unread}</Badge>
+              <CheckCircle className="h-3 w-3" />
+              مقروء
+              <span className="bg-white/20 px-1 rounded text-xs">{stats.total - stats.unread}</span>
             </Button>
           </div>
 
-          {/* فلاتر النوع */}
+          {/* فلاتر النوع - تصميم أفقي مضغوط */}
           {notificationTypes.length > 0 && (
-            <div className="grid grid-cols-2 sm:flex gap-2">
+            <div className="flex gap-1 overflow-x-auto pb-1">
               <Button
                 variant={selectedType === 'all' ? 'secondary' : 'ghost'}
                 onClick={() => setSelectedType('all')}
                 size="sm"
-                className="text-xs"
+                className="text-xs h-7 px-2 flex-shrink-0"
               >
                 جميع الأنواع
               </Button>
@@ -254,7 +289,7 @@ export default function NotificationsPage() {
                   variant={selectedType === type ? 'secondary' : 'ghost'}
                   onClick={() => setSelectedType(type)}
                   size="sm" 
-                  className="text-xs gap-1"
+                  className="text-xs gap-1 h-7 px-2 flex-shrink-0"
                 >
                   {typeIcons[type as keyof typeof typeIcons] && 
                     React.createElement(typeIcons[type as keyof typeof typeIcons], { className: "h-3 w-3" })}
@@ -268,15 +303,15 @@ export default function NotificationsPage() {
           )}
         </div>
 
-        {/* قائمة الإشعارات */}
-        <div className="space-y-4">
+        {/* قائمة الإشعارات محسّنة */}
+        <div className="space-y-2">
           {filteredNotifications.length === 0 ? (
-            <div className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-lg rounded-2xl p-8 border border-white/20 shadow-lg text-center">
-              <Bell className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-600 mb-2">
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-lg border border-blue-100 dark:border-slate-700 text-center">
+              <Bell className="h-12 w-12 text-blue-400 mx-auto mb-3" />
+              <h3 className="text-base font-semibold text-gray-700 dark:text-gray-300 mb-1">
                 لا توجد إشعارات
               </h3>
-              <p className="text-gray-500">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
                 {filter === 'all' && 'لا توجد إشعارات في النظام حالياً'}
                 {filter === 'unread' && 'لا توجد إشعارات غير مقروءة'}
                 {filter === 'read' && 'لا توجد إشعارات مقروءة'}
@@ -291,33 +326,41 @@ export default function NotificationsPage() {
                 <div
                   key={notification.id}
                   className={cn(
-                    "bg-white/70 dark:bg-slate-800/70 backdrop-blur-lg rounded-2xl p-4 sm:p-6 border border-white/20 shadow-lg transition-all duration-200 hover:shadow-xl",
-                    notification.status === 'unread' && "border-l-4 border-l-blue-500 bg-blue-50/50 dark:bg-blue-900/20"
+                    "bg-white dark:bg-slate-800 rounded-xl p-3 border shadow-lg transition-all duration-200 hover:shadow-xl",
+                    notification.status === 'unread' 
+                      ? "border-l-4 border-l-blue-500 bg-blue-50 dark:bg-blue-900/20 border-blue-100 dark:border-blue-800" 
+                      : "border-gray-100 dark:border-slate-700"
                   )}
                   data-testid={`notification-${notification.id}`}
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-3 flex-1">
-                      <div className="flex items-center gap-2 mt-1">
-                        <TypeIcon className="h-5 w-5 text-gray-500" />
-                        <div className={cn("p-1 rounded-full", priorityColors[notification.priority])}>
-                          <PriorityIcon className="h-3 w-3 text-white" />
-                        </div>
+                  <div className="flex items-start gap-3">
+                    {/* أيقونات النوع والأولوية */}
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <div className={cn("p-1.5 rounded-lg", priorityColors[notification.priority])}>
+                        <TypeIcon className="h-3 w-3 text-white" />
                       </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-2 flex-wrap">
-                          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                            {notification.title}
-                          </h3>
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      {/* عنوان وشارات */}
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex-1">
+                          {notification.title}
+                        </h3>
+                        <div className="flex items-center gap-1 flex-shrink-0">
                           {notification.status === 'unread' && (
-                            <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-800">
-                              جديد
-                            </Badge>
+                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                           )}
                           <Badge
                             variant="outline"
-                            className={cn("text-xs text-white border-0", priorityColors[notification.priority])}
+                            className={cn(
+                              "text-xs h-5 px-1.5",
+                              notification.priority === 'critical' && "bg-red-100 text-red-700 border-red-200",
+                              notification.priority === 'high' && "bg-orange-100 text-orange-700 border-orange-200",
+                              notification.priority === 'medium' && "bg-yellow-100 text-yellow-700 border-yellow-200",
+                              notification.priority === 'low' && "bg-gray-100 text-gray-700 border-gray-200",
+                              notification.priority === 'info' && "bg-blue-100 text-blue-700 border-blue-200"
+                            )}
                           >
                             {notification.priority === 'info' && 'معلومات'}
                             {notification.priority === 'low' && 'منخفض'}
@@ -326,47 +369,50 @@ export default function NotificationsPage() {
                             {notification.priority === 'critical' && 'حرج'}
                           </Badge>
                         </div>
-                        
-                        <div className="flex items-center gap-2 text-sm text-gray-500 mb-3">
-                          <Clock className="h-4 w-4" />
-                          <span>
-                            {new Date(notification.createdAt).toLocaleDateString('ar-SA', {
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric',
-                              hour: '2-digit',
-                              minute: '2-digit'
-                            })}
-                          </span>
-                        </div>
-                        
-                        <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
-                          {notification.message}
-                        </p>
-                        
-                        {notification.actionRequired && (
-                          <div className="mt-4 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-                            <div className="flex items-center gap-2 text-yellow-800 dark:text-yellow-400">
-                              <AlertTriangle className="h-4 w-4" />
-                              <span className="text-sm font-medium">يتطلب إجراءً</span>
-                            </div>
-                          </div>
-                        )}
                       </div>
+                      
+                      {/* التاريخ والوقت */}
+                      <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400 mb-2">
+                        <Clock className="h-3 w-3" />
+                        <span>
+                          {new Date(notification.createdAt).toLocaleDateString('ar-SA', {
+                            month: 'short',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </span>
+                      </div>
+                      
+                      {/* الرسالة */}
+                      <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed mb-2">
+                        {notification.message}
+                      </p>
+                      
+                      {/* إجراء مطلوب */}
+                      {notification.actionRequired && (
+                        <div className="mt-2 p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                          <div className="flex items-center gap-1 text-yellow-800 dark:text-yellow-400">
+                            <AlertTriangle className="h-3 w-3" />
+                            <span className="text-xs font-medium">يتطلب إجراءً</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                     
+                    {/* زر تعليم كمقروء */}
                     {notification.status === 'unread' && (
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => handleMarkAsRead(notification.id)}
                         disabled={markAsReadMutation.isPending}
-                        className="gap-2 shrink-0"
+                        className="gap-1 h-7 px-2 flex-shrink-0 text-xs"
                         data-testid={`mark-read-${notification.id}`}
                       >
-                        <CheckCircle className="h-4 w-4" />
-                        <span className="hidden sm:inline">تعليم كمقروء</span>
-                        <span className="sm:hidden">مقروء</span>
+                        <CheckCircle className="h-3 w-3" />
+                        <span className="hidden sm:inline">مقروء</span>
+                        <span className="sm:hidden">✓</span>
                       </Button>
                     )}
                   </div>
