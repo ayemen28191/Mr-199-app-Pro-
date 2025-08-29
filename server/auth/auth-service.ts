@@ -309,6 +309,13 @@ export async function registerUser(request: RegisterRequest) {
         trustDeviceDays: 30,
         requirePasswordChange: false,
         requireMfaForSensitive: false,
+        notifyLoginFromNewDevice: true,
+        notifyPasswordChange: true,
+        notifyPermissionChange: true,
+        autoRevokeInactive: true,
+        inactivityDays: 90,
+        allowSessionSharing: false,
+        logDetailLevel: 'standard',
       });
 
     // إنشاء رمز التحقق من البريد الإلكتروني
