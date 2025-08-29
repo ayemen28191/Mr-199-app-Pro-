@@ -195,6 +195,7 @@ const DatabaseTableManager = () => {
   const [selectedTable, setSelectedTable] = useState<DatabaseTable | null>(null);
   const [showRecommendations, setShowRecommendations] = useState(true);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // جلب قائمة الجداول مع معلومات RLS
   const { data: tables = [], isLoading } = useQuery<DatabaseTable[]>({
@@ -685,7 +686,7 @@ export default function AISystemDashboard() {
 
         {/* Mobile-Optimized Tabs */}
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid grid-cols-3 sm:grid-cols-6 w-full h-auto p-1">
+          <TabsList className="grid grid-cols-6 w-full h-auto p-1">
             <TabsTrigger value="overview" className="text-xs sm:text-sm p-2 flex flex-col sm:flex-row items-center gap-1">
               <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4" />
               <span className="hidden sm:inline">نظرة عامة</span>
@@ -706,13 +707,15 @@ export default function AISystemDashboard() {
               <span className="hidden sm:inline">الذكاء الاصطناعي</span>
               <span className="sm:hidden">ذكاء</span>
             </TabsTrigger>
-            <TabsTrigger value="automation" className="text-xs sm:text-sm p-2 flex flex-col sm:flex-row items-center gap-1 hidden sm:flex">
+            <TabsTrigger value="automation" className="text-xs sm:text-sm p-2 flex flex-col sm:flex-row items-center gap-1">
               <Zap className="w-3 h-3 sm:w-4 sm:h-4" />
-              تلقائي
+              <span className="hidden sm:inline">تلقائي</span>
+              <span className="sm:hidden">تلقائي</span>
             </TabsTrigger>
-            <TabsTrigger value="settings" className="text-xs sm:text-sm p-2 flex flex-col sm:flex-row items-center gap-1 hidden sm:flex">
+            <TabsTrigger value="settings" className="text-xs sm:text-sm p-2 flex flex-col sm:flex-row items-center gap-1">
               <Settings className="w-3 h-3 sm:w-4 sm:h-4" />
-              إعدادات
+              <span className="hidden sm:inline">إعدادات</span>
+              <span className="sm:hidden">إعدادات</span>
             </TabsTrigger>
           </TabsList>
 
