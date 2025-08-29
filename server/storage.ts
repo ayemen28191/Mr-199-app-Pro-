@@ -320,6 +320,11 @@ export interface IStorage {
   executeAiSystemRecommendation(id: string, executionResult: any): Promise<AiSystemRecommendation | undefined>;
   dismissAiSystemRecommendation(id: string): Promise<AiSystemRecommendation | undefined>;
 
+  // Database Administration
+  getDatabaseTables(): Promise<any[]>;
+  toggleTableRLS(tableName: string, enable: boolean): Promise<any>;
+  getTablePolicies(tableName: string): Promise<any[]>;
+
 }
 
 export class DatabaseStorage implements IStorage {
@@ -3898,6 +3903,181 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error dismissing AI system recommendation:', error);
       return undefined;
+    }
+  }
+
+  // ===== وظائف إدارة قاعدة البيانات الذكية =====
+
+  async getDatabaseTables() {
+    try {
+      console.log('🔍 جاري تحليل جداول قاعدة البيانات...');
+      
+      // استعلام متقدم لجلب معلومات الجداول مع RLS
+      const query = sql`
+        SELECT 
+          t.table_name,
+          t.table_schema as schema_name,
+          COALESCE(pg_class.reltuples::bigint, 0) as row_count,
+          pg_tables.rowsecurity as rls_enabled,
+          CASE 
+            WHEN pg_tables.rowsecurity IS NULL THEN false
+            ELSE pg_tables.rowsecurity
+          END as rls_forced,
+          EXISTS(
+            SELECT 1 FROM pg_policies 
+            WHERE schemaname = t.table_schema 
+            AND tablename = t.table_name
+          ) as has_policies,
+          CASE 
+            WHEN t.table_name ~* 'user|auth|session|account' THEN 'high'
+            WHEN t.table_name ~* 'project|worker|supplier|payment' THEN 'medium'
+            ELSE 'low'
+          END as security_level,
+          CASE 
+            WHEN t.table_name ~* 'user|auth' AND NOT COALESCE(pg_tables.rowsecurity, false) 
+            THEN 'يُنصح بتفعيل RLS للحماية'
+            WHEN pg_class.reltuples > 10000 
+            THEN 'يُنصح بإضافة فهارس للأداء'
+            ELSE 'الإعدادات مناسبة'
+          END as recommended_action,
+          pg_size_pretty(pg_total_relation_size(pg_class.oid)) as size_estimate,
+          CURRENT_TIMESTAMP as last_analyzed
+        FROM information_schema.tables t
+        LEFT JOIN pg_tables ON pg_tables.tablename = t.table_name 
+          AND pg_tables.schemaname = t.table_schema
+        LEFT JOIN pg_class ON pg_class.relname = t.table_name
+        LEFT JOIN pg_namespace ON pg_namespace.nspname = t.table_schema 
+          AND pg_class.relnamespace = pg_namespace.oid
+        WHERE t.table_schema IN ('public', 'auth')
+          AND t.table_type = 'BASE TABLE'
+          AND t.table_name NOT LIKE 'pg_%'
+          AND t.table_name NOT LIKE 'sql_%'
+        ORDER BY 
+          CASE t.table_schema 
+            WHEN 'public' THEN 1 
+            WHEN 'auth' THEN 2 
+            ELSE 3 
+          END,
+          pg_class.reltuples DESC NULLS LAST,
+          t.table_name
+      `;
+      
+      const result = await db.execute(query);
+      
+      console.log(`✅ تم تحليل ${result.length} جدول بنجاح`);
+      
+      return result.map((row: any) => ({
+        table_name: row.table_name,
+        schema_name: row.schema_name,
+        row_count: parseInt(row.row_count) || 0,
+        rls_enabled: Boolean(row.rls_enabled),
+        rls_forced: Boolean(row.rls_forced),
+        has_policies: Boolean(row.has_policies),
+        security_level: row.security_level || 'low',
+        recommended_action: row.recommended_action || '',
+        size_estimate: row.size_estimate || '0 bytes',
+        last_analyzed: row.last_analyzed || new Date().toISOString()
+      }));
+      
+    } catch (error) {
+      console.error('❌ خطأ في تحليل جداول قاعدة البيانات:', error);
+      
+      // في حالة فشل الاستعلام المتقدم، نعيد البيانات الأساسية
+      const basicQuery = sql`
+        SELECT 
+          table_name,
+          table_schema as schema_name
+        FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+          AND table_type = 'BASE TABLE'
+        ORDER BY table_name
+      `;
+      
+      const basicResult = await db.execute(basicQuery);
+      
+      return basicResult.map((row: any) => ({
+        table_name: row.table_name,
+        schema_name: row.schema_name || 'public',
+        row_count: 0,
+        rls_enabled: false,
+        rls_forced: false,
+        has_policies: false,
+        security_level: 'medium' as const,
+        recommended_action: 'فحص تفصيلي مطلوب',
+        size_estimate: 'غير معروف',
+        last_analyzed: new Date().toISOString()
+      }));
+    }
+  }
+
+  async toggleTableRLS(tableName: string, enable: boolean) {
+    try {
+      console.log(`🔧 ${enable ? 'تفعيل' : 'تعطيل'} RLS للجدول: ${tableName}`);
+      
+      // التحقق من وجود الجدول أولاً
+      const tableCheck = await db.execute(sql`
+        SELECT table_name 
+        FROM information_schema.tables 
+        WHERE table_name = ${tableName} 
+          AND table_schema = 'public'
+      `);
+      
+      if (tableCheck.length === 0) {
+        throw new Error(`الجدول ${tableName} غير موجود`);
+      }
+      
+      // تنفيذ عملية تفعيل/تعطيل RLS
+      const operation = enable ? 'ENABLE' : 'DISABLE';
+      await db.execute(sql.raw(`ALTER TABLE ${tableName} ${operation} ROW LEVEL SECURITY`));
+      
+      console.log(`✅ تم ${enable ? 'تفعيل' : 'تعطيل'} RLS للجدول ${tableName} بنجاح`);
+      
+      return {
+        table_name: tableName,
+        rls_enabled: enable,
+        updated_at: new Date().toISOString()
+      };
+      
+    } catch (error) {
+      console.error(`❌ خطأ في ${enable ? 'تفعيل' : 'تعطيل'} RLS للجدول ${tableName}:`, error);
+      throw error;
+    }
+  }
+
+  async getTablePolicies(tableName: string) {
+    try {
+      console.log(`🔍 جلب سياسات RLS للجدول: ${tableName}`);
+      
+      const query = sql`
+        SELECT 
+          policyname as policy_name,
+          cmd as command,
+          permissive,
+          roles,
+          qual as expression,
+          with_check
+        FROM pg_policies 
+        WHERE tablename = ${tableName}
+          AND schemaname = 'public'
+        ORDER BY policyname
+      `;
+      
+      const result = await db.execute(query);
+      
+      console.log(`✅ تم جلب ${result.length} سياسة للجدول ${tableName}`);
+      
+      return result.map((row: any) => ({
+        policy_name: row.policy_name,
+        command: row.command,
+        permissive: row.permissive,
+        roles: row.roles,
+        expression: row.expression,
+        with_check: row.with_check
+      }));
+      
+    } catch (error) {
+      console.error(`❌ خطأ في جلب سياسات الجدول ${tableName}:`, error);
+      return [];
     }
   }
 

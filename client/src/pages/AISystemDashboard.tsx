@@ -13,7 +13,7 @@ import {
   Activity, Brain, Database, Settings, Play, Pause, AlertCircle, CheckCircle,
   TrendingUp, Zap, Shield, Cpu, BarChart3, Clock, Server, RefreshCw, Loader2,
   ChevronDown, ChevronUp, AlertTriangle, Eye, EyeOff, DollarSign, Users, 
-  Lock, Wrench, Truck
+  Lock, Wrench, Truck, Table, Edit, MoreVertical, Power, PowerOff
 } from 'lucide-react';
 
 interface SystemMetrics {
@@ -35,6 +35,19 @@ interface SystemRecommendation {
   autoExecutable: boolean;
   confidence: number;
   targetArea: string;
+}
+
+interface DatabaseTable {
+  table_name: string;
+  schema_name: string;
+  row_count: number;
+  rls_enabled: boolean;
+  rls_forced: boolean;
+  has_policies: boolean;
+  security_level: 'high' | 'medium' | 'low';
+  recommended_action: string;
+  size_estimate: string;
+  last_analyzed: string;
 }
 
 // مكون عرض التوصية المحسن
@@ -172,6 +185,298 @@ const RecommendationCard = ({ recommendation, onExecute, isExecuting, disabled }
             )}
           </Button>
         )}
+      </div>
+    </div>
+  );
+};
+
+// مكون إدارة الجداول الذكي
+const DatabaseTableManager = () => {
+  const [selectedTable, setSelectedTable] = useState<DatabaseTable | null>(null);
+  const [showRecommendations, setShowRecommendations] = useState(true);
+  const { toast } = useToast();
+
+  // جلب قائمة الجداول مع معلومات RLS
+  const { data: tables = [], isLoading } = useQuery<DatabaseTable[]>({
+    queryKey: ['/api/db-admin/tables'],
+    refetchInterval: 30000, // تحديث كل 30 ثانية
+  });
+
+  // تنفيذ عمليات RLS
+  const rlsToggleMutation = useMutation({
+    mutationFn: async ({ tableName, enable }: { tableName: string; enable: boolean }) => {
+      return apiRequest('/api/db-admin/toggle-rls', 'POST', { tableName, enable });
+    },
+    onSuccess: (data, { tableName, enable }) => {
+      toast({
+        title: "تم التحديث بنجاح",
+        description: `تم ${enable ? 'تفعيل' : 'تعطيل'} RLS للجدول ${tableName}`,
+        variant: "default",
+      });
+      // تحديث البيانات
+      queryClient.invalidateQueries({ queryKey: ['/api/db-admin/tables'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "خطأ في العملية",
+        description: error.message || "فشل في تحديث إعدادات RLS",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const getSecurityLevelColor = (level: string) => ({
+    high: 'bg-red-100 text-red-800',
+    medium: 'bg-yellow-100 text-yellow-800', 
+    low: 'bg-green-100 text-green-800'
+  }[level] || 'bg-gray-100 text-gray-800');
+
+  const getTableIcon = (tableName: string) => {
+    if (tableName.includes('user')) return <Users className="w-4 h-4" />;
+    if (tableName.includes('project')) return <BarChart3 className="w-4 h-4" />;
+    if (tableName.includes('auth')) return <Lock className="w-4 h-4" />;
+    return <Table className="w-4 h-4" />;
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Header */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Database className="w-5 h-5" />
+                إدارة الجداول الذكية
+              </CardTitle>
+              <CardDescription>
+                إدارة متقدمة لجداول قاعدة البيانات وسياسات الأمان
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setShowRecommendations(!showRecommendations)}
+              >
+                {showRecommendations ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                <span className="hidden sm:inline mr-1">
+                  {showRecommendations ? 'إخفاء' : 'عرض'} التوصيات
+                </span>
+              </Button>
+              <Button size="sm" variant="outline">
+                <RefreshCw className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* قائمة الجداول */}
+        <div className="lg:col-span-2">
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">الجداول المكتشفة ({tables.length})</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="flex items-center justify-center h-32">
+                  <Loader2 className="w-6 h-6 animate-spin" />
+                  <span className="mr-2">جاري تحليل قاعدة البيانات...</span>
+                </div>
+              ) : (
+                <ScrollArea className="h-96">
+                  <div className="space-y-2">
+                    {tables.map((table) => (
+                      <div 
+                        key={`${table.schema_name}.${table.table_name}`}
+                        className={`p-3 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
+                          selectedTable?.table_name === table.table_name ? 'border-blue-500 bg-blue-50' : ''
+                        }`}
+                        onClick={() => setSelectedTable(table)}
+                      >
+                        {/* معلومات الجدول */}
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            {getTableIcon(table.table_name)}
+                            <div>
+                              <h4 className="text-sm font-medium">{table.table_name}</h4>
+                              <p className="text-xs text-gray-500">{table.schema_name}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Badge className={`text-xs ${getSecurityLevelColor(table.security_level)}`}>
+                              {table.security_level === 'high' ? 'عالي' : 
+                               table.security_level === 'medium' ? 'متوسط' : 'منخفض'}
+                            </Badge>
+                          </div>
+                        </div>
+
+                        {/* حالة RLS */}
+                        <div className="grid grid-cols-2 gap-3 mb-2">
+                          <div className="flex items-center gap-2">
+                            {table.rls_enabled ? (
+                              <Power className="w-3 h-3 text-green-600" />
+                            ) : (
+                              <PowerOff className="w-3 h-3 text-red-600" />
+                            )}
+                            <span className="text-xs">
+                              RLS {table.rls_enabled ? 'مُفعّل' : 'معطّل'}
+                            </span>
+                          </div>
+                          <div className="text-xs text-gray-600">
+                            <Clock className="w-3 h-3 inline mr-1" />
+                            {table.row_count.toLocaleString()} صف
+                          </div>
+                        </div>
+
+                        {/* التوصية */}
+                        {table.recommended_action && (
+                          <div className="text-xs bg-blue-50 p-2 rounded border-r-2 border-blue-400">
+                            💡 {table.recommended_action}
+                          </div>
+                        )}
+
+                        {/* أزرار التحكم */}
+                        <div className="flex items-center justify-between mt-2 pt-2 border-t">
+                          <div className="text-xs text-gray-500">
+                            حجم: {table.size_estimate}
+                          </div>
+                          <Button
+                            size="sm"
+                            variant={table.rls_enabled ? "outline" : "default"}
+                            className="text-xs py-1 h-6"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              rlsToggleMutation.mutate({
+                                tableName: table.table_name,
+                                enable: !table.rls_enabled
+                              });
+                            }}
+                            disabled={rlsToggleMutation.isPending}
+                          >
+                            {rlsToggleMutation.isPending ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              table.rls_enabled ? 'تعطيل RLS' : 'تفعيل RLS'
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* اللوحة الجانبية - التوصيات والتفاصيل */}
+        <div className="space-y-4">
+          {showRecommendations && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Brain className="w-4 h-4" />
+                  التوصيات الذكية
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="w-4 h-4 text-yellow-600 flex-shrink-0 mt-0.5" />
+                      <div className="text-sm">
+                        <div className="font-medium mb-1">تحسين الأمان</div>
+                        <div className="text-gray-600">
+                          يُنصح بتفعيل RLS على الجداول التي تحتوي على بيانات المستخدمين
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-start gap-2">
+                      <TrendingUp className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+                      <div className="text-sm">
+                        <div className="font-medium mb-1">تحسين الأداء</div>
+                        <div className="text-gray-600">
+                          إضافة فهارس للجداول الكبيرة لتحسين الاستعلامات
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                    <div className="flex items-start gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                      <div className="text-sm">
+                        <div className="font-medium mb-1">أمان ممتاز</div>
+                        <div className="text-gray-600">
+                          معظم الجداول الحساسة محمية بسياسات RLS
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* تفاصيل الجدول المحدد */}
+          {selectedTable && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Edit className="w-4 h-4" />
+                  تفاصيل الجدول
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div>
+                    <h4 className="font-medium text-sm mb-1">{selectedTable.table_name}</h4>
+                    <p className="text-xs text-gray-600">{selectedTable.schema_name}</p>
+                  </div>
+                  
+                  <Separator />
+                  
+                  <div className="grid grid-cols-2 gap-3 text-xs">
+                    <div>
+                      <span className="text-gray-600">الصفوف:</span>
+                      <div className="font-medium">{selectedTable.row_count.toLocaleString()}</div>
+                    </div>
+                    <div>
+                      <span className="text-gray-600">الحجم:</span>
+                      <div className="font-medium">{selectedTable.size_estimate}</div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span>RLS Status:</span>
+                      <Badge variant={selectedTable.rls_enabled ? "default" : "secondary"}>
+                        {selectedTable.rls_enabled ? 'مُفعّل' : 'معطّل'}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span>السياسات:</span>
+                      <Badge variant={selectedTable.has_policies ? "default" : "secondary"}>
+                        {selectedTable.has_policies ? 'موجودة' : 'غير موجودة'}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <Button size="sm" className="w-full">
+                    <Edit className="w-3 h-3 mr-1" />
+                    إدارة السياسات
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -380,7 +685,7 @@ export default function AISystemDashboard() {
 
         {/* Mobile-Optimized Tabs */}
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid grid-cols-3 sm:grid-cols-5 w-full h-auto p-1">
+          <TabsList className="grid grid-cols-3 sm:grid-cols-6 w-full h-auto p-1">
             <TabsTrigger value="overview" className="text-xs sm:text-sm p-2 flex flex-col sm:flex-row items-center gap-1">
               <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4" />
               <span className="hidden sm:inline">نظرة عامة</span>
@@ -390,6 +695,11 @@ export default function AISystemDashboard() {
               <Database className="w-3 h-3 sm:w-4 sm:h-4" />
               <span className="hidden sm:inline">قاعدة البيانات</span>
               <span className="sm:hidden">قاعدة</span>
+            </TabsTrigger>
+            <TabsTrigger value="db-admin" className="text-xs sm:text-sm p-2 flex flex-col sm:flex-row items-center gap-1">
+              <Table className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">إدارة الجداول</span>
+              <span className="sm:hidden">جداول</span>
             </TabsTrigger>
             <TabsTrigger value="ai" className="text-xs sm:text-sm p-2 flex flex-col sm:flex-row items-center gap-1">
               <Brain className="w-3 h-3 sm:w-4 sm:h-4" />
@@ -781,6 +1091,10 @@ export default function AISystemDashboard() {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          <TabsContent value="db-admin" className="mt-3 sm:mt-4">
+            <DatabaseTableManager />
           </TabsContent>
 
           <TabsContent value="automation" className="mt-3 sm:mt-4 hidden sm:block">

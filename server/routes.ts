@@ -47,6 +47,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log('💡 تأكد من تنفيذ استعلامات قاعدة البيانات في Supabase');
   }
   
+  // ====== مسارات إدارة قاعدة البيانات الذكية ======
+  
+  // جلب قائمة الجداول مع معلومات RLS
+  app.get("/api/db-admin/tables", async (req, res) => {
+    try {
+      const tables = await storage.getDatabaseTables();
+      res.json(tables);
+    } catch (error) {
+      console.error('خطأ في جلب جداول قاعدة البيانات:', error);
+      res.status(500).json({ message: "خطأ في جلب جداول قاعدة البيانات" });
+    }
+  });
+
+  // تفعيل/تعطيل RLS للجدول
+  app.post("/api/db-admin/toggle-rls", async (req, res) => {
+    try {
+      const { tableName, enable } = req.body;
+      
+      if (!tableName || typeof enable !== 'boolean') {
+        return res.status(400).json({ message: "معطيات غير صحيحة" });
+      }
+
+      const result = await storage.toggleTableRLS(tableName, enable);
+      res.json({ 
+        success: true, 
+        message: `تم ${enable ? 'تفعيل' : 'تعطيل'} RLS للجدول ${tableName}`,
+        result 
+      });
+    } catch (error) {
+      console.error('خطأ في تحديث RLS:', error);
+      res.status(500).json({ message: "خطأ في تحديث إعدادات RLS" });
+    }
+  });
+
+  // جلب سياسات RLS للجدول
+  app.get("/api/db-admin/policies/:tableName", async (req, res) => {
+    try {
+      const { tableName } = req.params;
+      const policies = await storage.getTablePolicies(tableName);
+      res.json(policies);
+    } catch (error) {
+      console.error('خطأ في جلب سياسات الجدول:', error);
+      res.status(500).json({ message: "خطأ في جلب سياسات الجدول" });
+    }
+  });
+
   // ====== مسارات النظام الذكي ======
   
   // حالة النظام الذكي الحقيقية
