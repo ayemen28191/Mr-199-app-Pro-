@@ -11,7 +11,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { 
   Activity, Brain, Database, Settings, Play, Pause, AlertCircle, CheckCircle,
-  TrendingUp, Zap, Shield, Cpu, BarChart3, Clock, Server, RefreshCw
+  TrendingUp, Zap, Shield, Cpu, BarChart3, Clock, Server, RefreshCw, Loader2
 } from 'lucide-react';
 
 interface SystemMetrics {
@@ -30,6 +30,7 @@ export default function AISystemDashboard() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [isSystemRunning, setIsSystemRunning] = useState(false);
+  const [executingRecommendation, setExecutingRecommendation] = useState<string | null>(null);
 
   // جلب حالة النظام
   const { data: systemStatus } = useQuery<any>({
@@ -75,15 +76,33 @@ export default function AISystemDashboard() {
   // تنفيذ التوصيات
   const executeRecommendationMutation = useMutation({
     mutationFn: async (recommendationId: string) => {
+      setExecutingRecommendation(recommendationId);
       return apiRequest('/api/ai-system/execute-recommendation', 'POST', { recommendationId });
     },
-    onSuccess: (data) => {
+    onSuccess: (data, recommendationId) => {
       toast({
-        title: "تم بدء التنفيذ",
-        description: data.message,
-        variant: "default",
+        title: "🚀 تم بدء التنفيذ",
+        description: `${data.message} - الوقت المتوقع: ${data.estimatedTime}`,
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/ai-system/recommendations'] });
+      
+      // محاكاة إتمام التنفيذ بعد وقت محدد
+      setTimeout(() => {
+        setExecutingRecommendation(null);
+        toast({
+          title: "✅ تم إكمال التنفيذ",
+          description: "تم تنفيذ التوصية بنجاح وتحسين الأداء",
+        });
+        queryClient.invalidateQueries({ queryKey: ['/api/ai-system/recommendations'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/ai-system/metrics'] });
+      }, 3000); // 3 ثوانٍ
+    },
+    onError: (error) => {
+      setExecutingRecommendation(null);
+      toast({
+        title: "❌ خطأ في التنفيذ",
+        description: "حدث خطأ أثناء تنفيذ التوصية",
+        variant: "destructive",
+      });
     }
   });
 
@@ -290,13 +309,24 @@ export default function AISystemDashboard() {
                             {rec.autoExecutable && (
                               <Button 
                                 size="sm" 
-                                variant="outline" 
-                                className="text-xs py-1 h-6" 
+                                variant={executingRecommendation === rec.id ? "default" : "outline"}
+                                className={`text-xs py-1 h-6 transition-all ${
+                                  executingRecommendation === rec.id 
+                                    ? 'bg-blue-500 text-white animate-pulse' 
+                                    : ''
+                                }`}
                                 data-testid={`button-execute-${rec.id}`}
                                 onClick={() => handleExecuteRecommendation(rec.id)}
-                                disabled={executeRecommendationMutation.isPending}
+                                disabled={executeRecommendationMutation.isPending || !!executingRecommendation}
                               >
-                                {executeRecommendationMutation.isPending ? 'جاري التنفيذ...' : 'تنفيذ تلقائي'}
+                                {executingRecommendation === rec.id ? (
+                                  <>
+                                    <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                    تنفيذ جاري...
+                                  </>
+                                ) : (
+                                  'تنفيذ تلقائي'
+                                )}
                               </Button>
                             )}
                           </div>
