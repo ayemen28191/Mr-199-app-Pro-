@@ -125,12 +125,12 @@ function generateExpectedSchema(): ExpectedSchema {
   console.log('🔍 بدء استخراج المخطط المتوقع من ملفات TypeScript...');
   
   const project = new Project({
-    tsConfigFilePath: resolve(process.cwd(), 'tsconfig.json'),
+    tsConfigFilePath: resolve(process.cwd(), '..', 'tsconfig.json'),
   });
   
   // إضافة الملفات المطلوبة
   const sourceFiles = [
-    resolve(process.cwd(), 'shared/schema.ts')
+    resolve(process.cwd(), '..', 'shared/schema.ts')
   ];
   
   const actualFiles: string[] = [];
@@ -186,7 +186,7 @@ function main() {
     const schema = generateExpectedSchema();
     
     // كتابة النتيجة إلى ملف JSON
-    const outputPath = resolve(process.cwd(), 'scripts/expected_schema.json');
+    const outputPath = resolve(process.cwd(), 'expected_schema.json');
     writeFileSync(outputPath, JSON.stringify(schema, null, 2), 'utf-8');
     
     console.log('\n📊 ملخص الاستخراج:');

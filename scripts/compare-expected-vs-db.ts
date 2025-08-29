@@ -1,5 +1,5 @@
 import { Pool } from 'pg';
-import { readFileSync, existsSync } from 'fs';
+import { readFileSync, existsSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
 
 interface DatabaseColumn {
@@ -111,7 +111,10 @@ function isTypeCompatible(expectedType: string | undefined, actualType: string):
 }
 
 async function getDatabaseSchema(connectionString: string): Promise<Record<string, Record<string, DatabaseColumn>>> {
-  const pool = new Pool({ connectionString });
+  const pool = new Pool({ 
+    connectionString,
+    ssl: { rejectUnauthorized: false } // للتطوير فقط
+  });
   
   try {
     console.log('🔗 الاتصال بقاعدة البيانات...');
@@ -151,7 +154,7 @@ async function getDatabaseSchema(connectionString: string): Promise<Record<strin
 }
 
 function loadExpectedSchema(): ExpectedSchema {
-  const schemaPath = resolve(process.cwd(), 'scripts/expected_schema.json');
+  const schemaPath = resolve(process.cwd(), 'expected_schema.json');
   
   if (!existsSync(schemaPath)) {
     throw new Error(`ملف المخطط المتوقع غير موجود: ${schemaPath}. قم بتشغيل generate-expected-schema.ts أولاً`);
@@ -309,7 +312,9 @@ function printReport(result: ComparisonResult) {
 
 async function main() {
   try {
-    const DATABASE_URL = process.env.DATABASE_URL;
+    // استخدام نفس اتصال Supabase المستخدم في التطبيق
+    const DATABASE_URL = process.env.DATABASE_URL || "postgresql://postgres.wibtasmyusxfqxxqekks:Ay**--772283228@aws-0-us-east-1.pooler.supabase.com:6543/postgres";
+    
     if (!DATABASE_URL) {
       throw new Error('متغير البيئة DATABASE_URL مطلوب');
     }
@@ -329,8 +334,8 @@ async function main() {
     printReport(result);
     
     // حفظ التقرير كـ JSON
-    const reportPath = resolve(process.cwd(), 'scripts/schema_comparison_report.json');
-    require('fs').writeFileSync(reportPath, JSON.stringify(result, null, 2));
+    const reportPath = resolve(process.cwd(), 'schema_comparison_report.json');
+    writeFileSync(reportPath, JSON.stringify(result, null, 2));
     console.log(`\n💾 تم حفظ التقرير في: ${reportPath}`);
     
     // إنهاء العملية بحالة الخطأ إذا كان هناك انحراف

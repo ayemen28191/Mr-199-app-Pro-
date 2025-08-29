@@ -9,42 +9,42 @@ echo "============================================="
 case "$1" in
   "gen:expected")
     echo "📋 توليد المخطط المتوقع من الكود..."
-    npx tsx scripts/generate-expected-schema.ts
+    cd "$(dirname "$0")" && npx tsx generate-expected-schema.ts
     ;;
     
   "check:schema")
     echo "🔍 مقارنة المخطط مع قاعدة البيانات..."
-    npx tsx scripts/compare-expected-vs-db.ts
+    cd "$(dirname "$0")" && npx tsx compare-expected-vs-db.ts
     ;;
     
   "schema:ci")
     echo "🚀 تشغيل فحص CI كامل..."
-    npx tsx scripts/generate-expected-schema.ts && npx tsx scripts/compare-expected-vs-db.ts
+    cd "$(dirname "$0")" && npx tsx generate-expected-schema.ts && npx tsx compare-expected-vs-db.ts
     ;;
     
   "backup:create")
     echo "💾 إنشاء نسخة احتياطية..."
-    npx tsx scripts/backup-database.ts create $2 $3
+    cd "$(dirname "$0")" && npx tsx backup-database.ts create $2 $3
     ;;
     
   "backup:restore")
     echo "🔄 استعادة نسخة احتياطية..."
-    npx tsx scripts/backup-database.ts restore $2 $3
+    cd "$(dirname "$0")" && npx tsx backup-database.ts restore $2 $3
     ;;
     
   "backup:list")
     echo "📂 عرض النسخ الاحتياطية..."
-    npx tsx scripts/backup-database.ts list
+    cd "$(dirname "$0")" && npx tsx backup-database.ts list
     ;;
     
   "ddl:setup")
     echo "⚙️ إعداد نظام مراقبة DDL..."
-    npx tsx scripts/setup-ddl-audit.ts setup $2
+    cd "$(dirname "$0")" && npx tsx setup-ddl-audit.ts setup $2
     ;;
     
   "ddl:test")
     echo "🧪 اختبار نظام مراقبة DDL..."
-    npx tsx scripts/setup-ddl-audit.ts test $2
+    cd "$(dirname "$0")" && npx tsx setup-ddl-audit.ts test $2
     ;;
     
   *)
