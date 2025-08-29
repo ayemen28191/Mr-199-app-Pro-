@@ -99,7 +99,14 @@ export default function AISystemDashboard() {
     }
   }, [systemStatus]);
 
-  const lastUpdate = new Date().toLocaleString('ar-SA');
+  const lastUpdate = new Date().toLocaleString('en-GB', {
+    year: 'numeric',
+    month: '2-digit', 
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  });
 
   const formatUptime = (ms: number) => {
     const h = Math.floor(ms / 3600000), m = Math.floor((ms % 3600000) / 60000);
@@ -176,7 +183,7 @@ export default function AISystemDashboard() {
             <CardContent className="p-3 sm:p-4">
               <div className="flex items-center justify-between mb-2">
                 <Activity className="h-4 w-4 text-green-600" />
-                <span className={`text-sm font-bold ${getHealthColor(metrics.system.health)}`}>{metrics.system.health.toFixed(0)}%</span>
+                <span className={`text-sm font-bold ${getHealthColor(metrics.system.health)}`}>{metrics.system.health.toFixed(1)}%</span>
               </div>
               <div className="text-xs text-gray-600">صحة النظام</div>
               <Progress value={metrics.system.health} className="h-1 mt-2" />
@@ -190,7 +197,7 @@ export default function AISystemDashboard() {
                 <span className="text-sm font-bold">{metrics.ai.decisions}</span>
               </div>
               <div className="text-xs text-gray-600">قرارات ذكية</div>
-              <div className="text-xs text-gray-500 mt-1">دقة: {metrics.ai.accuracy}%</div>
+              <div className="text-xs text-gray-500 mt-1">دقة: {metrics.ai.accuracy.toFixed(1)}%</div>
             </CardContent>
           </Card>
 
@@ -201,7 +208,7 @@ export default function AISystemDashboard() {
                 <span className="text-sm font-bold">{metrics.automation.tasksCompleted}</span>
               </div>
               <div className="text-xs text-gray-600">مهام مكتملة</div>
-              <div className="text-xs text-gray-500 mt-1">نجاح: {metrics.automation.successRate}%</div>
+              <div className="text-xs text-gray-500 mt-1">نجاح: {metrics.automation.successRate.toFixed(1)}%</div>
             </CardContent>
           </Card>
         </div>
@@ -247,15 +254,15 @@ export default function AISystemDashboard() {
                 <CardContent>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div className="text-center p-3 bg-blue-50 rounded-lg">
-                      <div className="text-xl sm:text-2xl font-bold text-blue-600 mb-1">{metrics.database.performance}%</div>
+                      <div className="text-xl sm:text-2xl font-bold text-blue-600 mb-1">{metrics.database.performance.toFixed(1)}%</div>
                       <div className="text-xs text-gray-600">أداء قاعدة البيانات</div>
                     </div>
                     <div className="text-center p-3 bg-green-50 rounded-lg">
-                      <div className="text-xl sm:text-2xl font-bold text-green-600 mb-1">{metrics.ai.accuracy}%</div>
+                      <div className="text-xl sm:text-2xl font-bold text-green-600 mb-1">{metrics.ai.accuracy.toFixed(1)}%</div>
                       <div className="text-xs text-gray-600">دقة الذكاء الاصطناعي</div>
                     </div>
                     <div className="text-center p-3 bg-purple-50 rounded-lg">
-                      <div className="text-xl sm:text-2xl font-bold text-purple-600 mb-1">{metrics.automation.successRate}%</div>
+                      <div className="text-xl sm:text-2xl font-bold text-purple-600 mb-1">{metrics.automation.successRate.toFixed(1)}%</div>
                       <div className="text-xs text-gray-600">معدل نجاح التشغيل</div>
                     </div>
                   </div>
@@ -354,14 +361,14 @@ export default function AISystemDashboard() {
                     <div className="space-y-2">
                       <div className="flex justify-between">
                         <span className="text-sm">صحة قاعدة البيانات</span>
-                        <span className={`font-bold ${getHealthColor(metrics.database.health)}`}>{metrics.database.health}%</span>
+                        <span className={`font-bold ${getHealthColor(metrics.database.health)}`}>{metrics.database.health.toFixed(1)}%</span>
                       </div>
                       <Progress value={metrics.database.health} className="h-1.5" />
                     </div>
                     <div className="space-y-2">
                       <div className="flex justify-between">
                         <span className="text-sm">الأداء العام</span>
-                        <span className={`font-bold ${getHealthColor(metrics.database.performance)}`}>{metrics.database.performance}%</span>
+                        <span className={`font-bold ${getHealthColor(metrics.database.performance)}`}>{metrics.database.performance.toFixed(1)}%</span>
                       </div>
                       <Progress value={metrics.database.performance} className="h-1.5" />
                     </div>
@@ -411,14 +418,14 @@ export default function AISystemDashboard() {
                     <div>
                       <div className="flex justify-between mb-1 text-sm">
                         <span>مستوى التعلم</span>
-                        <span>{metrics.ai.learning}%</span>
+                        <span>{metrics.ai.learning.toFixed(1)}%</span>
                       </div>
                       <Progress value={metrics.ai.learning} className="h-1.5" />
                     </div>
                     <div>
                       <div className="flex justify-between mb-1 text-sm">
                         <span>دقة القرارات</span>
-                        <span>{metrics.ai.accuracy}%</span>
+                        <span>{metrics.ai.accuracy.toFixed(1)}%</span>
                       </div>
                       <Progress value={metrics.ai.accuracy} className="h-1.5" />
                     </div>
@@ -491,7 +498,7 @@ export default function AISystemDashboard() {
                       <div className="text-xs text-gray-600">مهام مكتملة</div>
                     </div>
                     <div className="p-2 bg-gray-50 rounded">
-                      <div className="text-lg font-bold">{metrics.automation.successRate}%</div>
+                      <div className="text-lg font-bold">{metrics.automation.successRate.toFixed(1)}%</div>
                       <div className="text-xs text-gray-600">معدل النجاح</div>
                     </div>
                   </div>
@@ -535,7 +542,7 @@ export default function AISystemDashboard() {
                         <div className="text-xs text-gray-600">جدول</div>
                       </div>
                       <div className="p-2 bg-green-50 rounded">
-                        <div className="text-lg font-bold text-green-600">{metrics.database.health}%</div>
+                        <div className="text-lg font-bold text-green-600">{metrics.database.health.toFixed(1)}%</div>
                         <div className="text-xs text-gray-600">صحة</div>
                       </div>
                     </div>
@@ -543,7 +550,7 @@ export default function AISystemDashboard() {
                     <div className="space-y-2">
                       <div className="flex justify-between text-sm">
                         <span>الأداء العام</span>
-                        <span className={`font-bold ${getHealthColor(metrics.database.performance)}`}>{metrics.database.performance}%</span>
+                        <span className={`font-bold ${getHealthColor(metrics.database.performance)}`}>{metrics.database.performance.toFixed(1)}%</span>
                       </div>
                       <Progress value={metrics.database.performance} className="h-1.5" />
                     </div>
@@ -589,7 +596,7 @@ export default function AISystemDashboard() {
                     </div>
                     <div className="flex justify-between items-center text-sm">
                       <span>معدل النجاح</span>
-                      <span className="font-bold text-green-600">{metrics.automation.successRate}%</span>
+                      <span className="font-bold text-green-600">{metrics.automation.successRate.toFixed(1)}%</span>
                     </div>
                     <div className="flex justify-between items-center text-sm">
                       <span>الوقت الموفر</span>
