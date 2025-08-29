@@ -1,4 +1,5 @@
-import { Pool } from 'pg';
+import { Pool, neonConfig } from '@neondatabase/serverless';
+import ws from "ws";
 import { readFileSync, existsSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
 
@@ -110,15 +111,15 @@ function isTypeCompatible(expectedType: string | undefined, actualType: string):
   return false;
 }
 
-async function getDatabaseSchema(connectionString: string): Promise<Record<string, Record<string, DatabaseColumn>>> {
-  const pool = new Pool({ 
-    connectionString,
-    ssl: { rejectUnauthorized: false } // للتطوير فقط
-  });
+async function getDatabaseSchema(): Promise<Record<string, Record<string, DatabaseColumn>>> {
+  console.log('🔗 الاتصال بقاعدة البيانات باستخدام Neon Serverless (نفس طريقة التطبيق الرئيسي)...');
+  
+  // استخدام نفس التكوين المضمون من التطبيق الرئيسي
+  neonConfig.webSocketConstructor = ws;
+  const SUPABASE_DATABASE_URL = "postgresql://postgres.wibtasmyusxfqxxqekks:Ay**--772283228@aws-0-us-east-1.pooler.supabase.com:6543/postgres";
+  const pool = new Pool({ connectionString: SUPABASE_DATABASE_URL });
   
   try {
-    console.log('🔗 الاتصال بقاعدة البيانات...');
-    
     const query = `
       SELECT 
         table_name,
@@ -145,9 +146,12 @@ async function getDatabaseSchema(connectionString: string): Promise<Record<strin
       schema[tableName][row.column_name] = row as DatabaseColumn;
     }
     
-    console.log(`📊 تم استخراج مخطط ${Object.keys(schema).length} جدول من قاعدة البيانات`);
+    console.log(`✨ بنجاح! تم استخراج مخطط ${Object.keys(schema).length} جدول من قاعدة البيانات`);
     return schema;
     
+  } catch (error) {
+    console.error('❌ خطأ في استعلام قاعدة البيانات:', error);
+    throw error;
   } finally {
     await pool.end();
   }
@@ -312,20 +316,13 @@ function printReport(result: ComparisonResult) {
 
 async function main() {
   try {
-    // استخدام نفس اتصال Supabase المستخدم في التطبيق
-    const DATABASE_URL = process.env.DATABASE_URL || "postgresql://postgres.wibtasmyusxfqxxqekks:Ay**--772283228@aws-0-us-east-1.pooler.supabase.com:6543/postgres";
-    
-    if (!DATABASE_URL) {
-      throw new Error('متغير البيئة DATABASE_URL مطلوب');
-    }
-    
     console.log('🚀 بدء مقارنة مخطط قاعدة البيانات...\n');
     
     // تحميل المخطط المتوقع
     const expectedSchema = loadExpectedSchema();
     
-    // استخراج المخطط الفعلي
-    const actualSchema = await getDatabaseSchema(DATABASE_URL);
+    // استخراج المخطط الفعلي باستخدام نفس اتصال التطبيق
+    const actualSchema = await getDatabaseSchema();
     
     // إجراء المقارنة
     const result = compareSchemas(expectedSchema, actualSchema);
