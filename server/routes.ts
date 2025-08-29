@@ -30,6 +30,7 @@ import {
   insertNotificationSchema
 } from "@shared/schema";
 import { NotificationService } from "./services/NotificationService";
+import { aiSystemService } from "./services/AiSystemService";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
@@ -48,17 +49,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // ====== مسارات النظام الذكي ======
   
-  // حالة النظام الذكي
+  // حالة النظام الذكي الحقيقية
   app.get("/api/ai-system/status", async (req, res) => {
     try {
-      const systemStatus = {
-        status: "running",
-        uptime: Date.now() - 1756477114796, // وقت التشغيل من البداية
-        health: 98 + Math.random() * 2,
-        version: "2.1.0",
-        lastUpdate: new Date().toISOString()
-      };
-      
+      const systemStatus = await aiSystemService.getSystemStatus();
       res.json(systemStatus);
     } catch (error) {
       console.error('خطأ في جلب حالة النظام الذكي:', error);
@@ -66,36 +60,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // مقاييس النظام المباشرة
+  // مقاييس النظام الحقيقية من قاعدة البيانات
   app.get("/api/ai-system/metrics", async (req, res) => {
     try {
-      const metrics = {
-        system: {
-          status: "running",
-          uptime: Date.now() - 1756477114796,
-          health: 98 + Math.random() * 2,
-          version: "2.1.0"
-        },
-        database: {
-          tables: 37,
-          health: 95 + Math.random() * 5,
-          issues: 0,
-          performance: 92 + Math.random() * 8
-        },
-        ai: {
-          decisions: Math.floor(Math.random() * 50) + 100,
-          accuracy: 88 + Math.random() * 12,
-          learning: 45 + Math.random() * 25,
-          predictions: Math.floor(Math.random() * 10) + 3
-        },
-        automation: {
-          tasksCompleted: Math.floor(Math.random() * 20) + 50,
-          successRate: 96 + Math.random() * 4,
-          timeSaved: Math.floor(Math.random() * 300) + 120,
-          errors: Math.floor(Math.random() * 3)
-        }
-      };
-      
+      const metrics = await aiSystemService.getSystemMetrics();
       res.json(metrics);
     } catch (error) {
       console.error('خطأ في جلب مقاييس النظام:', error);
@@ -103,41 +71,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // توصيات الذكاء الاصطناعي
+  // توصيات الذكاء الاصطناعي الحقيقية
   app.get("/api/ai-system/recommendations", async (req, res) => {
     try {
-      const recommendations = [
-        {
-          id: 'rec_1',
-          type: 'optimization',
-          priority: 'high',
-          description: 'تحسين الفهارس للاستعلامات المتكررة في جدول المشاريع',
-          estimatedImpact: '25% تحسن في الأداء',
-          timeframe: 'أسبوع واحد',
-          autoExecutable: true,
-          confidence: 95
-        },
-        {
-          id: 'rec_2',
-          type: 'maintenance',
-          priority: 'medium',
-          description: 'تنظيف البيانات القديمة والسجلات المنتهية الصلاحية',
-          estimatedImpact: 'توفير 15% من مساحة التخزين',
-          timeframe: '3 أيام',
-          autoExecutable: true,
-          confidence: 87
-        },
-        {
-          id: 'rec_3',
-          type: 'security',
-          priority: 'low',
-          description: 'تحديث إعدادات الأمان وكلمات المرور المنتهية الصلاحية',
-          estimatedImpact: 'تحسن الأمان العام',
-          timeframe: 'أسبوعين',
-          autoExecutable: false,
-          confidence: 92
-        }
-      ];
+      // جلب التوصيات الموجودة أو توليد جديدة
+      let recommendations = await storage.getAiSystemRecommendations({ status: 'active' });
+      
+      if (recommendations.length === 0) {
+        // توليد توصيات جديدة إذا لم توجد
+        recommendations = await aiSystemService.generateRecommendations();
+      }
       
       res.json(recommendations);
     } catch (error) {

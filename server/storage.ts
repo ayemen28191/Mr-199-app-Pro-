@@ -18,6 +18,9 @@ import {
   // Notifications types
   type NotificationReadState,
   type InsertNotificationReadState,
+  // AI System types (النظام الذكي)
+  type AiSystemLog, type AiSystemMetric, type AiSystemDecision, type AiSystemRecommendation,
+  type InsertAiSystemLog, type InsertAiSystemMetric, type InsertAiSystemDecision, type InsertAiSystemRecommendation,
   type InsertProject, type InsertWorker, type InsertFundTransfer, type InsertWorkerAttendance,
   type InsertMaterial, type InsertMaterialPurchase, type InsertTransportationExpense, type InsertDailyExpenseSummary,
   type InsertWorkerTransfer, type InsertWorkerBalance, type InsertAutocompleteData, type InsertWorkerType, type InsertWorkerMiscExpense, type InsertUser,
@@ -28,7 +31,9 @@ import {
   // Equipment tables (النظام المبسط)
   equipment, equipmentMovements,
   // Notifications tables
-  notificationReadStates
+  notificationReadStates,
+  // AI System tables (النظام الذكي)
+  aiSystemLogs, aiSystemMetrics, aiSystemDecisions, aiSystemRecommendations
 } from "@shared/schema";
 import { db } from "./db";
 import { and, eq, isNull, or, gte, lte, desc, ilike, like, isNotNull, asc, count, sum, ne, max, sql, inArray, gt } from 'drizzle-orm';
@@ -284,6 +289,36 @@ export interface IStorage {
   markNotificationAsRead(userId: string, notificationId: string, notificationType: string): Promise<void>;
   markAllNotificationsAsRead(userId: string): Promise<void>;
   getReadNotifications(userId: string, notificationType?: string): Promise<NotificationReadState[]>;
+
+  // =====================================================
+  // AI System Methods (نظام الذكاء الاصطناعي)
+  // =====================================================
+
+  // AI System Logs
+  getAiSystemLogs(filters?: { logType?: string; operation?: string; limit?: number }): Promise<AiSystemLog[]>;
+  createAiSystemLog(log: InsertAiSystemLog): Promise<AiSystemLog>;
+  deleteOldAiSystemLogs(olderThanDays: number): Promise<void>;
+
+  // AI System Metrics
+  getAiSystemMetrics(filters?: { metricType?: string; isActive?: boolean; limit?: number }): Promise<AiSystemMetric[]>;
+  getLatestAiSystemMetrics(): Promise<AiSystemMetric[]>;
+  createAiSystemMetric(metric: InsertAiSystemMetric): Promise<AiSystemMetric>;
+  updateAiSystemMetric(id: string, metric: Partial<InsertAiSystemMetric>): Promise<AiSystemMetric | undefined>;
+
+  // AI System Decisions
+  getAiSystemDecisions(filters?: { status?: string; decisionType?: string; priority?: number }): Promise<AiSystemDecision[]>;
+  getAiSystemDecision(id: string): Promise<AiSystemDecision | undefined>;
+  createAiSystemDecision(decision: InsertAiSystemDecision): Promise<AiSystemDecision>;
+  updateAiSystemDecision(id: string, decision: Partial<InsertAiSystemDecision>): Promise<AiSystemDecision | undefined>;
+  executeAiSystemDecision(id: string, executedBy: string): Promise<AiSystemDecision | undefined>;
+
+  // AI System Recommendations
+  getAiSystemRecommendations(filters?: { status?: string; priority?: string; targetArea?: string }): Promise<AiSystemRecommendation[]>;
+  getAiSystemRecommendation(id: string): Promise<AiSystemRecommendation | undefined>;
+  createAiSystemRecommendation(recommendation: InsertAiSystemRecommendation): Promise<AiSystemRecommendation>;
+  updateAiSystemRecommendation(id: string, recommendation: Partial<InsertAiSystemRecommendation>): Promise<AiSystemRecommendation | undefined>;
+  executeAiSystemRecommendation(id: string, executionResult: any): Promise<AiSystemRecommendation | undefined>;
+  dismissAiSystemRecommendation(id: string): Promise<AiSystemRecommendation | undefined>;
 
 }
 
@@ -3566,6 +3601,303 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error getting read notifications:', error);
       return [];
+    }
+  }
+
+  // =====================================================
+  // AI System Implementation (تنفيذ النظام الذكي)
+  // =====================================================
+
+  // AI System Logs
+  async getAiSystemLogs(filters?: { logType?: string; operation?: string; limit?: number }): Promise<AiSystemLog[]> {
+    try {
+      let query = db.select().from(aiSystemLogs);
+      
+      const conditions = [];
+      if (filters?.logType) {
+        conditions.push(eq(aiSystemLogs.logType, filters.logType));
+      }
+      if (filters?.operation) {
+        conditions.push(ilike(aiSystemLogs.operation, `%${filters.operation}%`));
+      }
+
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
+
+      query = query.orderBy(desc(aiSystemLogs.createdAt));
+      
+      if (filters?.limit) {
+        query = query.limit(filters.limit);
+      }
+
+      return await query;
+    } catch (error) {
+      console.error('Error getting AI system logs:', error);
+      return [];
+    }
+  }
+
+  async createAiSystemLog(log: InsertAiSystemLog): Promise<AiSystemLog> {
+    try {
+      const [newLog] = await db.insert(aiSystemLogs).values(log).returning();
+      return newLog;
+    } catch (error) {
+      console.error('Error creating AI system log:', error);
+      throw error;
+    }
+  }
+
+  async deleteOldAiSystemLogs(olderThanDays: number): Promise<void> {
+    try {
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - olderThanDays);
+      
+      await db.delete(aiSystemLogs)
+        .where(lte(aiSystemLogs.createdAt, cutoffDate));
+    } catch (error) {
+      console.error('Error deleting old AI system logs:', error);
+      throw error;
+    }
+  }
+
+  // AI System Metrics
+  async getAiSystemMetrics(filters?: { metricType?: string; isActive?: boolean; limit?: number }): Promise<AiSystemMetric[]> {
+    try {
+      let query = db.select().from(aiSystemMetrics);
+      
+      const conditions = [];
+      if (filters?.metricType) {
+        conditions.push(eq(aiSystemMetrics.metricType, filters.metricType));
+      }
+      if (filters?.isActive !== undefined) {
+        conditions.push(eq(aiSystemMetrics.isActive, filters.isActive));
+      }
+
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
+
+      query = query.orderBy(desc(aiSystemMetrics.timestamp));
+      
+      if (filters?.limit) {
+        query = query.limit(filters.limit);
+      }
+
+      return await query;
+    } catch (error) {
+      console.error('Error getting AI system metrics:', error);
+      return [];
+    }
+  }
+
+  async getLatestAiSystemMetrics(): Promise<AiSystemMetric[]> {
+    try {
+      return await db.select().from(aiSystemMetrics)
+        .where(eq(aiSystemMetrics.isActive, true))
+        .orderBy(desc(aiSystemMetrics.timestamp))
+        .limit(10);
+    } catch (error) {
+      console.error('Error getting latest AI system metrics:', error);
+      return [];
+    }
+  }
+
+  async createAiSystemMetric(metric: InsertAiSystemMetric): Promise<AiSystemMetric> {
+    try {
+      const [newMetric] = await db.insert(aiSystemMetrics).values(metric).returning();
+      return newMetric;
+    } catch (error) {
+      console.error('Error creating AI system metric:', error);
+      throw error;
+    }
+  }
+
+  async updateAiSystemMetric(id: string, metric: Partial<InsertAiSystemMetric>): Promise<AiSystemMetric | undefined> {
+    try {
+      const [updatedMetric] = await db.update(aiSystemMetrics)
+        .set({ ...metric, timestamp: new Date() })
+        .where(eq(aiSystemMetrics.id, id))
+        .returning();
+      return updatedMetric || undefined;
+    } catch (error) {
+      console.error('Error updating AI system metric:', error);
+      return undefined;
+    }
+  }
+
+  // AI System Decisions
+  async getAiSystemDecisions(filters?: { status?: string; decisionType?: string; priority?: number }): Promise<AiSystemDecision[]> {
+    try {
+      let query = db.select().from(aiSystemDecisions);
+      
+      const conditions = [];
+      if (filters?.status) {
+        conditions.push(eq(aiSystemDecisions.status, filters.status));
+      }
+      if (filters?.decisionType) {
+        conditions.push(eq(aiSystemDecisions.decisionType, filters.decisionType));
+      }
+      if (filters?.priority) {
+        conditions.push(eq(aiSystemDecisions.priority, filters.priority));
+      }
+
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
+
+      return await query.orderBy(desc(aiSystemDecisions.createdAt));
+    } catch (error) {
+      console.error('Error getting AI system decisions:', error);
+      return [];
+    }
+  }
+
+  async getAiSystemDecision(id: string): Promise<AiSystemDecision | undefined> {
+    try {
+      const [decision] = await db.select().from(aiSystemDecisions)
+        .where(eq(aiSystemDecisions.id, id));
+      return decision || undefined;
+    } catch (error) {
+      console.error('Error getting AI system decision:', error);
+      return undefined;
+    }
+  }
+
+  async createAiSystemDecision(decision: InsertAiSystemDecision): Promise<AiSystemDecision> {
+    try {
+      const [newDecision] = await db.insert(aiSystemDecisions).values(decision).returning();
+      return newDecision;
+    } catch (error) {
+      console.error('Error creating AI system decision:', error);
+      throw error;
+    }
+  }
+
+  async updateAiSystemDecision(id: string, decision: Partial<InsertAiSystemDecision>): Promise<AiSystemDecision | undefined> {
+    try {
+      const [updatedDecision] = await db.update(aiSystemDecisions)
+        .set({ ...decision, updatedAt: new Date() })
+        .where(eq(aiSystemDecisions.id, id))
+        .returning();
+      return updatedDecision || undefined;
+    } catch (error) {
+      console.error('Error updating AI system decision:', error);
+      return undefined;
+    }
+  }
+
+  async executeAiSystemDecision(id: string, executedBy: string): Promise<AiSystemDecision | undefined> {
+    try {
+      const [executedDecision] = await db.update(aiSystemDecisions)
+        .set({ 
+          status: 'executed',
+          executedAt: new Date(),
+          executedBy: executedBy,
+          updatedAt: new Date()
+        })
+        .where(eq(aiSystemDecisions.id, id))
+        .returning();
+      return executedDecision || undefined;
+    } catch (error) {
+      console.error('Error executing AI system decision:', error);
+      return undefined;
+    }
+  }
+
+  // AI System Recommendations
+  async getAiSystemRecommendations(filters?: { status?: string; priority?: string; targetArea?: string }): Promise<AiSystemRecommendation[]> {
+    try {
+      let query = db.select().from(aiSystemRecommendations);
+      
+      const conditions = [];
+      if (filters?.status) {
+        conditions.push(eq(aiSystemRecommendations.status, filters.status));
+      }
+      if (filters?.priority) {
+        conditions.push(eq(aiSystemRecommendations.priority, filters.priority));
+      }
+      if (filters?.targetArea) {
+        conditions.push(eq(aiSystemRecommendations.targetArea, filters.targetArea));
+      }
+
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
+
+      return await query.orderBy(desc(aiSystemRecommendations.createdAt));
+    } catch (error) {
+      console.error('Error getting AI system recommendations:', error);
+      return [];
+    }
+  }
+
+  async getAiSystemRecommendation(id: string): Promise<AiSystemRecommendation | undefined> {
+    try {
+      const [recommendation] = await db.select().from(aiSystemRecommendations)
+        .where(eq(aiSystemRecommendations.id, id));
+      return recommendation || undefined;
+    } catch (error) {
+      console.error('Error getting AI system recommendation:', error);
+      return undefined;
+    }
+  }
+
+  async createAiSystemRecommendation(recommendation: InsertAiSystemRecommendation): Promise<AiSystemRecommendation> {
+    try {
+      const [newRecommendation] = await db.insert(aiSystemRecommendations).values(recommendation).returning();
+      return newRecommendation;
+    } catch (error) {
+      console.error('Error creating AI system recommendation:', error);
+      throw error;
+    }
+  }
+
+  async updateAiSystemRecommendation(id: string, recommendation: Partial<InsertAiSystemRecommendation>): Promise<AiSystemRecommendation | undefined> {
+    try {
+      const [updatedRecommendation] = await db.update(aiSystemRecommendations)
+        .set({ ...recommendation, updatedAt: new Date() })
+        .where(eq(aiSystemRecommendations.id, id))
+        .returning();
+      return updatedRecommendation || undefined;
+    } catch (error) {
+      console.error('Error updating AI system recommendation:', error);
+      return undefined;
+    }
+  }
+
+  async executeAiSystemRecommendation(id: string, executionResult: any): Promise<AiSystemRecommendation | undefined> {
+    try {
+      const [executedRecommendation] = await db.update(aiSystemRecommendations)
+        .set({ 
+          status: 'executed',
+          executedAt: new Date(),
+          executionResult: executionResult,
+          updatedAt: new Date()
+        })
+        .where(eq(aiSystemRecommendations.id, id))
+        .returning();
+      return executedRecommendation || undefined;
+    } catch (error) {
+      console.error('Error executing AI system recommendation:', error);
+      return undefined;
+    }
+  }
+
+  async dismissAiSystemRecommendation(id: string): Promise<AiSystemRecommendation | undefined> {
+    try {
+      const [dismissedRecommendation] = await db.update(aiSystemRecommendations)
+        .set({ 
+          status: 'dismissed',
+          dismissedAt: new Date(),
+          updatedAt: new Date()
+        })
+        .where(eq(aiSystemRecommendations.id, id))
+        .returning();
+      return dismissedRecommendation || undefined;
+    } catch (error) {
+      console.error('Error dismissing AI system recommendation:', error);
+      return undefined;
     }
   }
 

@@ -957,3 +957,104 @@ export type InsertAuthUserSession = z.infer<typeof insertAuthUserSessionSchema>;
 export type InsertAuthAuditLog = z.infer<typeof insertAuthAuditLogSchema>;
 export type InsertAuthVerificationCode = z.infer<typeof insertAuthVerificationCodeSchema>;
 export type InsertAuthUserSecuritySettings = z.infer<typeof insertAuthUserSecuritySettingsSchema>;
+
+// ================================
+// AI System Tables (جداول النظام الذكي)
+// ================================
+
+// AI System Logs (سجلات النظام الذكي)
+export const aiSystemLogs = pgTable("ai_system_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  logType: text("log_type").notNull(), // info, warning, error, decision
+  logLevel: integer("log_level").default(1).notNull(), // 1-5 (1=low, 5=critical)
+  operation: text("operation").notNull(), // النشاط المنفذ
+  description: text("description").notNull(),
+  data: jsonb("data"), // بيانات إضافية
+  executionTime: integer("execution_time"), // وقت التنفيذ بالميللي ثانية
+  userId: varchar("user_id"), // المستخدم المرتبط
+  projectId: varchar("project_id"), // المشروع المرتبط
+  success: boolean("success").default(true).notNull(),
+  errorMessage: text("error_message"), // رسالة الخطأ إن وجدت
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// AI System Metrics (مقاييس النظام الذكي)
+export const aiSystemMetrics = pgTable("ai_system_metrics", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  metricType: text("metric_type").notNull(), // performance, health, usage, accuracy
+  metricName: text("metric_name").notNull(), // اسم المقياس
+  metricValue: decimal("metric_value", { precision: 10, scale: 4 }).notNull(),
+  metricUnit: text("metric_unit"), // وحدة القياس (%, ms, count, etc.)
+  timestamp: timestamp("timestamp").defaultNow().notNull(),
+  metadata: jsonb("metadata"), // بيانات إضافية للمقياس
+  calculatedFrom: text("calculated_from"), // مصدر حساب المقياس
+  validUntil: timestamp("valid_until"), // صالح حتى (للبيانات المؤقتة)
+  isActive: boolean("is_active").default(true).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// AI System Decisions (قرارات النظام الذكي)
+export const aiSystemDecisions = pgTable("ai_system_decisions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  decisionType: text("decision_type").notNull(), // optimization, maintenance, security, automation
+  decisionTitle: text("decision_title").notNull(),
+  decisionDescription: text("decision_description").notNull(),
+  inputData: jsonb("input_data"), // البيانات المدخلة للقرار
+  outputData: jsonb("output_data"), // نتيجة القرار
+  confidence: decimal("confidence", { precision: 5, scale: 2 }), // درجة الثقة (0-100)
+  priority: integer("priority").default(3).notNull(), // 1-5 (1=low, 5=critical)
+  status: text("status").default("pending").notNull(), // pending, approved, executed, rejected
+  executedAt: timestamp("executed_at"),
+  executedBy: varchar("executed_by"), // المستخدم الذي نفذ القرار
+  impactAssessment: text("impact_assessment"), // تقييم التأثير
+  projectId: varchar("project_id"), // المشروع المرتبط إن وجد
+  autoExecutable: boolean("auto_executable").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// AI System Recommendations (توصيات النظام الذكي)
+export const aiSystemRecommendations = pgTable("ai_system_recommendations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  recommendationType: text("recommendation_type").notNull(), // optimization, maintenance, security
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  estimatedImpact: text("estimated_impact"), // التأثير المتوقع
+  timeframe: text("timeframe"), // الإطار الزمني للتنفيذ
+  priority: text("priority").default("medium").notNull(), // low, medium, high, critical
+  confidence: integer("confidence").default(80).notNull(), // درجة الثقة (0-100)
+  autoExecutable: boolean("auto_executable").default(false).notNull(),
+  executionScript: text("execution_script"), // سكريبت التنفيذ التلقائي
+  status: text("status").default("active").notNull(), // active, executed, dismissed, expired
+  executedAt: timestamp("executed_at"),
+  dismissedAt: timestamp("dismissed_at"),
+  executionResult: jsonb("execution_result"), // نتيجة التنفيذ
+  targetArea: text("target_area"), // المنطقة المستهدفة (database, performance, etc.)
+  requirements: jsonb("requirements"), // المتطلبات للتنفيذ
+  risks: jsonb("risks"), // المخاطر المحتملة
+  validUntil: timestamp("valid_until"), // صالح حتى
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// ================================
+// AI System Schemas (مخططات النظام الذكي)
+// ================================
+
+// Insert Schemas
+export const insertAiSystemLogSchema = createInsertSchema(aiSystemLogs).omit({ id: true, createdAt: true });
+export const insertAiSystemMetricSchema = createInsertSchema(aiSystemMetrics).omit({ id: true, createdAt: true });
+export const insertAiSystemDecisionSchema = createInsertSchema(aiSystemDecisions).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertAiSystemRecommendationSchema = createInsertSchema(aiSystemRecommendations).omit({ id: true, createdAt: true, updatedAt: true });
+
+// Select Types
+export type AiSystemLog = typeof aiSystemLogs.$inferSelect;
+export type AiSystemMetric = typeof aiSystemMetrics.$inferSelect;
+export type AiSystemDecision = typeof aiSystemDecisions.$inferSelect;
+export type AiSystemRecommendation = typeof aiSystemRecommendations.$inferSelect;
+
+// Insert Types
+export type InsertAiSystemLog = z.infer<typeof insertAiSystemLogSchema>;
+export type InsertAiSystemMetric = z.infer<typeof insertAiSystemMetricSchema>;
+export type InsertAiSystemDecision = z.infer<typeof insertAiSystemDecisionSchema>;
+export type InsertAiSystemRecommendation = z.infer<typeof insertAiSystemRecommendationSchema>;
