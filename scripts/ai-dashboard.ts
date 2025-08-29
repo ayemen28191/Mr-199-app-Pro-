@@ -447,17 +447,17 @@ class AIDashboard {
     const { spawn } = require('child_process');
     
     return new Promise((resolve, reject) => {
-      const process = spawn('npx', ['tsx', 'scripts/compare-expected-vs-db.ts'], {
+      const childProcess = spawn('npx', ['tsx', 'scripts/compare-expected-vs-db.ts'], {
         cwd: process.cwd(),
         stdio: 'pipe'
       });
 
       let output = '';
-      process.stdout.on('data', (data: Buffer) => {
+      childProcess.stdout.on('data', (data: Buffer) => {
         output += data.toString();
       });
 
-      process.on('close', (code: number) => {
+      childProcess.on('close', (code: number) => {
         if (code === 0) {
           console.log('✅ مقارنة المخططات مكتملة - مطابقة تامة');
         } else {
@@ -477,7 +477,7 @@ class AIDashboard {
         }
       });
 
-      process.on('error', reject);
+      childProcess.on('error', reject);
     });
   }
 

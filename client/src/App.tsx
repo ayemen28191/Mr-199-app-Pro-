@@ -28,6 +28,7 @@ import { EquipmentManagement } from "@/pages/equipment-management";
 import AdvancedReports from "@/pages/advanced-reports";
 import WorkersUnifiedReports from "@/pages/workers-unified-reports";
 import NotificationsPage from "@/pages/notifications";
+import AISystemDashboard from "@/pages/AISystemDashboard";
 
 import Header from "@/components/layout/header";
 import BottomNavigation from "@/components/layout/bottom-navigation";
@@ -214,6 +215,14 @@ function Router() {
         <ProtectedRoute>
           <AuthLayout>
             <NotificationsPage />
+          </AuthLayout>
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/ai-system">
+        <ProtectedRoute>
+          <AuthLayout>
+            <AISystemDashboard />
           </AuthLayout>
         </ProtectedRoute>
       </Route>
