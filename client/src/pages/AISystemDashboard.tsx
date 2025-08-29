@@ -198,10 +198,22 @@ const DatabaseTableManager = () => {
   const queryClient = useQueryClient();
 
   // جلب قائمة الجداول مع معلومات RLS
-  const { data: tables = [], isLoading } = useQuery<DatabaseTable[]>({
+  const { data: rawTables = [], isLoading } = useQuery<DatabaseTable[]>({
     queryKey: ['/api/db-admin/tables'],
     refetchInterval: 30000, // تحديث كل 30 ثانية
   });
+
+  // إزالة التكرار من الجداول بناءً على اسم الجدول و schema
+  const tables = React.useMemo(() => {
+    const uniqueTablesMap = new Map<string, DatabaseTable>();
+    rawTables.forEach(table => {
+      const key = `${table.schema_name}.${table.table_name}`;
+      if (!uniqueTablesMap.has(key)) {
+        uniqueTablesMap.set(key, table);
+      }
+    });
+    return Array.from(uniqueTablesMap.values());
+  }, [rawTables]);
 
   // تنفيذ عمليات RLS
   const rlsToggleMutation = useMutation({
@@ -291,6 +303,9 @@ const DatabaseTableManager = () => {
               </div>
               <CardDescription className="text-sm">
                 قاعدة البيانات Supabase متصلة مع {tables.length > 0 ? `${tables.length} جدول` : 'لا توجد جداول'}
+                {rawTables.length !== tables.length && (
+                  <span className="text-yellow-600"> (تم إزالة {rawTables.length - tables.length} مكرر)</span>
+                )}
                 {tables.length > 0 && ` - إجمالي الصفوف: ${tables.reduce((sum, t) => sum + t.row_count, 0).toLocaleString()}`}
               </CardDescription>
             </CardHeader>
@@ -308,7 +323,7 @@ const DatabaseTableManager = () => {
                   <span className="text-xs text-gray-500">تأكد من صحة الاتصال بقاعدة البيانات</span>
                 </div>
               ) : (
-                <ScrollArea className="h-96">
+                <ScrollArea className="h-[420px]">
                   <div className="space-y-2">
                     {tables
                       .sort((a, b) => a.table_name.localeCompare(b.table_name))
