@@ -68,6 +68,16 @@ export default function NotificationsPage() {
   // استخراج مصفوفة الإشعارات من البيانات المُرجعة
   const notifications = notificationsData?.notifications || [];
 
+  // دالة مساعدة لتحويل الأولوية الرقمية إلى نص
+  const getPriorityString = (priority: number | string): 'info' | 'low' | 'medium' | 'high' | 'critical' => {
+    if (typeof priority === 'string') return priority as any;
+    if (priority <= 1) return 'info';
+    if (priority <= 2) return 'low';
+    if (priority <= 3) return 'medium';
+    if (priority <= 4) return 'high';
+    return 'critical';
+  };
+
   // تحديد إشعار كمقروء
   const markAsReadMutation = useMutation({
     mutationFn: async ({ notificationId, userId }: { notificationId: string; userId?: string }) => {
@@ -123,16 +133,6 @@ export default function NotificationsPage() {
   // أنواع الإشعارات الموجودة
   const notificationTypes = Array.from(new Set(normalizedNotifications.map(n => n.type)));
   
-  // دالة مساعدة لتحويل الأولوية الرقمية إلى نص
-  const getPriorityString = (priority: number | string): 'info' | 'low' | 'medium' | 'high' | 'critical' => {
-    if (typeof priority === 'string') return priority as any;
-    if (priority <= 1) return 'info';
-    if (priority <= 2) return 'low';
-    if (priority <= 3) return 'medium';
-    if (priority <= 4) return 'high';
-    return 'critical';
-  };
-
   // إحصائيات سريعة
   const stats = {
     total: normalizedNotifications.length,
