@@ -74,13 +74,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // توصيات الذكاء الاصطناعي الحقيقية
   app.get("/api/ai-system/recommendations", async (req, res) => {
     try {
-      // جلب التوصيات الموجودة أو توليد جديدة
-      let recommendations = await storage.getAiSystemRecommendations({ status: 'active' });
-      
-      if (recommendations.length === 0) {
-        // توليد توصيات جديدة إذا لم توجد
-        recommendations = await aiSystemService.generateRecommendations();
-      }
+      // توليد توصيات جديدة دائماً للحصول على أحدث التحليلات
+      const recommendations = await aiSystemService.generateRecommendations();
       
       res.json(recommendations);
     } catch (error) {

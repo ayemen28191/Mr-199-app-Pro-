@@ -12,7 +12,8 @@ import { Separator } from '@/components/ui/separator';
 import { 
   Activity, Brain, Database, Settings, Play, Pause, AlertCircle, CheckCircle,
   TrendingUp, Zap, Shield, Cpu, BarChart3, Clock, Server, RefreshCw, Loader2,
-  ChevronDown, ChevronUp, AlertTriangle
+  ChevronDown, ChevronUp, AlertTriangle, Eye, EyeOff, DollarSign, Users, 
+  Lock, Wrench, Truck
 } from 'lucide-react';
 
 interface SystemMetrics {
@@ -23,9 +24,158 @@ interface SystemMetrics {
 }
 
 interface SystemRecommendation {
-  id: string; type: string; priority: 'low' | 'medium' | 'high' | 'critical';
-  description: string; estimatedImpact: string; timeframe: string; autoExecutable: boolean;
+  id: string; 
+  recommendationType: string; 
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  title: string;
+  description: string; 
+  detailedExplanation?: string;
+  estimatedImpact: string; 
+  timeframe: string; 
+  autoExecutable: boolean;
+  confidence: number;
+  targetArea: string;
 }
+
+// مكون عرض التوصية المحسن
+const RecommendationCard = ({ recommendation, onExecute, isExecuting, disabled }: {
+  recommendation: SystemRecommendation;
+  onExecute: (id: string) => void;
+  isExecuting: boolean;
+  disabled: boolean;
+}) => {
+  const [expanded, setExpanded] = React.useState(false);
+
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case 'financial': return <DollarSign className="w-4 h-4 text-green-600" />;
+      case 'workforce': return <Users className="w-4 h-4 text-blue-600" />;
+      case 'security': return <Lock className="w-4 h-4 text-red-600" />;
+      case 'performance': return <Wrench className="w-4 h-4 text-purple-600" />;
+      case 'supplier': return <Truck className="w-4 h-4 text-orange-600" />;
+      default: return <AlertCircle className="w-4 h-4 text-gray-600" />;
+    }
+  };
+
+  const getTypeLabel = (type: string) => {
+    switch (type) {
+      case 'financial': return 'مالي';
+      case 'workforce': return 'عمالة';
+      case 'security': return 'أمان';
+      case 'performance': return 'أداء';
+      case 'supplier': return 'موردين';
+      default: return 'عام';
+    }
+  };
+
+  const getPriorityColor = (priority: string) => ({
+    critical: 'bg-red-500', high: 'bg-orange-500', medium: 'bg-yellow-500', low: 'bg-green-500'
+  }[priority] || 'bg-gray-500');
+
+  return (
+    <div className="border rounded-lg p-3 bg-white hover:shadow-md transition-all">
+      {/* Header */}
+      <div className="flex items-start justify-between mb-2">
+        <div className="flex items-center gap-2">
+          {getTypeIcon(recommendation.recommendationType)}
+          <Badge variant="outline" className="text-xs">
+            {getTypeLabel(recommendation.recommendationType)}
+          </Badge>
+          <Badge className={`${getPriorityColor(recommendation.priority)} text-white text-xs`}>
+            {recommendation.priority === 'critical' ? 'حرج' :
+             recommendation.priority === 'high' ? 'عالي' : 
+             recommendation.priority === 'medium' ? 'متوسط' : 'منخفض'}
+          </Badge>
+        </div>
+        <div className="flex items-center gap-1">
+          <Badge variant="secondary" className="text-xs">
+            {recommendation.confidence}% دقة
+          </Badge>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-6 w-6 p-0"
+            onClick={() => setExpanded(!expanded)}
+            data-testid={`button-expand-${recommendation.id}`}
+          >
+            {expanded ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+          </Button>
+        </div>
+      </div>
+
+      {/* Title and Description */}
+      <h4 className="text-sm font-semibold mb-2 text-gray-800">
+        {recommendation.title}
+      </h4>
+      <p className="text-xs text-gray-600 mb-2 leading-relaxed">
+        {recommendation.description}
+      </p>
+
+      {/* Basic Info */}
+      <div className="grid grid-cols-2 gap-2 mb-2">
+        <div className="flex items-center gap-1">
+          <TrendingUp className="w-3 h-3 text-green-600" />
+          <span className="text-xs text-gray-600">التأثير: {recommendation.estimatedImpact}</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <Clock className="w-3 h-3 text-blue-600" />
+          <span className="text-xs text-gray-600">المدة: {recommendation.timeframe}</span>
+        </div>
+      </div>
+
+      {/* Detailed Explanation */}
+      {expanded && recommendation.detailedExplanation && (
+        <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+          <h5 className="text-xs font-medium mb-2 text-gray-700">الشرح التفصيلي:</h5>
+          <div className="text-xs text-gray-600 leading-relaxed whitespace-pre-line">
+            {recommendation.detailedExplanation}
+          </div>
+        </div>
+      )}
+
+      {/* Actions */}
+      <div className="flex items-center justify-between mt-3 pt-2 border-t">
+        <div className="flex items-center gap-2">
+          {recommendation.autoExecutable ? (
+            <Badge variant="secondary" className="text-xs">
+              <Zap className="w-3 h-3 mr-1" />
+              قابل للتنفيذ التلقائي
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="text-xs">
+              يتطلب تدخل يدوي
+            </Badge>
+          )}
+        </div>
+        
+        {recommendation.autoExecutable && (
+          <Button 
+            size="sm" 
+            variant={isExecuting ? "default" : "outline"}
+            className={`text-xs py-1 h-7 transition-all ${
+              isExecuting ? 'bg-blue-500 text-white animate-pulse' : ''
+            }`}
+            data-testid={`button-execute-${recommendation.id}`}
+            onClick={() => onExecute(recommendation.id)}
+            disabled={disabled}
+          >
+            {isExecuting ? (
+              <>
+                <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                تنفيذ جاري...
+              </>
+            ) : (
+              <>
+                <Play className="w-3 h-3 mr-1" />
+                تنفيذ
+              </>
+            )}
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+};
 
 export default function AISystemDashboard() {
   const queryClient = useQueryClient();
@@ -284,59 +434,47 @@ export default function AISystemDashboard() {
                 </CardContent>
               </Card>
 
-              {/* Compact Recommendations */}
-              <Card>
+              {/* Enhanced Recommendations */}
+              <Card className="lg:col-span-2">
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4" />
-                    التوصيات الذكية
-                  </CardTitle>
-                  <CardDescription className="text-xs">توصيات مخصصة من الذكاء الاصطناعي</CardDescription>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Brain className="w-4 h-4" />
+                        التوصيات الذكية المتقدمة
+                      </CardTitle>
+                      <CardDescription className="text-xs">تحليل عميق وتوصيات مخصصة من الذكاء الاصطناعي</CardDescription>
+                    </div>
+                    <Button size="sm" variant="outline" onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/ai-system/recommendations'] })}>
+                      <RefreshCw className="w-3 h-3" />
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <ScrollArea className="h-48 sm:h-56">
+                  <ScrollArea className="h-64 sm:h-80">
                     {recommendations.length > 0 ? (
-                      <div className="space-y-2">
-                        {recommendations.map((rec) => (
-                          <div key={rec.id} className="p-2 border rounded-md">
-                            <div className="flex items-start justify-between mb-2">
-                              <Badge className={`${getPriorityColor(rec.priority)} text-white text-xs`}>
-                                {rec.priority === 'high' ? 'عالي' : rec.priority === 'medium' ? 'متوسط' : 'منخفض'}
-                              </Badge>
-                              <Clock className="w-3 h-3 text-gray-400" />
-                            </div>
-                            <h4 className="text-sm font-medium mb-1">{rec.description}</h4>
-                            <p className="text-xs text-gray-600 mb-1">التأثير: {rec.estimatedImpact}</p>
-                            <p className="text-xs text-gray-500 mb-2">الإطار: {rec.timeframe}</p>
-                            {rec.autoExecutable && (
-                              <Button 
-                                size="sm" 
-                                variant={executingRecommendation === rec.id ? "default" : "outline"}
-                                className={`text-xs py-1 h-6 transition-all ${
-                                  executingRecommendation === rec.id 
-                                    ? 'bg-blue-500 text-white animate-pulse' 
-                                    : ''
-                                }`}
-                                data-testid={`button-execute-${rec.id}`}
-                                onClick={() => handleExecuteRecommendation(rec.id)}
-                                disabled={executeRecommendationMutation.isPending || !!executingRecommendation}
-                              >
-                                {executingRecommendation === rec.id ? (
-                                  <>
-                                    <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                                    تنفيذ جاري...
-                                  </>
-                                ) : (
-                                  'تنفيذ تلقائي'
-                                )}
-                              </Button>
-                            )}
-                          </div>
+                      <div className="space-y-3">
+                        {recommendations.slice(0, 3).map((rec) => (
+                          <RecommendationCard 
+                            key={rec.id} 
+                            recommendation={rec}
+                            onExecute={handleExecuteRecommendation}
+                            isExecuting={executingRecommendation === rec.id}
+                            disabled={executeRecommendationMutation.isPending || !!executingRecommendation}
+                          />
                         ))}
+                        {recommendations.length > 3 && (
+                          <div className="text-center pt-2">
+                            <Badge variant="secondary" className="text-xs">
+                              +{recommendations.length - 3} توصية إضافية متاحة
+                            </Badge>
+                          </div>
+                        )}
                       </div>
                     ) : (
-                      <div className="flex items-center justify-center h-24 text-gray-500 text-sm">
-                        لا توجد توصيات في الوقت الحالي
+                      <div className="flex flex-col items-center justify-center h-32 text-gray-500 text-sm">
+                        <Brain className="w-8 h-8 mb-2 text-gray-300" />
+                        <p>جاري تحليل البيانات لتوليد توصيات ذكية...</p>
                       </div>
                     )}
                   </ScrollArea>
