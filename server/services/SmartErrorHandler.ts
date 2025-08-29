@@ -334,8 +334,8 @@ export class SmartErrorHandler {
   private async sendSmartNotification(error: AnalyzedError): Promise<void> {
     try {
       const notificationPayload: NotificationPayload = {
-        type: 'database_error',
-        title: `🔧 ${error.arabicMessage}`,
+        type: 'system',
+        title: `🔧 خطأ في النظام: ${error.errorType}`,
         body: this.buildNotificationBody(error),
         priority: this.mapSeverityToPriority(error.severity),
         recipients: ['default'], // سيتم إرسال للإدارة
@@ -347,7 +347,8 @@ export class SmartErrorHandler {
           severity: error.severity,
           category: error.category,
           suggestedSolutions: error.suggestedSolutions,
-          action: 'open_error_details'
+          action: 'view_smart_errors',
+          route: '/smart-errors'
         },
         channelPreference: {
           push: true,

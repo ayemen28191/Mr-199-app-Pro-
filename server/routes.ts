@@ -4523,17 +4523,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log('🧪 إنشاء خطأ تجريبي لاختبار النظام الذكي');
       
-      // محاولة إدراج بيانات مكررة لإثارة خطأ unique violation
+      // محاولة إدراج بيانات في عمود غير موجود لإثارة خطأ مضمون
       try {
         await db.execute(sql`
-          INSERT INTO projects (name, status) 
-          VALUES ('مشروع تجريبي للاختبار', 'active')
-        `);
-        
-        // إذا نجح الإدراج، سنحاول مرة أخرى لإثارة الخطأ
-        await db.execute(sql`
-          INSERT INTO projects (name, status) 
-          VALUES ('مشروع تجريبي للاختبار', 'active')
+          INSERT INTO projects (name, status, nonexistent_column) 
+          VALUES ('اختبار خطأ', 'active', 'test')
         `);
         
       } catch (testError: any) {
