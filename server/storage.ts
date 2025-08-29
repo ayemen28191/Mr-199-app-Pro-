@@ -3529,11 +3529,12 @@ export class DatabaseStorage implements IStorage {
   // Notification Read States Implementation
   async isNotificationRead(userId: string, notificationId: string, notificationType: string): Promise<boolean> {
     try {
-      const [state] = await db.select().from(notificationReadStates)
+      const [state] = await db.select({
+        isRead: notificationReadStates.isRead
+      }).from(notificationReadStates)
         .where(and(
           eq(notificationReadStates.userId, userId),
-          eq(notificationReadStates.notificationId, notificationId),
-          eq(notificationReadStates.notificationId, notificationType)
+          eq(notificationReadStates.notificationId, notificationId)
         ));
       return state?.isRead || false;
     } catch (error) {
@@ -3544,11 +3545,17 @@ export class DatabaseStorage implements IStorage {
 
   async getNotificationReadState(userId: string, notificationId: string, notificationType: string): Promise<NotificationReadState | undefined> {
     try {
-      const [state] = await db.select().from(notificationReadStates)
+      const [state] = await db.select({
+        id: notificationReadStates.id,
+        userId: notificationReadStates.userId,
+        notificationId: notificationReadStates.notificationId,
+        isRead: notificationReadStates.isRead,
+        readAt: notificationReadStates.readAt,
+        createdAt: notificationReadStates.createdAt
+      }).from(notificationReadStates)
         .where(and(
           eq(notificationReadStates.userId, userId),
-          eq(notificationReadStates.notificationId, notificationId),
-          eq(notificationReadStates.notificationId, notificationType)
+          eq(notificationReadStates.notificationId, notificationId)
         ));
       return state || undefined;
     } catch (error) {
@@ -3596,12 +3603,15 @@ export class DatabaseStorage implements IStorage {
   async getReadNotifications(userId: string, notificationType?: string): Promise<NotificationReadState[]> {
     try {
       const conditions = [eq(notificationReadStates.userId, userId), eq(notificationReadStates.isRead, true)];
-      
-      if (notificationType) {
-        conditions.push(eq(notificationReadStates.notificationId, notificationType));
-      }
 
-      return await db.select().from(notificationReadStates)
+      return await db.select({
+        id: notificationReadStates.id,
+        userId: notificationReadStates.userId,
+        notificationId: notificationReadStates.notificationId,
+        isRead: notificationReadStates.isRead,
+        readAt: notificationReadStates.readAt,
+        createdAt: notificationReadStates.createdAt
+      }).from(notificationReadStates)
         .where(and(...conditions))
         .orderBy(desc(notificationReadStates.readAt));
     } catch (error) {
