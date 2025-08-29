@@ -734,7 +734,7 @@ export default function AISystemDashboard() {
 
         {/* Mobile-Optimized Tabs */}
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid grid-cols-6 w-full h-auto p-1">
+          <TabsList className="grid grid-cols-4 w-full h-auto p-1">
             <TabsTrigger value="overview" className="text-xs sm:text-sm p-2 flex flex-col sm:flex-row items-center gap-1">
               <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4" />
               <span className="hidden sm:inline">نظرة عامة</span>
@@ -749,21 +749,6 @@ export default function AISystemDashboard() {
               <Database className="w-3 h-3 sm:w-4 sm:h-4" />
               <span className="hidden sm:inline">قاعدة البيانات</span>
               <span className="sm:hidden">قاعدة</span>
-            </TabsTrigger>
-            <TabsTrigger value="db-admin" className="text-xs sm:text-sm p-2 flex flex-col sm:flex-row items-center gap-1">
-              <Table className="w-3 h-3 sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline">إدارة الجداول</span>
-              <span className="sm:hidden">جداول</span>
-            </TabsTrigger>
-            <TabsTrigger value="ai" className="text-xs sm:text-sm p-2 flex flex-col sm:flex-row items-center gap-1">
-              <Brain className="w-3 h-3 sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline">الذكاء الاصطناعي</span>
-              <span className="sm:hidden">ذكاء</span>
-            </TabsTrigger>
-            <TabsTrigger value="automation" className="text-xs sm:text-sm p-2 flex flex-col sm:flex-row items-center gap-1">
-              <Zap className="w-3 h-3 sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline">تلقائي</span>
-              <span className="sm:hidden">تلقائي</span>
             </TabsTrigger>
             <TabsTrigger value="settings" className="text-xs sm:text-sm p-2 flex flex-col sm:flex-row items-center gap-1">
               <Settings className="w-3 h-3 sm:w-4 sm:h-4" />
@@ -1047,126 +1032,6 @@ export default function AISystemDashboard() {
             </div>
           </TabsContent>
 
-          <TabsContent value="ai" className="mt-3 sm:mt-4">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-4">
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base">إحصائيات الذكاء</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div>
-                      <div className="flex justify-between mb-1 text-sm">
-                        <span>مستوى التعلم</span>
-                        <span>{metrics.ai.learning.toFixed(1)}%</span>
-                      </div>
-                      <Progress value={metrics.ai.learning} className="h-1.5" />
-                    </div>
-                    <div>
-                      <div className="flex justify-between mb-1 text-sm">
-                        <span>دقة القرارات</span>
-                        <span>{metrics.ai.accuracy.toFixed(1)}%</span>
-                      </div>
-                      <Progress value={metrics.ai.accuracy} className="h-1.5" />
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-sm">التنبؤات النشطة</span>
-                      <Badge className="text-xs">{metrics.ai.predictions}</Badge>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base">القرارات الأخيرة</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="p-2 border rounded text-sm">
-                      <div className="font-medium">تحسين استعلام</div>
-                      <div className="text-xs text-gray-600">ثقة: 95%</div>
-                    </div>
-                    <div className="p-2 border rounded text-sm">
-                      <div className="font-medium">إضافة فهرس</div>
-                      <div className="text-xs text-gray-600">ثقة: 87%</div>
-                    </div>
-                    <div className="p-2 border rounded text-sm">
-                      <div className="font-medium">تنظيف بيانات</div>
-                      <div className="text-xs text-gray-600">ثقة: 92%</div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base">التنبؤات المستقبلية</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="p-2 bg-blue-50 rounded text-sm">
-                      <div className="font-medium">نمو البيانات</div>
-                      <div className="text-xs text-gray-600">الشهر القادم: +12%</div>
-                    </div>
-                    <div className="p-2 bg-yellow-50 rounded text-sm">
-                      <div className="font-medium">احتياج صيانة</div>
-                      <div className="text-xs text-gray-600">خلال أسبوعين</div>
-                    </div>
-                    <div className="p-2 bg-green-50 rounded text-sm">
-                      <div className="font-medium">تحسن الأداء</div>
-                      <div className="text-xs text-gray-600">متوقع: +8%</div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Mobile: Show automation and settings in AI tab */}
-            <div className="block sm:hidden mt-4 space-y-3">
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Zap className="w-4 h-4" />
-                    التشغيل التلقائي
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-3 text-center">
-                    <div className="p-2 bg-gray-50 rounded">
-                      <div className="text-lg font-bold">{metrics.automation.tasksCompleted}</div>
-                      <div className="text-xs text-gray-600">مهام مكتملة</div>
-                    </div>
-                    <div className="p-2 bg-gray-50 rounded">
-                      <div className="text-lg font-bold">{metrics.automation.successRate.toFixed(1)}%</div>
-                      <div className="text-xs text-gray-600">معدل النجاح</div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Settings className="w-4 h-4" />
-                    الإعدادات
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                      <span>المراقبة</span>
-                      <Badge variant="secondary" className="text-xs">مُفعّل</Badge>
-                    </div>
-                    <div className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                      <span>التعلم</span>
-                      <Badge variant="secondary" className="text-xs">مُفعّل</Badge>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
 
           <TabsContent value="database" className="mt-3 sm:mt-4">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
@@ -1222,56 +1087,7 @@ export default function AISystemDashboard() {
             </div>
           </TabsContent>
 
-          <TabsContent value="db-admin" className="mt-3 sm:mt-4">
-            <DatabaseTableManager />
-          </TabsContent>
 
-          <TabsContent value="automation" className="mt-3 sm:mt-4 hidden sm:block">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base">إحصائيات التشغيل التلقائي</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center text-sm">
-                      <span>المهام المكتملة</span>
-                      <span className="font-bold">{metrics.automation.tasksCompleted}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-sm">
-                      <span>معدل النجاح</span>
-                      <span className="font-bold text-green-600">{metrics.automation.successRate.toFixed(1)}%</span>
-                    </div>
-                    <div className="flex justify-between items-center text-sm">
-                      <span>الوقت الموفر</span>
-                      <span className="font-bold text-blue-600">{Math.floor(metrics.automation.timeSaved / 60)} ساعة</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base">المهام المجدولة</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {[
-                      { name: 'تنظيف السجلات', freq: 'يومياً' },
-                      { name: 'تحديث الإحصائيات', freq: 'كل ساعة' },
-                      { name: 'فحص الأداء', freq: 'كل 30 دقيقة' },
-                      { name: 'النسخ الاحتياطي', freq: 'أسبوعياً' }
-                    ].map((task, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-2 border rounded text-sm">
-                        <span className="truncate">{task.name}</span>
-                        <Badge variant="outline" className="text-xs">{task.freq}</Badge>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
 
           <TabsContent value="advanced" className="mt-3 sm:mt-4">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

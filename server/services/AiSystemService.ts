@@ -1397,7 +1397,7 @@ export class AiSystemService {
       }
 
       // === قياس التحسينات المالية ===
-      const projects = await storage.getAllProjects();
+      const projects = await storage.getProjects();
       let totalSavings = 0;
       let riskReduction = 0;
 
@@ -1458,7 +1458,7 @@ export class AiSystemService {
       switch (type) {
         case 'financial':
           // فحص التحسينات المالية
-          const projects = await storage.getAllProjects();
+          const projects = await storage.getProjects();
           let positiveBalance = 0;
           for (const project of projects) {
             const stats = await storage.getProjectStatistics(project.id);
@@ -1472,7 +1472,7 @@ export class AiSystemService {
 
         case 'workforce':
           // فحص تحسينات العمالة
-          const workers = await storage.getAllWorkers();
+          const workers = await storage.getWorkers();
           const activeWorkers = workers.filter(w => w.status === 'active').length;
           success = activeWorkers > 0;
           actualImpact = { activeWorkers };
@@ -1530,9 +1530,9 @@ export class AiSystemService {
 
       // جمع البيانات الحالية للنسخ الاحتياطي
       const backupData = {
-        projects: await storage.getAllProjects(),
-        workers: await storage.getAllWorkers(),
-        suppliers: await storage.getAllSuppliers(),
+        projects: await storage.getProjects(),
+        workers: await storage.getWorkers(),
+        suppliers: await storage.getSuppliers(),
         systemMetrics: await this.getCurrentSystemState(),
         aiDecisions: await storage.getRecentAiSystemDecisions(50),
         timestamp
@@ -1723,8 +1723,8 @@ export class AiSystemService {
 
   private async getCurrentSystemState(): Promise<any> {
     try {
-      const projects = await storage.getAllProjects();
-      const workers = await storage.getAllWorkers();
+      const projects = await storage.getProjects();
+      const workers = await storage.getWorkers();
       
       return {
         projectsCount: projects.length,
