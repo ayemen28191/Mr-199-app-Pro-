@@ -92,27 +92,14 @@ router.post('/login', async (req, res) => {
     const { email, password, totpCode } = validation.data;
     const requestInfo = getRequestInfo(req);
 
-    // حل مؤقت - تسجيل دخول مبسط
-    let result;
-    if (email === 'admin@test.com' && password === 'admin123') {
-      result = {
-        success: true,
-        user: {
-          id: '1',
-          email: 'admin@test.com',
-          name: 'مدير النظام',
-          role: 'admin',
-          mfaEnabled: false
-        },
-        tokens: {
-          accessToken: 'temp_access_token_123',
-          refreshToken: 'temp_refresh_token_123',
-          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 ساعة
-        }
-      };
-    } else {
-      result = { success: false, message: 'بيانات تسجيل الدخول غير صحيحة' };
-    }
+    // استخدام نظام المصادقة الحقيقي
+    console.log('🔐 استدعاء loginUser للمستخدم:', email);
+    const result = await loginUser({
+      email,
+      password,
+      totpCode,
+      ...requestInfo
+    });
 
     const statusCode = result.success ? 200 : 
                       result.requireMFA || result.requireVerification ? 202 : 401;
