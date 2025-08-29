@@ -14,9 +14,10 @@ interface Notification {
   type: 'system' | 'maintenance' | 'warranty' | 'damaged';
   title: string;
   message: string;
-  priority: 'info' | 'low' | 'medium' | 'high' | 'critical';
+  priority: 'info' | 'low' | 'medium' | 'high' | 'critical' | number;
   createdAt: string;
-  status: 'read' | 'unread';
+  status?: 'read' | 'unread';
+  isRead?: boolean;
   actionRequired: boolean;
 }
 
@@ -49,16 +50,23 @@ export default function NotificationsPage() {
   const [selectedType, setSelectedType] = useState<string>('all');
 
   // جلب الإشعارات
-  const { data: notifications = [], isLoading } = useQuery({
+  const { data: notificationsData, isLoading } = useQuery({
     queryKey: ['/api/notifications'],
     queryFn: async () => {
       const response = await fetch('/api/notifications');
       if (!response.ok) {
         throw new Error('Failed to fetch notifications');
       }
-      return response.json() as Promise<Notification[]>;
+      return response.json() as Promise<{
+        notifications: Notification[];
+        unreadCount: number;
+        total: number;
+      }>;
     }
   });
+
+  // استخراج مصفوفة الإشعارات من البيانات المُرجعة
+  const notifications = notificationsData?.notifications || [];
 
   // تحديد إشعار كمقروء
   const markAsReadMutation = useMutation({
@@ -96,8 +104,15 @@ export default function NotificationsPage() {
     }
   });
 
+  // تحويل البيانات لضمان التوافق
+  const normalizedNotifications = notifications.map(notification => ({
+    ...notification,
+    priority: getPriorityString(notification.priority),
+    status: notification.status || (notification.isRead ? 'read' : 'unread')
+  }));
+
   // فلترة الإشعارات
-  const filteredNotifications = notifications.filter(notification => {
+  const filteredNotifications = normalizedNotifications.filter(notification => {
     // فلترة حسب الحالة
     if (filter !== 'all' && notification.status !== filter) return false;
     // فلترة حسب النوع
@@ -106,14 +121,24 @@ export default function NotificationsPage() {
   });
 
   // أنواع الإشعارات الموجودة
-  const notificationTypes = Array.from(new Set(notifications.map(n => n.type)));
+  const notificationTypes = Array.from(new Set(normalizedNotifications.map(n => n.type)));
   
+  // دالة مساعدة لتحويل الأولوية الرقمية إلى نص
+  const getPriorityString = (priority: number | string): 'info' | 'low' | 'medium' | 'high' | 'critical' => {
+    if (typeof priority === 'string') return priority as any;
+    if (priority <= 1) return 'info';
+    if (priority <= 2) return 'low';
+    if (priority <= 3) return 'medium';
+    if (priority <= 4) return 'high';
+    return 'critical';
+  };
+
   // إحصائيات سريعة
   const stats = {
-    total: notifications.length,
-    unread: notifications.filter(n => n.status === 'unread').length,
-    critical: notifications.filter(n => n.priority === 'critical').length,
-    high: notifications.filter(n => n.priority === 'high').length,
+    total: normalizedNotifications.length,
+    unread: normalizedNotifications.filter(n => n.status === 'unread').length,
+    critical: normalizedNotifications.filter(n => getPriorityString(n.priority) === 'critical').length,
+    high: normalizedNotifications.filter(n => getPriorityString(n.priority) === 'high').length,
   };
 
   const handleMarkAsRead = (notificationId: string) => {
