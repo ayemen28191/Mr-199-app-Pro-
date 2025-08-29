@@ -1,26 +1,9 @@
 {
   "status": "drift_detected",
-  "compared_at": "2025-08-29T13:47:32.304Z",
+  "compared_at": "2025-08-29T13:53:21.725Z",
   "database_url_host": "helium",
   "missing_tables": [],
-  "extra_tables": [
-    "actions",
-    "approvals",
-    "maintenance_schedules",
-    "maintenance_tasks",
-    "report_jobs",
-    "report_runs",
-    "system_events",
-    "tool_categories",
-    "tool_cost_tracking",
-    "tool_maintenance_logs",
-    "tool_movements",
-    "tool_purchase_items",
-    "tool_reservations",
-    "tool_stock",
-    "tool_usage_analytics",
-    "tools"
-  ],
+  "extra_tables": [],
   "mismatches": [
     {
       "table": "users",
@@ -4929,7 +4912,7 @@
   ],
   "summary": {
     "total_expected_tables": 37,
-    "total_actual_tables": 53,
+    "total_actual_tables": 37,
     "matching_tables": 37,
     "total_mismatches": 693
   }
