@@ -1034,57 +1034,259 @@ export default function AISystemDashboard() {
 
 
           <TabsContent value="database" className="mt-3 sm:mt-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base">إحصائيات قاعدة البيانات</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-2 gap-4 text-center">
-                      <div className="p-2 bg-blue-50 rounded">
-                        <div className="text-lg font-bold text-blue-600">{metrics.database.tables}</div>
-                        <div className="text-xs text-gray-600">جدول</div>
-                      </div>
-                      <div className="p-2 bg-green-50 rounded">
-                        <div className="text-lg font-bold text-green-600">{metrics.database.health.toFixed(1)}%</div>
-                        <div className="text-xs text-gray-600">صحة</div>
-                      </div>
-                    </div>
-                    <Separator />
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-sm">
-                        <span>الأداء العام</span>
-                        <span className={`font-bold ${getHealthColor(metrics.database.performance)}`}>{metrics.database.performance.toFixed(1)}%</span>
-                      </div>
-                      <Progress value={metrics.database.performance} className="h-1.5" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+            <Tabs defaultValue="overview" className="w-full">
+              <TabsList className="grid grid-cols-4 w-full mb-4">
+                <TabsTrigger value="overview" className="text-xs sm:text-sm p-2">
+                  <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                  إحصائيات
+                </TabsTrigger>
+                <TabsTrigger value="tables" className="text-xs sm:text-sm p-2">
+                  <Database className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                  إدارة الجداول
+                </TabsTrigger>
+                <TabsTrigger value="performance" className="text-xs sm:text-sm p-2">
+                  <Activity className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                  مراقبة الأداء
+                </TabsTrigger>
+                <TabsTrigger value="security" className="text-xs sm:text-sm p-2">
+                  <Shield className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+                  الأمان
+                </TabsTrigger>
+              </TabsList>
 
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base">العمليات الحديثة</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 p-2 bg-green-50 rounded text-sm">
-                      <CheckCircle className="w-3 h-3 text-green-600 flex-shrink-0" />
-                      <span className="truncate">تحسين الفهارس - مكتمل</span>
-                    </div>
-                    <div className="flex items-center gap-2 p-2 bg-blue-50 rounded text-sm">
-                      <Cpu className="w-3 h-3 text-blue-600 flex-shrink-0" />
-                      <span className="truncate">تحليل الأداء - جاري</span>
-                    </div>
-                    <div className="flex items-center gap-2 p-2 bg-yellow-50 rounded text-sm">
-                      <RefreshCw className="w-3 h-3 text-yellow-600 flex-shrink-0" />
-                      <span className="truncate">تنظيف البيانات - مجدول</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+              <TabsContent value="overview">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base">إحصائيات قاعدة البيانات</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-2 gap-4 text-center">
+                          <div className="p-2 bg-blue-50 rounded">
+                            <div className="text-lg font-bold text-blue-600">{metrics.database.tables}</div>
+                            <div className="text-xs text-gray-600">جدول</div>
+                          </div>
+                          <div className="p-2 bg-green-50 rounded">
+                            <div className="text-lg font-bold text-green-600">{metrics.database.health.toFixed(1)}%</div>
+                            <div className="text-xs text-gray-600">صحة</div>
+                          </div>
+                        </div>
+                        <Separator />
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span>الأداء العام</span>
+                            <span className={`font-bold ${getHealthColor(metrics.database.performance)}`}>{metrics.database.performance.toFixed(1)}%</span>
+                          </div>
+                          <Progress value={metrics.database.performance} className="h-1.5" />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base">العمليات الحديثة</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 p-2 bg-green-50 rounded text-sm">
+                          <CheckCircle className="w-3 h-3 text-green-600 flex-shrink-0" />
+                          <span className="truncate">تحسين الفهارس - مكتمل</span>
+                        </div>
+                        <div className="flex items-center gap-2 p-2 bg-blue-50 rounded text-sm">
+                          <Cpu className="w-3 h-3 text-blue-600 flex-shrink-0" />
+                          <span className="truncate">تحليل الأداء - جاري</span>
+                        </div>
+                        <div className="flex items-center gap-2 p-2 bg-yellow-50 rounded text-sm">
+                          <RefreshCw className="w-3 h-3 text-yellow-600 flex-shrink-0" />
+                          <span className="truncate">تنظيف البيانات - مجدول</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="tables">
+                <DatabaseTableManager />
+              </TabsContent>
+
+              <TabsContent value="performance">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base">مقاييس الأداء</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-2 gap-2 text-center">
+                          <div className="p-2 bg-purple-50 rounded">
+                            <div className="text-sm font-bold text-purple-600">{metrics.database.performance.toFixed(1)}%</div>
+                            <div className="text-xs text-gray-600">أداء عام</div>
+                          </div>
+                          <div className="p-2 bg-orange-50 rounded">
+                            <div className="text-sm font-bold text-orange-600">2.3s</div>
+                            <div className="text-xs text-gray-600">متوسط الاستجابة</div>
+                          </div>
+                        </div>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span>الاستعلامات البطيئة:</span>
+                            <span className="text-red-600 font-medium">3</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>الاتصالات النشطة:</span>
+                            <span className="text-green-600 font-medium">12</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>استخدام الذاكرة:</span>
+                            <span className="text-blue-600 font-medium">65%</span>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base">إحصائيات التخزين</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span>حجم قاعدة البيانات:</span>
+                            <span className="font-mono">247 MB</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span>الفهارس:</span>
+                            <span className="font-mono">45 MB</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span>النسخ الاحتياطية:</span>
+                            <span className="font-mono">1.2 GB</span>
+                          </div>
+                        </div>
+                        <Separator />
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-xs">
+                            <span>مساحة مستخدمة</span>
+                            <span>12%</span>
+                          </div>
+                          <Progress value={12} className="h-1.5" />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base">التحليلات المتقدمة</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        <div className="p-3 bg-blue-50 border-r-4 border-blue-400 rounded">
+                          <div className="text-sm font-medium text-blue-800 mb-1">
+                            💡 توصية ذكية
+                          </div>
+                          <div className="text-xs text-blue-700">
+                            يُنصح بإضافة فهرس مركب على جدول projects للاستعلام الأكثر تكراراً
+                          </div>
+                        </div>
+                        <div className="p-3 bg-green-50 border-r-4 border-green-400 rounded">
+                          <div className="text-sm font-medium text-green-800 mb-1">
+                            ✅ أداء ممتاز
+                          </div>
+                          <div className="text-xs text-green-700">
+                            جداول العمال والموردين محسّنة بكفاءة عالية
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="security">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Shield className="w-4 h-4" />
+                        حالة الأمان العامة
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-2 gap-3 text-center">
+                          <div className="p-2 bg-green-50 rounded">
+                            <div className="text-lg font-bold text-green-600">85%</div>
+                            <div className="text-xs text-gray-600">مستوى الأمان</div>
+                          </div>
+                          <div className="p-2 bg-blue-50 rounded">
+                            <div className="text-lg font-bold text-blue-600">32</div>
+                            <div className="text-xs text-gray-600">سياسة RLS</div>
+                          </div>
+                        </div>
+                        <Separator />
+                        <div className="space-y-2 text-sm">
+                          <div className="flex items-center justify-between">
+                            <span>الجداول المحمية:</span>
+                            <Badge variant="default" className="text-xs">32/41</Badge>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span>التشفير:</span>
+                            <Badge variant="default" className="text-xs">مُفعّل</Badge>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <span>صلاحيات المستخدم:</span>
+                            <Badge variant="secondary" className="text-xs">محدودة</Badge>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base">التهديدات والتحديات</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        <div className="p-2 bg-red-50 border border-red-200 rounded">
+                          <div className="flex items-center gap-2 mb-1">
+                            <AlertTriangle className="w-3 h-3 text-red-600" />
+                            <span className="text-sm font-medium text-red-800">تحذيرات</span>
+                          </div>
+                          <div className="text-xs text-red-700">
+                            • 9 جداول بدون سياسات RLS
+                          </div>
+                        </div>
+                        <div className="p-2 bg-yellow-50 border border-yellow-200 rounded">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Clock className="w-3 h-3 text-yellow-600" />
+                            <span className="text-sm font-medium text-yellow-800">مراجعة مطلوبة</span>
+                          </div>
+                          <div className="text-xs text-yellow-700">
+                            • تحديث صلاحيات المستخدمين القديمة
+                          </div>
+                        </div>
+                        <div className="p-2 bg-green-50 border border-green-200 rounded">
+                          <div className="flex items-center gap-2 mb-1">
+                            <CheckCircle className="w-3 h-3 text-green-600" />
+                            <span className="text-sm font-medium text-green-800">آمن</span>
+                          </div>
+                          <div className="text-xs text-green-700">
+                            • جميع البيانات الحساسة محمية
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>
+            </Tabs>
           </TabsContent>
 
 
@@ -1105,7 +1307,7 @@ export default function AISystemDashboard() {
                 <CardContent>
                   <div className="space-y-3">
                     <Button 
-                      onClick={() => verifyResultsMutation.mutate()}
+                      onClick={() => verifyResultsMutation.mutate(undefined)}
                       disabled={verifyResultsMutation.isPending}
                       className="w-full"
                       size="sm"
