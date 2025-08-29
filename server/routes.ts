@@ -27,10 +27,14 @@ import {
   // Equipment schemas (النظام المبسط)
   insertEquipmentSchema, insertEquipmentMovementSchema,
   // Notification schemas
-  insertNotificationSchema
+  insertNotificationSchema,
+  // Security Policy schemas (مخططات السياسات الأمنية)
+  insertSecurityPolicySchema, insertSecurityPolicySuggestionSchema,
+  insertSecurityPolicyImplementationSchema, insertSecurityPolicyViolationSchema
 } from "@shared/schema";
 import { NotificationService } from "./services/NotificationService";
 import { aiSystemService } from "./services/AiSystemService";
+import { securityPolicyService } from "./services/SecurityPolicyService";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
@@ -133,6 +137,165 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('خطأ في جلب سياسات الجدول:', error);
       res.status(500).json({ message: "خطأ في جلب سياسات الجدول" });
+    }
+  });
+
+  // ====== مسارات السياسات الأمنية المتقدمة ======
+  
+  // جلب جميع السياسات الأمنية
+  app.get("/api/security-policies", async (req, res) => {
+    try {
+      const { status, category, severity, limit } = req.query;
+      const policies = await securityPolicyService.getAllPolicies({
+        status: status as string,
+        category: category as string, 
+        severity: severity as string,
+        limit: limit ? parseInt(limit as string) : undefined
+      });
+      res.json(policies);
+    } catch (error) {
+      console.error('خطأ في جلب السياسات الأمنية:', error);
+      res.status(500).json({ message: "خطأ في جلب السياسات الأمنية" });
+    }
+  });
+
+  // إنشاء سياسة أمنية جديدة
+  app.post("/api/security-policies", async (req, res) => {
+    try {
+      const validation = insertSecurityPolicySchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ message: "بيانات غير صحيحة", errors: validation.error.errors });
+      }
+
+      const policy = await securityPolicyService.createPolicy(validation.data);
+      res.status(201).json(policy);
+    } catch (error) {
+      console.error('خطأ في إنشاء السياسة الأمنية:', error);
+      res.status(500).json({ message: error instanceof Error ? error.message : "خطأ في إنشاء السياسة الأمنية" });
+    }
+  });
+
+  // تحديث سياسة أمنية
+  app.put("/api/security-policies/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const validation = insertSecurityPolicySchema.partial().safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ message: "بيانات غير صحيحة", errors: validation.error.errors });
+      }
+
+      const updatedPolicy = await securityPolicyService.updatePolicy(id, validation.data);
+      res.json(updatedPolicy);
+    } catch (error) {
+      console.error('خطأ في تحديث السياسة الأمنية:', error);
+      res.status(500).json({ message: error instanceof Error ? error.message : "خطأ في تحديث السياسة الأمنية" });
+    }
+  });
+
+  // حذف سياسة أمنية
+  app.delete("/api/security-policies/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const result = await securityPolicyService.deletePolicy(id);
+      res.json(result);
+    } catch (error) {
+      console.error('خطأ في حذف السياسة الأمنية:', error);
+      res.status(500).json({ message: error instanceof Error ? error.message : "خطأ في حذف السياسة الأمنية" });
+    }
+  });
+
+  // جلب اقتراحات السياسات
+  app.get("/api/security-policy-suggestions", async (req, res) => {
+    try {
+      const { status, priority, category, limit } = req.query;
+      const suggestions = await securityPolicyService.getPolicySuggestions({
+        status: status as string,
+        priority: priority as string,
+        category: category as string,
+        limit: limit ? parseInt(limit as string) : undefined
+      });
+      res.json(suggestions);
+    } catch (error) {
+      console.error('خطأ في جلب اقتراحات السياسات:', error);
+      res.status(500).json({ message: "خطأ في جلب اقتراحات السياسات" });
+    }
+  });
+
+  // إنشاء اقتراح سياسة جديد
+  app.post("/api/security-policy-suggestions", async (req, res) => {
+    try {
+      const validation = insertSecurityPolicySuggestionSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ message: "بيانات غير صحيحة", errors: validation.error.errors });
+      }
+
+      const suggestion = await securityPolicyService.createPolicySuggestion(validation.data);
+      res.status(201).json(suggestion);
+    } catch (error) {
+      console.error('خطأ في إنشاء اقتراح السياسة:', error);
+      res.status(500).json({ message: error instanceof Error ? error.message : "خطأ في إنشاء اقتراح السياسة" });
+    }
+  });
+
+  // الموافقة على اقتراح سياسة
+  app.post("/api/security-policy-suggestions/:id/approve", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { reviewerId = 'system' } = req.body;
+      
+      const result = await securityPolicyService.approvePolicySuggestion(id, reviewerId);
+      res.json(result);
+    } catch (error) {
+      console.error('خطأ في الموافقة على الاقتراح:', error);
+      res.status(500).json({ message: error instanceof Error ? error.message : "خطأ في الموافقة على الاقتراح" });
+    }
+  });
+
+  // جلب انتهاكات السياسات
+  app.get("/api/security-policy-violations", async (req, res) => {
+    try {
+      const { policyId, severity, status, limit } = req.query;
+      const violations = await securityPolicyService.getPolicyViolations({
+        policyId: policyId as string,
+        severity: severity as string,
+        status: status as string,
+        limit: limit ? parseInt(limit as string) : undefined
+      });
+      res.json(violations);
+    } catch (error) {
+      console.error('خطأ في جلب انتهاكات السياسات:', error);
+      res.status(500).json({ message: "خطأ في جلب انتهاكات السياسات" });
+    }
+  });
+
+  // إنشاء سجل انتهاك جديد
+  app.post("/api/security-policy-violations", async (req, res) => {
+    try {
+      const validation = insertSecurityPolicyViolationSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ message: "بيانات غير صحيحة", errors: validation.error.errors });
+      }
+
+      const violation = await securityPolicyService.createViolation(validation.data);
+      res.status(201).json(violation);
+    } catch (error) {
+      console.error('خطأ في إنشاء سجل الانتهاك:', error);
+      res.status(500).json({ message: error instanceof Error ? error.message : "خطأ في إنشاء سجل الانتهاك" });
+    }
+  });
+
+  // إنشاء اقتراحات ذكية للسياسات
+  app.post("/api/security-policies/generate-smart-suggestions", async (req, res) => {
+    try {
+      const suggestions = await securityPolicyService.generateSmartSuggestions();
+      res.json({ 
+        message: `تم إنشاء ${suggestions.length} اقتراح ذكي للسياسات الأمنية`,
+        suggestions,
+        count: suggestions.length
+      });
+    } catch (error) {
+      console.error('خطأ في إنشاء الاقتراحات الذكية:', error);
+      res.status(500).json({ message: "خطأ في إنشاء الاقتراحات الذكية" });
     }
   });
 
@@ -273,7 +436,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { recommendationIds } = req.body;
       const recommendations = recommendationIds?.length > 0 
-        ? await storage.getAiSystemRecommendationsByIds(recommendationIds)
+        ? await storage.getAiSystemRecommendations({ status: 'executed' })
         : await storage.getAiSystemRecommendations({ status: 'executed' });
       
       const results = await aiSystemService.verifyImplementationResults(recommendations);

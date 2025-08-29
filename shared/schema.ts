@@ -1058,3 +1058,195 @@ export type InsertAiSystemLog = z.infer<typeof insertAiSystemLogSchema>;
 export type InsertAiSystemMetric = z.infer<typeof insertAiSystemMetricSchema>;
 export type InsertAiSystemDecision = z.infer<typeof insertAiSystemDecisionSchema>;
 export type InsertAiSystemRecommendation = z.infer<typeof insertAiSystemRecommendationSchema>;
+
+// ================================
+// نظام السياسات الأمنية المتقدم
+// ================================
+
+// جدول السياسات الأمنية (Security Policies)
+export const securityPolicies = pgTable("security_policies", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  policyId: text("policy_id").notNull().unique(), // معرف السياسة (مثل: SEC-001)
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  category: text("category").notNull(), // authentication, authorization, data_protection, etc.
+  severity: text("severity").notNull().default("medium"), // low, medium, high, critical
+  status: text("status").notNull().default("active"), // active, inactive, under_review, deprecated
+  complianceLevel: text("compliance_level").notNull().default("mandatory"), // mandatory, recommended, optional
+  
+  // تفاصيل السياسة
+  requirements: jsonb("requirements"), // متطلبات السياسة
+  implementation: jsonb("implementation"), // تفاصيل التطبيق
+  checkCriteria: jsonb("check_criteria"), // معايير الفحص
+  remediation: jsonb("remediation"), // خطوات الإصلاح
+  
+  // التطبيق والتنفيذ
+  isAutomated: boolean("is_automated").default(false).notNull(),
+  automationScript: text("automation_script"), // سكريبت التطبيق التلقائي
+  checkInterval: integer("check_interval").default(86400).notNull(), // فترة الفحص بالثواني
+  lastChecked: timestamp("last_checked"),
+  nextCheck: timestamp("next_check"),
+  
+  // النتائج والإحصائيات
+  complianceScore: decimal("compliance_score", { precision: 5, scale: 2 }).default('0').notNull(), // نتيجة الامتثال
+  violationsCount: integer("violations_count").default(0).notNull(),
+  lastViolation: timestamp("last_violation"),
+  
+  // الإشعارات
+  notifyOnViolation: boolean("notify_on_violation").default(true).notNull(),
+  notificationLevel: text("notification_level").default("medium").notNull(), // low, medium, high, critical
+  
+  // الصيانة
+  createdBy: varchar("created_by").references(() => users.id),
+  approvedBy: varchar("approved_by").references(() => users.id),
+  approvedAt: timestamp("approved_at"),
+  version: text("version").default("1.0").notNull(),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// جدول اقتراحات السياسات (Policy Suggestions)
+export const securityPolicySuggestions = pgTable("security_policy_suggestions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  suggestedPolicyId: text("suggested_policy_id").notNull(), // معرف السياسة المقترحة
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  category: text("category").notNull(),
+  priority: text("priority").notNull().default("medium"), // low, medium, high, critical
+  confidence: integer("confidence").default(80).notNull(), // درجة الثقة (0-100)
+  
+  // تفاصيل الاقتراح
+  reasoning: text("reasoning"), // سبب الاقتراح
+  estimatedImpact: text("estimated_impact"), // التأثير المتوقع
+  implementationEffort: text("implementation_effort"), // جهد التطبيق (low, medium, high)
+  prerequisites: jsonb("prerequisites"), // المتطلبات المسبقة
+  
+  // مصدر الاقتراح
+  sourceType: text("source_type").notNull().default("ai_analysis"), // ai_analysis, security_scan, manual, best_practice
+  sourceData: jsonb("source_data"), // البيانات المصدرية
+  
+  // حالة الاقتراح
+  status: text("status").default("pending").notNull(), // pending, approved, rejected, implemented
+  reviewedBy: varchar("reviewed_by").references(() => users.id),
+  reviewedAt: timestamp("reviewed_at"),
+  reviewNotes: text("review_notes"),
+  
+  // التنفيذ
+  implementedAs: varchar("implemented_as").references(() => securityPolicies.id),
+  implementedAt: timestamp("implemented_at"),
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// جدول تطبيق السياسات (Policy Implementations)
+export const securityPolicyImplementations = pgTable("security_policy_implementations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  policyId: varchar("policy_id").notNull().references(() => securityPolicies.id),
+  implementationType: text("implementation_type").notNull(), // automatic, manual, scheduled
+  
+  // تفاصيل التطبيق
+  implementationDetails: jsonb("implementation_details"),
+  executionScript: text("execution_script"),
+  targetSystems: jsonb("target_systems"), // الأنظمة المستهدفة
+  
+  // جدولة التنفيذ
+  scheduledAt: timestamp("scheduled_at"),
+  executedAt: timestamp("executed_at"),
+  completedAt: timestamp("completed_at"),
+  
+  // النتائج
+  status: text("status").default("pending").notNull(), // pending, running, completed, failed, cancelled
+  result: jsonb("result"), // نتائج التطبيق
+  success: boolean("success"),
+  errorMessage: text("error_message"),
+  
+  // المقاييس
+  executionDuration: integer("execution_duration"), // مدة التنفيذ بالثواني
+  affectedItems: integer("affected_items").default(0).notNull(), // عدد العناصر المتأثرة
+  
+  executedBy: varchar("executed_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// جدول انتهاكات السياسات (Policy Violations)
+export const securityPolicyViolations = pgTable("security_policy_violations", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  policyId: varchar("policy_id").notNull().references(() => securityPolicies.id),
+  violationId: text("violation_id").notNull().unique(), // معرف فريد للانتهاك
+  
+  // تفاصيل الانتهاك
+  severity: text("severity").notNull(), // low, medium, high, critical
+  status: text("status").default("open").notNull(), // open, investigating, resolved, false_positive
+  violationType: text("violation_type").notNull(), // configuration, access, data, process
+  
+  // البيانات الفنية
+  violatedRule: text("violated_rule").notNull(), // القاعدة المنتهكة
+  detectionMethod: text("detection_method").notNull(), // automated, manual, reported
+  evidence: jsonb("evidence"), // الأدلة والبيانات الداعمة
+  affectedResources: jsonb("affected_resources"), // الموارد المتأثرة
+  
+  // التوقيت
+  detectedAt: timestamp("detected_at").defaultNow().notNull(),
+  firstOccurrence: timestamp("first_occurrence").defaultNow().notNull(),
+  lastOccurrence: timestamp("last_occurrence").defaultNow().notNull(),
+  occurrenceCount: integer("occurrence_count").default(1).notNull(),
+  
+  // الحل والمتابعة
+  resolvedAt: timestamp("resolved_at"),
+  resolvedBy: varchar("resolved_by").references(() => users.id),
+  resolutionNotes: text("resolution_notes"),
+  resolutionMethod: text("resolution_method"), // automatic, manual, policy_change
+  
+  // التقييم
+  riskScore: decimal("risk_score", { precision: 5, scale: 2 }), // نتيجة المخاطر
+  businessImpact: text("business_impact"), // التأثير على العمل
+  
+  // الإشعارات
+  notified: boolean("notified").default(false).notNull(),
+  notificationsSent: jsonb("notifications_sent"), // سجل الإشعارات المرسلة
+  
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+// ================================
+// Security Policies Schemas (مخططات السياسات الأمنية)
+// ================================
+
+// Insert Schemas
+export const insertSecurityPolicySchema = createInsertSchema(securityPolicies).omit({ 
+  id: true, 
+  createdAt: true, 
+  updatedAt: true 
+});
+
+export const insertSecurityPolicySuggestionSchema = createInsertSchema(securityPolicySuggestions).omit({ 
+  id: true, 
+  createdAt: true, 
+  updatedAt: true 
+});
+
+export const insertSecurityPolicyImplementationSchema = createInsertSchema(securityPolicyImplementations).omit({ 
+  id: true, 
+  createdAt: true 
+});
+
+export const insertSecurityPolicyViolationSchema = createInsertSchema(securityPolicyViolations).omit({ 
+  id: true, 
+  createdAt: true, 
+  updatedAt: true 
+});
+
+// Select Types
+export type SecurityPolicy = typeof securityPolicies.$inferSelect;
+export type SecurityPolicySuggestion = typeof securityPolicySuggestions.$inferSelect;
+export type SecurityPolicyImplementation = typeof securityPolicyImplementations.$inferSelect;
+export type SecurityPolicyViolation = typeof securityPolicyViolations.$inferSelect;
+
+// Insert Types
+export type InsertSecurityPolicy = z.infer<typeof insertSecurityPolicySchema>;
+export type InsertSecurityPolicySuggestion = z.infer<typeof insertSecurityPolicySuggestionSchema>;
+export type InsertSecurityPolicyImplementation = z.infer<typeof insertSecurityPolicyImplementationSchema>;
+export type InsertSecurityPolicyViolation = z.infer<typeof insertSecurityPolicyViolationSchema>;
