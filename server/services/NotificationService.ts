@@ -15,7 +15,7 @@ import {
   type InsertNotificationQueue
 } from "@shared/schema";
 import { db } from "../db";
-import { eq, and, desc, or, inArray } from "drizzle-orm";
+import { eq, and, desc, or, inArray, sql } from "drizzle-orm";
 
 export interface NotificationPayload {
   type: string;
@@ -311,10 +311,10 @@ export class NotificationService {
       conditions.push(eq(notifications.projectId, filters.projectId));
     }
 
-    // فلترة الإشعارات للمستخدم
+    // فلترة الإشعارات للمستخدم - إصلاح البحث في JSONB
     conditions.push(
       or(
-        eq(notifications.recipients, JSON.stringify([userId])),
+        sql`${notifications.recipients} @> ${JSON.stringify([userId])}::jsonb`,
         eq(notifications.recipients, null) // الإشعارات العامة
       )
     );
