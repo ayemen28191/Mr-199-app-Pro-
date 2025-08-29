@@ -35,6 +35,7 @@ import {
 import { NotificationService } from "./services/NotificationService";
 import { aiSystemService } from "./services/AiSystemService";
 import { securityPolicyService } from "./services/SecurityPolicyService";
+import { smartErrorHandler } from './services/SmartErrorHandler';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
@@ -4489,6 +4490,93 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("خطأ في حذف سجل الحضور:", error);
       res.status(500).json({ message: "خطأ في حذف سجل الحضور" });
+    }
+  });
+
+  // ====== مسارات نظام كشف الأخطاء الذكي ======
+  
+  // جلب إحصائيات الأخطاء
+  app.get("/api/smart-errors/statistics", async (req, res) => {
+    try {
+      console.log('📊 طلب إحصائيات نظام الأخطاء الذكي');
+      
+      const statistics = await smartErrorHandler.getErrorStatistics();
+      
+      res.json({
+        success: true,
+        statistics,
+        message: 'تم جلب إحصائيات الأخطاء بنجاح'
+      });
+      
+    } catch (error: any) {
+      console.error('❌ خطأ في جلب إحصائيات الأخطاء:', error);
+      res.status(500).json({ 
+        success: false,
+        message: 'خطأ في جلب إحصائيات الأخطاء',
+        error: error.message
+      });
+    }
+  });
+
+  // إنشاء خطأ تجريبي لاختبار النظام
+  app.post("/api/smart-errors/test", async (req, res) => {
+    try {
+      console.log('🧪 إنشاء خطأ تجريبي لاختبار النظام الذكي');
+      
+      // محاولة إدراج بيانات مكررة لإثارة خطأ unique violation
+      try {
+        await db.execute(sql`
+          INSERT INTO projects (name, status) 
+          VALUES ('مشروع تجريبي للاختبار', 'active')
+        `);
+        
+        // إذا نجح الإدراج، سنحاول مرة أخرى لإثارة الخطأ
+        await db.execute(sql`
+          INSERT INTO projects (name, status) 
+          VALUES ('مشروع تجريبي للاختبار', 'active')
+        `);
+        
+      } catch (testError: any) {
+        // هذا ما نريده - خطأ للاختبار
+        console.log('🎯 تم إنشاء خطأ تجريبي بنجاح');
+        
+        const analyzedError = await smartErrorHandler.handleDatabaseError(
+          testError, 
+          {
+            operation: 'insert',
+            tableName: 'projects',
+            columnName: 'name',
+            attemptedValue: 'مشروع تجريبي للاختبار',
+            userId: req.session?.userId || 'test-user',
+            additionalContext: { testMode: true }
+          },
+          false // لا نريد رمي الخطأ
+        );
+        
+        return res.json({
+          success: true,
+          message: 'تم إنشاء واختبار خطأ تجريبي بنجاح',
+          testError: {
+            type: analyzedError.errorType,
+            severity: analyzedError.severity,
+            friendlyMessage: analyzedError.friendlyMessage,
+            fingerprint: analyzedError.fingerprint.substring(0, 12)
+          }
+        });
+      }
+      
+      res.json({
+        success: true,
+        message: 'لم يحدث خطأ في الاختبار، قد تكون البيانات موجودة بالفعل'
+      });
+      
+    } catch (error: any) {
+      console.error('❌ خطأ في اختبار النظام الذكي:', error);
+      res.status(500).json({ 
+        success: false,
+        message: 'خطأ في اختبار النظام الذكي',
+        error: error.message
+      });
     }
   });
 

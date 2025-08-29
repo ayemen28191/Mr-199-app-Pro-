@@ -29,6 +29,7 @@ import AdvancedReports from "@/pages/advanced-reports";
 import WorkersUnifiedReports from "@/pages/workers-unified-reports";
 import NotificationsPage from "@/pages/notifications";
 import AISystemDashboard from "@/pages/AISystemDashboard";
+import SmartErrorsPage from "@/pages/SmartErrorsPage";
 
 import Header from "@/components/layout/header";
 import BottomNavigation from "@/components/layout/bottom-navigation";
@@ -227,6 +228,13 @@ function Router() {
         </ProtectedRoute>
       </Route>
 
+      <Route path="/smart-errors">
+        <ProtectedRoute>
+          <AuthLayout>
+            <SmartErrorsPage />
+          </AuthLayout>
+        </ProtectedRoute>
+      </Route>
 
       <Route component={NotFound} />
     </Switch>

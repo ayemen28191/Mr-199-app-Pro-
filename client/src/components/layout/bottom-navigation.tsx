@@ -4,7 +4,8 @@ import {
   Home, Users, Receipt, BarChart, CreditCard, Building2, Truck, Filter, FileText,
   MoreHorizontal, Calculator, FileSpreadsheet, UserCheck, DollarSign, Package,
   ClipboardCheck, TrendingUp, Settings, PlusCircle, ArrowLeftRight, Target,
-  BookOpen, Calendar, Wrench, User, MapPin, Globe, X, Bell, Brain, Shield
+  BookOpen, Calendar, Wrench, User, MapPin, Globe, X, Bell, Brain, Shield,
+  Database
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -69,6 +70,7 @@ const allPages = [
     category: "النظام الذكي والأمان",
     pages: [
       { path: "/ai-system", icon: Brain, label: "النظام الذكي والسياسات الأمنية", description: "مراقبة ذكية وإدارة السياسات الأمنية تلقائياً" },
+      { path: "/smart-errors", icon: Database, label: "كشف الأخطاء الذكي", description: "مراقبة وتحليل أخطاء قاعدة البيانات بذكاء اصطناعي" },
     ]
   },
   // الإعدادات والإدارة

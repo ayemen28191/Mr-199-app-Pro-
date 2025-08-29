@@ -1027,12 +1027,8 @@ export const aiSystemRecommendations = pgTable("ai_system_recommendations", {
   executionScript: text("execution_script"), // سكريبت التنفيذ التلقائي
   status: text("status").default("active").notNull(), // active, executed, dismissed, expired
   executedAt: timestamp("executed_at"),
-  dismissedAt: timestamp("dismissed_at"),
-  executionResult: jsonb("execution_result"), // نتيجة التنفيذ
-  targetArea: text("target_area"), // المنطقة المستهدفة (database, performance, etc.)
-  requirements: jsonb("requirements"), // المتطلبات للتنفيذ
-  risks: jsonb("risks"), // المخاطر المحتملة
-  validUntil: timestamp("valid_until"), // صالح حتى
+  executedBy: varchar("executed_by").references(() => users.id),
+  feedback: jsonb("feedback"), // ملاحظات التنفيذ
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
