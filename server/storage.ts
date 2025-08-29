@@ -3964,9 +3964,9 @@ export class DatabaseStorage implements IStorage {
       
       const result = await db.execute(query);
       
-      console.log(`✅ تم تحليل ${result.length} جدول بنجاح`);
+      console.log(`✅ تم تحليل ${result.rows?.length || 0} جدول بنجاح`);
       
-      return result.map((row: any) => ({
+      return result.rows.map((row: any) => ({
         table_name: row.table_name,
         schema_name: row.schema_name,
         row_count: parseInt(row.row_count) || 0,
@@ -3995,7 +3995,7 @@ export class DatabaseStorage implements IStorage {
       
       const basicResult = await db.execute(basicQuery);
       
-      return basicResult.map((row: any) => ({
+      return basicResult.rows.map((row: any) => ({
         table_name: row.table_name,
         schema_name: row.schema_name || 'public',
         row_count: 0,
