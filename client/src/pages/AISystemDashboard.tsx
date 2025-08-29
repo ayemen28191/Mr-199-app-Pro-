@@ -489,6 +489,9 @@ export default function AISystemDashboard() {
   const [isSystemRunning, setIsSystemRunning] = useState(false);
   const [executingRecommendation, setExecutingRecommendation] = useState<string | null>(null);
   const [showIssues, setShowIssues] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview');
+  const [verificationResults, setVerificationResults] = useState<any>(null);
+  const [backupInProgress, setBackupInProgress] = useState(false);
 
   // جلب حالة النظام
   const { data: systemStatus } = useQuery<any>({
@@ -508,6 +511,50 @@ export default function AISystemDashboard() {
     refetchInterval: 60000, // تحديث كل دقيقة لتجنب التكرار المفرط
     staleTime: 30000, // البيانات تبقى "طازجة" لـ 30 ثانية
   });
+
+  // وظائف النظام المتقدم
+  const verifyResultsMutation = useMutation({
+    mutationFn: (recommendationIds?: string[]) => 
+      apiRequest('/api/ai-system/verify-results', 'POST', { recommendationIds }),
+    onSuccess: (data) => {
+      setVerificationResults(data);
+      toast({
+        title: "تم التحقق من النتائج",
+        description: `معدل النجاح: ${(data.verificationResults.filter((r: any) => r.success).length / data.verificationResults.length * 100).toFixed(1)}%`,
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "خطأ في التحقق",
+        description: error.message || "فشل في التحقق من النتائج",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const createBackupMutation = useMutation({
+    mutationFn: () => apiRequest('/api/ai-system/backup', 'POST'),
+    onSuccess: (data) => {
+      toast({
+        title: "تم إنشاء النسخة الاحتياطية",
+        description: `معرف النسخة: ${data.backupId}`,
+      });
+      setBackupInProgress(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "خطأ في النسخ الاحتياطي",
+        description: error.message || "فشل في إنشاء النسخة الاحتياطية",
+        variant: "destructive",
+      });
+      setBackupInProgress(false);
+    }
+  });
+
+  const handleCreateBackup = () => {
+    setBackupInProgress(true);
+    createBackupMutation.mutate();
+  };
 
   // متحكم في تشغيل/إيقاف النظام
   const systemToggleMutation = useMutation({
@@ -692,6 +739,11 @@ export default function AISystemDashboard() {
               <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4" />
               <span className="hidden sm:inline">نظرة عامة</span>
               <span className="sm:hidden">عام</span>
+            </TabsTrigger>
+            <TabsTrigger value="advanced" className="text-xs sm:text-sm p-2 flex flex-col sm:flex-row items-center gap-1">
+              <Zap className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">النظام المتقدم</span>
+              <span className="sm:hidden">متقدم</span>
             </TabsTrigger>
             <TabsTrigger value="database" className="text-xs sm:text-sm p-2 flex flex-col sm:flex-row items-center gap-1">
               <Database className="w-3 h-3 sm:w-4 sm:h-4" />
@@ -1215,6 +1267,166 @@ export default function AISystemDashboard() {
                         <Badge variant="outline" className="text-xs">{task.freq}</Badge>
                       </div>
                     ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="advanced" className="mt-3 sm:mt-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* التحقق من النتائج */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4" />
+                    التحقق من النتائج
+                  </CardTitle>
+                  <CardDescription>
+                    قياس فعالية التوصيات المنفذة والتحسينات المحققة
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <Button 
+                      onClick={() => verifyResultsMutation.mutate()}
+                      disabled={verifyResultsMutation.isPending}
+                      className="w-full"
+                      size="sm"
+                    >
+                      {verifyResultsMutation.isPending ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          جاري التحقق...
+                        </>
+                      ) : (
+                        <>
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          بدء التحقق
+                        </>
+                      )}
+                    </Button>
+                    
+                    {verificationResults && (
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between">
+                          <span>معدل النجاح:</span>
+                          <span className="font-mono text-green-600">
+                            {(verificationResults.verificationResults.filter((r: any) => r.success).length / verificationResults.verificationResults.length * 100).toFixed(1)}%
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>التوصيات المتحققة:</span>
+                          <span>{verificationResults.verificationResults.filter((r: any) => r.success).length}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span>العمليات الفاشلة:</span>
+                          <span className="text-red-600">{verificationResults.failedActions.length}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* النسخ الاحتياطي والتراجع */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Database className="w-4 h-4" />
+                    النسخ الاحتياطي والتراجع
+                  </CardTitle>
+                  <CardDescription>
+                    إنشاء نسخ احتياطية والتراجع عن التغييرات عند الحاجة
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <Button 
+                      onClick={handleCreateBackup}
+                      disabled={createBackupMutation.isPending || backupInProgress}
+                      className="w-full"
+                      variant="outline"
+                      size="sm"
+                    >
+                      {createBackupMutation.isPending || backupInProgress ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          إنشاء نسخة...
+                        </>
+                      ) : (
+                        <>
+                          <Database className="w-4 h-4 mr-2" />
+                          إنشاء نسخة احتياطية
+                        </>
+                      )}
+                    </Button>
+                    
+                    <div className="text-xs text-gray-500 p-2 bg-gray-50 rounded">
+                      💡 النسخ الاحتياطية تشمل: المشاريع، العمال، الموردين، قرارات النظام الذكي
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* مراقبة الأداء المتقدمة */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Activity className="w-4 h-4" />
+                    مراقبة الأداء المتقدمة
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    {verificationResults?.improvementMetrics && (
+                      <div className="space-y-2 text-sm">
+                        <div className="font-medium text-green-600">التحسينات المالية:</div>
+                        <div className="grid grid-cols-2 gap-2 text-xs">
+                          <div>توفير التكاليف: {verificationResults.improvementMetrics.financialImprovements.costReduction?.toLocaleString() || 0} ريال</div>
+                          <div>تقليل المخاطر: {verificationResults.improvementMetrics.riskReduction.incidentReduction || 0} مشروع</div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div className="space-y-1 text-xs">
+                      <div className="flex justify-between">
+                        <span>آخر تحليل:</span>
+                        <span className="text-gray-600">{new Date().toLocaleTimeString('ar-SA')}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>حالة المراقبة:</span>
+                        <Badge variant="secondary" className="text-xs">نشط</Badge>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* إعدادات متقدمة */}
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base flex items-center gap-2">
+                    <Settings className="w-4 h-4" />
+                    إعدادات متقدمة
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-1 gap-2">
+                      <Button variant="outline" size="sm" className="text-xs">
+                        <RefreshCw className="w-3 h-3 mr-1" />
+                        إعادة تدريب النموذج
+                      </Button>
+                      <Button variant="outline" size="sm" className="text-xs">
+                        <Database className="w-3 h-3 mr-1" />
+                        تحسين قاعدة البيانات
+                      </Button>
+                      <Button variant="outline" size="sm" className="text-xs">
+                        <Shield className="w-3 h-3 mr-1" />
+                        فحص الأمان
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

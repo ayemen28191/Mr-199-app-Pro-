@@ -223,6 +223,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // === المسارات الجديدة للنظام الذكي المتطور ===
+  
+  // التحقق من النتائج
+  app.post('/api/ai-system/verify-results', async (req, res) => {
+    try {
+      const { recommendationIds } = req.body;
+      const recommendations = recommendationIds?.length > 0 
+        ? await storage.getAiSystemRecommendationsByIds(recommendationIds)
+        : await storage.getAiSystemRecommendations({ status: 'executed' });
+      
+      const results = await aiSystemService.verifyImplementationResults(recommendations);
+      res.json(results);
+    } catch (error) {
+      console.error('خطأ في التحقق من النتائج:', error);
+      res.status(500).json({ error: 'فشل في التحقق من النتائج' });
+    }
+  });
+
+  // إنشاء نسخة احتياطية
+  app.post('/api/ai-system/backup', async (req, res) => {
+    try {
+      const backup = await aiSystemService.createSystemBackup();
+      res.json(backup);
+    } catch (error) {
+      console.error('خطأ في إنشاء النسخة الاحتياطية:', error);
+      res.status(500).json({ error: 'فشل في إنشاء النسخة الاحتياطية' });
+    }
+  });
+
+  // التراجع عن التغييرات
+  app.post('/api/ai-system/rollback', async (req, res) => {
+    try {
+      const { backupId, targetOperations } = req.body;
+      if (!backupId) {
+        return res.status(400).json({ error: 'معرف النسخة الاحتياطية مطلوب' });
+      }
+      const results = await aiSystemService.rollbackSystemChanges(backupId, targetOperations);
+      res.json(results);
+    } catch (error) {
+      console.error('خطأ في التراجع:', error);
+      res.status(500).json({ error: 'فشل في عملية التراجع' });
+    }
+  });
+
   // إضافة مسار تطبيق الموبايل في البداية لتجنب تداخل مع Vite
   app.get("/mobile*", (req, res) => {
     try {
