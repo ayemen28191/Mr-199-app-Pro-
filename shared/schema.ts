@@ -11,7 +11,7 @@ export const users = pgTable("users", {
   firstName: text("first_name"),
   lastName: text("last_name"),
   phone: varchar("phone", { length: 50 }),
-  avatarUrl: text("avatarurl"),
+  avatarUrl: text("avatar_url"),
   
   // المصادقة التقليدية
   role: text("role").notNull().default("admin"), // admin, manager, user (للتوافق العكسي)
