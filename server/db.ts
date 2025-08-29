@@ -11,17 +11,21 @@ neonConfig.webSocketConstructor = ws;
 // ⚠️ التطبيق يستخدم فقط قاعدة بيانات Supabase PostgreSQL السحابية
 // ⚠️ أي محاولة لاستخدام DATABASE_URL المحلي سيؤدي إلى فشل النظام
 
-const SUPABASE_DATABASE_URL = "postgresql://postgres.wibtasmyusxfqxxqekks:Ay**--772283228@aws-0-us-east-1.pooler.supabase.com:6543/postgres";
+const SUPABASE_DATABASE_URL = "postgresql://postgres.wibtasmyusxfqxxqekks:Ay3KeKsUSdFZp8Nb772283228@aws-0-us-east-1.pooler.supabase.com:6543/postgres";
 
-// ⛔ ممنوع استخدام process.env.DATABASE_URL - Replit PostgreSQL محظور
+// ⛔ حماية صارمة ضد استخدام قواعد البيانات المحلية
 // ✅ الاتصال الوحيد المسموح: Supabase Cloud Database
 const connectionString = SUPABASE_DATABASE_URL;
 
-if (!connectionString || connectionString.includes('replit') || connectionString.includes('localhost')) {
+// ⚠️ تجاهل متغيرات البيئة المحلية تماماً - استخدام Supabase فقط
+console.log("🔐 إجبار استخدام قاعدة بيانات Supabase السحابية حصرياً");
+console.log("⛔ تجاهل أي متغيرات بيئة محلية (DATABASE_URL، PGHOST، إلخ)");
+
+// فحص أن رابط Supabase صحيح
+if (!connectionString || !connectionString.includes('supabase.com')) {
   throw new Error(
-    "❌ خطأ حرج: محاولة استخدام قاعدة بيانات محلية محظورة!\n" +
-    "⚠️ التطبيق يستخدم فقط قاعدة بيانات Supabase السحابية\n" +
-    "⛔ استخدام قاعدة بيانات Replit المحلية ممنوع منعاً باتاً"
+    "❌ خطأ حرج: رابط Supabase غير صحيح!\n" +
+    "🔐 يجب أن يكون الرابط من supabase.com"
   );
 }
 
