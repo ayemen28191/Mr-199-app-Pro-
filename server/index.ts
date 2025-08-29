@@ -202,97 +202,35 @@ app.use((req, res, next) => {
           log("ℹ️  أعمدة tool_movements موجودة مسبقاً أو تم إنشاؤها");
         }
 
-        // إنشاء جداول المصادقة المتقدمة
+        // فحص جداول المصادقة فقط (الجداول موجودة مسبقاً)
         try {
-          log("🔐 بدء إنشاء جداول نظام المصادقة المتقدم...");
+          log("🔐 فحص جداول نظام المصادقة المتقدم...");
           
-          // إنشاء جدول auth_user_security_settings
+          // التأكد من وجود العمود المفقود في auth_user_security_settings
           await db.execute(sql`
-            CREATE TABLE IF NOT EXISTS auth_user_security_settings (
-              id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
-              user_id VARCHAR NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
-              password_expiry_days INTEGER DEFAULT 90,
-              require_password_change BOOLEAN DEFAULT false NOT NULL,
-              password_history JSONB,
-              session_timeout INTEGER DEFAULT 30 NOT NULL,
-              max_sessions INTEGER DEFAULT 5 NOT NULL,
-              require_mfa_for_sensitive BOOLEAN DEFAULT false NOT NULL,
-              trust_device_days INTEGER DEFAULT 30 NOT NULL,
-              allowed_ip_addresses JSONB,
-              device_restrictions JSONB,
-              security_notifications JSONB,
-              created_at TIMESTAMP DEFAULT NOW() NOT NULL,
-              updated_at TIMESTAMP DEFAULT NOW() NOT NULL
-            )
-          `);
-          
-          // إنشاء باقي جداول المصادقة
-          await db.execute(sql`
-            CREATE TABLE IF NOT EXISTS auth_roles (
-              id SERIAL PRIMARY KEY,
-              name VARCHAR(100) NOT NULL UNIQUE,
-              display_name VARCHAR(255) NOT NULL,
-              description TEXT,
-              is_system BOOLEAN DEFAULT false NOT NULL,
-              color VARCHAR(7) DEFAULT '#3B82F6' NOT NULL,
-              created_at TIMESTAMP DEFAULT NOW() NOT NULL,
-              updated_at TIMESTAMP DEFAULT NOW() NOT NULL
-            )
+            ALTER TABLE auth_user_security_settings 
+            ADD COLUMN IF NOT EXISTS auto_revoke_inactive BOOLEAN DEFAULT true NOT NULL
           `);
           
           await db.execute(sql`
-            CREATE TABLE IF NOT EXISTS auth_permissions (
-              id SERIAL PRIMARY KEY,
-              name VARCHAR(100) NOT NULL UNIQUE,
-              display_name VARCHAR(255) NOT NULL,
-              description TEXT,
-              resource VARCHAR(100) NOT NULL,
-              action VARCHAR(50) NOT NULL,
-              scope VARCHAR(50) DEFAULT 'global',
-              created_at TIMESTAMP DEFAULT NOW() NOT NULL
-            )
+            ALTER TABLE auth_user_security_settings 
+            ADD COLUMN IF NOT EXISTS inactivity_days INTEGER DEFAULT 90 NOT NULL
+          `);
+          
+          // التأكد من وجود الأعمدة المفقودة في auth_audit_log
+          await db.execute(sql`
+            ALTER TABLE auth_audit_log 
+            ADD COLUMN IF NOT EXISTS request_data JSONB
           `);
           
           await db.execute(sql`
-            CREATE TABLE IF NOT EXISTS auth_user_sessions (
-              id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
-              user_id VARCHAR NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-              session_token VARCHAR NOT NULL UNIQUE,
-              device_fingerprint VARCHAR,
-              user_agent TEXT,
-              ip_address INET,
-              location_data JSONB,
-              is_trusted_device BOOLEAN DEFAULT false NOT NULL,
-              expires_at TIMESTAMP NOT NULL,
-              last_activity TIMESTAMP DEFAULT NOW() NOT NULL,
-              created_at TIMESTAMP DEFAULT NOW() NOT NULL,
-              updated_at TIMESTAMP DEFAULT NOW() NOT NULL
-            )
+            ALTER TABLE auth_audit_log 
+            ADD COLUMN IF NOT EXISTS response_data JSONB
           `);
           
-          await db.execute(sql`
-            CREATE TABLE IF NOT EXISTS auth_verification_codes (
-              id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
-              user_id VARCHAR NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-              type VARCHAR(50) NOT NULL,
-              code VARCHAR(10) NOT NULL,
-              code_hash VARCHAR NOT NULL,
-              email TEXT,
-              phone VARCHAR(20),
-              sent_via VARCHAR(20) NOT NULL,
-              expires_at TIMESTAMP NOT NULL,
-              used_at TIMESTAMP,
-              ip_address INET,
-              user_agent TEXT,
-              attempts INTEGER DEFAULT 0 NOT NULL,
-              max_attempts INTEGER DEFAULT 3 NOT NULL,
-              created_at TIMESTAMP DEFAULT NOW() NOT NULL
-            )
-          `);
-          
-          log("✅ تم إنشاء جداول نظام المصادقة المتقدم بنجاح");
+          log("✅ تم تحديث جداول نظام المصادقة المتقدم بنجاح");
         } catch (error) {
-          log("⚠️ تحذير: فشل في إنشاء جداول المصادقة - سيعمل النظام بالوضع التقليدي");
+          log("⚠️ تحذير: مشكلة في تحديث جداول المصادقة");
           console.log("🔍 تفاصيل الخطأ:", error);
         }
 
