@@ -403,33 +403,74 @@ const DatabaseTableManager = () => {
                             <Badge variant="outline" className="text-xs">
                               {table.schema_name}
                             </Badge>
-                          </div>
-                          <Button
-                            size="sm"
-                            variant={table.rls_enabled ? "secondary" : "default"}
-                            className={`text-xs py-1 h-7 font-medium transition-all ${
-                              table.rls_enabled 
-                                ? 'bg-red-50 text-red-700 hover:bg-red-100 border-red-200' 
-                                : 'bg-green-50 text-green-700 hover:bg-green-100 border-green-200'
-                            }`}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              rlsToggleMutation.mutate({
-                                tableName: table.table_name,
-                                enable: !table.rls_enabled
-                              });
-                            }}
-                            disabled={rlsToggleMutation.isPending}
-                          >
-                            {rlsToggleMutation.isPending ? (
-                              <Loader2 className="w-3 h-3 animate-spin mr-1" />
-                            ) : table.rls_enabled ? (
-                              <PowerOff className="w-3 h-3 mr-1" />
-                            ) : (
-                              <Power className="w-3 h-3 mr-1" />
+                            {table.security_level === 'high' && !table.has_policies && (
+                              <Badge variant="destructive" className="text-xs">
+                                ⚠️ يحتاج سياسات
+                              </Badge>
                             )}
-                            {table.rls_enabled ? 'تعطيل RLS' : 'تفعيل RLS'}
-                          </Button>
+                          </div>
+                          <div className="flex gap-1">
+                            {/* زر عرض اقتراحات السياسات */}
+                            {table.security_level === 'high' && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-xs py-1 h-7 bg-blue-50 text-blue-700 hover:bg-blue-100"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  // عرض اقتراحات السياسات
+                                  fetch(`/api/db-admin/policy-suggestions/${table.table_name}`)
+                                    .then(res => res.json())
+                                    .then(data => {
+                                      console.log('اقتراحات السياسات:', data);
+                                      toast({
+                                        title: "اقتراحات السياسات",
+                                        description: `تم العثور على ${data.suggestions?.length || 0} اقتراح للجدول ${table.table_name}`,
+                                        variant: "default",
+                                      });
+                                    })
+                                    .catch(() => {
+                                      toast({
+                                        title: "خطأ في جلب الاقتراحات",
+                                        description: "فشل في جلب اقتراحات السياسات",
+                                        variant: "destructive",
+                                      });
+                                    });
+                                }}
+                              >
+                                <Wrench className="w-3 h-3 mr-1" />
+                                اقتراحات
+                              </Button>
+                            )}
+                            
+                            {/* زر تفعيل/تعطيل RLS */}
+                            <Button
+                              size="sm"
+                              variant={table.rls_enabled ? "secondary" : "default"}
+                              className={`text-xs py-1 h-7 font-medium transition-all ${
+                                table.rls_enabled 
+                                  ? 'bg-red-50 text-red-700 hover:bg-red-100 border-red-200' 
+                                  : 'bg-green-50 text-green-700 hover:bg-green-100 border-green-200'
+                              }`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                rlsToggleMutation.mutate({
+                                  tableName: table.table_name,
+                                  enable: !table.rls_enabled
+                                });
+                              }}
+                              disabled={rlsToggleMutation.isPending}
+                            >
+                              {rlsToggleMutation.isPending ? (
+                                <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                              ) : table.rls_enabled ? (
+                                <PowerOff className="w-3 h-3 mr-1" />
+                              ) : (
+                                <Power className="w-3 h-3 mr-1" />
+                              )}
+                              {table.rls_enabled ? 'تعطيل RLS' : 'تفعيل RLS'}
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -442,6 +483,60 @@ const DatabaseTableManager = () => {
 
         {/* اللوحة الجانبية - التوصيات والتفاصيل */}
         <div className="space-y-4">
+          {/* أدوات تحليل الأمان */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Shield className="w-4 h-4" />
+                أدوات الأمان المتقدمة
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full justify-start"
+                  onClick={() => {
+                    // سيتم إضافة وظيفة تحليل الأمان
+                    fetch('/api/db-admin/analyze-security', { method: 'POST' })
+                      .then(res => res.json())
+                      .then(data => {
+                        toast({
+                          title: "تم تحليل الأمان",
+                          description: `تم العثور على ${data.highRiskTables} جدول عالي الخطورة`,
+                          variant: "default",
+                        });
+                      })
+                      .catch(() => {
+                        toast({
+                          title: "خطأ في التحليل",
+                          description: "فشل في تحليل التهديدات الأمنية",
+                          variant: "destructive",
+                        });
+                      });
+                  }}
+                >
+                  <AlertTriangle className="w-4 h-4 mr-2" />
+                  تحليل التهديدات الأمنية
+                </Button>
+                
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full justify-start"
+                  onClick={() => {
+                    // تحديث قائمة الجداول
+                    queryClient.invalidateQueries({ queryKey: ['/api/db-admin/tables'] });
+                  }}
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  إعادة تحليل الجداول
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
           {showRecommendations && (
             <Card>
               <CardHeader className="pb-3">

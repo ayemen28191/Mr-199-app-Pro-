@@ -53,10 +53,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/db-admin/tables", async (req, res) => {
     try {
       const tables = await storage.getDatabaseTables();
+      
+      // تشغيل تحليل الأمان في الخلفية (لا ننتظره)
+      storage.analyzeSecurityThreats().catch(error => {
+        console.error('خطأ في تحليل التهديدات الأمنية:', error);
+      });
+      
       res.json(tables);
     } catch (error) {
       console.error('خطأ في جلب جداول قاعدة البيانات:', error);
       res.status(500).json({ message: "خطأ في جلب جداول قاعدة البيانات" });
+    }
+  });
+
+  // تحليل التهديدات الأمنية يدوياً
+  app.post("/api/db-admin/analyze-security", async (req, res) => {
+    try {
+      const analysis = await storage.analyzeSecurityThreats();
+      res.json(analysis);
+    } catch (error) {
+      console.error('خطأ في تحليل التهديدات الأمنية:', error);
+      res.status(500).json({ message: "خطأ في تحليل التهديدات الأمنية" });
+    }
+  });
+
+  // جلب اقتراحات السياسات لجدول محدد
+  app.get("/api/db-admin/policy-suggestions/:tableName", async (req, res) => {
+    try {
+      const { tableName } = req.params;
+      const tables = await storage.getDatabaseTables();
+      const table = tables.find(t => t.table_name === tableName);
+      
+      if (!table) {
+        return res.status(404).json({ message: "الجدول غير موجود" });
+      }
+
+      // إنشاء اقتراحات للجدول
+      const suggestions = (storage as any).generatePolicySuggestions(table);
+      
+      res.json({
+        tableName,
+        securityLevel: table.security_level,
+        hasExistingPolicies: table.has_policies,
+        suggestions
+      });
+    } catch (error) {
+      console.error('خطأ في جلب اقتراحات السياسات:', error);
+      res.status(500).json({ message: "خطأ في جلب اقتراحات السياسات" });
     }
   });
 

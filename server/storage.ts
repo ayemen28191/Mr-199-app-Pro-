@@ -324,6 +324,7 @@ export interface IStorage {
   getDatabaseTables(): Promise<any[]>;
   toggleTableRLS(tableName: string, enable: boolean): Promise<any>;
   getTablePolicies(tableName: string): Promise<any[]>;
+  analyzeSecurityThreats(): Promise<any>;
 
 }
 
@@ -3908,6 +3909,133 @@ export class DatabaseStorage implements IStorage {
 
   // ===== وظائف إدارة قاعدة البيانات الذكية =====
 
+  // محلل الأمان للجداول عالية الخطورة
+  async analyzeSecurityThreats() {
+    try {
+      console.log('🔍 بدء تحليل التهديدات الأمنية للجداول...');
+      
+      const tables = await this.getDatabaseTables();
+      const highRiskTables = tables.filter(table => 
+        table.security_level === 'high' && !table.has_policies
+      );
+
+      const securityNotifications = [];
+
+      for (const table of highRiskTables) {
+        // إنشاء اقتراحات محددة لكل جدول
+        const policySuggestions = this.generatePolicySuggestions(table);
+        
+        const notification = {
+          id: `security-${table.table_name}-${Date.now()}`,
+          userId: 'default',
+          type: 'security' as const,
+          title: `🔐 تحذير أمني: الجدول ${table.table_name}`,
+          message: `الجدول ${table.table_name} يحتوي على بيانات حساسة ولا يحتوي على سياسات RLS. هذا قد يعرض البيانات للخطر.`,
+          data: {
+            tableName: table.table_name,
+            securityLevel: table.security_level,
+            rowCount: table.row_count,
+            policySuggestions: policySuggestions,
+            suggestedAction: 'تفعيل RLS وإضافة سياسات أمان'
+          },
+          priority: 'high' as const,
+          read: false,
+          createdAt: new Date(),
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // ينتهي خلال أسبوع
+        };
+        
+        securityNotifications.push(notification);
+      }
+
+      // حفظ الإشعارات الأمنية
+      if (securityNotifications.length > 0) {
+        for (const notification of securityNotifications) {
+          await this.createNotification(notification);
+        }
+        console.log(`⚠️ تم إنشاء ${securityNotifications.length} إشعار أمني للجداول عالية الخطورة`);
+      }
+
+      return {
+        totalTables: tables.length,
+        highRiskTables: highRiskTables.length,
+        securityNotifications: securityNotifications.length,
+        recommendations: highRiskTables.map(table => ({
+          table: table.table_name,
+          risk: 'عالي',
+          action: 'تفعيل RLS + إضافة سياسات',
+          suggestions: this.generatePolicySuggestions(table)
+        }))
+      };
+
+    } catch (error) {
+      console.error('❌ خطأ في تحليل التهديدات الأمنية:', error);
+      return {
+        totalTables: 0,
+        highRiskTables: 0,
+        securityNotifications: 0,
+        recommendations: [],
+        error: (error as Error).message
+      };
+    }
+  }
+
+  // مولد اقتراحات السياسات المتقدمة
+  private generatePolicySuggestions(table: any) {
+    const suggestions = [];
+    const tableName = table.table_name.toLowerCase();
+
+    // اقتراحات محددة حسب نوع الجدول
+    if (tableName.includes('user')) {
+      suggestions.push({
+        type: 'RLS_POLICY',
+        title: 'سياسة الوصول للمستخدمين',
+        code: `CREATE POLICY "users_policy" ON ${table.table_name}
+  USING (auth.uid() = id);`,
+        description: 'المستخدم يمكنه الوصول لبياناته فقط'
+      });
+      suggestions.push({
+        type: 'INSERT_POLICY', 
+        title: 'سياسة إنشاء المستخدمين',
+        code: `CREATE POLICY "users_insert_policy" ON ${table.table_name}
+  FOR INSERT WITH CHECK (auth.uid() = id);`,
+        description: 'المستخدم يمكنه إنشاء حسابه فقط'
+      });
+    } else if (tableName.includes('auth')) {
+      suggestions.push({
+        type: 'ADMIN_ONLY',
+        title: 'سياسة المشرفين فقط',
+        code: `CREATE POLICY "auth_admin_policy" ON ${table.table_name}
+  USING (auth.jwt() ->> 'role' = 'admin');`,
+        description: 'المشرفون فقط يمكنهم الوصول لبيانات المصادقة'
+      });
+    } else if (tableName.includes('project')) {
+      suggestions.push({
+        type: 'PROJECT_MEMBER',
+        title: 'سياسة أعضاء المشروع',
+        code: `CREATE POLICY "project_member_policy" ON ${table.table_name}
+  USING (
+    EXISTS (
+      SELECT 1 FROM project_members 
+      WHERE project_id = ${table.table_name}.id 
+      AND user_id = auth.uid()
+    )
+  );`,
+        description: 'أعضاء المشروع فقط يمكنهم الوصول'
+      });
+    }
+
+    // اقتراحات عامة
+    suggestions.push({
+      type: 'BASIC_RLS',
+      title: 'سياسة أساسية للحماية',
+      code: `CREATE POLICY "basic_security_policy" ON ${table.table_name}
+  USING (auth.uid() IS NOT NULL);`,
+      description: 'المستخدمون المسجلون فقط يمكنهم الوصول'
+    });
+
+    return suggestions;
+  }
+
   async getDatabaseTables() {
     try {
       console.log('🔍 جاري تحليل جداول قاعدة البيانات...');
@@ -3984,7 +4112,7 @@ export class DatabaseStorage implements IStorage {
       
       const basicResult = await db.execute(basicQuery);
       
-      return basicResult.rows.map((row: any) => ({
+      return (basicResult.rows || []).map((row: any) => ({
         table_name: row.table_name,
         schema_name: row.schema_name || 'public',
         row_count: 0,
@@ -4011,7 +4139,7 @@ export class DatabaseStorage implements IStorage {
           AND table_schema = 'public'
       `);
       
-      if (tableCheck.length === 0) {
+      if (tableCheck.rows.length === 0) {
         throw new Error(`الجدول ${tableName} غير موجود`);
       }
       
