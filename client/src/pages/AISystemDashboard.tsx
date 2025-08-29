@@ -278,18 +278,41 @@ const DatabaseTableManager = () => {
         <div className="lg:col-span-2">
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">الجداول المكتشفة ({tables.length})</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base">الجداول المكتشفة ({tables.length})</CardTitle>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-xs">
+                    ✅ البيانات الحقيقية
+                  </Badge>
+                  <Badge variant="secondary" className="text-xs">
+                    مرتبة أبجدياً
+                  </Badge>
+                </div>
+              </div>
+              <CardDescription className="text-sm">
+                قاعدة البيانات Supabase متصلة مع {tables.length > 0 ? `${tables.length} جدول` : 'لا توجد جداول'}
+                {tables.length > 0 && ` - إجمالي الصفوف: ${tables.reduce((sum, t) => sum + t.row_count, 0).toLocaleString()}`}
+              </CardDescription>
             </CardHeader>
             <CardContent>
               {isLoading ? (
-                <div className="flex items-center justify-center h-32">
-                  <Loader2 className="w-6 h-6 animate-spin" />
-                  <span className="mr-2">جاري تحليل قاعدة البيانات...</span>
+                <div className="flex flex-col items-center justify-center h-32 space-y-2">
+                  <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+                  <span className="mr-2 font-medium">جاري تحليل قاعدة البيانات...</span>
+                  <span className="text-xs text-gray-500">قد يستغرق هذا بضع ثواني</span>
+                </div>
+              ) : tables.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-32 space-y-2">
+                  <Database className="w-12 h-12 text-gray-400" />
+                  <span className="font-medium text-gray-600">لا توجد جداول متاحة</span>
+                  <span className="text-xs text-gray-500">تأكد من صحة الاتصال بقاعدة البيانات</span>
                 </div>
               ) : (
                 <ScrollArea className="h-96">
                   <div className="space-y-2">
-                    {tables.map((table) => (
+                    {tables
+                      .sort((a, b) => a.table_name.localeCompare(b.table_name))
+                      .map((table) => (
                       <div 
                         key={`${table.schema_name}.${table.table_name}`}
                         className={`p-3 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
@@ -314,21 +337,34 @@ const DatabaseTableManager = () => {
                           </div>
                         </div>
 
-                        {/* حالة RLS */}
+                        {/* حالة RLS وإحصائيات */}
                         <div className="grid grid-cols-2 gap-3 mb-2">
                           <div className="flex items-center gap-2">
                             {table.rls_enabled ? (
-                              <Power className="w-3 h-3 text-green-600" />
+                              <Shield className="w-3 h-3 text-green-600" />
                             ) : (
-                              <PowerOff className="w-3 h-3 text-red-600" />
+                              <AlertTriangle className="w-3 h-3 text-red-600" />
                             )}
-                            <span className="text-xs">
-                              RLS {table.rls_enabled ? 'مُفعّل' : 'معطّل'}
+                            <span className="text-xs font-medium">
+                              RLS {table.rls_enabled ? 'مُفعّل ✓' : 'معطّل ⚠️'}
                             </span>
                           </div>
-                          <div className="text-xs text-gray-600">
-                            <Clock className="w-3 h-3 inline mr-1" />
-                            {table.row_count.toLocaleString()} صف
+                          <div className="text-xs text-gray-600 font-mono">
+                            📊 {table.row_count.toLocaleString()} صف
+                          </div>
+                        </div>
+
+                        {/* معلومات إضافية */}
+                        <div className="grid grid-cols-2 gap-3 mb-2 text-xs">
+                          <div className="flex items-center gap-1">
+                            <span className="text-gray-500">السياسات:</span>
+                            <Badge variant={table.has_policies ? "default" : "secondary"} className="text-xs">
+                              {table.has_policies ? 'موجودة' : 'غير موجودة'}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="text-gray-500">الحجم:</span>
+                            <span className="font-mono text-blue-600">{table.size_estimate}</span>
                           </div>
                         </div>
 
@@ -341,13 +377,19 @@ const DatabaseTableManager = () => {
 
                         {/* أزرار التحكم */}
                         <div className="flex items-center justify-between mt-2 pt-2 border-t">
-                          <div className="text-xs text-gray-500">
-                            حجم: {table.size_estimate}
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-xs">
+                              {table.schema_name}
+                            </Badge>
                           </div>
                           <Button
                             size="sm"
-                            variant={table.rls_enabled ? "outline" : "default"}
-                            className="text-xs py-1 h-6"
+                            variant={table.rls_enabled ? "secondary" : "default"}
+                            className={`text-xs py-1 h-7 font-medium transition-all ${
+                              table.rls_enabled 
+                                ? 'bg-red-50 text-red-700 hover:bg-red-100 border-red-200' 
+                                : 'bg-green-50 text-green-700 hover:bg-green-100 border-green-200'
+                            }`}
                             onClick={(e) => {
                               e.stopPropagation();
                               rlsToggleMutation.mutate({
@@ -358,10 +400,13 @@ const DatabaseTableManager = () => {
                             disabled={rlsToggleMutation.isPending}
                           >
                             {rlsToggleMutation.isPending ? (
-                              <Loader2 className="w-3 h-3 animate-spin" />
+                              <Loader2 className="w-3 h-3 animate-spin mr-1" />
+                            ) : table.rls_enabled ? (
+                              <PowerOff className="w-3 h-3 mr-1" />
                             ) : (
-                              table.rls_enabled ? 'تعطيل RLS' : 'تفعيل RLS'
+                              <Power className="w-3 h-3 mr-1" />
                             )}
+                            {table.rls_enabled ? 'تعطيل RLS' : 'تفعيل RLS'}
                           </Button>
                         </div>
                       </div>
