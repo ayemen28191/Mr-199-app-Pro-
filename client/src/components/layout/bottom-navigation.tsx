@@ -64,18 +64,11 @@ const allPages = [
       { path: "/notifications", icon: Bell, label: "الإشعارات", description: "عرض وإدارة إشعارات النظام" },
     ]
   },
-  // النظام الذكي
+  // النظام الذكي والأمان
   {
-    category: "النظام الذكي",
+    category: "النظام الذكي والأمان",
     pages: [
-      { path: "/ai-system", icon: Brain, label: "النظام الذكي لقاعدة البيانات", description: "مراقبة وإدارة تلقائية بالذكاء الاصطناعي" },
-    ]
-  },
-  // الأمان والسياسات
-  {
-    category: "الأمان والسياسات",
-    pages: [
-      { path: "/security-policies", icon: Shield, label: "السياسات الأمنية المتقدمة", description: "إدارة شاملة للسياسات الأمنية والاقتراحات والانتهاكات" },
+      { path: "/ai-system", icon: Brain, label: "النظام الذكي والسياسات الأمنية", description: "مراقبة ذكية وإدارة السياسات الأمنية تلقائياً" },
     ]
   },
   // الإعدادات والإدارة

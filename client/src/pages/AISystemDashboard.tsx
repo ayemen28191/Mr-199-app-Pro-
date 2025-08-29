@@ -15,6 +15,7 @@ import {
   ChevronDown, ChevronUp, AlertTriangle, Eye, EyeOff, DollarSign, Users, 
   Lock, Wrench, Truck, Table, Edit, MoreVertical, Power, PowerOff
 } from 'lucide-react';
+import { SecurityPoliciesManager } from '@/components/SecurityPoliciesManager';
 
 interface SystemMetrics {
   system: { status: string; uptime: number; health: number; version: string; };
@@ -410,38 +411,64 @@ const DatabaseTableManager = () => {
                             )}
                           </div>
                           <div className="flex gap-1">
-                            {/* زر عرض اقتراحات السياسات */}
-                            {table.security_level === 'high' && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-xs py-1 h-7 bg-blue-50 text-blue-700 hover:bg-blue-100"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  // عرض اقتراحات السياسات
-                                  fetch(`/api/db-admin/policy-suggestions/${table.table_name}`)
-                                    .then(res => res.json())
-                                    .then(data => {
-                                      console.log('اقتراحات السياسات:', data);
-                                      toast({
-                                        title: "اقتراحات السياسات",
-                                        description: `تم العثور على ${data.suggestions?.length || 0} اقتراح للجدول ${table.table_name}`,
-                                        variant: "default",
-                                      });
-                                    })
-                                    .catch(() => {
-                                      toast({
-                                        title: "خطأ في جلب الاقتراحات",
-                                        description: "فشل في جلب اقتراحات السياسات",
-                                        variant: "destructive",
-                                      });
-                                    });
-                                }}
-                              >
-                                <Wrench className="w-3 h-3 mr-1" />
-                                اقتراحات
-                              </Button>
-                            )}
+                            {/* زر إضافة السياسة المقترحة */}
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-xs py-1 h-7 bg-green-50 text-green-700 hover:bg-green-100"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                // إضافة سياسة مقترحة للجدول
+                                const suggestedPolicy = {
+                                  suggested_policy_id: `AUTO-${table.table_name}-${Date.now()}`,
+                                  title: `حماية جدول ${table.table_name}`,
+                                  description: table.has_policies 
+                                    ? `تحسين السياسات الأمنية للجدول ${table.table_name}` 
+                                    : `إنشاء سياسات أمنية للجدول ${table.table_name}`,
+                                  category: 'data_protection',
+                                  priority: table.security_level === 'high' ? 'high' : 'medium',
+                                  confidence: table.security_level === 'high' ? 90 : 75,
+                                  reasoning: table.has_policies 
+                                    ? 'الجدول يحتوي على بيانات حساسة ويحتاج تحسين السياسات الموجودة'
+                                    : 'الجدول يحتوي على بيانات حساسة ويفتقر للحماية الأمنية',
+                                  estimated_impact: 'تحسين الأمان بنسبة 85%',
+                                  implementation_effort: 'medium',
+                                  source_type: 'ai_analysis',
+                                  source_data: {
+                                    table_name: table.table_name,
+                                    row_count: table.row_count,
+                                    rls_enabled: table.rls_enabled,
+                                    has_policies: table.has_policies,
+                                    security_level: table.security_level
+                                  }
+                                };
+                                
+                                fetch('/api/security-policy-suggestions', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify(suggestedPolicy)
+                                })
+                                .then(res => res.json())
+                                .then(data => {
+                                  console.log('تم إنشاء اقتراح السياسة:', data);
+                                  toast({
+                                    title: "تم إنشاء اقتراح السياسة",
+                                    description: `تم إنشاء اقتراح أمني للجدول ${table.table_name}`,
+                                    variant: "default",
+                                  });
+                                })
+                                .catch(() => {
+                                  toast({
+                                    title: "خطأ في إنشاء الاقتراح",
+                                    description: "فشل في إنشاء اقتراح السياسة",
+                                    variant: "destructive",
+                                  });
+                                });
+                              }}
+                            >
+                              <Shield className="w-3 h-3 mr-1" />
+                              سياسة مقترحة
+                            </Button>
                             
                             {/* زر تفعيل/تعطيل RLS */}
                             <Button
@@ -896,7 +923,7 @@ export default function AISystemDashboard() {
 
         {/* Mobile-Optimized Tabs */}
         <Tabs defaultValue="overview" className="w-full">
-          <TabsList className="grid grid-cols-4 w-full h-auto p-1">
+          <TabsList className="grid grid-cols-5 w-full h-auto p-1">
             <TabsTrigger value="overview" className="text-xs sm:text-sm p-2 flex flex-col sm:flex-row items-center gap-1">
               <BarChart3 className="w-3 h-3 sm:w-4 sm:h-4" />
               <span className="hidden sm:inline">نظرة عامة</span>
@@ -911,6 +938,11 @@ export default function AISystemDashboard() {
               <Database className="w-3 h-3 sm:w-4 sm:h-4" />
               <span className="hidden sm:inline">قاعدة البيانات</span>
               <span className="sm:hidden">قاعدة</span>
+            </TabsTrigger>
+            <TabsTrigger value="security" className="text-xs sm:text-sm p-2 flex flex-col sm:flex-row items-center gap-1">
+              <Shield className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">السياسات الأمنية</span>
+              <span className="sm:hidden">أمان</span>
             </TabsTrigger>
             <TabsTrigger value="settings" className="text-xs sm:text-sm p-2 flex flex-col sm:flex-row items-center gap-1">
               <Settings className="w-3 h-3 sm:w-4 sm:h-4" />
@@ -1380,82 +1412,7 @@ export default function AISystemDashboard() {
               </TabsContent>
 
               <TabsContent value="security">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <Shield className="w-4 h-4" />
-                        حالة الأمان العامة
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        <div className="grid grid-cols-2 gap-3 text-center">
-                          <div className="p-2 bg-green-50 rounded">
-                            <div className="text-lg font-bold text-green-600">85%</div>
-                            <div className="text-xs text-gray-600">مستوى الأمان</div>
-                          </div>
-                          <div className="p-2 bg-blue-50 rounded">
-                            <div className="text-lg font-bold text-blue-600">32</div>
-                            <div className="text-xs text-gray-600">سياسة RLS</div>
-                          </div>
-                        </div>
-                        <Separator />
-                        <div className="space-y-2 text-sm">
-                          <div className="flex items-center justify-between">
-                            <span>الجداول المحمية:</span>
-                            <Badge variant="default" className="text-xs">32/41</Badge>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span>التشفير:</span>
-                            <Badge variant="default" className="text-xs">مُفعّل</Badge>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <span>صلاحيات المستخدم:</span>
-                            <Badge variant="secondary" className="text-xs">محدودة</Badge>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base">التهديدات والتحديات</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        <div className="p-2 bg-red-50 border border-red-200 rounded">
-                          <div className="flex items-center gap-2 mb-1">
-                            <AlertTriangle className="w-3 h-3 text-red-600" />
-                            <span className="text-sm font-medium text-red-800">تحذيرات</span>
-                          </div>
-                          <div className="text-xs text-red-700">
-                            • 9 جداول بدون سياسات RLS
-                          </div>
-                        </div>
-                        <div className="p-2 bg-yellow-50 border border-yellow-200 rounded">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Clock className="w-3 h-3 text-yellow-600" />
-                            <span className="text-sm font-medium text-yellow-800">مراجعة مطلوبة</span>
-                          </div>
-                          <div className="text-xs text-yellow-700">
-                            • تحديث صلاحيات المستخدمين القديمة
-                          </div>
-                        </div>
-                        <div className="p-2 bg-green-50 border border-green-200 rounded">
-                          <div className="flex items-center gap-2 mb-1">
-                            <CheckCircle className="w-3 h-3 text-green-600" />
-                            <span className="text-sm font-medium text-green-800">آمن</span>
-                          </div>
-                          <div className="text-xs text-green-700">
-                            • جميع البيانات الحساسة محمية
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
+                <SecurityPoliciesManager />
               </TabsContent>
             </Tabs>
           </TabsContent>

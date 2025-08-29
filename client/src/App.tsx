@@ -29,7 +29,6 @@ import AdvancedReports from "@/pages/advanced-reports";
 import WorkersUnifiedReports from "@/pages/workers-unified-reports";
 import NotificationsPage from "@/pages/notifications";
 import AISystemDashboard from "@/pages/AISystemDashboard";
-import { SecurityPoliciesPage } from "@/pages/SecurityPoliciesPage";
 
 import Header from "@/components/layout/header";
 import BottomNavigation from "@/components/layout/bottom-navigation";
@@ -228,13 +227,6 @@ function Router() {
         </ProtectedRoute>
       </Route>
 
-      <Route path="/security-policies">
-        <ProtectedRoute>
-          <AuthLayout>
-            <SecurityPoliciesPage />
-          </AuthLayout>
-        </ProtectedRoute>
-      </Route>
 
       <Route component={NotFound} />
     </Switch>
