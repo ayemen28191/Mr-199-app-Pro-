@@ -747,7 +747,7 @@ export default function AISystemDashboard() {
                 </CardContent>
               </Card>
 
-              {/* Enhanced Recommendations */}
+              {/* Enhanced Recommendations with Tabs */}
               <Card className="lg:col-span-2">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
@@ -764,33 +764,98 @@ export default function AISystemDashboard() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <ScrollArea className="h-64 sm:h-80">
-                    {recommendations.length > 0 ? (
-                      <div className="space-y-3">
-                        {recommendations.slice(0, 3).map((rec) => (
-                          <RecommendationCard 
-                            key={rec.id} 
-                            recommendation={rec}
-                            onExecute={handleExecuteRecommendation}
-                            isExecuting={executingRecommendation === rec.id}
-                            disabled={executeRecommendationMutation.isPending || !!executingRecommendation}
-                          />
-                        ))}
-                        {recommendations.length > 3 && (
-                          <div className="text-center pt-2">
-                            <Badge variant="secondary" className="text-xs">
-                              +{recommendations.length - 3} توصية إضافية متاحة
-                            </Badge>
+                  <Tabs defaultValue="all" className="w-full">
+                    <TabsList className="grid w-full grid-cols-3 mb-4">
+                      <TabsTrigger value="all" className="text-xs flex items-center gap-1">
+                        <Brain className="w-3 h-3" />
+                        جميع التوصيات ({recommendations.length})
+                      </TabsTrigger>
+                      <TabsTrigger value="manual" className="text-xs flex items-center gap-1">
+                        <Settings className="w-3 h-3" />
+                        يدوية ({recommendations.filter(rec => !rec.autoExecutable).length})
+                      </TabsTrigger>
+                      <TabsTrigger value="auto" className="text-xs flex items-center gap-1">
+                        <Zap className="w-3 h-3" />
+                        تلقائية ({recommendations.filter(rec => rec.autoExecutable).length})
+                      </TabsTrigger>
+                    </TabsList>
+                    
+                    <TabsContent value="all">
+                      <ScrollArea className="h-64 sm:h-80">
+                        {recommendations.length > 0 ? (
+                          <div className="space-y-3">
+                            {recommendations.slice(0, 5).map((rec) => (
+                              <RecommendationCard 
+                                key={rec.id} 
+                                recommendation={rec}
+                                onExecute={handleExecuteRecommendation}
+                                isExecuting={executingRecommendation === rec.id}
+                                disabled={executeRecommendationMutation.isPending || !!executingRecommendation}
+                              />
+                            ))}
+                            {recommendations.length > 5 && (
+                              <div className="text-center pt-2">
+                                <Badge variant="secondary" className="text-xs">
+                                  +{recommendations.length - 5} توصية إضافية متاحة
+                                </Badge>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center justify-center h-32 text-gray-500 text-sm">
+                            <Brain className="w-8 h-8 mb-2 text-gray-300" />
+                            <p>جاري تحليل البيانات لتوليد توصيات ذكية...</p>
                           </div>
                         )}
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center h-32 text-gray-500 text-sm">
-                        <Brain className="w-8 h-8 mb-2 text-gray-300" />
-                        <p>جاري تحليل البيانات لتوليد توصيات ذكية...</p>
-                      </div>
-                    )}
-                  </ScrollArea>
+                      </ScrollArea>
+                    </TabsContent>
+                    
+                    <TabsContent value="manual">
+                      <ScrollArea className="h-64 sm:h-80">
+                        {recommendations.filter(rec => !rec.autoExecutable).length > 0 ? (
+                          <div className="space-y-3">
+                            {recommendations.filter(rec => !rec.autoExecutable).map((rec) => (
+                              <RecommendationCard 
+                                key={rec.id} 
+                                recommendation={rec}
+                                onExecute={handleExecuteRecommendation}
+                                isExecuting={executingRecommendation === rec.id}
+                                disabled={executeRecommendationMutation.isPending || !!executingRecommendation}
+                              />
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center justify-center h-32 text-gray-500 text-sm">
+                            <Settings className="w-8 h-8 mb-2 text-gray-300" />
+                            <p>لا توجد توصيات تتطلب تدخل يدوي</p>
+                          </div>
+                        )}
+                      </ScrollArea>
+                    </TabsContent>
+                    
+                    <TabsContent value="auto">
+                      <ScrollArea className="h-64 sm:h-80">
+                        {recommendations.filter(rec => rec.autoExecutable).length > 0 ? (
+                          <div className="space-y-3">
+                            {recommendations.filter(rec => rec.autoExecutable).map((rec) => (
+                              <RecommendationCard 
+                                key={rec.id} 
+                                recommendation={rec}
+                                onExecute={handleExecuteRecommendation}
+                                isExecuting={executingRecommendation === rec.id}
+                                disabled={executeRecommendationMutation.isPending || !!executingRecommendation}
+                              />
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center justify-center h-32 text-gray-500 text-sm">
+                            <Zap className="w-8 h-8 mb-2 text-gray-300" />
+                            <p>لا توجد توصيات قابلة للتنفيذ التلقائي</p>
+                          </div>
+                        )}
+                      </ScrollArea>
+                    </TabsContent>
+                  </Tabs>
                 </CardContent>
               </Card>
 
