@@ -694,6 +694,12 @@ export default function AISystemDashboard() {
     refetchInterval: 5000, // تحديث كل 5 ثوانِ
   });
 
+  // جلب الأخطاء الحقيقية من النظام الذكي
+  const { data: errorStats } = useQuery({
+    queryKey: ['/api/smart-errors/statistics'],
+    refetchInterval: 10000,
+  });
+
   // جلب التوصيات
   const { data: recommendations = [] } = useQuery<any[]>({
     queryKey: ['/api/ai-system/recommendations'],
@@ -1184,14 +1190,21 @@ export default function AISystemDashboard() {
                               <span className="font-medium text-red-800">مشاكل الأداء</span>
                             </div>
                             <ul className="text-red-700 space-y-1">
-                              <li>• بطء في بعض الاستعلامات المعقدة</li>
-                              <li>• استهلاك عالي للذاكرة في بعض العمليات</li>
-                              <li>• حاجة إلى تحسين فهارس قاعدة البيانات</li>
+                              {errorStats?.detectedErrors?.map((error: any, index: number) => (
+                                <li key={index}>• {error.arabic_title || error.description}</li>
+                              )) || [
+                                <li key="1">• بطء في بعض الاستعلامات المعقدة</li>,
+                                <li key="2">• استهلاك عالي للذاكرة في بعض العمليات</li>,
+                                <li key="3">• حاجة إلى تحسين فهارس قاعدة البيانات</li>
+                              ]}
                             </ul>
                             <div className="mt-2 pt-1 border-t border-red-300">
                               <span className="text-red-600 font-medium">الحلول المقترحة:</span>
                               <div className="mt-1 text-red-700">
-                                • تفعيل التنظيف التلقائي لقاعدة البيانات
+                                {errorStats?.detectedErrors?.length > 0 
+                                  ? `• تم اكتشاف ${errorStats.detectedErrors.length} مشكلة تحتاج إلى حل`
+                                  : '• تفعيل التنظيف التلقائي لقاعدة البيانات'
+                                }
                               </div>
                             </div>
                           </div>
