@@ -57,14 +57,14 @@ export class AiSystemService {
       const uptime = Date.now() - this.systemStartTime;
       
       // حساب الصحة بناءً على بيانات حقيقية مؤقتة
-      let recentLogs = [];
+      let recentLogs: any[] = [];
       try {
         recentLogs = await storage.getAiSystemLogs({ limit: 10 });
       } catch (error) {
         console.log('جداول AI لم يتم إنشاؤها بعد، استخدام البيانات الحقيقية المؤقتة');
       }
       
-      const errorCount = recentLogs.filter(log => log.logLevel >= 4).length;
+      const errorCount = recentLogs.filter((log: any) => log.logLevel >= 4).length;
       const health = Math.max(50, 100 - (errorCount * 10));
 
       // محاولة تسجيل النشاط، تجاهل الخطأ إذا لم تكن الجداول موجودة
@@ -113,8 +113,8 @@ export class AiSystemService {
       const projects = await storage.getProjects();
       const workers = await storage.getWorkers();
       
-      let decisions = [];
-      let recentLogs = [];
+      let decisions: any[] = [];
+      let recentLogs: any[] = [];
       
       // محاولة جلب بيانات AI إذا كانت متاحة
       try {
@@ -126,13 +126,13 @@ export class AiSystemService {
 
       // حساب المقاييس الحقيقية بناءً على البيانات الموجودة
       const systemUptime = Date.now() - this.systemStartTime;
-      const errorLogs = recentLogs.filter(log => log.logLevel >= 4);
+      const errorLogs = recentLogs.filter((log: any) => log.logLevel >= 4);
       const successRate = recentLogs.length > 0 
-        ? ((recentLogs.filter(log => log.success).length / recentLogs.length) * 100)
+        ? ((recentLogs.filter((log: any) => log.success).length / recentLogs.length) * 100)
         : 100;
 
       const aiDecisionsCount = decisions.length || Math.floor(projects.length * 2.5 + workers.length * 1.2);
-      const executedDecisions = decisions.filter(d => d.status === 'executed').length;
+      const executedDecisions = decisions.filter((d: any) => d.status === 'executed').length;
       const aiAccuracy = aiDecisionsCount > 0 
         ? ((executedDecisions / aiDecisionsCount) * 100)
         : Math.min(100, 85 + (projects.length * 2) + (workers.length * 0.5));
@@ -157,7 +157,7 @@ export class AiSystemService {
           predictions: Math.floor(aiDecisionsCount / 10) + Math.floor(projects.length * 0.8)
         },
         automation: {
-          tasksCompleted: recentLogs.filter(log => log.operation.includes('تلقائي')).length || Math.floor(projects.length * 1.5),
+          tasksCompleted: recentLogs.filter((log: any) => log.operation.includes('تلقائي')).length || Math.floor(projects.length * 1.5),
           successRate: successRate || Math.min(100, 95 + Math.random() * 5),
           timeSaved: Math.floor((recentLogs.length || projects.length * 3) * 2.5),
           errors: errorLogs.length
@@ -320,8 +320,8 @@ export class AiSystemService {
         decisionDescription: recommendation.description,
         inputData: { recommendationId, originalPriority: recommendation.priority },
         outputData: executionResult,
-        confidence: recommendation.confidence,
-        priority: recommendation.priority === 'high' ? 5 : 3,
+        confidence: parseInt(recommendation.confidence.toString()),
+        priority: recommendation.priority === 'high' ? '5' : '3',
         status: 'executed',
         executedAt: new Date(),
         autoExecutable: true
@@ -386,7 +386,7 @@ export class AiSystemService {
           decisionDescription: `يوجد ${activeProjects} مشروع نشط مع ${totalWorkers} عامل فقط. قد تحتاج لتوظيف عمال إضافيين.`,
           inputData: { activeProjects, totalWorkers, ratio: totalWorkers / activeProjects },
           confidence: 87,
-          priority: 4,
+          priority: '4',
           status: 'pending',
           autoExecutable: false
         });

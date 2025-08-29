@@ -128,22 +128,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { recommendationId } = req.body;
       
-      console.log(`🤖 تنفيذ التوصية الذكية: ${recommendationId}`);
+      console.log(`🤖 بدء تنفيذ التوصية الذكية: ${recommendationId}`);
       
-      // محاكاة تنفيذ التوصية
-      setTimeout(() => {
-        console.log(`✅ تم تنفيذ التوصية ${recommendationId} بنجاح`);
-      }, 2000);
+      // استدعاء خدمة النظام الذكي الحقيقية
+      const result = await aiSystemService.executeRecommendation(recommendationId);
       
-      res.json({ 
-        success: true, 
-        message: "تم بدء تنفيذ التوصية بنجاح",
-        recommendationId,
-        estimatedTime: "2-5 دقائق"
-      });
+      console.log(`✅ تم تنفيذ التوصية ${recommendationId} بنجاح`);
+      
+      res.json(result);
     } catch (error) {
       console.error('خطأ في تنفيذ التوصية:', error);
-      res.status(500).json({ message: "خطأ في تنفيذ التوصية" });
+      res.status(500).json({ message: error instanceof Error ? error.message : "خطأ في تنفيذ التوصية" });
     }
   });
 
