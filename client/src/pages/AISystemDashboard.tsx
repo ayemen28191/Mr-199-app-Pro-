@@ -1086,21 +1086,30 @@ export default function AISystemDashboard() {
 
                   <Card>
                     <CardHeader className="pb-3">
-                      <CardTitle className="text-base">العمليات الحديثة</CardTitle>
+                      <CardTitle className="text-base">حالة الاتصالات</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2 p-2 bg-green-50 rounded text-sm">
-                          <CheckCircle className="w-3 h-3 text-green-600 flex-shrink-0" />
-                          <span className="truncate">تحسين الفهارس - مكتمل</span>
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-2 gap-3 text-center">
+                          <div className="p-2 bg-green-50 rounded">
+                            <div className="text-lg font-bold text-green-600">12</div>
+                            <div className="text-xs text-gray-600">اتصالات نشطة</div>
+                          </div>
+                          <div className="p-2 bg-blue-50 rounded">
+                            <div className="text-lg font-bold text-blue-600">3.2s</div>
+                            <div className="text-xs text-gray-600">متوسط الاستجابة</div>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2 p-2 bg-blue-50 rounded text-sm">
-                          <Cpu className="w-3 h-3 text-blue-600 flex-shrink-0" />
-                          <span className="truncate">تحليل الأداء - جاري</span>
-                        </div>
-                        <div className="flex items-center gap-2 p-2 bg-yellow-50 rounded text-sm">
-                          <RefreshCw className="w-3 h-3 text-yellow-600 flex-shrink-0" />
-                          <span className="truncate">تنظيف البيانات - مجدول</span>
+                        <Separator />
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span>حالة الاتصال:</span>
+                            <Badge variant="default" className="text-xs">مستقر</Badge>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>البيانات المتبادلة:</span>
+                            <span className="text-green-600 font-medium">247 MB</span>
+                          </div>
                         </div>
                       </div>
                     </CardContent>
