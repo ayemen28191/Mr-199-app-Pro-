@@ -3912,17 +3912,14 @@ export class DatabaseStorage implements IStorage {
     try {
       console.log('🔍 جاري تحليل جداول قاعدة البيانات...');
       
-      // استعلام متقدم لجلب معلومات الجداول مع RLS
+      // استعلام محسّن لجلب معلومات الجداول مع إزالة التكرار
       const query = sql`
-        SELECT 
+        SELECT DISTINCT
           t.table_name,
           t.table_schema as schema_name,
-          COALESCE(pg_class.reltuples::bigint, 0) as row_count,
-          pg_tables.rowsecurity as rls_enabled,
-          CASE 
-            WHEN pg_tables.rowsecurity IS NULL THEN false
-            ELSE pg_tables.rowsecurity
-          END as rls_forced,
+          COALESCE(s.n_tup_ins - s.n_tup_del, 0) as row_count,
+          COALESCE(pt.rowsecurity, false) as rls_enabled,
+          COALESCE(pt.rowsecurity, false) as rls_forced,
           EXISTS(
             SELECT 1 FROM pg_policies 
             WHERE schemaname = t.table_schema 
@@ -3934,32 +3931,24 @@ export class DatabaseStorage implements IStorage {
             ELSE 'low'
           END as security_level,
           CASE 
-            WHEN t.table_name ~* 'user|auth' AND NOT COALESCE(pg_tables.rowsecurity, false) 
+            WHEN t.table_name ~* 'user|auth' AND NOT COALESCE(pt.rowsecurity, false) 
             THEN 'يُنصح بتفعيل RLS للحماية'
-            WHEN pg_class.reltuples > 10000 
+            WHEN COALESCE(s.n_tup_ins - s.n_tup_del, 0) > 10000 
             THEN 'يُنصح بإضافة فهارس للأداء'
             ELSE 'الإعدادات مناسبة'
           END as recommended_action,
-          pg_size_pretty(pg_total_relation_size(pg_class.oid)) as size_estimate,
+          pg_size_pretty(COALESCE(pg_total_relation_size(c.oid), 0)) as size_estimate,
           CURRENT_TIMESTAMP as last_analyzed
         FROM information_schema.tables t
-        LEFT JOIN pg_tables ON pg_tables.tablename = t.table_name 
-          AND pg_tables.schemaname = t.table_schema
-        LEFT JOIN pg_class ON pg_class.relname = t.table_name
-        LEFT JOIN pg_namespace ON pg_namespace.nspname = t.table_schema 
-          AND pg_class.relnamespace = pg_namespace.oid
-        WHERE t.table_schema IN ('public', 'auth')
+        LEFT JOIN pg_tables pt ON (pt.tablename = t.table_name AND pt.schemaname = t.table_schema)
+        LEFT JOIN pg_class c ON c.relname = t.table_name
+        LEFT JOIN pg_namespace n ON (n.nspname = t.table_schema AND c.relnamespace = n.oid)
+        LEFT JOIN pg_stat_user_tables s ON (s.relname = t.table_name AND s.schemaname = t.table_schema)
+        WHERE t.table_schema = 'public'
           AND t.table_type = 'BASE TABLE'
           AND t.table_name NOT LIKE 'pg_%'
           AND t.table_name NOT LIKE 'sql_%'
-        ORDER BY 
-          CASE t.table_schema 
-            WHEN 'public' THEN 1 
-            WHEN 'auth' THEN 2 
-            ELSE 3 
-          END,
-          pg_class.reltuples DESC NULLS LAST,
-          t.table_name
+        ORDER BY t.table_name
       `;
       
       const result = await db.execute(query);

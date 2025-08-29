@@ -203,13 +203,20 @@ const DatabaseTableManager = () => {
     refetchInterval: 30000, // تحديث كل 30 ثانية
   });
 
-  // إزالة التكرار من الجداول بناءً على اسم الجدول و schema
+  // إزالة التكرار من الجداول بناءً على اسم الجدول فقط (أقوى)
   const tables = React.useMemo(() => {
     const uniqueTablesMap = new Map<string, DatabaseTable>();
     rawTables.forEach(table => {
-      const key = `${table.schema_name}.${table.table_name}`;
+      // استخدام اسم الجدول فقط كمفتاح لإزالة التكرار التام
+      const key = table.table_name;
       if (!uniqueTablesMap.has(key)) {
         uniqueTablesMap.set(key, table);
+      } else {
+        // إذا وجد جدول مكرر، احتفظ بالذي له أكبر عدد صفوف
+        const existing = uniqueTablesMap.get(key)!;
+        if (table.row_count > existing.row_count) {
+          uniqueTablesMap.set(key, table);
+        }
       }
     });
     return Array.from(uniqueTablesMap.values());
@@ -323,7 +330,7 @@ const DatabaseTableManager = () => {
                   <span className="text-xs text-gray-500">تأكد من صحة الاتصال بقاعدة البيانات</span>
                 </div>
               ) : (
-                <ScrollArea className="h-[420px]">
+                <ScrollArea className="h-[500px]">
                   <div className="space-y-2">
                     {tables
                       .sort((a, b) => a.table_name.localeCompare(b.table_name))
