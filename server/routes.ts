@@ -120,8 +120,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // توصيات الذكاء الاصطناعي الحقيقية
   app.get("/api/ai-system/recommendations", async (req, res) => {
     try {
-      // توليد توصيات جديدة دائماً للحصول على أحدث التحليلات
-      const recommendations = await aiSystemService.generateRecommendations();
+      // جلب التوصيات من قاعدة البيانات أولاً
+      let recommendations = await storage.getAiSystemRecommendations({ status: 'active' });
+      
+      // إذا لم توجد توصيات أو كانت قديمة، إنشاء توصيات جديدة
+      if (recommendations.length === 0) {
+        console.log('🔄 لم توجد توصيات نشطة، جاري توليد توصيات جديدة...');
+        await aiSystemService.generateRecommendations();
+        recommendations = await storage.getAiSystemRecommendations({ status: 'active' });
+      }
       
       res.json(recommendations);
     } catch (error) {
@@ -168,6 +175,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/ai-system/execute-recommendation", async (req, res) => {
     try {
       const { recommendationId } = req.body;
+      
+      if (!recommendationId) {
+        console.error('❌ لم يتم توفير معرف التوصية');
+        return res.status(400).json({ message: "معرف التوصية مطلوب" });
+      }
       
       console.log(`🤖 بدء تنفيذ التوصية الذكية: ${recommendationId}`);
       

@@ -233,9 +233,21 @@ export class AiSystemService {
       // === توصيات إدارة الموردين ===
       await this.addSupplierRecommendations(recommendations, suppliers, stats);
 
-      // حفظ التوصيات في قاعدة البيانات
+      // مسح التوصيات القديمة أولاً لتجنب التكرار
+      try {
+        const oldRecommendations = await storage.getAiSystemRecommendations({ status: 'active' });
+        for (const oldRec of oldRecommendations) {
+          await storage.dismissAiSystemRecommendation(oldRec.id);
+        }
+      } catch (error) {
+        console.log('لم يتم مسح التوصيات القديمة:', error);
+      }
+
+      // حفظ التوصيات في قاعدة البيانات والحصول على التوصيات مع المعرفات
+      const savedRecommendations = [];
       for (const rec of recommendations) {
-        await storage.createAiSystemRecommendation(rec);
+        const savedRec = await storage.createAiSystemRecommendation(rec);
+        savedRecommendations.push(savedRec);
       }
 
       await this.logSystemActivity({
@@ -256,7 +268,7 @@ export class AiSystemService {
         }
       });
 
-      return recommendations;
+      return savedRecommendations;
     } catch (error) {
       await this.logSystemActivity({
         logType: 'error',
