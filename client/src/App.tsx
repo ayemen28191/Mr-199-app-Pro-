@@ -31,6 +31,7 @@ import NotificationsPage from "@/pages/notifications";
 import AdminNotificationsPage from "@/pages/admin-notifications";
 import AISystemDashboard from "@/pages/AISystemDashboard";
 import SmartErrorsPage from "@/pages/SmartErrorsPage";
+import { SecurityPoliciesPage } from "@/pages/SecurityPoliciesPage";
 
 import Header from "@/components/layout/header";
 import BottomNavigation from "@/components/layout/bottom-navigation";
@@ -87,11 +88,11 @@ function Router() {
       </Route>
       
       <Route path="/worker-accounts">
-        <ProtectedRoute>
+        <AdminRoute>
           <AuthLayout>
             <WorkerAccountsPage />
           </AuthLayout>
-        </ProtectedRoute>
+        </AdminRoute>
       </Route>
       
       <Route path="/suppliers">
@@ -111,11 +112,11 @@ function Router() {
       </Route>
       
       <Route path="/supplier-accounts">
-        <ProtectedRoute>
+        <AdminRoute>
           <AuthLayout>
             <SupplierAccountsPage />
           </AuthLayout>
-        </ProtectedRoute>
+        </AdminRoute>
       </Route>
       
       <Route path="/worker-attendance">
@@ -151,19 +152,19 @@ function Router() {
       </Route>
 
       <Route path="/project-transfers">
-        <ProtectedRoute>
+        <AdminRoute>
           <AuthLayout>
             <ProjectTransfers />
           </AuthLayout>
-        </ProtectedRoute>
+        </AdminRoute>
       </Route>
       
       <Route path="/project-transactions">
-        <ProtectedRoute>
+        <AdminRoute>
           <AuthLayout>
             <ProjectTransactionsPage />
           </AuthLayout>
-        </ProtectedRoute>
+        </AdminRoute>
       </Route>
       
       <Route path="/autocomplete-admin">
@@ -175,43 +176,43 @@ function Router() {
       </Route>
 
       <Route path="/equipment">
-        <ProtectedRoute>
+        <AdminRoute>
           <AuthLayout>
             <EquipmentManagement />
           </AuthLayout>
-        </ProtectedRoute>
+        </AdminRoute>
       </Route>
       
       <Route path="/equipment-management">
-        <ProtectedRoute>
+        <AdminRoute>
           <AuthLayout>
             <EquipmentManagement />
           </AuthLayout>
-        </ProtectedRoute>
+        </AdminRoute>
       </Route>
       
       <Route path="/reports">
-        <ProtectedRoute>
+        <AdminRoute>
           <AuthLayout>
             <Reports />
           </AuthLayout>
-        </ProtectedRoute>
+        </AdminRoute>
       </Route>
       
       <Route path="/advanced-reports">
-        <ProtectedRoute>
+        <AdminRoute>
           <AuthLayout>
             <AdvancedReports />
           </AuthLayout>
-        </ProtectedRoute>
+        </AdminRoute>
       </Route>
       
       <Route path="/workers-unified-reports">
-        <ProtectedRoute>
+        <AdminRoute>
           <AuthLayout>
             <WorkersUnifiedReports />
           </AuthLayout>
-        </ProtectedRoute>
+        </AdminRoute>
       </Route>
       
       <Route path="/notifications">
@@ -244,6 +245,14 @@ function Router() {
             <SmartErrorsPage />
           </AuthLayout>
         </ProtectedRoute>
+      </Route>
+
+      <Route path="/security-policies">
+        <AdminRoute>
+          <AuthLayout>
+            <SecurityPoliciesPage />
+          </AuthLayout>
+        </AdminRoute>
       </Route>
 
       <Route component={NotFound} />

@@ -7,7 +7,7 @@ import { Calendar, FileSpreadsheet, Printer, TrendingUp, Users, Building2 } from
 import { useSelectedProject } from "@/hooks/use-selected-project";
 import ProjectSelector from "@/components/project-selector";
 
-export default function AdvancedReports(): JSX.Element {
+export default function AdvancedReports() {
   const [selectedReportType, setSelectedReportType] = useState("");
   const [dateRange, setDateRange] = useState({ from: "", to: "" });
   const { selectedProjectId } = useSelectedProject();

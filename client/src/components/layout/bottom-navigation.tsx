@@ -55,7 +55,8 @@ const allPages = [
     category: "التقارير والإحصائيات",
     pages: [
       { path: "/reports", icon: FileSpreadsheet, label: "التقارير الأساسية", description: "التقارير المالية الأساسية" },
-
+      { path: "/advanced-reports", icon: TrendingUp, label: "التقارير المتقدمة", description: "تقارير مالية متقدمة وتحليلات شاملة" },
+      { path: "/workers-unified-reports", icon: Users, label: "تقارير العمال الموحدة", description: "تقارير شاملة لحسابات وحضور العمال" },
     ]
   },
   // الإشعارات والتنبيهات
@@ -69,7 +70,8 @@ const allPages = [
   {
     category: "النظام الذكي والأمان",
     pages: [
-      { path: "/ai-system", icon: Brain, label: "النظام الذكي والسياسات الأمنية", description: "مراقبة ذكية وإدارة السياسات الأمنية تلقائياً" },
+      { path: "/ai-system", icon: Brain, label: "النظام الذكي", description: "مراقبة ذكية ولوحة تحكم الذكاء الاصطناعي" },
+      { path: "/security-policies", icon: Shield, label: "السياسات الأمنية", description: "إدارة السياسات الأمنية والامتثال" },
       { path: "/smart-errors", icon: Database, label: "كشف الأخطاء الذكي", description: "مراقبة وتحليل أخطاء قاعدة البيانات بذكاء اصطناعي" },
     ]
   },
@@ -78,6 +80,7 @@ const allPages = [
     category: "الإعدادات والإدارة",
     pages: [
       { path: "/autocomplete-admin", icon: Wrench, label: "إعدادات الإكمال التلقائي", description: "إدارة بيانات الإكمال التلقائي" },
+      { path: "/admin-notifications", icon: Bell, label: "إشعارات المسؤولين", description: "إدارة وإرسال إشعارات للمستخدمين" },
     ]
   }
 ];
