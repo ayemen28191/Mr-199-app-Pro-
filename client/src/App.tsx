@@ -38,6 +38,7 @@ import FloatingAddButton from "@/components/layout/floating-add-button";
 import { FloatingButtonProvider } from "@/components/layout/floating-button-context";
 import { AuthProvider, useAuth } from "@/components/AuthProvider";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { AdminRoute } from "@/components/AdminRoute";
 import RegisterPage from "@/pages/RegisterPage";
 
 function AuthLayout({ children }: { children: React.ReactNode }) {
@@ -166,11 +167,11 @@ function Router() {
       </Route>
       
       <Route path="/autocomplete-admin">
-        <ProtectedRoute>
+        <AdminRoute>
           <AuthLayout>
             <AutocompleteAdminPage />
           </AuthLayout>
-        </ProtectedRoute>
+        </AdminRoute>
       </Route>
 
       <Route path="/equipment">
@@ -222,11 +223,11 @@ function Router() {
       </Route>
 
       <Route path="/admin-notifications">
-        <ProtectedRoute>
+        <AdminRoute>
           <AuthLayout>
             <AdminNotificationsPage />
           </AuthLayout>
-        </ProtectedRoute>
+        </AdminRoute>
       </Route>
 
       <Route path="/ai-system">

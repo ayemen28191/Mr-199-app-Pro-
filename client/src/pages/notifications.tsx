@@ -64,7 +64,17 @@ export default function NotificationsPage() {
   const { data: notificationsData, isLoading } = useQuery({
     queryKey: ['/api/notifications'],
     queryFn: async () => {
-      const response = await fetch(`/api/notifications?userId=${userId}&limit=50`);
+      const accessToken = localStorage.getItem('accessToken');
+      if (!accessToken) {
+        console.warn('لا يوجد رمز مصادقة - تخطي جلب الإشعارات');
+        return { notifications: [], unreadCount: 0, total: 0 };
+      }
+      
+      const response = await fetch(`/api/notifications?userId=${userId}&limit=50`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch notifications');
       }
