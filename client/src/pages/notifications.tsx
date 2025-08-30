@@ -1,10 +1,8 @@
-import { useState, useContext } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Bell, BellOff, CheckCircle, AlertCircle, Info, AlertTriangle, Filter, Clock } from 'lucide-react';
-import React from 'react';
 import { useAuth } from '@/components/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
 import { queryClient } from '@/lib/queryClient';
@@ -366,8 +364,10 @@ export default function NotificationsPage() {
                   size="sm" 
                   className="text-xs gap-1 h-7 px-2 flex-shrink-0"
                 >
-                  {typeIcons[type as keyof typeof typeIcons] && 
-                    React.createElement(typeIcons[type as keyof typeof typeIcons], { className: "h-3 w-3" })}
+                  {(() => {
+                    const Icon = typeIcons[type as keyof typeof typeIcons];
+                    return Icon ? <Icon className="h-3 w-3" /> : null;
+                  })()}
                   {type === 'system' && 'نظام'}
                   {type === 'maintenance' && 'صيانة'}
                   {type === 'warranty' && 'ضمان'}
