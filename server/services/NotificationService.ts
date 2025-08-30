@@ -370,15 +370,45 @@ export class NotificationService {
   async markAsRead(notificationId: string, userId: string): Promise<void> {
     console.log(`✅ تعليم الإشعار كمقروء: ${notificationId}`);
 
-    await db
-      .insert(notificationReadStates)
-      .values({
-        notificationId,
-        userId,
-        isRead: true,
-        readAt: new Date(),
-        actionTaken: 'read'
-      });
+    // التحقق من وجود السجل أولاً
+    const existingRecord = await db
+      .select()
+      .from(notificationReadStates)
+      .where(
+        and(
+          eq(notificationReadStates.notificationId, notificationId),
+          eq(notificationReadStates.userId, userId)
+        )
+      )
+      .limit(1);
+
+    if (existingRecord.length === 0) {
+      // إدراج سجل جديد إذا لم يكن موجوداً
+      await db
+        .insert(notificationReadStates)
+        .values({
+          notificationId,
+          userId,
+          isRead: true,
+          readAt: new Date(),
+          actionTaken: 'read'
+        });
+    } else {
+      // تحديث السجل الموجود
+      await db
+        .update(notificationReadStates)
+        .set({
+          isRead: true,
+          readAt: new Date(),
+          actionTaken: 'read'
+        })
+        .where(
+          and(
+            eq(notificationReadStates.notificationId, notificationId),
+            eq(notificationReadStates.userId, userId)
+          )
+        );
+    }
   }
 
   /**
@@ -403,11 +433,18 @@ export class NotificationService {
       .from(notifications)
       .where(and(...conditions));
 
+    // تعليم كل إشعار كمقروء بشكل متتالي لضمان عدم حدوث تضارب
+    let markedCount = 0;
     for (const notification of userNotifications) {
-      await this.markAsRead(notification.id, userId);
+      try {
+        await this.markAsRead(notification.id, userId);
+        markedCount++;
+      } catch (error) {
+        console.error(`خطأ في تعليم الإشعار ${notification.id} كمقروء:`, error);
+      }
     }
 
-    console.log(`✅ تم تعليم ${userNotifications.length} إشعار كمقروء`);
+    console.log(`✅ تم تعليم ${markedCount} إشعار كمقروء`);
   }
 
   /**
