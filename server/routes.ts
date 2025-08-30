@@ -2961,12 +2961,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Users endpoints
   app.get("/api/users", async (req, res) => {
     try {
+      const includeRole = req.query.includeRole === 'true';
       const users = await storage.getUsers();
-      // إخفاء كلمات المرور من الاستجابة
+      
+      // إخفاء كلمات المرور من الاستجابة وإضافة الأدوار إذا طُلبت
       const safeUsers = users.map(user => {
-        const { password, ...safeUser } = user;
+        const { password, totpSecret, backupCodes, ...safeUser } = user;
+        
+        // إضافة الدور إذا طُلب
+        if (includeRole) {
+          return {
+            ...safeUser,
+            role: user.role || 'user' // تأكد من وجود دور افتراضي
+          };
+        }
+        
         return safeUser;
       });
+      
       res.json(safeUsers);
     } catch (error) {
       console.error("Error fetching users:", error);
