@@ -53,7 +53,7 @@ export default function NotificationsPage() {
   const { data: notificationsData, isLoading } = useQuery({
     queryKey: ['/api/notifications'],
     queryFn: async () => {
-      const response = await fetch('/api/notifications');
+      const response = await fetch('/api/notifications?userId=default&limit=50');
       if (!response.ok) {
         throw new Error('Failed to fetch notifications');
       }
@@ -62,7 +62,8 @@ export default function NotificationsPage() {
         unreadCount: number;
         total: number;
       }>;
-    }
+    },
+    refetchInterval: 30000, // تحديث كل 30 ثانية
   });
 
   // استخراج مصفوفة الإشعارات من البيانات المُرجعة
@@ -81,14 +82,13 @@ export default function NotificationsPage() {
   // تحديد إشعار كمقروء
   const markAsReadMutation = useMutation({
     mutationFn: async ({ notificationId, userId }: { notificationId: string; userId?: string }) => {
-      const response = await fetch(`/api/notifications/${userId || 'default'}/mark-read`, {
+      const response = await fetch(`/api/notifications/${notificationId}/mark-read`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          notificationId,
-          notificationType: 'system'
+          userId: userId || 'default'
         }),
       });
       
@@ -109,6 +109,39 @@ export default function NotificationsPage() {
       toast({
         title: "خطأ",
         description: "فشل في تعليم الإشعار كمقروء",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // تعليم جميع الإشعارات كمقروءة
+  const markAllAsReadMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/notifications/mark-all-read', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ userId: 'default' }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to mark all notifications as read');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/notifications'] });
+      toast({
+        title: "تم بنجاح",
+        description: "تم تعليم جميع الإشعارات كمقروءة",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "خطأ",
+        description: "فشل في تعليم جميع الإشعارات كمقروءة",
         variant: "destructive",
       });
     }
@@ -142,7 +175,7 @@ export default function NotificationsPage() {
   };
 
   const handleMarkAsRead = (notificationId: string) => {
-    markAsReadMutation.mutate({ notificationId });
+    markAsReadMutation.mutate({ notificationId, userId: 'default' });
   };
 
   if (isLoading) {
@@ -215,9 +248,23 @@ export default function NotificationsPage() {
 
         {/* فلاتر الإشعارات محسّنة */}
         <div className="bg-white dark:bg-slate-800 rounded-xl p-3 shadow-lg border border-blue-100 dark:border-slate-700">
-          <div className="flex items-center gap-2 mb-2">
-            <Filter className="h-4 w-4 text-blue-600" />
-            <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">تصفية الإشعارات</span>
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-blue-600" />
+              <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">تصفية الإشعارات</span>
+            </div>
+            {stats.unread > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => markAllAsReadMutation.mutate()}
+                disabled={markAllAsReadMutation.isPending}
+                className="text-xs gap-1 h-7 px-2"
+              >
+                <CheckCircle className="h-3 w-3" />
+                تعليم الكل كمقروء
+              </Button>
+            )}
           </div>
           
           {/* فلاتر الحالة - تصميم مضغوط */}

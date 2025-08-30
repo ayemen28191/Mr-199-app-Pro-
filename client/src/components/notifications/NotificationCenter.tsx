@@ -62,7 +62,7 @@ export function NotificationCenter({ className }: NotificationCenterProps) {
   const fetchNotifications = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/notifications?userId=default&limit=20');
+      const response = await fetch('/api/notifications?userId=default&limit=50');
       if (response.ok) {
         const data = await response.json();
         // إذا كان التنسيق الجديد
@@ -137,8 +137,8 @@ export function NotificationCenter({ className }: NotificationCenterProps) {
       });
       
       if (response.ok) {
-        setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-        setUnreadCount(0);
+        // إعادة جلب البيانات من الخادم لضمان التزامن
+        await fetchNotifications();
       }
     } catch (error) {
       console.error('خطأ في تعليم جميع الإشعارات كمقروءة:', error);
