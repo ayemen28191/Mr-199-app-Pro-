@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Bell, X, CheckCircle, AlertTriangle, Info, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -231,8 +231,8 @@ export function NotificationCenter({ className }: NotificationCenterProps) {
           ) : (
             <div className="divide-y">
               {notifications.map((notification, index) => {
-                const Icon = notificationIcons[notification.type];
-                const colorClasses = notificationColors[notification.type];
+                const Icon = notificationIcons[notification.type] || Bell;
+                const colorClasses = notificationColors[notification.type] || notificationColors.system;
                 const priority = priorityLabels[notification.priority as keyof typeof priorityLabels] || priorityLabels[3];
                 
                 return (

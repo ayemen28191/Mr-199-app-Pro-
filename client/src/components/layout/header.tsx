@@ -81,7 +81,7 @@ export default function Header() {
                     )}
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56" dir="rtl">
+                <DropdownMenuContent align="end" className="w-56">
                   <div className="px-3 py-2 text-sm">
                     <div className="font-medium text-foreground">
                       {user?.name || 'المستخدم'}
