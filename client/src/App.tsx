@@ -28,6 +28,7 @@ import { EquipmentManagement } from "@/pages/equipment-management";
 import AdvancedReports from "@/pages/advanced-reports";
 import WorkersUnifiedReports from "@/pages/workers-unified-reports";
 import NotificationsPage from "@/pages/notifications";
+import AdminNotificationsPage from "@/pages/admin-notifications";
 import AISystemDashboard from "@/pages/AISystemDashboard";
 import SmartErrorsPage from "@/pages/SmartErrorsPage";
 
@@ -216,6 +217,14 @@ function Router() {
         <ProtectedRoute>
           <AuthLayout>
             <NotificationsPage />
+          </AuthLayout>
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/admin-notifications">
+        <ProtectedRoute>
+          <AuthLayout>
+            <AdminNotificationsPage />
           </AuthLayout>
         </ProtectedRoute>
       </Route>

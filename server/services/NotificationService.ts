@@ -277,13 +277,34 @@ export class NotificationService {
   /**
    * جلب جميع معرفات المستخدمين النشطين
    */
-  private async getAllActiveUserIds(): Promise<string[]> {
+  async getAllActiveUserIds(): Promise<string[]> {
     // هذا مؤقت - يمكن تحسينه لاحقاً
     return ['default']; // المستخدم الافتراضي
   }
 
   /**
-   * جلب الإشعارات للمستخدم مع الفلترة
+   * تحديد ما إذا كان المستخدم مسؤولاً
+   */
+  private isAdmin(userId: string): boolean {
+    // يمكن تحسين هذا لاحقاً بالتحقق من قاعدة البيانات
+    return userId === 'admin' || userId === 'مسؤول';
+  }
+
+  /**
+   * تحديد نوع الإشعارات المسموحة للمستخدم
+   */
+  private getAllowedNotificationTypes(userId: string): string[] {
+    if (this.isAdmin(userId)) {
+      // المسؤول يرى جميع الإشعارات
+      return ['system', 'security', 'error', 'maintenance', 'task', 'payroll', 'announcement', 'warranty', 'damaged'];
+    } else {
+      // المستخدم العادي يرى إشعارات محددة فقط
+      return ['task', 'payroll', 'announcement', 'maintenance', 'warranty'];
+    }
+  }
+
+  /**
+   * جلب الإشعارات للمستخدم مع الفلترة المحسنة
    */
   async getUserNotifications(
     userId: string, 
@@ -299,12 +320,16 @@ export class NotificationService {
     unreadCount: number;
     total: number;
   }> {
-    console.log(`📥 جلب إشعارات المستخدم: ${userId}`);
+    console.log(`📥 جلب إشعارات المستخدم: ${userId} (نوع: ${this.isAdmin(userId) ? 'مسؤول' : 'مستخدم عادي'})`);
 
     const conditions = [];
+    const allowedTypes = this.getAllowedNotificationTypes(userId);
 
-    // فلترة حسب النوع
-    if (filters.type) {
+    // فلترة حسب الأنواع المسموحة للمستخدم
+    conditions.push(inArray(notifications.type, allowedTypes));
+
+    // فلترة حسب النوع المحدد
+    if (filters.type && allowedTypes.includes(filters.type)) {
       conditions.push(eq(notifications.type, filters.type));
     }
 
@@ -313,13 +338,26 @@ export class NotificationService {
       conditions.push(eq(notifications.projectId, filters.projectId));
     }
 
-    // فلترة الإشعارات للمستخدم - إصلاح البحث في JSONB
-    conditions.push(
-      or(
-        sql`${notifications.recipients} @> ${JSON.stringify([userId])}::jsonb`,
-        eq(notifications.recipients, null) // الإشعارات العامة
-      )
-    );
+    // فلترة الإشعارات للمستخدم - تحسين البحث
+    if (this.isAdmin(userId)) {
+      // المسؤول يرى جميع الإشعارات أو التي تخصه
+      conditions.push(
+        or(
+          sql`${notifications.recipients} @> ${JSON.stringify([userId])}::jsonb`,
+          sql`${notifications.recipients} @> ${JSON.stringify(['admin'])}::jsonb`,
+          sql`${notifications.recipients} @> ${JSON.stringify(['مسؤول'])}::jsonb`,
+          eq(notifications.recipients, null) // الإشعارات العامة
+        )
+      );
+    } else {
+      // المستخدم العادي يرى فقط إشعاراته الشخصية والعامة (من الأنواع المسموحة)
+      conditions.push(
+        or(
+          sql`${notifications.recipients} @> ${JSON.stringify([userId])}::jsonb`,
+          eq(notifications.recipients, null) // الإشعارات العامة
+        )
+      );
+    }
 
     // جلب الإشعارات
     const notificationList = await db
@@ -330,7 +368,9 @@ export class NotificationService {
       .limit(filters.limit || 50)
       .offset(filters.offset || 0);
 
-    // جلب حالة القراءة للإشعارات
+    console.log(`🔍 تم العثور على ${notificationList.length} إشعار للمستخدم ${userId}`);
+
+    // جلب حالة القراءة للإشعارات (مخصصة لكل مستخدم)
     const notificationIds = notificationList.map((n: any) => n.id);
     const readStates = notificationIds.length > 0 ? 
       await db
@@ -338,16 +378,22 @@ export class NotificationService {
         .from(notificationReadStates)
         .where(
           and(
-            eq(notificationReadStates.userId, userId),
+            eq(notificationReadStates.userId, userId), // مهم: حالة القراءة مخصصة للمستخدم
             inArray(notificationReadStates.notificationId, notificationIds)
           )
         ) : [];
 
+    console.log(`📖 تم العثور على ${readStates.length} حالة قراءة للمستخدم ${userId}`);
+
     // دمج حالة القراءة مع الإشعارات
-    const enrichedNotifications = notificationList.map((notification: any) => ({
-      ...notification,
-      isRead: readStates.some((rs: any) => rs.notificationId === notification.id && rs.isRead)
-    }));
+    const enrichedNotifications = notificationList.map((notification: any) => {
+      const readState = readStates.find((rs: any) => rs.notificationId === notification.id);
+      return {
+        ...notification,
+        isRead: readState ? readState.isRead : false,
+        readAt: readState ? readState.readAt : null
+      };
+    });
 
     // فلترة غير المقروءة إذا طُلب ذلك
     const filteredNotifications = filters.unreadOnly 
@@ -357,7 +403,7 @@ export class NotificationService {
     // حساب عدد غير المقروءة
     const unreadCount = enrichedNotifications.filter((n: any) => !n.isRead).length;
 
-    console.log(`📊 تم جلب ${filteredNotifications.length} إشعار، غير مقروء: ${unreadCount}`);
+    console.log(`📊 المستخدم ${userId}: ${filteredNotifications.length} إشعار، غير مقروء: ${unreadCount}`);
 
     return {
       notifications: filteredNotifications,
@@ -514,18 +560,39 @@ export class NotificationService {
     unread: number;
     byType: Record<string, number>;
     byPriority: Record<number, number>;
+    userType: 'admin' | 'user';
+    allowedTypes: string[];
   }> {
     console.log(`📊 حساب إحصائيات الإشعارات للمستخدم: ${userId}`);
+
+    const isAdmin = this.isAdmin(userId);
+    const allowedTypes = this.getAllowedNotificationTypes(userId);
+    
+    // بناء شروط البحث مع فصل الصلاحيات
+    const conditions = [inArray(notifications.type, allowedTypes)];
+    
+    if (isAdmin) {
+      conditions.push(
+        or(
+          sql`${notifications.recipients} @> ${JSON.stringify([userId])}::jsonb`,
+          sql`${notifications.recipients} @> ${JSON.stringify(['admin'])}::jsonb`,
+          sql`${notifications.recipients} @> ${JSON.stringify(['مسؤول'])}::jsonb`,
+          eq(notifications.recipients, null)
+        )
+      );
+    } else {
+      conditions.push(
+        or(
+          sql`${notifications.recipients} @> ${JSON.stringify([userId])}::jsonb`,
+          eq(notifications.recipients, null)
+        )
+      );
+    }
 
     const userNotifications = await db
       .select()
       .from(notifications)
-      .where(
-        or(
-          eq(notifications.recipients, JSON.stringify([userId])),
-          eq(notifications.recipients, null)
-        )
-      );
+      .where(and(...conditions));
 
     const readStates = await db
       .select()
@@ -554,10 +621,12 @@ export class NotificationService {
       total: userNotifications.length,
       unread: unread.length,
       byType,
-      byPriority
+      byPriority,
+      userType: isAdmin ? 'admin' as const : 'user' as const,
+      allowedTypes
     };
 
-    console.log(`📊 إحصائيات الإشعارات:`, stats);
+    console.log(`📊 مستخدم ${userId} (نوع: ${stats.userType}): ${stats.total} إشعار، ${stats.unread} غير مقروء`);
     return stats;
   }
 

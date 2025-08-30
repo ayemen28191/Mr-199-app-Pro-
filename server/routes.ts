@@ -36,6 +36,12 @@ import { NotificationService } from "./services/NotificationService";
 import { aiSystemService } from "./services/AiSystemService";
 import { securityPolicyService } from "./services/SecurityPolicyService";
 import { smartErrorHandler } from './services/SmartErrorHandler';
+import { 
+  notifications, 
+  notificationReadStates, 
+  notificationQueue 
+} from "@shared/schema";
+import { eq, and, or, desc, inArray } from "drizzle-orm";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
@@ -4250,6 +4256,268 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching notification stats:", error);
       res.status(500).json({ message: "خطأ في جلب إحصائيات الإشعارات" });
+    }
+  });
+
+  // =====================================================
+  // واجهات برمجة التطبيقات للمسؤول - Admin APIs
+  // =====================================================
+
+  // جلب جميع الإشعارات مع تفاصيل المستخدمين - للمسؤول فقط
+  app.get("/api/admin/notifications/all", async (req, res) => {
+    try {
+      const requesterId = (req.query.requesterId as string) || 'admin';
+      
+      // التحقق من الصلاحيات
+      if (requesterId !== 'admin' && requesterId !== 'مسؤول') {
+        return res.status(403).json({ message: "غير مسموح - المسؤول فقط" });
+      }
+
+      const limit = parseInt(req.query.limit as string) || 100;
+      const offset = parseInt(req.query.offset as string) || 0;
+      const type = req.query.type as string;
+      const priority = req.query.priority as string;
+      
+      // بناء شروط البحث
+      const conditions = [];
+      if (type) {
+        conditions.push(eq(notifications.type, type));
+      }
+      if (priority) {
+        conditions.push(eq(notifications.priority, parseInt(priority)));
+      }
+
+      // جلب الإشعارات
+      const notificationList = await db
+        .select()
+        .from(notifications)
+        .where(conditions.length > 0 ? and(...conditions) : undefined)
+        .orderBy(desc(notifications.createdAt))
+        .limit(limit)
+        .offset(offset);
+
+      // جلب حالات القراءة لجميع المستخدمين
+      const notificationIds = notificationList.map(n => n.id);
+      const readStates = notificationIds.length > 0 ? 
+        await db
+          .select()
+          .from(notificationReadStates)
+          .where(inArray(notificationReadStates.notificationId, notificationIds)) : [];
+
+      // تجميع البيانات
+      const enrichedNotifications = notificationList.map(notification => {
+        const notificationReadStates = readStates.filter(
+          rs => rs.notificationId === notification.id
+        );
+        
+        return {
+          ...notification,
+          readStates: notificationReadStates,
+          totalReads: notificationReadStates.filter(rs => rs.isRead).length,
+          totalUsers: notificationReadStates.length
+        };
+      });
+
+      const total = await db
+        .select({ count: sql`count(*)` })
+        .from(notifications)
+        .where(conditions.length > 0 ? and(...conditions) : undefined);
+
+      res.json({
+        notifications: enrichedNotifications,
+        total: Number(total[0]?.count || 0),
+        limit,
+        offset
+      });
+    } catch (error) {
+      console.error("Error fetching admin notifications:", error);
+      res.status(500).json({ message: "خطأ في جلب إشعارات المسؤول" });
+    }
+  });
+
+  // جلب نشاط المستخدمين مع الإشعارات
+  app.get("/api/admin/notifications/user-activity", async (req, res) => {
+    try {
+      const requesterId = (req.query.requesterId as string) || 'admin';
+      
+      if (requesterId !== 'admin' && requesterId !== 'مسؤول') {
+        return res.status(403).json({ message: "غير مسموح - المسؤول فقط" });
+      }
+
+      // جلب إحصائيات المستخدمين
+      const userStats = await db.execute(sql`
+        SELECT 
+          nrs.user_id,
+          COUNT(DISTINCT nrs.notification_id) as total_notifications,
+          COUNT(CASE WHEN nrs.is_read = true THEN 1 END) as read_notifications,
+          COUNT(CASE WHEN nrs.is_read = false THEN 1 END) as unread_notifications,
+          MAX(nrs.read_at) as last_activity
+        FROM notification_read_states nrs
+        GROUP BY nrs.user_id
+        ORDER BY last_activity DESC NULLS LAST
+      `);
+
+      const formattedStats = userStats.rows.map((row: any) => ({
+        userId: row.user_id,
+        totalNotifications: Number(row.total_notifications),
+        readNotifications: Number(row.read_notifications),
+        unreadNotifications: Number(row.unread_notifications),
+        lastActivity: row.last_activity,
+        readPercentage: row.total_notifications > 0 
+          ? Math.round((row.read_notifications / row.total_notifications) * 100) 
+          : 0
+      }));
+
+      res.json({ userStats: formattedStats });
+    } catch (error) {
+      console.error("Error fetching user activity:", error);
+      res.status(500).json({ message: "خطأ في جلب نشاط المستخدمين" });
+    }
+  });
+
+  // إرسال إشعار مخصص من المسؤول
+  app.post("/api/admin/notifications/send", async (req, res) => {
+    try {
+      const requesterId = (req.body.requesterId as string) || 'admin';
+      
+      if (requesterId !== 'admin' && requesterId !== 'مسؤول') {
+        return res.status(403).json({ message: "غير مسموح - المسؤول فقط" });
+      }
+
+      const { title, body, type, priority, recipients, projectId } = req.body;
+      
+      if (!title || !body || !type) {
+        return res.status(400).json({ message: "العنوان والمحتوى والنوع مطلوبة" });
+      }
+
+      let finalRecipients: string[] = [];
+      
+      if (recipients === 'all') {
+        finalRecipients = await notificationService.getAllActiveUserIds();
+      } else if (recipients === 'admins') {
+        finalRecipients = await notificationService.getAllAdminIds();
+      } else if (Array.isArray(recipients)) {
+        finalRecipients = recipients;
+      } else {
+        return res.status(400).json({ message: "مستقبلين غير صحيحين" });
+      }
+
+      const notification = await notificationService.createNotification({
+        type,
+        title,
+        body,
+        priority: priority || 3,
+        recipients: finalRecipients,
+        projectId,
+        payload: { 
+          action: 'open_custom',
+          senderType: 'admin',
+          customMessage: true 
+        },
+        channelPreference: {
+          push: true,
+          email: false,
+          sms: false
+        }
+      });
+
+      res.status(201).json({ 
+        notification, 
+        sentTo: finalRecipients.length,
+        message: `تم إرسال الإشعار إلى ${finalRecipients.length} مستخدم` 
+      });
+    } catch (error) {
+      console.error("Error sending admin notification:", error);
+      res.status(500).json({ message: "خطأ في إرسال الإشعار" });
+    }
+  });
+
+  // حذف إشعار للمستخدم المحدد - للمسؤول فقط
+  app.delete("/api/admin/notifications/:notificationId/user/:userId", async (req, res) => {
+    try {
+      const requesterId = (req.body.requesterId as string) || 'admin';
+      
+      if (requesterId !== 'admin' && requesterId !== 'مسؤول') {
+        return res.status(403).json({ message: "غير مسموح - المسؤول فقط" });
+      }
+
+      const { notificationId, userId } = req.params;
+      
+      await notificationService.deleteNotificationForUser(notificationId, userId, requesterId);
+      
+      res.json({ 
+        message: `تم حذف الإشعار ${notificationId} للمستخدم ${userId}`,
+        notificationId,
+        userId 
+      });
+    } catch (error) {
+      console.error("Error deleting notification for user:", error);
+      res.status(500).json({ message: "خطأ في حذف الإشعار" });
+    }
+  });
+
+  // تحديث حالة إشعار لمستخدم محدد - للمسؤول فقط  
+  app.patch("/api/admin/notifications/:notificationId/user/:userId/status", async (req, res) => {
+    try {
+      const requesterId = (req.body.requesterId as string) || 'admin';
+      
+      if (requesterId !== 'admin' && requesterId !== 'مسؤول') {
+        return res.status(403).json({ message: "غير مسموح - المسؤول فقط" });
+      }
+
+      const { notificationId, userId } = req.params;
+      const { isRead } = req.body;
+      
+      if (typeof isRead !== 'boolean') {
+        return res.status(400).json({ message: "حالة القراءة يجب أن تكون true أو false" });
+      }
+
+      if (isRead) {
+        await notificationService.markAsRead(notificationId, userId);
+      } else {
+        // إزالة حالة القراءة
+        await db
+          .delete(notificationReadStates)
+          .where(
+            and(
+              eq(notificationReadStates.notificationId, notificationId),
+              eq(notificationReadStates.userId, userId)
+            )
+          );
+      }
+      
+      res.json({ 
+        message: `تم تحديث حالة الإشعار ${notificationId} للمستخدم ${userId}`,
+        notificationId,
+        userId,
+        isRead
+      });
+    } catch (error) {
+      console.error("Error updating notification status:", error);
+      res.status(500).json({ message: "خطأ في تحديث حالة الإشعار" });
+    }
+  });
+
+  // حذف إشعار بالكامل - للمسؤول فقط
+  app.delete("/api/admin/notifications/:notificationId", async (req, res) => {
+    try {
+      const requesterId = (req.query.requesterId as string) || 'admin';
+      
+      if (requesterId !== 'admin' && requesterId !== 'مسؤول') {
+        return res.status(403).json({ message: "غير مسموح - المسؤول فقط" });
+      }
+
+      const { notificationId } = req.params;
+      
+      await notificationService.deleteNotification(notificationId, requesterId);
+      
+      res.json({ 
+        message: `تم حذف الإشعار ${notificationId} بالكامل`,
+        notificationId
+      });
+    } catch (error) {
+      console.error("Error deleting notification completely:", error);
+      res.status(500).json({ message: "خطأ في حذف الإشعار" });
     }
   });
 
