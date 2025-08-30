@@ -289,6 +289,28 @@ export const printSettings = pgTable('print_settings', {
   isActive: boolean('is_active').notNull().default(true),
   userId: text('user_id'),
   
+  // Additional settings (matching database)
+  titleFontSize: integer('title_font_size').default(18),
+  subtitleFontSize: integer('subtitle_font_size').default(14),
+  lineHeight: decimal('line_height', { precision: 3, scale: 2 }).default('1.40'),
+  tableHeaderTextColor: text('table_header_text_color').default('#ffffff'),
+  primaryTextColor: text('primary_text_color').default('#000000'),
+  secondaryTextColor: text('secondary_text_color').default('#666666'),
+  backgroundColor: text('background_color').default('#ffffff'),
+  sectionSpacing: integer('section_spacing').default(20),
+  elementSpacing: integer('element_spacing').default(10),
+  projectInfoBackgroundColor: text('project_info_background_color').default('#f8f9fa'),
+  projectInfoBorderColor: text('project_info_border_color').default('#e9ecef'),
+  workerInfoBackgroundColor: text('worker_info_background_color').default('#f0f9ff'),
+  workerInfoBorderColor: text('worker_info_border_color').default('#0284c7'),
+  summaryBackgroundColor: text('summary_background_color').default('#f0fdf4'),
+  summaryBorderColor: text('summary_border_color').default('#16a34a'),
+  signatureLineColor: text('signature_line_color').default('#9ca3af'),
+  signatureLineWidth: integer('signature_line_width').default(2),
+  showCompanyInfo: boolean('show_company_info').default(true),
+  showDate: boolean('show_date').default(true),
+  showPageNumbers: boolean('show_page_numbers').default(true),
+  
   // Timestamps
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
@@ -296,15 +318,18 @@ export const printSettings = pgTable('print_settings', {
 
 // Project fund transfers table (ترحيل الأموال بين المشاريع)
 export const projectFundTransfers = pgTable("project_fund_transfers", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   fromProjectId: varchar("from_project_id").notNull().references(() => projects.id),
   toProjectId: varchar("to_project_id").notNull().references(() => projects.id),
-  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  amount: decimal("amount", { precision: 15, scale: 2 }).notNull(),
   description: text("description"), // وصف الترحيل
-  transferReason: text("transfer_reason"), // سبب الترحيل
-  transferDate: text("transfer_date").notNull(), // YYYY-MM-DD format
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  transferDate: date("transfer_date").defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow(),
+  transferReason: text("transfer_reason"),
+  approvedBy: text("approved_by").default('النظام'),
+  notes: text("notes"),
+  status: text("status").default('completed'),
 });
 
 // Schema definitions for forms
@@ -464,8 +489,8 @@ export const authUserSessions = pgTable("auth_user_sessions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
   
-  // معلومات الجهاز
-  deviceId: varchar("device_id", { length: 255 }).notNull(), // fingerprint للجهاز
+  // معلومات الجهاز (مطابق لقاعدة البيانات)
+  deviceId: varchar("device_id", { length: 255 }), // fingerprint للجهاز - مضاف حديثا
   deviceName: varchar("device_name", { length: 255 }),
   deviceType: varchar("device_type", { length: 50 }), // web, mobile, desktop
   browserName: varchar("browser_name", { length: 100 }),
@@ -1149,32 +1174,24 @@ export const securityPolicySuggestions = pgTable("security_policy_suggestions", 
 
 // جدول تطبيق السياسات (Policy Implementations)
 export const securityPolicyImplementations = pgTable("security_policy_implementations", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  policyId: varchar("policy_id").notNull().references(() => securityPolicies.id),
-  implementationType: text("implementation_type").notNull(), // automatic, manual, scheduled
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`(gen_random_uuid())::text`),
+  policyId: varchar("policy_id", { length: 255 }).notNull(),
+  implementationId: varchar("implementation_id", { length: 255 }).notNull(),
+  implementationType: varchar("implementation_type", { length: 100 }).notNull(),
+  status: varchar("status", { length: 50 }).notNull().default('pending'),
   
-  // تفاصيل التطبيق
-  implementationDetails: jsonb("implementation_details"),
-  executionScript: text("execution_script"),
-  targetSystems: jsonb("target_systems"), // الأنظمة المستهدفة
+  // تفاصيل التطبيق (مطابق لقاعدة البيانات)
+  configuration: jsonb("configuration"),
+  deploymentDetails: jsonb("deployment_details"),
+  successCriteria: jsonb("success_criteria"),
+  rollbackPlan: jsonb("rollback_plan"),
+  implementedBy: varchar("implemented_by", { length: 255 }),
+  implementationDate: timestamp("implementation_date", { withTimezone: true }),
+  verificationDate: timestamp("verification_date", { withTimezone: true }),
+  nextReview: timestamp("next_review", { withTimezone: true }),
   
-  // جدولة التنفيذ
-  scheduledAt: timestamp("scheduled_at"),
-  executedAt: timestamp("executed_at"),
-  completedAt: timestamp("completed_at"),
-  
-  // النتائج
-  status: text("status").default("pending").notNull(), // pending, running, completed, failed, cancelled
-  result: jsonb("result"), // نتائج التطبيق
-  success: boolean("success"),
-  errorMessage: text("error_message"),
-  
-  // المقاييس
-  executionDuration: integer("execution_duration"), // مدة التنفيذ بالثواني
-  affectedItems: integer("affected_items").default(0).notNull(), // عدد العناصر المتأثرة
-  
-  executedBy: varchar("executed_by").references(() => users.id),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
 
 // جدول انتهاكات السياسات (Policy Violations)
