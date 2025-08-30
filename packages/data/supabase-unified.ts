@@ -23,7 +23,17 @@ export const apiRequest = async (
   method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET',
   data?: any
 ) => {
-  const baseUrl = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:5000';
+  // ⚠️ استخدام Supabase Edge Functions أو URL مُعرّف صراحة فقط
+  const baseUrl = process.env.EXPO_PUBLIC_API_URL;
+  
+  if (!baseUrl) {
+    throw new Error('❌ متغير EXPO_PUBLIC_API_URL غير مُعرّف. يجب تعريف URL صحيح للـ API.');
+  }
+  
+  // حماية ضد URLs محلية
+  if (baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1')) {
+    throw new Error('🚫 ممنوع استخدام localhost. استخدم Supabase Edge Functions أو خادم سحابي فقط.');
+  }
   const url = `${baseUrl}${endpoint}`;
 
   const config: RequestInit = {

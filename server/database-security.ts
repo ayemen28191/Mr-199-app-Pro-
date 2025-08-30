@@ -10,7 +10,21 @@ export class DatabaseSecurityGuard {
   private static readonly ALLOWED_SUPABASE_PROJECT = 'wibtasmyusxfqxxqekks';
   private static readonly ALLOWED_HOSTS = [
     'aws-0-us-east-1.pooler.supabase.com',
-    'supabase.com'
+    'supabase.com',
+    '.supabase.co'
+  ];
+
+  private static readonly FORBIDDEN_NETWORKS = [
+    'localhost',
+    '127.0.0.1',
+    '0.0.0.0',
+    '192.168.',
+    '10.0.',
+    '172.16.',
+    'neon.tech',
+    'railway.app',
+    'heroku.com',
+    'planetscale.com'
   ];
 
   /**
@@ -24,21 +38,15 @@ export class DatabaseSecurityGuard {
       throw new Error('❌ رابط قاعدة البيانات مفقود!');
     }
 
-    // قائمة الخدمات المحظورة
-    const FORBIDDEN_SERVICES = [
-      'replit', 'localhost', '127.0.0.1', 'local', 'neon', 'postgres.js',
-      'railway', 'heroku', 'planetscale', 'cockroachdb', 'mongodb'
-    ];
-
-    // فحص الخدمات المحظورة
-    const forbiddenService = FORBIDDEN_SERVICES.find(service => 
-      connectionString.toLowerCase().includes(service)
+    // فحص الشبكات المحظورة
+    const forbiddenNetwork = this.FORBIDDEN_NETWORKS.find(network => 
+      connectionString.toLowerCase().includes(network.toLowerCase())
     );
     
-    if (forbiddenService) {
-      console.error(`🚨 خطر أمني: محاولة استخدام خدمة محظورة: ${forbiddenService}`);
+    if (forbiddenNetwork) {
+      console.error(`🚨 خطر أمني: محاولة استخدام شبكة محظورة: ${forbiddenNetwork}`);
       throw new Error(
-        `❌ خطأ أمني حرج: استخدام ${forbiddenService} محظور!\n` +
+        `❌ خطأ أمني حرج: استخدام ${forbiddenNetwork} محظور!\n` +
         `🔐 يجب استخدام Supabase السحابية فقط`
       );
     }
@@ -110,7 +118,76 @@ export class DatabaseSecurityGuard {
     // فحص دوري كل 30 دقيقة
     setInterval(() => {
       this.monitorEnvironmentVariables();
+      this.checkNetworkConnections();
       console.log('🔍 فحص دوري للأمان مكتمل');
     }, 30 * 60 * 1000);
+  }
+
+  /**
+   * مراقبة اتصالات الشبكة المشبوهة
+   */
+  private static checkNetworkConnections(): void {
+    console.log('🌐 فحص اتصالات الشبكة...');
+    
+    // فحص أن كل متغيرات البيئة تحتوي على عناوين آمنة فقط
+    const criticalEnvVars = ['SUPABASE_URL', 'DATABASE_URL', 'POSTGRES_URL'];
+    
+    criticalEnvVars.forEach(varName => {
+      const value = process.env[varName];
+      if (value) {
+        const hasForbiddenNetwork = this.FORBIDDEN_NETWORKS.some(network =>
+          value.toLowerCase().includes(network.toLowerCase())
+        );
+        
+        if (hasForbiddenNetwork) {
+          console.error(`🚨 اتصال مشبوه مكتشف في ${varName}: ${value}`);
+          console.error('⛔ سيتم حذف المتغير المشبوه...');
+          delete process.env[varName];
+        }
+      }
+    });
+  }
+
+  /**
+   * إنشاء تقرير أمني شامل
+   */
+  static generateSecurityReport(): {
+    isSecure: boolean;
+    warnings: string[];
+    recommendations: string[];
+  } {
+    const warnings: string[] = [];
+    const recommendations: string[] = [];
+
+    // فحص متغيرات البيئة
+    const suspiciousVars = Object.keys(process.env).filter(key => 
+      this.FORBIDDEN_NETWORKS.some(network => 
+        (process.env[key] || '').toLowerCase().includes(network.toLowerCase())
+      )
+    );
+
+    if (suspiciousVars.length > 0) {
+      warnings.push(`متغيرات بيئة مشبوهة مكتشفة: ${suspiciousVars.join(', ')}`);
+      recommendations.push('احذف جميع متغيرات البيئة المحلية واستخدم Supabase فقط');
+    }
+
+    // فحص اتصال Supabase
+    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_URL.includes('supabase')) {
+      warnings.push('متغير SUPABASE_URL غير مُعرّف أو غير صحيح');
+      recommendations.push('تأكد من تعريف SUPABASE_URL بشكل صحيح');
+    }
+
+    const isSecure = warnings.length === 0;
+    
+    console.log('📊 تقرير الأمان:');
+    console.log(`✅ آمن: ${isSecure ? 'نعم' : 'لا'}`);
+    if (warnings.length > 0) {
+      console.log('⚠️ تحذيرات:', warnings);
+    }
+    if (recommendations.length > 0) {
+      console.log('💡 توصيات:', recommendations);
+    }
+
+    return { isSecure, warnings, recommendations };
   }
 }

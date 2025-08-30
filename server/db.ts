@@ -30,6 +30,13 @@ DatabaseRestrictionGuard.validateSystemSecurity();
 // بدء المراقبة الدورية للأمان
 DatabaseSecurityGuard.startSecurityMonitoring();
 
+// إنشاء تقرير أمني شامل
+const securityReport = DatabaseSecurityGuard.generateSecurityReport();
+if (!securityReport.isSecure) {
+  console.error('🚨 تحذير أمني: النظام يحتوي على ثغرات أمنية!');
+  securityReport.warnings.forEach(warning => console.error(`⚠️ ${warning}`));
+}
+
 // تكوين اتصال قاعدة البيانات السحابية
 export const pool = new Pool({ connectionString });
 export const db = drizzle({ client: pool, schema });

@@ -35,8 +35,16 @@ export class DatabaseRestrictionGuard {
     /DATABASE_URL.*localhost/i,
     /DATABASE_URL.*127\.0\.0\.1/i,
     /DATABASE_URL.*5432/i,
+    /DATABASE_URL.*postgres:\/\/.*@localhost/i,
     /PGHOST.*localhost/i,
-    /PGPORT.*5432/i
+    /PGHOST.*127\.0\.0\.1/i,
+    /PGPORT.*5432/i,
+    /NEON_DATABASE_URL/i,
+    /POSTGRES_URL.*localhost/i,
+    /DB_URL.*localhost/i,
+    /RAILWAY_.*DATABASE/i,
+    /HEROKU_POSTGRESQL/i,
+    /PLANETSCALE_.*_URL/i
   ];
 
   /**
@@ -159,6 +167,7 @@ ALLOWED_TOOLS=drizzle-kit,supabase-cli
     // مراقبة دورية كل دقيقة
     setInterval(() => {
       this.blockEnvironmentVariables();
+      this.checkForbiddenLibraries();
     }, 60000);
 
     // تسجيل تحذيرات دورية
@@ -166,6 +175,39 @@ ALLOWED_TOOLS=drizzle-kit,supabase-cli
       console.log('🔐 تذكير: النظام يستخدم Supabase السحابية فقط');
       console.log('⚠️ أي محاولة لاستخدام قاعدة بيانات محلية ستفشل');
     }, 300000); // كل 5 دقائق
+  }
+
+  /**
+   * فحص مكتبات قواعد البيانات المحظورة
+   */
+  private static checkForbiddenLibraries(): void {
+    const FORBIDDEN_MODULES = [
+      'pg-local',
+      'sqlite3',
+      'mysql',
+      'mongodb',
+      'better-sqlite3',
+      'mysql2',
+      'tedious',
+      'oracledb'
+    ];
+
+    try {
+      const packageJsonPath = './package.json';
+      if (fs.existsSync(packageJsonPath)) {
+        const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+        const dependencies = { ...packageJson.dependencies, ...packageJson.devDependencies };
+        
+        FORBIDDEN_MODULES.forEach(module => {
+          if (dependencies[module]) {
+            console.error(`🚨 مكتبة محظورة مكتشفة: ${module}`);
+            console.error('⛔ سيتم تجاهلها - استخدم Supabase فقط');
+          }
+        });
+      }
+    } catch (error) {
+      // تجاهل أخطاء القراءة
+    }
   }
 
   /**
