@@ -369,32 +369,9 @@ export default function AdminNotificationsPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-indigo-50/40" dir="rtl">
       <div className="container mx-auto p-3 sm:p-6 max-w-7xl">
-        <div className="mb-6">
-          <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 mb-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
-                  <Shield className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
-                    مدير الإشعارات
-                  </h1>
-                  <p className="text-sm text-gray-500 mt-1">إدارة شاملة ومتقدمة لجميع إشعارات النظام</p>
-                </div>
-              </div>
-              <div className="hidden sm:flex items-center gap-2">
-                <div className="flex items-center gap-2 bg-green-50 px-3 py-2 rounded-lg">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                  <span className="text-xs font-medium text-green-700">متصل</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
 
         <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
-          <div className="bg-white rounded-2xl p-2 shadow-lg border border-gray-100 mb-6">
+          <div className="bg-white rounded-2xl p-2 shadow-lg border border-gray-100 mb-8">
             <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 gap-2 bg-gray-50 p-1 rounded-xl">
               <TabsTrigger value="overview" className="flex items-center gap-2 text-sm p-3 rounded-lg transition-all duration-200 data-[state=active]:bg-white data-[state=active]:shadow-sm">
                 <TrendingUp className="h-4 w-4" />
@@ -420,7 +397,7 @@ export default function AdminNotificationsPage() {
           </div>
 
           {/* نظرة عامة محسنة */}
-          <TabsContent value="overview" className="space-y-6">
+          <TabsContent value="overview" className="space-y-8 mt-8">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200 hover:shadow-lg transition-all duration-300">
                 <CardContent className="p-4">
@@ -503,7 +480,7 @@ export default function AdminNotificationsPage() {
           </TabsContent>
 
           {/* إدارة الإشعارات */}
-          <TabsContent value="notifications" className="space-y-4">
+          <TabsContent value="notifications" className="space-y-6 mt-8">
             <Card className="bg-white border border-gray-200 shadow-lg rounded-2xl">
               <CardHeader className="px-6 py-4 border-b border-gray-100">
                 <div className="flex items-center justify-between">
@@ -582,7 +559,7 @@ export default function AdminNotificationsPage() {
           </TabsContent>
 
           {/* نشاط المستخدمين */}
-          <TabsContent value="users" className="space-y-4">
+          <TabsContent value="users" className="space-y-6 mt-8">
             <Card className="bg-white border border-gray-200 shadow-lg rounded-2xl">
               <CardHeader className="px-6 py-4 border-b border-gray-100">
                 <CardTitle className="text-lg font-semibold flex items-center gap-2">
@@ -613,7 +590,7 @@ export default function AdminNotificationsPage() {
           </TabsContent>
 
           {/* إرسال إشعار جديد */}
-          <TabsContent value="create" className="space-y-4">
+          <TabsContent value="create" className="space-y-6 mt-8">
             <Card className="bg-white border border-gray-200 shadow-lg rounded-2xl">
               <CardHeader className="px-6 py-4 border-b border-gray-100">
                 <CardTitle className="text-lg font-semibold flex items-center gap-2">
