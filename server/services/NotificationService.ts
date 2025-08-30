@@ -298,8 +298,8 @@ export class NotificationService {
       // المسؤول يرى جميع الإشعارات
       return ['system', 'security', 'error', 'maintenance', 'task', 'payroll', 'announcement', 'warranty', 'damaged'];
     } else {
-      // المستخدم العادي يرى إشعارات محددة فقط
-      return ['task', 'payroll', 'announcement', 'maintenance', 'warranty'];
+      // المستخدم العادي يرى إشعارات محددة فقط - لا يرى إشعارات النظام أو الأمان
+      return ['task', 'payroll', 'announcement', 'maintenance', 'warranty', 'user-welcome'];
     }
   }
 
@@ -325,8 +325,10 @@ export class NotificationService {
     const conditions = [];
     const allowedTypes = this.getAllowedNotificationTypes(userId);
 
-    // فلترة حسب الأنواع المسموحة للمستخدم
-    conditions.push(inArray(notifications.type, allowedTypes));
+    // فلترة حسب الأنواع المسموحة للمستخدم - لا نفلتر إذا كان المستخدم مسؤول
+    if (!this.isAdmin(userId)) {
+      conditions.push(inArray(notifications.type, allowedTypes));
+    }
 
     // فلترة حسب النوع المحدد
     if (filters.type && allowedTypes.includes(filters.type)) {

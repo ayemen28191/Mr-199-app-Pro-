@@ -4101,23 +4101,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         offset
       });
 
-      // إذا لم توجد إشعارات، أرجع إشعار ترحيب
+      // إذا لم توجد إشعارات، أرجع إشعار ترحيب مناسب للمستخدم
       if (result.notifications.length === 0) {
-        const welcomeNotification = {
-          id: 'system-welcome',
-          type: 'system',
-          title: 'مرحباً بك',
-          message: 'مرحباً بك في نظام إدارة المشاريع الإنشائية',
-          priority: 3,
-          createdAt: new Date().toISOString(),
-          isRead: false,
-          actionRequired: false,
-        };
-        return res.json({
-          notifications: [welcomeNotification],
-          unreadCount: 1,
-          total: 1
-        });
+        const isAdmin = userId === 'admin' || userId === 'مسؤول';
+        
+        if (!isAdmin) {
+          // إشعار ترحيب للمستخدمين العاديين فقط
+          const welcomeNotification = {
+            id: 'user-welcome',
+            type: 'user-welcome',
+            title: 'مرحباً بك في نظام إدارة المشاريع',
+            message: 'أهلاً وسهلاً بك! يمكنك الآن متابعة مهامك والإعلانات المهمة من خلال هذا النظام',
+            priority: 1,
+            createdAt: new Date().toISOString(),
+            isRead: false,
+            actionRequired: false,
+          };
+          return res.json({
+            notifications: [welcomeNotification],
+            unreadCount: 1,
+            total: 1
+          });
+        } else {
+          // المسؤول لا يحتاج إشعار ترحيب
+          return res.json({
+            notifications: [],
+            unreadCount: 0,
+            total: 0
+          });
+        }
       }
 
       res.json(result);
@@ -4190,8 +4202,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`📖 تعليم إشعار كمقروء: ${notificationId} للمستخدم: ${userId}`);
       
-      // استخدام النظام الجديد المتقدم فقط
-      await notificationService.markAsRead(notificationId, userId);
+      // التعامل مع الإشعارات الافتراضية
+      if (notificationId === 'user-welcome' || notificationId === 'system-welcome') {
+        console.log(`✅ تم تعليم إشعار الترحيب كمقروء: ${notificationId}`);
+        // لا نحفظ حالة قراءة الإشعارات الافتراضية
+      } else {
+        // استخدام النظام الجديد المتقدم فقط للإشعارات الحقيقية
+        await notificationService.markAsRead(notificationId, userId);
+      }
       
       res.json({ 
         success: true,
