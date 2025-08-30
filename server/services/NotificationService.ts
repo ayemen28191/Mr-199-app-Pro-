@@ -417,21 +417,44 @@ export class NotificationService {
   async markAllAsRead(userId: string, projectId?: string): Promise<void> {
     console.log(`✅ تعليم جميع الإشعارات كمقروءة للمستخدم: ${userId}`);
 
-    const conditions = [
-      or(
-        eq(notifications.recipients, JSON.stringify([userId])),
-        eq(notifications.recipients, null)
-      )
-    ];
+    // جلب جميع الإشعارات أولاً للفحص
+    const allNotifications = await db
+      .select({ 
+        id: notifications.id, 
+        recipients: notifications.recipients, 
+        type: notifications.type,
+        title: notifications.title 
+      })
+      .from(notifications)
+      .limit(10);
 
+    console.log(`📊 إجمالي الإشعارات في قاعدة البيانات: ${allNotifications.length}`);
+    console.log(`📋 عينة من الإشعارات:`, allNotifications.map(n => ({
+      id: n.id,
+      recipients: n.recipients,
+      type: n.type,
+      title: n.title
+    })));
+
+    // شروط البحث المحسنة - جلب جميع الإشعارات للمستخدم
+    const conditions = [];
+    
+    // إضافة شروط متعددة للتأكد من جلب جميع الإشعارات المناسبة
     if (projectId) {
       conditions.push(eq(notifications.projectId, projectId));
     }
 
-    const userNotifications = await db
+    let query = db
       .select({ id: notifications.id })
-      .from(notifications)
-      .where(and(...conditions));
+      .from(notifications);
+
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions));
+    }
+
+    const userNotifications = await query;
+
+    console.log(`🎯 عدد الإشعارات المُفلترة: ${userNotifications.length}`);
 
     // تعليم كل إشعار كمقروء بشكل متتالي لضمان عدم حدوث تضارب
     let markedCount = 0;
@@ -439,8 +462,9 @@ export class NotificationService {
       try {
         await this.markAsRead(notification.id, userId);
         markedCount++;
+        console.log(`✅ تم تعليم الإشعار ${notification.id} كمقروء`);
       } catch (error) {
-        console.error(`خطأ في تعليم الإشعار ${notification.id} كمقروء:`, error);
+        console.error(`❌ خطأ في تعليم الإشعار ${notification.id} كمقروء:`, error);
       }
     }
 
