@@ -13,7 +13,7 @@ import {
   Activity, Brain, Database, Settings, Play, Pause, AlertCircle, CheckCircle,
   TrendingUp, Zap, Shield, Cpu, BarChart3, Clock, Server, RefreshCw, Loader2,
   ChevronDown, ChevronUp, AlertTriangle, Eye, EyeOff, DollarSign, Users, 
-  Lock, Wrench, Truck, Table, Edit, MoreVertical, Power, PowerOff
+  Lock, Wrench, Truck, Table, Edit, MoreVertical, Power, PowerOff, Info
 } from 'lucide-react';
 import { SecurityPoliciesManager } from '@/components/SecurityPoliciesManager';
 
@@ -1195,10 +1195,13 @@ export default function AISystemDashboard() {
                       <div className="flex justify-between items-center">
                         <span className="text-sm">المشاكل المكتشفة</span>
                         <div className="flex items-center gap-2">
-                          <Badge variant={metrics.database.issues > 0 ? "destructive" : "secondary"} className="text-xs">
-                            {metrics.database.issues}
+                          <Badge variant={(detectedErrorsData?.detectedErrors?.length || 0) > 0 ? "destructive" : "secondary"} className="text-xs">
+                            {detectedErrorsData?.detectedErrors?.length || 0}
+                            {errorStatistics?.totalErrors && errorStatistics.totalErrors > (detectedErrorsData?.detectedErrors?.length || 0) && (
+                              <span className="text-xs opacity-70"> / {errorStatistics.totalErrors}</span>
+                            )}
                           </Badge>
-                          {metrics.database.issues > 0 && (
+                          {(detectedErrorsData?.detectedErrors?.length || 0) > 0 && (
                             <Button
                               size="sm"
                               variant="ghost"
@@ -1212,7 +1215,7 @@ export default function AISystemDashboard() {
                         </div>
                       </div>
                       
-                      {showIssues && metrics.database.issues > 0 && (
+                      {showIssues && (detectedErrorsData?.detectedErrors?.length || 0) > 0 && (
                         <div className="space-y-2 mt-2">
                           {isLoadingErrors ? (
                             <div className="flex items-center justify-center p-3">
@@ -1221,13 +1224,27 @@ export default function AISystemDashboard() {
                             </div>
                           ) : detectedErrorsData?.detectedErrors?.length > 0 ? (
                             <div className="space-y-2">
-                              <div className="flex items-center justify-between">
-                                <span className="text-xs font-medium text-red-800">
-                                  المشاكل المكتشفة ({detectedErrorsData.detectedErrors.length})
-                                </span>
-                                <Badge variant="outline" className="text-xs">
-                                  آخر تحديث: منذ {Math.floor(Math.random() * 10)} دقائق
-                                </Badge>
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs font-medium text-red-800">
+                                    المشاكل المكتشفة ({detectedErrorsData.detectedErrors.length})
+                                    {errorStatistics?.totalErrors && errorStatistics.totalErrors > detectedErrorsData.detectedErrors.length && (
+                                      <span className="text-xs opacity-70 mr-1">من أصل {errorStatistics.totalErrors}</span>
+                                    )}
+                                  </span>
+                                  <Badge variant="outline" className="text-xs">
+                                    آخر تحديث: منذ {Math.floor(Math.random() * 10)} دقائق
+                                  </Badge>
+                                </div>
+                                
+                                {errorStatistics?.totalErrors && errorStatistics.totalErrors > detectedErrorsData.detectedErrors.length && (
+                                  <div className="flex items-start gap-1 p-2 bg-blue-50 border border-blue-200 rounded text-xs">
+                                    <Info className="w-3 h-3 text-blue-600 flex-shrink-0 mt-0.5" />
+                                    <span className="text-blue-800">
+                                      يتم عرض المشاكل النشطة فقط. العدد الإجمالي ({errorStatistics.totalErrors}) يشمل المشاكل المحلولة والمؤرشفة.
+                                    </span>
+                                  </div>
+                                )}
                               </div>
                               
                               <ScrollArea className="max-h-64">
