@@ -12,7 +12,8 @@ interface Notification {
   id: string;
   type: 'system' | 'maintenance' | 'warranty' | 'damaged' | 'user-welcome' | 'task' | 'payment-reminder' | 'general-announcement';
   title: string;
-  message: string;
+  message?: string;
+  body?: string;
   priority: 'info' | 'low' | 'medium' | 'high' | 'critical' | number;
   createdAt: string;
   status?: 'read' | 'unread';
@@ -469,7 +470,7 @@ export default function NotificationsPage() {
                       
                       {/* الرسالة */}
                       <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed mb-2">
-                        {notification.message}
+                        {notification.message || notification.body || 'لا يوجد محتوى'}
                       </p>
                       
                       {/* إجراء مطلوب */}
