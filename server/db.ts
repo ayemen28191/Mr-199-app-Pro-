@@ -3,6 +3,7 @@ import { drizzle } from 'drizzle-orm/neon-serverless';
 import ws from "ws";
 import * as schema from "@shared/schema";
 import { DatabaseSecurityGuard } from './database-security';
+import { DatabaseRestrictionGuard } from './database-restrictions';
 
 // Configure WebSocket for Neon/Supabase serverless connection
 neonConfig.webSocketConstructor = ws;
@@ -18,10 +19,13 @@ const SUPABASE_DATABASE_URL = "postgresql://postgres.wibtasmyusxfqxxqekks:Ay**--
 // ✅ الاتصال الوحيد المسموح: Supabase Cloud Database
 const connectionString = SUPABASE_DATABASE_URL;
 
-// ⚠️ تفعيل نظام الحماية المتقدم
+// ⚠️ تفعيل نظام الحماية المتقدم والموانع الصارمة
 DatabaseSecurityGuard.monitorEnvironmentVariables();
 DatabaseSecurityGuard.validateDatabaseConnection(connectionString);
 DatabaseSecurityGuard.logSecureConnectionInfo();
+
+// تطبيق موانع صارمة ضد قواعد البيانات المحلية
+DatabaseRestrictionGuard.validateSystemSecurity();
 
 // بدء المراقبة الدورية للأمان
 DatabaseSecurityGuard.startSecurityMonitoring();
