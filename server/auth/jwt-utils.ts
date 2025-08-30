@@ -11,12 +11,12 @@ import { users, authUserSessions } from '../../shared/schema.js';
 
 // إعدادات JWT
 const JWT_CONFIG = {
-  accessTokenSecret: process.env.JWT_ACCESS_SECRET || 'construction-app-access-secret-2025',
-  refreshTokenSecret: process.env.JWT_REFRESH_SECRET || 'construction-app-refresh-secret-2025',
+  accessTokenSecret: (process.env.JWT_ACCESS_SECRET || 'construction-app-access-secret-2025') as string,
+  refreshTokenSecret: (process.env.JWT_REFRESH_SECRET || 'construction-app-refresh-secret-2025') as string,
   accessTokenExpiry: '15m', // 15 دقيقة
   refreshTokenExpiry: '30d', // 30 يوم
   issuer: 'construction-management-app',
-  algorithm: 'HS256' as jwt.Algorithm,
+  algorithm: 'HS256' as const,
 };
 
 // واجهة بيانات JWT
@@ -67,11 +67,11 @@ export async function generateTokenPair(
 
   const accessToken = jwt.sign(
     accessPayload, 
-    JWT_CONFIG.accessTokenSecret, 
+    JWT_CONFIG.accessTokenSecret as jwt.Secret, 
     { 
       expiresIn: JWT_CONFIG.accessTokenExpiry,
-      issuer: JWT_CONFIG.issuer 
-    }
+      issuer: JWT_CONFIG.issuer
+    } as jwt.SignOptions
   );
 
   // إنشاء Refresh Token
@@ -85,11 +85,11 @@ export async function generateTokenPair(
 
   const refreshToken = jwt.sign(
     refreshPayload, 
-    JWT_CONFIG.refreshTokenSecret, 
+    JWT_CONFIG.refreshTokenSecret as jwt.Secret, 
     { 
       expiresIn: JWT_CONFIG.refreshTokenExpiry,
-      issuer: JWT_CONFIG.issuer 
-    }
+      issuer: JWT_CONFIG.issuer
+    } as jwt.SignOptions
   );
 
   // حفظ الجلسة في قاعدة البيانات

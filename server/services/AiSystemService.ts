@@ -1073,7 +1073,7 @@ export class AiSystemService {
           // إنشاء إشعار للإدارة (مؤقتاً في الكونسول)
           console.log(`📢 إشعار إدارة العمالة: يتطلب توظيف ${shortage} عامل إضافي`);
           // await storage.createNotification({
-          //   userId: 'default',
+          //   userId: 'admin', // يجب تمرير معرف إداري حقيقي
           //   type: 'workforce',
           //   title: '👷‍♂️ خطة توظيف عاجلة',
           //   message: `يتطلب توظيف ${shortage} عامل إضافي لتغطية ${activeProjects.length} مشروع نشط`,
@@ -1202,7 +1202,7 @@ export class AiSystemService {
         for (const supplier of highRiskSuppliers) {
           console.log(`📢 إشعار موردين: مورد عالي المخاطر - ${supplier.supplierName} (${supplier.totalDebt.toLocaleString()} ريال)`);
           // await storage.createNotification({
-          //   userId: 'default',
+          //   userId: 'admin', // يجب تمرير معرف إداري حقيقي
           //   type: 'supplier',
           //   title: `⚠️ مورد عالي المخاطر: ${supplier.supplierName}`,
           //   message: `إجمالي المديونية: ${supplier.totalDebt.toLocaleString()} ريال. يتطلب مراجعة عاجلة.`,
