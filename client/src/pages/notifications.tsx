@@ -56,7 +56,8 @@ export default function NotificationsPage() {
   const [selectedType, setSelectedType] = useState<string>('all');
   
   // معرف المستخدم الحقيقي
-  const userId = user?.id || 'default';
+  // استخدام UUID صحيح للمستخدم أو UUID افتراضي صالح
+  const userId = user?.id || '06b71320-c869-4636-8f9f-dbcb5b12c74d';
   const isAdmin = user?.role === 'admin' || user?.role === 'مدير' || user?.email?.includes('admin');
 
   // جلب الإشعارات

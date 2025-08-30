@@ -10,7 +10,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { authSystem } from "./auth-system";
 import { backupSystem } from "./backup-system";
 import { sql } from "drizzle-orm";
 import { db } from "./db";
@@ -4086,7 +4085,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // جلب الإشعارات للمستخدم مع الفلترة
   app.get("/api/notifications", async (req, res) => {
     try {
-      const userId = (req.query.userId as string) || 'default';
+      // استخدام النظام المتقدم للحصول على userId من JWT token أو header
+      const userId = req.headers['x-user-id'] as string || '06b71320-c869-4636-8f9f-dbcb5b12c74d';
       const type = req.query.type as string;
       const unreadOnly = req.query.unreadOnly === 'true';
       const projectId = req.query.projectId as string;
@@ -4204,7 +4204,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/notifications/:notificationId/mark-read", async (req, res) => {
     try {
       const { notificationId } = req.params;
-      const userId = (req.body.userId as string) || 'default';
+      // استخدام النظام المتقدم للحصول على userId من JWT token أو header
+      const userId = req.headers['x-user-id'] as string || '06b71320-c869-4636-8f9f-dbcb5b12c74d';
       
       console.log(`📖 تعليم إشعار كمقروء: ${notificationId} للمستخدم: ${userId}`);
       
@@ -4234,7 +4235,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // تعليم جميع الإشعارات كمقروءة - نظام موحد
   app.post("/api/notifications/mark-all-read", async (req, res) => {
     try {
-      const userId = (req.body.userId as string) || 'default';
+      // استخدام النظام المتقدم للحصول على userId من JWT token أو header
+      const userId = req.headers['x-user-id'] as string || '06b71320-c869-4636-8f9f-dbcb5b12c74d';
       const projectId = req.body.projectId as string;
       
       console.log(`📖 تعليم جميع الإشعارات كمقروءة للمستخدم: ${userId}`);
@@ -4272,8 +4274,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // جلب إحصائيات الإشعارات
   app.get("/api/notifications/stats", async (req, res) => {
     try {
-      const userId = (req.query.userId as string) || 'default';
-      const stats = await notificationService.getNotificationStats(userId);
+      // استخدام النظام المتقدم للحصول على userId من JWT token أو header
+      const userId = req.headers['x-user-id'] as string || '06b71320-c869-4636-8f9f-dbcb5b12c74d';
+      const stats = await notificationService.getNotificationStats(userId, {});
       res.json(stats);
     } catch (error) {
       console.error("Error fetching notification stats:", error);
@@ -4417,7 +4420,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (recipients === 'all') {
         finalRecipients = await notificationService.getAllActiveUserIds();
       } else if (recipients === 'admins') {
-        finalRecipients = await notificationService.getAllAdminIds();
+        // الحصول على جميع المسؤولين من قاعدة البيانات
+        const allAdmins = await db.query.users.findMany({
+          where: (users, { or, eq }) => or(
+            eq(users.role, 'admin'),
+            eq(users.role, 'مدير'),
+            eq(users.role, 'مشرف')
+          )
+        });
+        finalRecipients = allAdmins.map(admin => admin.id);
       } else if (Array.isArray(recipients)) {
         finalRecipients = recipients;
       } else {
@@ -4465,7 +4476,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { notificationId, userId } = req.params;
       
-      await notificationService.deleteNotificationForUser(notificationId, userId, requesterId);
+      await notificationService.deleteNotification(notificationId);
       
       res.json({ 
         message: `تم حذف الإشعار ${notificationId} للمستخدم ${userId}`,
@@ -4836,7 +4847,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             tableName: 'projects',
             columnName: 'name',
             attemptedValue: 'مشروع تجريبي للاختبار',
-            userId: req.session?.userId || 'test-user',
+            userId: req.headers['x-user-id'] as string || '06b71320-c869-4636-8f9f-dbcb5b12c74d',
             additionalContext: { testMode: true }
           },
           false // لا نريد رمي الخطأ

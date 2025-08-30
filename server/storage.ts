@@ -3937,7 +3937,7 @@ export class DatabaseStorage implements IStorage {
         
         const notification = {
           id: `security-${table.table_name}-${Date.now()}`,
-          userId: 'default',
+          userId: '06b71320-c869-4636-8f9f-dbcb5b12c74d',
           type: 'security' as const,
           title: `🔐 تحذير أمني: الجدول ${table.table_name}`,
           message: `الجدول ${table.table_name} يحتوي على بيانات حساسة ولا يحتوي على سياسات RLS. هذا قد يعرض البيانات للخطر.`,

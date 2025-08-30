@@ -425,10 +425,10 @@ router.get('/me', requireAuth, async (req: AuthenticatedRequest, res) => {
     res.json({
       success: true,
       user: {
-        id: req.user.userId,
-        email: req.user.email,
-        role: req.user.role,
-        sessionId: req.user.sessionId,
+        id: req.user?.userId || '',
+        email: req.user?.email || '',
+        role: req.user?.role || 'user',
+        sessionId: req.user?.sessionId || '',
       }
     });
   } catch (error) {

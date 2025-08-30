@@ -285,21 +285,68 @@ export class NotificationService {
   /**
    * تحديد ما إذا كان المستخدم مسؤولاً
    */
-  private isAdmin(userId: string): boolean {
-    // يمكن تحسين هذا لاحقاً بالتحقق من قاعدة البيانات
-    return userId === 'admin' || userId === 'مسؤول';
+  private async isAdmin(userId: string): Promise<boolean> {
+    try {
+      // التحقق السريع من المعرفات المعروفة
+      if (userId === 'admin' || userId === 'مسؤول') {
+        return true;
+      }
+
+      // التحقق من قاعدة البيانات
+      const user = await db.query.users.findFirst({
+        where: (users, { eq, or }) => or(
+          eq(users.id, userId),
+          eq(users.email, userId)
+        )
+      });
+
+      if (!user) {
+        console.log(`❌ لم يتم العثور على المستخدم: ${userId}`);
+        return false;
+      }
+
+      // تحديد المسؤول بناءً على الدور - يشمل جميع أدوار الإدارة
+      const adminRoles = ['admin', 'manager', 'مدير', 'مسؤول', 'مشرف'];
+      const isAdminUser = adminRoles.includes(user.role || '');
+
+      console.log(`🔍 فحص صلاحيات المستخدم ${user.email}: ${isAdminUser ? 'مسؤول' : 'مستخدم عادي'} (الدور: ${user.role})`);
+      return isAdminUser;
+    } catch (error) {
+      console.error('خطأ في فحص صلاحيات المستخدم:', error);
+      return false;
+    }
   }
 
   /**
-   * تحديد نوع الإشعارات المسموحة للمستخدم
+   * تحديد نوع الإشعارات المسموحة للمستخدم حسب الدور
    */
-  private getAllowedNotificationTypes(userId: string): string[] {
-    if (this.isAdmin(userId)) {
-      // المسؤول يرى جميع الإشعارات
-      return ['system', 'security', 'error', 'maintenance', 'task', 'payroll', 'announcement', 'warranty', 'damaged'];
-    } else {
-      // المستخدم العادي يرى إشعارات محددة فقط - لا يرى إشعارات النظام أو الأمان
-      return ['task', 'payroll', 'announcement', 'maintenance', 'warranty', 'user-welcome'];
+  private async getAllowedNotificationTypes(userId: string): Promise<string[]> {
+    try {
+      const user = await db.query.users.findFirst({
+        where: (users, { eq, or }) => or(
+          eq(users.id, userId),
+          eq(users.email, userId)
+        )
+      });
+
+      if (!user) {
+        // مستخدم غير موجود - إشعارات أساسية فقط
+        return ['user-welcome'];
+      }
+
+      const role = user.role || 'user';
+      const adminRoles = ['admin', 'manager', 'مدير', 'مسؤول', 'مشرف'];
+      
+      if (adminRoles.includes(role)) {
+        // المسؤول يرى جميع الإشعارات
+        return ['system', 'security', 'error', 'maintenance', 'task', 'payroll', 'announcement', 'warranty', 'damaged', 'user-welcome'];
+      } else {
+        // المستخدم العادي يرى إشعارات محددة فقط - لا يرى إشعارات النظام أو الأمان
+        return ['task', 'payroll', 'announcement', 'maintenance', 'warranty', 'user-welcome'];
+      }
+    } catch (error) {
+      console.error('خطأ في تحديد الأنواع المسموحة:', error);
+      return ['user-welcome']; // إشعارات أساسية في حالة الخطأ
     }
   }
 
@@ -320,13 +367,14 @@ export class NotificationService {
     unreadCount: number;
     total: number;
   }> {
-    console.log(`📥 جلب إشعارات المستخدم: ${userId} (نوع: ${this.isAdmin(userId) ? 'مسؤول' : 'مستخدم عادي'})`);
+    const isUserAdmin = await this.isAdmin(userId);
+    console.log(`📥 جلب إشعارات المستخدم: ${userId} (نوع: ${isUserAdmin ? 'مسؤول' : 'مستخدم عادي'})`);
 
     const conditions = [];
-    const allowedTypes = this.getAllowedNotificationTypes(userId);
+    const allowedTypes = await this.getAllowedNotificationTypes(userId);
 
     // فلترة حسب الأنواع المسموحة للمستخدم - لا نفلتر إذا كان المستخدم مسؤول
-    if (!this.isAdmin(userId)) {
+    if (!isUserAdmin) {
       conditions.push(inArray(notifications.type, allowedTypes));
     }
 
@@ -341,7 +389,7 @@ export class NotificationService {
     }
 
     // فلترة الإشعارات للمستخدم - تحسين البحث
-    if (this.isAdmin(userId)) {
+    if (isUserAdmin) {
       // المسؤول يرى جميع الإشعارات أو التي تخصه
       conditions.push(
         or(
@@ -604,8 +652,8 @@ export class NotificationService {
   }> {
     console.log(`📊 حساب إحصائيات الإشعارات للمستخدم: ${userId}`);
 
-    const isAdmin = this.isAdmin(userId);
-    const allowedTypes = this.getAllowedNotificationTypes(userId);
+    const isAdmin = await this.isAdmin(userId);
+    const allowedTypes = await this.getAllowedNotificationTypes(userId);
     
     // بناء شروط البحث مع فصل الصلاحيات
     const conditions = [inArray(notifications.type, allowedTypes)];
