@@ -4476,21 +4476,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "غير مسموح - المسؤول فقط" });
       }
 
-      // جلب إحصائيات المستخدمين مع أسمائهم
+      // جلب إحصائيات جميع المستخدمين مع أسمائهم (حتى الذين لم يتفاعلوا مع الإشعارات)
       const userStats = await db.execute(sql`
         SELECT 
-          nrs.user_id,
+          u.id::text as user_id,
           u.name as user_name,
           u.email as user_email,
           u.role as user_role,
-          COUNT(DISTINCT nrs.notification_id) as total_notifications,
-          COUNT(CASE WHEN nrs.is_read = true THEN 1 END) as read_notifications,
-          COUNT(CASE WHEN nrs.is_read = false THEN 1 END) as unread_notifications,
+          COALESCE(COUNT(DISTINCT nrs.notification_id), 0) as total_notifications,
+          COALESCE(COUNT(CASE WHEN nrs.is_read = true THEN 1 END), 0) as read_notifications,
+          COALESCE(COUNT(CASE WHEN nrs.is_read = false THEN 1 END), 0) as unread_notifications,
           MAX(nrs.read_at) as last_activity
-        FROM notification_read_states nrs
-        LEFT JOIN users u ON nrs.user_id = u.id
-        GROUP BY nrs.user_id, u.name, u.email, u.role
-        ORDER BY last_activity DESC NULLS LAST
+        FROM users u
+        LEFT JOIN notification_read_states nrs ON u.id::text = nrs.user_id
+        GROUP BY u.id, u.name, u.email, u.role
+        ORDER BY last_activity DESC NULLS LAST, u.name ASC
       `);
 
       const formattedStats = userStats.rows.map((row: any) => ({
