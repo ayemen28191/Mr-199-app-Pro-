@@ -65,10 +65,14 @@ export async function generateTokenPair(
     type: 'access',
   };
 
-  const accessToken = jwt.sign(accessPayload, JWT_CONFIG.accessTokenSecret, {
-    expiresIn: JWT_CONFIG.accessTokenExpiry,
-    issuer: JWT_CONFIG.issuer,
-  });
+  const accessToken = jwt.sign(
+    accessPayload, 
+    JWT_CONFIG.accessTokenSecret, 
+    { 
+      expiresIn: JWT_CONFIG.accessTokenExpiry,
+      issuer: JWT_CONFIG.issuer 
+    }
+  );
 
   // إنشاء Refresh Token
   const refreshPayload: JWTPayload = {
@@ -79,10 +83,14 @@ export async function generateTokenPair(
     type: 'refresh',
   };
 
-  const refreshToken = jwt.sign(refreshPayload, JWT_CONFIG.refreshTokenSecret, {
-    expiresIn: JWT_CONFIG.refreshTokenExpiry,
-    issuer: JWT_CONFIG.issuer,
-  });
+  const refreshToken = jwt.sign(
+    refreshPayload, 
+    JWT_CONFIG.refreshTokenSecret, 
+    { 
+      expiresIn: JWT_CONFIG.refreshTokenExpiry,
+      issuer: JWT_CONFIG.issuer 
+    }
+  );
 
   // حفظ الجلسة في قاعدة البيانات
   await db.insert(authUserSessions).values({
@@ -185,15 +193,7 @@ export async function verifyRefreshToken(token: string): Promise<JWTPayload | nu
       return null;
     }
 
-    return {
-      success: true,
-      user: {
-        userId: payload.userId,
-        email: payload.email,
-        role: payload.role,
-        sessionId: payload.sessionId
-      }
-    };
+    return payload;
   } catch (error) {
     console.error('خطأ في التحقق من Refresh Token:', error);
     return null;
@@ -242,8 +242,8 @@ export async function refreshAccessToken(refreshToken: string): Promise<TokenPai
     payload.userId,
     payload.email,
     user[0].role,
-    session[0].ipAddress,
-    session[0].userAgent || '',
+    session[0].ipAddress || undefined,
+    session[0].browserName || undefined,
     { deviceType: session[0].deviceType }
   );
 }

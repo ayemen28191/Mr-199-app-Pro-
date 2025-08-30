@@ -27,8 +27,6 @@ import {
 
 import {
   generateTokenPair,
-  generateTokens,
-  createUserSession,
   verifyAccessToken,
   refreshAccessToken,
   revokeToken,
@@ -197,16 +195,14 @@ export async function loginUser(request: LoginRequest): Promise<LoginResult> {
     // نظام JWT المتقدم
     console.log('🔑 تسجيل دخول ناجح بنظام JWT المتقدم');
     
-    // إنشاء جلسة جديدة
-    const sessionId = await createUserSession(user.id, ipAddress, userAgent);
-    
-    // إنشاء JWT tokens
-    const tokens = await generateTokens({
-      userId: user.id,
-      email: user.email,
-      role: user.role,
-      sessionId
-    });
+    // إنشاء JWT tokens مع جلسة جديدة
+    const tokens = await generateTokenPair(
+      user.id,
+      user.email,
+      user.role,
+      ipAddress,
+      userAgent
+    );
 
     // تسجيل نجاح تسجيل الدخول (معطل مؤقتاً)
     console.log('✅ نجح تسجيل الدخول للمستخدم:', user.id);
