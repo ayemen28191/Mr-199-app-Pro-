@@ -462,7 +462,7 @@ export default function AdminNotificationsPage() {
               </Card>
             </div>
 
-            <Card className="bg-white border border-gray-200 shadow-lg rounded-2xl">
+            <Card className="bg-white border border-gray-200 shadow-lg rounded-2xl min-h-[600px]">
               <CardHeader className="px-6 py-4 border-b border-gray-100">
                 <CardTitle className="text-lg font-semibold flex items-center gap-2">
                   <Activity className="h-5 w-5 text-blue-600" />
@@ -470,7 +470,7 @@ export default function AdminNotificationsPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-4">
-                <div className="space-y-2 max-h-80 overflow-y-auto">
+                <div className="space-y-2 max-h-[500px] overflow-y-auto">
                   {userActivityData?.userStats?.slice(0, 5).map((activity: UserActivity) => (
                     <UserActivityCard key={activity.userId} activity={activity} />
                   ))}
@@ -481,7 +481,7 @@ export default function AdminNotificationsPage() {
 
           {/* إدارة الإشعارات */}
           <TabsContent value="notifications" className="space-y-10 mt-12">
-            <Card className="bg-white border border-gray-200 shadow-lg rounded-2xl">
+            <Card className="bg-white border border-gray-200 shadow-lg rounded-2xl min-h-[700px]">
               <CardHeader className="px-6 py-4 border-b border-gray-100">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg font-semibold">فلترة الإشعارات</CardTitle>
@@ -560,7 +560,7 @@ export default function AdminNotificationsPage() {
 
           {/* نشاط المستخدمين */}
           <TabsContent value="users" className="space-y-10 mt-12">
-            <Card className="bg-white border border-gray-200 shadow-lg rounded-2xl">
+            <Card className="bg-white border border-gray-200 shadow-lg rounded-2xl min-h-[700px]">
               <CardHeader className="px-6 py-4 border-b border-gray-100">
                 <CardTitle className="text-lg font-semibold flex items-center gap-2">
                   <Users className="h-5 w-5 text-blue-600" />
@@ -591,7 +591,7 @@ export default function AdminNotificationsPage() {
 
           {/* إرسال إشعار جديد */}
           <TabsContent value="create" className="space-y-10 mt-12">
-            <Card className="bg-white border border-gray-200 shadow-lg rounded-2xl">
+            <Card className="bg-white border border-gray-200 shadow-lg rounded-2xl min-h-[600px]">
               <CardHeader className="px-6 py-4 border-b border-gray-100">
                 <CardTitle className="text-lg font-semibold flex items-center gap-2">
                   <Zap className="h-5 w-5 text-blue-600" />
