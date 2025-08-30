@@ -4072,26 +4072,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/notifications/:userId/mark-read", async (req, res) => {
-    try {
-      const { notificationId, notificationType } = req.body;
-      
-      if (!notificationId || !notificationType) {
-        return res.status(400).json({ message: "notificationId and notificationType are required" });
-      }
-      
-      await storage.markNotificationAsRead(
-        req.params.userId,
-        notificationId,
-        notificationType
-      );
-      
-      res.json({ message: "تم تعليم الإشعار كمقروء" });
-    } catch (error) {
-      console.error('Error marking notification as read:', error);
-      res.status(500).json({ message: "خطأ في تعليم الإشعار كمقروء" });
-    }
-  });
 
   // =====================================================
   // نظام إدارة الإشعارات المتقدم - Advanced Notification System
@@ -4196,31 +4176,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // تعليم إشعار كمقروء
+  // تعليم إشعار كمقروء - نظام موحد ومتقدم
   app.post("/api/notifications/:notificationId/mark-read", async (req, res) => {
     try {
       const { notificationId } = req.params;
       const userId = (req.body.userId as string) || 'default';
       
+      console.log(`📖 تعليم إشعار كمقروء: ${notificationId} للمستخدم: ${userId}`);
+      
+      // استخدام النظام الجديد المتقدم فقط
       await notificationService.markAsRead(notificationId, userId);
-      res.json({ message: "تم تعليم الإشعار كمقروء" });
+      
+      res.json({ 
+        success: true,
+        message: "تم تعليم الإشعار كمقروء بنجاح",
+        notificationId,
+        userId 
+      });
     } catch (error) {
-      console.error("Error marking notification as read:", error);
-      res.status(500).json({ message: "خطأ في تعليم الإشعار كمقروء" });
+      console.error("خطأ في تعليم الإشعار كمقروء:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "خطأ في تعليم الإشعار كمقروء",
+        error: error instanceof Error ? error.message : 'خطأ غير معروف'
+      });
     }
   });
 
-  // تعليم جميع الإشعارات كمقروءة
+  // تعليم جميع الإشعارات كمقروءة - نظام موحد
   app.post("/api/notifications/mark-all-read", async (req, res) => {
     try {
       const userId = (req.body.userId as string) || 'default';
       const projectId = req.body.projectId as string;
       
+      console.log(`📖 تعليم جميع الإشعارات كمقروءة للمستخدم: ${userId}`);
+      
       await notificationService.markAllAsRead(userId, projectId);
-      res.json({ message: "تم تعليم جميع الإشعارات كمقروءة" });
+      
+      res.json({ 
+        success: true,
+        message: "تم تعليم جميع الإشعارات كمقروءة بنجاح",
+        userId,
+        projectId 
+      });
     } catch (error) {
-      console.error("Error marking all notifications as read:", error);
-      res.status(500).json({ message: "خطأ في تعليم جميع الإشعارات كمقروءة" });
+      console.error("خطأ في تعليم جميع الإشعارات كمقروءة:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "خطأ في تعليم جميع الإشعارات كمقروءة",
+        error: error instanceof Error ? error.message : 'خطأ غير معروف'
+      });
     }
   });
 
