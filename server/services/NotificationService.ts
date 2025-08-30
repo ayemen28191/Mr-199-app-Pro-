@@ -278,8 +278,20 @@ export class NotificationService {
    * جلب جميع معرفات المستخدمين النشطين
    */
   async getAllActiveUserIds(): Promise<string[]> {
-    // هذا مؤقت - يمكن تحسينه لاحقاً
-    return ['default']; // المستخدم الافتراضي
+    try {
+      const users = await db.query.users.findMany({
+        columns: {
+          id: true
+        }
+      });
+      
+      const userIds = users.map(user => user.id);
+      console.log(`📋 تم جلب ${userIds.length} مستخدم نشط للإشعارات`);
+      return userIds;
+    } catch (error) {
+      console.error('خطأ في جلب المستخدمين النشطين:', error);
+      return ['default']; // المستخدم الافتراضي كحل احتياطي
+    }
   }
 
   /**
