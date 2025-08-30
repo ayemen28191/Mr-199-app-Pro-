@@ -382,7 +382,7 @@ export class NotificationService {
           notification_id VARCHAR NOT NULL,
           is_read BOOLEAN DEFAULT false NOT NULL,
           read_at TIMESTAMP,
-          action_taken TEXT,
+          action_taken BOOLEAN DEFAULT false,
           created_at TIMESTAMP DEFAULT NOW() NOT NULL,
           UNIQUE(user_id, notification_id)
         )
@@ -410,7 +410,7 @@ export class NotificationService {
       
       await db.execute(sql`
         INSERT INTO notification_read_states (user_id, notification_id, is_read, read_at, action_taken)
-        VALUES (${userId}, ${notificationId}, true, NOW(), 'acknowledged')
+        VALUES (${userId}, ${notificationId}, true, NOW(), true)
       `);
       
       console.log(`✅ تم تعليم الإشعار ${notificationId} كمقروء بنجاح`);
