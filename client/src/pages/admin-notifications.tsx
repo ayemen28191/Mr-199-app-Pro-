@@ -35,6 +35,9 @@ interface AdminNotification {
 
 interface UserActivity {
   userId: string;
+  userName: string;
+  userEmail: string;
+  userRole: string;
   totalNotifications: number;
   readNotifications: number;
   unreadNotifications: number;
@@ -269,12 +272,20 @@ export default function AdminNotificationsPage() {
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+              activity.userRole === 'admin' ? 'bg-red-500' : 'bg-blue-500'
+            }`}>
               <User className="h-5 w-5 text-white" />
             </div>
             <div>
-              <div className="font-medium">{activity.userId}</div>
-              <div className="text-sm text-gray-500">
+              <div className="font-medium flex items-center gap-2">
+                {activity.userName}
+                <Badge variant={activity.userRole === 'admin' ? 'destructive' : 'secondary'} className="text-xs">
+                  {activity.userRole === 'admin' ? 'مسؤول' : 'مستخدم'}
+                </Badge>
+              </div>
+              <div className="text-xs text-gray-500">{activity.userEmail}</div>
+              <div className="text-xs text-gray-400">
                 آخر نشاط: {activity.lastActivity ? new Date(activity.lastActivity).toLocaleString('ar') : 'لا يوجد'}
               </div>
             </div>

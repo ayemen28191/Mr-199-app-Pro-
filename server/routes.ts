@@ -4476,21 +4476,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "غير مسموح - المسؤول فقط" });
       }
 
-      // جلب إحصائيات المستخدمين
+      // جلب إحصائيات المستخدمين مع أسمائهم
       const userStats = await db.execute(sql`
         SELECT 
           nrs.user_id,
+          u.name as user_name,
+          u.email as user_email,
+          u.role as user_role,
           COUNT(DISTINCT nrs.notification_id) as total_notifications,
           COUNT(CASE WHEN nrs.is_read = true THEN 1 END) as read_notifications,
           COUNT(CASE WHEN nrs.is_read = false THEN 1 END) as unread_notifications,
           MAX(nrs.read_at) as last_activity
         FROM notification_read_states nrs
-        GROUP BY nrs.user_id
+        LEFT JOIN users u ON nrs.user_id = u.id
+        GROUP BY nrs.user_id, u.name, u.email, u.role
         ORDER BY last_activity DESC NULLS LAST
       `);
 
       const formattedStats = userStats.rows.map((row: any) => ({
         userId: row.user_id,
+        userName: row.user_name || row.user_email?.split('@')[0] || 'مستخدم غير معروف',
+        userEmail: row.user_email,
+        userRole: row.user_role,
         totalNotifications: Number(row.total_notifications),
         readNotifications: Number(row.read_notifications),
         unreadNotifications: Number(row.unread_notifications),
