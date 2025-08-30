@@ -63,7 +63,7 @@ export function NotificationCenter({ className }: NotificationCenterProps) {
     setLoading(true);
     try {
       // استخدام نظام المصادقة المتقدم JWT
-      const token = localStorage.getItem('access_token');
+      const token = localStorage.getItem('accessToken');
       
       if (!token) {
         console.warn('لا يوجد رمز مصادقة - تخطي جلب الإشعارات');
@@ -118,7 +118,7 @@ export function NotificationCenter({ className }: NotificationCenterProps) {
   const markAsRead = async (notificationId: string) => {
     try {
       // استخدام نظام المصادقة المتقدم JWT
-      const token = localStorage.getItem('access_token');
+      const token = localStorage.getItem('accessToken');
       
       if (!token) {
         console.warn('لا يوجد رمز مصادقة - لا يمكن تحديد الإشعار كمقروء');
@@ -150,7 +150,7 @@ export function NotificationCenter({ className }: NotificationCenterProps) {
   const markAllAsRead = async () => {
     try {
       // استخدام نظام المصادقة المتقدم JWT
-      const token = localStorage.getItem('access_token');
+      const token = localStorage.getItem('accessToken');
       
       if (!token) {
         console.warn('لا يوجد رمز مصادقة - لا يمكن تعليم الإشعارات كمقروءة');

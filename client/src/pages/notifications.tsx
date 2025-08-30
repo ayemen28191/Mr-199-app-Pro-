@@ -64,15 +64,9 @@ export default function NotificationsPage() {
   const { data: notificationsData, isLoading } = useQuery({
     queryKey: ['/api/notifications'],
     queryFn: async () => {
-      const accessToken = localStorage.getItem('accessToken');
-      if (!accessToken) {
-        console.warn('لا يوجد رمز مصادقة - تخطي جلب الإشعارات');
-        return { notifications: [], unreadCount: 0, total: 0 };
-      }
-      
       const response = await fetch(`/api/notifications?userId=${userId}&limit=50`, {
         headers: {
-          'Authorization': `Bearer ${accessToken}`,
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
         },
       });
       if (!response.ok) {
@@ -85,6 +79,7 @@ export default function NotificationsPage() {
       }>;
     },
     refetchInterval: 30000, // تحديث كل 30 ثانية
+    enabled: !!user, // فقط إذا كان المستخدم مسجل دخول
   });
 
   // استخراج مصفوفة الإشعارات من البيانات المُرجعة
@@ -107,6 +102,7 @@ export default function NotificationsPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
         },
         body: JSON.stringify({
           userId: userId
@@ -142,6 +138,7 @@ export default function NotificationsPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
         },
         body: JSON.stringify({ userId: userId }),
       });
