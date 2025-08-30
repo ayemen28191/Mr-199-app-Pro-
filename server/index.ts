@@ -1,5 +1,4 @@
 import express, { type Request, Response, NextFunction } from "express";
-import session from "express-session";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { databaseManager } from "./database-manager";
@@ -18,17 +17,7 @@ const app = express();
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: false, limit: '50mb' }));
 
-// إعداد session للمصادقة
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'construction-management-secret-key-2025',
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: process.env.NODE_ENV === 'production' && process.env.HTTPS === 'true',
-    httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
-  }
-}));
+// تم حذف إعداد session - النظام الآن يستخدم JWT فقط
 
 // نظام تسجيل محسن للإنتاج
 const IS_PRODUCTION = process.env.NODE_ENV === 'production';

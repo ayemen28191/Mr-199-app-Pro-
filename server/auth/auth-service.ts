@@ -27,6 +27,8 @@ import {
 
 import {
   generateTokenPair,
+  generateTokens,
+  createUserSession,
   verifyAccessToken,
   refreshAccessToken,
   revokeToken,
@@ -192,14 +194,19 @@ export async function loginUser(request: LoginRequest): Promise<LoginResult> {
       };
     }
 
-    // نظام مصادقة مبسط (بدون JWT معقد مؤقتاً)
-    console.log('🔑 تسجيل دخول ناجح بنظام مبسط');
-    const tokens = {
-      accessToken: 'simple-access-token-' + user.id + '-' + Date.now(),
-      refreshToken: 'simple-refresh-token-' + user.id + '-' + Date.now(),
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 ساعة
-      sessionId: 'simple-session-' + user.id
-    };
+    // نظام JWT المتقدم
+    console.log('🔑 تسجيل دخول ناجح بنظام JWT المتقدم');
+    
+    // إنشاء جلسة جديدة
+    const sessionId = await createUserSession(user.id, ipAddress, userAgent);
+    
+    // إنشاء JWT tokens
+    const tokens = await generateTokens({
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+      sessionId
+    });
 
     // تسجيل نجاح تسجيل الدخول (معطل مؤقتاً)
     console.log('✅ نجح تسجيل الدخول للمستخدم:', user.id);
@@ -328,7 +335,7 @@ export async function registerUser(request: RegisterRequest) {
   } catch (error) {
     console.error('خطأ في التسجيل:', error);
     
-    // تسجيل الخطأ بطريقة مبسطة
+    // تسجيل الخطأ في نظام الأخطاء الذكي
     console.log('❌ خطأ في إنشاء الحساب:', email, (error as Error).message);
 
     return {

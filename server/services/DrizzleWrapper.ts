@@ -31,7 +31,7 @@ export class DrizzleWrapper {
       const executionTime = Date.now() - startTime;
       
       console.log(`✅ تم تنفيذ INSERT بنجاح في ${executionTime}ms`);
-      return result;
+      return Array.isArray(result) ? result : [result];
       
     } catch (error: any) {
       operation.executionTime = Date.now() - startTime;
@@ -70,7 +70,7 @@ export class DrizzleWrapper {
       const executionTime = Date.now() - startTime;
       
       console.log(`✅ تم تنفيذ UPDATE بنجاح في ${executionTime}ms`);
-      return result;
+      return Array.isArray(result) ? result : [result];
       
     } catch (error: any) {
       operation.executionTime = Date.now() - startTime;
@@ -191,7 +191,7 @@ export class DrizzleWrapper {
     if (!req) return {};
     
     return {
-      userId: req.user?.id || req.session?.userId,
+      userId: req.user?.userId,
       projectId: req.body?.projectId || req.params?.projectId || req.query?.projectId,
       additionalContext: {
         userAgent: req.headers?.['user-agent'],
