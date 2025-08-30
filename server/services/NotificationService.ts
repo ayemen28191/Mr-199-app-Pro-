@@ -12,10 +12,14 @@ import {
   type Notification,
   type InsertNotification,
   type NotificationSettings as NotificationSettingsType,
-  type InsertNotificationQueue
+  type InsertNotificationQueue,
+  type NotificationTemplate as DBNotificationTemplate,
+  type InsertNotificationTemplate
 } from "@shared/schema";
 import { db } from "../db";
 import { eq, and, desc, or, inArray, sql } from "drizzle-orm";
+import Mustache from 'mustache';
+import { z } from 'zod';
 
 export interface NotificationPayload {
   type: string;
@@ -33,17 +37,15 @@ export interface NotificationPayload {
   };
 }
 
-export interface NotificationTemplate {
+export interface TemplateVariable {
   name: string;
-  type: string;
-  titleTemplate: string;
-  bodyTemplate: string;
-  priority?: number;
-  channelPreference?: {
-    push?: boolean;
-    email?: boolean;
-    sms?: boolean;
-  };
+  type?: string;
+  required?: boolean;
+  example?: string;
+}
+
+export interface ExtendedNotificationTemplate extends DBNotificationTemplate {
+  variables?: TemplateVariable[];
 }
 
 /**
@@ -453,15 +455,15 @@ export class NotificationService {
       conditions.push(eq(notifications.projectId, projectId));
     }
 
-    let query = db
-      .select({ id: notifications.id })
-      .from(notifications);
-
-    if (conditions.length > 0) {
-      query = query.where(and(...conditions));
-    }
-
-    const userNotifications = await query;
+    // إصلاح الاستعلام لتجنب مشاكل النوع
+    const userNotifications = conditions.length > 0 
+      ? await db
+          .select({ id: notifications.id })
+          .from(notifications)
+          .where(and(...conditions))
+      : await db
+          .select({ id: notifications.id })
+          .from(notifications);
 
     console.log(`🎯 عدد الإشعارات المُفلترة: ${userNotifications.length}`);
 
@@ -557,5 +559,416 @@ export class NotificationService {
 
     console.log(`📊 إحصائيات الإشعارات:`, stats);
     return stats;
+  }
+
+  // ==================== دوال القوالب المتقدمة ====================
+
+  /**
+   * مخطط التحقق من صحة القوالب
+   */
+  private templateSchema = z.object({
+    name: z.string().min(1, 'اسم القالب مطلوب'),
+    type: z.string().min(1, 'نوع القالب مطلوب'),
+    titleTemplate: z.string().min(1, 'قالب العنوان مطلوب'),
+    bodyTemplate: z.string().min(1, 'قالب المحتوى مطلوب'),
+    isActive: z.boolean().optional().default(true),
+    priority: z.number().optional().default(NotificationPriority.MEDIUM),
+    channelPreference: z.any().optional(), // سنستخدم any لتجنب مشاكل النوع مؤقتاً
+    variables: z.array(z.object({
+      name: z.string().min(1, 'اسم المتغير مطلوب'),
+      type: z.string().optional().default('string'),
+      required: z.boolean().optional().default(false),
+      example: z.string().optional()
+    })).optional().default([])
+  });
+
+  /**
+   * إنشاء قالب إشعار جديد
+   */
+  async createNotificationTemplate(data: any): Promise<DBNotificationTemplate> {
+    console.log(`🎨 إنشاء قالب إشعار جديد: ${data.name}`);
+    
+    try {
+      // التحقق من صحة البيانات
+      const validated = this.templateSchema.parse(data);
+      
+      // التحقق من عدم وجود قالب بنفس الاسم والنوع
+      const existing = await db
+        .select()
+        .from(notificationTemplates)
+        .where(
+          and(
+            eq(notificationTemplates.name, validated.name),
+            eq(notificationTemplates.type, validated.type)
+          )
+        );
+      
+      if (existing.length > 0) {
+        throw new Error(`قالب بالاسم "${validated.name}" ونوع "${validated.type}" موجود بالفعل`);
+      }
+      
+      // تحضير البيانات للإدراج (بدون variables مؤقتاً)
+      const templateData: InsertNotificationTemplate = {
+        name: validated.name,
+        type: validated.type,
+        titleTemplate: validated.titleTemplate,
+        bodyTemplate: validated.bodyTemplate,
+        isActive: validated.isActive,
+        priority: validated.priority,
+        channelPreference: validated.channelPreference || { push: true, email: false, sms: false }
+      };
+      
+      // إدراج القالب
+      const [template] = await db
+        .insert(notificationTemplates)
+        .values(templateData)
+        .returning();
+      
+      console.log(`✅ تم إنشاء القالب بنجاح: ${template.id}`);
+      return template;
+      
+    } catch (error) {
+      console.error(`❌ خطأ في إنشاء القالب:`, error);
+      if (error instanceof z.ZodError) {
+        const arabicErrors = error.errors.map(err => {
+          const field = err.path.join('.');
+          return `${err.message}`;
+        }).join(', ');
+        throw new Error(`بيانات غير صحيحة: ${arabicErrors}`);
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * تحديث قالب إشعار موجود
+   */
+  async updateTemplate(id: string, data: any): Promise<DBNotificationTemplate> {
+    console.log(`🎨 تحديث القالب: ${id}`);
+    
+    try {
+      // التحقق من وجود القالب أولاً
+      const [existing] = await db
+        .select()
+        .from(notificationTemplates)
+        .where(eq(notificationTemplates.id, id));
+      
+      if (!existing) {
+        throw new Error(`القالب بالمعرف ${id} غير موجود`);
+      }
+      
+      // التحقق من صحة البيانات الجديدة (partial)
+      const validated = this.templateSchema.partial().parse(data);
+      
+      // التحقق من عدم تضارب الاسم والنوع (إذا تم تغييرهما)
+      if (validated.name || validated.type) {
+        const checkName = validated.name || existing.name;
+        const checkType = validated.type || existing.type;
+        
+        const conflicting = await db
+          .select()
+          .from(notificationTemplates)
+          .where(
+            and(
+              eq(notificationTemplates.name, checkName),
+              eq(notificationTemplates.type, checkType),
+              sql`${notificationTemplates.id} != ${id}`
+            )
+          );
+        
+        if (conflicting.length > 0) {
+          throw new Error(`قالب آخر بالاسم "${checkName}" ونوع "${checkType}" موجود بالفعل`);
+        }
+      }
+      
+      // تحديث البيانات
+      const updateData = {
+        ...validated,
+        updatedAt: new Date()
+      };
+      
+      const [updated] = await db
+        .update(notificationTemplates)
+        .set(updateData)
+        .where(eq(notificationTemplates.id, id))
+        .returning();
+      
+      console.log(`✅ تم تحديث القالب بنجاح: ${updated.id}`);
+      return updated;
+      
+    } catch (error) {
+      console.error(`❌ خطأ في تحديث القالب:`, error);
+      if (error instanceof z.ZodError) {
+        const arabicErrors = error.errors.map(err => {
+          const field = err.path.join('.');
+          return `${field}: ${err.message}`;
+        }).join(', ');
+        throw new Error(`بيانات غير صحيحة: ${arabicErrors}`);
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * التحقق من صحة متغيرات القالب
+   */
+  validateTemplateVariables(
+    templateRecord: ExtendedNotificationTemplate, 
+    payloadVars: Record<string, any>
+  ): { ok: boolean; missing: string[]; invalid: string[] } {
+    console.log(`🔍 التحقق من متغيرات القالب: ${templateRecord.name}`);
+    
+    const variables = templateRecord.variables || [];
+    const missing: string[] = [];
+    const invalid: string[] = [];
+    
+    // فحص المتغيرات المطلوبة
+    for (const variable of variables) {
+      if (variable.required && !(variable.name in payloadVars)) {
+        missing.push(variable.name);
+      }
+      
+      // فحص نوع البيانات إذا كان محدداً
+      if (variable.name in payloadVars && variable.type) {
+        const value = payloadVars[variable.name];
+        const expectedType = variable.type;
+        const actualType = typeof value;
+        
+        // تحقق بسيط من النوع
+        if (expectedType === 'number' && actualType !== 'number') {
+          invalid.push(`${variable.name}: متوقع رقم، تم تمرير ${actualType}`);
+        } else if (expectedType === 'string' && actualType !== 'string') {
+          invalid.push(`${variable.name}: متوقع نص، تم تمرير ${actualType}`);
+        } else if (expectedType === 'boolean' && actualType !== 'boolean') {
+          invalid.push(`${variable.name}: متوقع true/false، تم تمرير ${actualType}`);
+        }
+      }
+    }
+    
+    const result = {
+      ok: missing.length === 0 && invalid.length === 0,
+      missing,
+      invalid
+    };
+    
+    console.log(`📊 نتيجة التحقق:`, result);
+    return result;
+  }
+
+  /**
+   * عرض القالب مع البيانات (آمن - لا يسمح بتنفيذ الكود)
+   */
+  renderTemplate(
+    titleTemplate: string, 
+    bodyTemplate: string, 
+    vars: Record<string, any>
+  ): { title: string; body: string } {
+    console.log(`🎨 عرض القالب مع البيانات`);
+    
+    try {
+      // تنظيف البيانات من أي كود ضار محتمل
+      const safeVars = this.sanitizeTemplateVars(vars);
+      
+      // استخدام Mustache لعرض آمن (لا يدعم تنفيذ الكود)
+      const title = Mustache.render(titleTemplate, safeVars);
+      const body = Mustache.render(bodyTemplate, safeVars);
+      
+      console.log(`✅ تم عرض القالب بنجاح`);
+      return { title, body };
+      
+    } catch (error: unknown) {
+      console.error(`❌ خطأ في عرض القالب:`, error);
+      throw new Error(`فشل في عرض القالب: ${error instanceof Error ? error.message : 'خطأ غير معروف'}`);
+    }
+  }
+
+  /**
+   * تنظيف متغيرات القالب من أي كود ضار
+   */
+  private sanitizeTemplateVars(vars: Record<string, any>): Record<string, any> {
+    const sanitized: Record<string, any> = {};
+    
+    for (const [key, value] of Object.entries(vars)) {
+      if (typeof value === 'string') {
+        // إزالة أي محاولات لحقن كود
+        sanitized[key] = value
+          .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+          .replace(/javascript:/gi, '')
+          .replace(/on\w+\s*=/gi, '')
+          .replace(/{{[^}]*}}/g, '') // منع القوالب المتداخلة
+          .trim();
+      } else if (typeof value === 'number' || typeof value === 'boolean') {
+        sanitized[key] = value;
+      } else if (value === null || value === undefined) {
+        sanitized[key] = '';
+      } else {
+        // تحويل الكائنات والمصفوفات إلى نص آمن
+        sanitized[key] = JSON.stringify(value).replace(/[<>"']/g, '');
+      }
+    }
+    
+    return sanitized;
+  }
+
+  /**
+   * إنشاء إشعار من قالب
+   */
+  async createNotificationFromTemplate(
+    templateId: string,
+    variables: Record<string, any>,
+    options: {
+      recipients: string[];
+      projectId?: string;
+      scheduledAt?: Date;
+      overrides?: {
+        priority?: number;
+        channelPreference?: { push?: boolean; email?: boolean; sms?: boolean };
+      }
+    }
+  ): Promise<Notification> {
+    console.log(`🎨 إنشاء إشعار من القالب: ${templateId}`);
+    
+    try {
+      // جلب القالب
+      const [template] = await db
+        .select()
+        .from(notificationTemplates)
+        .where(eq(notificationTemplates.id, templateId));
+      
+      if (!template) {
+        throw new Error(`القالب بالمعرف ${templateId} غير موجود`);
+      }
+      
+      if (!template.isActive) {
+        throw new Error(`القالب "${template.name}" غير نشط`);
+      }
+      
+      // إنشاء قالب موسع مع متغيرات افتراضية للاختبار
+      const extendedTemplate: ExtendedNotificationTemplate = {
+        ...template,
+        variables: [] // سنضيف المتغيرات لاحقاً عند تحديث Schema
+      };
+      
+      // التحقق من صحة المتغيرات
+      const validation = this.validateTemplateVariables(extendedTemplate, variables);
+      if (!validation.ok) {
+        const errors = [];
+        if (validation.missing.length > 0) {
+          errors.push(`متغيرات مفقودة: ${validation.missing.join(', ')}`);
+        }
+        if (validation.invalid.length > 0) {
+          errors.push(`متغيرات غير صحيحة: ${validation.invalid.join(', ')}`);
+        }
+        throw new Error(errors.join(' | '));
+      }
+      
+      // عرض القالب
+      const rendered = this.renderTemplate(
+        template.titleTemplate,
+        template.bodyTemplate,
+        variables
+      );
+      
+      // إنشاء الإشعار
+      const notificationData: NotificationPayload = {
+        type: template.type,
+        title: rendered.title,
+        body: rendered.body,
+        payload: {
+          templateId: template.id,
+          variables
+        },
+        priority: options.overrides?.priority || template.priority,
+        recipients: options.recipients,
+        projectId: options.projectId,
+        scheduledAt: options.scheduledAt,
+        channelPreference: options.overrides?.channelPreference || (template.channelPreference as any)
+      };
+      
+      return await this.createNotification(notificationData);
+      
+    } catch (error: unknown) {
+      console.error(`❌ خطأ في إنشاء إشعار من القالب:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * جلب جميع القوالب مع الفلترة
+   */
+  async getTemplates(filters: {
+    type?: string;
+    isActive?: boolean;
+    search?: string;
+    limit?: number;
+    offset?: number;
+  } = {}): Promise<{ templates: DBNotificationTemplate[]; total: number }> {
+    console.log(`📋 جلب قوالب الإشعارات`);
+    
+    const conditions = [];
+    
+    if (filters.type) {
+      conditions.push(eq(notificationTemplates.type, filters.type));
+    }
+    
+    if (filters.isActive !== undefined) {
+      conditions.push(eq(notificationTemplates.isActive, filters.isActive));
+    }
+    
+    if (filters.search) {
+      conditions.push(
+        or(
+          sql`${notificationTemplates.name} ILIKE ${'%' + filters.search + '%'}`,
+          sql`${notificationTemplates.titleTemplate} ILIKE ${'%' + filters.search + '%'}`
+        )
+      );
+    }
+    
+    const query = conditions.length > 0 
+      ? db.select().from(notificationTemplates).where(and(...conditions))
+      : db.select().from(notificationTemplates);
+    
+    const templates = await query
+      .orderBy(desc(notificationTemplates.createdAt))
+      .limit(filters.limit || 50)
+      .offset(filters.offset || 0);
+    
+    // حساب العدد الكلي
+    const countQuery = conditions.length > 0
+      ? db.select({ count: sql<number>`count(*)` }).from(notificationTemplates).where(and(...conditions))
+      : db.select({ count: sql<number>`count(*)` }).from(notificationTemplates);
+    
+    const [{ count }] = await countQuery;
+    
+    console.log(`📊 تم جلب ${templates.length} قالب من أصل ${count}`);
+    
+    return {
+      templates,
+      total: count
+    };
+  }
+
+  /**
+   * حذف قالب
+   */
+  async deleteTemplate(id: string): Promise<void> {
+    console.log(`🗑️ حذف القالب: ${id}`);
+    
+    // التحقق من وجود إشعارات تستخدم هذا القالب
+    const usedNotifications = await db
+      .select({ id: notifications.id })
+      .from(notifications)
+      .where(sql`${notifications.payload}->>'templateId' = ${id}`)
+      .limit(1);
+    
+    if (usedNotifications.length > 0) {
+      throw new Error('لا يمكن حذف القالب لأنه مستخدم في إشعارات موجودة');
+    }
+    
+    await db
+      .delete(notificationTemplates)
+      .where(eq(notificationTemplates.id, id));
+    
+    console.log(`✅ تم حذف القالب: ${id}`);
   }
 }
