@@ -10,6 +10,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
+import { useLocation } from "wouter";
 
 interface Notification {
   id: string;
@@ -55,6 +56,7 @@ export function NotificationCenter({ className }: NotificationCenterProps) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [, setLocation] = useLocation();
 
   // جلب الإشعارات من API
   const fetchNotifications = async () => {
@@ -302,7 +304,7 @@ export function NotificationCenter({ className }: NotificationCenterProps) {
                 className="w-full text-sm"
                 onClick={() => {
                   setIsOpen(false);
-                  // يمكن إضافة التنقل إلى صفحة الإشعارات الكاملة هنا
+                  setLocation('/notifications');
                 }}
                 data-testid="view-all-notifications-button"
               >
