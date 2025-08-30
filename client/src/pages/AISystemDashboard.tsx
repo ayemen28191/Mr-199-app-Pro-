@@ -1197,8 +1197,8 @@ export default function AISystemDashboard() {
                         <div className="flex items-center gap-2">
                           <Badge variant={(detectedErrorsData?.detectedErrors?.length || 0) > 0 ? "destructive" : "secondary"} className="text-xs">
                             {detectedErrorsData?.detectedErrors?.length || 0}
-                            {errorStatistics?.totalErrors && errorStatistics.totalErrors > (detectedErrorsData?.detectedErrors?.length || 0) && (
-                              <span className="text-xs opacity-70"> / {errorStatistics.totalErrors}</span>
+                            {errorStats?.totalErrors && errorStats.totalErrors > (detectedErrorsData?.detectedErrors?.length || 0) && (
+                              <span className="text-xs opacity-70"> / {errorStats.totalErrors}</span>
                             )}
                           </Badge>
                           {(detectedErrorsData?.detectedErrors?.length || 0) > 0 && (
@@ -1228,8 +1228,8 @@ export default function AISystemDashboard() {
                                 <div className="flex items-center justify-between">
                                   <span className="text-xs font-medium text-red-800">
                                     المشاكل المكتشفة ({detectedErrorsData.detectedErrors.length})
-                                    {errorStatistics?.totalErrors && errorStatistics.totalErrors > detectedErrorsData.detectedErrors.length && (
-                                      <span className="text-xs opacity-70 mr-1">من أصل {errorStatistics.totalErrors}</span>
+                                    {errorStats?.totalErrors && errorStats.totalErrors > detectedErrorsData.detectedErrors.length && (
+                                      <span className="text-xs opacity-70 mr-1">من أصل {errorStats.totalErrors}</span>
                                     )}
                                   </span>
                                   <Badge variant="outline" className="text-xs">
@@ -1237,11 +1237,11 @@ export default function AISystemDashboard() {
                                   </Badge>
                                 </div>
                                 
-                                {errorStatistics?.totalErrors && errorStatistics.totalErrors > detectedErrorsData.detectedErrors.length && (
+                                {errorStats?.totalErrors && errorStats.totalErrors > detectedErrorsData.detectedErrors.length && (
                                   <div className="flex items-start gap-1 p-2 bg-blue-50 border border-blue-200 rounded text-xs">
                                     <Info className="w-3 h-3 text-blue-600 flex-shrink-0 mt-0.5" />
                                     <span className="text-blue-800">
-                                      يتم عرض المشاكل النشطة فقط. العدد الإجمالي ({errorStatistics.totalErrors}) يشمل المشاكل المحلولة والمؤرشفة.
+                                      يتم عرض المشاكل النشطة فقط. العدد الإجمالي ({errorStats.totalErrors}) يشمل المشاكل المحلولة والمؤرشفة.
                                     </span>
                                   </div>
                                 )}
