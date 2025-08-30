@@ -35,6 +35,7 @@ import { NotificationService } from "./services/NotificationService";
 import { aiSystemService } from "./services/AiSystemService";
 import { securityPolicyService } from "./services/SecurityPolicyService";
 import { smartErrorHandler } from './services/SmartErrorHandler';
+import { secretsManager } from "./services/SecretsManager";
 import { 
   notifications, 
   notificationReadStates, 
@@ -143,6 +144,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('خطأ في جلب سياسات الجدول:', error);
       res.status(500).json({ message: "خطأ في جلب سياسات الجدول" });
+    }
+  });
+
+  // ====== مسارات إدارة المفاتيح السرية التلقائية ======
+  
+  // فحص حالة المفاتيح السرية
+  app.get("/api/secrets/status", async (req, res) => {
+    try {
+      const status = secretsManager.getSecretsStatus();
+      const { missing, existing } = secretsManager.checkRequiredSecrets();
+      
+      res.json({
+        success: true,
+        secrets: status,
+        summary: {
+          total: status.length,
+          existing: existing.length,
+          missing: missing.length,
+          existingKeys: existing,
+          missingKeys: missing
+        }
+      });
+    } catch (error) {
+      console.error('خطأ في فحص حالة المفاتيح السرية:', error);
+      res.status(500).json({ 
+        success: false,
+        message: "خطأ في فحص حالة المفاتيح السرية" 
+      });
+    }
+  });
+
+  // إضافة المفاتيح المفقودة تلقائياً
+  app.post("/api/secrets/auto-add", async (req, res) => {
+    try {
+      const result = await secretsManager.autoAddMissingSecrets();
+      
+      res.json({
+        success: true,
+        message: "تم تنفيذ عملية إضافة المفاتيح التلقائية",
+        result: {
+          added: result.added,
+          failed: result.failed,
+          existing: result.existing,
+          totalProcessed: result.added.length + result.failed.length + result.existing.length
+        }
+      });
+    } catch (error) {
+      console.error('خطأ في إضافة المفاتيح تلقائياً:', error);
+      res.status(500).json({ 
+        success: false,
+        message: "خطأ في إضافة المفاتيح تلقائياً",
+        error: error instanceof Error ? error.message : "خطأ غير محدد"
+      });
+    }
+  });
+
+  // إعادة تحميل المفاتيح من ملف .env
+  app.post("/api/secrets/reload", async (req, res) => {
+    try {
+      secretsManager.reloadSecrets();
+      
+      res.json({
+        success: true,
+        message: "تم إعادة تحميل المفاتيح السرية بنجاح"
+      });
+    } catch (error) {
+      console.error('خطأ في إعادة تحميل المفاتيح:', error);
+      res.status(500).json({ 
+        success: false,
+        message: "خطأ في إعادة تحميل المفاتيح السرية" 
+      });
+    }
+  });
+
+  // إضافة مفتاح سري جديد مطلوب
+  app.post("/api/secrets/add-required", async (req, res) => {
+    try {
+      const { name, value, description } = req.body;
+      
+      if (!name || !value || !description) {
+        return res.status(400).json({ 
+          success: false,
+          message: "جميع الحقول مطلوبة: name, value, description" 
+        });
+      }
+      
+      secretsManager.addRequiredSecret(name, value, description);
+      
+      res.json({
+        success: true,
+        message: `تم إضافة المفتاح المطلوب: ${name}`
+      });
+    } catch (error) {
+      console.error('خطأ في إضافة المفتاح المطلوب:', error);
+      res.status(500).json({ 
+        success: false,
+        message: "خطأ في إضافة المفتاح المطلوب" 
+      });
     }
   });
 
@@ -4276,7 +4375,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // استخدام النظام المتقدم للحصول على userId من JWT token أو header
       const userId = req.headers['x-user-id'] as string || '06b71320-c869-4636-8f9f-dbcb5b12c74d';
-      const stats = await notificationService.getNotificationStats(userId, {});
+      const stats = await notificationService.getNotificationStats(userId);
       res.json(stats);
     } catch (error) {
       console.error("Error fetching notification stats:", error);
@@ -4542,7 +4641,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const { notificationId } = req.params;
       
-      await notificationService.deleteNotification(notificationId, requesterId);
+      await notificationService.deleteNotification(notificationId);
       
       res.json({ 
         message: `تم حذف الإشعار ${notificationId} بالكامل`,

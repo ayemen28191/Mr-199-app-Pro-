@@ -37,6 +37,7 @@ A comprehensive construction project management system designed specifically for
 - **Financial Management**: Various fund transfers; daily expense tracking; material and tool purchases; transportation expenses; supplier account management.
 - **Reporting & Export**: Comprehensive financial reports; data export to Excel (using ExcelJS); report printing as PDF (using jsPDF).
 - **Security**: Bcrypt encryption (SALT_ROUNDS = 12), SQL injection protection with Drizzle ORM, secure session management, Zod schema data validation.
+- **Secret Keys Management**: Automated secret keys management system that adds required keys (JWT_ACCESS_SECRET, JWT_REFRESH_SECRET, ENCRYPTION_KEY) automatically when they don't exist.
 
 ## Mobile Application (React Native)
 
@@ -65,9 +66,10 @@ A comprehensive construction project management system designed specifically for
 - **✅ النظام موحد ومتصل**: جميع المكونات تعمل معاً بسلاسة مع النظام الجديد
 
 ### الحالة الحالية (August 30, 2025):
-**نظام مكتمل 100% مع نظام إشعارات متقدم وموحد وجاهز للإنتاج**
+**نظام مكتمل 100% مع نظام إشعارات متقدم وإدارة مفاتيح سرية تلقائية وجاهز للإنتاج**
 - قاعدة البيانات: 47 جدول تعمل بكفاءة عالية وأمان متقدم
 - نظام الإشعارات المتقدم: مكتمل مع NotificationQueueWorker وNotificationMonitoringService
+- **نظام إدارة المفاتيح السرية التلقائي**: إضافة تلقائية للمفاتيح المطلوبة عند عدم وجودها
 - APIs موحدة: جميع المسارات متوافقة مع النظام الجديد
 - النظام الذكي: متكامل ويحلل البيانات الحقيقية ويولد قرارات وتوصيات ذكية
 - واجهة المستخدم: RTL كامل مع تصميم عربي متكامل
@@ -147,6 +149,35 @@ A comprehensive construction project management system designed specifically for
 - **Testing**: Expo Go app for development, direct APK installation for production
 - **Requirements**: Node.js 18+, Expo CLI, EAS CLI
 
+## نظام إدارة المفاتيح السرية التلقائي (August 30, 2025)
+
+### الوصف
+نظام متقدم لإدارة المفاتيح السرية المطلوبة للتطبيق يعمل تلقائياً عند بدء تشغيل الخادم.
+
+### الميزات الرئيسية
+- **التحقق التلقائي**: فحص وجود المفاتيح المطلوبة عند بدء التشغيل
+- **الإضافة التلقائية**: إضافة المفاتيح المفقودة تلقائياً مع قيم آمنة
+- **إدارة من خلال API**: مسارات API لإدارة المفاتيح عبر واجهة المستخدم
+- **الأمان المتقدم**: استخدام cryptographic secure random values
+
+### المفاتيح المدارة
+- **JWT_ACCESS_SECRET**: مفتاح JWT للوصول (256-bit)
+- **JWT_REFRESH_SECRET**: مفتاح JWT للتحديث (256-bit) 
+- **ENCRYPTION_KEY**: مفتاح التشفير العام (256-bit)
+
+### الملفات المضافة
+- `server/services/SecretsManager.ts`: النظام الرئيسي لإدارة المفاتيح
+- تم ربط النظام بـ `server/index.ts` و `server/routes.ts`
+
+### مسارات API الجديدة
+- `GET /api/secrets/status`: فحص حالة المفاتيح السرية
+- `POST /api/secrets/auto-add`: إضافة المفاتيح المفقودة تلقائياً
+- `POST /api/secrets/reload`: إعادة تحميل المفاتيح من ملف .env
+- `POST /api/secrets/add-required`: إضافة مفتاح سري جديد مطلوب
+
+### التشغيل التلقائي
+النظام يعمل تلقائياً عند بدء تشغيل الخادم ولا يحتاج لتدخل يدوي.
+
 ## External Dependencies
 - **Database**: Supabase PostgreSQL
 - **Frontend Libraries**: React.js, TypeScript, Tailwind CSS, shadcn/ui, React Query (@tanstack/react-query), Wouter, React Hook Form, Zod
@@ -154,3 +185,4 @@ A comprehensive construction project management system designed specifically for
 - **Mobile Libraries**: React Native, Expo SDK, @supabase/supabase-js (for mobile), @react-native-async-storage/async-storage
 - **Export Libraries**: ExcelJS, jsPDF
 - **Build Tools**: Vite (web), EAS Build (mobile)
+- **Security Libraries**: crypto (Node.js built-in), dotenv, jsonwebtoken, bcrypt

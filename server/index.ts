@@ -6,6 +6,7 @@ import { databaseManager } from "./database-manager";
 import { sql } from "drizzle-orm";
 import { db } from "./db";
 import { createNotificationTables, createTestNotifications } from "./create-notification-tables";
+import { secretsManager } from "./services/SecretsManager";
 
 import { exec } from "child_process";
 import { promisify } from "util";
@@ -68,6 +69,21 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // 🔐 تهيئة نظام المفاتيح السرية التلقائي أولاً
+  try {
+    log("🔐 بدء تهيئة نظام المفاتيح السرية التلقائي...");
+    const secretsInitialized = await secretsManager.initializeSecrets();
+    
+    if (secretsInitialized) {
+      log("✅ تم تهيئة نظام المفاتيح السرية بنجاح");
+    } else {
+      log("⚠️ تحذير: فشل في تهيئة بعض المفاتيح السرية");
+    }
+  } catch (error) {
+    log("❌ خطأ في تهيئة نظام المفاتيح السرية:");
+    console.error(error);
+  }
+
   // ✅ فحص قاعدة بيانات Supabase السحابية فقط
   // ⛔ لا يتم إنشاء أي جداول محلية - Supabase فقط
   try {
