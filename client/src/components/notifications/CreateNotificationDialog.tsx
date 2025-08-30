@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useQuery } from "@tanstack/react-query";
 import { 
   Dialog, 
   DialogContent, 
@@ -29,14 +30,15 @@ import {
 } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
 import { useQueryClient, useMutation } from "@tanstack/react-query";
-import { Zap, Users, Shield, User, Send, Sparkles, AlertTriangle } from "lucide-react";
+import { Zap, Users, Shield, User, Send, Sparkles, AlertTriangle, ChevronDown } from "lucide-react";
 
 const notificationSchema = z.object({
   type: z.enum(['safety', 'task', 'payroll', 'announcement', 'system']),
   title: z.string().min(1, "العنوان مطلوب"),
   body: z.string().min(1, "المحتوى مطلوب"),
   priority: z.number().min(1).max(5),
-  recipients: z.array(z.string()).optional(),
+  recipientType: z.enum(['all', 'admins', 'workers', 'specific']),
+  specificUserId: z.string().optional(),
 });
 
 type NotificationFormData = z.infer<typeof notificationSchema>;
@@ -102,6 +104,17 @@ export function CreateNotificationDialog({
 }: CreateNotificationDialogProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [selectedRecipientType, setSelectedRecipientType] = useState<string>('all');
+
+  // جلب قائمة المستخدمين
+  const { data: users = [], isLoading: isLoadingUsers } = useQuery({
+    queryKey: ['/api/users'],
+    queryFn: async () => {
+      const response = await fetch('/api/users');
+      if (!response.ok) throw new Error('فشل في جلب المستخدمين');
+      return response.json();
+    },
+  });
 
   const form = useForm<NotificationFormData>({
     resolver: zodResolver(notificationSchema),
@@ -110,7 +123,8 @@ export function CreateNotificationDialog({
       title: "",
       body: "",
       priority: 3,
-      recipients: ["default"],
+      recipientType: "all",
+      specificUserId: undefined,
     },
   });
 
@@ -144,7 +158,7 @@ export function CreateNotificationDialog({
         body: JSON.stringify({
           ...data,
           projectId: projectId,
-          recipients: data.type === 'announcement' ? 'all' : data.recipients,
+          recipients: data.recipientType === 'specific' && data.specificUserId ? [data.specificUserId] : data.recipientType,
         }),
       });
 
@@ -319,26 +333,113 @@ export function CreateNotificationDialog({
               />
 
               {/* خيارات المستقبلين */}
-              <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
-                <label className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-                  <Users className="h-4 w-4 text-blue-600" />
-                  المستقبلين
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <div className="flex items-center gap-2 p-3 bg-white rounded-lg border border-gray-200 hover:border-blue-300 transition-colors cursor-pointer">
-                    <Users className="h-4 w-4 text-blue-600" />
-                    <span className="text-sm font-medium">جميع المستخدمين</span>
-                  </div>
-                  <div className="flex items-center gap-2 p-3 bg-white rounded-lg border border-gray-200 hover:border-red-300 transition-colors cursor-pointer">
-                    <Shield className="h-4 w-4 text-red-600" />
-                    <span className="text-sm font-medium">المسؤولين فقط</span>
-                  </div>
-                  <div className="flex items-center gap-2 p-3 bg-white rounded-lg border border-gray-200 hover:border-green-300 transition-colors cursor-pointer">
-                    <User className="h-4 w-4 text-green-600" />
-                    <span className="text-sm font-medium">الموظفين</span>
-                  </div>
-                </div>
-              </div>
+              <FormField
+                control={form.control}
+                name="recipientType"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-base font-semibold text-gray-800 flex items-center gap-2">
+                      <Users className="h-4 w-4 text-blue-600" />
+                      المستقبلين
+                    </FormLabel>
+                    <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {[
+                          { value: 'all', label: 'جميع المستخدمين', icon: Users, color: 'text-blue-600', bg: 'hover:border-blue-300' },
+                          { value: 'admins', label: 'المسؤولين فقط', icon: Shield, color: 'text-red-600', bg: 'hover:border-red-300' },
+                          { value: 'workers', label: 'الموظفين', icon: User, color: 'text-green-600', bg: 'hover:border-green-300' },
+                          { value: 'specific', label: 'مستخدم محدد', icon: User, color: 'text-purple-600', bg: 'hover:border-purple-300' },
+                        ].map((option) => {
+                          const IconComponent = option.icon;
+                          const isSelected = field.value === option.value;
+                          return (
+                            <div
+                              key={option.value}
+                              onClick={() => {
+                                field.onChange(option.value);
+                                setSelectedRecipientType(option.value);
+                              }}
+                              className={`flex items-center gap-2 p-3 bg-white rounded-lg border-2 transition-colors cursor-pointer ${
+                                isSelected ? `border-blue-500 bg-blue-50` : `border-gray-200 ${option.bg}`
+                              }`}
+                              data-testid={`recipient-type-${option.value}`}
+                            >
+                              <IconComponent className={`h-4 w-4 ${isSelected ? 'text-blue-600' : option.color}`} />
+                              <span className={`text-sm font-medium ${isSelected ? 'text-blue-900' : 'text-gray-700'}`}>
+                                {option.label}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* قائمة اختيار المستخدم المحدد */}
+                      {field.value === 'specific' && (
+                        <div className="mt-4">
+                          <FormField
+                            control={form.control}
+                            name="specificUserId"
+                            render={({ field: userField }) => (
+                              <FormItem>
+                                <FormLabel className="text-sm font-semibold text-gray-700">اختر المستخدم</FormLabel>
+                                <Select onValueChange={userField.onChange} value={userField.value}>
+                                  <FormControl>
+                                    <SelectTrigger 
+                                      className="h-12 border-2 border-gray-200 hover:border-blue-300 focus:border-blue-500 rounded-xl"
+                                      data-testid="specific-user-select"
+                                    >
+                                      <SelectValue placeholder="اختر المستخدم المحدد..." />
+                                    </SelectTrigger>
+                                  </FormControl>
+                                  <SelectContent className="rounded-xl border-0 shadow-xl max-h-48">
+                                    {isLoadingUsers ? (
+                                      <div className="p-3 text-center text-gray-500">
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mx-auto"></div>
+                                        <span className="text-sm mt-2">جاري التحميل...</span>
+                                      </div>
+                                    ) : users.length > 0 ? (
+                                      users.map((user: any) => (
+                                        <SelectItem 
+                                          key={user.id} 
+                                          value={user.id} 
+                                          className="p-3 rounded-lg"
+                                          data-testid={`user-option-${user.id}`}
+                                        >
+                                          <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center">
+                                              <span className="text-white text-sm font-semibold">
+                                                {user.name?.charAt(0) || user.email?.charAt(0) || '?'}
+                                              </span>
+                                            </div>
+                                            <div className="flex flex-col">
+                                              <span className="font-semibold text-gray-900">
+                                                {user.name || 'بدون اسم'}
+                                              </span>
+                                              <span className="text-xs text-gray-500">
+                                                {user.email}
+                                              </span>
+                                            </div>
+                                          </div>
+                                        </SelectItem>
+                                      ))
+                                    ) : (
+                                      <div className="p-3 text-center text-gray-500">
+                                        <span className="text-sm">لا توجد مستخدمون متاحون</span>
+                                      </div>
+                                    )}
+                                  </SelectContent>
+                                </Select>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <div className="flex gap-3 pt-4">
                 <Button
