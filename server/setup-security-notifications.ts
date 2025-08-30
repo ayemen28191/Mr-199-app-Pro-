@@ -86,20 +86,19 @@ const setupSecurityNotifications = async () => {
     // إنشاء إعدادات إشعارات للمستخدم الافتراضي
     console.log('⚙️ إعداد إعدادات الإشعارات...');
 
-    await notificationService.updateNotificationSettings('default', {
-      security: {
-        enabled: true,
-        sound: true,
-        browser: true,
-        email: false
-      },
-      security_violation: {
-        enabled: true,
-        sound: true,
-        browser: true,
-        email: true
-      }
-    });
+    // إنشاء إعدادات افتراضية للمستخدم (تم استبدال updateNotificationSettings بتنفيذ مباشر)
+    await db.execute(sql`
+      INSERT INTO notification_settings (user_id, notification_type, push_enabled, email_enabled, sms_enabled)
+      VALUES 
+        ('default', 'security', true, false, false),
+        ('default', 'security_violation', true, true, false)
+      ON CONFLICT (user_id, notification_type) 
+      DO UPDATE SET 
+        push_enabled = EXCLUDED.push_enabled,
+        email_enabled = EXCLUDED.email_enabled,
+        sms_enabled = EXCLUDED.sms_enabled,
+        updated_at = NOW()
+    `);
 
     console.log('✅ تم إعداد إعدادات الإشعارات');
 
@@ -111,12 +110,12 @@ const setupSecurityNotifications = async () => {
       title: 'مرحباً بنظام السياسات الأمنية',
       body: 'تم تفعيل نظام السياسات الأمنية المتقدم بنجاح. جميع الميزات جاهزة للاستخدام.',
       priority: 3,
-      metadata: {
+      payload: {
         category: 'system',
         feature: 'security_policies',
         version: '1.0.0'
       },
-      userId: 'default'
+      recipients: ['default']
     });
 
     // إنشاء بعض الاقتراحات الذكية التجريبية
