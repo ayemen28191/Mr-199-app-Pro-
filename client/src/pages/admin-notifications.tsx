@@ -371,7 +371,7 @@ export default function AdminNotificationsPage() {
       <div className="container mx-auto p-3 sm:p-6 max-w-7xl">
 
         <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
-          <div className="bg-white rounded-2xl p-2 shadow-lg border border-gray-100 mb-8">
+          <div className="bg-white rounded-2xl p-2 shadow-lg border border-gray-100 mb-12">
             <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 gap-2 bg-gray-50 p-1 rounded-xl">
               <TabsTrigger value="overview" className="flex items-center gap-2 text-sm p-3 rounded-lg transition-all duration-200 data-[state=active]:bg-white data-[state=active]:shadow-sm">
                 <TrendingUp className="h-4 w-4" />
@@ -397,10 +397,10 @@ export default function AdminNotificationsPage() {
           </div>
 
           {/* نظرة عامة محسنة */}
-          <TabsContent value="overview" className="space-y-8 mt-8">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200 hover:shadow-lg transition-all duration-300">
-                <CardContent className="p-4">
+          <TabsContent value="overview" className="space-y-12 mt-12">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+              <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200 hover:shadow-lg transition-all duration-300 min-h-[140px]">
+                <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs font-medium text-blue-600 mb-1">إجمالي الإشعارات</p>
@@ -413,8 +413,8 @@ export default function AdminNotificationsPage() {
                 </CardContent>
               </Card>
               
-              <Card className="bg-gradient-to-r from-green-50 to-green-100 border-green-200 hover:shadow-lg transition-all duration-300">
-                <CardContent className="p-4">
+              <Card className="bg-gradient-to-r from-green-50 to-green-100 border-green-200 hover:shadow-lg transition-all duration-300 min-h-[140px]">
+                <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs font-medium text-green-600 mb-1">المستخدمين النشطين</p>
@@ -427,8 +427,8 @@ export default function AdminNotificationsPage() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-to-r from-amber-50 to-amber-100 border-amber-200 hover:shadow-lg transition-all duration-300">
-                <CardContent className="p-4">
+              <Card className="bg-gradient-to-r from-amber-50 to-amber-100 border-amber-200 hover:shadow-lg transition-all duration-300 min-h-[140px]">
+                <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs font-medium text-amber-600 mb-1">معدل القراءة</p>
@@ -445,8 +445,8 @@ export default function AdminNotificationsPage() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-to-r from-red-50 to-red-100 border-red-200 hover:shadow-lg transition-all duration-300">
-                <CardContent className="p-4">
+              <Card className="bg-gradient-to-r from-red-50 to-red-100 border-red-200 hover:shadow-lg transition-all duration-300 min-h-[140px]">
+                <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs font-medium text-red-600 mb-1">الإشعارات الحرجة</p>
@@ -480,7 +480,7 @@ export default function AdminNotificationsPage() {
           </TabsContent>
 
           {/* إدارة الإشعارات */}
-          <TabsContent value="notifications" className="space-y-6 mt-8">
+          <TabsContent value="notifications" className="space-y-10 mt-12">
             <Card className="bg-white border border-gray-200 shadow-lg rounded-2xl">
               <CardHeader className="px-6 py-4 border-b border-gray-100">
                 <div className="flex items-center justify-between">
@@ -559,7 +559,7 @@ export default function AdminNotificationsPage() {
           </TabsContent>
 
           {/* نشاط المستخدمين */}
-          <TabsContent value="users" className="space-y-6 mt-8">
+          <TabsContent value="users" className="space-y-10 mt-12">
             <Card className="bg-white border border-gray-200 shadow-lg rounded-2xl">
               <CardHeader className="px-6 py-4 border-b border-gray-100">
                 <CardTitle className="text-lg font-semibold flex items-center gap-2">
@@ -590,7 +590,7 @@ export default function AdminNotificationsPage() {
           </TabsContent>
 
           {/* إرسال إشعار جديد */}
-          <TabsContent value="create" className="space-y-6 mt-8">
+          <TabsContent value="create" className="space-y-10 mt-12">
             <Card className="bg-white border border-gray-200 shadow-lg rounded-2xl">
               <CardHeader className="px-6 py-4 border-b border-gray-100">
                 <CardTitle className="text-lg font-semibold flex items-center gap-2">
