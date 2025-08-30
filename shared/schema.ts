@@ -499,36 +499,42 @@ export const authUserSessions = pgTable("auth_user_sessions", {
 
 // جدول سجل التدقيق (Audit Log)
 export const authAuditLog = pgTable("auth_audit_log", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id").references(() => users.id, { onDelete: "set null" }),
-  sessionId: varchar("session_id").references(() => authUserSessions.id, { onDelete: "set null" }),
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: uuid("user_id"),
+  sessionId: varchar("session_id"),
   
   // تفاصيل الحدث
   action: varchar("action", { length: 100 }).notNull(), // login, logout, create_user, etc.
   resource: varchar("resource", { length: 100 }), // user, project, role, etc.
   resourceId: varchar("resource_id"), // ID الكائن المتأثر
   
-  // تفاصيل الطلب
-  ipAddress: text("ip_address"),
-  userAgent: text("user_agent"),
-  method: varchar("method", { length: 10 }), // GET, POST, PUT, DELETE
-  url: text("url"),
-  
-  // البيانات والنتائج
-  requestData: jsonb("request_data"), // البيانات المرسلة
-  responseData: jsonb("response_data"), // البيانات المرجعة
+  // القيم القديمة والجديدة
   oldValues: jsonb("old_values"), // القيم القديمة (للتحديثات)
   newValues: jsonb("new_values"), // القيم الجديدة (للتحديثات)
   
-  // حالة العملية
-  status: varchar("status", { length: 20 }).notNull().default("success"), // success, failed, error
+  // تفاصيل الشبكة والطلب
+  ipAddress: varchar("ip_address").notNull(), // استخدم varchar بدلاً من inet للتوافق
+  userAgent: text("user_agent"),
+  
+  // حالة العملية والنتائج
+  status: varchar("status", { length: 20 }).default("success"), // success, failed, error
   errorMessage: text("error_message"),
   duration: integer("duration"), // مدة العملية بالميلي ثانية
   
-  // سياق إضافي
-  riskLevel: varchar("risk_level", { length: 20 }).default("low").notNull(), // low, medium, high, critical
+  // تفاصيل HTTP
+  url: text("url"),
+  method: varchar("method", { length: 10 }), // GET, POST, PUT, DELETE
+  requestBody: jsonb("request_body"), // جسم الطلب
+  responseStatus: integer("response_status"), // كود الاستجابة HTTP
+  
+  // معلومات إضافية
+  metadata: jsonb("metadata").default('{}'), // معلومات إضافية
   tags: text("tags").array(), // علامات للتصنيف والبحث
-  metadata: jsonb("metadata"), // معلومات إضافية
+  
+  // البيانات المطلوبة والمرجعة
+  requestData: jsonb("request_data"), // البيانات المرسلة
+  responseData: jsonb("response_data"), // البيانات المرجعة
+  riskLevel: text("risk_level"), // مستوى المخاطر
   
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
@@ -1027,10 +1033,15 @@ export const aiSystemRecommendations = pgTable("ai_system_recommendations", {
   executionScript: text("execution_script"), // سكريبت التنفيذ التلقائي
   status: text("status").default("active").notNull(), // active, executed, dismissed, expired
   executedAt: timestamp("executed_at"),
-  executedBy: varchar("executed_by").references(() => users.id),
-  feedback: jsonb("feedback"), // ملاحظات التنفيذ
+  dismissedAt: timestamp("dismissed_at"), // تاريخ الرفض
+  executionResult: jsonb("execution_result"), // نتيجة التنفيذ
+  targetArea: text("target_area"), // المجال المستهدف
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  requirements: jsonb("requirements"), // المتطلبات
+  risks: jsonb("risks"), // المخاطر
+  validUntil: timestamp("valid_until"), // صالح حتى
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  executedBy: uuid("executed_by"), // المستخدم الذي نفذ التوصية
 });
 
 // ================================
