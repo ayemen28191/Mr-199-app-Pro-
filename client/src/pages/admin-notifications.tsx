@@ -597,7 +597,7 @@ export default function AdminNotificationsPage() {
                     <p className="mt-2 text-gray-500">جاري التحميل...</p>
                   </div>
                 ) : userActivityData?.userStats?.length > 0 ? (
-                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                  <div className="space-y-2 max-h-[600px] min-h-[400px] overflow-y-auto">
                     {userActivityData.userStats.map((activity: UserActivity) => (
                       <UserActivityCard key={activity.userId} activity={activity} />
                     ))}
