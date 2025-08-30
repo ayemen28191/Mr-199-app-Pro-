@@ -415,8 +415,12 @@ export default function NotificationsPage() {
                   <div className="flex items-start gap-3">
                     {/* أيقونات النوع والأولوية */}
                     <div className="flex items-center gap-1 mt-0.5">
-                      <div className={cn("p-1.5 rounded-lg", priorityColors[notification.priority])}>
-                        <TypeIcon className="h-3 w-3 text-white" />
+                      <div className={cn("p-1.5 rounded-lg", priorityColors[notification.priority] || 'bg-blue-500')}>
+                        {TypeIcon ? (
+                          <TypeIcon className="h-3 w-3 text-white" />
+                        ) : (
+                          <Bell className="h-3 w-3 text-white" />
+                        )}
                       </div>
                     </div>
                     
