@@ -416,12 +416,12 @@ export default function AdminNotificationsPage() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Select value={filters.type} onValueChange={(value) => setFilters(prev => ({ ...prev, type: value }))}>
+                <Select value={filters.type || "all"} onValueChange={(value) => setFilters(prev => ({ ...prev, type: value === "all" ? "" : value }))}>
                   <SelectTrigger>
                     <SelectValue placeholder="نوع الإشعار" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">جميع الأنواع</SelectItem>
+                    <SelectItem value="all">جميع الأنواع</SelectItem>
                     {Object.entries(typeLabels).map(([key, value]) => (
                       <SelectItem key={key} value={key}>
                         {value.icon} {value.label}
@@ -430,12 +430,12 @@ export default function AdminNotificationsPage() {
                   </SelectContent>
                 </Select>
 
-                <Select value={filters.priority} onValueChange={(value) => setFilters(prev => ({ ...prev, priority: value }))}>
+                <Select value={filters.priority || "all"} onValueChange={(value) => setFilters(prev => ({ ...prev, priority: value === "all" ? "" : value }))}>
                   <SelectTrigger>
                     <SelectValue placeholder="الأولوية" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">جميع الأولويات</SelectItem>
+                    <SelectItem value="all">جميع الأولويات</SelectItem>
                     {Object.entries(priorityLabels).map(([key, value]) => (
                       <SelectItem key={key} value={key}>
                         {value.label}
