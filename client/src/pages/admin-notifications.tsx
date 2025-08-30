@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { AlertTriangle, Bell, BellRing, Clock, Delete, Edit, Eye, RefreshCw, Send, Settings, Shield, User, Users, TrendingUp, Activity, Zap, Target } from 'lucide-react';
+import { AlertTriangle, Bell, BellRing, Clock, Delete, Edit, Eye, RefreshCw, Send, Settings, Shield, User, Users, TrendingUp, Activity, Zap, Target, Crown, UserCheck } from 'lucide-react';
 
 // أنواع البيانات
 interface AdminNotification {
@@ -66,6 +66,45 @@ const typeLabels = {
   'warranty': { label: 'ضمان', icon: '🛡️' }
 };
 
+// دالة لتحديد أيقونة ولون الدور
+const getRoleInfo = (role: string) => {
+  switch (role?.toLowerCase()) {
+    case 'admin':
+    case 'مدير':
+    case 'مسؤول':
+      return {
+        icon: Crown,
+        label: 'مدير',
+        color: 'from-red-500 to-red-600',
+        textColor: 'text-red-700',
+        bgColor: 'bg-red-50',
+        borderColor: 'border-red-200'
+      };
+    case 'manager':
+    case 'مشرف':
+      return {
+        icon: Shield,
+        label: 'مشرف',
+        color: 'from-orange-500 to-orange-600',
+        textColor: 'text-orange-700',
+        bgColor: 'bg-orange-50',
+        borderColor: 'border-orange-200'
+      };
+    case 'user':
+    case 'مستخدم':
+    case 'موظف':
+    default:
+      return {
+        icon: UserCheck,
+        label: 'مستخدم',
+        color: 'from-blue-500 to-blue-600',
+        textColor: 'text-blue-700',
+        bgColor: 'bg-blue-50',
+        borderColor: 'border-blue-200'
+      };
+  }
+};
+
 export default function AdminNotificationsPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -83,6 +122,7 @@ export default function AdminNotificationsPage() {
     type: 'announcement',
     priority: 3,
     recipients: 'all',
+    specificUserId: '',
     projectId: ''
   });
 
@@ -114,13 +154,32 @@ export default function AdminNotificationsPage() {
     }
   });
 
+  // جلب قائمة المستخدمين مع أدوارهم
+  const { data: users = [], isLoading: isLoadingUsers } = useQuery({
+    queryKey: ['/api/users', 'with-roles'],
+    queryFn: async () => {
+      const response = await fetch('/api/users?includeRole=true');
+      if (!response.ok) throw new Error('فشل في جلب المستخدمين');
+      return response.json();
+    },
+  });
+
   // إرسال إشعار جديد
   const sendNotificationMutation = useMutation({
     mutationFn: async (notification: typeof newNotification) => {
+      const requestBody = {
+        ...notification,
+        requesterId: 'admin',
+        // إذا كان النوع specific، نرسل معرف المستخدم المحدد
+        recipients: notification.recipients === 'specific' && notification.specificUserId
+          ? [notification.specificUserId]
+          : notification.recipients
+      };
+      
       const response = await fetch('/api/admin/notifications/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...notification, requesterId: 'admin' })
+        body: JSON.stringify(requestBody)
       });
       if (!response.ok) throw new Error('فشل في إرسال الإشعار');
       return response.json();
@@ -134,6 +193,7 @@ export default function AdminNotificationsPage() {
         type: 'announcement',
         priority: 3,
         recipients: 'all',
+        specificUserId: '',
         projectId: ''
       });
       refetchNotifications();
@@ -686,9 +746,79 @@ export default function AdminNotificationsPage() {
                             المستخدمين العاديين فقط
                           </div>
                         </SelectItem>
+                        <SelectItem value="specific">
+                          <div className="flex items-center gap-2">
+                            <User className="h-4 w-4 text-purple-600" />
+                            مستخدم محدد
+                          </div>
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {/* قائمة اختيار المستخدم المحدد */}
+                  {newNotification.recipients === 'specific' && (
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">اختر المستخدم</label>
+                      <Select 
+                        value={newNotification.specificUserId} 
+                        onValueChange={(value) => setNewNotification(prev => ({ ...prev, specificUserId: value }))}
+                      >
+                        <SelectTrigger className="border-gray-300 focus:border-blue-500">
+                          <SelectValue placeholder="اختر المستخدم المحدد..." />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-48">
+                          {isLoadingUsers ? (
+                            <div className="p-3 text-center text-gray-500">
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 mx-auto"></div>
+                              <span className="text-sm mt-2">جاري التحميل...</span>
+                            </div>
+                          ) : users.length > 0 ? (
+                            users.map((user: any) => {
+                              const roleInfo = getRoleInfo(user.role);
+                              const RoleIcon = roleInfo.icon;
+                              const displayName = user.firstName && user.lastName 
+                                ? `${user.firstName} ${user.lastName}`
+                                : user.name || 'بدون اسم';
+                              
+                              return (
+                                <SelectItem 
+                                  key={user.id} 
+                                  value={user.id} 
+                                  className="p-3 rounded-lg hover:bg-gray-50"
+                                >
+                                  <div className="flex items-center gap-3 w-full">
+                                    <div className={`w-8 h-8 rounded-lg bg-gradient-to-r ${roleInfo.color} flex items-center justify-center shadow-sm`}>
+                                      <RoleIcon className="h-4 w-4 text-white" />
+                                    </div>
+                                    <div className="flex flex-col flex-1 min-w-0">
+                                      <div className="flex items-center gap-2 mb-1">
+                                        <span className="font-semibold text-gray-900 truncate text-sm">
+                                          {displayName}
+                                        </span>
+                                        <div className={`px-2 py-0.5 rounded-full ${roleInfo.bgColor} ${roleInfo.borderColor} border`}>
+                                          <span className={`text-xs font-semibold ${roleInfo.textColor}`}>
+                                            {roleInfo.label}
+                                          </span>
+                                        </div>
+                                      </div>
+                                      <span className="text-xs text-gray-500 truncate">
+                                        {user.email}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </SelectItem>
+                              );
+                            })
+                          ) : (
+                            <div className="p-3 text-center text-gray-500">
+                              <span className="text-sm">لا توجد مستخدمون متاحون</span>
+                            </div>
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                 </div>
 
                 <div>
@@ -704,7 +834,12 @@ export default function AdminNotificationsPage() {
 
                 <Button
                   onClick={() => sendNotificationMutation.mutate(newNotification)}
-                  disabled={!newNotification.title || !newNotification.body || sendNotificationMutation.isPending}
+                  disabled={
+                    !newNotification.title || 
+                    !newNotification.body || 
+                    (newNotification.recipients === 'specific' && !newNotification.specificUserId) ||
+                    sendNotificationMutation.isPending
+                  }
                   className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 h-12 text-base font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
                 >
                   {sendNotificationMutation.isPending ? (
