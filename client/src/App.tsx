@@ -231,11 +231,11 @@ function Router() {
       </Route>
 
       <Route path="/ai-system">
-        <ProtectedRoute>
+        <AdminRoute>
           <AuthLayout>
             <AISystemDashboard />
           </AuthLayout>
-        </ProtectedRoute>
+        </AdminRoute>
       </Route>
 
       <Route path="/smart-errors">
