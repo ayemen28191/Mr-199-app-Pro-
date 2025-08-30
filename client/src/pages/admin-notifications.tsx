@@ -181,83 +181,95 @@ export default function AdminNotificationsPage() {
     }
   });
 
+  // جلب اسم المستخدم من بياناته
+  const getUserName = (userId: string) => {
+    const user = userActivityData?.userStats?.find((u: UserActivity) => u.userId === userId);
+    return user?.userName || userId.slice(0, 8) + '...';
+  };
+
   // مكون عرض بطاقة الإشعار
   const NotificationCard = ({ notification }: { notification: AdminNotification }) => {
     const typeInfo = typeLabels[notification.type as keyof typeof typeLabels] || { label: notification.type, icon: '📄' };
     const priorityInfo = priorityLabels[notification.priority as keyof typeof priorityLabels] || { label: 'غير محدد', color: 'bg-gray-500' };
 
     return (
-      <Card className="mb-4 border-r-4" style={{ borderRightColor: priorityInfo.color.replace('bg-', '#') }}>
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <span>{typeInfo.icon}</span>
-              {notification.title}
+      <Card className="mb-3 border-r-4 shadow-sm" style={{ borderRightColor: priorityInfo.color.replace('bg-', '#') }}>
+        <CardHeader className="pb-3 px-4 pt-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <CardTitle className="text-base sm:text-lg flex items-center gap-2 break-words">
+              <span className="text-lg">{typeInfo.icon}</span>
+              <span className="min-w-0 flex-1">{notification.title}</span>
             </CardTitle>
-            <div className="flex items-center gap-2">
-              <Badge className={`${priorityInfo.color} text-white`}>
+            <div className="flex items-center gap-1 flex-wrap">
+              <Badge className={`${priorityInfo.color} text-white text-xs px-2 py-1`}>
                 {priorityInfo.label}
               </Badge>
-              <Badge variant="outline">
+              <Badge variant="outline" className="text-xs px-2 py-1">
                 {typeInfo.label}
               </Badge>
             </div>
           </div>
         </CardHeader>
-        <CardContent>
-          <p className="text-sm text-gray-600 mb-3">{notification.body}</p>
+        <CardContent className="px-4 pb-4">
+          <p className="text-sm text-gray-600 mb-3 line-clamp-2">{notification.body}</p>
           
-          <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-gray-500 mb-3 gap-1">
             <span className="flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              {new Date(notification.createdAt).toLocaleString('ar')}
+              <Clock className="h-3 w-3 flex-shrink-0" />
+              <span className="truncate">{new Date(notification.createdAt).toLocaleString('ar', { 
+                day: '2-digit',
+                month: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+              })}</span>
             </span>
             <span className="flex items-center gap-1">
-              <Users className="h-3 w-3" />
+              <Users className="h-3 w-3 flex-shrink-0" />
               {notification.totalReads}/{notification.totalUsers} مقروء
             </span>
           </div>
 
           {/* تفاصيل المستخدمين */}
           <div className="space-y-2">
-            <div className="text-sm font-medium">حالة المستخدمين:</div>
-            <ScrollArea className="h-32 w-full rounded border p-2">
+            <div className="text-sm font-medium flex items-center gap-1">
+              <User className="h-4 w-4" />
+              حالة المستخدمين:
+            </div>
+            <ScrollArea className="h-24 sm:h-32 w-full rounded border p-2 bg-gray-50">
               {notification.readStates.map((state) => (
-                <div key={state.userId} className="flex items-center justify-between py-1 border-b last:border-b-0">
-                  <span className="text-sm">{state.userId}</span>
-                  <div className="flex items-center gap-2">
-                    <Badge variant={state.isRead ? "default" : "secondary"}>
-                      {state.isRead ? 'مقروء' : 'غير مقروء'}
+                <div key={state.userId} className="flex items-center justify-between py-1.5 px-1 border-b last:border-b-0 bg-white rounded mb-1 last:mb-0">
+                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs text-white ${
+                      userActivityData?.userStats?.find((u: UserActivity) => u.userId === state.userId)?.userRole === 'admin' 
+                        ? 'bg-red-500' : 'bg-blue-500'
+                    }`}>
+                      {getUserName(state.userId).charAt(0).toUpperCase()}
+                    </div>
+                    <span className="text-sm font-medium truncate">{getUserName(state.userId)}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Badge variant={state.isRead ? "default" : "secondary"} className="text-xs px-1.5 py-0.5">
+                      {state.isRead ? '✓' : '○'}
                     </Badge>
                     {state.readAt && (
-                      <span className="text-xs text-gray-500">
-                        {new Date(state.readAt).toLocaleString('ar')}
+                      <span className="text-xs text-gray-500 hidden sm:block">
+                        {new Date(state.readAt).toLocaleString('ar', { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     )}
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => updateStatusMutation.mutate({
-                        notificationId: notification.id,
-                        userId: state.userId,
-                        isRead: !state.isRead
-                      })}
-                    >
-                      <Edit className="h-3 w-3" />
-                    </Button>
                   </div>
                 </div>
               ))}
             </ScrollArea>
           </div>
 
-          <div className="flex justify-end gap-2 mt-4">
+          <div className="flex justify-end gap-2 mt-3">
             <Button
               size="sm"
               variant="destructive"
               onClick={() => deleteNotificationMutation.mutate(notification.id)}
+              className="h-8 px-3 text-xs"
             >
-              <Delete className="h-4 w-4 mr-1" />
+              <Delete className="h-3 w-3 mr-1" />
               حذف
             </Button>
           </div>
@@ -268,39 +280,52 @@ export default function AdminNotificationsPage() {
 
   // مكون نشاط المستخدمين
   const UserActivityCard = ({ activity }: { activity: UserActivity }) => (
-    <Card className="mb-3">
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
+    <Card className="mb-2 shadow-sm hover:shadow-md transition-shadow">
+      <CardContent className="p-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
+            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
               activity.userRole === 'admin' ? 'bg-red-500' : 'bg-blue-500'
             }`}>
-              <User className="h-5 w-5 text-white" />
+              {activity.userRole === 'admin' ? (
+                <Shield className="h-5 w-5 text-white" />
+              ) : (
+                <User className="h-5 w-5 text-white" />
+              )}
             </div>
-            <div>
-              <div className="font-medium flex items-center gap-2">
-                {activity.userName}
-                <Badge variant={activity.userRole === 'admin' ? 'destructive' : 'secondary'} className="text-xs">
+            <div className="min-w-0 flex-1">
+              <div className="font-medium flex items-center gap-2 flex-wrap">
+                <span className="truncate">{activity.userName}</span>
+                <Badge variant={activity.userRole === 'admin' ? 'destructive' : 'secondary'} className="text-xs px-2 py-0.5">
                   {activity.userRole === 'admin' ? 'مسؤول' : 'مستخدم'}
                 </Badge>
               </div>
-              <div className="text-xs text-gray-500">{activity.userEmail}</div>
+              <div className="text-xs text-gray-500 truncate">{activity.userEmail}</div>
               <div className="text-xs text-gray-400">
-                آخر نشاط: {activity.lastActivity ? new Date(activity.lastActivity).toLocaleString('ar') : 'لا يوجد'}
+                آخر نشاط: {activity.lastActivity ? new Date(activity.lastActivity).toLocaleString('ar', {
+                  day: '2-digit',
+                  month: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                }) : 'لا يوجد'}
               </div>
             </div>
           </div>
-          <div className="text-left space-y-1">
-            <div className="text-sm">
-              <Badge variant="outline">{activity.totalNotifications} إجمالي</Badge>
+          <div className="flex flex-row sm:flex-col sm:text-left gap-2 sm:gap-1 flex-wrap">
+            <Badge variant="outline" className="text-xs px-2 py-1">
+              {activity.totalNotifications} إجمالي
+            </Badge>
+            <div className="flex gap-1">
+              <Badge variant="default" className="bg-green-500 text-xs px-2 py-1">
+                {activity.readNotifications} مقروء
+              </Badge>
+              <Badge variant="secondary" className="text-xs px-2 py-1">
+                {activity.unreadNotifications} غير مقروء
+              </Badge>
             </div>
-            <div className="text-sm">
-              <Badge variant="default" className="bg-green-500">{activity.readNotifications} مقروء</Badge>
-              <Badge variant="secondary" className="ml-1">{activity.unreadNotifications} غير مقروء</Badge>
-            </div>
-            <div className="text-sm">
-              <Badge variant="outline">{activity.readPercentage}% معدل القراءة</Badge>
-            </div>
+            <Badge variant={activity.readPercentage >= 80 ? "default" : activity.readPercentage >= 50 ? "secondary" : "destructive"} className="text-xs px-2 py-1">
+              {activity.readPercentage}% معدل القراءة
+            </Badge>
           </div>
         </div>
       </CardContent>
@@ -308,71 +333,75 @@ export default function AdminNotificationsPage() {
   );
 
   return (
-    <div className="container mx-auto p-4 max-w-7xl" dir="rtl">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold mb-2 flex items-center gap-2">
-          <Shield className="h-8 w-8 text-blue-600" />
-          لوحة تحكم الإشعارات - المسؤول
+    <div className="container mx-auto p-2 sm:p-4 max-w-7xl" dir="rtl">
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-2 flex items-center gap-2">
+          <Shield className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 flex-shrink-0" />
+          <span className="break-words">لوحة تحكم الإشعارات - المسؤول</span>
         </h1>
-        <p className="text-gray-600">إدارة شاملة لجميع إشعارات النظام والمستخدمين</p>
+        <p className="text-sm sm:text-base text-gray-600">إدارة شاملة لجميع إشعارات النظام والمستخدمين</p>
       </div>
 
       <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="overview" className="flex items-center gap-2">
-            <Eye className="h-4 w-4" />
-            نظرة عامة
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 gap-1 h-auto p-1">
+          <TabsTrigger value="overview" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm p-2 sm:p-3">
+            <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">نظرة عامة</span>
+            <span className="sm:hidden">عامة</span>
           </TabsTrigger>
-          <TabsTrigger value="notifications" className="flex items-center gap-2">
-            <Bell className="h-4 w-4" />
-            الإشعارات
+          <TabsTrigger value="notifications" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm p-2 sm:p-3">
+            <Bell className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">الإشعارات</span>
+            <span className="sm:hidden">إشعارات</span>
           </TabsTrigger>
-          <TabsTrigger value="users" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            المستخدمين
+          <TabsTrigger value="users" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm p-2 sm:p-3">
+            <Users className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">المستخدمين</span>
+            <span className="sm:hidden">مستخدمين</span>
           </TabsTrigger>
-          <TabsTrigger value="create" className="flex items-center gap-2">
-            <Send className="h-4 w-4" />
-            إرسال جديد
+          <TabsTrigger value="create" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm p-2 sm:p-3">
+            <Send className="h-3 w-3 sm:h-4 sm:w-4" />
+            <span className="hidden sm:inline">إرسال جديد</span>
+            <span className="sm:hidden">إرسال</span>
           </TabsTrigger>
         </TabsList>
 
         {/* نظرة عامة */}
         <TabsContent value="overview" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <Bell className="h-4 w-4" />
-                  إجمالي الإشعارات
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
+            <Card className="shadow-sm">
+              <CardHeader className="pb-2 px-3 pt-3">
+                <CardTitle className="text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2">
+                  <Bell className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500" />
+                  <span className="break-words">إجمالي الإشعارات</span>
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{notificationsData?.total || 0}</div>
+              <CardContent className="px-3 pb-3">
+                <div className="text-lg sm:text-2xl font-bold text-blue-600">{notificationsData?.total || 0}</div>
               </CardContent>
             </Card>
             
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  المستخدمين النشطين
+            <Card className="shadow-sm">
+              <CardHeader className="pb-2 px-3 pt-3">
+                <CardTitle className="text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2">
+                  <Users className="h-3 w-3 sm:h-4 sm:w-4 text-green-500" />
+                  <span className="break-words">المستخدمين النشطين</span>
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{userActivityData?.userStats?.length || 0}</div>
+              <CardContent className="px-3 pb-3">
+                <div className="text-lg sm:text-2xl font-bold text-green-600">{userActivityData?.userStats?.length || 0}</div>
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <BellRing className="h-4 w-4" />
-                  متوسط القراءة
+            <Card className="shadow-sm">
+              <CardHeader className="pb-2 px-3 pt-3">
+                <CardTitle className="text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2">
+                  <BellRing className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-500" />
+                  <span className="break-words">متوسط القراءة</span>
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
+              <CardContent className="px-3 pb-3">
+                <div className="text-lg sm:text-2xl font-bold text-yellow-600">
                   {userActivityData?.userStats?.length > 0 
                     ? Math.round(userActivityData.userStats.reduce((acc: number, user: UserActivity) => acc + user.readPercentage, 0) / userActivityData.userStats.length)
                     : 0}%
@@ -380,27 +409,27 @@ export default function AdminNotificationsPage() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4" />
-                  الإشعارات الحرجة
+            <Card className="shadow-sm">
+              <CardHeader className="pb-2 px-3 pt-3">
+                <CardTitle className="text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2">
+                  <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 text-red-500" />
+                  <span className="break-words">الإشعارات الحرجة</span>
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-red-600">
+              <CardContent className="px-3 pb-3">
+                <div className="text-lg sm:text-2xl font-bold text-red-600">
                   {notificationsData?.notifications?.filter((n: AdminNotification) => n.priority === 5).length || 0}
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>آخر النشاطات</CardTitle>
+          <Card className="shadow-sm">
+            <CardHeader className="px-4 py-3">
+              <CardTitle className="text-base sm:text-lg">آخر النشاطات</CardTitle>
             </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-64">
+            <CardContent className="px-4 pb-4">
+              <ScrollArea className="h-48 sm:h-64">
                 {userActivityData?.userStats?.slice(0, 5).map((activity: UserActivity) => (
                   <UserActivityCard key={activity.userId} activity={activity} />
                 ))}
@@ -426,7 +455,7 @@ export default function AdminNotificationsPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
                 <Select value={filters.type || "all"} onValueChange={(value) => setFilters(prev => ({ ...prev, type: value === "all" ? "" : value }))}>
                   <SelectTrigger>
                     <SelectValue placeholder="نوع الإشعار" />
@@ -492,7 +521,7 @@ export default function AdminNotificationsPage() {
               {isLoadingActivity ? (
                 <div className="text-center py-8">جاري التحميل...</div>
               ) : userActivityData?.userStats?.length > 0 ? (
-                <ScrollArea className="h-96">
+                <ScrollArea className="h-64 sm:h-96">
                   {userActivityData.userStats.map((activity: UserActivity) => (
                     <UserActivityCard key={activity.userId} activity={activity} />
                   ))}
@@ -511,7 +540,7 @@ export default function AdminNotificationsPage() {
               <CardTitle>إرسال إشعار جديد</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-2">العنوان</label>
                   <Input
