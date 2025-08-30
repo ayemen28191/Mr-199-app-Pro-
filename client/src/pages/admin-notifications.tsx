@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { AlertTriangle, Bell, BellRing, Clock, Delete, Edit, Eye, RefreshCw, Send, Settings, Shield, User, Users } from 'lucide-react';
+import { AlertTriangle, Bell, BellRing, Clock, Delete, Edit, Eye, RefreshCw, Send, Settings, Shield, User, Users, TrendingUp, Activity, Zap, Target } from 'lucide-react';
 
 // أنواع البيانات
 interface AdminNotification {
@@ -187,379 +187,346 @@ export default function AdminNotificationsPage() {
     return user?.userName || userId.slice(0, 8) + '...';
   };
 
-  // مكون عرض بطاقة الإشعار
+  // مكون عرض بطاقة الإشعار المحسن
   const NotificationCard = ({ notification }: { notification: AdminNotification }) => {
     const typeInfo = typeLabels[notification.type as keyof typeof typeLabels] || { label: notification.type, icon: '📄' };
     const priorityInfo = priorityLabels[notification.priority as keyof typeof priorityLabels] || { label: 'غير محدد', color: 'bg-gray-500' };
+    const readPercentage = Math.round((notification.totalReads / notification.totalUsers) * 100) || 0;
 
     return (
-      <Card className="mb-3 border-r-4 shadow-sm" style={{ borderRightColor: priorityInfo.color.replace('bg-', '#') }}>
-        <CardHeader className="pb-3 px-4 pt-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <CardTitle className="text-base sm:text-lg flex items-center gap-2 break-words">
-              <span className="text-lg">{typeInfo.icon}</span>
-              <span className="min-w-0 flex-1">{notification.title}</span>
-            </CardTitle>
-            <div className="flex items-center gap-1 flex-wrap">
-              <Badge className={`${priorityInfo.color} text-white text-xs px-2 py-1`}>
-                {priorityInfo.label}
-              </Badge>
-              <Badge variant="outline" className="text-xs px-2 py-1">
-                {typeInfo.label}
-              </Badge>
+      <Card className="group mb-2 hover:shadow-lg transition-all duration-300 ease-in-out border border-gray-100 hover:border-blue-200 bg-gradient-to-br from-white to-gray-50/30">
+        <CardContent className="p-4">
+          {/* الرأس العلوي المضغوط */}
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${priorityInfo.color} shadow-sm flex-shrink-0`}>
+                <span className="text-sm">{typeInfo.icon}</span>
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="font-semibold text-gray-900 text-sm truncate mb-0.5">{notification.title}</h3>
+                <div className="flex items-center gap-2 text-xs">
+                  <Badge variant="outline" className="text-xs px-1.5 py-0.5 bg-gray-50">
+                    {typeInfo.label}
+                  </Badge>
+                  <Badge className={`${priorityInfo.color} text-white text-xs px-1.5 py-0.5`}>
+                    {priorityInfo.label}
+                  </Badge>
+                </div>
+              </div>
             </div>
-          </div>
-        </CardHeader>
-        <CardContent className="px-4 pb-4">
-          <p className="text-sm text-gray-600 mb-3 line-clamp-2">{notification.body}</p>
-          
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-gray-500 mb-3 gap-1">
-            <span className="flex items-center gap-1">
-              <Clock className="h-3 w-3 flex-shrink-0" />
-              <span className="truncate">{new Date(notification.createdAt).toLocaleString('ar', { 
-                day: '2-digit',
-                month: '2-digit',
-                hour: '2-digit',
-                minute: '2-digit'
-              })}</span>
-            </span>
-            <span className="flex items-center gap-1">
-              <Users className="h-3 w-3 flex-shrink-0" />
-              {notification.totalReads}/{notification.totalUsers} مقروء
-            </span>
+            <div className="flex items-center gap-1">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => deleteNotificationMutation.mutate(notification.id)}
+                className="h-7 w-7 p-0 text-gray-400 hover:text-red-500 transition-colors"
+              >
+                <Delete className="h-3.5 w-3.5" />
+              </Button>
+            </div>
           </div>
 
-          {/* تفاصيل المستخدمين */}
+          {/* المحتوى */}
+          <p className="text-sm text-gray-600 line-clamp-2 mb-3 leading-relaxed">{notification.body}</p>
+          
+          {/* إحصائيات مضغوطة */}
+          <div className="bg-gray-50 rounded-lg p-2.5 mb-3">
+            <div className="flex items-center justify-between text-xs mb-2">
+              <span className="flex items-center gap-1 text-gray-500">
+                <Clock className="h-3 w-3" />
+                {new Date(notification.createdAt).toLocaleString('ar', { 
+                  day: '2-digit',
+                  month: '2-digit',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </span>
+              <span className="flex items-center gap-1 text-gray-600 font-medium">
+                <Users className="h-3 w-3" />
+                {notification.totalReads}/{notification.totalUsers} ({readPercentage}%)
+              </span>
+            </div>
+            
+            {/* شريط التقدم */}
+            <div className="w-full bg-gray-200 rounded-full h-1.5">
+              <div 
+                className={`h-1.5 rounded-full transition-all duration-500 ${
+                  readPercentage >= 80 ? 'bg-green-500' :
+                  readPercentage >= 60 ? 'bg-blue-500' :
+                  readPercentage >= 40 ? 'bg-yellow-500' : 'bg-red-500'
+                }`}
+                style={{ width: `${readPercentage}%` }}
+              />
+            </div>
+          </div>
+
+          {/* المستخدمين - عرض مضغوط */}
           <div className="space-y-2">
-            <div className="text-sm font-medium flex items-center gap-1">
-              <User className="h-4 w-4" />
+            <div className="text-xs font-medium text-gray-700 flex items-center gap-1">
+              <Activity className="h-3 w-3" />
               حالة المستخدمين:
             </div>
-            <ScrollArea className="h-24 sm:h-32 w-full rounded border p-2 bg-gray-50">
-              {notification.readStates.map((state) => (
-                <div key={state.userId} className="flex items-center justify-between py-1.5 px-1 border-b last:border-b-0 bg-white rounded mb-1 last:mb-0">
-                  <div className="flex items-center gap-2 min-w-0 flex-1">
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs text-white ${
+            <div className="max-h-20 overflow-y-auto space-y-1">
+              {notification.readStates.slice(0, 3).map((state) => (
+                <div key={state.userId} className="flex items-center justify-between py-1 px-2 bg-white rounded border">
+                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                    <div className={`w-5 h-5 rounded-full flex items-center justify-center text-xs text-white ${
                       userActivityData?.userStats?.find((u: UserActivity) => u.userId === state.userId)?.userRole === 'admin' 
-                        ? 'bg-red-500' : 'bg-blue-500'
+                        ? 'bg-gradient-to-r from-red-500 to-red-600' : 'bg-gradient-to-r from-blue-500 to-blue-600'
                     }`}>
                       {getUserName(state.userId).charAt(0).toUpperCase()}
                     </div>
-                    <span className="text-sm font-medium truncate">{getUserName(state.userId)}</span>
+                    <span className="text-xs font-medium truncate">{getUserName(state.userId)}</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <Badge variant={state.isRead ? "default" : "secondary"} className="text-xs px-1.5 py-0.5">
-                      {state.isRead ? '✓' : '○'}
-                    </Badge>
-                    {state.readAt && (
-                      <span className="text-xs text-gray-500 hidden sm:block">
-                        {new Date(state.readAt).toLocaleString('ar', { hour: '2-digit', minute: '2-digit' })}
-                      </span>
+                    {state.isRead ? (
+                      <div className="w-2 h-2 bg-green-500 rounded-full" />
+                    ) : (
+                      <div className="w-2 h-2 bg-gray-300 rounded-full" />
                     )}
                   </div>
                 </div>
               ))}
-            </ScrollArea>
-          </div>
-
-          <div className="flex justify-end gap-2 mt-3">
-            <Button
-              size="sm"
-              variant="destructive"
-              onClick={() => deleteNotificationMutation.mutate(notification.id)}
-              className="h-8 px-3 text-xs"
-            >
-              <Delete className="h-3 w-3 mr-1" />
-              حذف
-            </Button>
+              {notification.readStates.length > 3 && (
+                <div className="text-xs text-gray-500 text-center py-1">
+                  +{notification.readStates.length - 3} مستخدم آخر
+                </div>
+              )}
+            </div>
           </div>
         </CardContent>
       </Card>
     );
   };
 
-  // مكون نشاط المستخدمين
-  const UserActivityCard = ({ activity }: { activity: UserActivity }) => (
-    <Card className="mb-2 shadow-sm hover:shadow-md transition-shadow">
-      <CardContent className="p-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0 flex-1">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-              activity.userRole === 'admin' ? 'bg-red-500' : 'bg-blue-500'
-            }`}>
-              {activity.userRole === 'admin' ? (
-                <Shield className="h-5 w-5 text-white" />
-              ) : (
-                <User className="h-5 w-5 text-white" />
-              )}
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="font-medium flex items-center gap-2 flex-wrap">
-                <span className="truncate">{activity.userName}</span>
-                <Badge variant={activity.userRole === 'admin' ? 'destructive' : 'secondary'} className="text-xs px-2 py-0.5">
-                  {activity.userRole === 'admin' ? 'مسؤول' : 'مستخدم'}
-                </Badge>
+  // مكون نشاط المستخدمين المحسن
+  const UserActivityCard = ({ activity }: { activity: UserActivity }) => {
+    const getPerformanceColor = (percentage: number) => {
+      if (percentage >= 80) return 'from-green-500 to-green-600';
+      if (percentage >= 60) return 'from-blue-500 to-blue-600';
+      if (percentage >= 40) return 'from-yellow-500 to-yellow-600';
+      return 'from-red-500 to-red-600';
+    };
+
+    return (
+      <Card className="group mb-2 hover:shadow-md transition-all duration-300 border border-gray-100 hover:border-blue-200 bg-gradient-to-r from-white to-gray-50/50">
+        <CardContent className="p-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3 min-w-0 flex-1">
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm ${
+                activity.userRole === 'admin' 
+                  ? 'bg-gradient-to-r from-red-500 to-red-600' 
+                  : 'bg-gradient-to-r from-blue-500 to-blue-600'
+              }`}>
+                {activity.userRole === 'admin' ? (
+                  <Shield className="h-4 w-4 text-white" />
+                ) : (
+                  <User className="h-4 w-4 text-white" />
+                )}
               </div>
-              <div className="text-xs text-gray-500 truncate">{activity.userEmail}</div>
-              <div className="text-xs text-gray-400">
-                آخر نشاط: {activity.lastActivity ? new Date(activity.lastActivity).toLocaleString('ar', {
-                  day: '2-digit',
-                  month: '2-digit',
-                  hour: '2-digit',
-                  minute: '2-digit'
-                }) : 'لا يوجد'}
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-semibold text-sm text-gray-900 truncate">{activity.userName}</span>
+                  <Badge 
+                    variant={activity.userRole === 'admin' ? 'destructive' : 'secondary'} 
+                    className="text-xs px-1.5 py-0.5"
+                  >
+                    {activity.userRole === 'admin' ? 'مسؤول' : 'مستخدم'}
+                  </Badge>
+                </div>
+                <div className="text-xs text-gray-500 truncate mb-1">{activity.userEmail}</div>
+                <div className="text-xs text-gray-400">
+                  آخر نشاط: {activity.lastActivity ? new Date(activity.lastActivity).toLocaleString('ar', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  }) : 'لا يوجد'}
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex flex-col items-end gap-1">
+              <div className="flex items-center gap-1">
+                <div className="text-xs text-gray-500">{activity.totalNotifications}</div>
+                <Bell className="h-3 w-3 text-gray-400" />
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="text-xs font-medium text-green-600">{activity.readNotifications}</div>
+                <div className="text-xs text-gray-400">/</div>
+                <div className="text-xs text-gray-500">{activity.unreadNotifications}</div>
+              </div>
+              <div className={`text-xs font-bold bg-gradient-to-r ${getPerformanceColor(activity.readPercentage)} bg-clip-text text-transparent`}>
+                {activity.readPercentage}%
               </div>
             </div>
           </div>
-          <div className="flex flex-row sm:flex-col sm:text-left gap-2 sm:gap-1 flex-wrap">
-            <Badge variant="outline" className="text-xs px-2 py-1">
-              {activity.totalNotifications} إجمالي
-            </Badge>
-            <div className="flex gap-1">
-              <Badge variant="default" className="bg-green-500 text-xs px-2 py-1">
-                {activity.readNotifications} مقروء
-              </Badge>
-              <Badge variant="secondary" className="text-xs px-2 py-1">
-                {activity.unreadNotifications} غير مقروء
-              </Badge>
-            </div>
-            <Badge variant={activity.readPercentage >= 80 ? "default" : activity.readPercentage >= 50 ? "secondary" : "destructive"} className="text-xs px-2 py-1">
-              {activity.readPercentage}% معدل القراءة
-            </Badge>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
+        </CardContent>
+      </Card>
+    );
+  };
 
   return (
-    <div className="container mx-auto p-2 sm:p-4 max-w-7xl" dir="rtl">
-      <div className="mb-4 sm:mb-6">
-        <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold mb-2 flex items-center gap-2">
-          <Shield className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600 flex-shrink-0" />
-          <span className="break-words">لوحة تحكم الإشعارات - المسؤول</span>
-        </h1>
-        <p className="text-sm sm:text-base text-gray-600">إدارة شاملة لجميع إشعارات النظام والمستخدمين</p>
-      </div>
-
-      <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 gap-1 h-auto p-1">
-          <TabsTrigger value="overview" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm p-2 sm:p-3">
-            <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">نظرة عامة</span>
-            <span className="sm:hidden">عامة</span>
-          </TabsTrigger>
-          <TabsTrigger value="notifications" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm p-2 sm:p-3">
-            <Bell className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">الإشعارات</span>
-            <span className="sm:hidden">إشعارات</span>
-          </TabsTrigger>
-          <TabsTrigger value="users" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm p-2 sm:p-3">
-            <Users className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">المستخدمين</span>
-            <span className="sm:hidden">مستخدمين</span>
-          </TabsTrigger>
-          <TabsTrigger value="create" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm p-2 sm:p-3">
-            <Send className="h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="hidden sm:inline">إرسال جديد</span>
-            <span className="sm:hidden">إرسال</span>
-          </TabsTrigger>
-        </TabsList>
-
-        {/* نظرة عامة */}
-        <TabsContent value="overview" className="space-y-4">
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
-            <Card className="shadow-sm">
-              <CardHeader className="pb-2 px-3 pt-3">
-                <CardTitle className="text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2">
-                  <Bell className="h-3 w-3 sm:h-4 sm:w-4 text-blue-500" />
-                  <span className="break-words">إجمالي الإشعارات</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="px-3 pb-3">
-                <div className="text-lg sm:text-2xl font-bold text-blue-600">{notificationsData?.total || 0}</div>
-              </CardContent>
-            </Card>
-            
-            <Card className="shadow-sm">
-              <CardHeader className="pb-2 px-3 pt-3">
-                <CardTitle className="text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2">
-                  <Users className="h-3 w-3 sm:h-4 sm:w-4 text-green-500" />
-                  <span className="break-words">المستخدمين النشطين</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="px-3 pb-3">
-                <div className="text-lg sm:text-2xl font-bold text-green-600">{userActivityData?.userStats?.length || 0}</div>
-              </CardContent>
-            </Card>
-
-            <Card className="shadow-sm">
-              <CardHeader className="pb-2 px-3 pt-3">
-                <CardTitle className="text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2">
-                  <BellRing className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-500" />
-                  <span className="break-words">متوسط القراءة</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="px-3 pb-3">
-                <div className="text-lg sm:text-2xl font-bold text-yellow-600">
-                  {userActivityData?.userStats?.length > 0 
-                    ? Math.round(userActivityData.userStats.reduce((acc: number, user: UserActivity) => acc + user.readPercentage, 0) / userActivityData.userStats.length)
-                    : 0}%
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-indigo-50/40" dir="rtl">
+      <div className="container mx-auto p-3 sm:p-6 max-w-7xl">
+        <div className="mb-6">
+          <div className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 mb-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg">
+                  <Shield className="h-6 w-6 text-white" />
                 </div>
-              </CardContent>
-            </Card>
-
-            <Card className="shadow-sm">
-              <CardHeader className="pb-2 px-3 pt-3">
-                <CardTitle className="text-xs sm:text-sm font-medium flex items-center gap-1 sm:gap-2">
-                  <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 text-red-500" />
-                  <span className="break-words">الإشعارات الحرجة</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="px-3 pb-3">
-                <div className="text-lg sm:text-2xl font-bold text-red-600">
-                  {notificationsData?.notifications?.filter((n: AdminNotification) => n.priority === 5).length || 0}
+                <div>
+                  <h1 className="text-2xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+                    مدير الإشعارات
+                  </h1>
+                  <p className="text-sm text-gray-500 mt-1">إدارة شاملة ومتقدمة لجميع إشعارات النظام</p>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+              <div className="hidden sm:flex items-center gap-2">
+                <div className="flex items-center gap-2 bg-green-50 px-3 py-2 rounded-lg">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                  <span className="text-xs font-medium text-green-700">متصل</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
+          <div className="bg-white rounded-2xl p-2 shadow-lg border border-gray-100 mb-6">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 gap-2 bg-gray-50 p-1 rounded-xl">
+              <TabsTrigger value="overview" className="flex items-center gap-2 text-sm p-3 rounded-lg transition-all duration-200 data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                <TrendingUp className="h-4 w-4" />
+                <span className="hidden sm:inline font-medium">لوحة التحكم</span>
+                <span className="sm:hidden font-medium">عامة</span>
+              </TabsTrigger>
+              <TabsTrigger value="notifications" className="flex items-center gap-2 text-sm p-3 rounded-lg transition-all duration-200 data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                <Bell className="h-4 w-4" />
+                <span className="hidden sm:inline font-medium">الإشعارات</span>
+                <span className="sm:hidden font-medium">إشعارات</span>
+              </TabsTrigger>
+              <TabsTrigger value="users" className="flex items-center gap-2 text-sm p-3 rounded-lg transition-all duration-200 data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                <Users className="h-4 w-4" />
+                <span className="hidden sm:inline font-medium">المستخدمين</span>
+                <span className="sm:hidden font-medium">مستخدمين</span>
+              </TabsTrigger>
+              <TabsTrigger value="create" className="flex items-center gap-2 text-sm p-3 rounded-lg transition-all duration-200 data-[state=active]:bg-white data-[state=active]:shadow-sm">
+                <Zap className="h-4 w-4" />
+                <span className="hidden sm:inline font-medium">إرسال جديد</span>
+                <span className="sm:hidden font-medium">إرسال</span>
+              </TabsTrigger>
+            </TabsList>
           </div>
 
-          <Card className="shadow-sm">
-            <CardHeader className="px-4 py-3">
-              <CardTitle className="text-base sm:text-lg">آخر النشاطات</CardTitle>
-            </CardHeader>
-            <CardContent className="px-4 pb-4">
-              <ScrollArea className="h-48 sm:h-64">
-                {userActivityData?.userStats?.slice(0, 5).map((activity: UserActivity) => (
-                  <UserActivityCard key={activity.userId} activity={activity} />
-                ))}
-              </ScrollArea>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* إدارة الإشعارات */}
-        <TabsContent value="notifications" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>فلترة الإشعارات</CardTitle>
-                <Button
-                  onClick={() => refetchNotifications()}
-                  disabled={isLoadingNotifications}
-                  size="sm"
-                >
-                  <RefreshCw className="h-4 w-4 mr-1" />
-                  تحديث
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-4">
-                <Select value={filters.type || "all"} onValueChange={(value) => setFilters(prev => ({ ...prev, type: value === "all" ? "" : value }))}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="نوع الإشعار" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">جميع الأنواع</SelectItem>
-                    {Object.entries(typeLabels).map(([key, value]) => (
-                      <SelectItem key={key} value={key}>
-                        {value.icon} {value.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <Select value={filters.priority || "all"} onValueChange={(value) => setFilters(prev => ({ ...prev, priority: value === "all" ? "" : value }))}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="الأولوية" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">جميع الأولويات</SelectItem>
-                    {Object.entries(priorityLabels).map(([key, value]) => (
-                      <SelectItem key={key} value={key}>
-                        {value.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <Input
-                  type="number"
-                  placeholder="عدد النتائج"
-                  value={filters.limit}
-                  onChange={(e) => setFilters(prev => ({ ...prev, limit: parseInt(e.target.value) || 50 }))}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="space-y-4">
-            {isLoadingNotifications ? (
-              <div className="text-center py-8">جاري التحميل...</div>
-            ) : notificationsData?.notifications?.length > 0 ? (
-              notificationsData.notifications.map((notification: AdminNotification) => (
-                <NotificationCard key={notification.id} notification={notification} />
-              ))
-            ) : (
-              <Card>
-                <CardContent className="text-center py-8">
-                  <p>لا توجد إشعارات</p>
+          {/* نظرة عامة محسنة */}
+          <TabsContent value="overview" className="space-y-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200 hover:shadow-lg transition-all duration-300">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-medium text-blue-600 mb-1">إجمالي الإشعارات</p>
+                      <p className="text-2xl font-bold text-blue-700">{notificationsData?.total || 0}</p>
+                    </div>
+                    <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center">
+                      <Bell className="h-5 w-5 text-white" />
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
-            )}
-          </div>
-        </TabsContent>
+              
+              <Card className="bg-gradient-to-r from-green-50 to-green-100 border-green-200 hover:shadow-lg transition-all duration-300">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-medium text-green-600 mb-1">المستخدمين النشطين</p>
+                      <p className="text-2xl font-bold text-green-700">{userActivityData?.userStats?.length || 0}</p>
+                    </div>
+                    <div className="w-10 h-10 bg-green-500 rounded-xl flex items-center justify-center">
+                      <Users className="h-5 w-5 text-white" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
-        {/* نشاط المستخدمين */}
-        <TabsContent value="users" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>نشاط المستخدمين مع الإشعارات</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {isLoadingActivity ? (
-                <div className="text-center py-8">جاري التحميل...</div>
-              ) : userActivityData?.userStats?.length > 0 ? (
-                <ScrollArea className="h-64 sm:h-96">
-                  {userActivityData.userStats.map((activity: UserActivity) => (
+              <Card className="bg-gradient-to-r from-amber-50 to-amber-100 border-amber-200 hover:shadow-lg transition-all duration-300">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-medium text-amber-600 mb-1">معدل القراءة</p>
+                      <p className="text-2xl font-bold text-amber-700">
+                        {userActivityData?.userStats?.length > 0 
+                          ? Math.round(userActivityData.userStats.reduce((acc: number, user: UserActivity) => acc + user.readPercentage, 0) / userActivityData.userStats.length)
+                          : 0}%
+                      </p>
+                    </div>
+                    <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center">
+                      <Target className="h-5 w-5 text-white" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-r from-red-50 to-red-100 border-red-200 hover:shadow-lg transition-all duration-300">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-medium text-red-600 mb-1">الإشعارات الحرجة</p>
+                      <p className="text-2xl font-bold text-red-700">
+                        {notificationsData?.notifications?.filter((n: AdminNotification) => n.priority === 5).length || 0}
+                      </p>
+                    </div>
+                    <div className="w-10 h-10 bg-red-500 rounded-xl flex items-center justify-center">
+                      <AlertTriangle className="h-5 w-5 text-white" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            <Card className="bg-white border border-gray-200 shadow-lg rounded-2xl">
+              <CardHeader className="px-6 py-4 border-b border-gray-100">
+                <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                  <Activity className="h-5 w-5 text-blue-600" />
+                  آخر النشاطات
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4">
+                <div className="space-y-2 max-h-80 overflow-y-auto">
+                  {userActivityData?.userStats?.slice(0, 5).map((activity: UserActivity) => (
                     <UserActivityCard key={activity.userId} activity={activity} />
                   ))}
-                </ScrollArea>
-              ) : (
-                <div className="text-center py-8">لا يوجد نشاط للمستخدمين</div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* إرسال إشعار جديد */}
-        <TabsContent value="create" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>إرسال إشعار جديد</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">العنوان</label>
-                  <Input
-                    value={newNotification.title}
-                    onChange={(e) => setNewNotification(prev => ({ ...prev, title: e.target.value }))}
-                    placeholder="عنوان الإشعار"
-                  />
                 </div>
-                
-                <div>
-                  <label className="block text-sm font-medium mb-2">النوع</label>
-                  <Select 
-                    value={newNotification.type} 
-                    onValueChange={(value) => setNewNotification(prev => ({ ...prev, type: value }))}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* إدارة الإشعارات */}
+          <TabsContent value="notifications" className="space-y-4">
+            <Card className="bg-white border border-gray-200 shadow-lg rounded-2xl">
+              <CardHeader className="px-6 py-4 border-b border-gray-100">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg font-semibold">فلترة الإشعارات</CardTitle>
+                  <Button
+                    onClick={() => refetchNotifications()}
+                    disabled={isLoadingNotifications}
+                    size="sm"
+                    className="bg-blue-600 hover:bg-blue-700"
                   >
-                    <SelectTrigger>
-                      <SelectValue />
+                    <RefreshCw className="h-4 w-4 mr-1" />
+                    تحديث
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <Select value={filters.type || "all"} onValueChange={(value) => setFilters(prev => ({ ...prev, type: value === "all" ? "" : value }))}>
+                    <SelectTrigger className="border-gray-300 focus:border-blue-500">
+                      <SelectValue placeholder="نوع الإشعار" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="all">جميع الأنواع</SelectItem>
                       {Object.entries(typeLabels).map(([key, value]) => (
                         <SelectItem key={key} value={key}>
                           {value.icon} {value.label}
@@ -567,18 +534,13 @@ export default function AdminNotificationsPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
 
-                <div>
-                  <label className="block text-sm font-medium mb-2">الأولوية</label>
-                  <Select 
-                    value={newNotification.priority.toString()} 
-                    onValueChange={(value) => setNewNotification(prev => ({ ...prev, priority: parseInt(value) }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
+                  <Select value={filters.priority || "all"} onValueChange={(value) => setFilters(prev => ({ ...prev, priority: value === "all" ? "" : value }))}>
+                    <SelectTrigger className="border-gray-300 focus:border-blue-500">
+                      <SelectValue placeholder="الأولوية" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="all">جميع الأولويات</SelectItem>
                       {Object.entries(priorityLabels).map(([key, value]) => (
                         <SelectItem key={key} value={key}>
                           {value.label}
@@ -586,48 +548,205 @@ export default function AdminNotificationsPage() {
                       ))}
                     </SelectContent>
                   </Select>
+
+                  <Input
+                    type="number"
+                    placeholder="عدد النتائج"
+                    value={filters.limit}
+                    onChange={(e) => setFilters(prev => ({ ...prev, limit: parseInt(e.target.value) || 50 }))}
+                    className="border-gray-300 focus:border-blue-500"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="space-y-2">
+              {isLoadingNotifications ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                  <p className="mt-2 text-gray-500">جاري التحميل...</p>
+                </div>
+              ) : notificationsData?.notifications?.length > 0 ? (
+                notificationsData.notifications.map((notification: AdminNotification) => (
+                  <NotificationCard key={notification.id} notification={notification} />
+                ))
+              ) : (
+                <Card className="bg-white border border-gray-200 shadow-lg rounded-2xl">
+                  <CardContent className="text-center py-12">
+                    <Bell className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-500 text-lg">لا توجد إشعارات</p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </TabsContent>
+
+          {/* نشاط المستخدمين */}
+          <TabsContent value="users" className="space-y-4">
+            <Card className="bg-white border border-gray-200 shadow-lg rounded-2xl">
+              <CardHeader className="px-6 py-4 border-b border-gray-100">
+                <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                  <Users className="h-5 w-5 text-blue-600" />
+                  نشاط المستخدمين مع الإشعارات
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4">
+                {isLoadingActivity ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                    <p className="mt-2 text-gray-500">جاري التحميل...</p>
+                  </div>
+                ) : userActivityData?.userStats?.length > 0 ? (
+                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                    {userActivityData.userStats.map((activity: UserActivity) => (
+                      <UserActivityCard key={activity.userId} activity={activity} />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Users className="h-12 w-12 text-gray-400 mx-auto mb-2" />
+                    <p className="text-gray-500">لا يوجد نشاط للمستخدمين</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* إرسال إشعار جديد */}
+          <TabsContent value="create" className="space-y-4">
+            <Card className="bg-white border border-gray-200 shadow-lg rounded-2xl">
+              <CardHeader className="px-6 py-4 border-b border-gray-100">
+                <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                  <Zap className="h-5 w-5 text-blue-600" />
+                  إنشاء إشعار جديد
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6 space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">نوع الإشعار</label>
+                    <Select 
+                      value={newNotification.type} 
+                      onValueChange={(value) => setNewNotification(prev => ({ ...prev, type: value }))}
+                    >
+                      <SelectTrigger className="border-gray-300 focus:border-blue-500">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(typeLabels).map(([key, value]) => (
+                          <SelectItem key={key} value={key}>
+                            <span className="flex items-center gap-2">
+                              <span>{value.icon}</span>
+                              <span>{value.label}</span>
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">مستوى الأولوية</label>
+                    <Select 
+                      value={newNotification.priority.toString()} 
+                      onValueChange={(value) => setNewNotification(prev => ({ ...prev, priority: parseInt(value) }))}
+                    >
+                      <SelectTrigger className="border-gray-300 focus:border-blue-500">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(priorityLabels).map(([key, value]) => (
+                          <SelectItem key={key} value={key}>
+                            <div className={`flex items-center gap-2 font-medium ${
+                              key === '5' ? 'text-red-600' :
+                              key === '4' ? 'text-orange-600' :
+                              key === '3' ? 'text-yellow-600' :
+                              key === '2' ? 'text-green-600' : 'text-blue-600'
+                            }`}>
+                              {value.label}
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">عنوان الإشعار</label>
+                    <Input
+                      value={newNotification.title}
+                      onChange={(e) => setNewNotification(prev => ({ ...prev, title: e.target.value }))}
+                      placeholder="أدخل عنوان الإشعار"
+                      className="border-gray-300 focus:border-blue-500"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">المستقبلين</label>
+                    <Select 
+                      value={newNotification.recipients} 
+                      onValueChange={(value) => setNewNotification(prev => ({ ...prev, recipients: value }))}
+                    >
+                      <SelectTrigger className="border-gray-300 focus:border-blue-500">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">
+                          <div className="flex items-center gap-2">
+                            <Users className="h-4 w-4" />
+                            جميع المستخدمين
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="admins">
+                          <div className="flex items-center gap-2">
+                            <Shield className="h-4 w-4" />
+                            المسؤولين فقط
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="users">
+                          <div className="flex items-center gap-2">
+                            <User className="h-4 w-4" />
+                            المستخدمين العاديين فقط
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">المستقبلين</label>
-                  <Select 
-                    value={newNotification.recipients} 
-                    onValueChange={(value) => setNewNotification(prev => ({ ...prev, recipients: value }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">جميع المستخدمين</SelectItem>
-                      <SelectItem value="admins">المسؤولين فقط</SelectItem>
-                      <SelectItem value="users">المستخدمين العاديين فقط</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">محتوى الإشعار</label>
+                  <Textarea
+                    value={newNotification.body}
+                    onChange={(e) => setNewNotification(prev => ({ ...prev, body: e.target.value }))}
+                    placeholder="أدخل محتوى الإشعار التفصيلي..."
+                    rows={4}
+                    className="border-gray-300 focus:border-blue-500 resize-none"
+                  />
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-2">المحتوى</label>
-                <Textarea
-                  value={newNotification.body}
-                  onChange={(e) => setNewNotification(prev => ({ ...prev, body: e.target.value }))}
-                  placeholder="محتوى الإشعار"
-                  rows={4}
-                />
-              </div>
-
-              <Button
-                onClick={() => sendNotificationMutation.mutate(newNotification)}
-                disabled={!newNotification.title || !newNotification.body || sendNotificationMutation.isPending}
-                className="w-full"
-              >
-                <Send className="h-4 w-4 mr-2" />
-                {sendNotificationMutation.isPending ? 'جاري الإرسال...' : 'إرسال الإشعار'}
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+                <Button
+                  onClick={() => sendNotificationMutation.mutate(newNotification)}
+                  disabled={!newNotification.title || !newNotification.body || sendNotificationMutation.isPending}
+                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 h-12 text-base font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+                >
+                  {sendNotificationMutation.isPending ? (
+                    <div className="flex items-center gap-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      جاري الإرسال...
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Send className="h-5 w-5" />
+                      إرسال الإشعار
+                    </div>
+                  )}
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   );
 }
