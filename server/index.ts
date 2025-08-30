@@ -7,6 +7,7 @@ import { sql } from "drizzle-orm";
 import { db } from "./db";
 import { createNotificationTables, createTestNotifications } from "./create-notification-tables";
 import { secretsManager } from "./services/SecretsManager";
+import { smartSecretsManager } from "./services/SmartSecretsManager";
 
 import { exec } from "child_process";
 import { promisify } from "util";
@@ -69,18 +70,23 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // 🔐 تهيئة نظام المفاتيح السرية التلقائي أولاً
+  // 🔐 تهيئة النظام الذكي للمفاتيح السرية التلقائي أولاً
   try {
-    log("🔐 بدء تهيئة نظام المفاتيح السرية التلقائي...");
-    const secretsInitialized = await secretsManager.initializeSecrets();
+    log("🚀 بدء النظام الذكي لإدارة المفاتيح السرية...");
+    const smartInitialized = await smartSecretsManager.initializeOnStartup();
     
-    if (secretsInitialized) {
-      log("✅ تم تهيئة نظام المفاتيح السرية بنجاح");
+    if (smartInitialized) {
+      log("✅ تم تهيئة النظام الذكي للمفاتيح السرية بنجاح");
     } else {
-      log("⚠️ تحذير: فشل في تهيئة بعض المفاتيح السرية");
+      log("⚠️ تحذير: النظام الذكي واجه بعض المشاكل في التهيئة");
     }
+    
+    // عرض حالة سريعة
+    const status = smartSecretsManager.getQuickStatus();
+    log(`📊 حالة المفاتيح: ${status.readyCount}/${status.totalCount} جاهزة`);
+    
   } catch (error) {
-    log("❌ خطأ في تهيئة نظام المفاتيح السرية:");
+    log("❌ خطأ في النظام الذكي للمفاتيح السرية:");
     console.error(error);
   }
 

@@ -36,6 +36,7 @@ import { aiSystemService } from "./services/AiSystemService";
 import { securityPolicyService } from "./services/SecurityPolicyService";
 import { smartErrorHandler } from './services/SmartErrorHandler';
 import { secretsManager } from "./services/SecretsManager";
+import { smartSecretsManager } from "./services/SmartSecretsManager";
 import { 
   notifications, 
   notificationReadStates, 
@@ -149,22 +150,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ====== مسارات إدارة المفاتيح السرية التلقائية ======
   
-  // فحص حالة المفاتيح السرية
+  // فحص حالة المفاتيح السرية الذكي
   app.get("/api/secrets/status", async (req, res) => {
     try {
-      const status = secretsManager.getSecretsStatus();
-      const { missing, existing } = secretsManager.checkRequiredSecrets();
+      const analysis = smartSecretsManager.analyzeSecretsStatus();
+      const quickStatus = smartSecretsManager.getQuickStatus();
       
       res.json({
         success: true,
-        secrets: status,
-        summary: {
-          total: status.length,
-          existing: existing.length,
-          missing: missing.length,
-          existingKeys: existing,
-          missingKeys: missing
-        }
+        analysis,
+        quickStatus,
+        message: quickStatus.allReady ? 
+          "جميع المفاتيح جاهزة ومتزامنة" : 
+          `${quickStatus.missingKeys.length} مفتاح يحتاج معالجة`
       });
     } catch (error) {
       console.error('خطأ في فحص حالة المفاتيح السرية:', error);
@@ -175,26 +173,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // إضافة المفاتيح المفقودة تلقائياً
-  app.post("/api/secrets/auto-add", async (req, res) => {
+  // النظام الذكي لإدارة المفاتيح تلقائياً
+  app.post("/api/secrets/auto-manage", async (req, res) => {
     try {
-      const result = await secretsManager.autoAddMissingSecrets();
+      const result = await smartSecretsManager.autoManageSecrets();
       
       res.json({
-        success: true,
-        message: "تم تنفيذ عملية إضافة المفاتيح التلقائية",
-        result: {
-          added: result.added,
-          failed: result.failed,
-          existing: result.existing,
-          totalProcessed: result.added.length + result.failed.length + result.existing.length
-        }
+        success: result.success,
+        message: result.message,
+        details: result.details,
+        summary: result.summary
       });
     } catch (error) {
-      console.error('خطأ في إضافة المفاتيح تلقائياً:', error);
+      console.error('خطأ في النظام الذكي لإدارة المفاتيح:', error);
       res.status(500).json({ 
         success: false,
-        message: "خطأ في إضافة المفاتيح تلقائياً",
+        message: "خطأ في النظام الذكي لإدارة المفاتيح",
         error: error instanceof Error ? error.message : "خطأ غير محدد"
       });
     }
