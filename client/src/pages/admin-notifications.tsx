@@ -481,7 +481,7 @@ export default function AdminNotificationsPage() {
 
           {/* إدارة الإشعارات */}
           <TabsContent value="notifications" className="space-y-10 mt-12">
-            <Card className="bg-white border border-gray-200 shadow-lg rounded-2xl min-h-[700px]">
+            <Card className="bg-white border border-gray-200 shadow-lg rounded-2xl">
               <CardHeader className="px-6 py-4 border-b border-gray-100">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg font-semibold">فلترة الإشعارات</CardTitle>
