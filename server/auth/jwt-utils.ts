@@ -94,6 +94,7 @@ export async function generateTokenPair(
 
   // حفظ الجلسة في قاعدة البيانات
   await db.insert(authUserSessions).values({
+    id: sessionId,
     userId,
     deviceId: sessionId,
     refreshTokenHash: refreshToken,
@@ -103,6 +104,8 @@ export async function generateTokenPair(
     lastActivity: now,
     expiresAt,
     isRevoked: false,
+    loginMethod: 'password',
+    isTrustedDevice: false,
   });
 
   return {
