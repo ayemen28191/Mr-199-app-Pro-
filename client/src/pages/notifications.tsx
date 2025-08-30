@@ -173,12 +173,17 @@ export default function NotificationsPage() {
     return true;
   });
 
-  // أنواع الإشعارات المسموحة للمستخدم العادي فقط (إخفاء أنواع المسؤول)
-  const allowedUserTypes = ['user-welcome', 'task', 'payment-reminder', 'general-announcement'];
+  // أنواع الإشعارات المسموحة حسب نوع المستخدم
+  const adminTypes = ['system', 'maintenance', 'warranty', 'damaged'];
+  const userTypes = ['user-welcome', 'task', 'payment-reminder', 'general-announcement'];
+  
+  // تحديد الأنواع المسموحة حسب دور المستخدم
+  const allowedTypes = isAdmin ? [...adminTypes, ...userTypes] : userTypes;
+  
   const notificationTypes = Array.from(new Set(
     normalizedNotifications
       .map(n => n.type)
-      .filter(type => allowedUserTypes.includes(type))
+      .filter(type => allowedTypes.includes(type))
   ));
   
   // إحصائيات سريعة

@@ -62,7 +62,8 @@ export function NotificationCenter({ className }: NotificationCenterProps) {
   const fetchNotifications = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/notifications?userId=default&limit=50');
+      const currentUserId = localStorage.getItem('userId') || 'default';
+      const response = await fetch(`/api/notifications?userId=${currentUserId}&limit=50`);
       if (response.ok) {
         const data = await response.json();
         // إذا كان التنسيق الجديد
@@ -104,12 +105,13 @@ export function NotificationCenter({ className }: NotificationCenterProps) {
   // تعليم إشعار كمقروء
   const markAsRead = async (notificationId: string) => {
     try {
+      const currentUserId = localStorage.getItem('userId') || 'default';
       const response = await fetch(`/api/notifications/${notificationId}/mark-read`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ userId: 'default' }),
+        body: JSON.stringify({ userId: currentUserId }),
       });
       
       if (response.ok) {
@@ -133,7 +135,7 @@ export function NotificationCenter({ className }: NotificationCenterProps) {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ userId: 'default' }),
+        body: JSON.stringify({ userId: localStorage.getItem('userId') || 'default' }),
       });
       
       if (response.ok) {
