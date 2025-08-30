@@ -4480,7 +4480,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userStats = await db.execute(sql`
         SELECT 
           u.id::text as user_id,
-          u.name as user_name,
+          COALESCE(NULLIF(TRIM(CONCAT(u.first_name, ' ', u.last_name)), ''), u.email) as user_name,
           u.email as user_email,
           u.role as user_role,
           COALESCE(COUNT(DISTINCT nrs.notification_id), 0) as total_notifications,
@@ -4489,8 +4489,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           MAX(nrs.read_at) as last_activity
         FROM users u
         LEFT JOIN notification_read_states nrs ON u.id::text = nrs.user_id
-        GROUP BY u.id, u.name, u.email, u.role
-        ORDER BY last_activity DESC NULLS LAST, u.name ASC
+        GROUP BY u.id, u.first_name, u.last_name, u.email, u.role
+        ORDER BY last_activity DESC NULLS LAST, user_name ASC
       `);
 
       const formattedStats = userStats.rows.map((row: any) => ({
