@@ -399,8 +399,8 @@ export default function AdminNotificationsPage() {
           {/* نظرة عامة محسنة */}
           <TabsContent value="overview" className="space-y-12 mt-12">
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200 hover:shadow-lg transition-all duration-300 min-h-[140px]">
-                <CardContent className="p-6">
+              <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200 hover:shadow-lg transition-all duration-300">
+                <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs font-medium text-blue-600 mb-1">إجمالي الإشعارات</p>
@@ -413,8 +413,8 @@ export default function AdminNotificationsPage() {
                 </CardContent>
               </Card>
               
-              <Card className="bg-gradient-to-r from-green-50 to-green-100 border-green-200 hover:shadow-lg transition-all duration-300 min-h-[140px]">
-                <CardContent className="p-6">
+              <Card className="bg-gradient-to-r from-green-50 to-green-100 border-green-200 hover:shadow-lg transition-all duration-300">
+                <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs font-medium text-green-600 mb-1">المستخدمين النشطين</p>
@@ -427,8 +427,8 @@ export default function AdminNotificationsPage() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-to-r from-amber-50 to-amber-100 border-amber-200 hover:shadow-lg transition-all duration-300 min-h-[140px]">
-                <CardContent className="p-6">
+              <Card className="bg-gradient-to-r from-amber-50 to-amber-100 border-amber-200 hover:shadow-lg transition-all duration-300">
+                <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs font-medium text-amber-600 mb-1">معدل القراءة</p>
@@ -445,8 +445,8 @@ export default function AdminNotificationsPage() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-to-r from-red-50 to-red-100 border-red-200 hover:shadow-lg transition-all duration-300 min-h-[140px]">
-                <CardContent className="p-6">
+              <Card className="bg-gradient-to-r from-red-50 to-red-100 border-red-200 hover:shadow-lg transition-all duration-300">
+                <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs font-medium text-red-600 mb-1">الإشعارات الحرجة</p>
@@ -537,7 +537,7 @@ export default function AdminNotificationsPage() {
               </CardContent>
             </Card>
 
-            <div className="space-y-2">
+            <div className="space-y-2 min-h-[500px]">
               {isLoadingNotifications ? (
                 <div className="text-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
@@ -574,7 +574,7 @@ export default function AdminNotificationsPage() {
                     <p className="mt-2 text-gray-500">جاري التحميل...</p>
                   </div>
                 ) : userActivityData?.userStats?.length > 0 ? (
-                  <div className="space-y-2 max-h-[600px] min-h-[400px] overflow-y-auto">
+                  <div className="space-y-2 max-h-[700px] min-h-[500px] overflow-y-auto">
                     {userActivityData.userStats.map((activity: UserActivity) => (
                       <UserActivityCard key={activity.userId} activity={activity} />
                     ))}
