@@ -98,7 +98,7 @@ export async function generateTokenPair(
     deviceId: sessionId,
     refreshTokenHash: refreshToken,
     accessTokenHash: accessToken,
-    ipAddress,
+    ipAddress: ipAddress || null,
     deviceType: 'web',
     lastActivity: now,
     expiresAt,

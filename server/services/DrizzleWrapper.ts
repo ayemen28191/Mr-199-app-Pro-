@@ -40,7 +40,7 @@ export class DrizzleWrapper {
       console.log(`❌ خطأ في INSERT: ${error.message}`);
       
       // تمرير الخطأ للنظام الذكي
-      await smartErrorHandler.handleDatabaseError(error, operation, true);
+      await smartErrorHandler.handleDatabaseError(error, operation, false);
       
       // هذا السطر لن يتم الوصول إليه بسبب الـ throw في المعالج
       throw error;

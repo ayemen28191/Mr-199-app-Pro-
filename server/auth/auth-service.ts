@@ -183,14 +183,14 @@ export async function loginUser(request: LoginRequest): Promise<LoginResult> {
     }
     */
 
-    // التحقق من التحقق بالبريد الإلكتروني (تم تعطيله مؤقتاً)
-    if (!user.emailVerifiedAt) {
-      return {
-        success: false,
-        requireVerification: true,
-        message: 'يرجى التحقق من بريدك الإلكتروني أولاً'
-      };
-    }
+    // التحقق من التحقق بالبريد الإلكتروني (تم تعطيله مؤقتاً لتسهيل التطوير)
+    // if (!user.emailVerifiedAt) {
+    //   return {
+    //     success: false,
+    //     requireVerification: true,
+    //     message: 'يرجى التحقق من بريدك الإلكتروني أولاً'
+    //   };
+    // }
 
     // نظام JWT المتقدم
     console.log('🔑 تسجيل دخول ناجح بنظام JWT المتقدم');
@@ -204,8 +204,16 @@ export async function loginUser(request: LoginRequest): Promise<LoginResult> {
       userAgent
     );
 
-    // تسجيل نجاح تسجيل الدخول (معطل مؤقتاً)
-    console.log('✅ نجح تسجيل الدخول للمستخدم:', user.id);
+    // تسجيل نجاح تسجيل الدخول في سجل التدقيق
+    await logAuditEvent({
+      userId: user.id,
+      action: 'login_success',
+      resource: 'auth',
+      ipAddress,
+      userAgent,
+      status: 'success',
+      metadata: { loginMethod: 'password', sessionId: tokens.sessionId }
+    });
 
     // تحديث آخر تسجيل دخول
     await db
