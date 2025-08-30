@@ -43,6 +43,8 @@ import {
   notificationQueue 
 } from "@shared/schema";
 import { eq, and, or, desc, inArray } from "drizzle-orm";
+// Import middleware المصادقة المتقدم
+import { requireAuth, requireRole, requirePermission } from "./middleware/auth.js";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
@@ -61,8 +63,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // ====== مسارات إدارة قاعدة البيانات الذكية ======
   
-  // جلب قائمة الجداول مع معلومات RLS
-  app.get("/api/db-admin/tables", async (req, res) => {
+  // جلب قائمة الجداول مع معلومات RLS (مسار محمي - يتطلب دور admin)
+  app.get("/api/db-admin/tables", requireAuth, requireRole(['admin']), async (req, res) => {
     try {
       const tables = await storage.getDatabaseTables();
       
@@ -78,8 +80,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // تحليل التهديدات الأمنية يدوياً
-  app.post("/api/db-admin/analyze-security", async (req, res) => {
+  // تحليل التهديدات الأمنية يدوياً (مسار محمي - يتطلب دور admin)
+  app.post("/api/db-admin/analyze-security", requireAuth, requireRole(['admin']), async (req, res) => {
     try {
       const analysis = await storage.analyzeSecurityThreats();
       res.json(analysis);
@@ -150,8 +152,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ====== مسارات إدارة المفاتيح السرية التلقائية ======
   
-  // فحص حالة المفاتيح السرية الذكي
-  app.get("/api/secrets/status", async (req, res) => {
+  // فحص حالة المفاتيح السرية الذكي (مسار محمي - يتطلب دور admin)
+  app.get("/api/secrets/status", requireAuth, requireRole(['admin']), async (req, res) => {
     try {
       const analysis = smartSecretsManager.analyzeSecretsStatus();
       const quickStatus = smartSecretsManager.getQuickStatus();
@@ -764,11 +766,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // تم نقل تتبع الإشعارات المقروءة إلى قاعدة البيانات - حل مشكلة اختفاء الحالة عند إعادة التشغيل
   
-  // إضافة مسارات المصادقة المتقدمة - معطلة حتى توفر المفاتيح الأمنية
-  // app.use("/api/auth", authRoutes);
+  // مسارات المصادقة المتقدمة تم تفعيلها بنجاح في الأعلى
 
-  // Fund Transfers (تحويلات العهدة)
-  app.get("/api/fund-transfers", async (req, res) => {
+  // Fund Transfers (تحويلات العهدة) - مسار محمي
+  app.get("/api/fund-transfers", requireAuth, async (req, res) => {
     try {
       const projectId = req.query.projectId as string;
       const date = req.query.date as string;
@@ -782,8 +783,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Projects
-  app.get("/api/projects", async (req, res) => {
+  // Projects - مسار محمي
+  app.get("/api/projects", requireAuth, async (req, res) => {
     try {
       const projects = await storage.getProjects();
       res.json(projects);
@@ -792,7 +793,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/projects", async (req, res) => {
+  app.post("/api/projects", requireAuth, async (req, res) => {
     try {
       const result = insertProjectSchema.safeParse(req.body);
       if (!result.success) {
@@ -813,8 +814,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get projects with statistics - محسن للأداء الفائق
-  app.get("/api/projects/with-stats", async (req, res) => {
+  // Get projects with statistics - محسن للأداء الفائق - مسار محمي
+  app.get("/api/projects/with-stats", requireAuth, async (req, res) => {
     try {
       console.time('projects-with-stats');
       
@@ -1096,8 +1097,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Workers
-  app.get("/api/workers", async (req, res) => {
+  // Workers - مسار محمي
+  app.get("/api/workers", requireAuth, async (req, res) => {
     try {
       const workers = await storage.getWorkers();
       res.json(workers);
@@ -1106,7 +1107,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/workers", async (req, res) => {
+  app.post("/api/workers", requireAuth, async (req, res) => {
     try {
       const result = insertWorkerSchema.safeParse(req.body);
       if (!result.success) {

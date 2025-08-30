@@ -32,7 +32,7 @@ const registerSchema = z.object({
   password: z.string().min(8, 'كلمة المرور يجب أن تكون على الأقل 8 أحرف'),
   name: z.string().min(2, 'الاسم قصير جداً'),
   phone: z.string().optional(),
-  role: z.string().default('user'),
+  role: z.string().optional(),
 });
 
 const verifyEmailSchema = z.object({
@@ -440,47 +440,5 @@ router.get('/me', requireAuth, async (req: AuthenticatedRequest, res) => {
   }
 });
 
-/**
- * الحصول على معلومات المستخدم الحالي
- * GET /api/auth/me
- */
-router.get('/me', async (req, res) => {
-  try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({
-        success: false,
-        message: 'رمز المصادقة مفقود'
-      });
-    }
-
-    const token = authHeader.substring(7);
-    
-    // للحل المؤقت، التحقق من الرمز المبسط
-    if (token === 'temp_access_token_123') {
-      return res.json({
-        success: true,
-        user: {
-          id: '1',
-          email: 'admin@test.com',
-          name: 'مدير النظام',
-          role: 'admin',
-          mfaEnabled: false
-        }
-      });
-    } else {
-      return res.status(401).json({
-        success: false,
-        message: 'رمز المصادقة غير صالح'
-      });
-    }
-  } catch (error) {
-    console.error('خطأ في /api/auth/me:', error);
-    res.status(500).json({
-      success: false,
-      message: 'حدث خطأ داخلي في الخادم'
-    });
-  }
-});
 
 export default router;

@@ -14,7 +14,7 @@ export const users = pgTable("users", {
   avatarUrl: text("avatar_url"),
   
   // المصادقة التقليدية
-  role: text("role").notNull().default("admin"), // admin, manager, user (للتوافق العكسي)
+  role: text("role").notNull().default("user"), // admin, manager, user
   isActive: boolean("is_active").default(true).notNull(),
   
   // المصادقة المتقدمة

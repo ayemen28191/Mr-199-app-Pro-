@@ -52,10 +52,37 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const accessToken = localStorage.getItem('accessToken');
         
         if (savedUser && accessToken) {
-          // استخدم البيانات المحفوظة مباشرة بدون التحقق من الـ API
-          // هذا حل مؤقت لتجنب مشاكل المصادقة
-          const userData = JSON.parse(savedUser);
-          setUser(userData);
+          // التحقق من صحة الرمز المميز مع النظام المتقدم
+          try {
+            const response = await fetch('/api/auth/me', {
+              headers: {
+                'Authorization': `Bearer ${accessToken}`,
+              },
+            });
+            
+            if (response.ok) {
+              const data = await response.json();
+              if (data.success) {
+                setUser(data.user);
+                return;
+              }
+            }
+            
+            // إذا فشل التحقق، محاولة تجديد الرمز
+            const refreshSuccess = await refreshToken();
+            if (!refreshSuccess) {
+              // مسح البيانات المحفوظة إذا فشل التجديد
+              localStorage.removeItem('user');
+              localStorage.removeItem('accessToken');
+              localStorage.removeItem('refreshToken');
+            }
+          } catch (error) {
+            console.error('خطأ في التحقق من الرمز:', error);
+            // مسح البيانات المحفوظة في حالة الخطأ
+            localStorage.removeItem('user');
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+          }
         }
       } catch (error) {
         console.error('خطأ في تحقق المصادقة:', error);
