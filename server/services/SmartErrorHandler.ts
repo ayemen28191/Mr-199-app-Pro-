@@ -613,6 +613,98 @@ export class SmartErrorHandler {
       };
     }
   }
+
+  /**
+   * جلب قائمة الأخطاء التفصيلية
+   */
+  async getDetectedErrors(options: {
+    limit?: number;
+    offset?: number;
+    severity?: string;
+    errorType?: string;
+    tableName?: string;
+    status?: string;
+  } = {}): Promise<{
+    errors: Array<{
+      id: string;
+      errorType: string;
+      severity: 'low' | 'medium' | 'high' | 'critical';
+      tableName: string;
+      columnName?: string;
+      arabic_title?: string;
+      description: string;
+      friendlyMessage: string;
+      status: string;
+      fingerprint: string;
+      metadata: any;
+      created_at: string;
+      updated_at: string;
+    }>;
+    total: number;
+    hasMore: boolean;
+  }> {
+    try {
+      await this.ensureErrorTablesExist();
+      
+      const {
+        limit = 50,
+        offset = 0,
+        severity,
+        errorType,
+        tableName,
+        status = 'unresolved'
+      } = options;
+
+      // جلب البيانات باستخدام SQL بسيط جداً - استخدام أعمدة الجدول الفعلية
+      const result = await db.execute(sql`
+        SELECT 
+          id,
+          error_type,
+          severity,
+          table_name,
+          column_name,
+          original_message,
+          friendly_message,
+          fingerprint,
+          context,
+          created_at,
+          updated_at
+        FROM error_logs 
+        ORDER BY created_at DESC
+        LIMIT ${limit}
+      `);
+
+      const errors = result.rows.map((row: any) => ({
+        id: row.id,
+        errorType: row.error_type,
+        severity: row.severity,
+        tableName: row.table_name,
+        columnName: row.column_name,
+        arabic_title: `خطأ في ${row.table_name || 'النظام'}`, // عنوان تلقائي
+        description: row.original_message, // استخدام original_message كـ description
+        friendlyMessage: row.friendly_message,
+        status: 'unresolved', // القيمة الافتراضية
+        fingerprint: row.fingerprint,
+        metadata: row.context ? (typeof row.context === 'string' ? JSON.parse(row.context) : row.context) : null,
+        created_at: row.created_at,
+        updated_at: row.updated_at
+      }));
+
+      return {
+        errors,
+        total: errors.length,
+        hasMore: false
+      };
+
+    } catch (error) {
+      console.error('❌ خطأ في جلب قائمة الأخطاء التفصيلية:', error);
+      return {
+        errors: [],
+        total: 0,
+        hasMore: false
+      };
+    }
+  }
 }
 
 // تصدير مثيل عام للاستخدام

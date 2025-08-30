@@ -4931,6 +4931,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // جلب قائمة الأخطاء التفصيلية
+  app.get("/api/smart-errors/detected", async (req, res) => {
+    try {
+      console.log('📋 طلب جلب قائمة الأخطاء التفصيلية');
+      
+      const {
+        limit = 20,
+        offset = 0,
+        severity,
+        errorType,
+        tableName,
+        status = 'unresolved'
+      } = req.query;
+
+      const result = await smartErrorHandler.getDetectedErrors({
+        limit: Number(limit),
+        offset: Number(offset),
+        severity: severity as string,
+        errorType: errorType as string,
+        tableName: tableName as string,
+        status: status as string
+      });
+      
+      console.log(`📊 تم جلب ${result.errors.length} خطأ من إجمالي ${result.total}`);
+      
+      res.json({
+        success: true,
+        detectedErrors: result.errors,
+        pagination: {
+          total: result.total,
+          limit: Number(limit),
+          offset: Number(offset),
+          hasMore: result.hasMore
+        },
+        message: `تم جلب ${result.errors.length} خطأ بنجاح`
+      });
+      
+    } catch (error: any) {
+      console.error('❌ خطأ في جلب قائمة الأخطاء التفصيلية:', error);
+      res.status(500).json({ 
+        success: false,
+        message: 'خطأ في جلب قائمة الأخطاء التفصيلية',
+        error: error.message
+      });
+    }
+  });
+
   // إنشاء خطأ تجريبي لاختبار النظام
   app.post("/api/smart-errors/test", async (req, res) => {
     try {
