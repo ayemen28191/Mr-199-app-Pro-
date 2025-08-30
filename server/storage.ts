@@ -3649,7 +3649,8 @@ export class DatabaseStorage implements IStorage {
         query = query.limit(filters.limit);
       }
 
-      return await query;
+      const results = await query;
+      return results;
     } catch (error) {
       console.error('Error getting AI system logs:', error);
       return [];
@@ -3702,7 +3703,8 @@ export class DatabaseStorage implements IStorage {
         query = query.limit(filters.limit);
       }
 
-      return await query;
+      const results = await query;
+      return results;
     } catch (error) {
       console.error('Error getting AI system metrics:', error);
       return [];
@@ -3764,7 +3766,8 @@ export class DatabaseStorage implements IStorage {
         query = query.where(and(...conditions));
       }
 
-      return await query.orderBy(desc(aiSystemDecisions.createdAt));
+      const results = await query.orderBy(desc(aiSystemDecisions.createdAt));
+      return results;
     } catch (error) {
       console.error('Error getting AI system decisions:', error);
       return [];
@@ -3835,15 +3838,17 @@ export class DatabaseStorage implements IStorage {
       if (filters?.priority) {
         conditions.push(eq(aiSystemRecommendations.priority, filters.priority));
       }
-      if (filters?.targetArea) {
-        conditions.push(eq(aiSystemRecommendations.targetArea, filters.targetArea));
-      }
+      // targetArea column was removed from schema
+      // if (filters?.targetArea) {
+      //   conditions.push(eq(aiSystemRecommendations.targetArea, filters.targetArea));
+      // }
 
       if (conditions.length > 0) {
         query = query.where(and(...conditions));
       }
 
-      return await query.orderBy(desc(aiSystemRecommendations.createdAt));
+      const results = await query.orderBy(desc(aiSystemRecommendations.createdAt));
+      return results;
     } catch (error) {
       console.error('Error getting AI system recommendations:', error);
       return [];
@@ -3890,7 +3895,6 @@ export class DatabaseStorage implements IStorage {
         .set({ 
           status: 'executed',
           executedAt: new Date(),
-          executionResult: executionResult,
           updatedAt: new Date()
         })
         .where(eq(aiSystemRecommendations.id, id))
@@ -3907,7 +3911,6 @@ export class DatabaseStorage implements IStorage {
       const [dismissedRecommendation] = await db.update(aiSystemRecommendations)
         .set({ 
           status: 'dismissed',
-          dismissedAt: new Date(),
           updatedAt: new Date()
         })
         .where(eq(aiSystemRecommendations.id, id))
@@ -3939,7 +3942,7 @@ export class DatabaseStorage implements IStorage {
         
         const notification = {
           id: `security-${table.table_name}-${Date.now()}`,
-          userId: '06b71320-c869-4636-8f9f-dbcb5b12c74d',
+          userId: 'system', // نظام الأمان الداخلي
           type: 'security' as const,
           title: `🔐 تحذير أمني: الجدول ${table.table_name}`,
           message: `الجدول ${table.table_name} يحتوي على بيانات حساسة ولا يحتوي على سياسات RLS. هذا قد يعرض البيانات للخطر.`,
@@ -3962,7 +3965,7 @@ export class DatabaseStorage implements IStorage {
       // حفظ الإشعارات الأمنية
       if (securityNotifications.length > 0) {
         for (const notification of securityNotifications) {
-          await this.createNotification(notification);
+          await db.insert(notifications).values(notification);
         }
         console.log(`⚠️ تم إنشاء ${securityNotifications.length} إشعار أمني للجداول عالية الخطورة`);
       }
@@ -4193,9 +4196,9 @@ export class DatabaseStorage implements IStorage {
       
       const result = await db.execute(query);
       
-      console.log(`✅ تم جلب ${result.length} سياسة للجدول ${tableName}`);
+      console.log(`✅ تم جلب ${result.rows?.length || 0} سياسة للجدول ${tableName}`);
       
-      return result.map((row: any) => ({
+      return (result.rows || []).map((row: any) => ({
         policy_name: row.policy_name,
         command: row.command,
         permissive: row.permissive,

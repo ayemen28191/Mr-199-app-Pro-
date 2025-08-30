@@ -198,33 +198,8 @@ async function fixNotificationSystem() {
     try {
       await db.execute(sql`
         INSERT INTO "notification_settings" ("user_id", "notification_type", "push_enabled", "email_enabled")
-        SELECT 'default', 'safety', true, true
-        WHERE NOT EXISTS (SELECT 1 FROM notification_settings WHERE user_id = 'default' AND notification_type = 'safety')
-        
-        UNION ALL
-        
-        SELECT 'default', 'task', true, false
-        WHERE NOT EXISTS (SELECT 1 FROM notification_settings WHERE user_id = 'default' AND notification_type = 'task')
-        
-        UNION ALL
-        
-        SELECT 'default', 'payroll', true, false
-        WHERE NOT EXISTS (SELECT 1 FROM notification_settings WHERE user_id = 'default' AND notification_type = 'payroll')
-        
-        UNION ALL
-        
-        SELECT 'default', 'announcement', true, false
-        WHERE NOT EXISTS (SELECT 1 FROM notification_settings WHERE user_id = 'default' AND notification_type = 'announcement')
-        
-        UNION ALL
-        
-        SELECT 'default', 'system', true, false
-        WHERE NOT EXISTS (SELECT 1 FROM notification_settings WHERE user_id = 'default' AND notification_type = 'system')
-        
-        UNION ALL
-        
-        SELECT 'default', 'security', true, true
-        WHERE NOT EXISTS (SELECT 1 FROM notification_settings WHERE user_id = 'default' AND notification_type = 'security')
+        -- تم حذف البيانات الافتراضية للمستخدم 'default'
+        -- سيتم إنشاء إعدادات الإشعارات تلقائياً عند تسجيل المستخدمين الحقيقيين
       `);
     } catch (error) {
       console.log("⚠️ تم تخطي إدراج الإعدادات - قد تكون موجودة مسبقاً");

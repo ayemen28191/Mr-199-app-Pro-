@@ -91,8 +91,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // جلب اقتراحات السياسات لجدول محدد
-  app.get("/api/db-admin/policy-suggestions/:tableName", async (req, res) => {
+  // جلب اقتراحات السياسات لجدول محدد (مسار محمي - يتطلب دور admin)
+  app.get("/api/db-admin/policy-suggestions/:tableName", requireAuth, requireRole(['admin']), async (req, res) => {
     try {
       const { tableName } = req.params;
       const tables = await storage.getDatabaseTables();
@@ -117,8 +117,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // تفعيل/تعطيل RLS للجدول
-  app.post("/api/db-admin/toggle-rls", async (req, res) => {
+  // تفعيل/تعطيل RLS للجدول (مسار محمي - يتطلب دور admin)
+  app.post("/api/db-admin/toggle-rls", requireAuth, requireRole(['admin']), async (req, res) => {
     try {
       const { tableName, enable } = req.body;
       
@@ -138,8 +138,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // جلب سياسات RLS للجدول
-  app.get("/api/db-admin/policies/:tableName", async (req, res) => {
+  // جلب سياسات RLS للجدول (مسار محمي - يتطلب دور admin)
+  app.get("/api/db-admin/policies/:tableName", requireAuth, requireRole(['admin']), async (req, res) => {
     try {
       const { tableName } = req.params;
       const policies = await storage.getTablePolicies(tableName);
@@ -175,8 +175,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // النظام الذكي لإدارة المفاتيح تلقائياً
-  app.post("/api/secrets/auto-manage", async (req, res) => {
+  // النظام الذكي لإدارة المفاتيح تلقائياً (مسار محمي - يتطلب دور admin)
+  app.post("/api/secrets/auto-manage", requireAuth, requireRole(['admin']), async (req, res) => {
     try {
       const result = await smartSecretsManager.autoManageSecrets();
       
@@ -196,8 +196,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // إعادة تحميل المفاتيح من ملف .env
-  app.post("/api/secrets/reload", async (req, res) => {
+  // إعادة تحميل المفاتيح من ملف .env (مسار محمي - يتطلب دور admin)
+  app.post("/api/secrets/reload", requireAuth, requireRole(['admin']), async (req, res) => {
     try {
       secretsManager.reloadSecrets();
       
@@ -214,8 +214,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // إضافة مفتاح سري جديد مطلوب
-  app.post("/api/secrets/add-required", async (req, res) => {
+  // إضافة مفتاح سري جديد مطلوب (مسار محمي - يتطلب دور admin)
+  app.post("/api/secrets/add-required", requireAuth, requireRole(['admin']), async (req, res) => {
     try {
       const { name, value, description } = req.body;
       
@@ -243,8 +243,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ====== مسارات السياسات الأمنية المتقدمة ======
   
-  // جلب جميع السياسات الأمنية
-  app.get("/api/security-policies", async (req, res) => {
+  // جلب جميع السياسات الأمنية (مسار محمي - يتطلب دور admin)
+  app.get("/api/security-policies", requireAuth, requireRole(['admin']), async (req, res) => {
     try {
       const { status, category, severity, limit } = req.query;
       const policies = await securityPolicyService.getAllPolicies({
@@ -260,8 +260,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // إنشاء سياسة أمنية جديدة
-  app.post("/api/security-policies", async (req, res) => {
+  // إنشاء سياسة أمنية جديدة (مسار محمي - يتطلب دور admin)
+  app.post("/api/security-policies", requireAuth, requireRole(['admin']), async (req, res) => {
     try {
       const validation = insertSecurityPolicySchema.safeParse(req.body);
       if (!validation.success) {
@@ -276,8 +276,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // تحديث سياسة أمنية
-  app.put("/api/security-policies/:id", async (req, res) => {
+  // تحديث سياسة أمنية (مسار محمي - يتطلب دور admin)
+  app.put("/api/security-policies/:id", requireAuth, requireRole(['admin']), async (req, res) => {
     try {
       const { id } = req.params;
       const validation = insertSecurityPolicySchema.partial().safeParse(req.body);
@@ -293,8 +293,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // حذف سياسة أمنية
-  app.delete("/api/security-policies/:id", async (req, res) => {
+  // حذف سياسة أمنية (مسار محمي - يتطلب دور admin)
+  app.delete("/api/security-policies/:id", requireAuth, requireRole(['admin']), async (req, res) => {
     try {
       const { id } = req.params;
       const result = await securityPolicyService.deletePolicy(id);
@@ -305,8 +305,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // جلب اقتراحات السياسات
-  app.get("/api/security-policy-suggestions", async (req, res) => {
+  // جلب اقتراحات السياسات (مسار محمي - يتطلب دور admin)
+  app.get("/api/security-policy-suggestions", requireAuth, requireRole(['admin']), async (req, res) => {
     try {
       const { status, priority, category, limit } = req.query;
       const suggestions = await securityPolicyService.getPolicySuggestions({
@@ -322,8 +322,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // إنشاء اقتراح سياسة جديد
-  app.post("/api/security-policy-suggestions", async (req, res) => {
+  // إنشاء اقتراح سياسة جديد (مسار محمي - يتطلب دور admin)
+  app.post("/api/security-policy-suggestions", requireAuth, requireRole(['admin']), async (req, res) => {
     try {
       const validation = insertSecurityPolicySuggestionSchema.safeParse(req.body);
       if (!validation.success) {
@@ -338,8 +338,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // الموافقة على اقتراح سياسة
-  app.post("/api/security-policy-suggestions/:id/approve", async (req, res) => {
+  // الموافقة على اقتراح سياسة (مسار محمي - يتطلب دور admin)
+  app.post("/api/security-policy-suggestions/:id/approve", requireAuth, requireRole(['admin']), async (req, res) => {
     try {
       const { id } = req.params;
       const { reviewerId = 'system' } = req.body;
@@ -352,8 +352,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // جلب انتهاكات السياسات
-  app.get("/api/security-policy-violations", async (req, res) => {
+  // جلب انتهاكات السياسات (مسار محمي - يتطلب دور admin)
+  app.get("/api/security-policy-violations", requireAuth, requireRole(['admin']), async (req, res) => {
     try {
       const { policyId, severity, status, limit } = req.query;
       const violations = await securityPolicyService.getPolicyViolations({
@@ -369,8 +369,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // إنشاء سجل انتهاك جديد
-  app.post("/api/security-policy-violations", async (req, res) => {
+  // إنشاء سجل انتهاك جديد (مسار محمي - يتطلب دور admin)
+  app.post("/api/security-policy-violations", requireAuth, requireRole(['admin']), async (req, res) => {
     try {
       const validation = insertSecurityPolicyViolationSchema.safeParse(req.body);
       if (!validation.success) {
@@ -385,8 +385,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // إنشاء اقتراحات ذكية للسياسات
-  app.post("/api/security-policies/generate-smart-suggestions", async (req, res) => {
+  // إنشاء اقتراحات ذكية للسياسات (مسار محمي - يتطلب دور admin)
+  app.post("/api/security-policies/generate-smart-suggestions", requireAuth, requireRole(['admin']), async (req, res) => {
     try {
       const suggestions = await securityPolicyService.generateSmartSuggestions();
       res.json({ 
@@ -402,8 +402,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ====== مسارات النظام الذكي ======
   
-  // حالة النظام الذكي الحقيقية
-  app.get("/api/ai-system/status", async (req, res) => {
+  // حالة النظام الذكي الحقيقية (مسار محمي - يتطلب دور admin)
+  app.get("/api/ai-system/status", requireAuth, requireRole(['admin']), async (req, res) => {
     try {
       const systemStatus = await aiSystemService.getSystemStatus();
       res.json(systemStatus);
@@ -413,8 +413,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // مقاييس النظام الحقيقية من قاعدة البيانات
-  app.get("/api/ai-system/metrics", async (req, res) => {
+  // مقاييس النظام الحقيقية من قاعدة البيانات (مسار محمي - يتطلب دور admin)
+  app.get("/api/ai-system/metrics", requireAuth, requireRole(['admin']), async (req, res) => {
     try {
       const metrics = await aiSystemService.getSystemMetrics();
       res.json(metrics);
@@ -424,8 +424,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // توصيات الذكاء الاصطناعي الحقيقية
-  app.get("/api/ai-system/recommendations", async (req, res) => {
+  // توصيات الذكاء الاصطناعي الحقيقية (مسار محمي)
+  app.get("/api/ai-system/recommendations", requireAuth, async (req, res) => {
     try {
       // جلب التوصيات من قاعدة البيانات أولاً
       let recommendations = await storage.getAiSystemRecommendations({ status: 'active' });
@@ -452,8 +452,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // تشغيل/إيقاف النظام الذكي
-  app.post("/api/ai-system/toggle", async (req, res) => {
+  // تشغيل/إيقاف النظام الذكي (مسار محمي - يتطلب دور admin)
+  app.post("/api/ai-system/toggle", requireAuth, requireRole(['admin']), async (req, res) => {
     try {
       const { action } = req.body;
       
@@ -486,8 +486,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // تنفيذ توصية ذكية
-  app.post("/api/ai-system/execute-recommendation", async (req, res) => {
+  // تنفيذ توصية ذكية (مسار محمي)
+  app.post("/api/ai-system/execute-recommendation", requireAuth, async (req, res) => {
     try {
       const { recommendationId } = req.body;
       
@@ -532,8 +532,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // === المسارات الجديدة للنظام الذكي المتطور ===
   
-  // التحقق من النتائج
-  app.post('/api/ai-system/verify-results', async (req, res) => {
+  // التحقق من النتائج (مسار محمي - يتطلب دور admin)
+  app.post('/api/ai-system/verify-results', requireAuth, requireRole(['admin']), async (req, res) => {
     try {
       const { recommendationIds } = req.body;
       const recommendations = recommendationIds?.length > 0 
@@ -548,8 +548,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // إنشاء نسخة احتياطية
-  app.post('/api/ai-system/backup', async (req, res) => {
+  // إنشاء نسخة احتياطية (مسار محمي - يتطلب دور admin)
+  app.post('/api/ai-system/backup', requireAuth, requireRole(['admin']), async (req, res) => {
     try {
       const backup = await aiSystemService.createSystemBackup();
       res.json(backup);
@@ -559,8 +559,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // التراجع عن التغييرات
-  app.post('/api/ai-system/rollback', async (req, res) => {
+  // التراجع عن التغييرات (مسار محمي - يتطلب دور admin)
+  app.post('/api/ai-system/rollback', requireAuth, requireRole(['admin']), async (req, res) => {
     try {
       const { backupId, targetOperations } = req.body;
       if (!backupId) {
@@ -4150,7 +4150,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // =====================================================
 
   // Notification Read States
-  app.get("/api/notifications/:userId/read-state", async (req, res) => {
+  app.get("/api/notifications/:userId/read-state", requireAuth, async (req, res) => {
     try {
       const { notificationId, notificationType } = req.query;
       
@@ -4176,11 +4176,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // نظام إدارة الإشعارات المتقدم - Advanced Notification System
   // =====================================================
 
-  // جلب الإشعارات للمستخدم مع الفلترة
-  app.get("/api/notifications", async (req, res) => {
+  // جلب الإشعارات للمستخدم مع الفلترة (مسار محمي)
+  app.get("/api/notifications", requireAuth, async (req, res) => {
     try {
-      // استخدام النظام المتقدم للحصول على userId من JWT token أو header
-      const userId = req.headers['x-user-id'] as string || '06b71320-c869-4636-8f9f-dbcb5b12c74d';
+      // استخدام userId من النظام المتقدم JWT token
+      const userId = (req as any).user?.userId;
       const type = req.query.type as string;
       const unreadOnly = req.query.unreadOnly === 'true';
       const projectId = req.query.projectId as string;
@@ -4197,7 +4197,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // إذا لم توجد إشعارات، أرجع إشعار ترحيب مناسب للمستخدم
       if (result.notifications.length === 0) {
-        const isAdmin = userId === 'admin' || userId === 'مسؤول';
+        const userRole = (req as any).user?.role;
+        const isAdmin = userRole === 'admin';
         
         if (!isAdmin) {
           // فحص إذا كان إشعار الترحيب مُعلم كمقروء
@@ -4239,8 +4240,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // إنشاء إشعار جديد
-  app.post("/api/notifications", async (req, res) => {
+  // إنشاء إشعار جديد (مسار محمي)
+  app.post("/api/notifications", requireAuth, async (req, res) => {
     try {
       const notification = await notificationService.createNotification(req.body);
       res.status(201).json(notification);
@@ -4250,8 +4251,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // إنشاء إشعار أمني طارئ
-  app.post("/api/notifications/safety", async (req, res) => {
+  // إنشاء إشعار أمني طارئ (مسار محمي)
+  app.post("/api/notifications/safety", requireAuth, async (req, res) => {
     try {
       const notification = await notificationService.createSafetyAlert(req.body);
       res.status(201).json(notification);
@@ -4261,8 +4262,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // إنشاء إشعار مهمة
-  app.post("/api/notifications/task", async (req, res) => {
+  // إنشاء إشعار مهمة (مسار محمي)
+  app.post("/api/notifications/task", requireAuth, async (req, res) => {
     try {
       const notification = await notificationService.createTaskNotification(req.body);
       res.status(201).json(notification);
@@ -4272,8 +4273,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // إنشاء إشعار راتب
-  app.post("/api/notifications/payroll", async (req, res) => {
+  // إنشاء إشعار راتب (مسار محمي)
+  app.post("/api/notifications/payroll", requireAuth, async (req, res) => {
     try {
       const notification = await notificationService.createPayrollNotification(req.body);
       res.status(201).json(notification);
@@ -4283,8 +4284,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // إنشاء إعلان عام
-  app.post("/api/notifications/announcement", async (req, res) => {
+  // إنشاء إعلان عام (مسار محمي)
+  app.post("/api/notifications/announcement", requireAuth, async (req, res) => {
     try {
       const notification = await notificationService.createAnnouncement(req.body);
       res.status(201).json(notification);
@@ -4294,12 +4295,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // تعليم إشعار كمقروء - نظام موحد ومتقدم
-  app.post("/api/notifications/:notificationId/mark-read", async (req, res) => {
+  // تعليم إشعار كمقروء - نظام موحد ومتقدم (مسار محمي)
+  app.post("/api/notifications/:notificationId/mark-read", requireAuth, async (req, res) => {
     try {
       const { notificationId } = req.params;
-      // استخدام النظام المتقدم للحصول على userId من JWT token أو header
-      const userId = req.headers['x-user-id'] as string || '06b71320-c869-4636-8f9f-dbcb5b12c74d';
+      // استخدام userId من النظام المتقدم JWT token
+      const userId = (req as any).user?.userId;
+      
+      if (!userId) {
+        return res.status(401).json({ success: false, message: 'غير مصرح' });
+      }
       
       console.log(`📖 تعليم إشعار كمقروء: ${notificationId} للمستخدم: ${userId}`);
       
@@ -4326,12 +4331,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // تعليم جميع الإشعارات كمقروءة - نظام موحد
-  app.post("/api/notifications/mark-all-read", async (req, res) => {
+  // تعليم جميع الإشعارات كمقروءة - نظام موحد (مسار محمي)
+  app.post("/api/notifications/mark-all-read", requireAuth, async (req, res) => {
     try {
-      // استخدام النظام المتقدم للحصول على userId من JWT token أو header
-      const userId = req.headers['x-user-id'] as string || '06b71320-c869-4636-8f9f-dbcb5b12c74d';
+      // استخدام userId من النظام المتقدم JWT token
+      const userId = (req as any).user?.userId;
       const projectId = req.body.projectId as string;
+      
+      if (!userId) {
+        return res.status(401).json({ success: false, message: 'غير مصرح' });
+      }
       
       console.log(`📖 تعليم جميع الإشعارات كمقروءة للمستخدم: ${userId}`);
       
@@ -4368,8 +4377,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // جلب إحصائيات الإشعارات
   app.get("/api/notifications/stats", async (req, res) => {
     try {
-      // استخدام النظام المتقدم للحصول على userId من JWT token أو header
-      const userId = req.headers['x-user-id'] as string || '06b71320-c869-4636-8f9f-dbcb5b12c74d';
+      // استخدام userId من النظام المتقدم JWT token
+      const userId = (req as any).user?.userId;
+      
+      if (!userId) {
+        return res.status(401).json({ success: false, message: 'غير مصرح' });
+      }
       const stats = await notificationService.getNotificationStats(userId);
       res.json(stats);
     } catch (error) {
@@ -4941,7 +4954,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             tableName: 'projects',
             columnName: 'name',
             attemptedValue: 'مشروع تجريبي للاختبار',
-            userId: req.headers['x-user-id'] as string || '06b71320-c869-4636-8f9f-dbcb5b12c74d',
+            userId: (req as any).user?.userId || 'system',
             additionalContext: { testMode: true }
           },
           false // لا نريد رمي الخطأ

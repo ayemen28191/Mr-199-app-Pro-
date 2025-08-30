@@ -62,8 +62,20 @@ export function NotificationCenter({ className }: NotificationCenterProps) {
   const fetchNotifications = async () => {
     setLoading(true);
     try {
-      const currentUserId = localStorage.getItem('userId') || 'default';
-      const response = await fetch(`/api/notifications?userId=${currentUserId}&limit=50`);
+      // استخدام نظام المصادقة المتقدم JWT
+      const token = localStorage.getItem('access_token');
+      
+      if (!token) {
+        console.warn('لا يوجد رمز مصادقة - تخطي جلب الإشعارات');
+        setLoading(false);
+        return;
+      }
+      
+      const response = await fetch('/api/notifications?limit=50', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
       if (response.ok) {
         const data = await response.json();
         // إذا كان التنسيق الجديد
@@ -105,13 +117,20 @@ export function NotificationCenter({ className }: NotificationCenterProps) {
   // تعليم إشعار كمقروء
   const markAsRead = async (notificationId: string) => {
     try {
-      const currentUserId = localStorage.getItem('userId') || 'default';
+      // استخدام نظام المصادقة المتقدم JWT
+      const token = localStorage.getItem('access_token');
+      
+      if (!token) {
+        console.warn('لا يوجد رمز مصادقة - لا يمكن تحديد الإشعار كمقروء');
+        return;
+      }
+      
       const response = await fetch(`/api/notifications/${notificationId}/mark-read`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ userId: currentUserId }),
       });
       
       if (response.ok) {
@@ -130,12 +149,20 @@ export function NotificationCenter({ className }: NotificationCenterProps) {
   // تعليم جميع الإشعارات كمقروءة
   const markAllAsRead = async () => {
     try {
+      // استخدام نظام المصادقة المتقدم JWT
+      const token = localStorage.getItem('access_token');
+      
+      if (!token) {
+        console.warn('لا يوجد رمز مصادقة - لا يمكن تعليم الإشعارات كمقروءة');
+        return;
+      }
+      
       const response = await fetch('/api/notifications/mark-all-read', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ userId: localStorage.getItem('userId') || 'default' }),
       });
       
       if (response.ok) {
