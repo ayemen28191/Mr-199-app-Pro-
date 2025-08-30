@@ -16,8 +16,8 @@ import {
   // Equipment types (النظام المبسط)
   type Equipment, type EquipmentMovement, type InsertEquipment, type InsertEquipmentMovement,
   // Notifications types
-  type NotificationReadState,
-  type InsertNotificationReadState,
+  type Notification, type InsertNotification,
+  type NotificationReadState, type InsertNotificationReadState,
   // AI System types (النظام الذكي)
   type AiSystemLog, type AiSystemMetric, type AiSystemDecision, type AiSystemRecommendation,
   type InsertAiSystemLog, type InsertAiSystemMetric, type InsertAiSystemDecision, type InsertAiSystemRecommendation,
@@ -31,7 +31,7 @@ import {
   // Equipment tables (النظام المبسط)
   equipment, equipmentMovements,
   // Notifications tables
-  notificationReadStates,
+  notifications, notificationReadStates,
   // AI System tables (النظام الذكي)
   aiSystemLogs, aiSystemMetrics, aiSystemDecisions, aiSystemRecommendations
 } from "@shared/schema";
