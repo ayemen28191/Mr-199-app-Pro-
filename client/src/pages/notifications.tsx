@@ -1,17 +1,18 @@
-import { useState } from 'react';
+import { useState, useContext } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Bell, BellOff, CheckCircle, AlertCircle, Info, AlertTriangle, Filter, Clock } from 'lucide-react';
 import React from 'react';
+import { useAuth } from '@/components/AuthProvider';
 import { useToast } from '@/hooks/use-toast';
 import { queryClient } from '@/lib/queryClient';
 import { cn } from '@/lib/utils';
 
 interface Notification {
   id: string;
-  type: 'system' | 'maintenance' | 'warranty' | 'damaged';
+  type: 'system' | 'maintenance' | 'warranty' | 'damaged' | 'user-welcome' | 'task' | 'payment-reminder' | 'general-announcement';
   title: string;
   message: string;
   priority: 'info' | 'low' | 'medium' | 'high' | 'critical' | number;
@@ -41,19 +42,28 @@ const typeIcons = {
   system: Bell,
   maintenance: AlertTriangle,
   warranty: AlertCircle,
-  damaged: AlertCircle
+  damaged: AlertCircle,
+  'user-welcome': Bell,
+  task: CheckCircle,
+  'payment-reminder': AlertTriangle,
+  'general-announcement': Info
 };
 
 export default function NotificationsPage() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all');
   const [selectedType, setSelectedType] = useState<string>('all');
+  
+  // معرف المستخدم الحقيقي
+  const userId = user?.id || 'default';
+  const isAdmin = user?.role === 'admin' || user?.role === 'مدير' || user?.email?.includes('admin');
 
   // جلب الإشعارات
   const { data: notificationsData, isLoading } = useQuery({
     queryKey: ['/api/notifications'],
     queryFn: async () => {
-      const response = await fetch('/api/notifications?userId=default&limit=50');
+      const response = await fetch(`/api/notifications?userId=${userId}&limit=50`);
       if (!response.ok) {
         throw new Error('Failed to fetch notifications');
       }
@@ -88,7 +98,7 @@ export default function NotificationsPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          userId: userId || 'default'
+          userId: userId
         }),
       });
       
@@ -122,7 +132,7 @@ export default function NotificationsPage() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ userId: 'default' }),
+        body: JSON.stringify({ userId: userId }),
       });
       
       if (!response.ok) {
@@ -163,8 +173,13 @@ export default function NotificationsPage() {
     return true;
   });
 
-  // أنواع الإشعارات الموجودة
-  const notificationTypes = Array.from(new Set(normalizedNotifications.map(n => n.type)));
+  // أنواع الإشعارات المسموحة للمستخدم العادي فقط (إخفاء أنواع المسؤول)
+  const allowedUserTypes = ['user-welcome', 'task', 'payment-reminder', 'general-announcement'];
+  const notificationTypes = Array.from(new Set(
+    normalizedNotifications
+      .map(n => n.type)
+      .filter(type => allowedUserTypes.includes(type))
+  ));
   
   // إحصائيات سريعة
   const stats = {
@@ -175,7 +190,7 @@ export default function NotificationsPage() {
   };
 
   const handleMarkAsRead = (notificationId: string) => {
-    markAsReadMutation.mutate({ notificationId, userId: 'default' });
+    markAsReadMutation.mutate({ notificationId, userId: userId });
   };
 
   if (isLoading) {
@@ -344,6 +359,10 @@ export default function NotificationsPage() {
                   {type === 'maintenance' && 'صيانة'}
                   {type === 'warranty' && 'ضمان'}
                   {type === 'damaged' && 'عطل'}
+                  {type === 'user-welcome' && 'ترحيب'}
+                  {type === 'task' && 'مهام'}
+                  {type === 'payment-reminder' && 'تذكير دفع'}
+                  {type === 'general-announcement' && 'إعلان عام'}
                 </Button>
               ))}
             </div>

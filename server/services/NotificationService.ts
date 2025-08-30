@@ -580,14 +580,14 @@ export class NotificationService {
           sql`${notifications.recipients} @> ${JSON.stringify(['admin'])}::jsonb`,
           sql`${notifications.recipients} @> ${JSON.stringify(['مسؤول'])}::jsonb`,
           eq(notifications.recipients, null)
-        )
+        )!
       );
     } else {
       conditions.push(
         or(
           sql`${notifications.recipients} @> ${JSON.stringify([userId])}::jsonb`,
           eq(notifications.recipients, null)
-        )
+        )!
       );
     }
 
