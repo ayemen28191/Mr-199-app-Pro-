@@ -4106,6 +4106,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const isAdmin = userId === 'admin' || userId === 'مسؤول';
         
         if (!isAdmin) {
+          // فحص إذا كان إشعار الترحيب مُعلم كمقروء
+          console.log(`🚀 فحص حالة قراءة إشعار الترحيب للمستخدم ${userId}`);
+          const welcomeReadState = await notificationService.checkNotificationReadState('user-welcome', userId);
+          console.log(`📝 نتيجة فحص إشعار الترحيب: ${welcomeReadState ? 'مقروء' : 'غير مقروء'}`);
+          
           // إشعار ترحيب للمستخدمين العاديين فقط
           const welcomeNotification = {
             id: 'user-welcome',
@@ -4114,12 +4119,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             message: 'أهلاً وسهلاً بك! يمكنك الآن متابعة مهامك والإعلانات المهمة من خلال هذا النظام',
             priority: 1,
             createdAt: new Date().toISOString(),
-            isRead: false,
+            isRead: welcomeReadState,
             actionRequired: false,
           };
+          console.log(`🎆 إرسال إشعار الترحيب مع حالة القراءة: ${welcomeReadState}`);
           return res.json({
             notifications: [welcomeNotification],
-            unreadCount: 1,
+            unreadCount: welcomeReadState ? 0 : 1,
             total: 1
           });
         } else {
@@ -4202,13 +4208,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`📖 تعليم إشعار كمقروء: ${notificationId} للمستخدم: ${userId}`);
       
-      // التعامل مع الإشعارات الافتراضية
+      // حفظ حالة القراءة لجميع الإشعارات بما في ذلك إشعار الترحيب
+      await notificationService.markAsRead(notificationId, userId);
+      
       if (notificationId === 'user-welcome' || notificationId === 'system-welcome') {
-        console.log(`✅ تم تعليم إشعار الترحيب كمقروء: ${notificationId}`);
-        // لا نحفظ حالة قراءة الإشعارات الافتراضية
-      } else {
-        // استخدام النظام الجديد المتقدم فقط للإشعارات الحقيقية
-        await notificationService.markAsRead(notificationId, userId);
+        console.log(`✅ تم تعليم إشعار الترحيب كمقروء وحفظ حالته: ${notificationId}`);
       }
       
       res.json({ 

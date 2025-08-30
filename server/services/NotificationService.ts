@@ -415,18 +415,45 @@ export class NotificationService {
   }
 
   /**
+   * فحص حالة قراءة إشعار معين للمستخدم
+   */
+  async checkNotificationReadState(notificationId: string, userId: string): Promise<boolean> {
+    try {
+      console.log(`🔍 بدء فحص حالة الإشعار ${notificationId} للمستخدم ${userId}`);
+      
+      const readState = await db
+        .select()
+        .from(notificationReadStates)
+        .where(
+          and(
+            eq(notificationReadStates.userId, userId),
+            eq(notificationReadStates.notificationId, notificationId)
+          )
+        )
+        .limit(1);
+      
+      console.log(`📖 نتائج فحص الإشعار ${notificationId}:`, readState);
+      
+      const isRead = readState.length > 0 && readState[0].isRead;
+      console.log(`🎯 حالة النهائية للإشعار ${notificationId} للمستخدم ${userId}: ${isRead ? 'مقروء' : 'غير مقروء'}`);
+      
+      return isRead;
+    } catch (error) {
+      console.error(`❌ خطأ في فحص حالة الإشعار ${notificationId}:`, error);
+      return false;
+    }
+  }
+
+  /**
    * إعادة إنشاء جدول حالات القراءة
    */
   async recreateReadStatesTable(): Promise<void> {
     try {
-      console.log('🔧 بدء إعادة إنشاء جدول notification_read_states...');
+      console.log('🔧 التأكد من وجود جدول notification_read_states (بدون حذف البيانات)...');
       
-      // حذف الجدول أولاً
-      await db.execute(sql`DROP TABLE IF EXISTS notification_read_states CASCADE`);
-      
-      // إعادة إنشاء الجدول بالهيكل الصحيح
+      // إنشاء الجدول فقط إذا لم يكن موجوداً (بدون حذف البيانات الموجودة)
       await db.execute(sql`
-        CREATE TABLE notification_read_states (
+        CREATE TABLE IF NOT EXISTS notification_read_states (
           id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
           user_id VARCHAR NOT NULL,
           notification_id VARCHAR NOT NULL,
@@ -438,9 +465,9 @@ export class NotificationService {
         )
       `);
       
-      console.log('✅ تم إعادة إنشاء جدول notification_read_states بنجاح');
+      console.log('✅ تم التأكد من وجود جدول notification_read_states (البيانات محفوظة)');
     } catch (error) {
-      console.error('❌ خطأ في إعادة إنشاء الجدول:', error);
+      console.error('❌ خطأ في التأكد من الجدول:', error);
       throw error;
     }
   }
@@ -449,24 +476,34 @@ export class NotificationService {
    * تعليم إشعار كمقروء - حل مبسط
    */
   async markAsRead(notificationId: string, userId: string): Promise<void> {
-    console.log(`✅ تعليم الإشعار كمقروء: ${notificationId}`);
+    console.log(`✅ بدء تعليم الإشعار كمقروء: ${notificationId} للمستخدم: ${userId}`);
 
     try {
-      // حل مبسط: حذف وإعادة إدراج لتجنب مشاكل الـ conflict
-      await db.execute(sql`
+      // حذف السجل الموجود أولاً (إن وجد)
+      const deleteResult = await db.execute(sql`
         DELETE FROM notification_read_states 
         WHERE user_id = ${userId} AND notification_id = ${notificationId}
       `);
+      console.log(`🗑️ تم حذف ${deleteResult.rowCount || 0} سجل سابق`);
       
-      await db.execute(sql`
+      // إدراج سجل جديد
+      const insertResult = await db.execute(sql`
         INSERT INTO notification_read_states (user_id, notification_id, is_read, read_at, action_taken)
         VALUES (${userId}, ${notificationId}, true, NOW(), true)
       `);
+      console.log(`➕ تم إدراج سجل جديد: ${insertResult.rowCount || 0} صف`);
+      
+      // تحقق من الحفظ
+      const verifyResult = await db.execute(sql`
+        SELECT * FROM notification_read_states 
+        WHERE user_id = ${userId} AND notification_id = ${notificationId}
+      `);
+      console.log(`🔍 تحقق من الحفظ: تم العثور على ${verifyResult.rows.length} سجل`);
       
       console.log(`✅ تم تعليم الإشعار ${notificationId} كمقروء بنجاح`);
     } catch (error) {
       console.error(`❌ خطأ في تعليم الإشعار ${notificationId} كمقروء:`, error);
-      // تجاهل الخطأ ومتابعة العمل
+      throw error; // أرمي الخطأ بدلاً من تجاهله لأرى السبب
     }
   }
 
