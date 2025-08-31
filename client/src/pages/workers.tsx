@@ -10,8 +10,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Edit2, Trash2, Users, Clock, DollarSign, Calendar, Search, Filter, User, Activity } from 'lucide-react';
+import { StatsCard, StatsGrid } from "@/components/ui/stats-card";
 import { apiRequest } from '@/lib/queryClient';
 import AddWorkerForm from '@/components/forms/add-worker-form';
+import { useFloatingButton } from '@/components/layout/floating-button-context';
+import { useEffect } from 'react';
 
 interface Worker {
   id: string;
@@ -178,6 +181,26 @@ export default function WorkersPage() {
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { setFloatingAction } = useFloatingButton();
+
+  // تعيين إجراء الزر العائم لإضافة عامل جديد
+  useEffect(() => {
+    const handleAddWorker = () => {
+      setEditingWorker(undefined);
+      setShowDialog(true);
+    };
+    setFloatingAction(handleAddWorker, "إضافة عامل جديد");
+    return () => setFloatingAction(null);
+  }, [setFloatingAction]);
+
+  // دالة تنسيق العملة
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'decimal',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount) + ' ر.ي';
+  };
 
   const { data: workers = [], isLoading } = useQuery<Worker[]>({
     queryKey: ['/api/workers'],
@@ -190,7 +213,7 @@ export default function WorkersPage() {
 
 
   const deleteWorkerMutation = useMutation({
-    mutationFn: (id: string) => apiRequest("DELETE", `/api/workers/${id}`),
+    mutationFn: (id: string) => apiRequest(`/api/workers/${id}`, "DELETE"),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/workers'] });
       toast({
@@ -209,7 +232,7 @@ export default function WorkersPage() {
 
   const updateWorkerMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => 
-      apiRequest("PATCH", `/api/workers/${id}`, data),
+      apiRequest(`/api/workers/${id}`, "PATCH", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/workers'] });
       toast({
@@ -270,6 +293,14 @@ export default function WorkersPage() {
     setShowDialog(true);
   };
 
+  // تعيين إجراء الزر العائم
+  useEffect(() => {
+    setFloatingAction(handleNewWorker, "إضافة عامل جديد");
+    
+    // تنظيف الزر عند مغادرة الصفحة
+    return () => setFloatingAction(null);
+  }, [setFloatingAction]);
+
   if (isLoading) {
     return (
       <div className="container mx-auto p-4">
@@ -300,67 +331,34 @@ export default function WorkersPage() {
 
   return (
     <div className="container mx-auto p-4 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">إدارة العمال</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">إدارة وتنظيم العمالة في المشاريع</p>
-        </div>
-        <Button onClick={handleNewWorker} className="flex items-center gap-2">
-          <Plus className="h-4 w-4" />
-          إضافة عامل جديد
-        </Button>
-      </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="bg-gradient-to-r from-blue-500 to-blue-600 text-white">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-blue-100 text-sm">إجمالي العمال</p>
-                <p className="text-2xl font-bold">{stats.total}</p>
-              </div>
-              <Users className="h-8 w-8 text-blue-200" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-r from-green-500 to-green-600 text-white">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-green-100 text-sm">العمال النشطون</p>
-                <p className="text-2xl font-bold">{stats.active}</p>
-              </div>
-              <Activity className="h-8 w-8 text-green-200" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-r from-red-500 to-red-600 text-white">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-red-100 text-sm">العمال غير النشطين</p>
-                <p className="text-2xl font-bold">{stats.inactive}</p>
-              </div>
-              <Clock className="h-8 w-8 text-red-200" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-gradient-to-r from-purple-500 to-purple-600 text-white">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-purple-100 text-sm">متوسط الأجر</p>
-                <p className="text-2xl font-bold">{stats.avgWage.toFixed(0)} ر.ي</p>
-              </div>
-              <DollarSign className="h-8 w-8 text-purple-200" />
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        <StatsCard
+          title="إجمالي العمال"
+          value={stats.total}
+          icon={Users}
+          color="blue"
+        />
+        <StatsCard
+          title="العمال النشطون"
+          value={stats.active}
+          icon={Activity}
+          color="green"
+        />
+        <StatsCard
+          title="العمال غير النشطين"
+          value={stats.inactive}
+          icon={Clock}
+          color="orange"
+        />
+        <StatsCard
+          title="متوسط الأجر"
+          value={stats.avgWage}
+          icon={DollarSign}
+          color="purple"
+          formatter={(value: number) => formatCurrency(value)}
+        />
       </div>
 
       {/* Filters */}
@@ -385,7 +383,7 @@ export default function WorkersPage() {
               <Label htmlFor="status">الحالة</Label>
               <Select value={statusFilter} onValueChange={(value: any) => setStatusFilter(value)}>
                 <SelectTrigger className="mt-1">
-                  <SelectValue />
+                  <SelectValue placeholder="اختر الحالة" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">جميع الحالات</SelectItem>
@@ -399,7 +397,7 @@ export default function WorkersPage() {
               <Label htmlFor="type">نوع العامل</Label>
               <Select value={typeFilter} onValueChange={setTypeFilter}>
                 <SelectTrigger className="mt-1">
-                  <SelectValue />
+                  <SelectValue placeholder="اختر نوع العامل" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">جميع الأنواع</SelectItem>

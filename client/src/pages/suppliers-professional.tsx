@@ -7,9 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Search, Edit2, Trash2, Building, Phone, MapPin, User, CreditCard, Calendar, TrendingUp, AlertCircle } from "lucide-react";
+import { StatsCard, StatsGrid } from "@/components/ui/stats-card";
 import { type Supplier } from "@shared/schema";
 import { apiRequest } from "@/lib/queryClient";
 import AddSupplierForm from "@/components/forms/add-supplier-form";
+import { useFloatingButton } from "@/components/layout/floating-button-context";
+import { useEffect } from "react";
 
 export default function SuppliersPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -17,6 +20,7 @@ export default function SuppliersPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { setFloatingAction } = useFloatingButton();
 
   // Fetch data
   const { data: suppliers = [], isLoading } = useQuery({
@@ -26,7 +30,7 @@ export default function SuppliersPage() {
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const response = await apiRequest("DELETE", `/api/suppliers/${id}`);
+      const response = await apiRequest(`/api/suppliers/${id}`, "DELETE");
       return response;
     },
     onSuccess: () => {
@@ -54,6 +58,17 @@ export default function SuppliersPage() {
     setIsDialogOpen(false);
   };
 
+  const handleAddSupplier = () => {
+    setSelectedSupplier(null);
+    setIsDialogOpen(true);
+  };
+
+  // تعيين إجراء الزر العائم
+  useEffect(() => {
+    setFloatingAction(handleAddSupplier, "إضافة مورد جديد");
+    return () => setFloatingAction(null);
+  }, [setFloatingAction]);
+
   // Filter suppliers
   const filteredSuppliers = (suppliers as Supplier[]).filter((supplier: Supplier) =>
     supplier.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -70,7 +85,7 @@ export default function SuppliersPage() {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('ar-YE', {
+    return new Intl.NumberFormat('en-US', {
       style: 'decimal',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
@@ -136,21 +151,8 @@ export default function SuppliersPage() {
 
   return (
     <div className="container mx-auto p-4 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="space-y-1">
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">إدارة الموردين</h1>
-          <p className="text-sm text-muted-foreground">قم بإدارة بيانات الموردين والمقاولين</p>
-        </div>
-        
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={() => { resetForm(); setIsDialogOpen(true); }} className="gap-2 w-full sm:w-auto">
-              <Plus className="h-4 w-4" />
-              إضافة مورد جديد
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto">
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent className="w-[95vw] max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="text-lg sm:text-xl">
                 {selectedSupplier ? "تعديل بيانات المورد" : "إضافة مورد جديد"}
@@ -171,67 +173,34 @@ export default function SuppliersPage() {
             />
           </DialogContent>
         </Dialog>
-      </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-l-4 border-l-blue-500">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">إجمالي الموردين</p>
-                <p className="text-2xl font-bold text-blue-600">{stats.total}</p>
-              </div>
-              <div className="h-10 w-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <Building className="h-5 w-5 text-blue-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-green-500">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">الموردين النشطين</p>
-                <p className="text-2xl font-bold text-green-600">{stats.active}</p>
-              </div>
-              <div className="h-10 w-10 bg-green-100 rounded-lg flex items-center justify-center">
-                <TrendingUp className="h-5 w-5 text-green-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-orange-500">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">غير النشطين</p>
-                <p className="text-2xl font-bold text-orange-600">{stats.inactive}</p>
-              </div>
-              <div className="h-10 w-10 bg-orange-100 rounded-lg flex items-center justify-center">
-                <AlertCircle className="h-5 w-5 text-orange-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="border-l-4 border-l-red-500">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">إجمالي المديونية</p>
-                <p className="text-xl font-bold text-red-600 text-xs sm:text-xl">
-                  {formatCurrency(stats.totalDebt)}
-                </p>
-              </div>
-              <div className="h-10 w-10 bg-red-100 rounded-lg flex items-center justify-center">
-                <CreditCard className="h-5 w-5 text-red-600" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        <StatsCard
+          title="إجمالي الموردين"
+          value={stats.total}
+          icon={Building}
+          color="blue"
+        />
+        <StatsCard
+          title="الموردين النشطين"
+          value={stats.active}
+          icon={TrendingUp}
+          color="green"
+        />
+        <StatsCard
+          title="غير النشطين"
+          value={stats.inactive}
+          icon={AlertCircle}
+          color="orange"
+        />
+        <StatsCard
+          title="إجمالي المديونية"
+          value={stats.totalDebt}
+          icon={CreditCard}
+          color="red"
+          formatter={formatCurrency}
+        />
       </div>
 
       {/* Search */}

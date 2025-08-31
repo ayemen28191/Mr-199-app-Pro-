@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -25,12 +25,20 @@ import {
   Clock,
   MapPin,
   BarChart3,
-  Building2
+  Building2,
+  Camera,
+  Upload,
+  X,
+  Image as ImageIcon,
+  Eye
 } from "lucide-react";
+import { StatsCard, StatsGrid } from "@/components/ui/stats-card";
 import type { Project, InsertProject } from "@shared/schema";
 import { insertProjectSchema } from "@shared/schema";
 import { formatDate, formatCurrency } from "@/lib/utils";
 import { AutocompleteInput } from "@/components/ui/autocomplete-input-database";
+import { useFloatingButton } from "@/components/layout/floating-button-context";
+import { useEffect } from "react";
 
 interface ProjectStats {
   totalWorkers: number;
@@ -53,15 +61,49 @@ export default function ProjectsPage() {
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const { setFloatingAction } = useFloatingButton();
+  
+  // Image handling states
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const editFileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [editSelectedImage, setEditSelectedImage] = useState<string | null>(null);
+  const [enlargedImage, setEnlargedImage] = useState<string | null>(null);
 
-  // Fetch projects with statistics
-  const { data: projects = [], isLoading } = useQuery<ProjectWithStats[]>({
+  // تعيين إجراء الزر العائم لإضافة مشروع جديد
+  useEffect(() => {
+    const handleAddProject = () => setIsCreateDialogOpen(true);
+    setFloatingAction(handleAddProject, "إضافة مشروع جديد");
+    return () => setFloatingAction(null);
+  }, [setFloatingAction]);
+
+  // Fetch projects with statistics مع إعادة التحديث المحسنة
+  const { data: projects = [], isLoading, refetch: refetchProjects } = useQuery<ProjectWithStats[]>({
     queryKey: ["/api/projects/with-stats"],
     queryFn: async () => {
+      console.log('🔄 جلب المشاريع مع الإحصائيات...');
       const response = await fetch("/api/projects/with-stats");
-      if (!response.ok) throw new Error("فشل في تحميل المشاريع");
-      return response.json();
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('❌ خطأ في جلب المشاريع:', errorText);
+        throw new Error("فشل في تحميل المشاريع");
+      }
+      const data = await response.json();
+      console.log('✅ تم جلب المشاريع:', data.length, 'مشروع');
+      // تسجيل عينة من البيانات للتشخيص
+      if (data.length > 0) {
+        console.log('📊 عينة من إحصائيات المشاريع:', data.slice(0, 2).map((p: any) => ({
+          name: p.name,
+          totalIncome: p.stats?.totalIncome,
+          totalExpenses: p.stats?.totalExpenses,
+          currentBalance: p.stats?.currentBalance
+        })));
+      }
+      return data;
     },
+    refetchInterval: 60000, // إعادة التحديث كل دقيقة
+    staleTime: 30000, // البيانات طازجة لـ 30 ثانية
+    refetchOnWindowFocus: true,
   });
 
   // Create project form
@@ -70,6 +112,7 @@ export default function ProjectsPage() {
     defaultValues: {
       name: "",
       status: "active",
+      imageUrl: "",
     },
   });
 
@@ -79,6 +122,7 @@ export default function ProjectsPage() {
     defaultValues: {
       name: "",
       status: "active",
+      imageUrl: "",
     },
   });
 
@@ -86,7 +130,7 @@ export default function ProjectsPage() {
   const saveAutocompleteValue = async (category: string, value: string | null | undefined) => {
     if (!value || typeof value !== 'string' || !value.trim()) return;
     try {
-      await apiRequest("POST", "/api/autocomplete", { 
+      await apiRequest("/api/autocomplete", "POST", { 
         category, 
         value: value.trim() 
       });
@@ -96,10 +140,88 @@ export default function ProjectsPage() {
     }
   };
 
+  // Image handling functions for create form
+  const handleImageSelect = (file: File) => {
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        setSelectedImage(result);
+        createForm.setValue('imageUrl', result);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      toast({
+        title: "خطأ",
+        description: "يرجى اختيار ملف صورة صالح",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleImageCapture = (useCamera: boolean) => {
+    if (fileInputRef.current) {
+      fileInputRef.current.accept = "image/*";
+      if (useCamera) {
+        fileInputRef.current.setAttribute('capture', 'environment');
+      } else {
+        fileInputRef.current.removeAttribute('capture');
+      }
+      fileInputRef.current.click();
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setSelectedImage(null);
+    createForm.setValue('imageUrl', '');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  // Image handling functions for edit form
+  const handleEditImageSelect = (file: File) => {
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        setEditSelectedImage(result);
+        editForm.setValue('imageUrl', result);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      toast({
+        title: "خطأ",
+        description: "يرجى اختيار ملف صورة صالح",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEditImageCapture = (useCamera: boolean) => {
+    if (editFileInputRef.current) {
+      editFileInputRef.current.accept = "image/*";
+      if (useCamera) {
+        editFileInputRef.current.setAttribute('capture', 'environment');
+      } else {
+        editFileInputRef.current.removeAttribute('capture');
+      }
+      editFileInputRef.current.click();
+    }
+  };
+
+  const handleEditRemoveImage = () => {
+    setEditSelectedImage(null);
+    editForm.setValue('imageUrl', '');
+    if (editFileInputRef.current) {
+      editFileInputRef.current.value = '';
+    }
+  };
+
   // Create project mutation
   const createProjectMutation = useMutation({
     mutationFn: (data: InsertProject) =>
-      apiRequest("POST", "/api/projects", data),
+      apiRequest("/api/projects", "POST", data),
     onSuccess: async (data, variables) => {
       // حفظ اسم المشروع في autocomplete_data
       await saveAutocompleteValue('projectNames', variables.name);
@@ -109,6 +231,10 @@ export default function ProjectsPage() {
       toast({ title: "تم إنشاء المشروع بنجاح" });
       setIsCreateDialogOpen(false);
       createForm.reset();
+      setSelectedImage(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     },
     onError: (error: any) => {
       toast({
@@ -122,7 +248,7 @@ export default function ProjectsPage() {
   // Update project mutation
   const updateProjectMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: InsertProject }) =>
-      apiRequest("PATCH", `/api/projects/${id}`, data),
+      apiRequest(`/api/projects/${id}`, "PATCH", data),
     onSuccess: async (result, variables) => {
       // حفظ اسم المشروع في autocomplete_data
       await saveAutocompleteValue('projectNames', variables.data.name);
@@ -133,6 +259,10 @@ export default function ProjectsPage() {
       setIsEditDialogOpen(false);
       setEditingProject(null);
       editForm.reset();
+      setEditSelectedImage(null);
+      if (editFileInputRef.current) {
+        editFileInputRef.current.value = '';
+      }
     },
     onError: (error: any) => {
       toast({
@@ -146,7 +276,7 @@ export default function ProjectsPage() {
   // Delete project mutation
   const deleteProjectMutation = useMutation({
     mutationFn: (id: string) =>
-      apiRequest("DELETE", `/api/projects/${id}`),
+      apiRequest(`/api/projects/${id}`, "DELETE"),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
       queryClient.invalidateQueries({ queryKey: ["/api/projects/with-stats"] });
@@ -180,7 +310,9 @@ export default function ProjectsPage() {
     editForm.reset({
       name: project.name,
       status: project.status,
+      imageUrl: project.imageUrl || '',
     });
+    setEditSelectedImage(project.imageUrl || null);
     setIsEditDialogOpen(true);
   };
 
@@ -210,7 +342,13 @@ export default function ProjectsPage() {
     }
   };
 
-  // استخدام دالة formatCurrency من utils.ts
+  // تعيين إجراء الزر العائم
+  useEffect(() => {
+    setFloatingAction(() => setIsCreateDialogOpen(true), "إضافة مشروع جديد");
+    
+    // تنظيف الزر عند مغادرة الصفحة
+    return () => setFloatingAction(null);
+  }, [setFloatingAction]);
 
   if (isLoading) {
     return (
@@ -223,21 +361,61 @@ export default function ProjectsPage() {
     );
   }
 
+  // حساب الإحصائيات العامة
+  const overallStats = projects.reduce((acc, project) => {
+    return {
+      totalProjects: acc.totalProjects + 1,
+      activeProjects: acc.activeProjects + (project.status === 'active' ? 1 : 0),
+      totalIncome: acc.totalIncome + (project.stats?.totalIncome || 0),
+      totalExpenses: acc.totalExpenses + (project.stats?.totalExpenses || 0),
+      totalWorkers: acc.totalWorkers + (project.stats?.activeWorkers || 0),
+      materialPurchases: acc.materialPurchases + (project.stats?.materialPurchases || 0),
+    };
+  }, {
+    totalProjects: 0,
+    activeProjects: 0,
+    totalIncome: 0,
+    totalExpenses: 0,
+    totalWorkers: 0,
+    materialPurchases: 0,
+  });
+
+  const currentBalance = overallStats.totalIncome - overallStats.totalExpenses;
+
+  // استخدام دالة formatCurrency من utils.ts لضمان التوحيد
+  const formatCurrencyLocal = formatCurrency;
+
   return (
     <div className="space-y-6 p-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">المشاريع</h1>
-          <p className="text-muted-foreground mt-2">إدارة وعرض جميع المشاريع مع الإحصائيات</p>
-        </div>
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-2">
-              <Plus className="h-4 w-4" />
-              مشروع جديد
-            </Button>
-          </DialogTrigger>
+      
+      {/* إحصائيات عامة */}
+      <StatsGrid>
+        <StatsCard
+          title="إجمالي المشاريع"
+          value={overallStats.totalProjects.toString()}
+          icon={Building2}
+          color="blue"
+        />
+        <StatsCard
+          title="المشاريع النشطة"
+          value={overallStats.activeProjects.toString()}
+          icon={TrendingUp}
+          color="green"
+        />
+        <StatsCard
+          title="الرصيد الإجمالي"
+          value={formatCurrencyLocal(currentBalance)}
+          icon={DollarSign}
+          color={currentBalance >= 0 ? "green" : "red"}
+        />
+        <StatsCard
+          title="إجمالي العمال"
+          value={overallStats.totalWorkers.toString()}
+          icon={Users}
+          color="purple"
+        />
+      </StatsGrid>
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle>إنشاء مشروع جديد</DialogTitle>
@@ -287,6 +465,69 @@ export default function ProjectsPage() {
                     </FormItem>
                   )}
                 />
+
+                {/* Image Upload Section */}
+                <div className="space-y-4">
+                  <FormLabel>صورة المشروع (اختيارية)</FormLabel>
+                  
+                  {selectedImage ? (
+                    <div className="relative">
+                      <img 
+                        src={selectedImage} 
+                        alt="صورة المشروع" 
+                        className="w-full h-48 object-cover rounded-lg border"
+                      />
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
+                        className="absolute top-2 right-2"
+                        onClick={handleRemoveImage}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                      <ImageIcon className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                      <p className="text-sm text-gray-500 mb-4">اختر صورة للمشروع</p>
+                      <div className="flex gap-2 justify-center">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleImageCapture(true)}
+                        >
+                          <Camera className="h-4 w-4 mr-2" />
+                          كاميرا
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleImageCapture(false)}
+                        >
+                          <Upload className="h-4 w-4 mr-2" />
+                          رفع صورة
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        handleImageSelect(file);
+                      }
+                    }}
+                  />
+                </div>
+
                 <DialogFooter>
                   <Button type="submit" disabled={createProjectMutation.isPending}>
                     {createProjectMutation.isPending ? "جاري الإنشاء..." : "إنشاء المشروع"}
@@ -296,7 +537,6 @@ export default function ProjectsPage() {
             </Form>
           </DialogContent>
         </Dialog>
-      </div>
 
       {/* Projects Grid */}
       {projects.length === 0 ? (
@@ -313,7 +553,41 @@ export default function ProjectsPage() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {projects.map((project) => (
             <Card key={project.id} className="relative overflow-hidden hover:shadow-lg transition-shadow">
-              <CardHeader className="pb-3">
+              {/* Project Image */}
+              {project.imageUrl ? (
+                <div className="relative h-48 overflow-hidden cursor-pointer group">
+                  <img 
+                    src={project.imageUrl} 
+                    alt={project.name}
+                    className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-105"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEnlargedImage(project.imageUrl!);
+                    }}
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <div className="absolute bottom-3 left-3 flex items-center gap-1">
+                      <div className="w-4 h-4 bg-blue-500/80 rounded-full flex items-center justify-center">
+                        <ImageIcon className="h-2 w-2 text-white" />
+                      </div>
+                      <span className="text-xs text-white font-medium">صورة المشروع</span>
+                    </div>
+                    <div className="absolute top-3 left-3">
+                      <Eye className="text-white h-4 w-4" />
+                    </div>
+                  </div>
+                  <Badge className={`absolute top-3 right-3 ${getStatusColor(project.status)}`}>
+                    {getStatusText(project.status)}
+                  </Badge>
+                </div>
+              ) : null}
+              
+              <CardHeader className={project.imageUrl ? "pb-3" : "pb-3"}>
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
                     <CardTitle className="text-lg line-clamp-2">{project.name}</CardTitle>
@@ -322,9 +596,11 @@ export default function ProjectsPage() {
                       تم الإنشاء: {formatDate(project.createdAt)}
                     </CardDescription>
                   </div>
-                  <Badge className={getStatusColor(project.status)}>
-                    {getStatusText(project.status)}
-                  </Badge>
+                  {!project.imageUrl && (
+                    <Badge className={getStatusColor(project.status)}>
+                      {getStatusText(project.status)}
+                    </Badge>
+                  )}
                 </div>
               </CardHeader>
               
@@ -494,6 +770,69 @@ export default function ProjectsPage() {
                   </FormItem>
                 )}
               />
+
+              {/* Image Upload Section */}
+              <div className="space-y-4">
+                <FormLabel>صورة المشروع (اختيارية)</FormLabel>
+                
+                {editSelectedImage ? (
+                  <div className="relative">
+                    <img 
+                      src={editSelectedImage} 
+                      alt="صورة المشروع" 
+                      className="w-full h-48 object-cover rounded-lg border"
+                    />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="absolute top-2 right-2"
+                      onClick={handleEditRemoveImage}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                    <ImageIcon className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                    <p className="text-sm text-gray-500 mb-4">اختر صورة للمشروع</p>
+                    <div className="flex gap-2 justify-center">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEditImageCapture(true)}
+                      >
+                        <Camera className="h-4 w-4 mr-2" />
+                        كاميرا
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEditImageCapture(false)}
+                      >
+                        <Upload className="h-4 w-4 mr-2" />
+                        رفع صورة
+                      </Button>
+                    </div>
+                  </div>
+                )}
+                
+                <input
+                  ref={editFileInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      handleEditImageSelect(file);
+                    }
+                  }}
+                />
+              </div>
+
               <DialogFooter>
                 <Button type="submit" disabled={updateProjectMutation.isPending}>
                   {updateProjectMutation.isPending ? "جاري التحديث..." : "حفظ التغييرات"}
@@ -503,6 +842,29 @@ export default function ProjectsPage() {
           </Form>
         </DialogContent>
       </Dialog>
+
+      {/* نافذة عرض الصورة بالحجم الكامل */}
+      {enlargedImage && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4"
+          onClick={() => setEnlargedImage(null)}
+        >
+          <div className="relative max-w-4xl max-h-full">
+            <button
+              onClick={() => setEnlargedImage(null)}
+              className="absolute -top-10 right-0 text-white hover:text-gray-300 transition-colors"
+            >
+              <X className="h-8 w-8" />
+            </button>
+            <img 
+              src={enlargedImage}
+              alt="صورة مكبرة"
+              className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

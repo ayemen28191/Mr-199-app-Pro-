@@ -1,23 +1,790 @@
+/**
+ * الوصف: نظام API الرئيسي للخادم - إدارة جميع المسارات والعمليات
+ * المدخلات: طلبات HTTP من العميل
+ * المخرجات: استجابات JSON مع البيانات المطلوبة
+ * المالك: عمار
+ * آخر تعديل: 2025-08-20
+ * الحالة: نشط - النظام الأساسي للتطبيق
+ */
+
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { authSystem } from "./auth-system";
 import { backupSystem } from "./backup-system";
 import { sql } from "drizzle-orm";
 import { db } from "./db";
+import * as path from "path";
+import * as fs from "fs";
 import { 
   insertProjectSchema, insertWorkerSchema, insertFundTransferSchema, 
   insertWorkerAttendanceSchema, insertMaterialSchema, insertMaterialPurchaseSchema,
   insertTransportationExpenseSchema, insertDailyExpenseSummarySchema, insertWorkerTransferSchema,
   insertWorkerBalanceSchema, insertAutocompleteDataSchema, insertWorkerTypeSchema,
   insertWorkerMiscExpenseSchema, insertUserSchema, insertSupplierSchema, insertSupplierPaymentSchema,
-  insertPrintSettingsSchema, insertProjectFundTransferSchema, insertReportTemplateSchema
+  insertPrintSettingsSchema, insertProjectFundTransferSchema,
+  insertReportTemplateSchema,
+  // Equipment schemas (النظام المبسط)
+  insertEquipmentSchema, insertEquipmentMovementSchema,
+  // Notification schemas
+  insertNotificationSchema,
+  // Security Policy schemas (مخططات السياسات الأمنية)
+  insertSecurityPolicySchema, insertSecurityPolicySuggestionSchema,
+  insertSecurityPolicyImplementationSchema, insertSecurityPolicyViolationSchema
 } from "@shared/schema";
+import { NotificationService } from "./services/NotificationService";
+import { aiSystemService } from "./services/AiSystemService";
+import { securityPolicyService } from "./services/SecurityPolicyService";
+import { smartErrorHandler } from './services/SmartErrorHandler';
+import { secretsManager } from "./services/SecretsManager";
+import { smartSecretsManager } from "./services/SmartSecretsManager";
+import { 
+  notifications, 
+  notificationReadStates, 
+  notificationQueue 
+} from "@shared/schema";
+import { eq, and, or, desc, inArray } from "drizzle-orm";
+// Import middleware المصادقة المتقدم
+import { requireAuth, requireRole, requirePermission } from "./middleware/auth.js";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   
-  // Projects
-  app.get("/api/projects", async (req, res) => {
+  // إنشاء مثيل من خدمة الإشعارات المتقدمة
+  const notificationService = new NotificationService();
+
+  // ✅ تفعيل نظام المصادقة المتقدم
+  try {
+    const authRoutes = await import('./routes/auth.js');
+    app.use("/api/auth", authRoutes.default);
+    console.log('✅ تم تفعيل نظام المصادقة المتقدم بنجاح');
+  } catch (error: any) {
+    console.log('⚠️ خطأ في تحميل مسارات المصادقة:', error.message);
+    console.log('💡 تأكد من تنفيذ استعلامات قاعدة البيانات في Supabase');
+  }
+  
+  // ====== مسارات إدارة قاعدة البيانات الذكية ======
+  
+  // جلب قائمة الجداول مع معلومات RLS (مسار محمي - يتطلب دور admin)
+  app.get("/api/db-admin/tables", requireAuth, requireRole(['admin']), async (req, res) => {
+    try {
+      const tables = await storage.getDatabaseTables();
+      
+      // تشغيل تحليل الأمان في الخلفية (لا ننتظره)
+      storage.analyzeSecurityThreats().catch(error => {
+        console.error('خطأ في تحليل التهديدات الأمنية:', error);
+      });
+      
+      res.json(tables);
+    } catch (error) {
+      console.error('خطأ في جلب جداول قاعدة البيانات:', error);
+      res.status(500).json({ message: "خطأ في جلب جداول قاعدة البيانات" });
+    }
+  });
+
+  // تحليل التهديدات الأمنية يدوياً (مسار محمي - يتطلب دور admin)
+  app.post("/api/db-admin/analyze-security", requireAuth, requireRole(['admin']), async (req, res) => {
+    try {
+      const analysis = await storage.analyzeSecurityThreats();
+      res.json(analysis);
+    } catch (error) {
+      console.error('خطأ في تحليل التهديدات الأمنية:', error);
+      res.status(500).json({ message: "خطأ في تحليل التهديدات الأمنية" });
+    }
+  });
+
+  // جلب اقتراحات السياسات لجدول محدد (مسار محمي - يتطلب دور admin)
+  app.get("/api/db-admin/policy-suggestions/:tableName", requireAuth, requireRole(['admin']), async (req, res) => {
+    try {
+      const { tableName } = req.params;
+      const tables = await storage.getDatabaseTables();
+      const table = tables.find(t => t.table_name === tableName);
+      
+      if (!table) {
+        return res.status(404).json({ message: "الجدول غير موجود" });
+      }
+
+      // إنشاء اقتراحات للجدول
+      const suggestions = (storage as any).generatePolicySuggestions(table);
+      
+      res.json({
+        tableName,
+        securityLevel: table.security_level,
+        hasExistingPolicies: table.has_policies,
+        suggestions
+      });
+    } catch (error) {
+      console.error('خطأ في جلب اقتراحات السياسات:', error);
+      res.status(500).json({ message: "خطأ في جلب اقتراحات السياسات" });
+    }
+  });
+
+  // تفعيل/تعطيل RLS للجدول (مسار محمي - يتطلب دور admin)
+  app.post("/api/db-admin/toggle-rls", requireAuth, requireRole(['admin']), async (req, res) => {
+    try {
+      const { tableName, enable } = req.body;
+      
+      if (!tableName || typeof enable !== 'boolean') {
+        return res.status(400).json({ message: "معطيات غير صحيحة" });
+      }
+
+      const result = await storage.toggleTableRLS(tableName, enable);
+      res.json({ 
+        success: true, 
+        message: `تم ${enable ? 'تفعيل' : 'تعطيل'} RLS للجدول ${tableName}`,
+        result 
+      });
+    } catch (error) {
+      console.error('خطأ في تحديث RLS:', error);
+      res.status(500).json({ message: "خطأ في تحديث إعدادات RLS" });
+    }
+  });
+
+  // جلب سياسات RLS للجدول (مسار محمي - يتطلب دور admin)
+  app.get("/api/db-admin/policies/:tableName", requireAuth, requireRole(['admin']), async (req, res) => {
+    try {
+      const { tableName } = req.params;
+      const policies = await storage.getTablePolicies(tableName);
+      res.json(policies);
+    } catch (error) {
+      console.error('خطأ في جلب سياسات الجدول:', error);
+      res.status(500).json({ message: "خطأ في جلب سياسات الجدول" });
+    }
+  });
+
+  // ====== مسارات إدارة المفاتيح السرية التلقائية ======
+  
+  // فحص حالة المفاتيح السرية الذكي (مسار محمي - يتطلب دور admin)
+  app.get("/api/secrets/status", requireAuth, requireRole(['admin']), async (req, res) => {
+    try {
+      const analysis = smartSecretsManager.analyzeSecretsStatus();
+      const quickStatus = smartSecretsManager.getQuickStatus();
+      
+      res.json({
+        success: true,
+        analysis,
+        quickStatus,
+        message: quickStatus.allReady ? 
+          "جميع المفاتيح جاهزة ومتزامنة" : 
+          `${quickStatus.missingKeys.length} مفتاح يحتاج معالجة`
+      });
+    } catch (error) {
+      console.error('خطأ في فحص حالة المفاتيح السرية:', error);
+      res.status(500).json({ 
+        success: false,
+        message: "خطأ في فحص حالة المفاتيح السرية" 
+      });
+    }
+  });
+
+  // النظام الذكي لإدارة المفاتيح تلقائياً (مسار محمي - يتطلب دور admin)
+  app.post("/api/secrets/auto-manage", requireAuth, requireRole(['admin']), async (req, res) => {
+    try {
+      const result = await smartSecretsManager.autoManageSecrets();
+      
+      res.json({
+        success: result.success,
+        message: result.message,
+        details: result.details,
+        summary: result.summary
+      });
+    } catch (error) {
+      console.error('خطأ في النظام الذكي لإدارة المفاتيح:', error);
+      res.status(500).json({ 
+        success: false,
+        message: "خطأ في النظام الذكي لإدارة المفاتيح",
+        error: error instanceof Error ? error.message : "خطأ غير محدد"
+      });
+    }
+  });
+
+  // إعادة تحميل المفاتيح من ملف .env (مسار محمي - يتطلب دور admin)
+  app.post("/api/secrets/reload", requireAuth, requireRole(['admin']), async (req, res) => {
+    try {
+      secretsManager.reloadSecrets();
+      
+      res.json({
+        success: true,
+        message: "تم إعادة تحميل المفاتيح السرية بنجاح"
+      });
+    } catch (error) {
+      console.error('خطأ في إعادة تحميل المفاتيح:', error);
+      res.status(500).json({ 
+        success: false,
+        message: "خطأ في إعادة تحميل المفاتيح السرية" 
+      });
+    }
+  });
+
+  // إضافة مفتاح سري جديد مطلوب (مسار محمي - يتطلب دور admin)
+  app.post("/api/secrets/add-required", requireAuth, requireRole(['admin']), async (req, res) => {
+    try {
+      const { name, value, description } = req.body;
+      
+      if (!name || !value || !description) {
+        return res.status(400).json({ 
+          success: false,
+          message: "جميع الحقول مطلوبة: name, value, description" 
+        });
+      }
+      
+      secretsManager.addRequiredSecret(name, value, description);
+      
+      res.json({
+        success: true,
+        message: `تم إضافة المفتاح المطلوب: ${name}`
+      });
+    } catch (error) {
+      console.error('خطأ في إضافة المفتاح المطلوب:', error);
+      res.status(500).json({ 
+        success: false,
+        message: "خطأ في إضافة المفتاح المطلوب" 
+      });
+    }
+  });
+
+  // ====== مسارات السياسات الأمنية المتقدمة ======
+  
+  // جلب جميع السياسات الأمنية (مسار محمي - يتطلب دور admin)
+  app.get("/api/security-policies", requireAuth, requireRole(['admin']), async (req, res) => {
+    try {
+      const { status, category, severity, limit } = req.query;
+      const policies = await securityPolicyService.getAllPolicies({
+        status: status as string,
+        category: category as string, 
+        severity: severity as string,
+        limit: limit ? parseInt(limit as string) : undefined
+      });
+      res.json(policies);
+    } catch (error) {
+      console.error('خطأ في جلب السياسات الأمنية:', error);
+      res.status(500).json({ message: "خطأ في جلب السياسات الأمنية" });
+    }
+  });
+
+  // إنشاء سياسة أمنية جديدة (مسار محمي - يتطلب دور admin)
+  app.post("/api/security-policies", requireAuth, requireRole(['admin']), async (req, res) => {
+    try {
+      const validation = insertSecurityPolicySchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ message: "بيانات غير صحيحة", errors: validation.error.errors });
+      }
+
+      const policy = await securityPolicyService.createPolicy(validation.data);
+      res.status(201).json(policy);
+    } catch (error) {
+      console.error('خطأ في إنشاء السياسة الأمنية:', error);
+      res.status(500).json({ message: error instanceof Error ? error.message : "خطأ في إنشاء السياسة الأمنية" });
+    }
+  });
+
+  // تحديث سياسة أمنية (مسار محمي - يتطلب دور admin)
+  app.put("/api/security-policies/:id", requireAuth, requireRole(['admin']), async (req, res) => {
+    try {
+      const { id } = req.params;
+      const validation = insertSecurityPolicySchema.partial().safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ message: "بيانات غير صحيحة", errors: validation.error.errors });
+      }
+
+      const updatedPolicy = await securityPolicyService.updatePolicy(id, validation.data);
+      res.json(updatedPolicy);
+    } catch (error) {
+      console.error('خطأ في تحديث السياسة الأمنية:', error);
+      res.status(500).json({ message: error instanceof Error ? error.message : "خطأ في تحديث السياسة الأمنية" });
+    }
+  });
+
+  // حذف سياسة أمنية (مسار محمي - يتطلب دور admin)
+  app.delete("/api/security-policies/:id", requireAuth, requireRole(['admin']), async (req, res) => {
+    try {
+      const { id } = req.params;
+      const result = await securityPolicyService.deletePolicy(id);
+      res.json(result);
+    } catch (error) {
+      console.error('خطأ في حذف السياسة الأمنية:', error);
+      res.status(500).json({ message: error instanceof Error ? error.message : "خطأ في حذف السياسة الأمنية" });
+    }
+  });
+
+  // جلب اقتراحات السياسات (مسار محمي - يتطلب دور admin)
+  app.get("/api/security-policy-suggestions", requireAuth, requireRole(['admin']), async (req, res) => {
+    try {
+      const { status, priority, category, limit } = req.query;
+      const suggestions = await securityPolicyService.getPolicySuggestions({
+        status: status as string,
+        priority: priority as string,
+        category: category as string,
+        limit: limit ? parseInt(limit as string) : undefined
+      });
+      res.json(suggestions);
+    } catch (error) {
+      console.error('خطأ في جلب اقتراحات السياسات:', error);
+      res.status(500).json({ message: "خطأ في جلب اقتراحات السياسات" });
+    }
+  });
+
+  // إنشاء اقتراح سياسة جديد (مسار محمي - يتطلب دور admin)
+  app.post("/api/security-policy-suggestions", requireAuth, requireRole(['admin']), async (req, res) => {
+    try {
+      const validation = insertSecurityPolicySuggestionSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ message: "بيانات غير صحيحة", errors: validation.error.errors });
+      }
+
+      const suggestion = await securityPolicyService.createPolicySuggestion(validation.data);
+      res.status(201).json(suggestion);
+    } catch (error) {
+      console.error('خطأ في إنشاء اقتراح السياسة:', error);
+      res.status(500).json({ message: error instanceof Error ? error.message : "خطأ في إنشاء اقتراح السياسة" });
+    }
+  });
+
+  // الموافقة على اقتراح سياسة (مسار محمي - يتطلب دور admin)
+  app.post("/api/security-policy-suggestions/:id/approve", requireAuth, requireRole(['admin']), async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { reviewerId = 'system' } = req.body;
+      
+      const result = await securityPolicyService.approvePolicySuggestion(id, reviewerId);
+      res.json(result);
+    } catch (error) {
+      console.error('خطأ في الموافقة على الاقتراح:', error);
+      res.status(500).json({ message: error instanceof Error ? error.message : "خطأ في الموافقة على الاقتراح" });
+    }
+  });
+
+  // جلب انتهاكات السياسات (مسار محمي - يتطلب دور admin)
+  app.get("/api/security-policy-violations", requireAuth, requireRole(['admin']), async (req, res) => {
+    try {
+      const { policyId, severity, status, limit } = req.query;
+      const violations = await securityPolicyService.getPolicyViolations({
+        policyId: policyId as string,
+        severity: severity as string,
+        status: status as string,
+        limit: limit ? parseInt(limit as string) : undefined
+      });
+      res.json(violations);
+    } catch (error) {
+      console.error('خطأ في جلب انتهاكات السياسات:', error);
+      res.status(500).json({ message: "خطأ في جلب انتهاكات السياسات" });
+    }
+  });
+
+  // إنشاء سجل انتهاك جديد (مسار محمي - يتطلب دور admin)
+  app.post("/api/security-policy-violations", requireAuth, requireRole(['admin']), async (req, res) => {
+    try {
+      const validation = insertSecurityPolicyViolationSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ message: "بيانات غير صحيحة", errors: validation.error.errors });
+      }
+
+      const violation = await securityPolicyService.createViolation(validation.data);
+      res.status(201).json(violation);
+    } catch (error) {
+      console.error('خطأ في إنشاء سجل الانتهاك:', error);
+      res.status(500).json({ message: error instanceof Error ? error.message : "خطأ في إنشاء سجل الانتهاك" });
+    }
+  });
+
+  // إنشاء اقتراحات ذكية للسياسات (مسار محمي - يتطلب دور admin)
+  app.post("/api/security-policies/generate-smart-suggestions", requireAuth, requireRole(['admin']), async (req, res) => {
+    try {
+      const suggestions = await securityPolicyService.generateSmartSuggestions();
+      res.json({ 
+        message: `تم إنشاء ${suggestions.length} اقتراح ذكي للسياسات الأمنية`,
+        suggestions,
+        count: suggestions.length
+      });
+    } catch (error) {
+      console.error('خطأ في إنشاء الاقتراحات الذكية:', error);
+      res.status(500).json({ message: "خطأ في إنشاء الاقتراحات الذكية" });
+    }
+  });
+
+  // ====== مسارات النظام الذكي ======
+  
+  // حالة النظام الذكي الحقيقية (مسار محمي - يتطلب دور admin)
+  app.get("/api/ai-system/status", requireAuth, requireRole(['admin']), async (req, res) => {
+    try {
+      const systemStatus = await aiSystemService.getSystemStatus();
+      res.json(systemStatus);
+    } catch (error) {
+      console.error('خطأ في جلب حالة النظام الذكي:', error);
+      res.status(500).json({ message: "خطأ في جلب حالة النظام الذكي" });
+    }
+  });
+
+  // مقاييس النظام الحقيقية من قاعدة البيانات (مسار محمي - يتطلب دور admin)
+  app.get("/api/ai-system/metrics", requireAuth, requireRole(['admin']), async (req, res) => {
+    try {
+      const metrics = await aiSystemService.getSystemMetrics();
+      res.json(metrics);
+    } catch (error) {
+      console.error('خطأ في جلب مقاييس النظام:', error);
+      res.status(500).json({ message: "خطأ في جلب مقاييس النظام" });
+    }
+  });
+
+  // توصيات الذكاء الاصطناعي الحقيقية (مسار محمي)
+  app.get("/api/ai-system/recommendations", requireAuth, async (req, res) => {
+    try {
+      // جلب التوصيات من قاعدة البيانات أولاً
+      let recommendations = await storage.getAiSystemRecommendations({ status: 'active' });
+      
+      // التحقق من تاريخ آخر توصية لتجنب التوليد المتكرر
+      const lastRecommendationTime = recommendations.length > 0 
+        ? new Date(Math.max(...recommendations.map(r => new Date(r.createdAt || '').getTime())))
+        : null;
+      
+      const shouldGenerateNew = !lastRecommendationTime || 
+        (Date.now() - lastRecommendationTime.getTime()) > 30 * 60 * 1000; // 30 دقيقة
+      
+      // إذا لم توجد توصيات أو كانت قديمة جداً، إنشاء توصيات جديدة
+      if (recommendations.length === 0 || shouldGenerateNew) {
+        console.log('🔄 توليد توصيات جديدة...');
+        await aiSystemService.generateRecommendations();
+        recommendations = await storage.getAiSystemRecommendations({ status: 'active' });
+      }
+      
+      res.json(recommendations);
+    } catch (error) {
+      console.error('خطأ في جلب التوصيات:', error);
+      res.status(500).json({ message: "خطأ في جلب التوصيات" });
+    }
+  });
+
+  // تشغيل/إيقاف النظام الذكي (مسار محمي - يتطلب دور admin)
+  app.post("/api/ai-system/toggle", requireAuth, requireRole(['admin']), async (req, res) => {
+    try {
+      const { action } = req.body;
+      
+      if (action === 'start') {
+        // تشغيل النظام الذكي فعلياً
+        aiSystemService.startSystem();
+        console.log('🤖 تم تشغيل النظام الذكي');
+        res.json({ 
+          success: true, 
+          message: "تم بدء تشغيل النظام الذكي بنجاح",
+          status: "running",
+          timestamp: new Date().toISOString()
+        });
+      } else if (action === 'stop') {
+        // إيقاف النظام الذكي فعلياً
+        aiSystemService.stopSystem();
+        console.log('🤖 تم إيقاف النظام الذكي');
+        res.json({ 
+          success: true, 
+          message: "تم إيقاف النظام الذكي بنجاح",
+          status: "stopped",
+          timestamp: new Date().toISOString()
+        });
+      } else {
+        res.status(400).json({ message: "إجراء غير صالح" });
+      }
+    } catch (error) {
+      console.error('خطأ في تبديل حالة النظام:', error);
+      res.status(500).json({ message: "خطأ في تبديل حالة النظام" });
+    }
+  });
+
+  // تنفيذ توصية ذكية (مسار محمي)
+  app.post("/api/ai-system/execute-recommendation", requireAuth, async (req, res) => {
+    try {
+      const { recommendationId } = req.body;
+      
+      if (!recommendationId) {
+        console.error('❌ لم يتم توفير معرف التوصية');
+        return res.status(400).json({ message: "معرف التوصية مطلوب" });
+      }
+      
+      console.log(`🤖 بدء تنفيذ التوصية الذكية: ${recommendationId}`);
+      
+      // استدعاء خدمة النظام الذكي الحقيقية
+      const result = await aiSystemService.executeRecommendation(recommendationId);
+      
+      console.log(`✅ تم تنفيذ التوصية ${recommendationId} بنجاح`);
+      
+      res.json(result);
+    } catch (error) {
+      console.error('خطأ في تنفيذ التوصية:', error);
+      res.status(500).json({ message: error instanceof Error ? error.message : "خطأ في تنفيذ التوصية" });
+    }
+  });
+
+  // مسح جميع التوصيات (لحل مشكلة التكرار)
+  app.post("/api/ai-system/clear-recommendations", async (req, res) => {
+    try {
+      const allRecommendations = await storage.getAiSystemRecommendations({});
+      console.log(`🧹 مسح ${allRecommendations.length} توصية مكررة`);
+      
+      for (const rec of allRecommendations) {
+        await storage.dismissAiSystemRecommendation(rec.id);
+      }
+      
+      res.json({ 
+        message: `تم مسح ${allRecommendations.length} توصية بنجاح`,
+        cleared: allRecommendations.length 
+      });
+    } catch (error: any) {
+      console.error('خطأ في مسح التوصيات:', error);
+      res.status(500).json({ message: "خطأ في مسح التوصيات" });
+    }
+  });
+
+  // === المسارات الجديدة للنظام الذكي المتطور ===
+  
+  // التحقق من النتائج (مسار محمي - يتطلب دور admin)
+  app.post('/api/ai-system/verify-results', requireAuth, requireRole(['admin']), async (req, res) => {
+    try {
+      const { recommendationIds } = req.body;
+      const recommendations = recommendationIds?.length > 0 
+        ? await storage.getAiSystemRecommendations({ status: 'executed' })
+        : await storage.getAiSystemRecommendations({ status: 'executed' });
+      
+      const results = await aiSystemService.verifyImplementationResults(recommendations);
+      res.json(results);
+    } catch (error) {
+      console.error('خطأ في التحقق من النتائج:', error);
+      res.status(500).json({ error: 'فشل في التحقق من النتائج' });
+    }
+  });
+
+  // إنشاء نسخة احتياطية (مسار محمي - يتطلب دور admin)
+  app.post('/api/ai-system/backup', requireAuth, requireRole(['admin']), async (req, res) => {
+    try {
+      const backup = await aiSystemService.createSystemBackup();
+      res.json(backup);
+    } catch (error) {
+      console.error('خطأ في إنشاء النسخة الاحتياطية:', error);
+      res.status(500).json({ error: 'فشل في إنشاء النسخة الاحتياطية' });
+    }
+  });
+
+  // التراجع عن التغييرات (مسار محمي - يتطلب دور admin)
+  app.post('/api/ai-system/rollback', requireAuth, requireRole(['admin']), async (req, res) => {
+    try {
+      const { backupId, targetOperations } = req.body;
+      if (!backupId) {
+        return res.status(400).json({ error: 'معرف النسخة الاحتياطية مطلوب' });
+      }
+      const results = await aiSystemService.rollbackSystemChanges(backupId, targetOperations);
+      res.json(results);
+    } catch (error) {
+      console.error('خطأ في التراجع:', error);
+      res.status(500).json({ error: 'فشل في عملية التراجع' });
+    }
+  });
+
+  // إضافة مسار تطبيق الموبايل في البداية لتجنب تداخل مع Vite
+  app.get("/mobile*", (req, res) => {
+    try {
+      // إعداد HTML لتطبيق الموبايل
+      const mobileAppHtml = `
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>نظام إدارة المشاريع - الموبايل</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            direction: rtl;
+        }
+        
+        .mobile-container {
+            max-width: 375px;
+            width: 100%;
+            min-height: 100vh;
+            background: white;
+            border-radius: 25px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+            position: relative;
+            border: 8px solid #333;
+        }
+        
+        .status-bar {
+            height: 44px;
+            background: #000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        
+        .mobile-header {
+            background: linear-gradient(135deg, #2196F3, #1976D2);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .mobile-header h1 {
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+        
+        .mobile-header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .mobile-content {
+            padding: 30px 20px;
+            text-align: center;
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 25px;
+        }
+        
+        .icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+            opacity: 0.8;
+        }
+        
+        .message {
+            font-size: 16px;
+            line-height: 1.6;
+            color: #333;
+        }
+        
+        .buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 15px 20px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: block;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #2196F3, #1976D2);
+        }
+        
+        .btn-secondary:hover {
+            box-shadow: 0 5px 15px rgba(33, 150, 243, 0.4);
+        }
+        
+        .footer {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        @media (max-width: 400px) {
+            .mobile-container {
+                width: 100vw;
+                min-height: 100vh;
+                border-radius: 0;
+                border: none;
+            }
+            
+            body {
+                margin: 0;
+                padding: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="mobile-container">
+        <div class="status-bar">
+            <span>⚡ 📱</span>
+            <span>🔋 تطبيق الموبايل</span>
+        </div>
+        
+        <div class="mobile-header">
+            <h1>نظام إدارة المشاريع الإنشائية</h1>
+            <p>📱 تطبيق الموبايل - النسخة التجريبية</p>
+        </div>
+        
+        <div class="mobile-content">
+            <div class="icon">📱</div>
+            <div class="message">
+                <h2>✅ تم تفعيل تطبيق الموبايل بنجاح!</h2>
+                <p>هذا هو تطبيق الموبايل الخاص بك. للحصول على التطبيق الكامل مع جميع الميزات، يرجى استخدام أحد الخيارات أدناه.</p>
+            </div>
+            
+            <div class="buttons">
+                <a href="/" class="btn">🖥️ فتح تطبيق الويب الكامل</a>
+                <a href="exp://127.0.0.1:19006" class="btn btn-secondary">📱 فتح التطبيق في Expo Go</a>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>🏗️ نظام إدارة المشاريع الإنشائية © 2025</p>
+            <p>✅ يعمل على: ${req.headers.host}</p>
+        </div>
+    </div>
+</body>
+</html>`;
+      
+      res.send(mobileAppHtml);
+    } catch (error) {
+      console.error("Error serving mobile app:", error);
+      res.status(500).json({ message: "خطأ في تشغيل تطبيق الموبايل" });
+    }
+  });
+  
+  // تم نقل تتبع الإشعارات المقروءة إلى قاعدة البيانات - حل مشكلة اختفاء الحالة عند إعادة التشغيل
+  
+  // مسارات المصادقة المتقدمة تم تفعيلها بنجاح في الأعلى
+
+  // Fund Transfers (تحويلات العهدة) - مسار محمي
+  app.get("/api/fund-transfers", requireAuth, async (req, res) => {
+    try {
+      const projectId = req.query.projectId as string;
+      const date = req.query.date as string;
+      console.log(`🔍 جلب جميع تحويلات العهدة - المشروع: ${projectId || 'الكل'}, التاريخ: ${date || 'الكل'}`);
+      const transfers = await storage.getFundTransfers(projectId, date);
+      console.log(`✅ تم العثور على ${transfers.length} تحويل`);
+      res.json(transfers);
+    } catch (error) {
+      console.error("خطأ في جلب تحويلات العهدة:", error);
+      res.status(500).json({ message: "خطأ في جلب تحويلات العهدة", error: error instanceof Error ? error.message : 'Unknown error' });
+    }
+  });
+  
+  // Projects - مسار محمي
+  app.get("/api/projects", requireAuth, async (req, res) => {
     try {
       const projects = await storage.getProjects();
       res.json(projects);
@@ -26,7 +793,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/projects", async (req, res) => {
+  app.post("/api/projects", requireAuth, async (req, res) => {
     try {
       const result = insertProjectSchema.safeParse(req.body);
       if (!result.success) {
@@ -47,40 +814,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Get projects with statistics - مع إحصائيات حقيقية
-  app.get("/api/projects/with-stats", async (req, res) => {
+  // Get projects with statistics - محسن للأداء الفائق - مسار محمي
+  app.get("/api/projects/with-stats", requireAuth, async (req, res) => {
     try {
+      console.time('projects-with-stats');
+      
       const projects = await storage.getProjects();
       
-      // إضافة إحصائيات حقيقية لكل مشروع
+      // حساب الإحصائيات بشكل متوازي مع تحسين فائق
       const projectsWithStats = await Promise.all(
         projects.map(async (project) => {
-          try {
-            // استدعاء دالة getProjectStatistics لجلب الإحصائيات الحقيقية
-            const stats = await storage.getProjectStatistics(project.id);
-            return {
-              ...project,
-              stats
-            };
-          } catch (error) {
-            console.error(`Error getting stats for project ${project.id}:`, error);
-            // في حالة الخطأ، نعيد إحصائيات افتراضية
-            return {
-              ...project,
-              stats: {
-                totalWorkers: 0,
-                totalExpenses: 0,
-                totalIncome: 0,
-                currentBalance: 0,
-                activeWorkers: 0,
-                completedDays: 0,
-                materialPurchases: 0,
-                lastActivity: new Date().toISOString().split('T')[0]
-              }
-            };
-          }
+          const stats = await storage.getProjectStatistics(project.id);
+          return {
+            ...project,
+            stats: stats
+          };
         })
       );
+      
+      console.timeEnd('projects-with-stats');
+      console.log(`⚡ تم جلب ${projectsWithStats.length} مشروع مع الإحصائيات`);
       
       res.json(projectsWithStats);
     } catch (error) {
@@ -344,8 +1097,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Workers
-  app.get("/api/workers", async (req, res) => {
+  // Workers - مسار محمي
+  app.get("/api/workers", requireAuth, async (req, res) => {
     try {
       const workers = await storage.getWorkers();
       res.json(workers);
@@ -354,7 +1107,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/workers", async (req, res) => {
+  app.post("/api/workers", requireAuth, async (req, res) => {
     try {
       const result = insertWorkerSchema.safeParse(req.body);
       if (!result.success) {
@@ -446,7 +1199,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Fund Transfers
+
+
   app.get("/api/projects/:projectId/fund-transfers", async (req, res) => {
     try {
       const date = req.query.date as string;
@@ -462,25 +1216,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/fund-transfers", async (req, res) => {
     try {
+      console.log("📝 إنشاء حولة جديدة:", req.body);
+      
       const result = insertFundTransferSchema.safeParse(req.body);
       if (!result.success) {
-        return res.status(400).json({ message: "Invalid fund transfer data", errors: result.error.issues });
+        console.error("❌ خطأ في التحقق من البيانات:", result.error.issues);
+        return res.status(400).json({ 
+          message: "بيانات الحولة غير صحيحة", 
+          errors: result.error.issues.map(issue => `${issue.path.join('.')}: ${issue.message}`).join(', ')
+        });
       }
       
       // محاولة إنشاء التحويل مباشرة - إذا كان هناك تكرار ستعطي قاعدة البيانات خطأ
       try {
         const transfer = await storage.createFundTransfer(result.data);
+        console.log("✅ تم إنشاء الحولة بنجاح:", transfer.id);
         res.status(201).json(transfer);
       } catch (dbError: any) {
+        console.error("❌ خطأ في قاعدة البيانات:", dbError);
+        
         // فحص إذا كان الخطأ بسبب تكرار رقم الحوالة
         if (dbError.code === '23505' && (dbError.constraint === 'fund_transfers_transfer_number_key' || dbError.constraint === 'fund_transfers_transfer_number_unique')) {
           return res.status(400).json({ message: "يوجد تحويل بنفس رقم الحوالة مسبقاً" });
         }
-        throw dbError; // إعادة رفع الخطأ إذا لم يكن تكرار
+        
+        // معالجة أخطاء أخرى من قاعدة البيانات
+        if (dbError.code === '23503') {
+          return res.status(400).json({ message: "المشروع المحدد غير موجود" });
+        }
+        
+        throw dbError; // إعادة رفع الخطأ إذا لم يكن معروف
       }
-    } catch (error) {
-      console.error("Error creating fund transfer:", error);
-      res.status(500).json({ message: "Error creating fund transfer" });
+    } catch (error: any) {
+      console.error("❌ خطأ عام في إنشاء الحولة:", error);
+      res.status(500).json({ 
+        message: error?.message || "حدث خطأ أثناء إنشاء الحولة" 
+      });
     }
   });
 
@@ -721,6 +1492,111 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get worker attendance with project details for filtering
+  app.get("/api/worker-attendance/by-projects", async (req, res) => {
+    try {
+      const { projectIds, dateFrom, dateTo } = req.query;
+      console.log("🔍 طلب جلب سجلات الحضور:", { projectIds, dateFrom, dateTo });
+      
+      if (!projectIds) {
+        return res.status(400).json({ message: "مطلوب معرفات المشاريع" });
+      }
+
+      // تقسيم معرفات المشاريع
+      const projectIdArray = (projectIds as string).split(',').filter(id => id.trim());
+      console.log("🎯 المشاريع المحددة:", projectIdArray);
+      
+      if (projectIdArray.length === 0) {
+        return res.json([]);
+      }
+
+      const allAttendanceRecords = [];
+      
+      // جلب بيانات المشاريع والعمال
+      const projects = await storage.getProjects();
+      const workers = await storage.getWorkers();
+      
+      // إنشاء خرائط للبحث السريع
+      const projectMap = new Map(projects.map(p => [p.id, p]));
+      const workerMap = new Map(workers.map(w => [w.id, w]));
+      
+      for (const projectId of projectIdArray) {
+        const project = projectMap.get(projectId);
+        if (!project) {
+          console.log(`⚠️ مشروع غير موجود: ${projectId}`);
+          continue;
+        }
+
+        try {
+          // جلب جميع سجلات الحضور للمشروع
+          let projectAttendance = [];
+          
+          if (dateFrom && dateTo) {
+            // إذا تم تحديد تواريخ معينة
+            const fromDate = new Date(dateFrom as string);
+            const toDate = new Date(dateTo as string);
+            
+            for (let d = new Date(fromDate); d <= toDate; d.setDate(d.getDate() + 1)) {
+              const dateStr = d.toISOString().split('T')[0];
+              try {
+                const dayAttendance = await storage.getWorkerAttendance(projectId, dateStr);
+                projectAttendance.push(...dayAttendance);
+              } catch (dayError) {
+                // تجاهل الأيام التي لا تحتوي على بيانات
+              }
+            }
+          } else {
+            // جلب جميع السجلات (آخر 30 يوم)
+            const today = new Date();
+            const thirtyDaysAgo = new Date(today);
+            thirtyDaysAgo.setDate(today.getDate() - 30);
+            
+            for (let d = new Date(thirtyDaysAgo); d <= today; d.setDate(d.getDate() + 1)) {
+              const dateStr = d.toISOString().split('T')[0];
+              try {
+                const dayAttendance = await storage.getWorkerAttendance(projectId, dateStr);
+                projectAttendance.push(...dayAttendance);
+              } catch (dayError) {
+                // تجاهل الأيام التي لا تحتوي على بيانات
+              }
+            }
+          }
+          
+          // إضافة تفاصيل المشروع والعامل
+          for (const attendance of projectAttendance) {
+            const worker = workerMap.get(attendance.workerId);
+            if (worker) {
+              allAttendanceRecords.push({
+                id: attendance.id,
+                workerId: attendance.workerId,
+                workerName: worker.name,
+                workerType: worker.type,
+                projectId: projectId,
+                projectName: project.name,
+                date: attendance.date,
+                dailyWage: Number(attendance.dailyWage) || 0,
+                actualWage: Number(attendance.actualWage) || 0,
+                paidAmount: Number(attendance.paidAmount) || 0,
+                remainingAmount: Number(attendance.remainingAmount) || 0,
+                isPresent: attendance.isPresent,
+                workDays: Number(attendance.workDays) || 0
+              });
+            }
+          }
+          
+        } catch (projectError) {
+          console.error(`⛔ خطأ في معالجة المشروع ${projectId}:`, projectError);
+        }
+      }
+
+      console.log(`✅ تم جلب ${allAttendanceRecords.length} سجل حضور`);
+      res.json(allAttendanceRecords);
+    } catch (error) {
+      console.error("⛔ خطأ في جلب سجلات الحضور:", error);
+      res.status(500).json({ message: "خطأ في جلب سجلات الحضور", error: error instanceof Error ? error.message : 'خطأ غير معروف' });
+    }
+  });
+
   // Materials
   app.get("/api/materials", async (req, res) => {
     try {
@@ -956,7 +1832,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get all material purchases with filters
+  app.get("/api/material-purchases", async (req, res) => {
+    try {
+      const { supplierId, projectId, dateFrom, dateTo, purchaseType } = req.query;
+      console.log("Material purchases filter request:", { supplierId, projectId, dateFrom, dateTo, purchaseType });
+      
+      // أولاً: فحص إجمالي المشتريات في قاعدة البيانات
+      const { materialPurchases } = await import("@shared/schema");
+      const allPurchases = await db.select().from(materialPurchases).limit(5);
+      console.log(`📊 Total material purchases in DB: ${allPurchases.length}`);
+      if (allPurchases.length > 0) {
+        console.log("Sample purchase:", {
+          id: allPurchases[0].id,
+          supplierId: allPurchases[0].supplierId,
+          supplierName: allPurchases[0].supplierName,
+          projectId: allPurchases[0].projectId
+        });
+      }
+      
+      // استخدام دالة storage للحصول على جميع المشتريات مع الفلاتر
+      const purchases = await storage.getMaterialPurchasesWithFilters({
+        supplierId: supplierId as string,
+        projectId: projectId as string,
+        dateFrom: dateFrom as string,
+        dateTo: dateTo as string,
+        purchaseType: purchaseType as string
+      });
+      
+      // طباعة عينة من البيانات للتحقق من قيم purchaseType
+      if (purchases.length > 0) {
+        console.log('🔍 عينة من مشتريات المواد:', {
+          total: purchases.length,
+          first3: purchases.slice(0, 3).map(p => ({
+            id: p.id,
+            purchaseType: p.purchaseType,
+            purchaseTypeValue: JSON.stringify(p.purchaseType),
+            totalAmount: p.totalAmount,
+            supplierName: p.supplierName
+          }))
+        });
+        
+        // عرض جميع القيم الفريدة لـ purchaseType
+        const uniqueTypes = Array.from(new Set(purchases.map(p => p.purchaseType)));
+        console.log('🏷️ جميع قيم purchaseType في المشتريات:', uniqueTypes.map(t => `"${t}"`));
+      }
+      
+      console.log(`Found ${purchases.length} material purchases`);
+      res.json(purchases);
+    } catch (error) {
+      console.error("Error fetching material purchases:", error);
+      res.status(500).json({ message: "Error fetching material purchases" });
+    }
+  });
+
   app.get("/api/material-purchases/:id", async (req, res) => {
+    // التحقق إذا كان المسار هو date-range
+    if (req.params.id === 'date-range') {
+      try {
+        const dateRange = await storage.getMaterialPurchasesDateRange();
+        res.json(dateRange);
+        return;
+      } catch (error) {
+        console.error("Error fetching material purchases date range:", error);
+        res.status(500).json({ message: "Error fetching date range" });
+        return;
+      }
+    }
+    
+    // إذا لم يكن date-range، فهو ID عادي
     try {
       const purchase = await storage.getMaterialPurchaseById(req.params.id);
       if (!purchase) {
@@ -978,6 +1922,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Transportation Expenses
+  app.get("/api/transportation-expenses", async (req, res) => {
+    try {
+      const expenses = await storage.getAllTransportationExpenses();
+      res.json(expenses);
+    } catch (error) {
+      res.status(500).json({ message: "Error fetching transportation expenses" });
+    }
+  });
+
   app.get("/api/projects/:projectId/transportation-expenses", async (req, res) => {
     try {
       const date = req.query.date as string;
@@ -1104,6 +2057,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { projectId, date } = req.params;
       
       console.log(`🟦 Generating daily expense report for project ${projectId}, date ${date}`);
+      
+      // جلب معلومات المشروع أولاً
+      const project = await storage.getProject(projectId);
+      if (!project) {
+        return res.status(404).json({ message: "Project not found" });
+      }
       
       const [
         fundTransfers,
@@ -1246,16 +2205,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({
         date,
         projectId,
+        projectName: project.name, // إضافة اسم المشروع
+        
+        // البيانات الأساسية بالتنسيق الذي يتوقعه القالب
         fundTransfers,
         workerAttendance: workerAttendanceWithWorkers,
         materialPurchases: materialPurchasesWithMaterials,
         transportationExpenses: transportationExpensesWithWorkers,
         workerTransfers: workerTransfersWithWorkers,
-        workerMiscExpenses: workerMiscExpensesWithWorkers,
+        miscExpenses: workerMiscExpensesWithWorkers, // تغيير الاسم ليتطابق مع القالب
+        
+        // ترحيل الأموال بين المشاريع
         incomingProjectTransfers: incomingProjectTransfersWithProjects,
         outgoingProjectTransfers: outgoingProjectTransfersWithProjects,
         totalIncomingTransfers,
         totalOutgoingTransfers,
+        
+        // الملخص المالي في المستوى الأعلى (كما يتوقعه القالب)
+        carriedForward,
+        totalIncome,
+        totalExpenses,
+        remainingBalance,
+        
+        // تفاصيل إضافية للتقرير
         dailySummary,
         summary: {
           carriedForward,
@@ -1638,8 +2610,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/worker-transfers", async (req, res) => {
     try {
+      console.log("📥 البيانات المستلمة لإنشاء حولة العامل:", JSON.stringify(req.body, null, 2));
+      
       const validationResult = insertWorkerTransferSchema.safeParse(req.body);
       if (!validationResult.success) {
+        console.log("❌ خطأ في التحقق من البيانات:", JSON.stringify(validationResult.error.errors, null, 2));
         return res.status(400).json({ 
           message: "Invalid worker transfer data", 
           errors: validationResult.error.errors 
@@ -1682,6 +2657,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .catch(error => console.error("Error updating daily summary after worker transfer update:", error));
       });
       
+      res.json(transfer);
+    } catch (error) {
+      console.error("Error updating worker transfer:", error);
+      res.status(500).json({ message: "Failed to update worker transfer" });
+    }
+  });
+
+  // إضافة route PATCH للتحديث الجزئي
+  app.patch("/api/worker-transfers/:id", async (req, res) => {
+    try {
+      console.log("📥 البيانات المستلمة لتعديل حولة العامل:", JSON.stringify(req.body, null, 2));
+      
+      const validationResult = insertWorkerTransferSchema.partial().safeParse(req.body);
+      if (!validationResult.success) {
+        console.log("❌ خطأ في التحقق من البيانات:", JSON.stringify(validationResult.error.errors, null, 2));
+        return res.status(400).json({ 
+          message: "Invalid worker transfer data", 
+          errors: validationResult.error.errors 
+        });
+      }
+
+      const transfer = await storage.updateWorkerTransfer(req.params.id, validationResult.data);
+      if (!transfer) {
+        return res.status(404).json({ message: "Worker transfer not found" });
+      }
+      
+      // تحديث الملخص اليومي بعد تعديل الحوالة
+      setImmediate(() => {
+        storage.updateDailySummaryForDate(transfer.projectId, transfer.transferDate)
+          .catch(error => console.error("Error updating daily summary after worker transfer update:", error));
+      });
+      
+      console.log("✅ تم تعديل حولة العامل بنجاح:", transfer.id);
       res.json(transfer);
     } catch (error) {
       console.error("Error updating worker transfer:", error);
@@ -1953,12 +2961,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Users endpoints
   app.get("/api/users", async (req, res) => {
     try {
+      const includeRole = req.query.includeRole === 'true';
       const users = await storage.getUsers();
-      // إخفاء كلمات المرور من الاستجابة
+      
+      // إخفاء كلمات المرور من الاستجابة وإضافة الأدوار إذا طُلبت
       const safeUsers = users.map(user => {
-        const { password, ...safeUser } = user;
+        const { password, totpSecret, backupCodes, ...safeUser } = user;
+        
+        // إضافة الدور إذا طُلب
+        if (includeRole) {
+          return {
+            ...safeUser,
+            role: user.role || 'user' // تأكد من وجود دور افتراضي
+          };
+        }
+        
         return safeUser;
       });
+      
       res.json(safeUsers);
     } catch (error) {
       console.error("Error fetching users:", error);
@@ -2316,6 +3336,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // إحصائيات الموردين العامة مع فصل النقدي والآجل (يجب أن يأتي قبل route :id)
+  app.get("/api/suppliers/statistics", async (req, res) => {
+    try {
+      const { supplierId, projectId, dateFrom, dateTo, purchaseType } = req.query;
+      console.log(`📊 طلب إحصائيات الموردين:`, { supplierId, projectId, dateFrom, dateTo, purchaseType });
+      
+      // تصفية القيم الفارغة والغير محددة
+      const filters: any = {};
+      if (supplierId && supplierId !== 'undefined' && supplierId !== '') filters.supplierId = supplierId as string;
+      if (projectId && projectId !== 'all' && projectId !== 'undefined' && projectId !== '') filters.projectId = projectId as string;
+      if (dateFrom && dateFrom !== 'undefined' && dateFrom !== '') filters.dateFrom = dateFrom as string;
+      if (dateTo && dateTo !== 'undefined' && dateTo !== '') filters.dateTo = dateTo as string;
+      if (purchaseType && purchaseType !== 'all' && purchaseType !== 'undefined' && purchaseType !== '') filters.purchaseType = purchaseType as string;
+      
+      console.log(`🔄 الفلاتر المطبقة:`, filters);
+      
+      const statistics = await storage.getSupplierStatistics(filters);
+      
+      console.log(`✅ تم حساب إحصائيات الموردين:`, statistics);
+      res.json(statistics);
+    } catch (error) {
+      console.error("خطأ في جلب إحصائيات الموردين:", error);
+      
+      // إرجاع إحصائيات فارغة بدلاً من خطأ 500
+      res.json({
+        totalSuppliers: 0,
+        totalCashPurchases: "0",
+        totalCreditPurchases: "0",
+        totalDebt: "0",
+        totalPaid: "0",
+        remainingDebt: "0",
+        activeSuppliers: 0
+      });
+    }
+  });
+
   app.post("/api/suppliers", async (req, res) => {
     try {
       const result = insertSupplierSchema.safeParse(req.body);
@@ -2396,6 +3452,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+
   // Supplier purchases
   app.get("/api/suppliers/:id/purchases", async (req, res) => {
     try {
@@ -2414,6 +3471,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Supplier payments routes
+  app.get("/api/supplier-payments", async (req, res) => {
+    try {
+      console.log('🔍 API: بدء استدعاء getAllSupplierPayments...');
+      const payments = await storage.getAllSupplierPayments();
+      console.log(`📊 API: تم الحصول على ${payments.length} مدفوعة`);
+      res.json(payments);
+    } catch (error) {
+      console.error("خطأ في API route للمدفوعات:", error);
+      res.status(500).json({ message: "خطأ في جلب جميع مدفوعات الموردين" });
+    }
+  });
+
   app.get("/api/suppliers/:supplierId/payments", async (req, res) => {
     try {
       const { supplierId } = req.params;
@@ -2752,88 +3821,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // مسارات المصادقة والمستخدمين  
-  app.post("/api/auth/register", async (req, res) => {
-    try {
-      const { email, password, firstName, lastName, role = 'admin' } = req.body;
-      
-      if (!email || !password) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'الإيميل وكلمة المرور مطلوبان' 
-        });
-      }
-
-      const result = await authSystem.register({
-        email,
-        password,
-        firstName,
-        lastName,
-        role,
-        isActive: true
-      });
-
-      res.json(result);
-    } catch (error) {
-      console.error('خطأ في التسجيل:', error);  
-      res.status(500).json({ 
-        success: false, 
-        message: 'خطأ في إنشاء الحساب' 
-      });
-    }
-  });
-
-  app.post("/api/auth/login", async (req, res) => {
-    try {
-      const { email, password } = req.body;
-      
-      if (!email || !password) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'الإيميل وكلمة المرور مطلوبان' 
-        });
-      }
-
-      const result = await authSystem.login(email, password);
-      
-      if (result.success && result.user) {
-        // إنشاء session
-        (req.session as any).auth = authSystem.createSession(result.user);
-      }
-
-      res.json(result);
-    } catch (error) {
-      console.error('خطأ في تسجيل الدخول:', error);
-      res.status(500).json({ 
-        success: false, 
-        message: 'خطأ في تسجيل الدخول' 
-      });
-    }
-  });
-
-  app.post("/api/auth/logout", (req, res) => {
-    req.session.destroy((err) => {
-      if (err) {
-        return res.status(500).json({ 
-          success: false, 
-          message: 'خطأ في تسجيل الخروج' 
-        });
-      }
-      res.json({ success: true, message: 'تم تسجيل الخروج بنجاح' });
-    });
-  });
-
-  app.get("/api/auth/me", (req, res) => {
-    const user = authSystem.getCurrentUser(req);
-    if (user) {
-      res.json({ success: true, user });
-    } else {
-      res.status(401).json({ 
-        success: false, 
-        message: 'غير مسجل دخول' 
-      });
-    }
-  });
+  // ملاحظة: تم نقل مسارات المصادقة إلى النظام المتقدم أعلاه
+  // النظام الأساسي تم إزالته حسب طلب المستخدم
 
   // مسارات النسخ الاحتياطي
   app.post("/api/backup/create", async (req, res) => {
@@ -2873,29 +3862,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "معرفات المشاريع مطلوبة" });
       }
 
-      // تحويل projectIds إلى مصفوفة
-      let selectedProjectIds: string[] = [];
-      if (typeof projectIds === 'string') {
-        selectedProjectIds = projectIds.split(',').filter(id => id.trim());
-      }
-
-      if (selectedProjectIds.length === 0) {
-        return res.status(400).json({ message: "يجب تحديد مشروع واحد على الأقل" });
-      }
-
       // جلب البيانات الأساسية
       const [allProjects, allWorkers] = await Promise.all([
         storage.getProjects(),
         storage.getWorkers()
       ]);
 
-      // فلترة المشاريع المحددة
-      const selectedProjects = allProjects.filter(project => 
-        selectedProjectIds.includes(project.id)
-      );
+      // تحويل projectIds إلى مصفوفة ومعالجة حالة 'all'
+      let selectedProjectIds: string[] = [];
+      let selectedProjects: any[] = [];
+      
+      if (typeof projectIds === 'string') {
+        if (projectIds.trim() === 'all' || projectIds.trim() === '') {
+          // في حالة 'all' أو فارغ، استخدم جميع المشاريع
+          selectedProjects = allProjects;
+          selectedProjectIds = allProjects.map(p => p.id);
+        } else {
+          // في حالة تحديد مشاريع معينة
+          selectedProjectIds = projectIds.split(',').filter(id => id.trim());
+          selectedProjects = allProjects.filter(project => 
+            selectedProjectIds.includes(project.id)
+          );
+        }
+      }
 
       if (selectedProjects.length === 0) {
-        return res.status(404).json({ message: "لا توجد مشاريع صالحة" });
+        return res.status(404).json({ message: "لا توجد مشاريع متاحة" });
       }
 
       // فلترة العمال إذا تم تحديدهم
@@ -3162,6 +4154,902 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting report template:", error);
       res.status(500).json({ message: "خطأ في حذف قالب التقرير" });
+    }
+  });
+
+  // =====================================================
+  // API Routes لنظام إدارة الإشعارات
+  // =====================================================
+
+  // Notification Read States
+  app.get("/api/notifications/:userId/read-state", requireAuth, async (req, res) => {
+    try {
+      const { notificationId, notificationType } = req.query;
+      
+      if (!notificationId || !notificationType) {
+        return res.status(400).json({ message: "notificationId and notificationType are required" });
+      }
+      
+      const isRead = await storage.isNotificationRead(
+        req.params.userId,
+        notificationId as string,
+        notificationType as string
+      );
+      
+      res.json({ isRead });
+    } catch (error) {
+      console.error('Error checking notification read state:', error);
+      res.status(500).json({ message: "خطأ في فحص حالة قراءة الإشعار" });
+    }
+  });
+
+
+  // =====================================================
+  // نظام إدارة الإشعارات المتقدم - Advanced Notification System
+  // =====================================================
+
+  // جلب الإشعارات للمستخدم مع الفلترة (مسار محمي)
+  app.get("/api/notifications", requireAuth, async (req, res) => {
+    try {
+      // استخدام userId من النظام المتقدم JWT token
+      const userId = (req as any).user?.userId;
+      const type = req.query.type as string;
+      const unreadOnly = req.query.unreadOnly === 'true';
+      const projectId = req.query.projectId as string;
+      const limit = parseInt(req.query.limit as string) || 50;
+      const offset = parseInt(req.query.offset as string) || 0;
+
+      const result = await notificationService.getUserNotifications(userId, {
+        type,
+        unreadOnly,
+        projectId,
+        limit,
+        offset
+      });
+
+      // إذا لم توجد إشعارات، أرجع إشعار ترحيب مناسب للمستخدم
+      if (result.notifications.length === 0) {
+        const userRole = (req as any).user?.role;
+        const isAdmin = userRole === 'admin';
+        
+        if (!isAdmin) {
+          // فحص إذا كان إشعار الترحيب مُعلم كمقروء
+          console.log(`🚀 فحص حالة قراءة إشعار الترحيب للمستخدم ${userId}`);
+          const welcomeReadState = await notificationService.checkNotificationReadState('user-welcome', userId);
+          console.log(`📝 نتيجة فحص إشعار الترحيب: ${welcomeReadState ? 'مقروء' : 'غير مقروء'}`);
+          
+          // إشعار ترحيب للمستخدمين العاديين فقط
+          const welcomeNotification = {
+            id: 'user-welcome',
+            type: 'user-welcome',
+            title: 'مرحباً بك في نظام إدارة المشاريع',
+            message: 'أهلاً وسهلاً بك! يمكنك الآن متابعة مهامك والإعلانات المهمة من خلال هذا النظام',
+            priority: 1,
+            createdAt: new Date().toISOString(),
+            isRead: welcomeReadState,
+            actionRequired: false,
+          };
+          console.log(`🎆 إرسال إشعار الترحيب مع حالة القراءة: ${welcomeReadState}`);
+          return res.json({
+            notifications: [welcomeNotification],
+            unreadCount: welcomeReadState ? 0 : 1,
+            total: 1
+          });
+        } else {
+          // المسؤول لا يحتاج إشعار ترحيب
+          return res.json({
+            notifications: [],
+            unreadCount: 0,
+            total: 0
+          });
+        }
+      }
+
+      res.json(result);
+    } catch (error) {
+      console.error("Error fetching notifications:", error);
+      res.status(500).json({ message: "خطأ في جلب الإشعارات" });
+    }
+  });
+
+  // إنشاء إشعار جديد (مسار محمي)
+  app.post("/api/notifications", requireAuth, async (req, res) => {
+    try {
+      const notification = await notificationService.createNotification(req.body);
+      res.status(201).json(notification);
+    } catch (error) {
+      console.error("Error creating notification:", error);
+      res.status(500).json({ message: "خطأ في إنشاء الإشعار" });
+    }
+  });
+
+  // إنشاء إشعار أمني طارئ (مسار محمي)
+  app.post("/api/notifications/safety", requireAuth, async (req, res) => {
+    try {
+      const notification = await notificationService.createSafetyAlert(req.body);
+      res.status(201).json(notification);
+    } catch (error) {
+      console.error("Error creating safety alert:", error);
+      res.status(500).json({ message: "خطأ في إنشاء التنبيه الأمني" });
+    }
+  });
+
+  // إنشاء إشعار مهمة (مسار محمي)
+  app.post("/api/notifications/task", requireAuth, async (req, res) => {
+    try {
+      const notification = await notificationService.createTaskNotification(req.body);
+      res.status(201).json(notification);
+    } catch (error) {
+      console.error("Error creating task notification:", error);
+      res.status(500).json({ message: "خطأ في إنشاء إشعار المهمة" });
+    }
+  });
+
+  // إنشاء إشعار راتب (مسار محمي)
+  app.post("/api/notifications/payroll", requireAuth, async (req, res) => {
+    try {
+      const notification = await notificationService.createPayrollNotification(req.body);
+      res.status(201).json(notification);
+    } catch (error) {
+      console.error("Error creating payroll notification:", error);
+      res.status(500).json({ message: "خطأ في إنشاء إشعار الراتب" });
+    }
+  });
+
+  // إنشاء إعلان عام (مسار محمي)
+  app.post("/api/notifications/announcement", requireAuth, async (req, res) => {
+    try {
+      const notification = await notificationService.createAnnouncement(req.body);
+      res.status(201).json(notification);
+    } catch (error) {
+      console.error("Error creating announcement:", error);
+      res.status(500).json({ message: "خطأ في إنشاء الإعلان" });
+    }
+  });
+
+  // تعليم إشعار كمقروء - نظام موحد ومتقدم (مسار محمي)
+  app.post("/api/notifications/:notificationId/mark-read", requireAuth, async (req, res) => {
+    try {
+      const { notificationId } = req.params;
+      // استخدام userId من النظام المتقدم JWT token
+      const userId = (req as any).user?.userId;
+      
+      if (!userId) {
+        return res.status(401).json({ success: false, message: 'غير مصرح' });
+      }
+      
+      console.log(`📖 تعليم إشعار كمقروء: ${notificationId} للمستخدم: ${userId}`);
+      
+      // حفظ حالة القراءة لجميع الإشعارات بما في ذلك إشعار الترحيب
+      await notificationService.markAsRead(notificationId, userId);
+      
+      if (notificationId === 'user-welcome' || notificationId === 'system-welcome') {
+        console.log(`✅ تم تعليم إشعار الترحيب كمقروء وحفظ حالته: ${notificationId}`);
+      }
+      
+      res.json({ 
+        success: true,
+        message: "تم تعليم الإشعار كمقروء بنجاح",
+        notificationId,
+        userId 
+      });
+    } catch (error) {
+      console.error("خطأ في تعليم الإشعار كمقروء:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "خطأ في تعليم الإشعار كمقروء",
+        error: error instanceof Error ? error.message : 'خطأ غير معروف'
+      });
+    }
+  });
+
+  // تعليم جميع الإشعارات كمقروءة - نظام موحد (مسار محمي)
+  app.post("/api/notifications/mark-all-read", requireAuth, async (req, res) => {
+    try {
+      // استخدام userId من النظام المتقدم JWT token
+      const userId = (req as any).user?.userId;
+      const projectId = req.body.projectId as string;
+      
+      if (!userId) {
+        return res.status(401).json({ success: false, message: 'غير مصرح' });
+      }
+      
+      console.log(`📖 تعليم جميع الإشعارات كمقروءة للمستخدم: ${userId}`);
+      
+      await notificationService.markAllAsRead(userId, projectId);
+      
+      res.json({ 
+        success: true,
+        message: "تم تعليم جميع الإشعارات كمقروءة بنجاح",
+        userId,
+        projectId 
+      });
+    } catch (error) {
+      console.error("خطأ في تعليم جميع الإشعارات كمقروءة:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "خطأ في تعليم جميع الإشعارات كمقروءة",
+        error: error instanceof Error ? error.message : 'خطأ غير معروف'
+      });
+    }
+  });
+
+  // حذف إشعار
+  app.delete("/api/notifications/:notificationId", async (req, res) => {
+    try {
+      const { notificationId } = req.params;
+      await notificationService.deleteNotification(notificationId);
+      res.json({ message: "تم حذف الإشعار" });
+    } catch (error) {
+      console.error("Error deleting notification:", error);
+      res.status(500).json({ message: "خطأ في حذف الإشعار" });
+    }
+  });
+
+  // جلب إحصائيات الإشعارات
+  app.get("/api/notifications/stats", async (req, res) => {
+    try {
+      // استخدام userId من النظام المتقدم JWT token
+      const userId = (req as any).user?.userId;
+      
+      if (!userId) {
+        return res.status(401).json({ success: false, message: 'غير مصرح' });
+      }
+      const stats = await notificationService.getNotificationStats(userId);
+      res.json(stats);
+    } catch (error) {
+      console.error("Error fetching notification stats:", error);
+      res.status(500).json({ message: "خطأ في جلب إحصائيات الإشعارات" });
+    }
+  });
+
+  // =====================================================
+  // واجهات برمجة التطبيقات للمسؤول - Admin APIs
+  // =====================================================
+
+  // جلب جميع الإشعارات مع تفاصيل المستخدمين - للمسؤول فقط
+  app.get("/api/admin/notifications/all", async (req, res) => {
+    try {
+      const requesterId = (req.query.requesterId as string) || 'admin';
+      
+      // التحقق من الصلاحيات
+      if (requesterId !== 'admin' && requesterId !== 'مسؤول') {
+        return res.status(403).json({ message: "غير مسموح - المسؤول فقط" });
+      }
+
+      const limit = parseInt(req.query.limit as string) || 100;
+      const offset = parseInt(req.query.offset as string) || 0;
+      const type = req.query.type as string;
+      const priority = req.query.priority as string;
+      
+      // بناء شروط البحث
+      const conditions = [];
+      if (type) {
+        conditions.push(eq(notifications.type, type));
+      }
+      if (priority) {
+        conditions.push(eq(notifications.priority, parseInt(priority)));
+      }
+
+      // جلب الإشعارات
+      const notificationList = await db
+        .select()
+        .from(notifications)
+        .where(conditions.length > 0 ? and(...conditions) : undefined)
+        .orderBy(desc(notifications.createdAt))
+        .limit(limit)
+        .offset(offset);
+
+      // جلب حالات القراءة لجميع المستخدمين
+      const notificationIds = notificationList.map(n => n.id);
+      const readStates = notificationIds.length > 0 ? 
+        await db
+          .select()
+          .from(notificationReadStates)
+          .where(inArray(notificationReadStates.notificationId, notificationIds)) : [];
+
+      // تجميع البيانات
+      const enrichedNotifications = notificationList.map(notification => {
+        const notificationReadStates = readStates.filter(
+          rs => rs.notificationId === notification.id
+        );
+        
+        return {
+          ...notification,
+          readStates: notificationReadStates,
+          totalReads: notificationReadStates.filter(rs => rs.isRead).length,
+          totalUsers: notificationReadStates.length
+        };
+      });
+
+      const total = await db
+        .select({ count: sql`count(*)` })
+        .from(notifications)
+        .where(conditions.length > 0 ? and(...conditions) : undefined);
+
+      res.json({
+        notifications: enrichedNotifications,
+        total: Number(total[0]?.count || 0),
+        limit,
+        offset
+      });
+    } catch (error) {
+      console.error("Error fetching admin notifications:", error);
+      res.status(500).json({ message: "خطأ في جلب إشعارات المسؤول" });
+    }
+  });
+
+  // جلب نشاط المستخدمين مع الإشعارات
+  app.get("/api/admin/notifications/user-activity", async (req, res) => {
+    try {
+      const requesterId = (req.query.requesterId as string) || 'admin';
+      
+      if (requesterId !== 'admin' && requesterId !== 'مسؤول') {
+        return res.status(403).json({ message: "غير مسموح - المسؤول فقط" });
+      }
+
+      // جلب إحصائيات جميع المستخدمين مع أسمائهم (حتى الذين لم يتفاعلوا مع الإشعارات)
+      const userStats = await db.execute(sql`
+        SELECT 
+          u.id::text as user_id,
+          COALESCE(NULLIF(TRIM(CONCAT(u.first_name, ' ', u.last_name)), ''), u.email) as user_name,
+          u.email as user_email,
+          u.role as user_role,
+          COALESCE(COUNT(DISTINCT nrs.notification_id), 0) as total_notifications,
+          COALESCE(COUNT(CASE WHEN nrs.is_read = true THEN 1 END), 0) as read_notifications,
+          COALESCE(COUNT(CASE WHEN nrs.is_read = false THEN 1 END), 0) as unread_notifications,
+          MAX(nrs.read_at) as last_activity
+        FROM users u
+        LEFT JOIN notification_read_states nrs ON u.id::text = nrs.user_id
+        GROUP BY u.id, u.first_name, u.last_name, u.email, u.role
+        ORDER BY last_activity DESC NULLS LAST, user_name ASC
+      `);
+
+      const formattedStats = userStats.rows.map((row: any) => ({
+        userId: row.user_id,
+        userName: row.user_name || row.user_email?.split('@')[0] || 'مستخدم غير معروف',
+        userEmail: row.user_email,
+        userRole: row.user_role,
+        totalNotifications: Number(row.total_notifications),
+        readNotifications: Number(row.read_notifications),
+        unreadNotifications: Number(row.unread_notifications),
+        lastActivity: row.last_activity,
+        readPercentage: row.total_notifications > 0 
+          ? Math.round((row.read_notifications / row.total_notifications) * 100) 
+          : 0
+      }));
+
+      res.json({ userStats: formattedStats });
+    } catch (error) {
+      console.error("Error fetching user activity:", error);
+      res.status(500).json({ message: "خطأ في جلب نشاط المستخدمين" });
+    }
+  });
+
+  // إرسال إشعار مخصص من المسؤول
+  app.post("/api/admin/notifications/send", async (req, res) => {
+    try {
+      const requesterId = (req.body.requesterId as string) || 'admin';
+      
+      if (requesterId !== 'admin' && requesterId !== 'مسؤول') {
+        return res.status(403).json({ message: "غير مسموح - المسؤول فقط" });
+      }
+
+      const { title, body, type, priority, recipients, projectId } = req.body;
+      
+      if (!title || !body || !type) {
+        return res.status(400).json({ message: "العنوان والمحتوى والنوع مطلوبة" });
+      }
+
+      let finalRecipients: string[] = [];
+      
+      if (recipients === 'all') {
+        finalRecipients = await notificationService.getAllActiveUserIds();
+      } else if (recipients === 'admins') {
+        // الحصول على جميع المسؤولين من قاعدة البيانات
+        const allAdmins = await db.query.users.findMany({
+          where: (users, { or, eq }) => or(
+            eq(users.role, 'admin'),
+            eq(users.role, 'مدير'),
+            eq(users.role, 'مشرف')
+          )
+        });
+        finalRecipients = allAdmins.map(admin => admin.id);
+      } else if (Array.isArray(recipients)) {
+        finalRecipients = recipients;
+      } else {
+        return res.status(400).json({ message: "مستقبلين غير صحيحين" });
+      }
+
+      const notification = await notificationService.createNotification({
+        type,
+        title,
+        body,
+        priority: priority || 3,
+        recipients: finalRecipients,
+        projectId,
+        payload: { 
+          action: 'open_custom',
+          senderType: 'admin',
+          customMessage: true 
+        },
+        channelPreference: {
+          push: true,
+          email: false,
+          sms: false
+        }
+      });
+
+      res.status(201).json({ 
+        notification, 
+        sentTo: finalRecipients.length,
+        message: `تم إرسال الإشعار إلى ${finalRecipients.length} مستخدم` 
+      });
+    } catch (error) {
+      console.error("Error sending admin notification:", error);
+      res.status(500).json({ message: "خطأ في إرسال الإشعار" });
+    }
+  });
+
+  // حذف إشعار للمستخدم المحدد - للمسؤول فقط
+  app.delete("/api/admin/notifications/:notificationId/user/:userId", async (req, res) => {
+    try {
+      const requesterId = (req.body.requesterId as string) || 'admin';
+      
+      if (requesterId !== 'admin' && requesterId !== 'مسؤول') {
+        return res.status(403).json({ message: "غير مسموح - المسؤول فقط" });
+      }
+
+      const { notificationId, userId } = req.params;
+      
+      await notificationService.deleteNotification(notificationId);
+      
+      res.json({ 
+        message: `تم حذف الإشعار ${notificationId} للمستخدم ${userId}`,
+        notificationId,
+        userId 
+      });
+    } catch (error) {
+      console.error("Error deleting notification for user:", error);
+      res.status(500).json({ message: "خطأ في حذف الإشعار" });
+    }
+  });
+
+  // تحديث حالة إشعار لمستخدم محدد - للمسؤول فقط  
+  app.patch("/api/admin/notifications/:notificationId/user/:userId/status", async (req, res) => {
+    try {
+      const requesterId = (req.body.requesterId as string) || 'admin';
+      
+      if (requesterId !== 'admin' && requesterId !== 'مسؤول') {
+        return res.status(403).json({ message: "غير مسموح - المسؤول فقط" });
+      }
+
+      const { notificationId, userId } = req.params;
+      const { isRead } = req.body;
+      
+      if (typeof isRead !== 'boolean') {
+        return res.status(400).json({ message: "حالة القراءة يجب أن تكون true أو false" });
+      }
+
+      if (isRead) {
+        await notificationService.markAsRead(notificationId, userId);
+      } else {
+        // إزالة حالة القراءة
+        await db
+          .delete(notificationReadStates)
+          .where(
+            and(
+              eq(notificationReadStates.notificationId, notificationId),
+              eq(notificationReadStates.userId, userId)
+            )
+          );
+      }
+      
+      res.json({ 
+        message: `تم تحديث حالة الإشعار ${notificationId} للمستخدم ${userId}`,
+        notificationId,
+        userId,
+        isRead
+      });
+    } catch (error) {
+      console.error("Error updating notification status:", error);
+      res.status(500).json({ message: "خطأ في تحديث حالة الإشعار" });
+    }
+  });
+
+  // حذف إشعار بالكامل - للمسؤول فقط
+  app.delete("/api/admin/notifications/:notificationId", async (req, res) => {
+    try {
+      const requesterId = (req.query.requesterId as string) || 'admin';
+      
+      if (requesterId !== 'admin' && requesterId !== 'مسؤول') {
+        return res.status(403).json({ message: "غير مسموح - المسؤول فقط" });
+      }
+
+      const { notificationId } = req.params;
+      
+      await notificationService.deleteNotification(notificationId);
+      
+      res.json({ 
+        message: `تم حذف الإشعار ${notificationId} بالكامل`,
+        notificationId
+      });
+    } catch (error) {
+      console.error("Error deleting notification completely:", error);
+      res.status(500).json({ message: "خطأ في حذف الإشعار" });
+    }
+  });
+
+  // =====================================================
+  // Equipment APIs - إدارة المعدات
+  // =====================================================
+
+  // Get all equipment with optional filters
+  app.get("/api/equipment", async (req, res) => {
+    try {
+      const { projectId, status, type, searchTerm } = req.query;
+      const filters = {
+        projectId: projectId as string,
+        status: status as string,
+        type: type as string,
+        searchTerm: searchTerm as string
+      };
+      
+      console.log(`🔍 جلب المعدات مع فلاتر:`, filters);
+      const equipment = await storage.getEquipment(filters);
+      console.log(`✅ تم جلب ${equipment.length} معدة`);
+      res.json(equipment);
+    } catch (error) {
+      console.error("خطأ في جلب المعدات:", error);
+      res.status(500).json({ message: "خطأ في جلب المعدات" });
+    }
+  });
+
+  // Get equipment by ID
+  app.get("/api/equipment/:id", async (req, res) => {
+    try {
+      const equipment = await storage.getEquipmentById(req.params.id);
+      if (!equipment) {
+        return res.status(404).json({ message: "المعدة غير موجودة" });
+      }
+      res.json(equipment);
+    } catch (error) {
+      console.error("خطأ في جلب المعدة:", error);
+      res.status(500).json({ message: "خطأ في جلب المعدة" });
+    }
+  });
+
+  // Create new equipment
+  app.post("/api/equipment", async (req, res) => {
+    try {
+      const result = insertEquipmentSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "بيانات المعدة غير صحيحة", 
+          errors: result.error.issues 
+        });
+      }
+      
+      // Equipment creation logic - code will be generated automatically if not provided
+      
+      const equipment = await storage.createEquipment(result.data);
+      console.log(`✅ تم إنشاء معدة جديدة: ${equipment.name}`);
+      res.status(201).json(equipment);
+    } catch (error) {
+      console.error("خطأ في إنشاء المعدة:", error);
+      res.status(500).json({ message: "خطأ في إنشاء المعدة" });
+    }
+  });
+
+  // Update equipment
+  app.patch("/api/equipment/:id", async (req, res) => {
+    try {
+      const result = insertEquipmentSchema.partial().safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "بيانات المعدة غير صحيحة", 
+          errors: result.error.issues 
+        });
+      }
+      
+      const equipment = await storage.updateEquipment(req.params.id, result.data);
+      if (!equipment) {
+        return res.status(404).json({ message: "المعدة غير موجودة" });
+      }
+      
+      console.log(`✅ تم تحديث المعدة: ${equipment.name}`);
+      res.json(equipment);
+    } catch (error) {
+      console.error("خطأ في تحديث المعدة:", error);
+      res.status(500).json({ message: "خطأ في تحديث المعدة" });
+    }
+  });
+
+  // Delete equipment
+  app.delete("/api/equipment/:id", async (req, res) => {
+    try {
+      const equipment = await storage.getEquipmentById(req.params.id);
+      if (!equipment) {
+        return res.status(404).json({ message: "المعدة غير موجودة" });
+      }
+      
+      await storage.deleteEquipment(req.params.id);
+      console.log(`✅ تم حذف المعدة: ${equipment.name}`);
+      res.status(204).send();
+    } catch (error) {
+      console.error("خطأ في حذف المعدة:", error);
+      res.status(500).json({ message: "خطأ في حذف المعدة" });
+    }
+  });
+
+  // Get equipment movements for specific equipment
+  app.get("/api/equipment/:id/movements", async (req, res) => {
+    try {
+      const movements = await storage.getEquipmentMovements(req.params.id);
+      console.log(`✅ تم جلب ${movements.length} حركة للمعدة`);
+      res.json(movements);
+    } catch (error) {
+      console.error("خطأ في جلب حركات المعدة:", error);
+      res.status(500).json({ message: "خطأ في جلب حركات المعدة" });
+    }
+  });
+
+  // Create equipment movement
+  app.post("/api/equipment/:id/movements", async (req, res) => {
+    try {
+      const movementData = { ...req.body, equipmentId: req.params.id };
+      const result = insertEquipmentMovementSchema.safeParse(movementData);
+      
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "بيانات حركة المعدة غير صحيحة", 
+          errors: result.error.issues 
+        });
+      }
+      
+      const movement = await storage.createEquipmentMovement(result.data);
+      console.log(`✅ تم إنشاء حركة معدة جديدة: ${movement.reason || 'حركة جديدة'}`);
+      res.status(201).json(movement);
+    } catch (error) {
+      console.error("خطأ في إنشاء حركة المعدة:", error);
+      res.status(500).json({ message: "خطأ في إنشاء حركة المعدة" });
+    }
+  });
+
+  // Generate next equipment code
+  app.get("/api/equipment/generate-code", async (req, res) => {
+    try {
+      const nextCode = await storage.generateNextEquipmentCode();
+      res.json({ code: nextCode });
+    } catch (error) {
+      console.error("خطأ في توليد كود المعدة:", error);
+      res.status(500).json({ message: "خطأ في توليد كود المعدة" });
+    }
+  });
+
+  // =====================================================
+  // Worker Attendance APIs - نظام حضور العمال  
+  // =====================================================
+
+  // Get worker attendance for project with optional date filter
+  app.get("/api/worker-attendance", async (req, res) => {
+    try {
+      const { projectId, date } = req.query;
+      
+      if (!projectId) {
+        return res.status(400).json({ message: "معرف المشروع مطلوب" });
+      }
+      
+      console.log(`🔍 جلب حضور العمال للمشروع: ${projectId}, التاريخ: ${date || 'الكل'}`);
+      const attendance = await storage.getWorkerAttendance(projectId as string, date as string);
+      console.log(`✅ تم جلب ${attendance.length} سجل حضور`);
+      res.json(attendance);
+    } catch (error) {
+      console.error("خطأ في جلب حضور العمال:", error);
+      res.status(500).json({ message: "خطأ في جلب حضور العمال" });
+    }
+  });
+
+  // Get specific worker attendance record
+  app.get("/api/worker-attendance/:id", async (req, res) => {
+    try {
+      const attendance = await storage.getWorkerAttendanceById(req.params.id);
+      if (!attendance) {
+        return res.status(404).json({ message: "سجل الحضور غير موجود" });
+      }
+      res.json(attendance);
+    } catch (error) {
+      console.error("خطأ في جلب سجل الحضور:", error);
+      res.status(500).json({ message: "خطأ في جلب سجل الحضور" });
+    }
+  });
+
+  // Create worker attendance record
+  app.post("/api/worker-attendance", async (req, res) => {
+    try {
+      const result = insertWorkerAttendanceSchema.safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "بيانات الحضور غير صحيحة", 
+          errors: result.error.issues 
+        });
+      }
+      
+      const attendance = await storage.createWorkerAttendance(result.data);
+      console.log(`✅ تم تسجيل حضور عامل جديد للمشروع: ${attendance.projectId}`);
+      res.status(201).json(attendance);
+    } catch (error) {
+      console.error("خطأ في تسجيل الحضور:", error);
+      res.status(500).json({ message: "خطأ في تسجيل الحضور" });
+    }
+  });
+
+  // Update worker attendance record
+  app.patch("/api/worker-attendance/:id", async (req, res) => {
+    try {
+      const result = insertWorkerAttendanceSchema.partial().safeParse(req.body);
+      if (!result.success) {
+        return res.status(400).json({ 
+          message: "بيانات الحضور غير صحيحة", 
+          errors: result.error.issues 
+        });
+      }
+      
+      const attendance = await storage.updateWorkerAttendance(req.params.id, result.data);
+      if (!attendance) {
+        return res.status(404).json({ message: "سجل الحضور غير موجود" });
+      }
+      
+      console.log(`✅ تم تحديث سجل الحضور: ${attendance.id}`);
+      res.json(attendance);
+    } catch (error) {
+      console.error("خطأ في تحديث الحضور:", error);
+      res.status(500).json({ message: "خطأ في تحديث الحضور" });
+    }
+  });
+
+  // Delete worker attendance record  
+  app.delete("/api/worker-attendance/:id", async (req, res) => {
+    try {
+      const attendance = await storage.getWorkerAttendanceById(req.params.id);
+      if (!attendance) {
+        return res.status(404).json({ message: "سجل الحضور غير موجود" });
+      }
+      
+      await storage.deleteWorkerAttendance(req.params.id);
+      console.log(`✅ تم حذف سجل الحضور: ${req.params.id}`);
+      res.status(204).send();
+    } catch (error) {
+      console.error("خطأ في حذف سجل الحضور:", error);
+      res.status(500).json({ message: "خطأ في حذف سجل الحضور" });
+    }
+  });
+
+  // ====== مسارات نظام كشف الأخطاء الذكي ======
+  
+  // جلب إحصائيات الأخطاء
+  app.get("/api/smart-errors/statistics", async (req, res) => {
+    try {
+      console.log('📊 طلب إحصائيات نظام الأخطاء الذكي');
+      
+      const statistics = await smartErrorHandler.getErrorStatistics();
+      
+      res.json({
+        success: true,
+        statistics,
+        message: 'تم جلب إحصائيات الأخطاء بنجاح'
+      });
+      
+    } catch (error: any) {
+      console.error('❌ خطأ في جلب إحصائيات الأخطاء:', error);
+      res.status(500).json({ 
+        success: false,
+        message: 'خطأ في جلب إحصائيات الأخطاء',
+        error: error.message
+      });
+    }
+  });
+
+  // جلب قائمة الأخطاء التفصيلية
+  app.get("/api/smart-errors/detected", async (req, res) => {
+    try {
+      console.log('📋 طلب جلب قائمة الأخطاء التفصيلية');
+      
+      const {
+        limit = 20,
+        offset = 0,
+        severity,
+        errorType,
+        tableName,
+        status = 'unresolved'
+      } = req.query;
+
+      const result = await smartErrorHandler.getDetectedErrors({
+        limit: Number(limit),
+        offset: Number(offset),
+        severity: severity as string,
+        errorType: errorType as string,
+        tableName: tableName as string,
+        status: status as string
+      });
+      
+      console.log(`📊 تم جلب ${result.errors.length} خطأ من إجمالي ${result.total}`);
+      
+      res.json({
+        success: true,
+        detectedErrors: result.errors,
+        pagination: {
+          total: result.total,
+          limit: Number(limit),
+          offset: Number(offset),
+          hasMore: result.hasMore
+        },
+        message: `تم جلب ${result.errors.length} خطأ بنجاح`
+      });
+      
+    } catch (error: any) {
+      console.error('❌ خطأ في جلب قائمة الأخطاء التفصيلية:', error);
+      res.status(500).json({ 
+        success: false,
+        message: 'خطأ في جلب قائمة الأخطاء التفصيلية',
+        error: error.message
+      });
+    }
+  });
+
+  // إنشاء خطأ تجريبي لاختبار النظام
+  app.post("/api/smart-errors/test", async (req, res) => {
+    try {
+      console.log('🧪 إنشاء خطأ تجريبي لاختبار النظام الذكي');
+      
+      // محاولة إدراج بيانات في عمود غير موجود لإثارة خطأ مضمون
+      try {
+        await db.execute(sql`
+          INSERT INTO projects (name, status, nonexistent_column) 
+          VALUES ('اختبار خطأ', 'active', 'test')
+        `);
+        
+      } catch (testError: any) {
+        // هذا ما نريده - خطأ للاختبار
+        console.log('🎯 تم إنشاء خطأ تجريبي بنجاح');
+        
+        const analyzedError = await smartErrorHandler.handleDatabaseError(
+          testError, 
+          {
+            operation: 'insert',
+            tableName: 'projects',
+            columnName: 'name',
+            attemptedValue: 'مشروع تجريبي للاختبار',
+            userId: (req as any).user?.userId || 'system',
+            additionalContext: { testMode: true }
+          },
+          false // لا نريد رمي الخطأ
+        );
+        
+        return res.json({
+          success: true,
+          message: 'تم إنشاء واختبار خطأ تجريبي بنجاح',
+          testError: {
+            type: analyzedError.errorType,
+            severity: analyzedError.severity,
+            friendlyMessage: analyzedError.friendlyMessage,
+            fingerprint: analyzedError.fingerprint.substring(0, 12)
+          }
+        });
+      }
+      
+      res.json({
+        success: true,
+        message: 'لم يحدث خطأ في الاختبار، قد تكون البيانات موجودة بالفعل'
+      });
+      
+    } catch (error: any) {
+      console.error('❌ خطأ في اختبار النظام الذكي:', error);
+      res.status(500).json({ 
+        success: false,
+        message: 'خطأ في اختبار النظام الذكي',
+        error: error.message
+      });
     }
   });
 

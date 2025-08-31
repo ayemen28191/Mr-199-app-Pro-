@@ -1,9 +1,18 @@
+/**
+ * الوصف: قالب تقارير موحد وبسيط لجميع التقارير
+ * المدخلات: عنوان التقرير + معلومات الرأس + المحتوى
+ * المخرجات: قالب تقرير احترافي مع دعم الطباعة
+ * المالك: عمار
+ * آخر تعديل: 2025-08-15
+ * الحالة: نشط
+ */
+
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { PrinterIcon, DownloadIcon, Building2Icon } from "lucide-react";
+import { Building2Icon } from "lucide-react";
 import { formatDate, formatCurrency } from "@/lib/utils";
+import { StatsCard } from "@/components/ui/stats-card";
 
 interface UnifiedReportTemplateProps {
   title: string;
@@ -14,9 +23,6 @@ interface UnifiedReportTemplateProps {
     value: string;
   }[];
   children: React.ReactNode;
-  onPrint?: () => void;
-  onExport?: () => void;
-  isLoading?: boolean;
   className?: string;
 }
 
@@ -26,50 +32,45 @@ export function UnifiedReportTemplate({
   reportDate = new Date().toISOString().split('T')[0],
   headerInfo,
   children,
-  onPrint,
-  onExport,
-  isLoading = false,
   className = ""
 }: UnifiedReportTemplateProps) {
   return (
     <div className={`container mx-auto p-4 space-y-6 max-w-7xl ${className}`}>
-      {/* Header Section - Professional Design */}
+      {/* Header Section */}
       <Card className="print:shadow-none print:border-2 print:border-gray-800">
         <CardHeader className="pb-4">
           <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
             {/* Company Logo and Title */}
             <div className="flex items-center gap-4">
-              <div className="bg-primary/10 p-3 rounded-lg">
+              <div className="bg-primary/10 p-3 rounded-lg print:bg-gray-100">
                 <Building2Icon className="h-8 w-8 text-primary" />
               </div>
               <div>
-                <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">
+                <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white print:text-black">
                   {title}
                 </h1>
                 {subtitle && (
-                  <p className="text-lg text-muted-foreground mt-1">{subtitle}</p>
+                  <p className="text-lg text-muted-foreground mt-1 print:text-gray-600">{subtitle}</p>
                 )}
                 <div className="flex items-center gap-2 mt-2">
-                  <Badge variant="outline" className="text-xs">
+                  <Badge variant="outline" className="text-xs print:border-gray-400">
                     تاريخ التقرير: {formatDate(reportDate)}
                   </Badge>
                 </div>
               </div>
             </div>
-
-            {/* أزرار التحكم تمت إزالتها لمنع التكرار - الأزرار موجودة في الصفحة الرئيسية */}
           </div>
 
           <Separator className="mt-4" />
 
           {/* Report Information Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4 print:grid-cols-3">
             {headerInfo.map((info, index) => (
-              <div key={index} className="flex justify-between py-2 px-3 bg-muted/30 rounded-lg">
-                <span className="font-medium text-sm text-muted-foreground">
+              <div key={index} className="flex justify-between py-2 px-3 bg-muted/30 rounded-lg print:bg-gray-50 print:border print:border-gray-300">
+                <span className="font-medium text-sm text-muted-foreground print:text-gray-700">
                   {info.label}:
                 </span>
-                <span className="font-semibold text-sm">
+                <span className="font-semibold text-sm print:text-black">
                   {info.value}
                 </span>
               </div>
@@ -84,196 +85,15 @@ export function UnifiedReportTemplate({
       </div>
 
       {/* Footer - Print Only */}
-      <div className="hidden print:block text-center text-xs text-gray-500 mt-8 pt-4 border-t">
+      <div className="hidden print:block text-center text-xs text-gray-500 mt-8 pt-4 border-t border-gray-300">
         <p>نظام إدارة المشاريع الإنشائية - طُبع في {formatDate(new Date().toISOString().split('T')[0])}</p>
         <p>www.constructionpm.com | info@constructionpm.com</p>
       </div>
-
-      {/* Unified Print Styles */}
-      <style>{`
-        @media print {
-          @page {
-            margin: 0.5in;
-            size: A4;
-          }
-          
-          * {
-            -webkit-print-color-adjust: exact !important;
-            color-adjust: exact !important;
-          }
-          
-          body {
-            font-size: 12px !important;
-            line-height: 1.4 !important;
-          }
-          
-          .container {
-            max-width: none !important;
-            padding: 0 !important;
-            margin: 0 !important;
-          }
-          
-          .print\\:hidden {
-            display: none !important;
-          }
-          
-          .print\\:block {
-            display: block !important;
-          }
-          
-          .print\\:shadow-none {
-            box-shadow: none !important;
-          }
-          
-          .print\\:border-2 {
-            border: 2px solid !important;
-          }
-          
-          .print\\:border-gray-800 {
-            border-color: #1f2937 !important;
-          }
-          
-          /* Table optimizations for print */
-          table {
-            page-break-inside: auto;
-            font-size: 11px !important;
-          }
-          
-          thead {
-            display: table-header-group;
-          }
-          
-          tr {
-            page-break-inside: avoid;
-            page-break-after: auto;
-          }
-          
-          th, td {
-            padding: 6px 8px !important;
-            font-size: 10px !important;
-            border: 1px solid #e5e7eb !important;
-          }
-          
-          th {
-            background-color: #f3f4f6 !important;
-            font-weight: bold !important;
-          }
-          
-          /* Card spacing optimizations */
-          .space-y-6 > * + * {
-            margin-top: 1rem !important;
-          }
-          
-          .space-y-4 > * + * {
-            margin-top: 0.75rem !important;
-          }
-          
-          /* Header optimizations */
-          h1 {
-            font-size: 18px !important;
-            margin-bottom: 8px !important;
-          }
-          
-          h2 {
-            font-size: 14px !important;
-            margin-bottom: 6px !important;
-          }
-          
-          h3 {
-            font-size: 12px !important;
-            margin-bottom: 4px !important;
-          }
-          
-          /* Responsive grid for print */
-          .grid {
-            display: grid !important;
-            gap: 0.5rem !important;
-          }
-          
-          .grid-cols-3 {
-            grid-template-columns: repeat(3, 1fr) !important;
-          }
-          
-          .grid-cols-2 {
-            grid-template-columns: repeat(2, 1fr) !important;
-          }
-          
-          /* Badge and button styles */
-          .badge {
-            font-size: 9px !important;
-            padding: 2px 6px !important;
-          }
-          
-          /* Summary card optimizations */
-          .summary-cards {
-            display: grid !important;
-            grid-template-columns: repeat(3, 1fr) !important;
-            gap: 0.5rem !important;
-            margin: 1rem 0 !important;
-          }
-          
-          .summary-card {
-            border: 1px solid #e5e7eb !important;
-            padding: 0.75rem !important;
-            text-align: center !important;
-            background: #f9fafb !important;
-          }
-          
-          .summary-card .title {
-            font-size: 10px !important;
-            color: #6b7280 !important;
-            margin-bottom: 4px !important;
-          }
-          
-          .summary-card .value {
-            font-size: 14px !important;
-            font-weight: bold !important;
-            color: #111827 !important;
-          }
-        }
-        
-        /* Mobile responsiveness - Screen only */
-        @media (max-width: 768px) and (not print) {
-          .container {
-            padding: 0.5rem !important;
-          }
-          
-          .overflow-x-auto {
-            -webkit-overflow-scrolling: touch;
-          }
-          
-          table {
-            font-size: 0.875rem;
-            min-width: 600px;
-          }
-          
-          th, td {
-            padding: 0.5rem !important;
-            white-space: nowrap;
-          }
-          
-          .grid-cols-3 {
-            grid-template-columns: 1fr !important;
-          }
-          
-          .grid-cols-2 {
-            grid-template-columns: 1fr !important;
-          }
-          
-          .flex-col {
-            flex-direction: column !important;
-          }
-          
-          .gap-4 {
-            gap: 1rem !important;
-          }
-        }
-      `}</style>
     </div>
   );
 }
 
-// Helper component for summary cards with unified styling
+// Helper component for summary cards
 interface SummaryCardProps {
   title: string;
   value: string | number;
@@ -281,25 +101,53 @@ interface SummaryCardProps {
   icon?: React.ReactNode;
 }
 
+// استخدم StatsCard الموحد بدلاً من SummaryCard
+// export function SummaryCard({ title, value, valueColor = "text-gray-900", icon }: SummaryCardProps) {
+//   return (
+//     <Card className="print:shadow-none print:border print:border-gray-300">
+//       <CardContent className="p-4 text-center">
+//         {icon && (
+//           <div className="flex justify-center mb-2 print:hidden">
+//             {icon}
+//           </div>
+//         )}
+//         <p className="text-sm text-muted-foreground print:text-gray-600">{title}</p>
+//         <p className={`text-xl font-bold print:text-lg print:text-black ${valueColor}`}>
+//           {typeof value === 'number' ? formatCurrency(value) : value}
+//         </p>
+//       </CardContent>
+//     </Card>
+//   );
+// }
+
+// مكون بديل محسن يستخدم StatsCard الموحد
 export function SummaryCard({ title, value, valueColor = "text-gray-900", icon }: SummaryCardProps) {
+  // تحويل اللون إلى لون StatsCard
+  const colorMap: Record<string, any> = {
+    "text-gray-900": "blue",
+    "text-green-600": "green",
+    "text-red-600": "red",
+    "text-orange-600": "orange",
+    "text-blue-600": "blue",
+    "text-purple-600": "purple"
+  };
+  
+  // استخدام أيقونة افتراضية إذا لم تُوفر
+  const defaultIcon = Building2Icon;
+  
   return (
-    <Card className="summary-card">
-      <CardContent className="p-4 text-center">
-        {icon && (
-          <div className="flex justify-center mb-2">
-            {icon}
-          </div>
-        )}
-        <p className="text-sm text-muted-foreground title">{title}</p>
-        <p className={`text-xl font-bold value ${valueColor}`}>
-          {typeof value === 'number' ? formatCurrency(value) : value}
-        </p>
-      </CardContent>
-    </Card>
+    <div className="print:border print:border-gray-300 print:rounded">
+      <StatsCard
+        title={title}
+        value={typeof value === 'number' ? formatCurrency(value) : value}
+        icon={icon as any || defaultIcon}
+        color={colorMap[valueColor] || "blue"}
+      />
+    </div>
   );
 }
 
-// Professional table component with unified styling
+// Professional table component
 interface UnifiedTableProps {
   headers: string[];
   data: (string | number | React.ReactNode)[][];
@@ -309,13 +157,13 @@ interface UnifiedTableProps {
 export function UnifiedTable({ headers, data, className = "" }: UnifiedTableProps) {
   return (
     <div className="overflow-x-auto">
-      <table className={`min-w-full border-collapse ${className}`}>
+      <table className={`min-w-full border-collapse print:text-sm ${className}`}>
         <thead>
-          <tr className="bg-muted/50">
+          <tr className="bg-muted/50 print:bg-gray-200">
             {headers.map((header, index) => (
               <th
                 key={index}
-                className="text-center font-semibold text-sm border border-gray-300 p-3"
+                className="text-center font-semibold text-sm border border-gray-300 p-3 print:p-2 print:text-xs"
               >
                 {header}
               </th>
@@ -324,11 +172,11 @@ export function UnifiedTable({ headers, data, className = "" }: UnifiedTableProp
         </thead>
         <tbody>
           {data.map((row, rowIndex) => (
-            <tr key={rowIndex} className="hover:bg-muted/30 even:bg-muted/10">
+            <tr key={rowIndex} className="hover:bg-muted/30 even:bg-muted/10 print:even:bg-gray-50">
               {row.map((cell, cellIndex) => (
                 <td
                   key={cellIndex}
-                  className="text-center text-sm border border-gray-300 p-3"
+                  className="text-center text-sm border border-gray-300 p-3 print:p-2 print:text-xs"
                 >
                   {cell}
                 </td>

@@ -15,7 +15,7 @@ export const FormErrorHandler = ({ errors, onFirstError }: FormErrorHandlerProps
       hasTriggeredRef.current = true;
       
       // لمسة دعابية في الكونسول
-      console.log('أووه، يبدو أنك نسيت تعبئة بعض الحقول! 😅');
+
       
       // التركيز على أول حقل فيه خطأ
       const firstErrorField = errorFields[0];

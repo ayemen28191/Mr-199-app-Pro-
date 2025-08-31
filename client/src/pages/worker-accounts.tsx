@@ -1,3 +1,12 @@
+/**
+ * الوصف: صفحة إدارة حسابات العمال والحوالات المالية
+ * المدخلات: بيانات العمال والحوالات المالية
+ * المخرجات: عرض أرصدة العمال وإدارة الحوالات
+ * المالك: عمار
+ * آخر تعديل: 2025-08-20
+ * الحالة: نشط - إدارة مالية العمال
+ */
+
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
@@ -20,9 +29,14 @@ import {
   Plus,
   Edit2,
   Trash2,
-  AlertCircle
+  AlertCircle,
+  ChartGantt
 } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
+import { AutocompleteInput } from '@/components/ui/autocomplete-input-database';
+import { useFloatingButton } from '@/components/layout/floating-button-context';
+import ProjectSelector from '@/components/project-selector';
+import '@/styles/unified-print-styles.css';
 
 interface Worker {
   id: string;
@@ -59,6 +73,7 @@ interface TransferFormData {
   recipientPhone: string;
   transferMethod: 'cash' | 'bank' | 'hawaleh';
   transferNumber: string;
+  transferDate: string;
   notes: string;
 }
 
@@ -70,6 +85,59 @@ export default function WorkerAccountsPage() {
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { setFloatingAction } = useFloatingButton();
+
+  // تعيين إجراء الزر العائم لإضافة تحويل جديد
+  useEffect(() => {
+    const handleAddTransfer = () => {
+      setEditingTransfer(null);
+      setShowTransferDialog(true);
+    };
+    
+    setFloatingAction(handleAddTransfer, "إضافة تحويل جديد");
+    return () => setFloatingAction(null);
+  }, [setFloatingAction]);
+
+  // دالة مساعدة لحفظ قيم الإكمال التلقائي
+  const saveAutocompleteValue = async (field: string, value: string) => {
+    if (!value || value.trim().length < 2) return;
+    
+    try {
+      await apiRequest('/api/autocomplete', 'POST', {
+        category: field,
+        value: value.trim(),
+        usageCount: 1
+      });
+      console.log(`✅ تم حفظ قيمة الإكمال التلقائي: ${field} = ${value.trim()}`);
+    } catch (error) {
+      console.error(`❌ خطأ في حفظ قيمة الإكمال التلقائي ${field}:`, error);
+    }
+  };
+
+  // دالة لحفظ جميع قيم الإكمال التلقائي للحولة
+  const saveAllTransferAutocompleteValues = async () => {
+    const promises = [];
+    
+    if (formData.recipientName && formData.recipientName.trim().length >= 2) {
+      promises.push(saveAutocompleteValue('recipientNames', formData.recipientName));
+    }
+    
+    if (formData.recipientPhone && formData.recipientPhone.trim().length >= 3) {
+      promises.push(saveAutocompleteValue('recipientPhones', formData.recipientPhone));
+    }
+    
+    if (formData.transferNumber && formData.transferNumber.trim().length >= 1) {
+      promises.push(saveAutocompleteValue('workerTransferNumbers', formData.transferNumber));
+    }
+    
+    if (formData.notes && formData.notes.trim().length >= 2) {
+      promises.push(saveAutocompleteValue('workerTransferNotes', formData.notes));
+    }
+    
+    if (promises.length > 0) {
+      await Promise.all(promises);
+    }
+  };
 
   // Get URL parameters for editing
   const urlParams = new URLSearchParams(window.location.search);
@@ -85,30 +153,36 @@ export default function WorkerAccountsPage() {
     recipientPhone: '',
     transferMethod: 'hawaleh',
     transferNumber: '',
+    transferDate: new Date().toISOString().split('T')[0], // تاريخ اليوم بصيغة YYYY-MM-DD
     notes: ''
   });
 
   // Fetch data
-  const { data: workers = [] } = useQuery({
+  const { data: workers = [] } = useQuery<Worker[]>({
     queryKey: ['/api/workers'],
     select: (data: Worker[]) => data.filter(w => w.isActive)
   });
 
-  const { data: projects = [] } = useQuery({
+  const { data: projects = [] } = useQuery<Project[]>({
     queryKey: ['/api/projects']
   });
 
-  const { data: transfers = [] } = useQuery({
+  const { data: transfers = [] } = useQuery<WorkerTransfer[]>({
     queryKey: ['/api/worker-transfers']
   });
 
   // Create transfer mutation
   const createTransferMutation = useMutation({
     mutationFn: async (data: TransferFormData) => {
+      // حفظ جميع قيم الإكمال التلقائي قبل العملية الأساسية
+      await saveAllTransferAutocompleteValues();
+      
+      // تنفيذ العملية الأساسية
       return apiRequest('/api/worker-transfers', 'POST', data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/worker-transfers'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/autocomplete'] });
       setShowTransferDialog(false);
       resetForm();
       toast({
@@ -116,10 +190,25 @@ export default function WorkerAccountsPage() {
         description: "تم إرسال الحولة بنجاح"
       });
     },
-    onError: () => {
+    onError: async (error: any) => {
+      // حفظ جميع قيم الإكمال التلقائي حتى في حالة الخطأ
+      await saveAllTransferAutocompleteValues();
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/autocomplete'] });
+      
+      console.error("خطأ في إرسال الحولة:", error);
+      
+      let errorMessage = "فشل في إرسال الحولة";
+      
+      if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "خطأ",
-        description: "فشل في إرسال الحولة",
+        description: errorMessage,
         variant: "destructive"
       });
     }
@@ -128,10 +217,14 @@ export default function WorkerAccountsPage() {
   // Update transfer mutation
   const updateTransferMutation = useMutation({
     mutationFn: async (data: { id: string; updates: Partial<TransferFormData> }) => {
+      // حفظ جميع قيم الإكمال التلقائي قبل العملية الأساسية
+      await saveAllTransferAutocompleteValues();
+      
       return apiRequest(`/api/worker-transfers/${data.id}`, 'PATCH', data.updates);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/worker-transfers'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/autocomplete'] });
       setShowTransferDialog(false);
       setEditingTransfer(null);
       resetForm();
@@ -140,10 +233,25 @@ export default function WorkerAccountsPage() {
         description: "تم تحديث الحولة بنجاح"
       });
     },
-    onError: () => {
+    onError: async (error: any) => {
+      // حفظ جميع قيم الإكمال التلقائي حتى في حالة الخطأ
+      await saveAllTransferAutocompleteValues();
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/autocomplete'] });
+      
+      console.error("خطأ في تحديث الحولة:", error);
+      
+      let errorMessage = "فشل في تحديث الحولة";
+      
+      if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "خطأ",
-        description: "فشل في تحديث الحولة",
+        description: errorMessage,
         variant: "destructive"
       });
     }
@@ -161,10 +269,20 @@ export default function WorkerAccountsPage() {
         description: "تم حذف الحولة بنجاح"
       });
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error("خطأ في حذف الحولة:", error);
+      
+      let errorMessage = "فشل في حذف الحولة";
+      
+      if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "خطأ",
-        description: "فشل في حذف الحولة",
+        description: errorMessage,
         variant: "destructive"
       });
     }
@@ -184,6 +302,7 @@ export default function WorkerAccountsPage() {
           recipientPhone: transfer.recipientPhone || '',
           transferMethod: transfer.transferMethod,
           transferNumber: transfer.transferNumber || '',
+          transferDate: transfer.transferDate,
           notes: transfer.notes || ''
         });
         setShowTransferDialog(true);
@@ -200,12 +319,13 @@ export default function WorkerAccountsPage() {
       recipientPhone: '',
       transferMethod: 'hawaleh',
       transferNumber: '',
+      transferDate: new Date().toISOString().split('T')[0],
       notes: ''
     });
   };
 
   const handleSubmit = () => {
-    if (!formData.workerId || !formData.projectId || !formData.amount || !formData.recipientName) {
+    if (!formData.workerId || !formData.projectId || !formData.amount || !formData.recipientName || !formData.transferDate) {
       toast({
         title: "خطأ",
         description: "الرجاء ملء جميع الحقول المطلوبة",
@@ -234,6 +354,7 @@ export default function WorkerAccountsPage() {
       recipientPhone: transfer.recipientPhone || '',
       transferMethod: transfer.transferMethod,
       transferNumber: transfer.transferNumber || '',
+      transferDate: transfer.transferDate,
       notes: transfer.notes || ''
     });
     setShowTransferDialog(true);
@@ -258,55 +379,28 @@ export default function WorkerAccountsPage() {
 
   return (
     <div className="min-h-screen bg-background p-4 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setLocation('/daily-expenses')}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <ArrowLeft className="h-4 w-4 mr-1" />
-            العودة
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">حسابات العمال</h1>
-            <p className="text-muted-foreground">إدارة حوالات وتحويلات العمال</p>
-          </div>
-        </div>
-        <Button 
-          onClick={() => {
-            setEditingTransfer(null);
-            resetForm();
-            setShowTransferDialog(true);
-          }}
-          className="bg-blue-600 hover:bg-blue-700"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          حولة جديدة
-        </Button>
-      </div>
+      {/* Header - تم إزالة العنوان المكرر لأنه موجود في شريط التطبيق */}
 
       {/* Project Filter */}
-      <Card>
+      <Card className="mb-4">
         <CardContent className="p-4">
-          <div className="flex items-center gap-4">
-            <Label className="whitespace-nowrap">تصفية بالمشروع:</Label>
-            <Select value={selectedProject} onValueChange={setSelectedProject}>
-              <SelectTrigger className="max-w-xs">
-                <SelectValue placeholder="جميع المشاريع" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">جميع المشاريع</SelectItem>
-                {projects.map((project: Project) => (
-                  <SelectItem key={project.id} value={project.id}>
-                    {project.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          <h2 className="text-lg font-bold text-foreground mb-3 flex items-center">
+            <ChartGantt className="ml-2 h-5 w-5 text-primary" />
+            اختر المشروع
+          </h2>
+          <Select value={selectedProject} onValueChange={setSelectedProject}>
+            <SelectTrigger>
+              <SelectValue placeholder="جميع المشاريع" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">جميع المشاريع</SelectItem>
+              {projects.map((project: Project) => (
+                <SelectItem key={project.id} value={project.id}>
+                  {project.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </CardContent>
       </Card>
 
@@ -374,7 +468,7 @@ export default function WorkerAccountsPage() {
                           </div>
                           <div className="flex items-center gap-1">
                             <Calendar className="h-3 w-3 text-gray-600" />
-                            <span>{new Date(transfer.transferDate).toLocaleDateString('ar-SA')}</span>
+                            <span>{new Date(transfer.transferDate).toLocaleDateString('en-GB')}</span>
                           </div>
                         </div>
                       </div>
@@ -487,19 +581,23 @@ export default function WorkerAccountsPage() {
 
             <div>
               <Label>اسم المستلم *</Label>
-              <Input
+              <AutocompleteInput
+                category="recipientNames"
                 value={formData.recipientName}
-                onChange={(e) => setFormData({...formData, recipientName: e.target.value})}
+                onChange={(value) => setFormData({...formData, recipientName: value})}
                 placeholder="اسم الشخص المستلم للحولة"
+                className="w-full"
               />
             </div>
 
             <div>
               <Label>رقم الهاتف</Label>
-              <Input
+              <AutocompleteInput
+                category="recipientPhones"
                 value={formData.recipientPhone}
-                onChange={(e) => setFormData({...formData, recipientPhone: e.target.value})}
+                onChange={(value) => setFormData({...formData, recipientPhone: value})}
                 placeholder="رقم هاتف المستلم (اختياري)"
+                className="w-full"
               />
             </div>
 
@@ -523,20 +621,34 @@ export default function WorkerAccountsPage() {
             </div>
 
             <div>
-              <Label>رقم الحولة</Label>
+              <Label>تاريخ التحويل *</Label>
               <Input
+                type="date"
+                value={formData.transferDate}
+                onChange={(e) => setFormData({...formData, transferDate: e.target.value})}
+                className="w-full"
+              />
+            </div>
+
+            <div>
+              <Label>رقم الحولة</Label>
+              <AutocompleteInput
+                category="workerTransferNumbers"
                 value={formData.transferNumber}
-                onChange={(e) => setFormData({...formData, transferNumber: e.target.value})}
+                onChange={(value) => setFormData({...formData, transferNumber: value})}
                 placeholder="رقم الحولة أو المرجع"
+                className="w-full"
               />
             </div>
 
             <div>
               <Label>ملاحظات</Label>
-              <Input
+              <AutocompleteInput
+                category="workerTransferNotes"
                 value={formData.notes}
-                onChange={(e) => setFormData({...formData, notes: e.target.value})}
+                onChange={(value) => setFormData({...formData, notes: value})}
                 placeholder="ملاحظات إضافية (اختياري)"
+                className="w-full"
               />
             </div>
 

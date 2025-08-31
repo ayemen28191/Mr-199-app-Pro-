@@ -1,3 +1,12 @@
+/**
+ * الوصف: صفحة إدارة المصاريف اليومية والتحويلات المالية
+ * المدخلات: تاريخ محدد ومعرف المشروع
+ * المخرجات: عرض وإدارة جميع المصاريف والتحويلات اليومية
+ * المالك: عمار
+ * آخر تعديل: 2025-08-20
+ * الحالة: نشط - الصفحة الأساسية لإدارة المصاريف
+ */
+
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
@@ -16,6 +25,7 @@ import WorkerMiscExpenses from "./worker-misc-expenses";
 import { getCurrentDate, formatCurrency, formatDate } from "@/lib/utils";
 import { AutocompleteInput } from "@/components/ui/autocomplete-input-database";
 import { apiRequest } from "@/lib/queryClient";
+import { useFloatingButton } from "@/components/layout/floating-button-context";
 import type { 
   WorkerAttendance, 
   TransportationExpense, 
@@ -33,7 +43,9 @@ import type {
 export default function DailyExpenses() {
   const [, setLocation] = useLocation();
   const { selectedProjectId, selectProject } = useSelectedProject();
-  const [selectedDate, setSelectedDate] = useState(getCurrentDate());
+  const [selectedDate, setSelectedDate] = useState(() => {
+    return new Date().toISOString().split('T')[0];
+  });
   const [carriedForward, setCarriedForward] = useState<string>("0");
   const [showProjectTransfers, setShowProjectTransfers] = useState<boolean>(true);
   
@@ -52,18 +64,56 @@ export default function DailyExpenses() {
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { setFloatingAction } = useFloatingButton();
 
   // دالة مساعدة لحفظ قيم الإكمال التلقائي
   const saveAutocompleteValue = async (field: string, value: string) => {
     if (!value || value.trim().length < 2) return;
     
     try {
-      await apiRequest('POST', '/api/autocomplete', {
+      await apiRequest('/api/autocomplete', 'POST', {
         category: field,
-        value: value.trim()
+        value: value.trim(),
+        usageCount: 1 // زيادة عداد الاستخدام
       });
+      console.log(`✅ تم حفظ قيمة الإكمال التلقائي: ${field} = ${value.trim()}`);
     } catch (error) {
-      console.error(`Error saving autocomplete value for ${field}:`, error);
+      console.error(`❌ خطأ في حفظ قيمة الإكمال التلقائي ${field}:`, error);
+    }
+  };
+
+  // تعيين إجراء الزر العائم لحفظ المصاريف
+  useEffect(() => {
+    const handleSaveExpenses = () => {
+      // محاكاة كليك زر الحفظ
+      const saveButton = document.querySelector('[type="submit"]') as HTMLButtonElement;
+      if (saveButton) {
+        saveButton.click();
+      }
+    };
+    
+    setFloatingAction(handleSaveExpenses, "حفظ المصاريف");
+    return () => setFloatingAction(null);
+  }, [setFloatingAction]);
+
+  // دالة لحفظ جميع قيم الإكمال التلقائي للحولة
+  const saveAllFundTransferAutocompleteValues = async () => {
+    const promises = [];
+    
+    if (senderName && senderName.trim().length >= 2) {
+      promises.push(saveAutocompleteValue('senderNames', senderName));
+    }
+    
+    if (transferNumber && transferNumber.trim().length >= 1) {
+      promises.push(saveAutocompleteValue('transferNumbers', transferNumber));
+    }
+    
+    if (transferType && transferType.trim().length >= 2) {
+      promises.push(saveAutocompleteValue('transferTypes', transferType));
+    }
+    
+    if (promises.length > 0) {
+      await Promise.all(promises);
     }
   };
 
@@ -79,7 +129,7 @@ export default function DailyExpenses() {
   const { data: todayAttendance = [] } = useQuery<WorkerAttendance[]>({
     queryKey: ["/api/projects", selectedProjectId, "attendance", selectedDate],
     queryFn: async () => {
-      const response = await apiRequest("GET", `/api/projects/${selectedProjectId}/attendance?date=${selectedDate}`);
+      const response = await apiRequest(`/api/projects/${selectedProjectId}/attendance?date=${selectedDate}`, "GET");
       return Array.isArray(response) ? response as WorkerAttendance[] : [];
     },
     enabled: !!selectedProjectId,
@@ -88,7 +138,7 @@ export default function DailyExpenses() {
   const { data: todayTransportation = [] } = useQuery<TransportationExpense[]>({
     queryKey: ["/api/projects", selectedProjectId, "transportation-expenses", selectedDate],
     queryFn: async () => {
-      const response = await apiRequest("GET", `/api/projects/${selectedProjectId}/transportation-expenses?date=${selectedDate}`);
+      const response = await apiRequest(`/api/projects/${selectedProjectId}/transportation-expenses?date=${selectedDate}`, "GET");
       return Array.isArray(response) ? response as TransportationExpense[] : [];
     },
     enabled: !!selectedProjectId,
@@ -97,7 +147,7 @@ export default function DailyExpenses() {
   const { data: todayMaterialPurchases = [], refetch: refetchMaterialPurchases } = useQuery({
     queryKey: ["/api/projects", selectedProjectId, "material-purchases", selectedDate],
     queryFn: async () => {
-      const response = await apiRequest("GET", `/api/projects/${selectedProjectId}/material-purchases?dateFrom=${selectedDate}&dateTo=${selectedDate}`);
+      const response = await apiRequest(`/api/projects/${selectedProjectId}/material-purchases?dateFrom=${selectedDate}&dateTo=${selectedDate}`, "GET");
       console.log("Material purchases response:", response);
       return Array.isArray(response) ? response as any[] : [];
     },
@@ -112,7 +162,7 @@ export default function DailyExpenses() {
   const { data: todayWorkerTransfers = [], refetch: refetchWorkerTransfers } = useQuery({
     queryKey: ["/api/worker-transfers", selectedProjectId, selectedDate],
     queryFn: async () => {
-      const response = await apiRequest("GET", `/api/worker-transfers?projectId=${selectedProjectId}&date=${selectedDate}`);
+      const response = await apiRequest(`/api/worker-transfers?projectId=${selectedProjectId}&date=${selectedDate}`, "GET");
       console.log("Worker transfers response:", response);
       return Array.isArray(response) ? response as WorkerTransfer[] : [];
     },
@@ -122,7 +172,7 @@ export default function DailyExpenses() {
   const { data: todayMiscExpenses = [] } = useQuery({
     queryKey: ["/api/worker-misc-expenses", selectedProjectId, selectedDate],
     queryFn: async () => {
-      const response = await apiRequest("GET", `/api/worker-misc-expenses?projectId=${selectedProjectId}&date=${selectedDate}`);
+      const response = await apiRequest(`/api/worker-misc-expenses?projectId=${selectedProjectId}&date=${selectedDate}`, "GET");
       return Array.isArray(response) ? response : [];
     },
     enabled: !!selectedProjectId,
@@ -132,7 +182,7 @@ export default function DailyExpenses() {
   const { data: projectTransfers = [] } = useQuery<(ProjectFundTransfer & { fromProjectName?: string; toProjectName?: string })[]>({
     queryKey: ["/api/project-fund-transfers", selectedProjectId, selectedDate],
     queryFn: async () => {
-      const response = await apiRequest("GET", `/api/project-fund-transfers?date=${selectedDate}`);
+      const response = await apiRequest(`/api/project-fund-transfers?date=${selectedDate}`, "GET");
       if (!Array.isArray(response)) return [];
       
       const filteredTransfers = response.filter((transfer: ProjectFundTransfer) => 
@@ -154,30 +204,25 @@ export default function DailyExpenses() {
   const { data: todayFundTransfers = [], refetch: refetchFundTransfers, isLoading: fundTransfersLoading } = useQuery({
     queryKey: ["/api/projects", selectedProjectId, "fund-transfers", selectedDate],
     queryFn: async () => {
-      console.log("=== FUND TRANSFERS QUERY STARTED ===");
-      console.log("selectedProjectId:", selectedProjectId);
-      console.log("selectedDate:", selectedDate);
+      if (!selectedProjectId || !selectedDate) {
+        return [];
+      }
       
-      const response = await apiRequest("GET", `/api/projects/${selectedProjectId}/fund-transfers?date=${selectedDate}`);
-      console.log("=== FUND TRANSFERS DEBUG ===");
-      console.log("API URL:", `/api/projects/${selectedProjectId}/fund-transfers?date=${selectedDate}`);
-      console.log("API Response:", response);
-      console.log("Response type:", typeof response);
-      console.log("Is array:", Array.isArray(response));
-      console.log("Array length:", response?.length);
-      console.log("============================");
+      const response = await apiRequest(`/api/projects/${selectedProjectId}/fund-transfers?date=${selectedDate}`, "GET");
       return Array.isArray(response) ? response as FundTransfer[] : [];
     },
     enabled: !!selectedProjectId && !!selectedDate,
     refetchOnMount: true,
     refetchOnWindowFocus: false,
+    staleTime: 30000, // البيانات صالحة لـ30 ثانية
+    gcTime: 60000, // الاحتفاظ بالذاكرة لدقيقة واحدة
   });
 
   // جلب الرصيد المتبقي من اليوم السابق
   const { data: previousBalance } = useQuery({
     queryKey: ["/api/projects", selectedProjectId, "previous-balance", selectedDate],
     queryFn: async () => {
-      const response = await apiRequest("GET", `/api/projects/${selectedProjectId}/previous-balance/${selectedDate}`);
+      const response = await apiRequest(`/api/projects/${selectedProjectId}/previous-balance/${selectedDate}`, "GET");
       return response?.balance || "0";
     },
     enabled: !!selectedProjectId && !!selectedDate,
@@ -190,16 +235,36 @@ export default function DailyExpenses() {
     }
   }, [previousBalance]);
 
+  // تهيئة قيم الإكمال التلقائي الافتراضية لنوع التحويل
+  useEffect(() => {
+    const initializeDefaultTransferTypes = async () => {
+      const defaultTypes = ['حولة بنكية', 'تسليم يدوي', 'صراف آلي', 'تحويل داخلي', 'شيك', 'نقدية'];
+      
+      for (const type of defaultTypes) {
+        try {
+          await saveAutocompleteValue('transferTypes', type);
+        } catch (error) {
+          // تجاهل الأخطاء في حالة وجود القيم مسبقاً
+          console.log(`Type ${type} might already exist:`, error);
+        }
+      }
+    };
+
+    // تهيئة القيم مرة واحدة فقط
+    const hasInitialized = localStorage.getItem('transferTypesInitialized');
+    if (!hasInitialized) {
+      initializeDefaultTransferTypes();
+      localStorage.setItem('transferTypesInitialized', 'true');
+    }
+  }, []);
+
   const addFundTransferMutation = useMutation({
     mutationFn: async (data: InsertFundTransfer) => {
-      // حفظ قيم الإكمال التلقائي قبل العملية الأساسية
-      await Promise.all([
-        saveAutocompleteValue('senderNames', senderName),
-        saveAutocompleteValue('transferNumbers', transferNumber)
-      ]);
+      // حفظ جميع قيم الإكمال التلقائي قبل العملية الأساسية
+      await saveAllFundTransferAutocompleteValues();
       
       // تنفيذ العملية الأساسية
-      return apiRequest("POST", "/api/fund-transfers", data);
+      return apiRequest("/api/fund-transfers", "POST", data);
     },
     onSuccess: async (newTransfer) => {
       // تحديث فوري للقائمة
@@ -222,19 +287,29 @@ export default function DailyExpenses() {
       setTransferNumber("");
       setTransferType("");
     },
-    onError: async (error) => {
-      // حفظ قيم الإكمال التلقائي حتى في حالة الخطأ
-      await Promise.all([
-        saveAutocompleteValue('senderNames', senderName),
-        saveAutocompleteValue('transferNumbers', transferNumber)
-      ]);
+    onError: async (error: any) => {
+      // حفظ جميع قيم الإكمال التلقائي حتى في حالة الخطأ
+      await saveAllFundTransferAutocompleteValues();
       
       // تحديث كاش autocomplete
       queryClient.invalidateQueries({ queryKey: ["/api/autocomplete"] });
       
+      console.error("خطأ في إضافة الحولة:", error);
+      
+      let errorMessage = "حدث خطأ أثناء إضافة الحولة";
+      
+      // معالجة أنواع مختلفة من الأخطاء
+      if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
+      
       toast({
-        title: "خطأ في إضافة العهدة",
-        description: error?.message || "حدث خطأ أثناء إضافة تحويل العهدة",
+        title: "فشل في إضافة الحولة",
+        description: errorMessage,
         variant: "destructive",
       });
     },
@@ -249,7 +324,7 @@ export default function DailyExpenses() {
       ]);
       
       // تنفيذ العملية الأساسية
-      return apiRequest("POST", "/api/transportation-expenses", data);
+      return apiRequest("/api/transportation-expenses", "POST", data);
     },
     onSuccess: async (newExpense) => {
       // تحديث فوري للقائمة
@@ -290,7 +365,7 @@ export default function DailyExpenses() {
   });
 
   const saveDailySummaryMutation = useMutation({
-    mutationFn: (data: InsertDailyExpenseSummary) => apiRequest("POST", "/api/daily-expense-summaries", data),
+    mutationFn: (data: InsertDailyExpenseSummary) => apiRequest("/api/daily-expense-summaries", "POST", data),
     onSuccess: () => {
       toast({
         title: "تم الحفظ",
@@ -313,7 +388,7 @@ export default function DailyExpenses() {
 
   // Delete mutations
   const deleteFundTransferMutation = useMutation({
-    mutationFn: (id: string) => apiRequest("DELETE", `/api/fund-transfers/${id}`),
+    mutationFn: (id: string) => apiRequest(`/api/fund-transfers/${id}`, "DELETE"),
     onSuccess: (_, id) => {
       // حذف فوري من القائمة
       queryClient.setQueryData(["/api/projects", selectedProjectId, "fund-transfers", selectedDate], (oldData: any[]) => {
@@ -322,13 +397,27 @@ export default function DailyExpenses() {
       });
       toast({ title: "تم الحذف", description: "تم حذف العهدة بنجاح" });
     },
-    onError: () => {
-      toast({ title: "خطأ", description: "حدث خطأ أثناء حذف العهدة", variant: "destructive" });
+    onError: (error: any) => {
+      console.error("خطأ في حذف الحولة:", error);
+      
+      let errorMessage = "حدث خطأ أثناء حذف الحولة";
+      
+      if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      toast({ 
+        title: "فشل في حذف الحولة", 
+        description: errorMessage, 
+        variant: "destructive" 
+      });
     }
   });
 
   const deleteTransportationMutation = useMutation({
-    mutationFn: (id: string) => apiRequest("DELETE", `/api/transportation-expenses/${id}`),
+    mutationFn: (id: string) => apiRequest(`/api/transportation-expenses/${id}`, "DELETE"),
     onSuccess: (_, id) => {
       // حذف فوري من القائمة
       queryClient.setQueryData(["/api/projects", selectedProjectId, "transportation-expenses", selectedDate], (oldData: any[]) => {
@@ -343,7 +432,7 @@ export default function DailyExpenses() {
   });
 
   const deleteMaterialPurchaseMutation = useMutation({
-    mutationFn: (id: string) => apiRequest("DELETE", `/api/material-purchases/${id}`),
+    mutationFn: (id: string) => apiRequest(`/api/material-purchases/${id}`, "DELETE"),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProjectId, "material-purchases"] });
       toast({ title: "تم الحذف", description: "تم حذف شراء المواد بنجاح" });
@@ -354,7 +443,7 @@ export default function DailyExpenses() {
   });
 
   const deleteWorkerAttendanceMutation = useMutation({
-    mutationFn: (id: string) => apiRequest("DELETE", `/api/worker-attendance/${id}`),
+    mutationFn: (id: string) => apiRequest(`/api/worker-attendance/${id}`, "DELETE"),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProjectId, "attendance"] });
       toast({ title: "تم الحذف", description: "تم حذف حضور العامل بنجاح" });
@@ -367,7 +456,7 @@ export default function DailyExpenses() {
   // Fund Transfer Update Mutation
   const updateFundTransferMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => 
-      apiRequest("PUT", `/api/fund-transfers/${id}`, data),
+      apiRequest(`/api/fund-transfers/${id}`, "PUT", data),
     onSuccess: async (updatedTransfer, { id }) => {
       // تحديث فوري للقائمة
       queryClient.setQueryData(["/api/projects", selectedProjectId, "fund-transfers", selectedDate], (oldData: any[]) => {
@@ -388,10 +477,20 @@ export default function DailyExpenses() {
         description: "تم تحديث العهدة بنجاح",
       });
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error("خطأ في تحديث الحولة:", error);
+      
+      let errorMessage = "حدث خطأ أثناء تحديث الحولة";
+      
+      if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
-        title: "خطأ",
-        description: "حدث خطأ أثناء تحديث العهدة",
+        title: "فشل في تحديث الحولة",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -414,10 +513,29 @@ export default function DailyExpenses() {
   };
 
   const handleAddFundTransfer = () => {
-    if (!selectedProjectId || !fundAmount || !transferType) {
+    // التحقق من البيانات المطلوبة
+    if (!selectedProjectId) {
       toast({
         title: "خطأ",
-        description: "يرجى ملء جميع البيانات المطلوبة",
+        description: "يرجى اختيار المشروع أولاً",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!fundAmount || fundAmount.trim() === "" || parseFloat(fundAmount) <= 0) {
+      toast({
+        title: "خطأ",
+        description: "يرجى إدخال مبلغ صحيح",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!transferType || transferType.trim() === "") {
+      toast({
+        title: "خطأ",
+        description: "يرجى اختيار نوع التحويل",
         variant: "destructive",
       });
       return;
@@ -425,10 +543,10 @@ export default function DailyExpenses() {
 
     const transferData = {
       projectId: selectedProjectId,
-      amount: fundAmount,
-      senderName,
-      transferNumber,
-      transferType,
+      amount: fundAmount.toString(),
+      senderName: senderName.trim() || "غير محدد",
+      transferNumber: transferNumber.trim() || null,
+      transferType: transferType,
       transferDate: new Date(selectedDate + 'T12:00:00.000Z'),
       notes: "",
     };
@@ -446,7 +564,7 @@ export default function DailyExpenses() {
   // Transportation Update Mutation
   const updateTransportationMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: any }) => 
-      apiRequest("PUT", `/api/transportation-expenses/${id}`, data),
+      apiRequest(`/api/transportation-expenses/${id}`, "PUT", data),
     onSuccess: async (updatedExpense, { id }) => {
       // تحديث فوري للقائمة
       queryClient.setQueryData(["/api/projects", selectedProjectId, "transportation-expenses", selectedDate], (oldData: any[]) => {
@@ -594,27 +712,97 @@ export default function DailyExpenses() {
 
   const totals = calculateTotals();
 
+  // حساب مؤشرات البيانات المتوفرة
+  const dataIndicators = {
+    fundTransfers: todayFundTransfers.length > 0,
+    attendance: todayAttendance.length > 0,
+    transportation: todayTransportation.length > 0,
+    materials: Array.isArray(todayMaterialPurchases) && todayMaterialPurchases.length > 0,
+    workerTransfers: Array.isArray(todayWorkerTransfers) && todayWorkerTransfers.length > 0,
+    miscExpenses: Array.isArray(todayMiscExpenses) && todayMiscExpenses.length > 0
+  };
 
+  const totalDataSections = Object.keys(dataIndicators).length;
+  const sectionsWithData = Object.values(dataIndicators).filter(Boolean).length;
 
   return (
     <div className="p-4 slide-in">
-      {/* Header with Back Button */}
-      <div className="flex items-center mb-4">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setLocation("/")}
-          className="ml-3 p-2"
-        >
-          <ArrowRight className="h-5 w-5" />
-        </Button>
-        <h2 className="text-xl font-bold text-foreground">المصروفات اليومية</h2>
-      </div>
 
       <ProjectSelector
         selectedProjectId={selectedProjectId}
-        onProjectChange={selectProject}
+        onProjectChange={(projectId, projectName) => selectProject(projectId, projectName)}
       />
+
+      {/* Data Overview Indicator */}
+      {selectedProjectId && (
+        <Card className={`mb-3 border-l-4 ${
+          sectionsWithData === 0 
+            ? 'border-l-amber-400 bg-amber-50/30' 
+            : sectionsWithData === totalDataSections 
+              ? 'border-l-green-500 bg-green-50/30' 
+              : 'border-l-blue-500 bg-blue-50/30'
+        }`}>
+          <CardContent className="p-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className={`h-3 w-3 rounded-full ${
+                  sectionsWithData === 0 
+                    ? 'bg-amber-400' 
+                    : sectionsWithData === totalDataSections 
+                      ? 'bg-green-500' 
+                      : 'bg-blue-500'
+                }`}></div>
+                <span className="text-sm font-medium">
+                  بيانات يوم {formatDate(selectedDate)}
+                </span>
+              </div>
+              <div className="flex items-center gap-3 text-xs">
+                <div className="flex items-center gap-1">
+                  <span className="font-bold text-lg arabic-numbers">{sectionsWithData}</span>
+                  <span className="text-muted-foreground">/{totalDataSections}</span>
+                </div>
+                {sectionsWithData === 0 && (
+                  <span className="text-amber-700 bg-amber-100 px-3 py-1 rounded-full text-xs font-medium">
+                    لا توجد بيانات
+                  </span>
+                )}
+                {sectionsWithData > 0 && sectionsWithData < totalDataSections && (
+                  <span className="text-blue-700 bg-blue-100 px-3 py-1 rounded-full text-xs font-medium">
+                    بيانات جزئية
+                  </span>
+                )}
+                {sectionsWithData === totalDataSections && (
+                  <span className="text-green-700 bg-green-100 px-3 py-1 rounded-full text-xs font-medium">
+                    بيانات كاملة ✓
+                  </span>
+                )}
+              </div>
+            </div>
+            {sectionsWithData > 0 && (
+              <div className="mt-2 flex gap-1 flex-wrap">
+                {dataIndicators.fundTransfers && (
+                  <span className="bg-primary/10 text-primary text-xs px-2 py-1 rounded">عهدة</span>
+                )}
+                {dataIndicators.attendance && (
+                  <span className="bg-success/10 text-success text-xs px-2 py-1 rounded">حضور</span>
+                )}
+                {dataIndicators.transportation && (
+                  <span className="bg-secondary/10 text-secondary text-xs px-2 py-1 rounded">نقل</span>
+                )}
+                {dataIndicators.materials && (
+                  <span className="bg-green-500/10 text-green-600 text-xs px-2 py-1 rounded">مواد</span>
+                )}
+                {dataIndicators.workerTransfers && (
+                  <span className="bg-orange-500/10 text-orange-600 text-xs px-2 py-1 rounded">حوالات</span>
+                )}
+                {dataIndicators.miscExpenses && (
+                  <span className="bg-purple-500/10 text-purple-600 text-xs px-2 py-1 rounded">متنوعة</span>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Date and Balance Info */}
       <Card className="mb-4">
@@ -650,8 +838,10 @@ export default function DailyExpenses() {
                 inputMode="decimal"
                 value={fundAmount}
                 onChange={(e) => setFundAmount(e.target.value)}
-                placeholder="المبلغ"
+                placeholder="المبلغ *"
                 className="text-center arabic-numbers"
+                min="0"
+                step="0.01"
               />
               <AutocompleteInput
                 value={senderName}
@@ -670,18 +860,26 @@ export default function DailyExpenses() {
               className="w-full mb-2 arabic-numbers"
             />
             <div className="flex gap-2">
-              <Select value={transferType} onValueChange={setTransferType}>
-                <SelectTrigger className="flex-1">
-                  <SelectValue placeholder="نوع التحويل" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="حولة">حولة بنكية</SelectItem>
-                  <SelectItem value="تسليم يدوي">تسليم يدوي</SelectItem>
-                  <SelectItem value="صراف">صراف آلي</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button onClick={handleAddFundTransfer} size="sm" className="bg-primary">
-                {editingFundTransferId ? <Save className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+              <AutocompleteInput
+                value={transferType}
+                onChange={setTransferType}
+                category="transferTypes"
+                placeholder="نوع التحويل *"
+                className="flex-1"
+              />
+              <Button 
+                onClick={handleAddFundTransfer} 
+                size="sm" 
+                className="bg-primary"
+                disabled={addFundTransferMutation.isPending || updateFundTransferMutation.isPending}
+              >
+                {addFundTransferMutation.isPending || updateFundTransferMutation.isPending ? (
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                ) : editingFundTransferId ? (
+                  <Save className="h-4 w-4" />
+                ) : (
+                  <Plus className="h-4 w-4" />
+                )}
               </Button>
               {editingFundTransferId && (
                 <Button onClick={resetFundTransferForm} size="sm" variant="outline">
@@ -693,6 +891,7 @@ export default function DailyExpenses() {
             {/* عرض العهد المضافة لهذا اليوم */}
             <div className="mt-3 pt-3 border-t">
               <h5 className="text-sm font-medium text-muted-foreground mb-2">العهد المضافة اليوم:</h5>
+
               {fundTransfersLoading ? (
                 <div className="text-center text-muted-foreground">جاري التحميل...</div>
               ) : Array.isArray(todayFundTransfers) && todayFundTransfers.length > 0 ? (
@@ -735,8 +934,15 @@ export default function DailyExpenses() {
                   </div>
                 </div>
               ) : (
-                <div className="text-muted-foreground text-sm text-center p-3">
-                  لا توجد عهد مضافة لهذا اليوم (العدد: {todayFundTransfers?.length || 0})
+                <div className="text-center py-4 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+                  <DollarSign className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+                  <p className="text-sm text-gray-600 mb-1">
+                    لا توجد تحويلات عهد للتاريخ {selectedDate}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    يمكنك إضافة تحويل جديد أو اختيار تاريخ آخر
+                  </p>
+
                 </div>
               )}
             </div>
@@ -752,7 +958,11 @@ export default function DailyExpenses() {
             أجور العمال
           </h4>
           {todayAttendance.length === 0 ? (
-            <p className="text-muted-foreground text-sm">لم يتم تسجيل حضور عمال لهذا اليوم</p>
+            <div className="text-center py-4 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+              <Users className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+              <p className="text-sm text-gray-600">لا يوجد حضور عمال للتاريخ {selectedDate}</p>
+              <p className="text-xs text-gray-500 mt-1">اذهب إلى صفحة حضور العمال لتسجيل الحضور</p>
+            </div>
           ) : (
             <div className="space-y-2">
               {todayAttendance.map((attendance, index) => {
@@ -842,33 +1052,49 @@ export default function DailyExpenses() {
             </div>
             
             {/* Show existing transportation expenses */}
-            {todayTransportation.map((expense, index) => (
-              <div key={index} className="flex justify-between items-center p-2 bg-muted rounded">
-                <span className="text-sm flex-1">{expense.description}</span>
-                <div className="flex items-center gap-2">
-                  <span className="font-medium arabic-numbers">{formatCurrency(expense.amount)}</span>
-                  <div className="flex gap-1">
-                    <Button 
-                      size="sm" 
-                      variant="ghost" 
-                      className="h-7 w-7 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                      onClick={() => handleEditTransportation(expense)}
-                    >
-                      <Edit2 className="h-3 w-3" />
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      variant="ghost" 
-                      className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
-                      onClick={() => deleteTransportationMutation.mutate(expense.id)}
-                      disabled={deleteTransportationMutation.isPending}
-                    >
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
+            {todayTransportation.length === 0 ? (
+              <div className="text-center py-4 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200 mt-3">
+                <Car className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+                <p className="text-sm text-gray-600">لا توجد مصاريف نقل للتاريخ {selectedDate}</p>
+                <p className="text-xs text-gray-500 mt-1">أضف مصاريف جديدة أو اختر تاريخ آخر</p>
+              </div>
+            ) : (
+              <div className="mt-3 space-y-2">
+                {todayTransportation.map((expense, index) => (
+                  <div key={index} className="flex justify-between items-center p-2 bg-muted rounded">
+                    <span className="text-sm flex-1">{expense.description}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium arabic-numbers">{formatCurrency(expense.amount)}</span>
+                      <div className="flex gap-1">
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          className="h-7 w-7 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          onClick={() => handleEditTransportation(expense)}
+                        >
+                          <Edit2 className="h-3 w-3" />
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          variant="ghost" 
+                          className="h-7 w-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => deleteTransportationMutation.mutate(expense.id)}
+                          disabled={deleteTransportationMutation.isPending}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
                   </div>
+                ))}
+                <div className="text-left mt-2 pt-2 border-t">
+                  <span className="text-sm text-muted-foreground">إجمالي النقل: </span>
+                  <span className="font-bold text-secondary arabic-numbers">
+                    {formatCurrency(totals.totalTransportation)}
+                  </span>
                 </div>
               </div>
-            ))}
+            )}
           </div>
         </CardContent>
       </Card>
@@ -881,7 +1107,11 @@ export default function DailyExpenses() {
             شراء مواد
           </h4>
           {!Array.isArray(todayMaterialPurchases) || todayMaterialPurchases.length === 0 ? (
-            <p className="text-muted-foreground text-sm mb-3">لا توجد مشتريات لهذا اليوم</p>
+            <div className="text-center py-4 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+              <Package className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+              <p className="text-sm text-gray-600">لا توجد مشتريات مواد للتاريخ {selectedDate}</p>
+              <p className="text-xs text-gray-500 mt-1">اذهب إلى شراء المواد لإضافة مشتريات جديدة</p>
+            </div>
           ) : (
             <div className="space-y-2 mb-3">
               {todayMaterialPurchases.map((purchase, index) => {
@@ -978,7 +1208,11 @@ export default function DailyExpenses() {
             حولة من حساب العمال
           </h4>
           {!Array.isArray(todayWorkerTransfers) || todayWorkerTransfers.length === 0 ? (
-            <p className="text-muted-foreground text-sm mb-3">لا توجد حوالات لهذا اليوم</p>
+            <div className="text-center py-4 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
+              <ArrowLeftRight className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+              <p className="text-sm text-gray-600">لا توجد حوالات عمال للتاريخ {selectedDate}</p>
+              <p className="text-xs text-gray-500 mt-1">اذهب إلى صفحة العمال لإدارة الحوالات</p>
+            </div>
           ) : (
             <div className="space-y-2 mb-3">
               {todayWorkerTransfers.map((transfer, index) => {

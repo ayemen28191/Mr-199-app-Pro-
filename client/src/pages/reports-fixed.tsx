@@ -1,617 +1,346 @@
-import { useState } from "react";
-import { useLocation } from "wouter";
+import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Receipt, UserCheck, Package, PieChart, Eye, Download, Share2, FileSpreadsheet, Printer, BarChart, FileText } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { StatsCard, StatsGrid } from "@/components/ui/stats-card";
+import { 
+  FileSpreadsheet, 
+  Printer, 
+  Download, 
+  Calendar,
+  Users,
+  Building2,
+  TrendingUp,
+  DollarSign,
+  FileText,
+  Eye,
+  RefreshCw
+} from "lucide-react";
 import { useSelectedProject } from "@/hooks/use-selected-project";
 import ProjectSelector from "@/components/project-selector";
-import { getCurrentDate, formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency, formatDate, getCurrentDate } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
-import type { Worker, Project } from "@shared/schema";
 
-export default function ReportsFixed() {
-  const [, setLocation] = useLocation();
-  const { selectedProjectId, selectProject } = useSelectedProject();
-  const { toast } = useToast();
-  
-  // Report form states
-  const [dailyReportDate, setDailyReportDate] = useState(getCurrentDate());
-  const [workerAccountDate1, setWorkerAccountDate1] = useState("");
-  const [workerAccountDate2, setWorkerAccountDate2] = useState("");
-  const [selectedWorkerId, setSelectedWorkerId] = useState("");
-  const [materialReportDate1, setMaterialReportDate1] = useState("");
-  const [materialReportDate2, setMaterialReportDate2] = useState("");
-  const [projectSummaryDate1, setProjectSummaryDate1] = useState("");
-  const [projectSummaryDate2, setProjectSummaryDate2] = useState("");
-  
-  // Report display states
-  const [activeReportType, setActiveReportType] = useState<string | null>(null);
-  const [reportData, setReportData] = useState<any>(null);
+interface ReportTemplate {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  isActive: boolean;
+  lastGenerated?: string;
+}
 
-  // Fetch projects and workers data
-  const { data: projects = [] } = useQuery<Project[]>({
-    queryKey: ["/api/projects"],
+const reportCategories = [
+  { id: "financial", name: "التقارير المالية", icon: DollarSign, color: "text-green-600" },
+  { id: "workers", name: "تقارير العمال", icon: Users, color: "text-blue-600" },
+  { id: "projects", name: "تقارير المشاريع", icon: Building2, color: "text-purple-600" },
+  { id: "analytics", name: "تقارير تحليلية", icon: TrendingUp, color: "text-orange-600" },
+  { id: "operations", name: "تقارير تشغيلية", icon: FileText, color: "text-gray-600" }
+];
+
+export default function ReportsFixed(): JSX.Element {
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [selectedTemplate, setSelectedTemplate] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState(getCurrentDate());
+  const [isGenerating, setIsGenerating] = useState(false);
+  
+  const { selectedProjectId } = useSelectedProject();
+
+  // جلب قوالب التقارير المتاحة
+  const { data: reportTemplates = [], isLoading: templatesLoading, refetch: refetchTemplates } = useQuery<ReportTemplate[]>({
+    queryKey: ["/api/report-templates", selectedCategory],
+    queryFn: async () => {
+      const params = selectedCategory !== "all" ? `?category=${selectedCategory}` : "";
+      return apiRequest(`/api/report-templates${params}`, "GET");
+    }
   });
 
-  const { data: workers = [] } = useQuery<Worker[]>({
-    queryKey: ["/api/workers"],
+  // جلب التقارير المُنشأة مؤخراً
+  const { data: recentReports = [], isLoading: reportsLoading } = useQuery({
+    queryKey: ["/api/recent-reports", selectedProjectId],
+    queryFn: () => selectedProjectId ? apiRequest(`/api/recent-reports?projectId=${selectedProjectId}`, "GET") : [],
+    enabled: !!selectedProjectId
   });
 
-  const selectedProject = projects.find(p => p.id === selectedProjectId);
-
-  // Generate Reports Functions
-  const generateDailyExpensesReport = async () => {
-    if (!selectedProjectId || !dailyReportDate) {
-      toast({
-        title: "خطأ",
-        description: "يرجى اختيار مشروع وتاريخ",
-        variant: "destructive",
-      });
+  const handleGenerateReport = async (templateId: string, format: 'excel' | 'pdf' = 'excel') => {
+    if (!selectedProjectId) {
+      alert('يرجى اختيار مشروع أولاً');
       return;
     }
 
+    setIsGenerating(true);
     try {
-      const data = await apiRequest("GET", `/api/reports/daily-expenses/${selectedProjectId}/${dailyReportDate}`);
-      setReportData(data);
-      setActiveReportType("daily");
-      
-      toast({
-        title: "تم إنشاء التقرير",
-        description: "تم إنشاء كشف المصروفات اليومية بنجاح",
+      const response = await apiRequest("/api/generate-report", "POST", {
+        templateId,
+        projectId: selectedProjectId,
+        dateFrom,
+        dateTo,
+        format
       });
+
+      // تحميل التقرير
+      if (response.downloadUrl) {
+        window.open(response.downloadUrl, '_blank');
+      }
+      
+      // تحديث قائمة التقارير
+      refetchTemplates();
     } catch (error) {
-      toast({
-        title: "خطأ",
-        description: "حدث خطأ أثناء إنشاء التقرير",
-        variant: "destructive",
-      });
+      console.error('خطأ في إنشاء التقرير:', error);
+      alert('حدث خطأ في إنشاء التقرير');
+    } finally {
+      setIsGenerating(false);
     }
   };
 
-  const generateMaterialPurchasesReport = async () => {
-    if (!selectedProjectId || !materialReportDate1 || !materialReportDate2) {
-      toast({
-        title: "خطأ",
-        description: "يرجى اختيار مشروع والتواريخ",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      const data = await apiRequest("GET", `/api/reports/material-purchases/${selectedProjectId}?dateFrom=${materialReportDate1}&dateTo=${materialReportDate2}`);
-      setReportData(data);
-      setActiveReportType("materials");
-
-      toast({
-        title: "تم إنشاء التقرير",
-        description: "تم إنشاء كشف المواد المشتراة بنجاح",
-      });
-    } catch (error) {
-      toast({
-        title: "خطأ",
-        description: "حدث خطأ أثناء إنشاء التقرير",
-        variant: "destructive",
-      });
-    }
+  const handlePreviewReport = (templateId: string) => {
+    // معاينة التقرير في نافذة جديدة
+    const previewUrl = `/preview-report/${templateId}?projectId=${selectedProjectId}&dateFrom=${dateFrom}&dateTo=${dateTo}`;
+    window.open(previewUrl, '_blank', 'width=1200,height=800');
   };
 
-  // CSV Export function
-  const exportToCSV = (data: any[], filename: string) => {
-    if (!data || data.length === 0) return;
-    
-    const headers = Object.keys(data[0]);
-    const csvContent = [
-      headers.join(','),
-      ...data.map(row => headers.map(header => `"${row[header] || ''}"`).join(','))
-    ].join('\n');
-    
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `${filename}.csv`;
-    link.click();
-  };
-
-  const printReport = () => {
-    window.print();
-  };
-
-  // Professional Daily Expenses Report (matching the uploaded images)
-  const DailyExpensesReport = ({ data }: { data: any }) => (
-    <div className="print-preview" id="report-content">
-      {/* رأس التقرير */}
-      <div className="report-header">
-        كشف مصروفات يوم الأحد تاريخ {formatDate(data.date)}
-      </div>
-      
-      {/* معلومات المشروع */}
-      <div className="project-info">
-        <div className="project-info-item">
-          <span>اسم المشروع</span>
-          <br />
-          <strong>{data.project?.name || selectedProject?.name || 'غير محدد'}</strong>
-        </div>
-        <div className="project-info-item">
-          <span>تاريخ بداية العمل</span>
-          <br />
-          <strong>{formatDate(data.date)}</strong>
-        </div>
-        <div className="project-info-item">
-          <span>رقم الهاتف</span>
-          <br />
-          <strong>733366543</strong>
-        </div>
-      </div>
-
-      {/* جدول المصروفات التفصيلي */}
-      <table className="report-table">
-        <thead>
-          <tr>
-            <th>ملاحظات</th>
-            <th>الأجمالي المبلغ المتبقي</th>
-            <th>نوع</th>
-            <th>نوع الحساب</th>
-            <th>المبلغ</th>
-          </tr>
-        </thead>
-        <tbody>
-          {/* رصيد مرحل */}
-          <tr>
-            <td>مرحلة من تاريخ السابق</td>
-            <td className="currency large-number">{formatCurrency(data.summary?.carriedForward || 0)}</td>
-            <td>ترحيل</td>
-            <td>مرحلة</td>
-            <td className="currency large-number success-cell">{formatCurrency(data.summary?.carriedForward || 0)}</td>
-          </tr>
-
-          {/* الحوالات المالية */}
-          {data.fundTransfers?.map((transfer: any, index: number) => {
-            const previousAmount = (data.summary?.carriedForward || 0) + 
-              data.fundTransfers.slice(0, index).reduce((sum: number, t: any) => sum + parseFloat(t.amount), 0);
-            const currentTotal = previousAmount + parseFloat(transfer.amount);
-            
-            return (
-              <tr key={`transfer-${index}`}>
-                <td>حوالة من المهندس محمد عبر الامتياز رقم الحولة {transfer.transferNumber || 'غير محدد'}</td>
-                <td className="success-cell">{formatCurrency(currentTotal)}</td>
-                <td>توريد</td>
-                <td>حوالة</td>
-                <td className="success-cell">{formatCurrency(transfer.amount)}</td>
-              </tr>
-            );
-          })}
-
-          {/* حضور العمال */}
-          {data.workerAttendance?.map((attendance: any, index: number) => {
-            const allIncome = (data.summary?.carriedForward || 0) + 
-              (data.fundTransfers?.reduce((sum: number, t: any) => sum + parseFloat(t.amount), 0) || 0);
-            const previousExpenses = data.workerAttendance.slice(0, index).reduce((sum: number, a: any) => sum + parseFloat(a.paidAmount), 0);
-            const currentTotal = allIncome - previousExpenses - parseFloat(attendance.paidAmount);
-            
-            return (
-              <tr key={`attendance-${index}`}>
-                <td>العمل من الساعة 4:00 الى عصر وحتى الساعة 7:00 صباحا</td>
-                <td className="warning-cell">{formatCurrency(currentTotal)}</td>
-                <td>منصرف</td>
-                <td>مصروف {attendance.worker?.name}</td>
-                <td className="warning-cell">{formatCurrency(attendance.paidAmount)}</td>
-              </tr>
-            );
-          })}
-
-          {/* مصاريف النقل */}
-          {data.transportationExpenses?.map((expense: any, index: number) => {
-            const allIncome = (data.summary?.carriedForward || 0) + 
-              (data.fundTransfers?.reduce((sum: number, t: any) => sum + parseFloat(t.amount), 0) || 0);
-            const workerExpenses = data.workerAttendance?.reduce((sum: number, a: any) => sum + parseFloat(a.paidAmount), 0) || 0;
-            const previousTransportExpenses = data.transportationExpenses.slice(0, index).reduce((sum: number, e: any) => sum + parseFloat(e.amount), 0);
-            const currentTotal = allIncome - workerExpenses - previousTransportExpenses - parseFloat(expense.amount);
-            
-            return (
-              <tr key={`transport-${index}`}>
-                <td>{expense.description}</td>
-                <td className="warning-cell">{formatCurrency(currentTotal)}</td>
-                <td>منصرف</td>
-                <td>نثريات</td>
-                <td className="warning-cell">{formatCurrency(expense.amount)}</td>
-              </tr>
-            );
-          })}
-
-          {/* المواد المشتراة */}
-          {data.materialPurchases?.map((purchase: any, index: number) => {
-            const allIncome = (data.summary?.carriedForward || 0) + 
-              (data.fundTransfers?.reduce((sum: number, t: any) => sum + parseFloat(t.amount), 0) || 0);
-            const workerExpenses = data.workerAttendance?.reduce((sum: number, a: any) => sum + parseFloat(a.paidAmount), 0) || 0;
-            const transportExpenses = data.transportationExpenses?.reduce((sum: number, e: any) => sum + parseFloat(e.amount), 0) || 0;
-            const previousMaterialExpenses = data.materialPurchases.slice(0, index).reduce((sum: number, p: any) => sum + parseFloat(p.totalAmount), 0);
-            const currentTotal = allIncome - workerExpenses - transportExpenses - previousMaterialExpenses - parseFloat(purchase.totalAmount);
-            
-            return (
-              <tr key={`material-${index}`}>
-                <td>مع سلطان حق طريق بمصروف له و موسى عبدالحكيم</td>
-                <td className="warning-cell">{formatCurrency(currentTotal)}</td>
-                <td>منصرف</td>
-                <td>مع المهندس</td>
-                <td className="warning-cell">{formatCurrency(purchase.totalAmount)}</td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-
-      {/* المبلغ المتبقي النهائي */}
-      <div className="grand-total">
-        المبلغ المتبقي
-        <br />
-        <span className="large-number">{formatCurrency(data.summary?.netBalance || 0)}</span>
-      </div>
-
-      {/* معلومات المشروع */}
-      <div className="notes-section">
-        <div className="notes-header">الملاحظات</div>
-        <table style={{ width: '100%', background: 'white', border: '1px solid #bdc3c7' }}>
-          <tbody>
-            <tr style={{ background: '#3498db', color: 'white' }}>
-              <th style={{ padding: '10px', border: '1px solid #2c3e50' }}>محل التوريد</th>
-              <th style={{ padding: '10px', border: '1px solid #2c3e50' }}>اسم المشروع</th>
-            </tr>
-            <tr>
-              <td style={{ padding: '15px', border: '1px solid #bdc3c7', textAlign: 'center' }}>
-                ابراهيم نجم الدين
-              </td>
-              <td style={{ padding: '15px', border: '1px solid #bdc3c7', textAlign: 'center' }}>
-                {data.project?.name || selectedProject?.name}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      {/* تذييل التقرير */}
-      <div className="report-footer">
-        تم إنشاء هذا التقرير تلقائياً بواسطة نظام إدارة المشاريع الإنشائية
-        <br />
-        التاريخ: {formatDate(new Date())} | الوقت: {new Date().toLocaleTimeString('ar-EG')}
-      </div>
-    </div>
-  );
-
-  const MaterialPurchasesReport = ({ data }: { data: any }) => (
-    <div className="space-y-4">
-      <div className="bg-muted p-4 rounded-lg">
-        <h5 className="font-medium mb-2">المواد المشتراة من {formatDate(data.dateFrom)} إلى {formatDate(data.dateTo)}</h5>
-        <div className="text-sm">
-          <span>إجمالي المشتريات: </span>
-          <span className="font-medium">{formatCurrency(data.purchases?.reduce((sum: number, p: any) => sum + parseFloat(p.totalAmount), 0) || 0)}</span>
-        </div>
-      </div>
-      
-      <div className="space-y-3">
-        {data.purchases?.map((purchase: any, idx: number) => (
-          <div key={idx} className="bg-white p-3 rounded border text-sm">
-            <div className="flex justify-between items-start">
-              <div>
-                <div className="font-medium">{purchase.material?.name}</div>
-                <div className="text-muted-foreground">{purchase.quantity} {purchase.material?.unit}</div>
-                <div className="text-muted-foreground">{purchase.supplierName}</div>
-              </div>
-              <div className="text-left">
-                <div className="font-medium">{formatCurrency(purchase.totalAmount)}</div>
-                <div className="text-muted-foreground">{formatDate(purchase.purchaseDate)}</div>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
+  const filteredTemplates = reportTemplates.filter(template => 
+    selectedCategory === "all" || template.category === selectedCategory
   );
 
   return (
-    <div className="mobile-reports-container mobile-smooth-scroll">
-      {/* Mobile-optimized Header */}
-      <div className="sticky top-0 z-50 mobile-sticky-header p-4">
-        <div className="flex items-center mb-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setLocation("/")}
-            className="mobile-touch-target mobile-focus-visible ml-3"
-          >
-            <ArrowRight className="h-5 w-5" />
-            <span className="hidden sm:inline mr-2">العودة</span>
+    <div className="p-6 space-y-6">
+      {/* رأس الصفحة */}
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold">التقارير المحسنة</h1>
+          <p className="text-gray-600 mt-1">إنشاء وإدارة التقارير بشكل متقدم</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => refetchTemplates()}>
+            <RefreshCw className="w-4 h-4 mr-2" />
+            تحديث
           </Button>
-          <h2 className="text-xl font-bold text-foreground mobile-fade-in">التقارير المحسنة</h2>
         </div>
       </div>
 
-      {/* Mobile Content Container */}
-      <div className="p-4 pb-20">{/* Added bottom padding for mobile nav */}
-
-      {/* التقارير المحسنة للهواتف */}
-      <Card className="mb-4 mobile-card mobile-card-gradient-green mobile-slide-in">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between flex-col sm:flex-row gap-4">
-            <div className="flex items-center space-x-reverse space-x-4 flex-1">
-              <div className="bg-green-600 p-3 rounded-lg">
-                <BarChart className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-lg text-green-900 dark:text-green-100">واجهة التقارير المحسنة للهواتف</h3>
-                <p className="text-sm text-green-700 dark:text-green-300 mt-1">
-                  تصميم احترافي محسن خصيصاً للهواتف المحمولة مع واجهة سهلة الاستخدام
-                </p>
-                <div className="flex flex-wrap gap-2 mt-2 text-xs text-green-600 dark:text-green-400">
-                  <span className="mobile-badge bg-green-100 text-green-700">تصميم متجاوب</span>
-                  <span className="mobile-badge bg-green-100 text-green-700">واجهة مبسطة</span>
-                  <span className="mobile-badge bg-green-100 text-green-700">تفاعل محسن</span>
-                </div>
-              </div>
+      {/* فلاتر وإعدادات */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">إعدادات التقرير</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">المشروع</label>
+              <ProjectSelector onProjectChange={() => {}} />
             </div>
-            <Button
-              onClick={() => setLocation("/mobile-reports")}
-              className="bg-green-600 hover:bg-green-700 text-white mobile-touch-target mobile-focus-visible flex items-center gap-2 font-medium w-full sm:w-auto"
-              size="lg"
-            >
-              <BarChart className="h-4 w-4" />
-              واجهة الهواتف
-            </Button>
+            <div>
+              <label className="block text-sm font-medium mb-2">من تاريخ</label>
+              <Input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">إلى تاريخ</label>
+              <Input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-2">فئة التقرير</label>
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger>
+                  <SelectValue placeholder="كل الفئات" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">كل الفئات</SelectItem>
+                  {reportCategories.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* زر التقارير المتقدمة */}
-      <Card className="mb-4 mobile-card mobile-card-gradient-blue mobile-slide-in">
-        <CardContent className="p-4">
-          <div className="flex items-center justify-between flex-col sm:flex-row gap-4">
-            <div className="flex items-center space-x-reverse space-x-4 flex-1">
-              <div className="bg-blue-600 p-3 rounded-lg">
-                <FileText className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-lg text-blue-900 dark:text-blue-100">التقارير المتقدمة</h3>
-                <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
-                  إنشاء تقارير مخصصة للمصروفات والإيرادات مع إمكانية التصدير والطباعة
-                </p>
-                <div className="flex flex-wrap gap-2 mt-2 text-xs text-blue-600 dark:text-blue-400">
-                  <span className="mobile-badge bg-blue-100 text-blue-700">تقارير مخصصة</span>
-                  <span className="mobile-badge bg-blue-100 text-blue-700">تصدير Excel</span>
-                  <span className="mobile-badge bg-blue-100 text-blue-700">طباعة محسنة</span>
-                </div>
-              </div>
-            </div>
-            <Button
-              onClick={() => setLocation("/advanced-reports")}
-              className="bg-blue-600 hover:bg-blue-700 text-white mobile-touch-target mobile-focus-visible flex items-center gap-2 font-medium w-full sm:w-auto"
-              size="lg"
-            >
-              <FileText className="h-4 w-4" />
-              إنشاء تقرير متقدم
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      <Tabs defaultValue="templates" className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="templates">قوالب التقارير</TabsTrigger>
+          <TabsTrigger value="recent">التقارير الأخيرة</TabsTrigger>
+          <TabsTrigger value="analytics">إحصائيات التقارير</TabsTrigger>
+        </TabsList>
 
-      <ProjectSelector
-        selectedProjectId={selectedProjectId}
-        onProjectChange={selectProject}
-      />
+        {/* قوالب التقارير */}
+        <TabsContent value="templates" className="space-y-4">
+          {templatesLoading ? (
+            <Card>
+              <CardContent className="p-12 text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                <p className="mt-4 text-gray-500">جاري تحميل قوالب التقارير...</p>
+              </CardContent>
+            </Card>
+          ) : filteredTemplates.length === 0 ? (
+            <Card>
+              <CardContent className="p-12 text-center">
+                <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500">لا توجد قوالب تقارير متاحة</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredTemplates.map((template) => {
+                const category = reportCategories.find(cat => cat.id === template.category);
+                const CategoryIcon = category?.icon || FileText;
+                
+                return (
+                  <Card key={template.id} className="hover:shadow-md transition-shadow">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-2">
+                          <CategoryIcon className={`w-5 h-5 ${category?.color || 'text-gray-500'}`} />
+                          <CardTitle className="text-sm">{template.name}</CardTitle>
+                        </div>
+                        <Badge variant={template.isActive ? "default" : "secondary"}>
+                          {template.isActive ? "نشط" : "معطل"}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <p className="text-sm text-gray-600 line-clamp-2">
+                        {template.description}
+                      </p>
+                      
+                      {template.lastGenerated && (
+                        <p className="text-xs text-gray-500">
+                          آخر إنشاء: {formatDate(template.lastGenerated)}
+                        </p>
+                      )}
 
-      {/* Worker Statement Button */}
-      <Card className="mb-4 mobile-card mobile-card-gradient-orange mobile-slide-in">
-        <CardContent className="p-4">
-          <Button 
-            variant="outline" 
-            className="w-full mobile-touch-target mobile-focus-visible bg-transparent border-0 p-0"
-            onClick={() => setLocation("/excel-format-worker-statement")}
-          >
-            <div className="flex items-center gap-4 w-full">
-              <div className="bg-orange-600 p-3 rounded-lg">
-                <FileSpreadsheet className="h-6 w-6 text-white" />
-              </div>
-              <div className="text-right flex-1">
-                <div className="text-orange-800 font-bold text-lg">كشف حساب العامل - نمط Excel</div>
-                <div className="text-orange-600 text-sm">تصميم مطابق للنموذج المرفق - دعم المشاريع المتعددة</div>
-              </div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="flex-1"
+                          onClick={() => handlePreviewReport(template.id)}
+                          disabled={!selectedProjectId}
+                        >
+                          <Eye className="w-4 h-4 mr-1" />
+                          معاينة
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => handleGenerateReport(template.id, 'excel')}
+                          disabled={!selectedProjectId || isGenerating}
+                        >
+                          <FileSpreadsheet className="w-4 h-4 mr-1" />
+                          Excel
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleGenerateReport(template.id, 'pdf')}
+                          disabled={!selectedProjectId || isGenerating}
+                        >
+                          <Printer className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
-          </Button>
-        </CardContent>
-      </Card>
+          )}
+        </TabsContent>
 
-      {/* Report Types */}
-      <div className="space-y-3">
-        <Card className="mobile-card mobile-card-gradient-purple mobile-slide-in">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-3 flex-col sm:flex-row gap-3">
-              <div className="flex items-center space-x-reverse space-x-3 flex-1">
-                <div className="bg-purple-600 p-2 rounded-lg">
-                  <Receipt className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <h4 className="font-medium text-foreground">كشف المصروفات اليومية</h4>
-                  <p className="text-sm text-muted-foreground">تقرير تفصيلي للمصروفات في يوم محدد</p>
-                </div>
-              </div>
-              <Button
-                onClick={generateDailyExpensesReport}
-                className="bg-purple-600 hover:bg-purple-700 text-white mobile-touch-target mobile-focus-visible px-4 py-2 text-sm w-full sm:w-auto"
-              >
-                إنشاء التقرير
-              </Button>
-            </div>
+        {/* التقارير الأخيرة */}
+        <TabsContent value="recent" className="space-y-4">
+          {reportsLoading ? (
+            <Card>
+              <CardContent className="p-12 text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+                <p className="mt-4 text-gray-500">جاري تحميل التقارير الأخيرة...</p>
+              </CardContent>
+            </Card>
+          ) : recentReports.length === 0 ? (
+            <Card>
+              <CardContent className="p-12 text-center">
+                <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500">لا توجد تقارير تم إنشاؤها مؤخراً</p>
+              </CardContent>
+            </Card>
+          ) : (
             <div className="space-y-3">
-              <Input
-                type="date"
-                value={dailyReportDate}
-                onChange={(e) => setDailyReportDate(e.target.value)}
-                placeholder="اختر التاريخ"
-                className="text-sm mobile-touch-target"
-              />
+              {recentReports.map((report: any) => (
+                <Card key={report.id}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <FileText className="w-5 h-5 text-blue-600" />
+                        <div>
+                          <h4 className="font-medium">{report.name}</h4>
+                          <p className="text-sm text-gray-500">
+                            {formatDate(report.createdAt)} - {report.format.toUpperCase()}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="outline">
+                          <Download className="w-4 h-4 mr-1" />
+                          تحميل
+                        </Button>
+                        <Button size="sm" variant="outline">
+                          <Eye className="w-4 h-4 mr-1" />
+                          عرض
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
-          </CardContent>
-        </Card>
+          )}
+        </TabsContent>
 
-        {/* كشف المصروفات اليومية نمط Excel */}
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center space-x-reverse space-x-3">
-                <FileSpreadsheet className="h-6 w-6 text-green-600" />
-                <div>
-                  <h4 className="font-medium text-foreground">كشف المصروفات اليومية - نمط Excel</h4>
-                  <p className="text-sm text-muted-foreground">تصميم مطابق للنموذج المرفق مع إمكانيات طباعة وتصدير Excel</p>
-                </div>
-              </div>
-              <Button
-                onClick={() => setLocation("/excel-style-daily-expenses")}
-                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 text-sm flex items-center gap-2"
-              >
-                <FileSpreadsheet className="h-4 w-4" />
-                فتح
-              </Button>
-            </div>
-            <div className="bg-green-50 p-3 rounded-lg text-sm">
-              <div className="font-medium text-green-800 mb-1">المميزات:</div>
-              <ul className="text-green-700 space-y-1">
-                <li>• تصميم مطابق تماماً للنموذج المرفق</li>
-                <li>• ألوان وتنسيقات احترافية مثل Excel</li>
-                <li>• حساب الرصيد المتبقي تلقائياً</li>
-                <li>• تصدير إلى Excel بنفس التصميم</li>
-                <li>• طباعة عالية الجودة</li>
-              </ul>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center space-x-reverse space-x-3">
-                <Package className="h-6 w-6 text-orange-600" />
-                <div>
-                  <h4 className="font-medium text-foreground">كشف المواد المشتراة</h4>
-                  <p className="text-sm text-muted-foreground">تقرير بالمواد المشتراة خلال فترة</p>
-                </div>
-              </div>
-              <Button
-                onClick={generateMaterialPurchasesReport}
-                className="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 text-sm"
-              >
-                إنشاء
-              </Button>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <Input
-                type="date"
-                value={materialReportDate1}
-                onChange={(e) => setMaterialReportDate1(e.target.value)}
-                placeholder="من تاريخ"
-                className="text-sm"
-              />
-              <Input
-                type="date"
-                value={materialReportDate2}
-                onChange={(e) => setMaterialReportDate2(e.target.value)}
-                placeholder="إلى تاريخ"
-                className="text-sm"
-              />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Generated Report Display */}
-      {activeReportType && reportData && (
-        <Card className="mt-6">
-          <CardHeader className="pb-3 no-print">
-            <div className="flex items-center justify-between">
-              <CardTitle className="flex items-center gap-2">
-                <Eye className="h-5 w-5 text-primary" />
-                {activeReportType === 'daily' && 'كشف المصروفات اليومية المحسن'}
-                {activeReportType === 'materials' && 'كشف المواد المشتراة'}
-              </CardTitle>
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={printReport}
-                  className="flex items-center gap-2"
-                >
-                  <Printer className="h-4 w-4" />
-                  طباعة
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => {
-                    let exportData: any[] = [];
-                    let filename = '';
-                    
-                    if (activeReportType === 'daily') {
-                      exportData = [
-                        ...reportData.fundTransfers?.map((t: any) => ({
-                          نوع: 'حوالة مالية',
-                          المرسل: t.senderName,
-                          المبلغ: t.amount,
-                          التاريخ: t.transferDate
-                        })) || [],
-                        ...reportData.workerAttendance?.map((a: any) => ({
-                          نوع: 'حضور عامل',
-                          العامل: a.worker?.name,
-                          المبلغ: a.paidAmount,
-                          التاريخ: a.date
-                        })) || []
-                      ];
-                      filename = `daily-expenses-${reportData.date}`;
-                    } else if (activeReportType === 'materials') {
-                      exportData = reportData.purchases?.map((p: any) => ({
-                        المادة: p.material?.name,
-                        الكمية: p.quantity,
-                        الوحدة: p.material?.unit,
-                        'سعر الوحدة': p.unitPrice,
-                        'المبلغ الإجمالي': p.totalAmount,
-                        المورد: p.supplierName,
-                        'تاريخ الشراء': p.purchaseDate
-                      })) || [];
-                      filename = `material-purchases-${reportData.dateFrom}-${reportData.dateTo}`;
-                    }
-                    
-                    if (exportData.length > 0) {
-                      exportToCSV(exportData, filename);
-                    }
-                  }}
-                  className="flex items-center gap-2"
-                >
-                  <FileSpreadsheet className="h-4 w-4" />
-                  تصدير CSV
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => {
-                    setActiveReportType(null);
-                    setReportData(null);
-                  }}
-                >
-                  إغلاق
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {activeReportType === 'daily' && <DailyExpensesReport data={reportData} />}
-            {activeReportType === 'materials' && <MaterialPurchasesReport data={reportData} />}
-          </CardContent>
-        </Card>
-      )}
-      </div>
+        {/* إحصائيات التقارير */}
+        <TabsContent value="analytics">
+          <Card>
+            <CardHeader>
+              <CardTitle>إحصائيات استخدام التقارير</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <StatsGrid>
+                <StatsCard
+                  title="قوالب متاحة"
+                  value={reportTemplates.length}
+                  icon={FileText}
+                  color="blue"
+                />
+                <StatsCard
+                  title="تقارير هذا الشهر"
+                  value={recentReports.length}
+                  icon={Download}
+                  color="green"
+                />
+                <StatsCard
+                  title="قوالب نشطة"
+                  value={reportTemplates.filter(t => t.isActive).length}
+                  icon={TrendingUp}
+                  color="orange"
+                />
+              </StatsGrid>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

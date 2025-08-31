@@ -2,6 +2,8 @@ import { Pool, neonConfig } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-serverless';
 import ws from "ws";
 import * as schema from "@shared/schema";
+import { DatabaseSecurityGuard } from './database-security';
+import { DatabaseRestrictionGuard } from './database-restrictions';
 
 // Configure WebSocket for Neon/Supabase serverless connection
 neonConfig.webSocketConstructor = ws;
@@ -13,16 +15,26 @@ neonConfig.webSocketConstructor = ws;
 
 const SUPABASE_DATABASE_URL = "postgresql://postgres.wibtasmyusxfqxxqekks:Ay**--772283228@aws-0-us-east-1.pooler.supabase.com:6543/postgres";
 
-// ⛔ ممنوع استخدام process.env.DATABASE_URL - Replit PostgreSQL محظور
+// ⛔ حماية صارمة ضد استخدام قواعد البيانات المحلية
 // ✅ الاتصال الوحيد المسموح: Supabase Cloud Database
 const connectionString = SUPABASE_DATABASE_URL;
 
-if (!connectionString || connectionString.includes('replit') || connectionString.includes('localhost')) {
-  throw new Error(
-    "❌ خطأ حرج: محاولة استخدام قاعدة بيانات محلية محظورة!\n" +
-    "⚠️ التطبيق يستخدم فقط قاعدة بيانات Supabase السحابية\n" +
-    "⛔ استخدام قاعدة بيانات Replit المحلية ممنوع منعاً باتاً"
-  );
+// ⚠️ تفعيل نظام الحماية المتقدم والموانع الصارمة
+DatabaseSecurityGuard.monitorEnvironmentVariables();
+DatabaseSecurityGuard.validateDatabaseConnection(connectionString);
+DatabaseSecurityGuard.logSecureConnectionInfo();
+
+// تطبيق موانع صارمة ضد قواعد البيانات المحلية
+DatabaseRestrictionGuard.validateSystemSecurity();
+
+// بدء المراقبة الدورية للأمان
+DatabaseSecurityGuard.startSecurityMonitoring();
+
+// إنشاء تقرير أمني شامل
+const securityReport = DatabaseSecurityGuard.generateSecurityReport();
+if (!securityReport.isSecure) {
+  console.error('🚨 تحذير أمني: النظام يحتوي على ثغرات أمنية!');
+  securityReport.warnings.forEach(warning => console.error(`⚠️ ${warning}`));
 }
 
 // تكوين اتصال قاعدة البيانات السحابية

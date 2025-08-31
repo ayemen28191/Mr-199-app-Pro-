@@ -74,7 +74,7 @@ export class BackupSystem {
         const projectMaterials = await storage.getMaterialPurchases(project.id);
         const projectAttendance = await storage.getWorkerAttendance(project.id);
         const projectTransport = await storage.getTransportationExpenses(project.id);
-        const projectSummary = await storage.getDailyExpenseSummary(project.id);
+        const projectSummary = await storage.getDailyExpenseSummary(project.id, '');
         
         fundTransfers.push(...projectFunds);
         materialPurchases.push(...projectMaterials);

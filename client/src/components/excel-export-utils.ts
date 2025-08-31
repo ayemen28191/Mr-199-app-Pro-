@@ -1,3 +1,12 @@
+/**
+ * الوصف: أدوات تصدير البيانات إلى ملفات Excel مع تصميم احترافي
+ * المدخلات: بيانات مختلفة (عمال، مصاريف، تقارير)
+ * المخرجات: ملفات Excel منسقة ومصممة احترافياً
+ * المالك: عمار
+ * آخر تعديل: 2025-08-20
+ * الحالة: نشط - نظام التصدير الأساسي
+ */
+
 // استيراد أنواع البيانات من exceljs
 import * as ExcelJS from 'exceljs';
 
@@ -27,20 +36,21 @@ export const EXCEL_STYLES = {
   
   // حدود موحدة
   borders: {
-    thin: { style: 'thin', color: { argb: 'FFE2E8F0' } },
-    medium: { style: 'medium', color: { argb: 'FF94A3B8' } },
-    thick: { style: 'thick', color: { argb: 'FF475569' } },
+    thin: { style: 'thin' as const, color: { argb: 'FFE2E8F0' } },
+    medium: { style: 'medium' as const, color: { argb: 'FF94A3B8' } },
+    thick: { style: 'thick' as const, color: { argb: 'FF475569' } },
   },
 };
 
-// معلومات الشركة/المؤسسة
+// معلومات الشركة/المؤسسة - مُحدثة حسب الطلب
 export const COMPANY_INFO = {
-  name: 'نظام إدارة مشاريع البناء',
-  nameEn: 'Construction Management System',
-  address: 'المملكة العربية السعودية',
-  phone: '+966XXXXXXXXX',
-  email: 'info@construction.com',
-  website: 'www.construction.com',
+  name: 'شركة الفتيني للمقاولات والاستشارات الهندسية',
+  nameEn: 'Al-Fathi Construction & Engineering Consultancy Company',
+  address: 'الجمهورية اليمنية',
+  phone: '+967XXXXXXXXX',
+  email: 'info@alfatini.com',
+  website: 'www.alfatini.com',
+  logo: '🏗️', // يمكن استبدالها بشعار الشركة لاحقاً
 };
 
 // إضافة رأس موحد للتقرير
@@ -115,7 +125,7 @@ export function addReportHeader(
 
 // إضافة ذيل موحد للتقرير
 export function addReportFooter(worksheet: ExcelJS.Worksheet, startRow: number): void {
-  const currentDate = new Date().toLocaleDateString('ar-SA', {
+  const currentDate = new Date().toLocaleDateString('en-GB', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -244,13 +254,43 @@ export function saveExcelFile(workbook: any, fileName: string): void {
   });
 }
 
-// تنسيق العملة للعرض في Excel
+// دوال التنسيق المحسنة للاستخدام في التقارير
+
+// تنسيق العملة بالأرقام الإنجليزية
 export function formatCurrency(amount: string | number): string {
   const num = typeof amount === 'string' ? parseFloat(amount) : amount;
-  return num.toLocaleString('ar-SA') + ' ر.ي';
+  if (isNaN(num)) return '0 ريال';
+  return num.toLocaleString('en-US', { useGrouping: true }) + ' ريال';
 }
 
-// تنسيق التاريخ للعرض في Excel
+// تنسيق الأرقام بالإنجليزية
+export function formatNumber(num: string | number): string {
+  const number = typeof num === 'string' ? parseFloat(num) : num;
+  if (isNaN(number)) return '0';
+  return number.toLocaleString('en-US', { useGrouping: true });
+}
+
+// تنسيق التاريخ بالأرقام الإنجليزية
 export function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString('ar-SA');
+  if (!dateStr) return '';
+  return new Date(dateStr).toLocaleDateString('en-GB');
+}
+
+// تنسيق الوقت الكامل
+export function formatDateTime(dateStr: string): string {
+  if (!dateStr) return '';
+  return new Date(dateStr).toLocaleString('en-GB', { 
+    timeZone: 'Asia/Riyadh',
+    year: 'numeric',
+    month: '2-digit', 
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+// تنسيق النسب المئوية
+export function formatPercentage(value: number, total: number): string {
+  if (total === 0) return '0%';
+  return ((value / total) * 100).toFixed(1) + '%';
 }

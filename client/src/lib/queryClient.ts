@@ -25,8 +25,8 @@ async function throwIfResNotOk(res: Response) {
 }
 
 export async function apiRequest(
-  method: string,
   url: string,
+  method: string,
   data?: unknown | undefined,
 ): Promise<any> {
   // إضافة timeout 30 ثانية للطلبات
@@ -34,9 +34,21 @@ export async function apiRequest(
   const timeoutId = setTimeout(() => controller.abort(), 30000);
 
   try {
+    // جمع headers مع Authorization إذا كان متوفراً
+    const headers: Record<string, string> = {};
+    if (data) {
+      headers["Content-Type"] = "application/json";
+    }
+    
+    // إضافة رمز المصادقة إذا كان متوفراً
+    const accessToken = localStorage.getItem('accessToken');
+    if (accessToken) {
+      headers["Authorization"] = `Bearer ${accessToken}`;
+    }
+
     const res = await fetch(url, {
       method,
-      headers: data ? { "Content-Type": "application/json" } : {},
+      headers,
       body: data ? JSON.stringify(data) : undefined,
       credentials: "include",
       signal: controller.signal,
@@ -66,7 +78,15 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
+    // إعداد headers مع Authorization
+    const headers: Record<string, string> = {};
+    const accessToken = localStorage.getItem('accessToken');
+    if (accessToken) {
+      headers["Authorization"] = `Bearer ${accessToken}`;
+    }
+
     const res = await fetch(queryKey.join("/") as string, {
+      headers,
       credentials: "include",
     });
 

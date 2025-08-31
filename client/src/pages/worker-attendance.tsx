@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { ArrowRight, Save } from "lucide-react";
+import { ArrowRight, Save, ChartGantt } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,7 @@ import ProjectSelector from "@/components/project-selector";
 import EnhancedWorkerCard from "@/components/enhanced-worker-card";
 import { getCurrentDate, formatCurrency } from "@/lib/utils";
 import { apiRequest } from "@/lib/queryClient";
+import { useFloatingButton } from "@/components/layout/floating-button-context";
 import type { Worker, InsertWorkerAttendance } from "@shared/schema";
 
 interface AttendanceData {
@@ -52,12 +53,25 @@ export default function WorkerAttendance() {
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { setFloatingAction } = useFloatingButton();
+
+  // تعيين إجراء الزر العائم لحفظ الحضور
+  useEffect(() => {
+    const handleFloatingSave = () => {
+      // محاكاة كليك زر الحفظ
+      const submitButton = document.querySelector('[type="submit"]') as HTMLButtonElement;
+      submitButton?.click();
+    };
+    
+    setFloatingAction(handleFloatingSave, "حفظ الحضور");
+    return () => setFloatingAction(null);
+  }, [setFloatingAction]);
 
   // دالة مساعدة لحفظ قيم الإكمال التلقائي
   const saveAutocompleteValue = async (category: string, value: string | null | undefined) => {
     if (!value || typeof value !== 'string' || !value.trim()) return;
     try {
-      await apiRequest("POST", "/api/autocomplete", { 
+      await apiRequest("/api/autocomplete", "POST", { 
         category, 
         value: value.trim() 
       });
@@ -70,14 +84,14 @@ export default function WorkerAttendance() {
   // Get today's attendance records
   const { data: todayAttendance = [] } = useQuery({
     queryKey: ["/api/projects", selectedProjectId, "attendance", selectedDate],
-    queryFn: () => apiRequest("GET", `/api/projects/${selectedProjectId}/attendance?date=${selectedDate}`),
+    queryFn: () => apiRequest(`/api/projects/${selectedProjectId}/attendance?date=${selectedDate}`, "GET"),
     enabled: !!selectedProjectId,
   });
 
   // Fetch specific attendance record for editing
   const { data: attendanceToEdit } = useQuery({
     queryKey: ["/api/worker-attendance", editId],
-    queryFn: () => apiRequest("GET", `/api/worker-attendance/${editId}`),
+    queryFn: () => apiRequest(`/api/worker-attendance/${editId}`, "GET"),
     enabled: !!editId,
   });
 
@@ -100,7 +114,7 @@ export default function WorkerAttendance() {
 
   // Delete Attendance Mutation
   const deleteAttendanceMutation = useMutation({
-    mutationFn: (id: string) => apiRequest("DELETE", `/api/worker-attendance/${id}`),
+    mutationFn: (id: string) => apiRequest(`/api/worker-attendance/${id}`, "DELETE"),
     onSuccess: () => {
       toast({
         title: "تم الحذف",
@@ -155,7 +169,7 @@ export default function WorkerAttendance() {
       
       // تنفيذ العملية الأساسية
       const promises = attendanceRecords.map(record =>
-        apiRequest("POST", "/api/worker-attendance", record)
+        apiRequest("/api/worker-attendance", "POST", record)
       );
       await Promise.all(promises);
       return attendanceRecords;
@@ -336,23 +350,21 @@ export default function WorkerAttendance() {
 
   return (
     <div className="p-4 slide-in">
-      {/* Header with Back Button */}
-      <div className="flex items-center mb-4">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setLocation("/")}
-          className="ml-3 p-2"
-        >
-          <ArrowRight className="h-5 w-5" />
-        </Button>
-        <h2 className="text-xl font-bold text-foreground">تسجيل حضور العمال</h2>
-      </div>
 
-      <ProjectSelector
-        selectedProjectId={selectedProjectId}
-        onProjectChange={selectProject}
-      />
+      <Card className="mb-4">
+        <CardContent className="p-4">
+          <h2 className="text-lg font-bold text-foreground mb-3 flex items-center">
+            <ChartGantt className="ml-2 h-5 w-5 text-primary" />
+            اختر المشروع
+          </h2>
+          <ProjectSelector
+            selectedProjectId={selectedProjectId}
+            onProjectChange={(projectId, projectName) => selectProject(projectId, projectName)}
+            showHeader={false}
+            variant="compact"
+          />
+        </CardContent>
+      </Card>
 
       {/* Date Selection */}
       <Card className="mb-4">

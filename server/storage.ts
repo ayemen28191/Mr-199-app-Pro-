@@ -1,17 +1,42 @@
+/**
+ * الوصف: طبقة الوصول للبيانات - إدارة جميع عمليات قاعدة البيانات
+ * المدخلات: طلبات CRUD للبيانات
+ * المخرجات: كائنات البيانات والاستعلامات المحسّنة
+ * المالك: عمار
+ * آخر تعديل: 2025-08-20
+ * الحالة: نشط - نظام إدارة البيانات الأساسي
+ */
+
 import { 
   type Project, type Worker, type FundTransfer, type WorkerAttendance, 
   type Material, type MaterialPurchase, type TransportationExpense, type DailyExpenseSummary,
   type WorkerTransfer, type WorkerBalance, type AutocompleteData, type WorkerType, type WorkerMiscExpense, type User,
-  type Supplier, type SupplierPayment, type PrintSettings, type ProjectFundTransfer, type ReportTemplate,
+  type Supplier, type SupplierPayment, type PrintSettings, type ProjectFundTransfer,
+  type ReportTemplate,
+  // Equipment types (النظام المبسط)
+  type Equipment, type EquipmentMovement, type InsertEquipment, type InsertEquipmentMovement,
+  // Notifications types
+  type Notification, type InsertNotification,
+  type NotificationReadState, type InsertNotificationReadState,
+  // AI System types (النظام الذكي)
+  type AiSystemLog, type AiSystemMetric, type AiSystemDecision, type AiSystemRecommendation,
+  type InsertAiSystemLog, type InsertAiSystemMetric, type InsertAiSystemDecision, type InsertAiSystemRecommendation,
   type InsertProject, type InsertWorker, type InsertFundTransfer, type InsertWorkerAttendance,
   type InsertMaterial, type InsertMaterialPurchase, type InsertTransportationExpense, type InsertDailyExpenseSummary,
   type InsertWorkerTransfer, type InsertWorkerBalance, type InsertAutocompleteData, type InsertWorkerType, type InsertWorkerMiscExpense, type InsertUser,
-  type InsertSupplier, type InsertSupplierPayment, type InsertPrintSettings, type InsertProjectFundTransfer, type InsertReportTemplate,
+  type InsertSupplier, type InsertSupplierPayment, type InsertPrintSettings, type InsertProjectFundTransfer,
+  type InsertReportTemplate,
   projects, workers, fundTransfers, workerAttendance, materials, materialPurchases, transportationExpenses, dailyExpenseSummaries,
-  workerTransfers, workerBalances, autocompleteData, workerTypes, workerMiscExpenses, users, suppliers, supplierPayments, printSettings, projectFundTransfers, reportTemplates
+  workerTransfers, workerBalances, autocompleteData, workerTypes, workerMiscExpenses, users, suppliers, supplierPayments, printSettings, projectFundTransfers, reportTemplates,
+  // Equipment tables (النظام المبسط)
+  equipment, equipmentMovements,
+  // Notifications tables
+  notifications, notificationReadStates,
+  // AI System tables (النظام الذكي)
+  aiSystemLogs, aiSystemMetrics, aiSystemDecisions, aiSystemRecommendations
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, gte, lte, gt, sql, inArray, or } from "drizzle-orm";
+import { and, eq, isNull, or, gte, lte, desc, ilike, like, isNotNull, asc, count, sum, ne, max, sql, inArray, gt } from 'drizzle-orm';
 
 export interface IStorage {
   // Projects
@@ -61,12 +86,21 @@ export interface IStorage {
   
   // Material Purchases
   getMaterialPurchases(projectId: string, dateFrom?: string, dateTo?: string): Promise<MaterialPurchase[]>;
+  getMaterialPurchasesWithFilters(filters: {
+    supplierId?: string;
+    projectId?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    purchaseType?: string;
+  }): Promise<MaterialPurchase[]>;
+  getMaterialPurchasesDateRange(): Promise<{ minDate: string; maxDate: string }>;
   getMaterialPurchaseById(id: string): Promise<MaterialPurchase | null>;
   createMaterialPurchase(purchase: InsertMaterialPurchase): Promise<MaterialPurchase>;
   updateMaterialPurchase(id: string, purchase: Partial<InsertMaterialPurchase>): Promise<MaterialPurchase | undefined>;
   deleteMaterialPurchase(id: string): Promise<void>;
   
   // Transportation Expenses
+  getAllTransportationExpenses(): Promise<TransportationExpense[]>;
   getTransportationExpenses(projectId: string, date?: string): Promise<TransportationExpense[]>;
   createTransportationExpense(expense: InsertTransportationExpense): Promise<TransportationExpense>;
   updateTransportationExpense(id: string, expense: Partial<InsertTransportationExpense>): Promise<TransportationExpense | undefined>;
@@ -156,6 +190,7 @@ export interface IStorage {
   deleteSupplier(id: string): Promise<void>;
   
   // Supplier Payments
+  getAllSupplierPayments(): Promise<SupplierPayment[]>;
   getSupplierPayments(supplierId: string, projectId?: string): Promise<SupplierPayment[]>;
   getSupplierPayment(id: string): Promise<SupplierPayment | undefined>;
   createSupplierPayment(payment: InsertSupplierPayment): Promise<SupplierPayment>;
@@ -170,6 +205,33 @@ export interface IStorage {
     totalDebt: string;
     totalPaid: string;
     remainingDebt: string;
+    // إضافة الحسابات المنفصلة للنقدي والآجل
+    cashPurchases: {
+      total: string;
+      count: number;
+      purchases: MaterialPurchase[];
+    };
+    creditPurchases: {
+      total: string;
+      count: number;
+      purchases: MaterialPurchase[];
+    };
+  }>;
+  
+  // إحصائيات عامة لحساب الموردين
+  getSupplierStatistics(filters?: {
+    supplierId?: string;
+    projectId?: string;
+    dateFrom?: string;
+    dateTo?: string;
+  }): Promise<{
+    totalSuppliers: number;
+    totalCashPurchases: string;
+    totalCreditPurchases: string;
+    totalDebt: string;
+    totalPaid: string;
+    remainingDebt: string;
+    activeSuppliers: number;
   }>;
   
   // Purchase filtering for supplier reports
@@ -183,6 +245,8 @@ export interface IStorage {
   deletePrintSettings(id: string): Promise<void>;
   getDefaultPrintSettings(reportType: string): Promise<PrintSettings | undefined>;
   
+
+  
   // Report Templates
   getReportTemplates(): Promise<ReportTemplate[]>;
   getReportTemplate(id: string): Promise<ReportTemplate | undefined>;
@@ -190,9 +254,89 @@ export interface IStorage {
   createReportTemplate(template: InsertReportTemplate): Promise<ReportTemplate>;
   updateReportTemplate(id: string, template: Partial<InsertReportTemplate>): Promise<ReportTemplate | undefined>;
   deleteReportTemplate(id: string): Promise<void>;
+
+  // =====================================================
+  // نظام إدارة المعدات المبسط
+  // =====================================================
+
+  // Equipment - Simple Management
+  getEquipment(filters?: {
+    projectId?: string;
+    status?: string;
+    type?: string;
+    searchTerm?: string;
+  }): Promise<Equipment[]>;
+  getEquipmentById(id: string): Promise<Equipment | undefined>;
+  getEquipmentByCode(code: string): Promise<Equipment | undefined>;
+  getEquipmentByProject(projectId: string): Promise<Equipment[]>;
+  generateNextEquipmentCode(): Promise<string>;
+  createEquipment(equipment: InsertEquipment): Promise<Equipment>;
+  updateEquipment(id: string, equipment: Partial<InsertEquipment>): Promise<Equipment | undefined>;
+  deleteEquipment(id: string): Promise<void>;
+
+  // Equipment Movements - Simple Tracking
+  getEquipmentMovements(equipmentId: string): Promise<EquipmentMovement[]>;
+  createEquipmentMovement(movement: InsertEquipmentMovement): Promise<EquipmentMovement>;
+
+
+  // =====================================================
+  // نظام إدارة الإشعارات
+  // =====================================================
+
+  // Notification Read States
+  isNotificationRead(userId: string, notificationId: string, notificationType: string): Promise<boolean>;
+  getNotificationReadState(userId: string, notificationId: string, notificationType: string): Promise<NotificationReadState | undefined>;
+  markNotificationAsRead(userId: string, notificationId: string, notificationType: string): Promise<void>;
+  markAllNotificationsAsRead(userId: string): Promise<void>;
+  getReadNotifications(userId: string, notificationType?: string): Promise<NotificationReadState[]>;
+
+  // =====================================================
+  // AI System Methods (نظام الذكاء الاصطناعي)
+  // =====================================================
+
+  // AI System Logs
+  getAiSystemLogs(filters?: { logType?: string; operation?: string; limit?: number }): Promise<AiSystemLog[]>;
+  createAiSystemLog(log: InsertAiSystemLog): Promise<AiSystemLog>;
+  deleteOldAiSystemLogs(olderThanDays: number): Promise<void>;
+
+  // AI System Metrics
+  getAiSystemMetrics(filters?: { metricType?: string; isActive?: boolean; limit?: number }): Promise<AiSystemMetric[]>;
+  getLatestAiSystemMetrics(): Promise<AiSystemMetric[]>;
+  createAiSystemMetric(metric: InsertAiSystemMetric): Promise<AiSystemMetric>;
+  updateAiSystemMetric(id: string, metric: Partial<InsertAiSystemMetric>): Promise<AiSystemMetric | undefined>;
+
+  // AI System Decisions
+  getAiSystemDecisions(filters?: { status?: string; decisionType?: string; priority?: number }): Promise<AiSystemDecision[]>;
+  getAiSystemDecision(id: string): Promise<AiSystemDecision | undefined>;
+  createAiSystemDecision(decision: InsertAiSystemDecision): Promise<AiSystemDecision>;
+  updateAiSystemDecision(id: string, decision: Partial<InsertAiSystemDecision>): Promise<AiSystemDecision | undefined>;
+  executeAiSystemDecision(id: string, executedBy: string): Promise<AiSystemDecision | undefined>;
+
+  // AI System Recommendations
+  getAiSystemRecommendations(filters?: { status?: string; priority?: string; targetArea?: string }): Promise<AiSystemRecommendation[]>;
+  getAiSystemRecommendation(id: string): Promise<AiSystemRecommendation | undefined>;
+  createAiSystemRecommendation(recommendation: InsertAiSystemRecommendation): Promise<AiSystemRecommendation>;
+  updateAiSystemRecommendation(id: string, recommendation: Partial<InsertAiSystemRecommendation>): Promise<AiSystemRecommendation | undefined>;
+  executeAiSystemRecommendation(id: string, executionResult: any): Promise<AiSystemRecommendation | undefined>;
+  dismissAiSystemRecommendation(id: string): Promise<AiSystemRecommendation | undefined>;
+
+  // Database Administration
+  getDatabaseTables(): Promise<any[]>;
+  toggleTableRLS(tableName: string, enable: boolean): Promise<any>;
+  getTablePolicies(tableName: string): Promise<any[]>;
+  analyzeSecurityThreats(): Promise<any>;
+
 }
 
 export class DatabaseStorage implements IStorage {
+  // Cache للمعدات - تحسين الأداء الفائق
+  private equipmentCache: { data: any[], timestamp: number } | null = null;
+  
+  // Cache للإحصائيات - تحسين الأداء الفائق للمشاريع 
+  private projectStatsCache: Map<string, { data: any, timestamp: number }> = new Map();
+  
+  private readonly CACHE_DURATION = 2 * 60 * 1000; // 2 دقائق cache
+
   // Projects
   async getProjects(): Promise<Project[]> {
     return await db.select().from(projects);
@@ -386,14 +530,23 @@ export class DatabaseStorage implements IStorage {
 
   async createFundTransfer(transfer: InsertFundTransfer): Promise<FundTransfer> {
     try {
+      console.log('💾 إنشاء حولة جديدة في قاعدة البيانات:', {
+        projectId: transfer.projectId,
+        amount: transfer.amount,
+        transferType: transfer.transferType,
+        senderName: transfer.senderName
+      });
+      
       const [newTransfer] = await db
         .insert(fundTransfers)
         .values(transfer)
         .returning();
       
       if (!newTransfer) {
-        throw new Error('فشل في إنشاء تحويل العهدة');
+        throw new Error('فشل في إنشاء تحويل العهدة - لم يتم إرجاع البيانات من قاعدة البيانات');
       }
+      
+      console.log('✅ تم إنشاء الحولة بنجاح في قاعدة البيانات:', newTransfer.id);
       
       // تحديث الملخص اليومي في الخلفية (دون انتظار)
       const transferDate = new Date(transfer.transferDate).toISOString().split('T')[0];
@@ -401,14 +554,25 @@ export class DatabaseStorage implements IStorage {
       
       return newTransfer;
     } catch (error: any) {
-      console.error('Error creating fund transfer:', error);
+      console.error('❌ خطأ في إنشاء الحولة:', error);
       
       // إذا كان الخطأ متعلق بتكرار رقم التحويل
       if (error.code === '23505' && error.constraint?.includes('transfer_number')) {
         throw new Error('يوجد تحويل بنفس رقم الحوالة مسبقاً');
       }
       
-      throw error;
+      // إذا كان الخطأ متعلق بمرجع خارجي غير صحيح (المشروع غير موجود)
+      if (error.code === '23503') {
+        throw new Error('المشروع المحدد غير موجود');
+      }
+      
+      // إذا كان الخطأ متعلق بقيود البيانات
+      if (error.code === '23514') {
+        throw new Error('البيانات المدخلة لا تتوافق مع قيود قاعدة البيانات');
+      }
+      
+      // خطأ عام
+      throw new Error(error.message || 'حدث خطأ غير متوقع أثناء إنشاء الحولة');
     }
   }
 
@@ -784,6 +948,149 @@ export class DatabaseStorage implements IStorage {
     }));
   }
 
+  async getMaterialPurchasesWithFilters(filters: {
+    supplierId?: string;
+    projectId?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    purchaseType?: string;
+  }): Promise<any[]> {
+    const { supplierId, projectId, dateFrom, dateTo, purchaseType } = filters;
+    
+    // إنشاء شروط البحث
+    const conditions = [];
+    
+    if (supplierId) {
+      // جلب اسم المورد من جدول الموردين
+      const supplierData = await db.select({ name: suppliers.name })
+        .from(suppliers)
+        .where(eq(suppliers.id, supplierId));
+      
+      const supplierName = supplierData[0]?.name;
+      console.log(`🔍 البحث عن المورد: ID=${supplierId}, Name=${supplierName}`);
+      
+      if (supplierName) {
+        // البحث بـ supplierName أولاً (لأن البيانات محفوظة بهذا الشكل)
+        conditions.push(eq(materialPurchases.supplierName, supplierName));
+        console.log(`✅ إضافة شرط البحث بـ supplierName: ${supplierName}`);
+      } else {
+        console.log(`❌ لم يتم العثور على اسم المورد للـ ID: ${supplierId}`);
+        // في حالة عدم وجود اسم، ابحث بـ supplierId
+        conditions.push(eq(materialPurchases.supplierId, supplierId));
+      }
+    }
+    
+    if (projectId && projectId !== 'all') {
+      conditions.push(eq(materialPurchases.projectId, projectId));
+    }
+    
+    if (dateFrom) {
+      conditions.push(gte(materialPurchases.purchaseDate, dateFrom));
+    }
+    
+    if (dateTo) {
+      conditions.push(lte(materialPurchases.purchaseDate, dateTo));
+    }
+    
+    if (purchaseType && purchaseType !== 'all') {
+      // إضافة شرط فلترة purchaseType مع التعامل مع الأحرف العربية المختلفة
+      console.log(`🔍 فلتر purchaseType المطلوب: "${purchaseType}"`);
+      // البحث عن كلا الشكلين: "أجل" و "آجل"
+      if (purchaseType === 'أجل') {
+        conditions.push(or(
+          sql`${materialPurchases.purchaseType} LIKE ${'%أجل%'}`,
+          sql`${materialPurchases.purchaseType} LIKE ${'%آجل%'}`
+        ));
+      } else {
+        conditions.push(sql`${materialPurchases.purchaseType} LIKE ${'%' + purchaseType + '%'}`);
+      }
+    }
+
+    // جلب المشتريات مع معلومات المواد والموردين
+    const purchases = await db
+      .select({
+        id: materialPurchases.id,
+        projectId: materialPurchases.projectId,
+        materialId: materialPurchases.materialId,
+        supplierId: materialPurchases.supplierId,
+        quantity: materialPurchases.quantity,
+        unitPrice: materialPurchases.unitPrice,
+        totalAmount: materialPurchases.totalAmount,
+        purchaseType: materialPurchases.purchaseType,
+        supplierName: materialPurchases.supplierName,
+        invoiceNumber: materialPurchases.invoiceNumber,
+        invoiceDate: materialPurchases.invoiceDate,
+        invoicePhoto: materialPurchases.invoicePhoto,
+        notes: materialPurchases.notes,
+        purchaseDate: materialPurchases.purchaseDate,
+        createdAt: materialPurchases.createdAt,
+        // إضافة الحقول المالية المطلوبة
+        paidAmount: materialPurchases.paidAmount,
+        remainingAmount: materialPurchases.remainingAmount,
+        dueDate: materialPurchases.dueDate,
+        // معلومات المادة
+        materialName: materials.name,
+        materialCategory: materials.category,
+        materialUnit: materials.unit,
+        // معلومات المشروع
+        projectName: projects.name
+      })
+      .from(materialPurchases)
+      .leftJoin(materials, eq(materialPurchases.materialId, materials.id))
+      .leftJoin(projects, eq(materialPurchases.projectId, projects.id))
+      .where(conditions.length > 0 ? and(...conditions) : undefined)
+      .orderBy(materialPurchases.createdAt);
+      
+    console.log(`📊 استعلم قاعدة البيانات وحصل على ${purchases.length} مشترى`);
+
+    console.log(`🔍 إرجاع ${purchases.length} مشترى بعد التطبيق الفلاتر`);
+    
+    return purchases.map(purchase => ({
+      id: purchase.id,
+      projectId: purchase.projectId,
+      materialId: purchase.materialId,
+      supplierId: purchase.supplierId,
+      quantity: purchase.quantity,
+      unitPrice: purchase.unitPrice,
+      totalAmount: purchase.totalAmount,
+      purchaseType: purchase.purchaseType,
+      supplierName: purchase.supplierName,
+      invoiceNumber: purchase.invoiceNumber,
+      invoiceDate: purchase.invoiceDate,
+      invoicePhoto: purchase.invoicePhoto,
+      notes: purchase.notes,
+      purchaseDate: purchase.purchaseDate,
+      createdAt: purchase.createdAt,
+      // إضافة الحقول المفقودة بقيم افتراضية
+      paidAmount: purchase.paidAmount || "0",
+      remainingAmount: purchase.remainingAmount || "0",
+      dueDate: purchase.dueDate || null,
+      material: {
+        id: purchase.materialId,
+        name: purchase.materialName,
+        category: purchase.materialCategory,
+        unit: purchase.materialUnit
+      },
+      project: {
+        name: purchase.projectName
+      }
+    }));
+  }
+
+  async getMaterialPurchasesDateRange(): Promise<{ minDate: string; maxDate: string }> {
+    const result = await db
+      .select({
+        minDate: sql<string>`MIN(${materialPurchases.purchaseDate})`,
+        maxDate: sql<string>`MAX(${materialPurchases.purchaseDate})`
+      })
+      .from(materialPurchases);
+
+    return {
+      minDate: result[0]?.minDate || new Date().toISOString().split('T')[0],
+      maxDate: result[0]?.maxDate || new Date().toISOString().split('T')[0]
+    };
+  }
+
   async getMaterialPurchaseById(id: string): Promise<MaterialPurchase | null> {
     const [purchase] = await db.select().from(materialPurchases).where(eq(materialPurchases.id, id));
     return purchase || null;
@@ -842,6 +1149,15 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Transportation Expenses
+  async getAllTransportationExpenses(): Promise<TransportationExpense[]> {
+    try {
+      return await db.select().from(transportationExpenses).orderBy(transportationExpenses.date, transportationExpenses.id);
+    } catch (error) {
+      console.error('Error getting all transportation expenses:', error);
+      return [];
+    }
+  }
+
   async getTransportationExpenses(projectId: string, date?: string): Promise<TransportationExpense[]> {
     if (date) {
       return await db.select().from(transportationExpenses)
@@ -1209,6 +1525,13 @@ export class DatabaseStorage implements IStorage {
     attendance: any[];
     transfers: WorkerTransfer[];
     balance: WorkerBalance | null;
+    summary: {
+      totalWorkDays: number;
+      totalWagesEarned: number;
+      totalPaidAmount: number;
+      totalTransfers: number;
+      remainingBalance: number;
+    };
   }> {
     try {
       // جلب بيانات العامل
@@ -1275,11 +1598,31 @@ export class DatabaseStorage implements IStorage {
         balance = workerBalance || null;
       }
       
+      // حساب الإحصائيات الإجمالية
+      const totalWorkDays = attendance.reduce((sum, record) => sum + (Number(record.workDays) || 1), 0);
+      const totalWagesEarned = attendance.reduce((sum, record) => {
+        const dailyWage = Number(record.dailyWage) || Number(worker?.dailyWage) || 0;
+        const workDays = Number(record.workDays) || 1;
+        return sum + (dailyWage * workDays);
+      }, 0);
+      const totalPaidAmount = attendance.reduce((sum, record) => sum + (Number(record.paidAmount) || 0), 0);
+      const totalTransfers = transfers.reduce((sum, transfer) => sum + (Number(transfer.amount) || 0), 0);
+      const remainingBalance = totalWagesEarned - totalPaidAmount;
+
+      const summary = {
+        totalWorkDays,
+        totalWagesEarned,
+        totalPaidAmount,
+        totalTransfers,
+        remainingBalance
+      };
+
       return {
         worker,
         attendance,
         transfers, // This now includes all transfers including family transfers
-        balance
+        balance,
+        summary
       };
     } catch (error) {
       console.error('Error getting worker account statement:', error);
@@ -1287,7 +1630,14 @@ export class DatabaseStorage implements IStorage {
         worker: null,
         attendance: [],
         transfers: [],
-        balance: null
+        balance: null,
+        summary: {
+          totalWorkDays: 0,
+          totalWagesEarned: 0,
+          totalPaidAmount: 0,
+          totalTransfers: 0,
+          remainingBalance: 0
+        }
       };
     }
   }
@@ -1431,16 +1781,118 @@ export class DatabaseStorage implements IStorage {
       throw new Error('Worker not found');
     }
 
-    return {
-      worker,
-      projects: [],
-      totals: {
-        totalEarned: '0',
-        totalPaid: '0',
-        totalTransferred: '0',
-        totalBalance: '0'
+    try {
+      // جلب جميع المشاريع التي عمل بها العامل
+      let projectConditions = [eq(workerAttendance.workerId, workerId)];
+      
+      if (dateFrom) {
+        projectConditions.push(gte(workerAttendance.date, dateFrom));
       }
-    };
+      
+      if (dateTo) {
+        projectConditions.push(lte(workerAttendance.date, dateTo));
+      }
+      
+      // الحصول على المشاريع المميزة
+      const distinctProjects = await db.selectDistinct({ projectId: workerAttendance.projectId })
+        .from(workerAttendance)
+        .where(and(...projectConditions));
+      
+      const projectsList = [];
+      let totalEarned = 0;
+      let totalPaid = 0;
+      let totalTransferred = 0;
+      let totalBalance = 0;
+      
+      // لكل مشروع، احسب التفاصيل
+      for (const { projectId } of distinctProjects) {
+        const [project] = await db.select().from(projects).where(eq(projects.id, projectId));
+        if (!project) continue;
+        
+        // جلب الحضور لهذا المشروع
+        let attendanceConditions = [
+          eq(workerAttendance.workerId, workerId),
+          eq(workerAttendance.projectId, projectId)
+        ];
+        
+        if (dateFrom) {
+          attendanceConditions.push(gte(workerAttendance.date, dateFrom));
+        }
+        
+        if (dateTo) {
+          attendanceConditions.push(lte(workerAttendance.date, dateTo));
+        }
+        
+        const attendance = await db.select().from(workerAttendance)
+          .where(and(...attendanceConditions))
+          .orderBy(workerAttendance.date);
+        
+        // جلب التحويلات لهذا المشروع
+        let transfersConditions = [
+          eq(workerTransfers.workerId, workerId),
+          eq(workerTransfers.projectId, projectId)
+        ];
+        
+        if (dateFrom) {
+          transfersConditions.push(gte(workerTransfers.transferDate, dateFrom));
+        }
+        
+        if (dateTo) {
+          transfersConditions.push(lte(workerTransfers.transferDate, dateTo));
+        }
+        
+        const transfers = await db.select().from(workerTransfers)
+          .where(and(...transfersConditions))
+          .orderBy(workerTransfers.transferDate);
+        
+        // حساب الإحصائيات لهذا المشروع
+        const projectEarned = attendance.reduce((sum, record) => {
+          const dailyWage = Number(record.dailyWage) || Number(worker.dailyWage) || 0;
+          const workDays = Number(record.workDays) || 1;
+          return sum + (dailyWage * workDays);
+        }, 0);
+        
+        const projectPaid = attendance.reduce((sum, record) => sum + (Number(record.paidAmount) || 0), 0);
+        const projectTransferred = transfers.reduce((sum, transfer) => sum + (Number(transfer.amount) || 0), 0);
+        
+        const balance = await this.getWorkerBalance(workerId, projectId);
+        
+        projectsList.push({
+          project,
+          attendance,
+          balance: balance || null,
+          transfers
+        });
+        
+        totalEarned += projectEarned;
+        totalPaid += projectPaid;
+        totalTransferred += projectTransferred;
+        totalBalance += balance ? Number(balance.currentBalance) : 0;
+      }
+      
+      return {
+        worker,
+        projects: projectsList,
+        totals: {
+          totalEarned: totalEarned.toString(),
+          totalPaid: totalPaid.toString(),
+          totalTransferred: totalTransferred.toString(),
+          totalBalance: totalBalance.toString()
+        }
+      };
+    } catch (error) {
+      console.error('Error getting worker multi-project statement:', error);
+      return {
+        worker,
+        projects: [],
+        totals: {
+          totalEarned: '0',
+          totalPaid: '0',
+          totalTransferred: '0',
+          totalBalance: '0'
+        }
+      };
+    }
   }
 
   async getWorkerProjects(workerId: string): Promise<Project[]> {
@@ -1516,6 +1968,17 @@ export class DatabaseStorage implements IStorage {
     lastActivity: string;
   }> {
     try {
+      console.time(`getProjectStatistics-${projectId}`);
+      
+      // فحص Cache أولاً - تحسين الأداء الفائق
+      const now = Date.now();
+      const cachedStats = this.projectStatsCache.get(projectId);
+      if (cachedStats && (now - cachedStats.timestamp) < this.CACHE_DURATION) {
+        console.log(`⚡ استخدام Cache للمشروع ${projectId} - سرعة فائقة!`);
+        console.timeEnd(`getProjectStatistics-${projectId}`);
+        return cachedStats.data;
+      }
+      
       console.log(`🔍 حساب إحصائيات المشروع: ${projectId}`);
       
       // حساب الإحصائيات الكلية الحقيقية من جميع المعاملات
@@ -1567,10 +2030,11 @@ export class DatabaseStorage implements IStorage {
           WHERE project_id = ${projectId}
         `),
         
-        // إجمالي مشتريات المواد النقدية فقط (المشتريات الآجلة لا تُحسب)
+        // إجمالي مشتريات المواد النقدية (المدفوعة فعلياً)
         db.execute(sql`
           SELECT 
-            COALESCE(SUM(CASE WHEN purchase_type = 'نقد' THEN CAST(total_amount AS DECIMAL) ELSE 0 END), 0) as total,
+            COALESCE(SUM(CASE WHEN purchase_type = 'نقد' THEN CAST(total_amount AS DECIMAL) ELSE 0 END), 0) as cash_total,
+            COALESCE(SUM(CASE WHEN purchase_type = 'أجل' THEN CAST(total_amount AS DECIMAL) ELSE 0 END), 0) as credit_total,
             COUNT(DISTINCT id) as count
           FROM material_purchases 
           WHERE project_id = ${projectId}
@@ -1605,27 +2069,16 @@ export class DatabaseStorage implements IStorage {
       const totalProjectOut = parseFloat((projectTransfersOut.rows[0] as any)?.total || '0');
       const totalWages = parseFloat((attendance.rows[0] as any)?.total_wages || '0');
       const completedDays = parseInt((attendance.rows[0] as any)?.completed_days || '0');
-      const totalMaterials = parseFloat((materials.rows[0] as any)?.total || '0');
+      const totalMaterialsCash = parseFloat((materials.rows[0] as any)?.cash_total || '0');
+      const totalMaterialsCredit = parseFloat((materials.rows[0] as any)?.credit_total || '0');
       const materialCount = parseInt((materials.rows[0] as any)?.count || '0');
       const totalTransport = parseFloat((transport.rows[0] as any)?.total || '0');
       const totalMisc = parseFloat((miscExpenses.rows[0] as any)?.total || '0');
       const totalWorkerTransfers = parseFloat((workerTransfers.rows[0] as any)?.total || '0');
 
-      // تسجيل القيم للتأكد من صحة البيانات
-      console.log(`📊 تفاصيل الحسابات للمشروع ${projectId}:`);
-      console.log(`   💰 تحويلات العهدة: ${totalFundTransfers}`);
-      console.log(`   📈 تحويلات واردة: ${totalProjectIn}`);
-      console.log(`   📉 تحويلات صادرة: ${totalProjectOut}`);
-      console.log(`   👷 أجور العمال المدفوعة فعلياً: ${totalWages}`);
-      console.log(`   🏗️  مشتريات المواد (نقدية فقط): ${totalMaterials}`);
-      console.log(`   🚚 النقل: ${totalTransport}`);
-      console.log(`   📋 مصاريف متنوعة: ${totalMisc}`);
-      console.log(`   💸 حوالات الأهل: ${totalWorkerTransfers}`);
-      console.log(`   📤 تحويلات صادرة: ${totalProjectOut}`);
-
       // الإجمالي الكلي للدخل والمصروفات - مع تصحيح منطق التحويلات الصادرة
       const totalIncome = totalFundTransfers + totalProjectIn;
-      const totalExpenses = totalWages + totalMaterials + totalTransport + totalMisc + totalWorkerTransfers + totalProjectOut;
+      const totalExpenses = totalWages + totalMaterialsCash + totalTransport + totalMisc + totalWorkerTransfers + totalProjectOut;
       // ملاحظة: التحويلات الصادرة تُحسب كمصروف لأنها أموال تخرج من المشروع
       // حوالات الأهل أيضاً تُحسب كمصروف لأنها أموال تخرج من المشروع نهائياً
       const currentBalance = totalIncome - totalExpenses;
@@ -1642,7 +2095,7 @@ export class DatabaseStorage implements IStorage {
 
       const result = {
         totalWorkers: totalWorkers,
-        totalExpenses: Math.round(totalExpenses * 100) / 100, // المصاريف الحقيقية فقط (بدون التحويلات)
+        totalExpenses: Math.round(totalExpenses * 100) / 100,
         totalIncome: Math.round(totalIncome * 100) / 100,
         currentBalance: Math.round(currentBalance * 100) / 100,
         activeWorkers: totalWorkers, // نفترض أن جميع العمال نشطين
@@ -1651,11 +2104,19 @@ export class DatabaseStorage implements IStorage {
         lastActivity: new Date().toISOString().split('T')[0]
       };
 
-      console.log(`✅ تم حساب الإحصائيات بنجاح - الرصيد النهائي: ${result.currentBalance}`);
-      return result;
+      // حفظ في Cache للاستخدام السريع لاحقاً
+      this.projectStatsCache.set(projectId, {
+        data: result,
+        timestamp: now
+      });
+      
+      console.timeEnd(`getProjectStatistics-${projectId}`);
+      console.log(`⚡ تم حساب وحفظ إحصائيات المشروع ${projectId} في Cache`);
 
+      return result;
     } catch (error) {
-      console.error('❌ خطأ في حساب إحصائيات المشروع:', error);
+      console.error('خطأ في حساب إحصائيات المشروع:', error);
+      // إرجاع إحصائيات فارغة في حالة الخطأ
       return {
         totalWorkers: 0,
         totalExpenses: 0,
@@ -2245,6 +2706,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Supplier Payments methods
+  async getAllSupplierPayments(): Promise<SupplierPayment[]> {
+    try {
+      console.log('🔍 جاري جلب جميع مدفوعات الموردين...');
+      const payments = await db.select().from(supplierPayments).orderBy(supplierPayments.paymentDate);
+      console.log(`✅ تم جلب ${payments.length} مدفوعة مورد`);
+      return payments;
+    } catch (error) {
+      console.error('خطأ في جلب جميع مدفوعات الموردين:', error);
+      return [];
+    }
+  }
+
   async getSupplierPayments(supplierId: string, projectId?: string): Promise<SupplierPayment[]> {
     try {
       const conditions = [eq(supplierPayments.supplierId, supplierId)];
@@ -2315,6 +2788,17 @@ export class DatabaseStorage implements IStorage {
     totalDebt: string;
     totalPaid: string;
     remainingDebt: string;
+    // إضافة الحسابات المنفصلة للنقدي والآجل
+    cashPurchases: {
+      total: string;
+      count: number;
+      purchases: MaterialPurchase[];
+    };
+    creditPurchases: {
+      total: string;
+      count: number;
+      purchases: MaterialPurchase[];
+    };
   }> {
     try {
       // جلب بيانات المورد
@@ -2323,24 +2807,28 @@ export class DatabaseStorage implements IStorage {
         throw new Error('المورد غير موجود');
       }
 
-      // شروط التصفية
-      const purchaseConditions = [eq(materialPurchases.supplierId, supplierId)];
+      // شروط التصفية للمشتريات (نحتاج للبحث بـ supplierName بدلاً من supplierId)
+      const supplierName = supplier.name;
+      const purchaseConditions = [eq(materialPurchases.supplierName, supplierName)];
       const paymentConditions = [eq(supplierPayments.supplierId, supplierId)];
       
-      if (projectId) {
+      if (projectId && projectId !== 'all') {
         purchaseConditions.push(eq(materialPurchases.projectId, projectId));
         paymentConditions.push(eq(supplierPayments.projectId, projectId));
       }
       
-      if (dateFrom && dateTo) {
-        purchaseConditions.push(
-          gte(materialPurchases.invoiceDate, dateFrom),
-          lte(materialPurchases.invoiceDate, dateTo)
-        );
-        paymentConditions.push(
-          gte(supplierPayments.paymentDate, dateFrom),
-          lte(supplierPayments.paymentDate, dateTo)
-        );
+      if (dateFrom) {
+        purchaseConditions.push(gte(materialPurchases.invoiceDate, dateFrom));
+        if (paymentConditions.length > 1 || !paymentConditions.some(c => c === paymentConditions[0])) {
+          paymentConditions.push(gte(supplierPayments.paymentDate, dateFrom));
+        }
+      }
+      
+      if (dateTo) {
+        purchaseConditions.push(lte(materialPurchases.invoiceDate, dateTo));
+        if (paymentConditions.length > 1 || dateFrom) {
+          paymentConditions.push(lte(supplierPayments.paymentDate, dateTo));
+        }
       }
 
       // جلب المشتريات
@@ -2353,9 +2841,24 @@ export class DatabaseStorage implements IStorage {
         .where(and(...paymentConditions))
         .orderBy(supplierPayments.paymentDate);
 
-      // حساب الإجماليات
-      const totalDebt = purchases.reduce((sum, purchase) => 
+      // فصل المشتريات حسب نوع الدفع (مع إزالة علامات التنصيص وتطبيع الأحرف العربية)
+      const cashPurchasesList = purchases.filter(p => {
+        const cleanType = p.purchaseType?.replace(/['"]/g, '') || '';
+        return cleanType === 'نقد';
+      });
+      const creditPurchasesList = purchases.filter(p => {
+        const cleanType = p.purchaseType?.replace(/['"]/g, '') || '';
+        // البحث عن جميع أشكال "أجل": مع الألف العادية والمد
+        return cleanType === 'أجل' || cleanType === 'آجل' || cleanType.includes('جل');
+      });
+
+      // حساب الإجماليات منفصلة
+      const cashTotal = cashPurchasesList.reduce((sum, purchase) => 
         sum + parseFloat(purchase.totalAmount || '0'), 0);
+      const creditTotal = creditPurchasesList.reduce((sum, purchase) => 
+        sum + parseFloat(purchase.totalAmount || '0'), 0);
+      
+      const totalDebt = cashTotal + creditTotal;
       const totalPaid = payments.reduce((sum, payment) => 
         sum + parseFloat(payment.amount || '0'), 0);
       const remainingDebt = totalDebt - totalPaid;
@@ -2366,7 +2869,17 @@ export class DatabaseStorage implements IStorage {
         payments,
         totalDebt: totalDebt.toString(),
         totalPaid: totalPaid.toString(),
-        remainingDebt: remainingDebt.toString()
+        remainingDebt: remainingDebt.toString(),
+        cashPurchases: {
+          total: cashTotal.toString(),
+          count: cashPurchasesList.length,
+          purchases: cashPurchasesList
+        },
+        creditPurchases: {
+          total: creditTotal.toString(),
+          count: creditPurchasesList.length,
+          purchases: creditPurchasesList
+        }
       };
     } catch (error) {
       console.error('Error getting supplier account statement:', error);
@@ -2395,6 +2908,164 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       console.error('Error getting purchases by supplier:', error);
       return [];
+    }
+  }
+
+  // تنفيذ دالة إحصائيات الموردين العامة
+  async getSupplierStatistics(filters?: {
+    supplierId?: string;
+    projectId?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    purchaseType?: string;
+  }): Promise<{
+    totalSuppliers: number;
+    totalCashPurchases: string;
+    totalCreditPurchases: string;
+    totalDebt: string;
+    totalPaid: string;
+    remainingDebt: string;
+    activeSuppliers: number;
+  }> {
+    try {
+      console.log('🔍 Supplier statistics filters:', filters);
+      
+      // جلب جميع الموردين
+      const allSuppliers = await this.getSuppliers();
+      
+      // إعداد شروط البحث للمشتريات
+      const purchaseConditions = [];
+      const paymentConditions = [];
+      
+      if (filters?.supplierId) {
+        // للبحث بالمورد المحدد
+        try {
+          const supplier = await this.getSupplier(filters.supplierId);
+          if (supplier) {
+            purchaseConditions.push(eq(materialPurchases.supplierName, supplier.name));
+            paymentConditions.push(eq(supplierPayments.supplierId, filters.supplierId));
+          } else {
+            // إذا لم يوجد المورد، نبحث مباشرة بالـ ID في جدول المشتريات
+            purchaseConditions.push(eq(materialPurchases.supplierId, filters.supplierId));
+            paymentConditions.push(eq(supplierPayments.supplierId, filters.supplierId));
+          }
+        } catch (error) {
+          console.error('⚠️ خطأ في البحث عن المورد، سيتم البحث بالـ ID مباشرة:', error);
+          // في حالة خطأ، نبحث مباشرة بالـ ID
+          purchaseConditions.push(eq(materialPurchases.supplierId, filters.supplierId));
+          paymentConditions.push(eq(supplierPayments.supplierId, filters.supplierId));
+        }
+      }
+      
+      if (filters?.projectId && filters.projectId !== 'all') {
+        purchaseConditions.push(eq(materialPurchases.projectId, filters.projectId));
+        paymentConditions.push(eq(supplierPayments.projectId, filters.projectId));
+      }
+      
+      if (filters?.dateFrom) {
+        purchaseConditions.push(gte(materialPurchases.invoiceDate, filters.dateFrom));
+        paymentConditions.push(gte(supplierPayments.paymentDate, filters.dateFrom));
+      }
+      
+      if (filters?.dateTo) {
+        purchaseConditions.push(lte(materialPurchases.invoiceDate, filters.dateTo));
+        paymentConditions.push(lte(supplierPayments.paymentDate, filters.dateTo));
+      }
+
+      // جلب جميع المشتريات مع الفلاتر
+      const purchases = await db.select().from(materialPurchases)
+        .where(purchaseConditions.length > 0 ? and(...purchaseConditions) : undefined);
+      
+      // جلب جميع المدفوعات مع الفلاتر
+      const payments = await db.select().from(supplierPayments)
+        .where(paymentConditions.length > 0 ? and(...paymentConditions) : undefined);
+
+      // طباعة عينة من البيانات للتحقق من قيم purchaseType
+      if (purchases.length > 0) {
+        console.log('🔍 عينة من البيانات:', {
+          total: purchases.length,
+          first3: purchases.slice(0, 3).map(p => ({
+            id: p.id,
+            purchaseType: p.purchaseType,
+            purchaseTypeType: typeof p.purchaseType,
+            totalAmount: p.totalAmount
+          }))
+        });
+        
+        // عرض جميع القيم الفريدة لـ purchaseType
+        const uniqueTypes = Array.from(new Set(purchases.map(p => p.purchaseType)));
+        console.log('🏷️ جميع قيم purchaseType الموجودة:', uniqueTypes);
+      }
+      
+      // فصل المشتريات حسب نوع الدفع أولاً (مع إزالة علامات التنصيص وتطبيع الأحرف العربية)
+      const allCashPurchases = purchases.filter(p => {
+        const cleanType = p.purchaseType?.replace(/['"]/g, '') || '';
+        const isCash = cleanType === 'نقد';
+        console.log(`💳 فحص: "${p.purchaseType}" -> "${cleanType}" -> نقد؟ ${isCash}`);
+        return isCash;
+      });
+      const allCreditPurchases = purchases.filter(p => {
+        const cleanType = p.purchaseType?.replace(/['"]/g, '') || '';
+        // البحث عن جميع أشكال "أجل": مع الألف العادية والمد
+        const isCredit = cleanType === 'أجل' || cleanType === 'آجل' || cleanType.includes('جل');
+        console.log(`💰 فحص: "${p.purchaseType}" -> "${cleanType}" -> أجل/آجل؟ ${isCredit}`);
+        return isCredit;
+      });
+      
+      // تطبيق فلتر نوع الدفع المحدد
+      let cashPurchases = allCashPurchases;
+      let creditPurchases = allCreditPurchases;
+      
+      if (filters?.purchaseType && filters.purchaseType !== 'all') {
+        if (filters.purchaseType === 'نقد') {
+          creditPurchases = []; // إخفاء الآجلة عند اختيار النقدية فقط
+        } else if (filters.purchaseType === 'أجل') {
+          cashPurchases = []; // إخفاء النقدية عند اختيار الآجلة فقط
+        }
+      }
+      
+      console.log('📊 Purchase statistics:', {
+        totalPurchases: purchases.length,
+        allCashPurchases: allCashPurchases.length,
+        allCreditPurchases: allCreditPurchases.length,
+        filteredCashPurchases: cashPurchases.length,
+        filteredCreditPurchases: creditPurchases.length,
+        selectedFilter: filters?.purchaseType || 'all'
+      });
+
+      // حساب الإجماليات
+      const totalCashPurchases = cashPurchases.reduce((sum, p) => sum + parseFloat(p.totalAmount || '0'), 0);
+      const totalCreditPurchases = creditPurchases.reduce((sum, p) => sum + parseFloat(p.totalAmount || '0'), 0);
+      
+      // المديونية = فقط المشتريات الآجلة (ليس النقدية)
+      const totalDebt = totalCreditPurchases;
+      const totalPaid = payments.reduce((sum, p) => sum + parseFloat(p.amount || '0'), 0);
+      const remainingDebt = totalDebt - totalPaid;
+      
+      console.log('💰 تفاصيل حساب المديونية:', {
+        cashPurchases: totalCashPurchases,
+        creditPurchases: totalCreditPurchases,
+        totalDebt: totalDebt,
+        totalPaid: totalPaid,
+        remainingDebt: remainingDebt,
+        creditPurchasesCount: creditPurchases.length
+      });
+      
+      // حساب عدد الموردين النشطين (الذين لديهم مشتريات)
+      const activeSupplierNames = Array.from(new Set(purchases.map(p => p.supplierName).filter(name => name !== null)));
+      
+      return {
+        totalSuppliers: filters?.supplierId ? 1 : allSuppliers.length,
+        totalCashPurchases: totalCashPurchases.toString(),
+        totalCreditPurchases: totalCreditPurchases.toString(),
+        totalDebt: totalDebt.toString(),
+        totalPaid: totalPaid.toString(),
+        remainingDebt: remainingDebt.toString(),
+        activeSuppliers: activeSupplierNames.length
+      };
+    } catch (error) {
+      console.error('Error getting supplier statistics:', error);
+      throw error;
     }
   }
 
@@ -2597,6 +3268,951 @@ export class DatabaseStorage implements IStorage {
       throw error;
     }
   }
+
+  // =====================================================
+  // تنفيذ دوال نظام إدارة المعدات المبسط
+  // =====================================================
+
+  // Equipment Management (نظام المعدات المبسط)
+  async getEquipmentList(): Promise<Equipment[]> {
+    try {
+      const equipmentList = await db
+        .select()
+        .from(equipment)
+        .orderBy(equipment.code);
+      return equipmentList;
+    } catch (error) {
+      console.error('Error getting equipment list:', error);
+      return [];
+    }
+  }
+
+  // Equipment operations with auto code generation and image support
+  async generateNextEquipmentCode(): Promise<string> {
+    try {
+      console.time('generateCode');
+      
+      // تحسين جذري: استخدام timestamp للسرعة الفائقة
+      const timestamp = Date.now().toString().slice(-6);
+      const code = `EQ-${timestamp}`;
+      
+      console.timeEnd('generateCode');
+      console.log(`📝 كود جديد: ${code}`);
+      
+      return code;
+    } catch (error) {
+      console.error('Error generating equipment code:', error);
+      const fallback = `EQ-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+      return fallback;
+    }
+  }
+
+  async getEquipmentById(id: string): Promise<Equipment | undefined> {
+    try {
+      const [foundEquipment] = await db.select().from(equipment)
+        .where(eq(equipment.id, id));
+      return foundEquipment || undefined;
+    } catch (error) {
+      console.error('Error getting equipment:', error);
+      return undefined;
+    }
+  }
+
+  async getEquipment(filters?: {
+    projectId?: string;
+    status?: string;
+    type?: string;
+    searchTerm?: string;
+  }): Promise<Equipment[]> {
+    try {
+      console.time('getEquipment');
+      
+      // فحص Cache أولاً
+      const now = Date.now();
+      if (this.equipmentCache && (now - this.equipmentCache.timestamp) < this.CACHE_DURATION) {
+        console.log('⚡ استخدام Cache المحلي - سرعة فائقة!');
+        console.timeEnd('getEquipment');
+        return this.applyFiltersToCache(this.equipmentCache.data, filters);
+      }
+      
+      // استعلام فائق السرعة - الحقول الأساسية + الصورة
+      const result = await db.select({
+        id: equipment.id,
+        code: equipment.code,
+        name: equipment.name,
+        status: equipment.status,
+        currentProjectId: equipment.currentProjectId,
+        type: equipment.type,
+        imageUrl: equipment.imageUrl,
+        description: equipment.description,
+        purchasePrice: equipment.purchasePrice,
+        purchaseDate: equipment.purchaseDate
+      }).from(equipment)
+        .limit(50); // حد أقصى 50
+      
+      // حفظ في Cache
+      this.equipmentCache = {
+        data: result,
+        timestamp: now
+      };
+      
+      console.timeEnd('getEquipment');
+      console.log(`⚡ تم جلب ${result.length} معدة وحفظها في Cache`);
+      
+      return this.applyFiltersToCache(result, filters);
+    } catch (error) {
+      console.error('Error getting equipment list:', error);
+      return [];
+    }
+  }
+
+  private applyFiltersToCache(data: any[], filters?: {
+    projectId?: string;
+    status?: string;
+    type?: string;
+    searchTerm?: string;
+  }): any[] {
+    if (!filters) return data;
+
+    return data.filter(item => {
+      // فلتر المشروع
+      if (filters.projectId && filters.projectId !== 'all') {
+        if (filters.projectId === 'warehouse') {
+          if (item.currentProjectId) return false;
+        } else if (item.currentProjectId !== filters.projectId) {
+          return false;
+        }
+      }
+
+      // فلتر الحالة
+      if (filters.status && filters.status !== 'all' && item.status !== filters.status) {
+        return false;
+      }
+
+      // فلتر النوع
+      if (filters.type && filters.type !== 'all' && item.type !== filters.type) {
+        return false;
+      }
+
+      // فلتر البحث
+      if (filters.searchTerm) {
+        const searchLower = filters.searchTerm.toLowerCase();
+        const nameMatch = item.name?.toLowerCase().includes(searchLower);
+        const codeMatch = item.code?.toLowerCase().includes(searchLower);
+        if (!nameMatch && !codeMatch) return false;
+      }
+
+      return true;
+    });
+  }
+
+  async getEquipmentByCode(code: string): Promise<Equipment | undefined> {
+    try {
+      const [foundEquipment] = await db.select().from(equipment)
+        .where(eq(equipment.code, code));
+      return foundEquipment || undefined;
+    } catch (error) {
+      console.error('Error getting equipment by code:', error);
+      return undefined;
+    }
+  }
+
+  async getEquipmentByProject(projectId: string): Promise<Equipment[]> {
+    try {
+      return await db.select().from(equipment)
+        .where(eq(equipment.currentProjectId, projectId))
+        .orderBy(equipment.code);
+    } catch (error) {
+      console.error('Error getting equipment by project:', error);
+      return [];
+    }
+  }
+
+  async createEquipment(equipmentData: InsertEquipment): Promise<Equipment> {
+    try {
+      console.time('createEquipment');
+      
+      // توليد كود تلقائي - محسن
+      const autoCode = await this.generateNextEquipmentCode();
+      
+      const [newEquipment] = await db
+        .insert(equipment)
+        .values({
+          ...equipmentData,
+          code: autoCode
+        })
+        .returning();
+      
+      if (!newEquipment) {
+        throw new Error('فشل في إنشاء المعدة');
+      }
+      
+      console.timeEnd('createEquipment');
+      console.log(`✅ تمت إضافة المعدة: ${newEquipment.name}`);
+      
+      return newEquipment;
+    } catch (error) {
+      console.error('Error creating equipment:', error);
+      throw error;
+    }
+  }
+
+  async updateEquipment(id: string, equipmentData: Partial<InsertEquipment>): Promise<Equipment | undefined> {
+    try {
+      console.time('updateEquipment');
+      
+      const [updatedEquipment] = await db
+        .update(equipment)
+        .set({ ...equipmentData, updatedAt: sql`CURRENT_TIMESTAMP` })
+        .where(eq(equipment.id, id))
+        .returning();
+      
+      console.timeEnd('updateEquipment');
+      console.log(`✅ تم تعديل المعدة: ${updatedEquipment?.name || id}`);
+      
+      return updatedEquipment || undefined;
+    } catch (error) {
+      console.error('Error updating equipment:', error);
+      throw error;
+    }
+  }
+
+  async deleteEquipment(id: string): Promise<void> {
+    try {
+      console.time('deleteEquipment');
+      
+      await db.delete(equipment).where(eq(equipment.id, id));
+      
+      console.timeEnd('deleteEquipment');
+      console.log(`🗑️ تم حذف المعدة: ${id}`);
+    } catch (error) {
+      console.error('Error deleting equipment:', error);
+      throw error;
+    }
+  }
+
+  // Equipment Movements
+  async getEquipmentMovements(equipmentId: string): Promise<EquipmentMovement[]> {
+    try {
+      return await db.select().from(equipmentMovements)
+        .where(eq(equipmentMovements.equipmentId, equipmentId))
+        .orderBy(desc(equipmentMovements.movementDate));
+    } catch (error) {
+      console.error('Error getting equipment movements:', error);
+      return [];
+    }
+  }
+
+  async createEquipmentMovement(movementData: InsertEquipmentMovement): Promise<EquipmentMovement> {
+    try {
+      const [newMovement] = await db
+        .insert(equipmentMovements)
+        .values(movementData)
+        .returning();
+      
+      if (!newMovement) {
+        throw new Error('فشل في إنشاء حركة المعدة');
+      }
+      
+      return newMovement;
+    } catch (error) {
+      console.error('Error creating equipment movement:', error);
+      throw error;
+    }
+  }
+
+
+  // =====================================================
+  // تنفيذ دوال إدارة الإشعارات
+  // =====================================================
+
+  // Notification Read States Implementation
+  async isNotificationRead(userId: string, notificationId: string, notificationType: string): Promise<boolean> {
+    try {
+      const [state] = await db.select({
+        isRead: notificationReadStates.isRead
+      }).from(notificationReadStates)
+        .where(and(
+          eq(notificationReadStates.userId, userId),
+          eq(notificationReadStates.notificationId, notificationId)
+        ));
+      return state?.isRead || false;
+    } catch (error) {
+      console.error('Error checking notification read state:', error);
+      return false;
+    }
+  }
+
+  async getNotificationReadState(userId: string, notificationId: string, notificationType: string): Promise<NotificationReadState | undefined> {
+    try {
+      const [state] = await db.select({
+        id: notificationReadStates.id,
+        userId: notificationReadStates.userId,
+        notificationId: notificationReadStates.notificationId,
+        isRead: notificationReadStates.isRead,
+        readAt: notificationReadStates.readAt,
+        actionTaken: notificationReadStates.actionTaken,
+        createdAt: notificationReadStates.createdAt
+      }).from(notificationReadStates)
+        .where(and(
+          eq(notificationReadStates.userId, userId),
+          eq(notificationReadStates.notificationId, notificationId)
+        ));
+      return state || undefined;
+    } catch (error) {
+      console.error('Error getting notification read state:', error);
+      return undefined;
+    }
+  }
+
+  async markNotificationAsRead(userId: string, notificationId: string, notificationType: string): Promise<void> {
+    try {
+      const existingState = await this.getNotificationReadState(userId, notificationId, notificationType);
+      
+      if (existingState) {
+        await db.update(notificationReadStates)
+          .set({ isRead: true, readAt: new Date() })
+          .where(eq(notificationReadStates.id, existingState.id));
+      } else {
+        await db.insert(notificationReadStates).values({
+          userId: userId,
+          notificationId: notificationId,
+          isRead: true,
+          readAt: new Date()
+        });
+      }
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+      throw error;
+    }
+  }
+
+  async markAllNotificationsAsRead(userId: string): Promise<void> {
+    try {
+      await db.update(notificationReadStates)
+        .set({ isRead: true, readAt: new Date() })
+        .where(and(
+          eq(notificationReadStates.userId, userId),
+          eq(notificationReadStates.isRead, false)
+        ));
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+      throw error;
+    }
+  }
+
+  async getReadNotifications(userId: string, notificationType?: string): Promise<NotificationReadState[]> {
+    try {
+      const conditions = [eq(notificationReadStates.userId, userId), eq(notificationReadStates.isRead, true)];
+
+      return await db.select({
+        id: notificationReadStates.id,
+        userId: notificationReadStates.userId,
+        notificationId: notificationReadStates.notificationId,
+        isRead: notificationReadStates.isRead,
+        readAt: notificationReadStates.readAt,
+        actionTaken: notificationReadStates.actionTaken,
+        createdAt: notificationReadStates.createdAt
+      }).from(notificationReadStates)
+        .where(and(...conditions))
+        .orderBy(desc(notificationReadStates.readAt));
+    } catch (error) {
+      console.error('Error getting read notifications:', error);
+      return [];
+    }
+  }
+
+  // =====================================================
+  // AI System Implementation (تنفيذ النظام الذكي)
+  // =====================================================
+
+  // AI System Logs
+  async getAiSystemLogs(filters?: { logType?: string; operation?: string; limit?: number }): Promise<AiSystemLog[]> {
+    try {
+      let query = db.select().from(aiSystemLogs);
+      
+      const conditions = [];
+      if (filters?.logType) {
+        conditions.push(eq(aiSystemLogs.logType, filters.logType));
+      }
+      if (filters?.operation) {
+        conditions.push(ilike(aiSystemLogs.operation, `%${filters.operation}%`));
+      }
+
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
+
+      query = query.orderBy(desc(aiSystemLogs.createdAt));
+      
+      if (filters?.limit) {
+        query = query.limit(filters.limit);
+      }
+
+      const results = await query;
+      return results;
+    } catch (error) {
+      console.error('Error getting AI system logs:', error);
+      return [];
+    }
+  }
+
+  async createAiSystemLog(log: InsertAiSystemLog): Promise<AiSystemLog> {
+    try {
+      const [newLog] = await db.insert(aiSystemLogs).values(log).returning();
+      return newLog;
+    } catch (error) {
+      console.error('Error creating AI system log:', error);
+      throw error;
+    }
+  }
+
+  async deleteOldAiSystemLogs(olderThanDays: number): Promise<void> {
+    try {
+      const cutoffDate = new Date();
+      cutoffDate.setDate(cutoffDate.getDate() - olderThanDays);
+      
+      await db.delete(aiSystemLogs)
+        .where(lte(aiSystemLogs.createdAt, cutoffDate));
+    } catch (error) {
+      console.error('Error deleting old AI system logs:', error);
+      throw error;
+    }
+  }
+
+  // AI System Metrics
+  async getAiSystemMetrics(filters?: { metricType?: string; isActive?: boolean; limit?: number }): Promise<AiSystemMetric[]> {
+    try {
+      let query = db.select().from(aiSystemMetrics);
+      
+      const conditions = [];
+      if (filters?.metricType) {
+        conditions.push(eq(aiSystemMetrics.metricType, filters.metricType));
+      }
+      if (filters?.isActive !== undefined) {
+        conditions.push(eq(aiSystemMetrics.isActive, filters.isActive));
+      }
+
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
+
+      query = query.orderBy(desc(aiSystemMetrics.timestamp));
+      
+      if (filters?.limit) {
+        query = query.limit(filters.limit);
+      }
+
+      const results = await query;
+      return results;
+    } catch (error) {
+      console.error('Error getting AI system metrics:', error);
+      return [];
+    }
+  }
+
+  async getLatestAiSystemMetrics(): Promise<AiSystemMetric[]> {
+    try {
+      return await db.select().from(aiSystemMetrics)
+        .where(eq(aiSystemMetrics.isActive, true))
+        .orderBy(desc(aiSystemMetrics.timestamp))
+        .limit(10);
+    } catch (error) {
+      console.error('Error getting latest AI system metrics:', error);
+      return [];
+    }
+  }
+
+  async createAiSystemMetric(metric: InsertAiSystemMetric): Promise<AiSystemMetric> {
+    try {
+      const [newMetric] = await db.insert(aiSystemMetrics).values(metric).returning();
+      return newMetric;
+    } catch (error) {
+      console.error('Error creating AI system metric:', error);
+      throw error;
+    }
+  }
+
+  async updateAiSystemMetric(id: string, metric: Partial<InsertAiSystemMetric>): Promise<AiSystemMetric | undefined> {
+    try {
+      const [updatedMetric] = await db.update(aiSystemMetrics)
+        .set({ ...metric, timestamp: new Date() })
+        .where(eq(aiSystemMetrics.id, id))
+        .returning();
+      return updatedMetric || undefined;
+    } catch (error) {
+      console.error('Error updating AI system metric:', error);
+      return undefined;
+    }
+  }
+
+  // AI System Decisions
+  async getAiSystemDecisions(filters?: { status?: string; decisionType?: string; priority?: number }): Promise<AiSystemDecision[]> {
+    try {
+      let query = db.select().from(aiSystemDecisions);
+      
+      const conditions = [];
+      if (filters?.status) {
+        conditions.push(eq(aiSystemDecisions.status, filters.status));
+      }
+      if (filters?.decisionType) {
+        conditions.push(eq(aiSystemDecisions.decisionType, filters.decisionType));
+      }
+      if (filters?.priority) {
+        conditions.push(eq(aiSystemDecisions.priority, filters.priority));
+      }
+
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
+
+      const results = await query.orderBy(desc(aiSystemDecisions.createdAt));
+      return results;
+    } catch (error) {
+      console.error('Error getting AI system decisions:', error);
+      return [];
+    }
+  }
+
+  async getAiSystemDecision(id: string): Promise<AiSystemDecision | undefined> {
+    try {
+      const [decision] = await db.select().from(aiSystemDecisions)
+        .where(eq(aiSystemDecisions.id, id));
+      return decision || undefined;
+    } catch (error) {
+      console.error('Error getting AI system decision:', error);
+      return undefined;
+    }
+  }
+
+  async createAiSystemDecision(decision: InsertAiSystemDecision): Promise<AiSystemDecision> {
+    try {
+      const [newDecision] = await db.insert(aiSystemDecisions).values(decision).returning();
+      return newDecision;
+    } catch (error) {
+      console.error('Error creating AI system decision:', error);
+      throw error;
+    }
+  }
+
+  async updateAiSystemDecision(id: string, decision: Partial<InsertAiSystemDecision>): Promise<AiSystemDecision | undefined> {
+    try {
+      const [updatedDecision] = await db.update(aiSystemDecisions)
+        .set({ ...decision, updatedAt: new Date() })
+        .where(eq(aiSystemDecisions.id, id))
+        .returning();
+      return updatedDecision || undefined;
+    } catch (error) {
+      console.error('Error updating AI system decision:', error);
+      return undefined;
+    }
+  }
+
+  async executeAiSystemDecision(id: string, executedBy: string): Promise<AiSystemDecision | undefined> {
+    try {
+      const [executedDecision] = await db.update(aiSystemDecisions)
+        .set({ 
+          status: 'executed',
+          executedAt: new Date(),
+          executedBy: executedBy,
+          updatedAt: new Date()
+        })
+        .where(eq(aiSystemDecisions.id, id))
+        .returning();
+      return executedDecision || undefined;
+    } catch (error) {
+      console.error('Error executing AI system decision:', error);
+      return undefined;
+    }
+  }
+
+  // AI System Recommendations
+  async getAiSystemRecommendations(filters?: { status?: string; priority?: string; targetArea?: string }): Promise<AiSystemRecommendation[]> {
+    try {
+      let query = db.select().from(aiSystemRecommendations);
+      
+      const conditions = [];
+      if (filters?.status) {
+        conditions.push(eq(aiSystemRecommendations.status, filters.status));
+      }
+      if (filters?.priority) {
+        conditions.push(eq(aiSystemRecommendations.priority, filters.priority));
+      }
+      // targetArea column was removed from schema
+      // if (filters?.targetArea) {
+      //   conditions.push(eq(aiSystemRecommendations.targetArea, filters.targetArea));
+      // }
+
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
+
+      const results = await query.orderBy(desc(aiSystemRecommendations.createdAt));
+      return results;
+    } catch (error) {
+      console.error('Error getting AI system recommendations:', error);
+      return [];
+    }
+  }
+
+  async getAiSystemRecommendation(id: string): Promise<AiSystemRecommendation | undefined> {
+    try {
+      const [recommendation] = await db.select().from(aiSystemRecommendations)
+        .where(eq(aiSystemRecommendations.id, id));
+      return recommendation || undefined;
+    } catch (error) {
+      console.error('Error getting AI system recommendation:', error);
+      return undefined;
+    }
+  }
+
+  async createAiSystemRecommendation(recommendation: InsertAiSystemRecommendation): Promise<AiSystemRecommendation> {
+    try {
+      const [newRecommendation] = await db.insert(aiSystemRecommendations).values(recommendation).returning();
+      return newRecommendation;
+    } catch (error) {
+      console.error('Error creating AI system recommendation:', error);
+      throw error;
+    }
+  }
+
+  async updateAiSystemRecommendation(id: string, recommendation: Partial<InsertAiSystemRecommendation>): Promise<AiSystemRecommendation | undefined> {
+    try {
+      const [updatedRecommendation] = await db.update(aiSystemRecommendations)
+        .set({ ...recommendation, updatedAt: new Date() })
+        .where(eq(aiSystemRecommendations.id, id))
+        .returning();
+      return updatedRecommendation || undefined;
+    } catch (error) {
+      console.error('Error updating AI system recommendation:', error);
+      return undefined;
+    }
+  }
+
+  async executeAiSystemRecommendation(id: string, executionResult: any): Promise<AiSystemRecommendation | undefined> {
+    try {
+      const [executedRecommendation] = await db.update(aiSystemRecommendations)
+        .set({ 
+          status: 'executed',
+          executedAt: new Date(),
+          updatedAt: new Date()
+        })
+        .where(eq(aiSystemRecommendations.id, id))
+        .returning();
+      return executedRecommendation || undefined;
+    } catch (error) {
+      console.error('Error executing AI system recommendation:', error);
+      return undefined;
+    }
+  }
+
+  async dismissAiSystemRecommendation(id: string): Promise<AiSystemRecommendation | undefined> {
+    try {
+      const [dismissedRecommendation] = await db.update(aiSystemRecommendations)
+        .set({ 
+          status: 'dismissed',
+          updatedAt: new Date()
+        })
+        .where(eq(aiSystemRecommendations.id, id))
+        .returning();
+      return dismissedRecommendation || undefined;
+    } catch (error) {
+      console.error('Error dismissing AI system recommendation:', error);
+      return undefined;
+    }
+  }
+
+  // ===== وظائف إدارة قاعدة البيانات الذكية =====
+
+  // محلل الأمان للجداول عالية الخطورة
+  async analyzeSecurityThreats() {
+    try {
+      console.log('🔍 بدء تحليل التهديدات الأمنية للجداول...');
+      
+      const tables = await this.getDatabaseTables();
+      const highRiskTables = tables.filter(table => 
+        table.security_level === 'high' && !table.has_policies
+      );
+
+      const securityNotifications = [];
+
+      for (const table of highRiskTables) {
+        // إنشاء اقتراحات محددة لكل جدول
+        const policySuggestions = this.generatePolicySuggestions(table);
+        
+        const notification = {
+          id: `security-${table.table_name}-${Date.now()}`,
+          userId: 'system', // نظام الأمان الداخلي
+          type: 'security' as const,
+          title: `🔐 تحذير أمني: الجدول ${table.table_name}`,
+          message: `الجدول ${table.table_name} يحتوي على بيانات حساسة ولا يحتوي على سياسات RLS. هذا قد يعرض البيانات للخطر.`,
+          data: {
+            tableName: table.table_name,
+            securityLevel: table.security_level,
+            rowCount: table.row_count,
+            policySuggestions: policySuggestions,
+            suggestedAction: 'تفعيل RLS وإضافة سياسات أمان'
+          },
+          priority: 'high' as const,
+          read: false,
+          createdAt: new Date(),
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // ينتهي خلال أسبوع
+        };
+        
+        securityNotifications.push(notification);
+      }
+
+      // حفظ الإشعارات الأمنية
+      if (securityNotifications.length > 0) {
+        for (const notification of securityNotifications) {
+          await db.insert(notifications).values(notification);
+        }
+        console.log(`⚠️ تم إنشاء ${securityNotifications.length} إشعار أمني للجداول عالية الخطورة`);
+      }
+
+      return {
+        totalTables: tables.length,
+        highRiskTables: highRiskTables.length,
+        securityNotifications: securityNotifications.length,
+        recommendations: highRiskTables.map(table => ({
+          table: table.table_name,
+          risk: 'عالي',
+          action: 'تفعيل RLS + إضافة سياسات',
+          suggestions: this.generatePolicySuggestions(table)
+        }))
+      };
+
+    } catch (error) {
+      console.error('❌ خطأ في تحليل التهديدات الأمنية:', error);
+      return {
+        totalTables: 0,
+        highRiskTables: 0,
+        securityNotifications: 0,
+        recommendations: [],
+        error: (error as Error).message
+      };
+    }
+  }
+
+  // مولد اقتراحات السياسات المتقدمة
+  private generatePolicySuggestions(table: any) {
+    const suggestions = [];
+    const tableName = table.table_name.toLowerCase();
+
+    // اقتراحات محددة حسب نوع الجدول
+    if (tableName.includes('user')) {
+      suggestions.push({
+        type: 'RLS_POLICY',
+        title: 'سياسة الوصول للمستخدمين',
+        code: `CREATE POLICY "users_policy" ON ${table.table_name}
+  USING (auth.uid() = id);`,
+        description: 'المستخدم يمكنه الوصول لبياناته فقط'
+      });
+      suggestions.push({
+        type: 'INSERT_POLICY', 
+        title: 'سياسة إنشاء المستخدمين',
+        code: `CREATE POLICY "users_insert_policy" ON ${table.table_name}
+  FOR INSERT WITH CHECK (auth.uid() = id);`,
+        description: 'المستخدم يمكنه إنشاء حسابه فقط'
+      });
+    } else if (tableName.includes('auth')) {
+      suggestions.push({
+        type: 'ADMIN_ONLY',
+        title: 'سياسة المشرفين فقط',
+        code: `CREATE POLICY "auth_admin_policy" ON ${table.table_name}
+  USING (auth.jwt() ->> 'role' = 'admin');`,
+        description: 'المشرفون فقط يمكنهم الوصول لبيانات المصادقة'
+      });
+    } else if (tableName.includes('project')) {
+      suggestions.push({
+        type: 'PROJECT_MEMBER',
+        title: 'سياسة أعضاء المشروع',
+        code: `CREATE POLICY "project_member_policy" ON ${table.table_name}
+  USING (
+    EXISTS (
+      SELECT 1 FROM project_members 
+      WHERE project_id = ${table.table_name}.id 
+      AND user_id = auth.uid()
+    )
+  );`,
+        description: 'أعضاء المشروع فقط يمكنهم الوصول'
+      });
+    }
+
+    // اقتراحات عامة
+    suggestions.push({
+      type: 'BASIC_RLS',
+      title: 'سياسة أساسية للحماية',
+      code: `CREATE POLICY "basic_security_policy" ON ${table.table_name}
+  USING (auth.uid() IS NOT NULL);`,
+      description: 'المستخدمون المسجلون فقط يمكنهم الوصول'
+    });
+
+    return suggestions;
+  }
+
+  async getDatabaseTables() {
+    try {
+      console.log('🔍 جاري تحليل جداول قاعدة البيانات...');
+      
+      // استعلام محسّن لجلب معلومات الجداول مع إزالة التكرار
+      const query = sql`
+        SELECT DISTINCT
+          t.table_name,
+          t.table_schema as schema_name,
+          COALESCE(s.n_tup_ins - s.n_tup_del, 0) as row_count,
+          COALESCE(pt.rowsecurity, false) as rls_enabled,
+          COALESCE(pt.rowsecurity, false) as rls_forced,
+          EXISTS(
+            SELECT 1 FROM pg_policies 
+            WHERE schemaname = t.table_schema 
+            AND tablename = t.table_name
+          ) as has_policies,
+          CASE 
+            WHEN t.table_name ~* 'user|auth|session|account' THEN 'high'
+            WHEN t.table_name ~* 'project|worker|supplier|payment' THEN 'medium'
+            ELSE 'low'
+          END as security_level,
+          CASE 
+            WHEN t.table_name ~* 'user|auth' AND NOT COALESCE(pt.rowsecurity, false) 
+            THEN 'يُنصح بتفعيل RLS للحماية'
+            WHEN COALESCE(s.n_tup_ins - s.n_tup_del, 0) > 10000 
+            THEN 'يُنصح بإضافة فهارس للأداء'
+            ELSE 'الإعدادات مناسبة'
+          END as recommended_action,
+          pg_size_pretty(COALESCE(pg_total_relation_size(c.oid), 0)) as size_estimate,
+          CURRENT_TIMESTAMP as last_analyzed
+        FROM information_schema.tables t
+        LEFT JOIN pg_tables pt ON (pt.tablename = t.table_name AND pt.schemaname = t.table_schema)
+        LEFT JOIN pg_class c ON c.relname = t.table_name
+        LEFT JOIN pg_namespace n ON (n.nspname = t.table_schema AND c.relnamespace = n.oid)
+        LEFT JOIN pg_stat_user_tables s ON (s.relname = t.table_name AND s.schemaname = t.table_schema)
+        WHERE t.table_schema = 'public'
+          AND t.table_type = 'BASE TABLE'
+          AND t.table_name NOT LIKE 'pg_%'
+          AND t.table_name NOT LIKE 'sql_%'
+        ORDER BY t.table_name
+      `;
+      
+      const result = await db.execute(query);
+      
+      console.log(`✅ تم تحليل ${result.rows?.length || 0} جدول بنجاح`);
+      
+      return result.rows.map((row: any) => ({
+        table_name: row.table_name,
+        schema_name: row.schema_name,
+        row_count: parseInt(row.row_count) || 0,
+        rls_enabled: Boolean(row.rls_enabled),
+        rls_forced: Boolean(row.rls_forced),
+        has_policies: Boolean(row.has_policies),
+        security_level: row.security_level || 'low',
+        recommended_action: row.recommended_action || '',
+        size_estimate: row.size_estimate || '0 bytes',
+        last_analyzed: row.last_analyzed || new Date().toISOString()
+      }));
+      
+    } catch (error) {
+      console.error('❌ خطأ في تحليل جداول قاعدة البيانات:', error);
+      
+      // في حالة فشل الاستعلام المتقدم، نعيد البيانات الأساسية
+      const basicQuery = sql`
+        SELECT 
+          table_name,
+          table_schema as schema_name
+        FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+          AND table_type = 'BASE TABLE'
+        ORDER BY table_name
+      `;
+      
+      const basicResult = await db.execute(basicQuery);
+      
+      return (basicResult.rows || []).map((row: any) => ({
+        table_name: row.table_name,
+        schema_name: row.schema_name || 'public',
+        row_count: 0,
+        rls_enabled: false,
+        rls_forced: false,
+        has_policies: false,
+        security_level: 'medium' as const,
+        recommended_action: 'فحص تفصيلي مطلوب',
+        size_estimate: 'غير معروف',
+        last_analyzed: new Date().toISOString()
+      }));
+    }
+  }
+
+  async toggleTableRLS(tableName: string, enable: boolean) {
+    try {
+      console.log(`🔧 ${enable ? 'تفعيل' : 'تعطيل'} RLS للجدول: ${tableName}`);
+      
+      // التحقق من وجود الجدول أولاً
+      const tableCheck = await db.execute(sql`
+        SELECT table_name 
+        FROM information_schema.tables 
+        WHERE table_name = ${tableName} 
+          AND table_schema = 'public'
+      `);
+      
+      if (tableCheck.rows.length === 0) {
+        throw new Error(`الجدول ${tableName} غير موجود`);
+      }
+      
+      // تنفيذ عملية تفعيل/تعطيل RLS
+      const operation = enable ? 'ENABLE' : 'DISABLE';
+      await db.execute(sql.raw(`ALTER TABLE ${tableName} ${operation} ROW LEVEL SECURITY`));
+      
+      console.log(`✅ تم ${enable ? 'تفعيل' : 'تعطيل'} RLS للجدول ${tableName} بنجاح`);
+      
+      return {
+        table_name: tableName,
+        rls_enabled: enable,
+        updated_at: new Date().toISOString()
+      };
+      
+    } catch (error) {
+      console.error(`❌ خطأ في ${enable ? 'تفعيل' : 'تعطيل'} RLS للجدول ${tableName}:`, error);
+      throw error;
+    }
+  }
+
+  async getTablePolicies(tableName: string) {
+    try {
+      console.log(`🔍 جلب سياسات RLS للجدول: ${tableName}`);
+      
+      const query = sql`
+        SELECT 
+          policyname as policy_name,
+          cmd as command,
+          permissive,
+          roles,
+          qual as expression,
+          with_check
+        FROM pg_policies 
+        WHERE tablename = ${tableName}
+          AND schemaname = 'public'
+        ORDER BY policyname
+      `;
+      
+      const result = await db.execute(query);
+      
+      console.log(`✅ تم جلب ${result.rows?.length || 0} سياسة للجدول ${tableName}`);
+      
+      return (result.rows || []).map((row: any) => ({
+        policy_name: row.policy_name,
+        command: row.command,
+        permissive: row.permissive,
+        roles: row.roles,
+        expression: row.expression,
+        with_check: row.with_check
+      }));
+      
+    } catch (error) {
+      console.error(`❌ خطأ في جلب سياسات الجدول ${tableName}:`, error);
+      return [];
+    }
+  }
+
 }
 
 export const storage = new DatabaseStorage();

@@ -1,18 +1,32 @@
-import { useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState, useCallback } from "react";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Clock, Receipt, ShoppingCart, BarChart, Plus, Users, UserCheck, ArrowRight, RefreshCw, Settings } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
+import { Clock, Receipt, ShoppingCart, BarChart, ArrowRight, Settings, DollarSign, TrendingDown, TrendingUp, Calendar, Package, UserCheck, Plus, User, FolderPlus } from "lucide-react";
+import { StatsCard, StatsGrid } from "@/components/ui/stats-card";
 import { useSelectedProject } from "@/hooks/use-selected-project";
 import ProjectSelector from "@/components/project-selector";
-import AddProjectForm from "@/components/forms/add-project-form";
-import EnhancedAddWorkerForm from "@/components/forms/enhanced-add-worker-form";
-import { formatCurrency, formatDate } from "@/lib/utils";
+
+import { formatDate } from "@/lib/utils";
 import { LoadingCard, LoadingSpinner } from "@/components/ui/loading-spinner";
-import type { Project, DailyExpenseSummary } from "@shared/schema";
+import { useFloatingButton } from "@/components/layout/floating-button-context";
+import { useEffect } from "react";
+// import type { Project, DailyExpenseSummary, Worker, insertProjectSchema, insertWorkerSchema } from "@shared/schema";
+
+import { apiRequest } from "@/lib/queryClient";
+import type { 
+  Project, 
+  DailyExpenseSummary, 
+  Worker, 
+  AutocompleteData as WorkerType 
+} from "@shared/schema";
 
 interface ProjectStats {
   totalWorkers: string;
@@ -32,9 +46,44 @@ interface ProjectWithStats extends Project {
 export default function Dashboard() {
   const [, setLocation] = useLocation();
   const { selectedProjectId, selectProject } = useSelectedProject();
-  const [showAddProject, setShowAddProject] = useState(false);
-  const [showAddWorker, setShowAddWorker] = useState(false);
+  const [showFloatingMenu, setShowFloatingMenu] = useState(false);
+  const [showWorkerModal, setShowWorkerModal] = useState(false);
+  const [showProjectModal, setShowProjectModal] = useState(false);
+
+  // نماذج بيانات العامل والمشروع
+  const [workerData, setWorkerData] = useState({
+    name: '',
+    phone: '',
+    type: '',
+    dailyWage: ''
+  });
+
+  // نموذج إضافة مهنة جديدة
+  const [showAddTypeDialog, setShowAddTypeDialog] = useState(false);
+  const [newTypeName, setNewTypeName] = useState("");
+
+  const [projectData, setProjectData] = useState({
+    name: '',
+    status: 'active',
+    description: ''
+  });
+
   const queryClient = useQueryClient();
+  const { setFloatingAction } = useFloatingButton();
+  const { toast } = useToast();
+
+  // دالة مساعدة لحفظ القيم في autocomplete_data
+  const saveAutocompleteValue = async (category: string, value: string | null | undefined) => {
+    if (!value || typeof value !== 'string' || !value.trim()) return;
+    try {
+      await apiRequest("/api/autocomplete", "POST", { 
+        category, 
+        value: value.trim() 
+      });
+    } catch (error) {
+      console.log(`Failed to save autocomplete value for ${category}:`, error);
+    }
+  };
 
   // تحميل المشاريع مع الإحصائيات بشكل محسن
   const { data: projects = [], isLoading: projectsLoading } = useQuery<ProjectWithStats[]>({
@@ -43,15 +92,104 @@ export default function Dashboard() {
     refetchInterval: 1000 * 60, // إعادة التحديث كل دقيقة
   });
 
-  // تسجيل البيانات عند تحميلها
-  if (projects && projects.length > 0) {
-    console.log('📋 جميع المشاريع المحملة:', projects.map((p: ProjectWithStats) => ({
-      name: p.name,
-      totalIncome: p.stats?.totalIncome,
-      totalExpenses: p.stats?.totalExpenses,
-      isEqual: p.stats?.totalIncome === p.stats?.totalExpenses
-    })));
-  }
+  // جلب أنواع العمال من قاعدة البيانات
+  const { data: workerTypes = [] } = useQuery<WorkerType[]>({
+    queryKey: ["/api/worker-types"],
+  });
+
+  // متحولات لإضافة العامل والمشروع
+  const addWorkerMutation = useMutation({
+    mutationFn: async (data: any) => {
+      // حفظ القيم في autocomplete_data قبل العملية الأساسية
+      await Promise.all([
+        saveAutocompleteValue('workerNames', data.name),
+        saveAutocompleteValue('workerTypes', data.type)
+      ]);
+      
+      return apiRequest("/api/workers", "POST", data);
+    },
+    onSuccess: () => {
+      // تحديث كاش autocomplete للتأكد من ظهور البيانات الجديدة
+      queryClient.invalidateQueries({ queryKey: ["/api/autocomplete"] });
+      
+      queryClient.invalidateQueries({ queryKey: ["/api/workers"] });
+      toast({
+        title: "نجح الحفظ",
+        description: "تم إضافة العامل بنجاح",
+      });
+      setShowWorkerModal(false);
+      setWorkerData({ name: '', phone: '', type: '', dailyWage: '' });
+    },
+    onError: (error) => {
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء إضافة العامل",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const addProjectMutation = useMutation({
+    mutationFn: async (data: any) => {
+      // حفظ القيم في autocomplete_data قبل العملية الأساسية
+      await Promise.all([
+        saveAutocompleteValue('projectNames', data.name),
+        saveAutocompleteValue('projectDescriptions', data.description)
+      ]);
+      
+      return apiRequest("/api/projects", "POST", data);
+    },
+    onSuccess: () => {
+      // تحديث كاش autocomplete للتأكد من ظهور البيانات الجديدة
+      queryClient.invalidateQueries({ queryKey: ["/api/autocomplete"] });
+      
+      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/projects/with-stats"] });
+      toast({
+        title: "نجح الحفظ",
+        description: "تم إضافة المشروع بنجاح",
+      });
+      setShowProjectModal(false);
+      setProjectData({ name: '', status: 'active', description: '' });
+    },
+    onError: (error) => {
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء إضافة المشروع",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // إضافة نوع عامل جديد
+  const addWorkerTypeMutation = useMutation({
+    mutationFn: async (data: { name: string }) => {
+      // حفظ قيم أنواع العمال في autocomplete_data
+      await saveAutocompleteValue('workerTypes', data.name);
+      
+      return apiRequest("/api/worker-types", "POST", data);
+    },
+    onSuccess: (newType) => {
+      // تحديث كاش autocomplete للتأكد من ظهور البيانات الجديدة
+      queryClient.invalidateQueries({ queryKey: ["/api/autocomplete"] });
+      
+      toast({
+        title: "تم الحفظ",
+        description: "تم إضافة نوع العامل بنجاح",
+      });
+      setWorkerData({...workerData, type: newType.name});
+      setNewTypeName("");
+      setShowAddTypeDialog(false);
+      queryClient.invalidateQueries({ queryKey: ["/api/worker-types"] });
+    },
+    onError: (error) => {
+      toast({
+        title: "خطأ",
+        description: "حدث خطأ أثناء إضافة نوع العامل",
+        variant: "destructive",
+      });
+    },
+  });
 
   const { data: todaySummary } = useQuery<DailyExpenseSummary>({
     queryKey: ["/api/projects", selectedProjectId, "daily-summary", new Date().toISOString().split('T')[0]],
@@ -59,37 +197,59 @@ export default function Dashboard() {
     staleTime: 1000 * 30, // 30 ثانية للملخص اليومي
   });
 
-  // دالة إعادة تحميل البيانات
-  const handleRefreshData = () => {
-    queryClient.invalidateQueries({ queryKey: ["/api/projects/with-stats"] });
-    if (selectedProjectId) {
-      queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedProjectId, "daily-summary"] });
-    }
-  };
+
 
   const selectedProject = projects.find((p: ProjectWithStats) => p.id === selectedProjectId);
-  
-  // إضافة تسجيل للتحقق من البيانات في Frontend
-  if (selectedProject) {
-    console.log('🔍 بيانات المشروع المحدد في Frontend:', {
-      projectId: selectedProject.id,
-      projectName: selectedProject.name,
-      totalIncome: selectedProject.stats?.totalIncome,
-      totalExpenses: selectedProject.stats?.totalExpenses,
-      currentBalance: selectedProject.stats?.currentBalance
-    });
+
+
+
+  // إعداد الزر العائم مع قائمة الخيارات
+  useEffect(() => {
+    const handleFloatingAction = () => {
+      setShowFloatingMenu(!showFloatingMenu);
+    };
     
-    // فحص خاص لمشروع الحبشي
-    if (selectedProject.name.includes('الحبشي')) {
-      console.warn('🚨 مشروع الحبشي - تحقق من البيانات:', {
-        مشروع: selectedProject.name,
-        الدخل: selectedProject.stats?.totalIncome,
-        المصاريف: selectedProject.stats?.totalExpenses,
-        هل_متساوية: selectedProject.stats?.totalIncome === selectedProject.stats?.totalExpenses,
-        fullStats: selectedProject.stats
+    setFloatingAction(handleFloatingAction, "إضافة");
+    return () => setFloatingAction(null);
+  }, [setFloatingAction, showFloatingMenu]);
+
+  // تسجيل بيانات المشروع المحدد - داخل useEffect لتجنب التحديثات أثناء الرسم
+  useEffect(() => {
+    if (selectedProject) {
+      console.log('🔍 بيانات المشروع المحدد في Frontend:', {
+        projectId: selectedProject.id,
+        projectName: selectedProject.name,
+        totalIncome: selectedProject.stats?.totalIncome,
+        totalExpenses: selectedProject.stats?.totalExpenses,
+        currentBalance: selectedProject.stats?.currentBalance
       });
+      
+      // فحص خاص لمشروع الحبشي
+      if (selectedProject.name.includes('الحبشي')) {
+        console.warn('🚨 مشروع الحبشي - تحقق من البيانات:', {
+          مشروع: selectedProject.name,
+          الدخل: selectedProject.stats?.totalIncome,
+          المصاريف: selectedProject.stats?.totalExpenses,
+          هل_متساوية: selectedProject.stats?.totalIncome === selectedProject.stats?.totalExpenses,
+          fullStats: selectedProject.stats
+        });
+      }
     }
-  }
+  }, [selectedProject]);
+
+  // دالة تنسيق العملة
+  const formatCurrency = (amount: number) => {
+    if (typeof amount !== 'number') {
+      const num = parseFloat(String(amount));
+      if (isNaN(num)) return '0 ر.ي';
+      amount = num;
+    }
+    return new Intl.NumberFormat('en-US', {
+      style: 'decimal',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0,
+    }).format(amount) + ' ر.ي';
+  };
 
   const quickActions = [
     {
@@ -149,76 +309,13 @@ export default function Dashboard() {
 
   return (
     <div className="p-4 fade-in">
-      {/* Refresh Button */}
-      <div className="flex justify-end mb-3">
-        <Button 
-          variant="outline" 
-          size="sm"
-          onClick={handleRefreshData}
-          className="h-8 px-3 text-xs"
-        >
-          <RefreshCw className="ml-1 h-3 w-3" />
-          تحديث البيانات
-        </Button>
-      </div>
 
-      {/* Management Buttons */}
-      <div className="grid grid-cols-2 gap-3 mb-4">
-        <Dialog open={showAddProject} onOpenChange={setShowAddProject}>
-          <DialogTrigger asChild>
-            <Button variant="outline" className="h-12 border-2 border-dashed">
-              <Plus className="ml-2 h-4 w-4" />
-              إضافة مشروع
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>إضافة مشروع جديد</DialogTitle>
-            </DialogHeader>
-            <AddProjectForm onSuccess={() => setShowAddProject(false)} />
-          </DialogContent>
-        </Dialog>
 
-        <Dialog open={showAddWorker} onOpenChange={setShowAddWorker}>
-          <DialogTrigger asChild>
-            <Button variant="outline" className="h-12 border-2 border-dashed">
-              <Users className="ml-2 h-4 w-4" />
-              إضافة عامل
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>إضافة عامل جديد</DialogTitle>
-            </DialogHeader>
-            <EnhancedAddWorkerForm onSuccess={() => setShowAddWorker(false)} />
-          </DialogContent>
-        </Dialog>
-      </div>
 
-      {/* Multi-Project Workers Link */}
-      <div className="grid grid-cols-1 gap-3 mb-4">
-        <Button 
-          variant="outline" 
-          className="h-12 border-2 border-blue-300 hover:bg-blue-50"
-          onClick={() => setLocation("/multi-project-workers")}
-        >
-          <UserCheck className="ml-2 h-5 w-5 text-blue-600" />
-          <span className="text-blue-700 font-medium">العمال متعددي المشاريع</span>
-        </Button>
-        
-        <Button 
-          variant="outline" 
-          className="h-12 border-2 border-green-300 hover:bg-green-50"
-          onClick={() => setLocation("/enhanced-worker-statement")}
-        >
-          <Users className="ml-2 h-5 w-5 text-green-600" />
-          <span className="text-green-700 font-medium">كشف حساب العامل المحسن</span>
-        </Button>
-      </div>
 
       <ProjectSelector
         selectedProjectId={selectedProjectId}
-        onProjectChange={selectProject}
+        onProjectChange={(projectId, projectName) => selectProject(projectId, projectName)}
       />
 
       {selectedProject && (
@@ -232,47 +329,46 @@ export default function Dashboard() {
             </div>
 
             {/* Project Statistics */}
-            <div className="grid grid-cols-3 gap-3 mb-4">
-              <div className="bg-blue-50 dark:bg-blue-950/20 p-3 rounded-lg text-center">
-                <div className="text-sm text-muted-foreground mb-1">إجمالي التوريد</div>
-                <div className="text-lg font-bold text-primary arabic-numbers">
-                  {projectsLoading ? <LoadingSpinner size="sm" className="mx-auto" /> : formatCurrency(selectedProject?.stats?.totalIncome || 0)}
-                </div>
-              </div>
-              <div className="bg-red-50 dark:bg-red-950/20 p-3 rounded-lg text-center">
-                <div className="text-sm text-muted-foreground mb-1">إجمالي المنصرف</div>
-                <div className="text-lg font-bold text-destructive arabic-numbers">
-                  {projectsLoading ? <LoadingSpinner size="sm" className="mx-auto" /> : formatCurrency(selectedProject?.stats?.totalExpenses || 0)}
-                </div>
-              </div>
-              <div className="bg-green-50 dark:bg-green-950/20 p-3 rounded-lg text-center">
-                <div className="text-sm text-muted-foreground mb-1">المتبقي الحالي</div>
-                <div className="text-lg font-bold text-success arabic-numbers">
-                  {projectsLoading ? <LoadingSpinner size="sm" className="mx-auto" /> : formatCurrency(selectedProject?.stats?.currentBalance || 0)}
-                </div>
-              </div>
-            </div>
-
-            {/* Project Activity Stats */}
-            <div className="grid grid-cols-3 gap-3">
-              <div className="bg-muted p-3 rounded-lg text-center">
-                <div className="text-sm text-muted-foreground mb-1">أيام العمل</div>
-                <div className="text-lg font-bold text-foreground arabic-numbers">
-                  {projectsLoading ? <LoadingSpinner size="sm" className="mx-auto" /> : (selectedProject?.stats?.completedDays || "0")}
-                </div>
-              </div>
-              <div className="bg-muted p-3 rounded-lg text-center">
-                <div className="text-sm text-muted-foreground mb-1">المشتريات</div>
-                <div className="text-lg font-bold text-foreground arabic-numbers">
-                  {projectsLoading ? <LoadingSpinner size="sm" className="mx-auto" /> : (selectedProject?.stats?.materialPurchases || "0")}
-                </div>
-              </div>
-              <div className="bg-muted p-3 rounded-lg text-center">
-                <div className="text-sm text-muted-foreground mb-1">العمال</div>
-                <div className="text-lg font-bold text-foreground arabic-numbers">
-                  {projectsLoading ? <LoadingSpinner size="sm" className="mx-auto" /> : (selectedProject?.stats?.activeWorkers || "0")}
-                </div>
-              </div>
+            <div className="grid grid-cols-2 gap-3">
+              <StatsCard
+                title="إجمالي التوريد"
+                value={selectedProject?.stats?.totalIncome || 0}
+                icon={TrendingUp}
+                color="blue"
+                formatter={formatCurrency}
+              />
+              <StatsCard
+                title="إجمالي المنصرف"
+                value={selectedProject?.stats?.totalExpenses || 0}
+                icon={TrendingDown}
+                color="red"
+                formatter={formatCurrency}
+              />
+              <StatsCard
+                title="المتبقي الحالي"
+                value={selectedProject?.stats?.currentBalance || 0}
+                icon={DollarSign}
+                color="green"
+                formatter={formatCurrency}
+              />
+              <StatsCard
+                title="العمال النشطين"
+                value={selectedProject?.stats?.activeWorkers || "0"}
+                icon={UserCheck}
+                color="purple"
+              />
+              <StatsCard
+                title="أيام العمل المكتملة"
+                value={selectedProject?.stats?.completedDays || "0"}
+                icon={Calendar}
+                color="teal"
+              />
+              <StatsCard
+                title="مشتريات المواد"
+                value={selectedProject?.stats?.materialPurchases || "0"}
+                icon={Package}
+                color="indigo"
+              />
             </div>
           </CardContent>
         </Card>
@@ -299,6 +395,265 @@ export default function Dashboard() {
           </div>
         </CardContent>
       </Card>
+
+      {/* قائمة الخيارات العائمة */}
+      {showFloatingMenu && (
+        <div className="fixed bottom-20 right-4 z-50 space-y-2">
+          <Button
+            onClick={() => {
+              setShowWorkerModal(true);
+              setShowFloatingMenu(false);
+            }}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white shadow-lg rounded-full px-4 py-3"
+            size="sm"
+          >
+            <User className="h-4 w-4" />
+            <span>إضافة عامل</span>
+          </Button>
+          <Button
+            onClick={() => {
+              setShowProjectModal(true);
+              setShowFloatingMenu(false);
+            }}
+            className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white shadow-lg rounded-full px-4 py-3"
+            size="sm"
+          >
+            <FolderPlus className="h-4 w-4" />
+            <span>إضافة مشروع</span>
+          </Button>
+        </div>
+      )}
+
+      {/* خلفية شفافة لإغلاق القائمة */}
+      {showFloatingMenu && (
+        <div 
+          className="fixed inset-0 z-40 bg-black bg-opacity-20"
+          onClick={() => setShowFloatingMenu(false)}
+        />
+      )}
+
+      {/* نموذج إضافة عامل */}
+      <Dialog open={showWorkerModal} onOpenChange={setShowWorkerModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>إضافة عامل جديد</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="worker-name">اسم العامل</Label>
+              <Input
+                id="worker-name"
+                value={workerData.name}
+                onChange={(e) => setWorkerData({...workerData, name: e.target.value})}
+                placeholder="أدخل اسم العامل"
+              />
+            </div>
+            <div>
+              <Label htmlFor="worker-phone">رقم الهاتف</Label>
+              <Input
+                id="worker-phone"
+                value={workerData.phone}
+                onChange={(e) => setWorkerData({...workerData, phone: e.target.value})}
+                placeholder="أدخل رقم الهاتف"
+              />
+            </div>
+            <div>
+              <Label htmlFor="worker-type">نوع العامل</Label>
+              <div className="flex gap-2">
+                <Select value={workerData.type} onValueChange={(value) => setWorkerData({...workerData, type: value})}>
+                  <SelectTrigger className="flex-1">
+                    <SelectValue placeholder="اختر نوع العامل..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {workerTypes.map((workerType) => (
+                      <SelectItem key={workerType.id} value={workerType.value}>
+                        {workerType.value}
+                      </SelectItem>
+                    ))}
+                    {workerTypes.length === 0 && (
+                      <>
+                        <SelectItem value="معلم">معلم</SelectItem>
+                        <SelectItem value="عامل">عامل</SelectItem>
+                        <SelectItem value="حداد">حداد</SelectItem>
+                        <SelectItem value="نجار">نجار</SelectItem>
+                        <SelectItem value="سائق">سائق</SelectItem>
+                        <SelectItem value="كهربائي">كهربائي</SelectItem>
+                        <SelectItem value="سباك">سباك</SelectItem>
+                      </>
+                    )}
+                  </SelectContent>
+                </Select>
+                
+                <Dialog open={showAddTypeDialog} onOpenChange={setShowAddTypeDialog}>
+                  <DialogTrigger asChild>
+                    <Button type="button" variant="outline" size="icon" className="shrink-0" title="إضافة نوع جديد">
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>إضافة نوع عامل جديد</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div>
+                        <Label htmlFor="new-type-name">اسم نوع العامل</Label>
+                        <Input
+                          id="new-type-name"
+                          type="text"
+                          value={newTypeName}
+                          onChange={(e) => setNewTypeName(e.target.value)}
+                          placeholder="مثال: كهربائي، سباك، حداد..."
+                          required
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          onClick={() => {
+                            if (newTypeName.trim()) {
+                              addWorkerTypeMutation.mutate({ name: newTypeName.trim() });
+                            }
+                          }}
+                          disabled={!newTypeName.trim() || addWorkerTypeMutation.isPending}
+                          className="flex-1"
+                        >
+                          {addWorkerTypeMutation.isPending ? "جاري الإضافة..." : "إضافة"}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            setShowAddTypeDialog(false);
+                            setNewTypeName("");
+                          }}
+                          className="flex-1"
+                        >
+                          إلغاء
+                        </Button>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              </div>
+            </div>
+            <div>
+              <Label htmlFor="worker-wage">الأجر اليومي (ر.ي)</Label>
+              <Input
+                id="worker-wage"
+                type="number"
+                inputMode="decimal"
+                value={workerData.dailyWage}
+                onChange={(e) => setWorkerData({...workerData, dailyWage: e.target.value})}
+                placeholder="0"
+                className="text-center arabic-numbers"
+                required
+              />
+            </div>
+            <div className="flex gap-3 pt-4">
+              <Button
+                onClick={() => {
+                  if (!workerData.name.trim() || !workerData.type || !workerData.dailyWage) {
+                    toast({
+                      title: "خطأ",
+                      description: "يرجى ملء جميع البيانات المطلوبة",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+
+                  const parsedWage = parseFloat(workerData.dailyWage);
+                  
+                  if (isNaN(parsedWage) || parsedWage <= 0) {
+                    toast({
+                      title: "خطأ",
+                      description: "يرجى إدخال مبلغ صحيح للأجر اليومي",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+
+                  addWorkerMutation.mutate({
+                    name: workerData.name.trim(),
+                    phone: workerData.phone || null,
+                    type: workerData.type,
+                    dailyWage: parsedWage.toString(),
+                    isActive: true,
+                  });
+                }}
+                disabled={addWorkerMutation.isPending}
+                className="flex-1"
+              >
+                {addWorkerMutation.isPending ? "جاري الحفظ..." : "حفظ"}
+              </Button>
+              <Button variant="outline" onClick={() => setShowWorkerModal(false)} className="flex-1">
+                إلغاء
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* نموذج إضافة مشروع */}
+      <Dialog open={showProjectModal} onOpenChange={setShowProjectModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>إضافة مشروع جديد</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="project-name">اسم المشروع</Label>
+              <Input
+                id="project-name"
+                value={projectData.name}
+                onChange={(e) => setProjectData({...projectData, name: e.target.value})}
+                placeholder="أدخل اسم المشروع"
+              />
+            </div>
+            <div>
+              <Label htmlFor="project-status">حالة المشروع</Label>
+              <Select value={projectData.status} onValueChange={(value) => setProjectData({...projectData, status: value})}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">نشط</SelectItem>
+                  <SelectItem value="completed">مكتمل</SelectItem>
+                  <SelectItem value="paused">متوقف</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="project-description">وصف المشروع</Label>
+              <Input
+                id="project-description"
+                value={projectData.description}
+                onChange={(e) => setProjectData({...projectData, description: e.target.value})}
+                placeholder="أدخل وصف المشروع (اختياري)"
+              />
+            </div>
+            <div className="flex gap-3 pt-4">
+              <Button
+                onClick={() => {
+                  if (projectData.name) {
+                    addProjectMutation.mutate({
+                      name: projectData.name,
+                      status: projectData.status,
+                      description: projectData.description || null
+                    });
+                  }
+                }}
+                disabled={!projectData.name || addProjectMutation.isPending}
+                className="flex-1"
+              >
+                {addProjectMutation.isPending ? "جاري الحفظ..." : "حفظ"}
+              </Button>
+              <Button variant="outline" onClick={() => setShowProjectModal(false)} className="flex-1">
+                إلغاء
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

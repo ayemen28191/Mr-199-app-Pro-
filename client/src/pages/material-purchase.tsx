@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
-import { ArrowRight, Save, Plus, Camera, Package } from "lucide-react";
+import { ArrowRight, Save, Plus, Camera, Package, ChartGantt } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -10,13 +10,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Combobox } from "@/components/ui/combobox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useSelectedProject } from "@/hooks/use-selected-project";
 import ProjectSelector from "@/components/project-selector";
 import { getCurrentDate, formatCurrency } from "@/lib/utils";
 import { AutocompleteInput } from "@/components/ui/autocomplete-input-database";
 import { apiRequest } from "@/lib/queryClient";
-import type { Material, InsertMaterialPurchase, InsertMaterial, Supplier } from "@shared/schema";
+import { useFloatingButton } from "@/components/layout/floating-button-context";
+import type { Material, InsertMaterialPurchase, InsertMaterial, Supplier, InsertSupplier } from "@shared/schema";
 
 export default function MaterialPurchase() {
   const [, setLocation] = useLocation();
@@ -41,14 +43,44 @@ export default function MaterialPurchase() {
   const [invoicePhoto, setInvoicePhoto] = useState<string>("");
   const [editingPurchaseId, setEditingPurchaseId] = useState<string | null>(null);
   
+  // حالات نموذج إضافة المورد
+  const [isSupplierDialogOpen, setIsSupplierDialogOpen] = useState(false);
+  const [supplierFormName, setSupplierFormName] = useState("");
+  const [supplierFormContactPerson, setSupplierFormContactPerson] = useState("");
+  const [supplierFormPhone, setSupplierFormPhone] = useState("");
+  const [supplierFormAddress, setSupplierFormAddress] = useState("");
+  const [supplierFormPaymentTerms, setSupplierFormPaymentTerms] = useState("نقد");
+  const [supplierFormNotes, setSupplierFormNotes] = useState("");
+  
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { setFloatingAction } = useFloatingButton();
+
+  // إجراء الحفظ لاستخدامه مع الزر العائم
+  const handleFloatingSave = () => {
+    if (!selectedProjectId) {
+      toast({
+        title: "خطأ",
+        description: "يرجى اختيار مشروع أولاً",
+        variant: "destructive",
+      });
+      return;
+    }
+    // محاكاة كليك زر الحفظ
+    (document.querySelector('[type="submit"]') as HTMLElement)?.click();
+  };
+
+  // تعيين إجراء الزر العائم
+  useEffect(() => {
+    setFloatingAction(handleFloatingSave, "حفظ المشتريات");
+    return () => setFloatingAction(null);
+  }, [setFloatingAction, selectedProjectId]);
 
   // دالة مساعدة لحفظ القيم في autocomplete_data
   const saveAutocompleteValue = async (category: string, value: string | null | undefined) => {
     if (!value || typeof value !== 'string' || !value.trim()) return;
     try {
-      await apiRequest("POST", "/api/autocomplete", { 
+      await apiRequest("/api/autocomplete", "POST", { 
         category, 
         value: value.trim() 
       });
@@ -56,6 +88,78 @@ export default function MaterialPurchase() {
       // تجاهل الأخطاء لأن هذه عملية مساعدة
       console.log(`Failed to save autocomplete value for ${category}:`, error);
     }
+  };
+
+  // دالة إعادة تعيين نموذج المورد
+  const resetSupplierForm = () => {
+    setSupplierFormName("");
+    setSupplierFormContactPerson("");
+    setSupplierFormPhone("");
+    setSupplierFormAddress("");
+    setSupplierFormPaymentTerms("نقد");
+    setSupplierFormNotes("");
+  };
+
+  // إضافة مورد جديد
+  const addSupplierMutation = useMutation({
+    mutationFn: async (data: InsertSupplier) => {
+      // حفظ القيم في autocomplete_data قبل العملية الأساسية
+      await Promise.all([
+        saveAutocompleteValue('supplier_name', supplierFormName),
+        saveAutocompleteValue('supplier_contact_person', supplierFormContactPerson),
+        saveAutocompleteValue('supplier_phone', supplierFormPhone),
+        saveAutocompleteValue('supplier_address', supplierFormAddress),
+        saveAutocompleteValue('supplier_payment_terms', supplierFormPaymentTerms)
+      ]);
+
+      return apiRequest("/api/suppliers", "POST", data);
+    },
+    onSuccess: (newSupplier) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
+      toast({
+        title: "تم إضافة المورد بنجاح",
+        description: `تم إضافة المورد "${supplierFormName}" إلى قاعدة البيانات`,
+      });
+      
+      // تحديد المورد الجديد في قائمة الاختيار
+      setSupplierName(supplierFormName);
+      
+      // إغلاق النموذج وإعادة تعيين القيم
+      setIsSupplierDialogOpen(false);
+      resetSupplierForm();
+    },
+    onError: (error: any) => {
+      toast({
+        title: "خطأ في إضافة المورد",
+        description: error?.message || "حدث خطأ أثناء إضافة المورد. يرجى المحاولة مرة أخرى.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleAddSupplier = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!supplierFormName.trim()) {
+      toast({
+        title: "خطأ في البيانات",
+        description: "يرجى إدخال اسم المورد",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const supplierData: InsertSupplier = {
+      name: supplierFormName.trim(),
+      contactPerson: supplierFormContactPerson.trim() || undefined,
+      phone: supplierFormPhone.trim() || undefined,
+      address: supplierFormAddress.trim() || undefined,
+      paymentTerms: supplierFormPaymentTerms || undefined,
+      notes: supplierFormNotes.trim() || undefined,
+      isActive: true,
+    };
+
+    addSupplierMutation.mutate(supplierData);
   };
 
   const { data: materials = [] } = useQuery<Material[]>({
@@ -70,7 +174,7 @@ export default function MaterialPurchase() {
   // Fetch purchase data for editing
   const { data: purchaseToEdit } = useQuery({
     queryKey: ["/api/material-purchases", editId],
-    queryFn: () => apiRequest("GET", `/api/material-purchases/${editId}`),
+    queryFn: () => apiRequest(`/api/material-purchases/${editId}`, "GET"),
     enabled: !!editId,
   });
 
@@ -94,7 +198,7 @@ export default function MaterialPurchase() {
   }, [purchaseToEdit]);
 
   const addMaterialMutation = useMutation({
-    mutationFn: (data: InsertMaterial) => apiRequest("POST", "/api/materials", data),
+    mutationFn: (data: InsertMaterial) => apiRequest("/api/materials", "POST", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/materials"] });
     },
@@ -135,7 +239,7 @@ export default function MaterialPurchase() {
       ]);
       
       // تنفيذ العملية الأساسية
-      return apiRequest("POST", "/api/material-purchases", data);
+      return apiRequest("/api/material-purchases", "POST", data);
     },
     onSuccess: async () => {
       // تحديث كاش autocomplete للتأكد من ظهور البيانات الجديدة
@@ -226,7 +330,7 @@ export default function MaterialPurchase() {
         saveAutocompleteValue('notes', notes)
       ]);
       
-      return apiRequest("PUT", `/api/material-purchases/${id}`, data);
+      return apiRequest(`/api/material-purchases/${id}`, "PUT", data);
     },
     onSuccess: async () => {
       // تحديث كاش autocomplete للتأكد من ظهور البيانات الجديدة
@@ -287,7 +391,7 @@ export default function MaterialPurchase() {
 
   // Delete Material Purchase Mutation
   const deleteMaterialPurchaseMutation = useMutation({
-    mutationFn: (id: string) => apiRequest("DELETE", `/api/material-purchases/${id}`),
+    mutationFn: (id: string) => apiRequest(`/api/material-purchases/${id}`, "DELETE"),
     onSuccess: () => {
       toast({
         title: "تم الحذف",
@@ -430,23 +534,21 @@ export default function MaterialPurchase() {
 
   return (
     <div className="p-4 slide-in">
-      {/* Header with Back Button */}
-      <div className="flex items-center mb-4">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setLocation("/daily-expenses")}
-          className="ml-3 p-2"
-        >
-          <ArrowRight className="h-5 w-5" />
-        </Button>
-        <h2 className="text-xl font-bold text-foreground">شراء مواد</h2>
-      </div>
 
-      <ProjectSelector
-        selectedProjectId={selectedProjectId}
-        onProjectChange={selectProject}
-      />
+      <Card className="mb-4">
+        <CardContent className="p-4">
+          <h2 className="text-lg font-bold text-foreground mb-3 flex items-center">
+            <ChartGantt className="ml-2 h-5 w-5 text-primary" />
+            اختر المشروع
+          </h2>
+          <ProjectSelector
+            selectedProjectId={selectedProjectId}
+            onProjectChange={(projectId, projectName) => selectProject(projectId, projectName)}
+            showHeader={false}
+            variant="compact"
+          />
+        </CardContent>
+      </Card>
 
       {/* Purchase Form */}
       <Card className="mb-4">
@@ -569,15 +671,113 @@ export default function MaterialPurchase() {
                     )}
                   </SelectContent>
                 </Select>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => setLocation("/suppliers")}
-                  title="إضافة مورد جديد"
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
+                <Dialog open={isSupplierDialogOpen} onOpenChange={setIsSupplierDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      title="إضافة مورد جديد"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-[425px]" dir="rtl">
+                    <DialogHeader>
+                      <DialogTitle>إضافة مورد جديد</DialogTitle>
+                      <DialogDescription>
+                        أدخل معلومات المورد الجديد. جميع الحقول اختيارية عدا اسم المورد.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <form onSubmit={handleAddSupplier} className="space-y-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="supplier-name">اسم المورد/المحل *</Label>
+                        <Input
+                          id="supplier-name"
+                          value={supplierFormName}
+                          onChange={(e) => setSupplierFormName(e.target.value)}
+                          placeholder="مثال: مؤسسة الخضراء للمواد"
+                          required
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="supplier-contact">الشخص المسؤول</Label>
+                        <Input
+                          id="supplier-contact"
+                          value={supplierFormContactPerson}
+                          onChange={(e) => setSupplierFormContactPerson(e.target.value)}
+                          placeholder="مثال: أحمد محمد"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="supplier-phone">رقم الهاتف</Label>
+                        <Input
+                          id="supplier-phone"
+                          value={supplierFormPhone}
+                          onChange={(e) => setSupplierFormPhone(e.target.value)}
+                          placeholder="مثال: 777123456"
+                          type="tel"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="supplier-address">العنوان</Label>
+                        <Input
+                          id="supplier-address"
+                          value={supplierFormAddress}
+                          onChange={(e) => setSupplierFormAddress(e.target.value)}
+                          placeholder="مثال: شارع الستين، صنعاء"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="supplier-payment">شروط الدفع</Label>
+                        <Select value={supplierFormPaymentTerms} onValueChange={setSupplierFormPaymentTerms}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="اختر شروط الدفع" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="نقد">نقد</SelectItem>
+                            <SelectItem value="أجل">أجل</SelectItem>
+                            <SelectItem value="نقد وأجل">نقد وأجل</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="supplier-notes">ملاحظات</Label>
+                        <Textarea
+                          id="supplier-notes"
+                          value={supplierFormNotes}
+                          onChange={(e) => setSupplierFormNotes(e.target.value)}
+                          placeholder="أي ملاحظات إضافية..."
+                          rows={3}
+                        />
+                      </div>
+                      
+                      <div className="flex justify-end space-x-2 space-x-reverse pt-4">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            setIsSupplierDialogOpen(false);
+                            resetSupplierForm();
+                          }}
+                        >
+                          إلغاء
+                        </Button>
+                        <Button
+                          type="submit"
+                          disabled={addSupplierMutation.isPending || !supplierFormName.trim()}
+                        >
+                          {addSupplierMutation.isPending ? "جاري الإضافة..." : "إضافة المورد"}
+                        </Button>
+                      </div>
+                    </form>
+                  </DialogContent>
+                </Dialog>
               </div>
               {activeSuppliers.length === 0 && (
                 <p className="text-sm text-muted-foreground mt-1">
@@ -723,7 +923,7 @@ export default function MaterialPurchase() {
           <CardContent className="p-4">
             <div className="text-center text-muted-foreground">
               <Package className="h-12 w-12 mx-auto mb-3 text-muted-foreground/50" />
-              <h3 className="text-lg font-medium mb-2">لا توجد مشتريات في {new Date(purchaseDate).toLocaleDateString('ar-YE')}</h3>
+              <h3 className="text-lg font-medium mb-2">لا توجد مشتريات في {new Date(purchaseDate).toLocaleDateString('en-GB')}</h3>
               <p className="text-sm">غيّر تاريخ الشراء أعلاه لعرض مشتريات تواريخ أخرى</p>
               <p className="text-sm mt-1">إجمالي المشتريات المسجلة: {allMaterialPurchases.length}</p>
             </div>
@@ -736,7 +936,7 @@ export default function MaterialPurchase() {
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-foreground">
-                المشتريات في {new Date(purchaseDate).toLocaleDateString('ar-YE')} ({materialPurchases.length})
+                المشتريات في {new Date(purchaseDate).toLocaleDateString('en-GB')} ({materialPurchases.length})
               </h3>
               <p className="text-sm text-muted-foreground">
                 غيّر تاريخ الشراء أعلاه لعرض مشتريات تواريخ أخرى
@@ -757,7 +957,7 @@ export default function MaterialPurchase() {
                         {purchase.supplierName && <p>المورد: {purchase.supplierName}</p>}
                         {purchase.purchaseType && <p>نوع الدفع: {purchase.purchaseType}</p>}
                         {purchase.purchaseDate && (
-                          <p>تاريخ الشراء: {new Date(purchase.purchaseDate).toLocaleDateString('ar-YE')}</p>
+                          <p>تاريخ الشراء: {new Date(purchase.purchaseDate).toLocaleDateString('en-GB')}</p>
                         )}
                       </div>
                     </div>
